@@ -1,0 +1,17 @@
+{
+  "@@locale": "zh_Hant",
+  "appTitle": "Wynime",
+  "phaseZeroLabel": "Phase 0 專案骨架",
+  "navigationHome": "首頁",
+  "navigationSearch": "搜尋",
+  "navigationLibrary": "收藏庫",
+  "navigationDownloads": "下載",
+  "navigationSources": "來源",
+  "navigationSettings": "設定",
+  "homePlaceholder": "未來首頁會整合放送資訊、繼續觀看與可自訂模組。",
+  "searchPlaceholder": "目前僅建立搜尋介面骨架；Phase 0 不會查詢任何網站或來源。",
+  "libraryPlaceholder": "收藏與觀看紀錄會在後續階段接入。",
+  "downloadsPlaceholder": "目前只有下載介面，尚未加入任何真實媒體下載實作。",
+  "sourcesPlaceholder": "來源管理目前為預留頁面；來源套件與即時解析均未啟用。",
+  "settingsPlaceholder": "後續階段會透過型別化政策逐步加入設定分類。"
+}

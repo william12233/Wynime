@@ -34,6 +34,29 @@ Platform ───────────────────→ Domain
 
 Domain must not import upper or outer layers.
 
+## Phase 0 package layout
+
+```text
+lib/
+├─ main.dart
+├─ l10n/
+└─ src/
+   ├─ app/
+   ├─ presentation/
+   ├─ design_system/
+   └─ domain/
+      ├─ models/
+      ├─ repositories/
+      └─ services/
+```
+
+- `app` owns application bootstrap and navigation destination definitions.
+- `presentation` owns responsive shells and placeholder pages.
+- `design_system` owns the single breakpoint classifier, spacing, radii, motion, dimensions and semantic themes.
+- `domain` contains pure Dart models and typed interfaces only.
+- Phase 0 intentionally has no Dart infrastructure implementation. Generated Android and Windows runner projects remain platform bootstrap shells until later phases add typed platform adapters.
+- Architecture-boundary tests reject Flutter, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
+
 ## Platform strategy
 
 - Flutter owns shared UI and presentation state.

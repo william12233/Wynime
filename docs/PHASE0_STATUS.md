@@ -37,16 +37,18 @@ No live source parsing, WebView interception, media playback, downloads,
 FFmpeg, mpv, Bangumi production authentication, or source package execution is
 implemented in Phase 0.
 
-## Validation status
+## Validation result
 
-- Flutter dependency resolution: **PASS**
-- Localization generation: **PASS**
-- Dart formatting: **PASS**
-- Domain and application tests before Golden generation: **11 PASS**
-- Full test suite used to generate and verify all four Golden baselines:
-  **PASS**
-- Final permanent CI run covering analyze, tests, Android build, and Windows
-  build: **IN PROGRESS**
+**Phase 0 Gate: PASS**
 
-Phase 0 must not be marked complete until every permanent CI job passes on the
-current branch head.
+- Flutter dependency resolution and localization generation: **PASS**
+- `dart format --output=none --set-exit-if-changed .`: **PASS**
+- `flutter analyze --fatal-infos`: **PASS**
+- Unit, widget, architecture-boundary, localization, responsive-shell, and
+  fixed-size Golden tests: **16 PASS**
+- Android debug APK build: **PASS**
+- Windows debug application build: **PASS**
+
+The permanent `Phase 0 CI` workflow validates every pull-request revision with
+separate format/analyze, test, Android build, and Windows build jobs. Phase 0 is
+complete in this branch, while every later product phase remains unstarted.

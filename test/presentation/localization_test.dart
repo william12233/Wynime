@@ -6,20 +6,32 @@ void main() {
   testWidgets(
     'supports Traditional Chinese, Simplified Chinese, Japanese, and English',
     (tester) async {
-      const expectations = <Locale, String>{
-        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'): '收藏庫',
-        Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'): '收藏库',
-        Locale('ja'): 'ライブラリ',
-        Locale('en'): 'Library',
-      };
+      final expectations = <({Locale locale, String label})>[
+        (
+          locale: const Locale.fromSubtags(
+            languageCode: 'zh',
+            scriptCode: 'Hant',
+          ),
+          label: '收藏庫',
+        ),
+        (
+          locale: const Locale.fromSubtags(
+            languageCode: 'zh',
+            scriptCode: 'Hans',
+          ),
+          label: '收藏库',
+        ),
+        (locale: const Locale('ja'), label: 'ライブラリ'),
+        (locale: const Locale('en'), label: 'Library'),
+      ];
 
       await tester.binding.setSurfaceSize(const Size(1024, 768));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      for (final entry in expectations.entries) {
-        await tester.pumpWidget(WynimeApp(locale: entry.key));
+      for (final expectation in expectations) {
+        await tester.pumpWidget(WynimeApp(locale: expectation.locale));
         await tester.pumpAndSettle();
-        expect(find.text(entry.value), findsOneWidget);
+        expect(find.text(expectation.label), findsOneWidget);
       }
     },
   );

@@ -1,0 +1,55 @@
+name: Generate Phase 0 golden baselines
+
+on:
+  push:
+    branches:
+      - bootstrap/phase-0
+    paths:
+      - .phase0-golden-request
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wynime-phase-0-goldens
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: 3.44.8
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Phase 0 branch
+        uses: actions/checkout@v6
+        with:
+          ref: bootstrap/phase-0
+          fetch-depth: 0
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Generate fixed-size golden baselines
+        run: flutter test --update-goldens test/golden/app_shell_golden_test.dart
+      - name: Verify complete test suite
+        run: flutter test
+      - name: Commit golden baselines
+        shell: bash
+        run: |
+          rm -f .phase0-golden-request
+          rm -f .github/workflows/generate-phase-0-goldens.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+            exit 0
+          fi
+          git commit -m "test: add Phase 0 golden baselines"
+          git push origin HEAD:bootstrap/phase-0

@@ -9,6 +9,7 @@ void main() {
     required String fileName,
   }) async {
     await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const WynimeApp(locale: Locale('en')));
     await tester.pumpAndSettle();
     await expectLater(
@@ -16,10 +17,6 @@ void main() {
       matchesGoldenFile('goldens/$fileName.png'),
     );
   }
-
-  tearDown(() async {
-    TestWidgetsFlutterBinding.ensureInitialized().setSurfaceSize(null);
-  });
 
   testWidgets('Android 360x800 shell', (tester) async {
     await expectGolden(

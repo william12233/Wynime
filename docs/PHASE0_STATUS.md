@@ -23,7 +23,7 @@ with Flutter instead of being selected independently.
 - Compact, Medium, and Expanded app shells
 - Home, Search, Library, Downloads, Sources, and Settings placeholders
 - `gen_l10n` ARB resources for Traditional Chinese, Simplified Chinese,
-  Japanese, and English
+  Japanese, and English, with generic Chinese resolving to Traditional Chinese
 - Shared design tokens with no bundled font
 - Pure Dart Domain contracts, including the authoritative
   `PlaybackSession`, `AdRemovalPlan`, `DownloadArtifactManifest`, and
@@ -37,16 +37,16 @@ No live source parsing, WebView interception, media playback, downloads,
 FFmpeg, mpv, Bangumi production authentication, or source package execution is
 implemented in Phase 0.
 
-## Bootstrap validation
+## Validation status
 
-Overall Linux bootstrap validation: **FAIL**
-
-- Flutter dependency resolution: **FAIL (1)**
-- Localization generation: **FAIL (1)**
+- Flutter dependency resolution: **PASS**
+- Localization generation: **PASS**
 - Dart formatting: **PASS**
-- Flutter analyzer: **FAIL (1)**
-- Golden baseline generation: **FAIL (1)**
-- Unit, widget, architecture, and golden tests: **FAIL (1)**
-- Android debug build: **FAIL (1)**
+- Domain and application tests before Golden generation: **11 PASS**
+- Full test suite used to generate and verify all four Golden baselines:
+  **PASS**
+- Final permanent CI run covering analyze, tests, Android build, and Windows
+  build: **IN PROGRESS**
 
-- Windows build: **PENDING** — validated by the Windows GitHub Actions job after the generated runner is committed.
+Phase 0 must not be marked complete until every permanent CI job passes on the
+current branch head.

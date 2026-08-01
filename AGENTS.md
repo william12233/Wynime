@@ -7,6 +7,8 @@ Before changing code, read in this order:
 3. `docs/DECISIONS.md`
 4. Relevant feature docs and tests
 
+`docs/Wynime_完整應用計畫與技術規格_v0.3.docx` is the detailed human-review snapshot. It is useful for full-plan review, but it is not the machine-readable source of truth. If the DOCX conflicts with Markdown or an accepted architecture decision, Markdown and `docs/DECISIONS.md` win. Update Markdown first, then regenerate the DOCX through the repository workflow.
+
 ## Working rules
 
 - Do not implement magnet, BT, seeding, DRM bypass, paywall bypass, or access-control circumvention.

@@ -52,4 +52,5 @@ jobs:
             exit 0
           fi
           git commit -m "build: generate Phase 1 persistence artifacts"
+          git pull --rebase origin phase-1/persistence
           git push origin HEAD:phase-1/persistence

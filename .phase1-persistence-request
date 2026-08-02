@@ -1,1 +1,1 @@
-Generate and commit Phase 1 artifacts; permanent CI performs validation.
+Generate and commit Phase 1 artifacts from the latest branch head.

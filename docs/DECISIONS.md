@@ -65,3 +65,15 @@
 **Status:** Proposed  
 **Decision:** Adopt Rust for HLS/download internals only after Android and Windows FFI, cancellation, crash recovery, memory and stress prototypes pass.  
 **Fallback:** Dart orchestration with Kotlin and Windows-native implementations.
+
+## ADR-012 — Source rule schema v1 uses bounded declarative dialects
+
+**Status:** Accepted  
+**Decision:** Phase 2 source schema version 1 supports CSS selectors, a restricted JSONPath subset and restricted regular-expression captures. XPath and executable source code are rejected explicitly rather than partially or silently supported.  
+**Reason:** CSS and JSONPath cover fixture-based extraction without introducing an unsafe interpreter. Dart regular expressions are permitted only with strict pattern/input budgets and syntax restrictions. XPath requires a dedicated safe subset parser and remains deferred.
+
+## ADR-013 — Source signatures never increase authority
+
+**Status:** Accepted  
+**Decision:** Signature metadata may identify an author, but signed and unsigned packages are subject to identical domain allowlists, permissions, user-consent rules and resource budgets.  
+**Reason:** Identity and runtime authority are separate security properties; trusting an author must not bypass sandbox controls.

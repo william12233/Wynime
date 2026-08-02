@@ -105,6 +105,28 @@ jobs:
           test "$(grep -c 'media_kit_libs_windows_video 1.0.12' docs/DECISIONS.md)" -eq 1
           sed -i 's/media_kit_libs_windows_video: 1.0.12/media_kit_libs_windows_video: 1.0.11/' pubspec.yaml
           sed -i 's/media_kit_libs_windows_video 1.0.12/media_kit_libs_windows_video 1.0.11/' docs/DECISIONS.md
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/platform/playback/mpv_player_backend.dart')
+          source = path.read_text()
+          old = """  MpvPlayerBackend({
+            MediaKitFacade facade = const ProductionMediaKitFacade(),
+            PlaybackFailureClassifier classifier = const PlaybackFailureClassifier(),
+            this.backendId = 'mpv-libmpv',
+          }) : _facade = facade,
+               _classifier = classifier;
+          """
+          new = """  MpvPlayerBackend({
+            this._facade = const ProductionMediaKitFacade(),
+            this._classifier = const PlaybackFailureClassifier(),
+            this.backendId = 'mpv-libmpv',
+          });
+          """
+          if source.count(old) != 1:
+              raise SystemExit('Unexpected MpvPlayerBackend constructor shape.')
+          path.write_text(source.replace(old, new))
+          PY
           rm -rf .phase6 .github/workflows/phase6-apply.yml
 
       - name: Resolve dependencies and generate lockfile

@@ -4,9 +4,13 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:wynime/src/domain/models/hls_manifest.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
 import 'package:wynime/src/domain/models/source_security_policy.dart';
 import 'package:wynime/src/domain/services/playback_proxy.dart';
+import 'package:wynime/src/infrastructure/playback/hls_manifest_fingerprinter.dart';
+import 'package:wynime/src/infrastructure/playback/hls_manifest_parser.dart';
+import 'package:wynime/src/infrastructure/playback/hls_manifest_sanitizer.dart';
 import 'package:wynime/src/infrastructure/playback/hls_playlist_rewriter.dart';
 import 'package:wynime/src/infrastructure/playback/proxy_upstream_client.dart';
 
@@ -15,21 +19,33 @@ final class LoopbackPlaybackProxyService implements PlaybackProxyService {
     ProxyUpstreamClient? upstreamClient,
     Random? random,
     HlsPlaylistRewriter rewriter = const HlsPlaylistRewriter(),
+    HlsManifestParser parser = const HlsManifestParser(),
+    HlsManifestFingerprinter fingerprinter = const HlsManifestFingerprinter(),
+    HlsManifestSanitizer sanitizer = const HlsManifestSanitizer(),
   }) => LoopbackPlaybackProxyService._(
     upstreamClient ?? DartIoProxyUpstreamClient(),
     random ?? Random.secure(),
     rewriter,
+    parser,
+    fingerprinter,
+    sanitizer,
   );
 
   LoopbackPlaybackProxyService._(
     this._upstreamClient,
     this._random,
     this._rewriter,
+    this._parser,
+    this._fingerprinter,
+    this._sanitizer,
   );
 
   final ProxyUpstreamClient _upstreamClient;
   final Random _random;
   final HlsPlaylistRewriter _rewriter;
+  final HlsManifestParser _parser;
+  final HlsManifestFingerprinter _fingerprinter;
+  final HlsManifestSanitizer _sanitizer;
   final Map<String, _ProxySession> _sessions = {};
   HttpServer? _server;
   LoopbackAddressFamily? _addressFamily;
@@ -261,10 +277,41 @@ final class LoopbackPlaybackProxyService implements PlaybackProxyService {
           'Playlist is not valid UTF-8.',
         );
       }
+      var playerPlaylist = playlist;
+      final adRemovalPlan = proxySession.session.adRemovalPlan;
+      if (adRemovalPlan.isActive) {
+        try {
+          final parsed = _parser.parse(source: playlist, sourceUri: currentUri);
+          if (parsed is HlsMediaPlaylist) {
+            final fingerprint = _fingerprinter.fingerprint(parsed);
+            adRemovalPlan.verifyManifestFingerprint(fingerprint);
+            if (adRemovalPlan.removals.isNotEmpty) {
+              playerPlaylist = _sanitizer.sanitize(
+                playlist: parsed,
+                plan: adRemovalPlan,
+                actualFingerprint: fingerprint,
+              );
+            }
+          }
+        } on HlsManifestParseException {
+          throw PlaybackProxyException(
+            'invalid_playlist',
+            'Playlist parsing failed closed.',
+          );
+        } on HlsSanitizationException catch (error) {
+          throw PlaybackProxyException(error.code, error.message);
+        } on StateError {
+          throw PlaybackProxyException(
+            'fingerprint_mismatch',
+            'AdRemovalPlan does not match the current manifest.',
+          );
+        }
+      }
+
       late String rewritten;
       try {
         rewritten = _rewriter.rewrite(
-          playlist: playlist,
+          playlist: playerPlaylist,
           baseUri: currentUri,
           register: proxySession.register,
         );

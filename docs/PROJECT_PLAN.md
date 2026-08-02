@@ -158,3 +158,18 @@ Bangumi 保存收藏與已看集數；Wynime 本機保存精確播放秒數、�
 ## 13. Phase 0 Gate
 
 必須通過：Android build、Windows build、format／analyze、unit tests、Golden smoke test。Phase 0 不接真實網站、不接真實播放器、不執行真實下載，也不接正式 Bangumi OAuth。
+## 14. Phase 5 Gate
+
+必須通過：
+
+- strict master／media parser 的合法、惡意與資源上限 fixtures；
+- canonical SHA-256 fingerprint 對 token 更新保持穩定、對結構變更敏感；
+- safe 模式僅依 CUE 或 bounded ad-DATERANGE 移除；
+- discontinuity-only、Live／EVENT、LL-HLS、SAMPLE-AES／非 identity key format 全部 fail closed；
+- smart／aggressive 至少兩種獨立訊號、首尾保護、啟發式移除比例上限；
+- sanitizer 逐段重驗 identity，保留 KEY／MAP／BYTERANGE／PDT，修正 media／discontinuity sequence；
+- `AdTimelineMap` 完整覆蓋原時間軸並保持雙向單調；
+- loopback proxy 在 URI rewrite 前套用並驗證同一份 `AdRemovalPlan`；
+- format、fatal analyze、全部 tests、Android debug build 與 Windows debug build。
+
+Phase 5 不包含 mpv、FFmpeg、真實下載、下載端 AES-128 解密、內容辨識模型或 Bangumi。

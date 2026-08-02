@@ -91,3 +91,17 @@
 **Decision:** Phase 4 resolves one authoritative `PlaybackSession`, exposes every player resource through a numeric-loopback-only HTTP proxy with a per-session unguessable capability path, and pins Android `media3-exoplayer` plus `media3-exoplayer-hls` to `1.10.1`. The player never receives a raw upstream media URI or source credentials.  
 **Reason:** Centralizing URI, Header, Cookie, Referer, Origin, expiry and refresh authority avoids player-specific resolution drift. Capability paths and strict source allowlists prevent the local service from becoming an open proxy, while HLS URI rewriting allows every child request to reuse the same policy and credentials. Media3 `1.10.1` was the newest stable version verified against the locked toolchain when Phase 4 began.  
 **Safety:** The listener binds only `127.0.0.1` or `::1`; redirects and child resources remain allowlisted; IPv4 and IPv6 DNS results must all be public; every new upstream socket is connected directly to an address validated inside the connection factory while HTTPS preserves the original hostname for certificate checks; request and response resources are bounded; Set-Cookie and Location are not forwarded; lease close cancels active body subscriptions; Media3 accepts only loopback endpoints. Phase 4 does not sanitize manifests, detect ads or rewrite timelines.
+
+## ADR-016 — Canonical HLS fingerprints bind every ad decision
+
+**Status:** Accepted  
+**Decision:** Phase 5 parses a bounded immutable HLS model and computes one SHA-256 structural fingerprint before planning or sanitization. Volatile authorization query values are masked, while sequence numbers, durations, discontinuities, byte ranges, effective key／map context, date ranges and resource structure remain fingerprint inputs. Every active `AdRemovalPlan` must match that fingerprint exactly.  
+**Reason:** A refreshed token must not invalidate an otherwise identical stream, but an ad plan must never be reused after the manifest structure changes. Hash-only identity also prevents credentials or complete manifests from entering persistence and diagnostics.  
+**Safety:** Mixed playlist kinds, duplicate singleton tags, malformed or unsupported semantics and resource-budget excesses fail closed before hashing. The parser accepts only HTTP(S) resources without user info or fragments.
+
+## ADR-017 — Phase 5 sanitization is evidence-bound and VOD-only
+
+**Status:** Accepted  
+**Decision:** Safe mode removes only segments covered by explicit HLS CUE markers or a bounded ad `EXT-X-DATERANGE`. Smart and aggressive modes require at least two independent structural signals, cannot heuristically target first or last discontinuity groups, and obey a configured maximum removal ratio. Sanitization accepts only complete VOD media playlists and produces one exact bidirectional `AdTimelineMap`.  
+**Reason:** `EXT-X-DISCONTINUITY`, a short segment or a different host can all occur in legitimate content. Combining independent evidence, preserving exact segment identity and limiting heuristics reduces false positives while keeping deterministic replay and seeking.  
+**Safety:** Planning refuses to remove every segment. Live／event, LL-HLS, delta updates, I-frame-only, ambiguous date-range semantics, SAMPLE-AES and non-identity key formats are rejected. DRM and access-control bypass remain explicitly out of scope.

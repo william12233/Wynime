@@ -11,68 +11,71 @@ import 'package:wynime/src/domain/services/player_backend.dart';
 import '../helpers/playback_test_support.dart';
 
 void main() {
-  test('opens fallback when the preferred backend probe is unavailable', () async {
-    final primary = _FakeBackend(
-      backendId: 'windows-mpv',
-      kind: PlayerBackendKind.mpv,
-      availability: PlayerBackendAvailability.unavailable,
-    );
-    final fallback = _FakeBackend(
-      backendId: 'android-media3',
-      kind: PlayerBackendKind.media3,
-    );
-    final backend = SwitchablePlayerBackend(
-      primary: primary,
-      fallback: fallback,
-    );
-    addTearDown(backend.close);
-    final session = _loopbackSession();
+  test(
+    'opens fallback when the preferred backend probe is unavailable',
+    () async {
+      final primary = _FakeBackend(
+        backendId: 'windows-mpv',
+        kind: PlayerBackendKind.mpv,
+        availability: PlayerBackendAvailability.unavailable,
+      );
+      final fallback = _FakeBackend(
+        backendId: 'android-media3',
+        kind: PlayerBackendKind.media3,
+      );
+      final backend = SwitchablePlayerBackend(
+        primary: primary,
+        fallback: fallback,
+      );
+      addTearDown(backend.close);
+      final session = _loopbackSession();
 
-    await backend.open(session);
+      await backend.open(session);
 
-    expect(primary.opened, isEmpty);
-    expect(fallback.opened, [same(session)]);
-    expect(backend.activeBackend, same(fallback));
-  });
+      expect(primary.opened, isEmpty);
+      expect(fallback.opened, [same(session)]);
+      expect(backend.activeBackend, same(fallback));
+    },
+  );
 
-  test('decoder failure hands the same session and position to fallback', () async {
-    final primary = _FakeBackend(
-      backendId: 'windows-mpv',
-      kind: PlayerBackendKind.mpv,
-    );
-    final fallback = _FakeBackend(
-      backendId: 'android-media3',
-      kind: PlayerBackendKind.media3,
-    );
-    final backend = SwitchablePlayerBackend(
-      primary: primary,
-      fallback: fallback,
-    );
-    addTearDown(backend.close);
-    final session = _loopbackSession();
-    await backend.open(session);
-    primary.emit(
-      PlaybackState.paused,
-      position: const Duration(seconds: 42),
-    );
+  test(
+    'decoder failure hands the same session and position to fallback',
+    () async {
+      final primary = _FakeBackend(
+        backendId: 'windows-mpv',
+        kind: PlayerBackendKind.mpv,
+      );
+      final fallback = _FakeBackend(
+        backendId: 'android-media3',
+        kind: PlayerBackendKind.media3,
+      );
+      final backend = SwitchablePlayerBackend(
+        primary: primary,
+        fallback: fallback,
+      );
+      addTearDown(backend.close);
+      final session = _loopbackSession();
+      await backend.open(session);
+      primary.emit(PlaybackState.paused, position: const Duration(seconds: 42));
 
-    primary.emitFailure(
-      kind: PlaybackFailureKind.decoder,
-      position: const Duration(seconds: 42),
-    );
-    await _eventually(() => fallback.opened.isNotEmpty);
+      primary.emitFailure(
+        kind: PlaybackFailureKind.decoder,
+        position: const Duration(seconds: 42),
+      );
+      await _eventually(() => fallback.opened.isNotEmpty);
 
-    expect(fallback.opened.single, same(session));
-    expect(fallback.seeks, [const Duration(seconds: 42)]);
-    expect(fallback.pauseCalls, 1);
-    expect(primary.closeCalls, 1);
-    expect(backend.lastHandoff?.sessionId, session.sessionId);
-    expect(
-      backend.lastHandoff?.timelineMapIdentity,
-      session.timelineMapIdentity,
-    );
-    expect(backend.lastHandoff?.intent, PlaybackIntent.paused);
-  });
+      expect(fallback.opened.single, same(session));
+      expect(fallback.seeks, [const Duration(seconds: 42)]);
+      expect(fallback.pauseCalls, 1);
+      expect(primary.closeCalls, 1);
+      expect(backend.lastHandoff?.sessionId, session.sessionId);
+      expect(
+        backend.lastHandoff?.timelineMapIdentity,
+        session.timelineMapIdentity,
+      );
+      expect(backend.lastHandoff?.intent, PlaybackIntent.paused);
+    },
+  );
 
   test('network failure is forwarded without engine fallback', () async {
     final primary = _FakeBackend(
@@ -123,10 +126,7 @@ void main() {
     await _eventually(() => fallback.opened.isNotEmpty);
     final count = events.length;
 
-    primary.emit(
-      PlaybackState.playing,
-      position: const Duration(hours: 1),
-    );
+    primary.emit(PlaybackState.playing, position: const Duration(hours: 1));
     await Future<void>.delayed(Duration.zero);
 
     expect(events, hasLength(count));
@@ -202,16 +202,9 @@ final class _FakeBackend
     closeCalls += 1;
   }
 
-  void emit(
-    PlaybackState state, {
-    Duration position = Duration.zero,
-  }) {
+  void emit(PlaybackState state, {Duration position = Duration.zero}) {
     _events.add(
-      PlaybackEvent(
-        sequence: _sequence++,
-        state: state,
-        position: position,
-      ),
+      PlaybackEvent(sequence: _sequence++, state: state, position: position),
     );
   }
 

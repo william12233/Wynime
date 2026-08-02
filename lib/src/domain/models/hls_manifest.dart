@@ -304,7 +304,9 @@ final class HlsDateRange {
       );
     }
     final startRaw = frozen['START-DATE'];
-    final startDate = startRaw == null ? null : DateTime.tryParse(startRaw);
+    final startDate = startRaw == null || !_explicitTimeZone.hasMatch(startRaw)
+        ? null
+        : DateTime.tryParse(startRaw);
     if (startDate == null) {
       throw ArgumentError.value(
         attributes,
@@ -313,7 +315,9 @@ final class HlsDateRange {
       );
     }
     final endRaw = frozen['END-DATE'];
-    final endDate = endRaw == null ? null : DateTime.tryParse(endRaw);
+    final endDate = endRaw == null || !_explicitTimeZone.hasMatch(endRaw)
+        ? null
+        : DateTime.tryParse(endRaw);
     if (endRaw != null && endDate == null) {
       throw ArgumentError.value(
         attributes,
@@ -373,8 +377,8 @@ final class HlsDateRange {
           );
   }
 
-  DateTime? get effectiveEndDate =>
-      endDate ?? (duration == null ? null : startDate.add(duration!));
+  DateTime? get effectiveEndDate => endDate ??
+      (duration == null ? null : startDate.add(duration!));
 
   bool get hasExplicitAdSignal {
     final normalizedClass = className?.toLowerCase() ?? '';
@@ -403,3 +407,4 @@ final RegExp _adDateRangeClass = RegExp(
   r'(^|[._:/-])(ad|ads|advert|advertising|commercial|interstitial|promo|sponsor)([._:/-]|$)',
   caseSensitive: false,
 );
+final RegExp _explicitTimeZone = RegExp(r'(?:Z|[+-]\d{2}:\d{2})$');

@@ -256,6 +256,47 @@ jobs:
               1,
           )
           path.write_text(content)
+
+          path = Path('test/infrastructure/loopback_playback_proxy_test.dart')
+          content = path.read_text()
+          old = "    expect(sanitized, contains('content-100.m4s'));"
+          new = "    expect(sanitized, contains('#EXTINF:10,content-a'));"
+          if content.count(old) != 1:
+              raise SystemExit('proxy expectation correction precondition failed')
+          path.write_text(content.replace(old, new, 1))
+
+          path = Path('test/architecture/playback_dependency_test.dart')
+          content = path.read_text()
+          obsolete = """
+
+            test('Phase 4 contains no Phase 5 sanitizer or ad-detection implementation', () {
+              final playbackFiles = Directory('lib/src')
+                  .listSync(recursive: true)
+                  .whereType<File>()
+                  .where((file) => file.path.endsWith('.dart'));
+
+              const forbiddenImplementations = [
+                'AdDetector',
+                'ManifestSanitizer',
+                'TimelineRewriter',
+                'FFmpeg',
+                'libmpv',
+              ];
+              for (final file in playbackFiles) {
+                final content = file.readAsStringSync();
+                for (final token in forbiddenImplementations) {
+                  expect(
+                    content,
+                    isNot(contains(token)),
+                    reason: '${file.path} must not cross the Phase 4 boundary.',
+                  );
+                }
+              }
+            });
+          """
+          if content.count(obsolete) != 1:
+              raise SystemExit('obsolete Phase 4 gate correction precondition failed')
+          path.write_text(content.replace(obsolete, '\n', 1))
           PY
 
       - name: Resolve dependencies

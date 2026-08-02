@@ -1448,7 +1448,7 @@ class $ArtifactRowsTable extends ArtifactRows
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {artifactId};
+  Set<GeneratedColumn> get $primaryKey => {manifestId, artifactId};
   @override
   ArtifactRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';

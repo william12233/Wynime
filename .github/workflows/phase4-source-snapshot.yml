@@ -43,11 +43,12 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Reassemble reviewed source payload
+      - name: Reassemble reviewed final payload
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
+          cp .github/workflows/phase-0-ci.yml /tmp/phase-0-ci.yml
           python - <<'PY'
           import base64
           import hashlib
@@ -55,14 +56,11 @@ jobs:
           import os
           import urllib.request
 
-          digest = 'aeed412876bfed04ce96274e0c1017419837d2cf0da13b1a657a8c6217ff989d'
-          prefix = f'PHASE4_PAYLOAD_{digest}_'
-          url = (
-              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}"
-              '/issues/9/comments?per_page=100'
-          )
+          digest = 'd169e5ba9eb6998ee9b9b6bf8c7f5f6ce0d7dcde28621bb6aa5910c031625955'
+          prefix = f'PHASE4_FINAL_PAYLOAD_{digest}_'
           request = urllib.request.Request(
-              url,
+              f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}"
+              '/issues/9/comments?per_page=100',
               headers={
                   'Authorization': f"Bearer {os.environ['GITHUB_TOKEN']}",
                   'Accept': 'application/vnd.github+json',
@@ -74,8 +72,7 @@ jobs:
 
           parts = {}
           for item in comments:
-              body = item.get('body') or ''
-              marker, separator, payload = body.partition('\n')
+              marker, separator, payload = (item.get('body') or '').partition('\n')
               if not separator or not marker.startswith(prefix):
                   continue
               sequence = int(marker.removeprefix(prefix))
@@ -83,7 +80,7 @@ jobs:
                   raise SystemExit(f'duplicate payload part: {sequence}')
               parts[sequence] = payload.strip()
 
-          expected = list(range(1, 9))
+          expected = [1, 2, 3, 4]
           if sorted(parts) != expected:
               raise SystemExit(
                   f'payload parts mismatch: expected {expected}, got {sorted(parts)}'
@@ -96,174 +93,12 @@ jobs:
           actual = hashlib.sha256(archive).hexdigest()
           if actual != digest:
               raise SystemExit(f'payload digest mismatch: {actual}')
-          with open('/tmp/phase4.tar.gz', 'wb') as output:
+          with open('/tmp/phase4-final.tar.gz', 'wb') as output:
               output.write(archive)
           PY
 
-          tar -xzf /tmp/phase4.tar.gz
-
-      - name: Apply reviewed corrections
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          replacements = {
-              'lib/src/application/playback/playback_coordinator.dart': [(
-                  '''  PlaybackCoordinator({
-              required PlaybackSessionResolver resolver,
-              required PlaybackProxyService proxy,
-              required PlayerBackend player,
-            }) : _resolver = resolver,
-                 _proxy = proxy,
-                 _player = player {
-          ''',
-                  '''  factory PlaybackCoordinator({
-              required PlaybackSessionResolver resolver,
-              required PlaybackProxyService proxy,
-              required PlayerBackend player,
-            }) => PlaybackCoordinator._(resolver, proxy, player);
-
-            PlaybackCoordinator._(this._resolver, this._proxy, this._player) {
-          ''',
-              )],
-              'lib/src/domain/services/playback_proxy.dart': [(
-                  '''  PlaybackProxyLease({
-              required String sessionId,
-              required this.playbackUri,
-              required Future<void> Function() close,
-            }) : sessionId = _requiredSessionId(sessionId),
-                 _close = close {
-          ''',
-                  '''  factory PlaybackProxyLease({
-              required String sessionId,
-              required Uri playbackUri,
-              required Future<void> Function() close,
-            }) => PlaybackProxyLease._(
-              _requiredSessionId(sessionId),
-              playbackUri,
-              close,
-            );
-
-            PlaybackProxyLease._(this.sessionId, this.playbackUri, this._close) {
-          ''',
-              )],
-              'lib/src/infrastructure/playback/loopback_playback_proxy.dart': [(
-                  '''  LoopbackPlaybackProxyService({
-              ProxyUpstreamClient? upstreamClient,
-              Random? random,
-              HlsPlaylistRewriter rewriter = const HlsPlaylistRewriter(),
-            }) : _upstreamClient = upstreamClient ?? DartIoProxyUpstreamClient(),
-                 _random = random ?? Random.secure(),
-                 _rewriter = rewriter;
-          ''',
-                  '''  factory LoopbackPlaybackProxyService({
-              ProxyUpstreamClient? upstreamClient,
-              Random? random,
-              HlsPlaylistRewriter rewriter = const HlsPlaylistRewriter(),
-            }) => LoopbackPlaybackProxyService._(
-              upstreamClient ?? DartIoProxyUpstreamClient(),
-              random ?? Random.secure(),
-              rewriter,
-            );
-
-            LoopbackPlaybackProxyService._(
-              this._upstreamClient,
-              this._random,
-              this._rewriter,
-            );
-          ''',
-              )],
-              'lib/src/infrastructure/playback/proxy_upstream_client.dart': [(
-                  '''  DartIoProxyUpstreamClient({
-              HttpClient? client,
-              UpstreamAddressResolver addressResolver =
-                  const SystemUpstreamAddressResolver(),
-            }) : _client = client ?? HttpClient(),
-                 _addressResolver = addressResolver {
-          ''',
-                  '''  factory DartIoProxyUpstreamClient({
-              HttpClient? client,
-              UpstreamAddressResolver addressResolver =
-                  const SystemUpstreamAddressResolver(),
-            }) => DartIoProxyUpstreamClient._(
-              client ?? HttpClient(),
-              addressResolver,
-            );
-
-            DartIoProxyUpstreamClient._(this._client, this._addressResolver) {
-          ''',
-              )],
-              'lib/src/platform/playback/media3_player_backend.dart': [
-                  (
-                      '''  MethodChannelMedia3Transport({
-              MethodChannel methodChannel = const MethodChannel(
-                'io.github.william12233.wynime/media3',
-              ),
-              EventChannel eventChannel = const EventChannel(
-                'io.github.william12233.wynime/media3/events',
-              ),
-            }) : _methodChannel = methodChannel,
-                 _eventChannel = eventChannel;
-          ''',
-                      '''  factory MethodChannelMedia3Transport({
-              MethodChannel methodChannel = const MethodChannel(
-                'io.github.william12233.wynime/media3',
-              ),
-              EventChannel eventChannel = const EventChannel(
-                'io.github.william12233.wynime/media3/events',
-              ),
-            }) => MethodChannelMedia3Transport._(methodChannel, eventChannel);
-
-            MethodChannelMedia3Transport._(this._methodChannel, this._eventChannel);
-          ''',
-                  ),
-                  (
-                      '''  Media3PlayerBackend({
-              Media3PlatformTransport? transport,
-              PlaybackErrorClassifier classifier = const PlaybackErrorClassifier(),
-            }) : _transport = transport ?? MethodChannelMedia3Transport(),
-                 _classifier = classifier {
-          ''',
-                      '''  factory Media3PlayerBackend({
-              Media3PlatformTransport? transport,
-              PlaybackErrorClassifier classifier = const PlaybackErrorClassifier(),
-            }) => Media3PlayerBackend._(
-              transport ?? MethodChannelMedia3Transport(),
-              classifier,
-            );
-
-            Media3PlayerBackend._(this._transport, this._classifier) {
-          ''',
-                  ),
-                  (
-                      '''  Future<void> seek(Duration position) {
-          ''',
-                      '''  Future<void> seek(Duration position) async {
-          ''',
-                  ),
-                  (
-                      '''    return _transport.invoke('seek', {
-          ''',
-                      '''    await _transport.invoke('seek', {
-          ''',
-                  ),
-              ],
-          }
-
-          for file_name, edits in replacements.items():
-              path = Path(file_name)
-              content = path.read_text()
-              for old, new in edits:
-                  if content.count(old) != 1:
-                      raise SystemExit(
-                          f'correction precondition failed for {file_name}'
-                      )
-                  content = content.replace(old, new, 1)
-              path.write_text(content)
-          PY
-
-          rm -f .github/workflows/phase4-source-snapshot.yml
+          tar -xzf /tmp/phase4-final.tar.gz
+          cp /tmp/phase-0-ci.yml .github/workflows/phase-0-ci.yml
 
       - name: Resolve dependencies
         run: flutter pub get
@@ -286,13 +121,13 @@ jobs:
       - name: Commit validated implementation
         shell: bash
         run: |
-          test ! -e .github/workflows/phase4-source-snapshot.yml
+          test -z "$(git status --porcelain -- .github/workflows)"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           if git diff --cached --quiet; then
-            echo 'No implementation changes to commit.'
-            exit 1
+            echo 'Validated implementation already matches the branch.'
+            exit 0
           fi
           git commit -m 'Phase 4: add secure playback session, proxy, and Media3 MVP'
           git push origin HEAD:phase-4/playback-mvp

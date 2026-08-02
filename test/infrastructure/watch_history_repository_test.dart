@@ -48,28 +48,31 @@ void main() {
     },
   );
 
-  test('the exact source-line-episode identity remains a single record', () async {
-    final database = openTestDatabase();
-    addTearDown(database.close);
-    final repository = DriftWatchHistoryRepository(database);
-    final first = progress(
-      progressId: 'progress-old',
-      position: const Duration(minutes: 4),
-      updatedAt: DateTime.utc(2026, 8, 2, 1),
-    );
-    final replacement = progress(
-      progressId: 'progress-current',
-      position: const Duration(minutes: 12),
-      updatedAt: DateTime.utc(2026, 8, 2, 2),
-    );
+  test(
+    'the exact source-line-episode identity remains a single record',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final repository = DriftWatchHistoryRepository(database);
+      final first = progress(
+        progressId: 'progress-old',
+        position: const Duration(minutes: 4),
+        updatedAt: DateTime.utc(2026, 8, 2, 1),
+      );
+      final replacement = progress(
+        progressId: 'progress-current',
+        position: const Duration(minutes: 12),
+        updatedAt: DateTime.utc(2026, 8, 2, 2),
+      );
 
-    await repository.save(first);
-    await repository.save(replacement);
+      await repository.save(first);
+      await repository.save(replacement);
 
-    expect(await repository.findById(first.progressId), isNull);
-    final loaded = await repository.findById(replacement.progressId);
-    expect(loaded, isNotNull);
-    expect(loaded!.position, replacement.position);
-    expect(await repository.watchRecent().first, hasLength(1));
-  });
+      expect(await repository.findById(first.progressId), isNull);
+      final loaded = await repository.findById(replacement.progressId);
+      expect(loaded, isNotNull);
+      expect(loaded!.position, replacement.position);
+      expect(await repository.watchRecent().first, hasLength(1));
+    },
+  );
 }

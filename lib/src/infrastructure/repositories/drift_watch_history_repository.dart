@@ -28,11 +28,11 @@ final class DriftWatchHistoryRepository implements WatchHistoryRepository {
         return;
       }
 
-      final count = await (_database.update(
-        _database.watchHistoryRows,
-      )..where((table) => table.progressId.equals(existing.progressId))).write(
-        companion,
-      );
+      final count =
+          await (_database.update(
+                _database.watchHistoryRows,
+              )..where((table) => table.progressId.equals(existing.progressId)))
+              .write(companion);
       if (count != 1) {
         throw StateError(
           'Watch progress update affected $count rows: ${existing.progressId}',

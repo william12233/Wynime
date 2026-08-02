@@ -204,9 +204,16 @@ jobs:
           test/helpers/playback_test_support.dart
           test/platform/media3_player_backend_test.dart
           test/platform/mpv_player_backend_test.dart
+          windows/flutter/generated_plugin_registrant.cc
+          windows/flutter/generated_plugins.cmake
           EOF
           sort -o /tmp/allowed-paths.txt /tmp/allowed-paths.txt
-          diff -u /tmp/allowed-paths.txt /tmp/actual-paths.txt
+          comm -23 /tmp/actual-paths.txt /tmp/allowed-paths.txt > /tmp/unexpected-paths.txt
+          if test -s /tmp/unexpected-paths.txt; then
+            echo 'Unexpected Phase 6 paths:'
+            cat /tmp/unexpected-paths.txt
+            exit 1
+          fi
           test ! -e .phase6
           test ! -e .github/workflows/phase6-apply.yml
 

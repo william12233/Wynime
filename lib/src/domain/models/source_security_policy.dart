@@ -120,10 +120,33 @@ final class SourceDomainRule {
       r'^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*'
       r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$',
     );
-    if (host.isEmpty || host.length > 253 || !valid.hasMatch(host)) {
-      throw ArgumentError.value(value, 'host', 'Must be a valid ASCII host.');
+    final isLocal =
+        host == 'localhost' ||
+        host.endsWith('.localhost') ||
+        host.endsWith('.local');
+    if (host.isEmpty ||
+        host.length > 253 ||
+        !valid.hasMatch(host) ||
+        isLocal ||
+        _isIpv4Literal(host)) {
+      throw ArgumentError.value(
+        value,
+        'host',
+        'Must be a public ASCII DNS host.',
+      );
     }
     return host;
+  }
+
+  static bool _isIpv4Literal(String host) {
+    final parts = host.split('.');
+    if (parts.length != 4) {
+      return false;
+    }
+    return parts.every((part) {
+      final value = int.tryParse(part);
+      return value != null && value >= 0 && value <= 255;
+    });
   }
 
   static Set<String> _validateSchemes(Set<String> values) {
@@ -156,11 +179,11 @@ final class SourceSecurityPolicy {
        permissions = UnmodifiableSetView(
          Set<SourcePermission>.unmodifiable(permissions),
        ) {
-    if (this.allowedDomains.isEmpty) {
+    if (this.allowedDomains.isEmpty || this.allowedDomains.length > 32) {
       throw ArgumentError.value(
         allowedDomains,
         'allowedDomains',
-        'At least one domain rule is required.',
+        'Must contain between 1 and 32 domain rules.',
       );
     }
     final allowsHttp = this.allowedDomains.any(

@@ -106,8 +106,12 @@ final class SourcePackageManifest {
         'Must contain between 1 and 80 characters.',
       );
     }
-    if (this.programs.isEmpty) {
-      throw ArgumentError.value(programs, 'programs', 'Must not be empty.');
+    if (this.programs.isEmpty || this.programs.length > 32) {
+      throw ArgumentError.value(
+        programs,
+        'programs',
+        'Must contain between 1 and 32 programs.',
+      );
     }
     final ids = <String>{};
     for (final program in this.programs) {

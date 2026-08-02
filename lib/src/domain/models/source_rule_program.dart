@@ -104,8 +104,12 @@ final class SourceRuleProgram {
         'Must be a lower-case identifier.',
       );
     }
-    if (this.fields.isEmpty) {
-      throw ArgumentError.value(fields, 'fields', 'Must not be empty.');
+    if (this.fields.isEmpty || this.fields.length > 64) {
+      throw ArgumentError.value(
+        fields,
+        'fields',
+        'Must contain between 1 and 64 field rules.',
+      );
     }
     if (resultLimit <= 0 || resultLimit > 1000) {
       throw ArgumentError.value(

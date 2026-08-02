@@ -9,11 +9,12 @@ import '../helpers/source_rule_test_support.dart';
 
 void main() {
   SourceRuleProgram program({
+    String programId = 'search',
     int resultLimit = 10,
     SourceRegexCapture? capture,
   }) {
     return SourceRuleProgram(
-      programId: 'search',
+      programId: programId,
       documentKind: SourceDocumentKind.html,
       rootSelector: SourceSelector(
         kind: SourceSelectorKind.css,
@@ -88,6 +89,47 @@ void main() {
         wynimeVersionConstraint: constraint,
         securityPolicy: policy,
         programs: [program(capture: SourceRegexCapture(pattern: r'^(\d+)$'))],
+      ),
+      throwsArgumentError,
+    );
+  });
+
+  test('package and program declaration counts are bounded', () {
+    final version = Version.parse('1.0.0');
+    final constraint = VersionConstraint.parse('^1.0.0');
+
+    expect(
+      () => SourceRuleProgram(
+        programId: 'oversized',
+        documentKind: SourceDocumentKind.html,
+        rootSelector: SourceSelector(
+          kind: SourceSelectorKind.css,
+          expression: '.item',
+        ),
+        resultLimit: 1,
+        fields: List.generate(
+          65,
+          (index) => SourceFieldRule(
+            name: 'field$index',
+            valueKind: SourceValueKind.text,
+          ),
+        ),
+      ),
+      throwsArgumentError,
+    );
+
+    expect(
+      () => SourcePackageManifest(
+        schemaVersion: 1,
+        packageId: 'example.anime',
+        displayName: 'Example Anime',
+        version: version,
+        wynimeVersionConstraint: constraint,
+        securityPolicy: testSourcePolicy(),
+        programs: List.generate(
+          33,
+          (index) => program(programId: 'program$index'),
+        ),
       ),
       throwsArgumentError,
     );

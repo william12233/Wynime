@@ -22,6 +22,22 @@ void main() {
     );
   });
 
+  test('schema version 1 rejects private and local allowlist targets', () {
+    for (final host in [
+      'localhost',
+      'api.localhost',
+      'printer.local',
+      '127.0.0.1',
+      '192.168.1.10',
+    ]) {
+      expect(
+        () => SourceDomainRule(host: host),
+        throwsArgumentError,
+        reason: host,
+      );
+    }
+  });
+
   test('schema version 1 rejects non-standard ports', () {
     final policy = testSourcePolicy();
 

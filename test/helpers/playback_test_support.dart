@@ -58,6 +58,7 @@ PlaybackSession testPlaybackSession({
   Uri? origin,
   String? userAgent,
   DateTime? expiresAt,
+  AdRemovalPlan? adRemovalPlan,
   PlaybackSessionRefresher? refresh,
 }) {
   final resolvedEpisode = episode ?? testEpisode();
@@ -73,7 +74,7 @@ PlaybackSession testPlaybackSession({
     origin: origin,
     userAgent: userAgent,
     expiresAt: expiresAt,
-    adRemovalPlan: testAdRemovalPlan(resolvedEpisode),
+    adRemovalPlan: adRemovalPlan ?? testAdRemovalPlan(resolvedEpisode),
     refresh: refresh,
   );
 }

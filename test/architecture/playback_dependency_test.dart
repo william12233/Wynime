@@ -86,33 +86,58 @@ void main() {
     );
   });
 
-  test(
-    'Phase 4 contains no Phase 5 sanitizer or ad-detection implementation',
-    () {
-      final playbackFiles = Directory('lib/src')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.dart'));
+  test('Phase 5 HLS policy remains pure and isolated to Infrastructure', () {
+    final hlsFiles = [
+      File('lib/src/infrastructure/playback/hls_manifest_parser.dart'),
+      File('lib/src/infrastructure/playback/hls_manifest_fingerprinter.dart'),
+      File('lib/src/infrastructure/playback/hls_ad_planner.dart'),
+      File('lib/src/infrastructure/playback/hls_manifest_sanitizer.dart'),
+    ];
 
-      const forbiddenImplementations = [
-        'AdDetector',
-        'ManifestSanitizer',
-        'TimelineRewriter',
-        'FFmpeg',
-        'libmpv',
-      ];
-      for (final file in playbackFiles) {
-        final content = file.readAsStringSync();
-        for (final token in forbiddenImplementations) {
-          expect(
-            content,
-            isNot(contains(token)),
-            reason: '${file.path} must not cross the Phase 4 boundary.',
-          );
-        }
+    const forbidden = [
+      "import 'dart:io'",
+      "import 'dart:ffi'",
+      'package:flutter/',
+      'MethodChannel',
+      'HttpClient',
+      'Socket',
+      'Process.',
+    ];
+    for (final file in hlsFiles) {
+      final content = file.readAsStringSync();
+      for (final token in forbidden) {
+        expect(
+          content,
+          isNot(contains(token)),
+          reason: '${file.path} must remain deterministic policy code.',
+        );
       }
-    },
-  );
+    }
+  });
+
+  test('Phase 5 does not cross into mpv, FFmpeg, or download execution', () {
+    final playbackFiles = Directory('lib/src')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'));
+
+    const forbiddenImplementations = [
+      'FFmpeg',
+      'libmpv',
+      'DownloadExecutor',
+      'Aes128Downloader',
+    ];
+    for (final file in playbackFiles) {
+      final content = file.readAsStringSync();
+      for (final token in forbiddenImplementations) {
+        expect(
+          content,
+          isNot(contains(token)),
+          reason: '${file.path} must not cross the Phase 5 boundary.',
+        );
+      }
+    }
+  });
 
   test('temporary source snapshot workflow is removed before review', () {
     expect(

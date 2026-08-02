@@ -7,16 +7,19 @@ Before changing code, read in this order:
 3. `docs/DECISIONS.md`
 4. Relevant feature docs and tests
 
-`docs/Wynime_完整應用計畫與技術規格_v0.3.docx` is a human-review snapshot. Markdown and accepted decisions are authoritative.
+`docs/Wynime_完整應用計畫與技術規格_v0.3.docx` is the detailed human-review snapshot. It is useful for full-plan review, but it is not the machine-readable source of truth. If the DOCX conflicts with Markdown or an accepted architecture decision, Markdown and `docs/DECISIONS.md` win. Update Markdown first, then regenerate the DOCX through the repository workflow.
 
 ## Working rules
 
 - Do not implement magnet, BT, seeding, DRM bypass, paywall bypass, or access-control circumvention.
-- Preserve Flutter UI with platform-native media and WebView integrations.
+- Preserve the approved architecture: Flutter UI with platform-native media and WebView integrations.
 - Playback and download must share the same `PlaybackSession`.
 - Ad removal must use one authoritative `AdRemovalPlan` keyed by source, line, episode, and manifest fingerprint.
 - Download and deletion must share one authoritative `DownloadArtifactManifest`; deletion must never reconstruct or guess paths.
-- Do not claim success without relevant build, analyze, unit, integration, or golden tests.
+- Unsigned source packages are allowed, but sandboxing, domain allowlists, declared permissions, and resource limits are mandatory.
+- Do not claim success without running the relevant build, analyze, unit, integration, or golden tests.
+- Keep Android and Windows UI visually aligned through shared design tokens and fixed-size screenshot tests.
+- Do not add bundled font files until the multilingual font review is explicitly approved.
 - Keep telemetry disabled by default and redact secrets, cookies, tokens, and full media URLs from logs and persistence.
 
 ## Change boundaries

@@ -101,6 +101,10 @@ jobs:
                       raise SystemExit(f'Unsafe payload member: {member.name}')
           PY
           tar -xzf /tmp/phase6-source.tar.gz -C .
+          test "$(grep -c 'media_kit_libs_windows_video: 1.0.12' pubspec.yaml)" -eq 1
+          test "$(grep -c 'media_kit_libs_windows_video 1.0.12' docs/DECISIONS.md)" -eq 1
+          sed -i 's/media_kit_libs_windows_video: 1.0.12/media_kit_libs_windows_video: 1.0.11/' pubspec.yaml
+          sed -i 's/media_kit_libs_windows_video 1.0.12/media_kit_libs_windows_video 1.0.11/' docs/DECISIONS.md
           rm -rf .phase6 .github/workflows/phase6-apply.yml
 
       - name: Resolve dependencies and generate lockfile

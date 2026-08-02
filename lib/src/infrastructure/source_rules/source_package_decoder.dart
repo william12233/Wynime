@@ -9,7 +9,17 @@ import '../../domain/models/source_security_policy.dart';
 final class SourcePackageDecoder {
   const SourcePackageDecoder();
 
+  static const maxPackageBytes = 256 * 1024;
+
   SourcePackageManifest decode(String source) {
+    final sourceBytes = utf8.encode(source).length;
+    if (sourceBytes > maxPackageBytes) {
+      throw SourcePackageFormatException(
+        r'$',
+        'Source package exceeds the $maxPackageBytes-byte limit.',
+      );
+    }
+
     final Object? decoded;
     try {
       decoded = jsonDecode(source);

@@ -99,6 +99,7 @@ jobs:
 
           tar -xzf /tmp/phase4-final.tar.gz
           cp /tmp/phase-0-ci.yml .github/workflows/phase-0-ci.yml
+          mv .github/workflows/phase4-source-snapshot.yml /tmp/phase4-source-snapshot.yml
 
       - name: Resolve dependencies
         run: flutter pub get
@@ -117,6 +118,11 @@ jobs:
 
       - name: Build Android debug APK
         run: flutter build apk --debug
+
+      - name: Restore one-time workflow
+        if: always()
+        shell: bash
+        run: mv /tmp/phase4-source-snapshot.yml .github/workflows/phase4-source-snapshot.yml
 
       - name: Commit validated implementation
         shell: bash

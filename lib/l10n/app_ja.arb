@@ -1,0 +1,17 @@
+{
+  "@@locale": "ja",
+  "appTitle": "Wynime",
+  "phaseZeroLabel": "Phase 0 スキャフォールド",
+  "navigationHome": "ホーム",
+  "navigationSearch": "検索",
+  "navigationLibrary": "ライブラリ",
+  "navigationDownloads": "ダウンロード",
+  "navigationSources": "ソース",
+  "navigationSettings": "設定",
+  "homePlaceholder": "今後、放送情報、視聴再開項目、カスタマイズ可能なモジュールを表示します。",
+  "searchPlaceholder": "現在は検索 UI の骨格のみです。Phase 0 ではサイトやソースへ接続しません。",
+  "libraryPlaceholder": "コレクションと視聴履歴は後続フェーズで接続します。",
+  "downloadsPlaceholder": "ダウンロード画面のみを用意し、実際のメディア取得はまだ実装していません。",
+  "sourcesPlaceholder": "ソース管理はプレースホルダーです。ソースパッケージと実サイト解析は無効です。",
+  "settingsPlaceholder": "設定項目は後続フェーズで型付きポリシーの背後に追加します。"
+}

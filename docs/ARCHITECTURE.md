@@ -85,7 +85,7 @@ This prevents duplicate resume records and avoids relying on a primary-key-only 
 
 ### Artifact-manifest transaction
 
-`DownloadArtifactManifest` and all child artifacts are inserted in one database transaction. Artifact IDs and absolute file URIs are unique. Any child conflict rolls back the parent manifest insert, so deletion can never observe a partial inventory.
+`DownloadArtifactManifest` and all child artifacts are inserted in one database transaction. Artifact IDs are unique within their owning manifest, while absolute file URIs are unique across all manifests. Any child conflict rolls back the parent manifest insert, so deletion can never observe a partial inventory.
 
 No repository reconstructs or guesses file paths. The database stores only file URIs explicitly supplied by the authoritative manifest.
 

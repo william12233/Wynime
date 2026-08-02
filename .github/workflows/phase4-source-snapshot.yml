@@ -1,0 +1,32 @@
+name: Phase 4 Source Snapshot
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    if: github.head_ref == 'phase-4/playback-mvp'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Phase 4 head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Upload private source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-source-${{ github.sha }}
+          path: |
+            .
+            !.git
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error

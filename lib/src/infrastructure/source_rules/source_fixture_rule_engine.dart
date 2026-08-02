@@ -9,6 +9,7 @@ import '../../domain/models/source_security_policy.dart';
 import '../../domain/services/source_rule_evaluator.dart';
 import 'evaluation_budget_meter.dart';
 import 'json_path_subset.dart';
+import 'safe_css_selector_policy.dart';
 import 'safe_regex_policy.dart';
 
 final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
@@ -159,6 +160,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
     EvaluationBudgetMeter meter,
   ) {
     meter.consumeStep();
+    SafeCssSelectorPolicy.validate(expression);
     try {
       final rawMatches = root.querySelectorAll(expression) as Iterable;
       final matches = rawMatches.cast<Element>().toList(growable: false);

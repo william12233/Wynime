@@ -10,13 +10,14 @@ void main() {
   SourceRuleProgram htmlProgram({
     SourceRegexCapture? capture,
     int resultLimit = 10,
+    String selector = '.item',
   }) {
     return SourceRuleProgram(
       programId: 'security',
       documentKind: SourceDocumentKind.html,
       rootSelector: SourceSelector(
         kind: SourceSelectorKind.css,
-        expression: '.item',
+        expression: selector,
       ),
       resultLimit: resultLimit,
       fields: [
@@ -120,6 +121,31 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('complex CSS selector dialects are rejected', () {
+    for (final selector in [
+      '.item:first-child',
+      'a[href]',
+      '.a, .b',
+      '.a + .b',
+      '*',
+    ]) {
+      final program = htmlProgram(selector: selector);
+      final package = testSourcePackage(program: program);
+      expect(
+        () => engine.evaluate(
+          package: package,
+          program: program,
+          fixture: SourceFixture(
+            initialUri: Uri.parse('https://example.com'),
+            body: '<div class="item">value</div>',
+          ),
+        ),
+        throwsA(isA<SourceRuleSecurityException>()),
+        reason: selector,
+      );
+    }
   });
 
   test('unsafe regular-expression constructs are rejected', () {

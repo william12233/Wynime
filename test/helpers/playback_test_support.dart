@@ -59,6 +59,8 @@ PlaybackSession testPlaybackSession({
   String? userAgent,
   DateTime? expiresAt,
   AdRemovalPlan? adRemovalPlan,
+  Iterable<MediaTrack> subtitles = const [],
+  Iterable<MediaTrack> audioTracks = const [],
   PlaybackSessionRefresher? refresh,
 }) {
   final resolvedEpisode = episode ?? testEpisode();
@@ -74,6 +76,8 @@ PlaybackSession testPlaybackSession({
     origin: origin,
     userAgent: userAgent,
     expiresAt: expiresAt,
+    subtitles: subtitles,
+    audioTracks: audioTracks,
     adRemovalPlan: adRemovalPlan ?? testAdRemovalPlan(resolvedEpisode),
     refresh: refresh,
   );

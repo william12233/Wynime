@@ -173,3 +173,20 @@ Bangumi 保存收藏與已看集數；Wynime 本機保存精確播放秒數、�
 - format、fatal analyze、全部 tests、Android debug build 與 Windows debug build。
 
 Phase 5 不包含 mpv、FFmpeg、真實下載、下載端 AES-128 解密、內容辨識模型或 Bangumi。
+
+## 15. Phase 6 Gate
+
+必須通過：
+
+- Windows 預設路由為 libmpv → WebView，Android 預設路由為 Media3 → libmpv → WebView；
+- 所有 backend 先執行 availability probe，不可用或 probe 失敗時 fail closed；
+- libmpv 只接受含有效 port、無 user-info／query／fragment 的數字 loopback capability URI，且不得接收上游 Headers、Cookies 或完整 URL；
+- 引擎切換沿用同一份 `PlaybackSession`、proxy lease、capability URI、`AdRemovalPlan` 與 `timelineMapIdentity`；
+- 切換時保存原時間軸位置、播放／暫停、音量、倍速、音軌與字幕；缺少精確 track ID 時拒絕切換；
+- stale generation／operation 事件不影響目前播放器；timeline identity 不一致立即失敗並關閉 backend；
+- 每次播放 operation 最多一次自動 fallback，且僅允許 decoder、renderer、unsupported；authorization、expiry、network、manifest 不得換引擎；
+- 原生錯誤只輸出固定脫敏 diagnostic code；不得包含 token、cookie、完整媒體 URL 或原始 native message；
+- media-kit／libmpv 原生 artifact 的來源、版本、授權模式與 FFmpeg linkage 在發行前具備可追溯證據；
+- format、fatal analyze、全部 tests、Android debug build 與 Windows debug build。
+
+Phase 6 的 Android／Windows 實際硬體播放若未執行，只能標記 `prototype_not_hardware_validated`。Phase 6 不包含真實下載、FFmpeg、下載端解密、Bangumi 或 Phase 7。

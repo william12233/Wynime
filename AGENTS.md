@@ -31,33 +31,33 @@ Before changing code, read in this order:
 - Platform-specific code must stay behind typed interfaces.
 - Domain must remain pure Dart and must not import Flutter, Drift, HTML parsers, WebView plugins, `dart:io`, or `dart:ffi`.
 
-## Phase 5 scope
+## Phase 6 scope
 
 Allowed:
-- Strict, bounded HLS master and media playlist parsing into immutable typed models
-- Canonical SHA-256 manifest fingerprints that mask volatile authorization values while retaining structural identity
-- Explicit ad evidence from bounded CUE markers and bounded `EXT-X-DATERANGE` records
-- Conservative structural evidence using authority, path, duration and interior discontinuity-group signals
-- `off`, `safe`, `smart` and `aggressive` planning modes with one authoritative `AdRemovalPlan`
-- Exact original-to-sanitized and sanitized-to-original timeline mapping
-- Complete-VOD manifest sanitization that preserves effective key, map, byte-range, gap and program-date-time context
-- Discontinuity and media-sequence repair after approved segment removal
-- Playback-proxy integration before opaque loopback URI rewriting
-- Deterministic fixture, malicious-input, timeline, proxy and architecture tests
+- Windows libmpv playback through the reviewed `media_kit` wrapper and platform-specific native package
+- Android libmpv compatibility prototype while Media3 remains the default engine
+- Wynime-owned typed playback controls for play, pause, seek, volume, rate, audio track and subtitle track
+- Backend availability probes and a single application-layer engine router
+- One bounded automatic fallback per playback operation for decoder, renderer or unsupported failures only
+- Engine handoff using the same `PlaybackSession`, loopback proxy lease, capability URI, `AdRemovalPlan` and timeline-map identity
+- Preservation of original-timeline position, play state, volume, rate, selected audio and subtitle track
+- Generation-scoped event sequencing so stale engine events cannot mutate the current operation
+- Platform-only media-kit facade and video surface with deterministic fake-backed tests
+- Android／Windows compilation, analyzer, unit, architecture and current-head CI evidence
 
 Required defaults:
-- Every plan is keyed by complete source／line／subject／episode identity and the exact canonical manifest fingerprint
-- An active plan must match the current parsed manifest before any transformation
-- `EXT-X-DISCONTINUITY` alone never authorizes removal
-- Safe mode removes only explicitly bounded CUE or ad-DATERANGE segments
-- Smart and aggressive modes require at least two independent signals, never heuristically remove first or last groups, and obey a bounded removal ratio
-- Planning and sanitization refuse to remove every segment
-- Sanitization accepts only complete VOD media playlists; live, event, low-latency, I-frame-only and ambiguous semantics fail closed
-- Phase 5 accepts only identity `AES-128` key semantics; SAMPLE-AES, DRM key formats and access-control bypass remain rejected
-- Cookies, tokens, complete upstream URLs, SCTE payloads and unredacted manifests never enter diagnostics or persistence
+- Android preference is Media3 → libmpv → WebView; Windows preference is libmpv → WebView
+- libmpv receives only the numeric-loopback capability URI and no upstream URL, Header, Cookie, Referer, Origin or token
+- Automatic fallback never runs for authorization, expiry, network or manifest failures
+- Track restoration requires an exact current-session track identifier; missing tracks fail closed
+- Timeline identity mismatch, unavailable runtime, stale events and repeated fallback fail closed
+- Raw native errors are collapsed into stable secret-safe diagnostic codes
+- media-kit wrapper and native binary provenance／license must be reviewed before release packaging
+- Real-device hardware playback remains `prototype_not_hardware_validated` until exercised on supported Android and Windows hardware
 
 Not allowed yet:
+- Real downloads, FFmpeg execution, AES-128 download decryption, remuxing or artifact creation
+- DRM, paywall, login or access-control bypass
 - Content-recognition or machine-learning ad classification
 - Source-provided Dart, JavaScript, WASM or native executable adapters
-- DRM, paywall, login or access-control bypass
-- mpv, FFmpeg, real downloads, AES-128 download execution, Bangumi authentication or Phase 6 work
+- Bangumi authentication or Phase 7 work

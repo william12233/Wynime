@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
+import 'package:wynime/src/domain/models/player_backend.dart';
 import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/domain/services/player_backend.dart';
 
@@ -58,6 +59,7 @@ final class Media3PlayerBackend implements PlayerBackend {
   late final Stream<PlaybackEvent> _events;
   int _lastSequence = -1;
   String? _activeSessionId;
+  String? _timelineMapIdentity;
 
   @override
   String get backendId => 'android-media3';
@@ -69,16 +71,40 @@ final class Media3PlayerBackend implements PlayerBackend {
   Stream<PlaybackEvent> get events => _events;
 
   @override
+  Future<PlayerBackendAvailability> probe() async {
+    try {
+      await _transport.invoke('probe', const {});
+      return const PlayerBackendAvailability.available('android-media3');
+    } on MissingPluginException {
+      return const PlayerBackendAvailability.unavailable(
+        'android-media3',
+        reasonCode: 'platform_plugin_missing',
+      );
+    } on PlatformException {
+      return const PlayerBackendAvailability.probeFailed(
+        'android-media3',
+        reasonCode: 'platform_probe_failed',
+      );
+    } on Object {
+      return const PlayerBackendAvailability.probeFailed(
+        'android-media3',
+        reasonCode: 'platform_probe_failed',
+      );
+    }
+  }
+
+  @override
   Future<void> open(PlaybackSession session) async {
     final uri = session.playbackUri;
-    if (uri == null || !_isNumericLoopback(uri)) {
+    if (uri == null || !_isCapabilityLoopback(uri)) {
       throw ArgumentError.value(
         uri,
         'session.playbackUri',
-        'Media3 accepts only a loopback proxy endpoint.',
+        'Media3 accepts only a loopback capability endpoint.',
       );
     }
     _activeSessionId = session.sessionId;
+    _timelineMapIdentity = session.timelineMapIdentity;
     try {
       await _transport.invoke('open', {
         'sessionId': session.sessionId,
@@ -87,9 +113,13 @@ final class Media3PlayerBackend implements PlayerBackend {
       });
     } on Object {
       _activeSessionId = null;
+      _timelineMapIdentity = null;
       rethrow;
     }
   }
+
+  @override
+  Future<void> play() => _transport.invoke('play', const {});
 
   @override
   Future<void> pause() => _transport.invoke('pause', const {});
@@ -103,9 +133,41 @@ final class Media3PlayerBackend implements PlayerBackend {
   }
 
   @override
+  Future<void> setVolume(double volume) async {
+    if (!volume.isFinite || volume < 0 || volume > 1) {
+      throw ArgumentError.value(volume, 'volume', 'Must be between 0 and 1.');
+    }
+    await _transport.invoke('setVolume', {'volume': volume});
+  }
+
+  @override
+  Future<void> setRate(double rate) async {
+    if (!rate.isFinite || rate < 0.25 || rate > 4) {
+      throw ArgumentError.value(rate, 'rate', 'Must be between 0.25 and 4.');
+    }
+    await _transport.invoke('setRate', {'rate': rate});
+  }
+
+  @override
+  Future<void> selectAudioTrack(String? trackId) =>
+      _selectTrack('audio', trackId);
+
+  @override
+  Future<void> selectSubtitleTrack(String? trackId) =>
+      _selectTrack('subtitle', trackId);
+
+  Future<void> _selectTrack(String type, String? trackId) async {
+    if (trackId != null && !_validTrackId(trackId)) {
+      throw ArgumentError.value(trackId, 'trackId', 'Invalid track ID.');
+    }
+    await _transport.invoke('selectTrack', {'type': type, 'id': trackId});
+  }
+
+  @override
   Future<void> close() async {
     await _transport.invoke('close', const {});
     _activeSessionId = null;
+    _timelineMapIdentity = null;
   }
 
   PlaybackEvent _mapEvent(Map<String, Object?> raw) {
@@ -116,15 +178,21 @@ final class Media3PlayerBackend implements PlayerBackend {
     _lastSequence = sequence;
     final state = _stateFromName(_requiredString(raw, 'state'));
     final eventSessionId = _optionalString(raw, 'sessionId');
+    final eventTimelineIdentity = _optionalString(raw, 'timelineMapIdentity');
     final activeSessionId = _activeSessionId;
+    final activeTimelineIdentity = _timelineMapIdentity;
     if (state != PlaybackState.idle) {
-      if (eventSessionId == null) {
+      if (eventSessionId == null || eventTimelineIdentity == null) {
         throw const FormatException(
-          'Non-idle Media3 events require a sessionId.',
+          'Non-idle Media3 events require session and timeline identity.',
         );
       }
       if (activeSessionId != null && eventSessionId != activeSessionId) {
         throw StateError('Media3 event belongs to a stale PlaybackSession.');
+      }
+      if (activeTimelineIdentity != null &&
+          eventTimelineIdentity != activeTimelineIdentity) {
+        throw StateError('Media3 event belongs to a stale timeline map.');
       }
     }
 
@@ -152,6 +220,11 @@ final class Media3PlayerBackend implements PlayerBackend {
       position: position,
       bufferedPosition: buffered,
       failure: failure,
+      volume: _optionalDouble(raw, 'volume'),
+      rate: _optionalDouble(raw, 'rate'),
+      audioTrackId: _optionalString(raw, 'audioTrackId'),
+      subtitleTrackId: _optionalString(raw, 'subtitleTrackId'),
+      timelineMapIdentity: eventTimelineIdentity,
     );
   }
 }
@@ -173,6 +246,13 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
   Stream<PlaybackEvent> get events => _controller.stream;
 
   @override
+  Future<PlayerBackendAvailability> probe() async =>
+      PlayerBackendAvailability.unavailable(
+        backendId,
+        reasonCode: 'backend_unsupported',
+      );
+
+  @override
   Future<void> open(PlaybackSession session) async {
     final failure = PlaybackFailure(
       code: 'backend_unsupported',
@@ -186,10 +266,14 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
         sequence: _sequence++,
         state: PlaybackState.failed,
         failure: failure,
+        timelineMapIdentity: session.timelineMapIdentity,
       ),
     );
     throw UnsupportedError('$backendId is not available on this platform.');
   }
+
+  @override
+  Future<void> play() async {}
 
   @override
   Future<void> pause() async {}
@@ -200,6 +284,26 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
       throw ArgumentError.value(position, 'position', 'Must not be negative.');
     }
   }
+
+  @override
+  Future<void> setVolume(double volume) async {
+    if (!volume.isFinite || volume < 0 || volume > 1) {
+      throw ArgumentError.value(volume, 'volume', 'Must be between 0 and 1.');
+    }
+  }
+
+  @override
+  Future<void> setRate(double rate) async {
+    if (!rate.isFinite || rate < 0.25 || rate > 4) {
+      throw ArgumentError.value(rate, 'rate', 'Must be between 0.25 and 4.');
+    }
+  }
+
+  @override
+  Future<void> selectAudioTrack(String? trackId) async {}
+
+  @override
+  Future<void> selectSubtitleTrack(String? trackId) async {}
 
   @override
   Future<void> close() async {
@@ -267,6 +371,17 @@ int? _optionalInt(Map<String, Object?> map, String key) {
   throw FormatException('Media3 event field $key must be an integer.');
 }
 
+double? _optionalDouble(Map<String, Object?> map, String key) {
+  final value = map[key];
+  if (value == null) {
+    return null;
+  }
+  if (value is num && value.isFinite) {
+    return value.toDouble();
+  }
+  throw FormatException('Media3 event field $key must be numeric.');
+}
+
 PlaybackState _stateFromName(String value) => switch (value) {
   'idle' => PlaybackState.idle,
   'opening' => PlaybackState.opening,
@@ -280,11 +395,25 @@ PlaybackState _stateFromName(String value) => switch (value) {
   _ => throw FormatException('Unknown Media3 state: $value'),
 };
 
-bool _isNumericLoopback(Uri uri) =>
-    uri.scheme == 'http' &&
-    uri.userInfo.isEmpty &&
-    uri.hasPort &&
-    uri.port > 0 &&
-    !uri.hasQuery &&
-    !uri.hasFragment &&
-    (uri.host == '127.0.0.1' || uri.host == '::1');
+bool _isCapabilityLoopback(Uri uri) {
+  final segments = uri.pathSegments;
+  return uri.scheme == 'http' &&
+      uri.userInfo.isEmpty &&
+      uri.hasPort &&
+      uri.port > 0 &&
+      !uri.hasQuery &&
+      !uri.hasFragment &&
+      (uri.host == '127.0.0.1' || uri.host == '::1') &&
+      segments.length >= 4 &&
+      segments.length <= 16 &&
+      segments[0] == 'v1' &&
+      segments[1] == 'session' &&
+      segments.every((segment) => segment.isNotEmpty && segment.length <= 256);
+}
+
+bool _validTrackId(String value) {
+  final normalized = value.trim();
+  return normalized.isNotEmpty &&
+      normalized.length <= 256 &&
+      !normalized.codeUnits.any((unit) => unit < 0x20 || unit == 0x7f);
+}

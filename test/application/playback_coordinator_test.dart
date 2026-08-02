@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wynime/src/application/playback/playback_coordinator.dart';
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
+import 'package:wynime/src/domain/models/player_backend.dart';
 import 'package:wynime/src/domain/models/web_capture_models.dart';
 import 'package:wynime/src/domain/services/playback_proxy.dart';
 import 'package:wynime/src/domain/services/playback_session_resolver.dart';
@@ -281,6 +282,25 @@ final class _FakePlayer implements PlayerBackend {
 
   @override
   Stream<PlaybackEvent> get events => _events.stream;
+
+  @override
+  Future<PlayerBackendAvailability> probe() async =>
+      const PlayerBackendAvailability.available('fake-player');
+
+  @override
+  Future<void> play() async {}
+
+  @override
+  Future<void> setVolume(double volume) async {}
+
+  @override
+  Future<void> setRate(double rate) async {}
+
+  @override
+  Future<void> selectAudioTrack(String? trackId) async {}
+
+  @override
+  Future<void> selectSubtitleTrack(String? trackId) async {}
 
   @override
   Future<void> open(PlaybackSession session) async {

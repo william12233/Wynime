@@ -1,9 +1,12 @@
 package io.github.william12233.wynime
 
 import android.net.Uri
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Tracks
 import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import io.flutter.embedding.android.FlutterActivity
@@ -22,6 +25,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private var eventSink: EventChannel.EventSink? = null
     private var eventSequence = 0L
     private var activeSessionId: String? = null
+    private var activeTimelineMapIdentity: String? = null
 
     private val playerListener =
         object : Player.Listener {
@@ -40,6 +44,12 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                 }
             }
 
+            override fun onTracksChanged(tracks: Tracks) {
+                if (player?.playbackState == Player.STATE_READY) {
+                    emitState(if (player?.isPlaying == true) "playing" else "ready")
+                }
+            }
+
             override fun onPlayerError(error: PlaybackException) {
                 val httpStatus = findHttpStatus(error)
                 val payload = mutableMapOf<String, Any?>(
@@ -50,8 +60,13 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                     "sessionExpired" to (httpStatus == 401 || httpStatus == 403),
                     "positionMs" to safePosition(),
                     "bufferedPositionMs" to safeBufferedPosition(),
+                    "volume" to (player?.volume?.toDouble() ?: 1.0),
+                    "rate" to (player?.playbackParameters?.speed?.toDouble() ?: 1.0),
+                    "audioTrackId" to selectedTrackId(C.TRACK_TYPE_AUDIO),
+                    "subtitleTrackId" to selectedTrackId(C.TRACK_TYPE_TEXT),
                 )
                 activeSessionId?.let { payload["sessionId"] = it }
+                activeTimelineMapIdentity?.let { payload["timelineMapIdentity"] = it }
                 eventSink?.success(payload)
             }
         }
@@ -67,10 +82,16 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private fun handleMethodCall(call: MethodCall, result: MethodChannel.Result) {
         try {
             when (call.method) {
+                "probe" -> result.success(null)
                 "open" -> {
                     val sessionId = requiredString(call, "sessionId")
+                    val timelineMapIdentity = requiredString(call, "timelineMapIdentity")
                     val uri = validateLoopbackUri(requiredString(call, "uri"))
-                    open(sessionId, uri)
+                    open(sessionId, timelineMapIdentity, uri)
+                    result.success(null)
+                }
+                "play" -> {
+                    player?.play()
                     result.success(null)
                 }
                 "pause" -> {
@@ -82,6 +103,33 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                         ?: throw IllegalArgumentException("positionMs is required")
                     require(positionMs >= 0) { "positionMs must not be negative" }
                     player?.seekTo(positionMs)
+                    result.success(null)
+                }
+                "setVolume" -> {
+                    val volume = call.argument<Number>("volume")?.toDouble()
+                        ?: throw IllegalArgumentException("volume is required")
+                    require(volume.isFinite() && volume in 0.0..1.0) {
+                        "volume must be between 0 and 1"
+                    }
+                    player?.volume = volume.toFloat()
+                    emitCurrentState()
+                    result.success(null)
+                }
+                "setRate" -> {
+                    val rate = call.argument<Number>("rate")?.toDouble()
+                        ?: throw IllegalArgumentException("rate is required")
+                    require(rate.isFinite() && rate in 0.25..4.0) {
+                        "rate must be between 0.25 and 4"
+                    }
+                    player?.setPlaybackSpeed(rate.toFloat())
+                    emitCurrentState()
+                    result.success(null)
+                }
+                "selectTrack" -> {
+                    val type = requiredString(call, "type")
+                    val id = call.argument<String>("id")?.trim()?.takeIf { it.isNotEmpty() }
+                    selectTrack(type, id)
+                    emitCurrentState()
                     result.success(null)
                 }
                 "close" -> {
@@ -97,12 +145,19 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         }
     }
 
-    private fun open(sessionId: String, uri: Uri) {
+    private fun open(sessionId: String, timelineMapIdentity: String, uri: Uri) {
         require(sessionId.matches(Regex("^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,128}$"))) {
             "Invalid sessionId"
         }
+        require(
+            timelineMapIdentity.length in 1..1024 &&
+                timelineMapIdentity.none { it.code < 0x20 || it.code == 0x7f },
+        ) {
+            "Invalid timelineMapIdentity"
+        }
         closePlayer(emitClosed = false)
         activeSessionId = sessionId
+        activeTimelineMapIdentity = timelineMapIdentity
         emitState("opening")
         try {
             player =
@@ -114,12 +169,46 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                 }
         } catch (error: RuntimeException) {
             activeSessionId = null
+            activeTimelineMapIdentity = null
             throw IllegalStateException("Unable to initialize Media3", error)
         }
     }
 
+    private fun selectTrack(type: String, id: String?) {
+        val exoPlayer = player ?: throw IllegalStateException("Media3 player is not open")
+        val trackType =
+            when (type) {
+                "audio" -> C.TRACK_TYPE_AUDIO
+                "subtitle" -> C.TRACK_TYPE_TEXT
+                else -> throw IllegalArgumentException("Unknown track type")
+            }
+        val builder =
+            exoPlayer.trackSelectionParameters
+                .buildUpon()
+                .clearOverridesOfType(trackType)
+        if (id == null) {
+            exoPlayer.trackSelectionParameters =
+                builder.setTrackTypeDisabled(trackType, true).build()
+            return
+        }
+        val match = Regex("^(\\d+):(\\d+)$").matchEntire(id)
+            ?: throw IllegalArgumentException("Track ID must use groupIndex:trackIndex")
+        val groupIndex = match.groupValues[1].toInt()
+        val trackIndex = match.groupValues[2].toInt()
+        val groups = exoPlayer.currentTracks.groups.filter { it.type == trackType }
+        val group = groups.getOrNull(groupIndex)
+            ?: throw IllegalStateException("Requested track group is unavailable")
+        require(trackIndex in 0 until group.length) { "Requested track is unavailable" }
+        exoPlayer.trackSelectionParameters =
+            builder
+                .setTrackTypeDisabled(trackType, false)
+                .addOverride(TrackSelectionOverride(group.mediaTrackGroup, trackIndex))
+                .build()
+    }
+
     private fun closePlayer(emitClosed: Boolean) {
         val closingSessionId = activeSessionId
+        val closingTimelineMapIdentity = activeTimelineMapIdentity
         player?.let { existing ->
             existing.removeListener(playerListener)
             existing.stop()
@@ -128,20 +217,55 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         }
         player = null
         activeSessionId = null
-        if (emitClosed) {
-            emitState("closed", closingSessionId)
+        activeTimelineMapIdentity = null
+        if (emitClosed && closingSessionId != null && closingTimelineMapIdentity != null) {
+            emitState("closed", closingSessionId, closingTimelineMapIdentity)
         }
     }
 
-    private fun emitState(state: String, sessionId: String? = activeSessionId) {
+    private fun emitCurrentState() {
+        val exoPlayer = player ?: return
+        val state =
+            when {
+                exoPlayer.playbackState == Player.STATE_BUFFERING -> "buffering"
+                exoPlayer.playbackState == Player.STATE_ENDED -> "ended"
+                exoPlayer.isPlaying -> "playing"
+                exoPlayer.playbackState == Player.STATE_READY -> "paused"
+                else -> "idle"
+            }
+        emitState(state)
+    }
+
+    private fun emitState(
+        state: String,
+        sessionId: String? = activeSessionId,
+        timelineMapIdentity: String? = activeTimelineMapIdentity,
+    ) {
         val payload = mutableMapOf<String, Any?>(
             "sequence" to nextSequence(),
             "state" to state,
             "positionMs" to safePosition(),
             "bufferedPositionMs" to safeBufferedPosition(),
+            "volume" to (player?.volume?.toDouble() ?: 1.0),
+            "rate" to (player?.playbackParameters?.speed?.toDouble() ?: 1.0),
+            "audioTrackId" to selectedTrackId(C.TRACK_TYPE_AUDIO),
+            "subtitleTrackId" to selectedTrackId(C.TRACK_TYPE_TEXT),
         )
         sessionId?.let { payload["sessionId"] = it }
+        timelineMapIdentity?.let { payload["timelineMapIdentity"] = it }
         eventSink?.success(payload)
+    }
+
+    private fun selectedTrackId(trackType: Int): String? {
+        val groups = player?.currentTracks?.groups?.filter { it.type == trackType } ?: return null
+        groups.forEachIndexed { groupIndex, group ->
+            for (trackIndex in 0 until group.length) {
+                if (group.isTrackSelected(trackIndex)) {
+                    return "$groupIndex:$trackIndex"
+                }
+            }
+        }
+        return null
     }
 
     private fun nextSequence(): Long = eventSequence++
@@ -166,6 +290,15 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         require(uri.userInfo == null && uri.query == null && uri.fragment == null) {
             "Media3 URI must not contain user-info, query, or fragment"
         }
+        val segments = uri.pathSegments
+        require(
+            segments.size in 4..16 &&
+                segments[0] == "v1" &&
+                segments[1] == "session" &&
+                segments.all { it.isNotEmpty() && it.length <= 256 },
+        ) {
+            "Media3 URI must use a bounded session capability path"
+        }
         return uri
     }
 
@@ -183,7 +316,11 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         eventSink = events
-        emitState(if (player == null) "idle" else "ready")
+        if (player == null) {
+            emitState("idle", null, null)
+        } else {
+            emitCurrentState()
+        }
     }
 
     override fun onCancel(arguments: Any?) {

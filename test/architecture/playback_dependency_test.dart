@@ -115,34 +115,59 @@ void main() {
     }
   });
 
-  test('Phase 5 does not cross into mpv, FFmpeg, or download execution', () {
-    final playbackFiles = Directory('lib/src')
+  test('media-kit and libmpv stay inside the platform playback boundary', () {
+    final dartFiles = Directory('lib/src')
         .listSync(recursive: true)
         .whereType<File>()
         .where((file) => file.path.endsWith('.dart'));
 
-    const forbiddenImplementations = [
-      'FFmpeg',
-      'libmpv',
-      'DownloadExecutor',
-      'Aes128Downloader',
-    ];
-    for (final file in playbackFiles) {
+    for (final file in dartFiles) {
+      final path = file.path.replaceAll('\\', '/');
       final content = file.readAsStringSync();
-      for (final token in forbiddenImplementations) {
+      if (content.contains('package:media_kit/') ||
+          content.contains('package:media_kit_video/')) {
         expect(
-          content,
-          isNot(contains(token)),
-          reason: '${file.path} must not cross the Phase 5 boundary.',
+          path,
+          startsWith('lib/src/platform/playback/'),
+          reason: '$path imports media-kit outside Platform playback.',
         );
       }
+      if (path.startsWith('lib/src/domain/') ||
+          path.startsWith('lib/src/application/')) {
+        expect(content, isNot(contains('package:media_kit/')));
+        expect(content, isNot(contains('package:media_kit_video/')));
+        expect(content, isNot(contains('VideoController')));
+      }
+      expect(content, isNot(contains('FFmpeg')));
+      expect(content, isNot(contains('DownloadExecutor')));
+      expect(content, isNot(contains('Aes128Downloader')));
     }
   });
 
-  test('temporary source snapshot workflow is removed before review', () {
-    expect(
-      File('.github/workflows/phase4-source-snapshot.yml').existsSync(),
-      isFalse,
-    );
+  test('mpv receives only the loopback capability and empty headers', () {
+    final backend = File(
+      'lib/src/platform/playback/mpv_player_backend.dart',
+    ).readAsStringSync();
+    final facade = File(
+      'lib/src/platform/playback/media_kit_facade.dart',
+    ).readAsStringSync();
+    final router = File(
+      'lib/src/application/playback/playback_engine_router.dart',
+    ).readAsStringSync();
+
+    expect(backend, contains("uri.host != '127.0.0.1'"));
+    expect(backend, contains("uri.host != '::1'"));
+    expect(backend, contains('uri.userInfo.isNotEmpty'));
+    expect(backend, contains('uri.hasQuery'));
+    expect(backend, contains('uri.hasFragment'));
+    expect(facade, contains('httpHeaders: const <String, String>{}'));
+    expect(router, contains('_automaticFallbackCount == 0'));
+    expect(router, contains('timeline_identity_mismatch'));
+  });
+
+  test('temporary Phase 6 workflows and payloads are absent before review', () {
+    expect(File('.github/workflows/phase6-export.yml').existsSync(), isFalse);
+    expect(File('.github/workflows/phase6-apply.yml').existsSync(), isFalse);
+    expect(Directory('.phase6').existsSync(), isFalse);
   });
 }

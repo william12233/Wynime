@@ -34,7 +34,7 @@ Platform ───────────────────→ Domain
 
 Domain must not import upper or outer layers. Architecture tests reject Flutter, Drift, HTML parser, WebView plugins, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
 
-## Package layout through Phase 5
+## Package layout through Phase 6
 
 ```text
 lib/
@@ -272,3 +272,23 @@ A source is not trusted merely because it is signed. Every source is constrained
 - Codec or renderer failures may trigger backend fallback.
 - Deletion failures remain visible and recoverable.
 - No layer may convert an unknown failure into success.
+
+## Phase 6 native playback routing
+
+`PlaybackCoordinator` continues to own exactly one resolved `PlaybackSession` and one loopback `PlaybackProxyLease`. It receives a Wynime-owned `PlaybackEngineRouter` as its `PlayerBackend`; therefore switching Media3／libmpv never asks the resolver or proxy to create a second session. The same capability URI, ad-removal plan and `timelineMapIdentity` cross every engine handoff.
+
+The router lives in Application and depends only on Domain ports. Platform implementations remain under `lib/src/platform/playback`:
+
+- `Media3PlayerBackend` maps the Android MethodChannel and EventChannel to the typed port.
+- `MpvPlayerBackend` maps a testable media-kit facade to the same typed port.
+- `ProductionMediaKitFacade` is the only layer that imports `media_kit` and `media_kit_video`.
+- `MpvPlayerSurface` is the only UI adapter that consumes the media-kit `VideoController`.
+- `PlayerBackendFactory` supplies Android order Media3 → libmpv → WebView and Windows order libmpv → WebView.
+
+The native player never receives the upstream media URI or source credentials. Both Media3 and libmpv accept only a bounded numeric-loopback capability endpoint. `MpvPlayerBackend` supplies an empty HTTP-header map to media-kit. Upstream authorization remains exclusively inside the proxy.
+
+Before a switch, the router snapshots position in the original timeline, play state, volume, rate, audio selection, subtitle selection and timeline identity. The new backend opens the same session, then receives the mapped sanitized seek and remaining controls. Events emitted while handoff is pending cannot overwrite that snapshot. Event subscriptions are scoped by operation and backend generation so old-engine events are discarded.
+
+Automatic fallback is limited to one attempt per operation and only decoder, renderer or unsupported failures. Authorization／expiry returns to the existing session-refresh path; network and manifest failures remain visible without engine hopping. Exact track identifiers must exist in the current `PlaybackSession`, and production media-kit selection also matches the native track ID exactly.
+
+The Dart wrapper is MIT-licensed, but release suitability depends on the exact bundled libmpv and linked FFmpeg build. Phase 6 records the dependency versions and keeps release licensing as an explicit provenance gate. Compilation and deterministic fake-backed tests do not establish real hardware playback; without Android and Windows device evidence the result remains `prototype_not_hardware_validated`.

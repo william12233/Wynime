@@ -122,6 +122,11 @@ final class PlaybackCoordinator {
     return playable;
   }
 
+  Future<void> play() async {
+    _ensureActive();
+    await _player.play();
+  }
+
   Future<void> pause() async {
     _ensureActive();
     await _player.pause();
@@ -130,6 +135,26 @@ final class PlaybackCoordinator {
   Future<void> seek(Duration position) async {
     _ensureActive();
     await _player.seek(position);
+  }
+
+  Future<void> setVolume(double volume) async {
+    _ensureActive();
+    await _player.setVolume(volume);
+  }
+
+  Future<void> setRate(double rate) async {
+    _ensureActive();
+    await _player.setRate(rate);
+  }
+
+  Future<void> selectAudioTrack(String? trackId) async {
+    _ensureActive();
+    await _player.selectAudioTrack(trackId);
+  }
+
+  Future<void> selectSubtitleTrack(String? trackId) async {
+    _ensureActive();
+    await _player.selectSubtitleTrack(trackId);
   }
 
   Future<void> stop() async {

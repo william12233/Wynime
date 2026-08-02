@@ -78,6 +78,11 @@ final class PlaybackEvent {
     this.position = Duration.zero,
     this.bufferedPosition = Duration.zero,
     this.failure,
+    this.volume,
+    this.rate,
+    this.audioTrackId,
+    this.subtitleTrackId,
+    this.timelineMapIdentity,
   }) {
     if (sequence < 0) {
       throw ArgumentError.value(sequence, 'sequence', 'Must not be negative.');
@@ -91,6 +96,27 @@ final class PlaybackEvent {
     if (state != PlaybackState.failed && failure != null) {
       throw ArgumentError('Only failed playback events may contain a failure.');
     }
+    final eventVolume = volume;
+    if (eventVolume != null &&
+        (!eventVolume.isFinite || eventVolume < 0 || eventVolume > 1)) {
+      throw ArgumentError.value(
+        eventVolume,
+        'volume',
+        'Must be between 0 and 1.',
+      );
+    }
+    final eventRate = rate;
+    if (eventRate != null &&
+        (!eventRate.isFinite || eventRate < 0.25 || eventRate > 4)) {
+      throw ArgumentError.value(
+        eventRate,
+        'rate',
+        'Must be between 0.25 and 4.',
+      );
+    }
+    _optionalEventText(audioTrackId, 'audioTrackId', 256);
+    _optionalEventText(subtitleTrackId, 'subtitleTrackId', 256);
+    _optionalEventText(timelineMapIdentity, 'timelineMapIdentity', 1024);
   }
 
   final int sequence;
@@ -98,6 +124,23 @@ final class PlaybackEvent {
   final Duration position;
   final Duration bufferedPosition;
   final PlaybackFailure? failure;
+  final double? volume;
+  final double? rate;
+  final String? audioTrackId;
+  final String? subtitleTrackId;
+  final String? timelineMapIdentity;
+}
+
+void _optionalEventText(String? value, String name, int maxLength) {
+  if (value == null) {
+    return;
+  }
+  final normalized = value.trim();
+  if (normalized.isEmpty ||
+      normalized.length > maxLength ||
+      normalized.codeUnits.any((unit) => unit < 0x20 || unit == 0x7f)) {
+    throw ArgumentError.value(value, name, 'Invalid event value.');
+  }
 }
 
 String _requiredCode(String value) {

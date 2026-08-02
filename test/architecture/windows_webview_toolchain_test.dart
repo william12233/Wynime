@@ -21,9 +21,7 @@ void main() {
       );
 
       expect(
-        cmake.indexOf(
-          '_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS',
-        ),
+        cmake.indexOf('_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS'),
         lessThan(cmake.indexOf('include(flutter/generated_plugins.cmake)')),
         reason:
             'The compatibility definition must be visible to plugin targets.',

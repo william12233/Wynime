@@ -17,7 +17,7 @@ Before changing code, read in this order:
 - Ad removal must use one authoritative `AdRemovalPlan` keyed by source, line, episode, and manifest fingerprint.
 - Download and deletion must share one authoritative `DownloadArtifactManifest`; deletion must never reconstruct or guess paths.
 - Unsigned source packages are allowed, but sandboxing, domain allowlists, declared permissions, and resource limits are mandatory.
-- Do not claim success without running the relevant build, analyze, unit, integration, or golden tests.
+- Do not claim success without running the relevant build, analyze, unit, integration, or golden tests. When real hardware or an external runtime is unavailable, record that limitation and use current-head compilation, static analysis, deterministic replay tests, and independent read-only code review as the acceptance evidence.
 - Keep Android and Windows UI visually aligned through shared design tokens and fixed-size screenshot tests.
 - Do not add bundled font files until the multilingual font review is explicitly approved.
 - Keep telemetry disabled by default and redact secrets, cookies, tokens, and full media URLs from logs and persistence.
@@ -29,25 +29,33 @@ Before changing code, read in this order:
 - Architecture changes require updating `docs/DECISIONS.md`.
 - Public interfaces require tests before implementation dependencies are added.
 - Platform-specific code must stay behind typed interfaces.
-- Domain must remain pure Dart and must not import Flutter, Drift, HTML parsers, `dart:io`, or `dart:ffi`.
+- Domain must remain pure Dart and must not import Flutter, Drift, HTML parsers, WebView plugins, `dart:io`, or `dart:ffi`.
 
-## Phase 2 scope
+## Phase 3 scope
 
 Allowed:
-- Source Package schema version 1 and strict JSON decoding
-- Package version and Wynime compatibility validation
-- Domain allowlists, declared permissions, resource budgets and re-consent decisions
-- Optional signature metadata that never increases runtime authority
-- CSS selector evaluation over supplied HTML fixtures
-- Restricted JSONPath evaluation over supplied JSON fixtures
-- Restricted regular-expression capture over bounded strings
-- Fixture-only security, budget and regression tests
+- Android native WebView and Windows WebView2 behind typed interfaces
+- Explicit runtime availability reporting
+- Desktop user-agent policy guarded by declared permission
+- Cookie import, export, and scoped clearing guarded by declared permission
+- Navigation, iframe, resource, XHR, and fetch request observation
+- Allowlist enforcement and bounded in-memory media-candidate capture
+- Redacted diagnostics and deterministic replay tests
+- Android and Windows build gates
+
+Required defaults:
+- File and content URI access disabled
+- File-URL cross-origin and universal access disabled
+- Mixed content blocked
+- Camera, microphone, geolocation, and new-window requests denied
+- Media playback requires a user gesture
+- Captured cookies, tokens, Authorization values, and full URLs must not be logged or persisted
+- A missing WebView2 Runtime returns an explicit unavailable status
 
 Not allowed yet:
-- Live HTTP, XHR or fetch
-- Android WebView or Windows WebView2
-- Cookie jars, login sessions or media-request interception
-- Site-specific executable adapters
-- Arbitrary Dart, JavaScript, WASM or native code execution
-- Real playback, downloads, FFmpeg, mpv or Bangumi authentication
-- Phase 3 WebView integration work
+- Source-provided Dart, JavaScript, WASM, or native executable adapters
+- DRM, paywall, login, or access-control bypass
+- `PlaybackSession` resolution or refresh callbacks
+- Local HLS proxy, sanitizer, ad detection, or timeline mapping
+- Media3, mpv, playback backend selection, or playback error recovery
+- Real downloads, FFmpeg, Bangumi authentication, or Phase 4 work

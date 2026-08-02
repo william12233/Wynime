@@ -15,7 +15,7 @@ Pure models and interfaces. No Flutter widgets, WebView, Media3, mpv, FFmpeg, HT
 Database, network clients, source engines, HLS processing, download implementation, Bangumi client and platform bridges.
 
 ### Platform
-Android Kotlin modules and Windows native modules. Platform implementations must be hidden behind typed interfaces.
+Android Kotlin modules, Windows native modules and Flutter plugin adapters. Platform implementations must be hidden behind typed interfaces.
 
 ## Authoritative objects
 
@@ -32,9 +32,9 @@ Infrastructure ─────────────→ Domain
 Platform ───────────────────→ Domain
 ```
 
-Domain must not import upper or outer layers. Architecture tests reject Flutter, Drift, HTML parser, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
+Domain must not import upper or outer layers. Architecture tests reject Flutter, Drift, HTML parser, WebView plugins, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
 
-## Package layout through Phase 2
+## Package layout through Phase 3
 
 ```text
 lib/
@@ -48,10 +48,13 @@ lib/
    │  ├─ models/
    │  ├─ repositories/
    │  └─ services/
-   └─ infrastructure/
-      ├─ database/
-      ├─ repositories/
-      └─ source_rules/
+   ├─ infrastructure/
+   │  ├─ database/
+   │  ├─ repositories/
+   │  ├─ source_rules/
+   │  └─ web_capture/
+   └─ platform/
+      └─ web_capture/
 ```
 
 - `app` owns application bootstrap and navigation destination definitions.
@@ -61,7 +64,8 @@ lib/
 - `infrastructure/database` owns the Drift schema and generated database mapping.
 - `infrastructure/repositories` implements Domain repository interfaces without exposing Drift records outside Infrastructure.
 - `infrastructure/source_rules` owns strict package decoding and fixture-only declarative rule evaluation.
-- Generated Android and Windows runners remain platform bootstrap shells until later phases add typed platform adapters.
+- `infrastructure/web_capture` owns plugin-independent event accumulation, budgets, classification and redaction.
+- `platform/web_capture` is the only layer that imports the WebView plugin and maps plugin values into Domain capture models.
 
 ## Phase 1 persistence architecture
 
@@ -141,6 +145,45 @@ Before and during evaluation, the engine enforces document bytes, redirect count
 ### Fixture-only boundary
 
 Phase 2 accepts a supplied `SourceFixture` containing the intended URI, redirect chain and HTML or JSON body. The source-rule implementation imports no HTTP client, WebView, `dart:io`, `dart:ffi` or executable-code API. Real network and browser capture begin only in Phase 3 behind typed interfaces.
+
+## Phase 3 WebView capture architecture
+
+### Runtime and plugin boundary
+
+Phase 3 uses `flutter_inappwebview` only under `lib/src/platform/web_capture`. Android resolves to the native Android WebView implementation and Windows resolves to the endorsed WebView2 implementation. `WebSourceBrowserPort` exposes runtime probing and scoped cookie operations without exposing plugin classes to Domain or Infrastructure.
+
+A Windows machine without the WebView2 Runtime returns an explicit `webview2_runtime_missing` status. Runtime probe failures return `webview2_probe_failed`; neither state is converted into success.
+
+### Capture request authority
+
+`WebCaptureRequest` combines the Phase 2 `SourceSecurityPolicy` with:
+
+- platform-default or explicitly permitted desktop user agent;
+- bounded initial headers and cookies;
+- event, candidate, header and cookie budgets;
+- explicit media-request inspection permission.
+
+Every initial URI, navigation, iframe, resource, XHR and fetch target is checked against the same allowlist. Disallowed navigations are cancelled, disallowed resource requests receive an empty 403 response, and disallowed XHR/fetch requests are aborted.
+
+### Browser hardening
+
+The platform surface enables JavaScript only because dynamic source pages require it, while enforcing these defaults:
+
+- no file or content URI access;
+- no file-URL cross-origin or universal access;
+- no mixed content;
+- no automatic JavaScript windows or multiple windows;
+- no camera, microphone or geolocation permission;
+- media playback requires a user gesture;
+- no automatic source download handling.
+
+Source packages cannot inject Dart, JavaScript, WASM or native executable adapters in Phase 3. The plugin's internal request-observation instrumentation is platform implementation detail and receives no package-supplied program.
+
+### Capture output and privacy
+
+`WebCaptureAccumulator` stores bounded events and deduplicated media candidates in memory only. Candidate classification recognizes HLS, DASH, common direct audio/video files and media segments using response content type or URL path.
+
+Diagnostic output contains scheme, host, path-segment count, method and header names only. Cookie values, Authorization values, query strings, fragments and complete media URLs are not logged or persisted. Phase 3 does not create a `PlaybackSession`; Phase 4 must validate and transform a chosen candidate through its own Gate.
 
 ## Platform strategy
 

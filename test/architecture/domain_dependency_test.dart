@@ -16,6 +16,9 @@ void main() {
         'package:flutter_localizations/',
         'package:drift/',
         'package:html/',
+        'package:flutter_inappwebview/',
+        'package:webview_flutter/',
+        'package:webview_windows/',
         'dart:io',
         'dart:ffi',
       ];

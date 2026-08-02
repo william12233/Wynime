@@ -81,6 +81,9 @@ final class SourceDomainRule {
         !permissions.contains(SourcePermission.insecureHttp)) {
       return false;
     }
+    if (!_usesStandardPort(uri, normalizedScheme)) {
+      return false;
+    }
 
     final requestHost = uri.host.toLowerCase().replaceFirst(RegExp(r'\.$'), '');
     return requestHost == host ||
@@ -95,6 +98,17 @@ final class SourceDomainRule {
       return includeSubdomains || !candidate.includeSubdomains;
     }
     return includeSubdomains && candidate.host.endsWith('.$host');
+  }
+
+  static bool _usesStandardPort(Uri uri, String scheme) {
+    if (!uri.hasPort) {
+      return true;
+    }
+    return switch (scheme) {
+      'https' => uri.port == 443,
+      'http' => uri.port == 80,
+      _ => false,
+    };
   }
 
   static String _normalizeHost(String value) {

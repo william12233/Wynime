@@ -17,49 +17,6 @@ env:
   FLUTTER_VERSION: 3.44.8
 
 jobs:
-  generate-phase-2-lockfile:
-    name: Generate Phase 2 dependency lockfile
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'phase-2/source-rules'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout Phase 2 branch
-        uses: actions/checkout@v6
-        with:
-          ref: phase-2/source-rules
-          fetch-depth: 0
-      - name: Check lockfile request
-        id: request
-        shell: bash
-        run: |
-          if [[ -f .phase2-lock-request ]]; then
-            echo "required=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "required=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Install Flutter
-        if: steps.request.outputs.required == 'true'
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - name: Resolve and lock dependencies
-        if: steps.request.outputs.required == 'true'
-        run: flutter pub get
-      - name: Commit lockfile
-        if: steps.request.outputs.required == 'true'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pubspec.lock
-          git commit -m "build: lock Phase 2 source rule dependencies"
-          git pull --rebase origin phase-2/source-rules
-          git push origin HEAD:phase-2/source-rules
-
   static-analysis:
     name: Generated code, format, analyze, and document generator
     runs-on: ubuntu-24.04
@@ -93,7 +50,7 @@ jobs:
           unzip -t "docs/Wynime_完整應用計畫與技術規格_v0.3.docx"
 
   tests:
-    name: Unit, persistence, widget, architecture, and golden tests
+    name: Unit, persistence, source-rule, widget, architecture, and golden tests
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:

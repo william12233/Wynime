@@ -16,6 +16,13 @@ void main() {
     );
   });
 
+  test('schema version 1 rejects non-standard ports', () {
+    final policy = testSourcePolicy();
+
+    expect(policy.allowsUri(Uri.parse('https://example.com:443/path')), isTrue);
+    expect(policy.allowsUri(Uri.parse('https://example.com:8443/path')), isFalse);
+  });
+
   test('network permission is mandatory even for an allowed domain', () {
     final policy = testSourcePolicy(permissions: const {});
 
@@ -38,6 +45,8 @@ void main() {
       },
     );
     expect(policy.allowsUri(Uri.parse('http://example.com')), isTrue);
+    expect(policy.allowsUri(Uri.parse('http://example.com:80')), isTrue);
+    expect(policy.allowsUri(Uri.parse('http://example.com:8080')), isFalse);
   });
 
   test('authority expansion requires fresh consent', () {

@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:pub_semver/pub_semver.dart';
 
@@ -11,15 +12,47 @@ final class SourcePackageSignatureMetadata {
     required String keyId,
     required String algorithm,
     required String signatureBase64,
-  }) : declaredSignerId = _requireNonEmpty(declaredSignerId, 'declaredSignerId', 128),
+  }) : declaredSignerId = _requireNonEmpty(
+         declaredSignerId,
+         'declaredSignerId',
+         128,
+       ),
        keyId = _requireNonEmpty(keyId, 'keyId', 128),
-       algorithm = _requireNonEmpty(algorithm, 'algorithm', 32),
-       signatureBase64 = _requireNonEmpty(signatureBase64, 'signatureBase64', 4096);
+       algorithm = _validateAlgorithm(algorithm),
+       signatureBase64 = _validateSignature(signatureBase64);
 
   final String declaredSignerId;
   final String keyId;
   final String algorithm;
   final String signatureBase64;
+
+  static String _validateAlgorithm(String value) {
+    final algorithm = _requireNonEmpty(value, 'algorithm', 32);
+    if (algorithm != 'ed25519') {
+      throw ArgumentError.value(
+        value,
+        'algorithm',
+        'Only ed25519 signature metadata is supported.',
+      );
+    }
+    return algorithm;
+  }
+
+  static String _validateSignature(String value) {
+    final signature = _requireNonEmpty(value, 'signatureBase64', 4096);
+    try {
+      if (base64Decode(signature).length != 64) {
+        throw const FormatException('Ed25519 signatures must contain 64 bytes.');
+      }
+    } on FormatException catch (error) {
+      throw ArgumentError.value(
+        value,
+        'signatureBase64',
+        'Invalid Ed25519 signature metadata: ${error.message}',
+      );
+    }
+    return signature;
+  }
 
   static String _requireNonEmpty(String value, String name, int maxLength) {
     final trimmed = value.trim();
@@ -46,7 +79,9 @@ final class SourcePackageManifest {
     this.signatureMetadata,
   }) : packageId = packageId.trim(),
        displayName = displayName.trim(),
-       programs = UnmodifiableListView(List<SourceRuleProgram>.unmodifiable(programs)) {
+       programs = UnmodifiableListView(
+         List<SourceRuleProgram>.unmodifiable(programs),
+       ) {
     if (schemaVersion != 1) {
       throw ArgumentError.value(
         schemaVersion,
@@ -80,6 +115,24 @@ final class SourcePackageManifest {
           'programs',
           'Program IDs must be unique.',
         );
+      }
+      if (program.resultLimit > securityPolicy.budget.maxRecords) {
+        throw ArgumentError.value(
+          program.resultLimit,
+          'programs',
+          'Program ${program.programId} exceeds maxRecords.',
+        );
+      }
+      for (final field in program.fields) {
+        final capture = field.regexCapture;
+        if (capture != null &&
+            capture.pattern.length > securityPolicy.budget.maxRegexPatternChars) {
+          throw ArgumentError.value(
+            capture.pattern.length,
+            'programs',
+            'Regex in ${program.programId}.${field.name} exceeds the pattern budget.',
+          );
+        }
       }
     }
   }

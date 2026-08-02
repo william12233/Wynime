@@ -13,13 +13,15 @@ final class DriftArtifactManifestRepository
   @override
   Future<void> create(DownloadArtifactManifest manifest) {
     return _database.transaction(() async {
-      await _database.into(_database.artifactManifests).insert(
-        ArtifactManifestsCompanion(
-          manifestId: Value(manifest.manifestId),
-          downloadId: Value(manifest.downloadId),
-          createdAt: Value(manifest.createdAt),
-        ),
-      );
+      await _database
+          .into(_database.artifactManifests)
+          .insert(
+            ArtifactManifestsCompanion(
+              manifestId: Value(manifest.manifestId),
+              downloadId: Value(manifest.downloadId),
+              createdAt: Value(manifest.createdAt),
+            ),
+          );
       if (manifest.artifacts.isNotEmpty) {
         await _database.batch((batch) {
           batch.insertAll(

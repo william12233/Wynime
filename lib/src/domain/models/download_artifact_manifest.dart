@@ -21,11 +21,7 @@ final class DownloadArtifact {
     required this.fileUri,
   }) {
     if (artifactId.trim().isEmpty) {
-      throw ArgumentError.value(
-        artifactId,
-        'artifactId',
-        'Must not be empty.',
-      );
+      throw ArgumentError.value(artifactId, 'artifactId', 'Must not be empty.');
     }
     if (fileUri.scheme != 'file' || !fileUri.isAbsolute) {
       throw ArgumentError.value(
@@ -49,18 +45,10 @@ final class DownloadArtifactManifest {
     required Iterable<DownloadArtifact> artifacts,
   }) : artifacts = UnmodifiableListView(_validateArtifacts(artifacts)) {
     if (manifestId.trim().isEmpty) {
-      throw ArgumentError.value(
-        manifestId,
-        'manifestId',
-        'Must not be empty.',
-      );
+      throw ArgumentError.value(manifestId, 'manifestId', 'Must not be empty.');
     }
     if (downloadId.trim().isEmpty) {
-      throw ArgumentError.value(
-        downloadId,
-        'downloadId',
-        'Must not be empty.',
-      );
+      throw ArgumentError.value(downloadId, 'downloadId', 'Must not be empty.');
     }
   }
 

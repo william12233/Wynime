@@ -83,11 +83,11 @@ final class DriftDeleteJobRepository implements DeleteJobRepository {
   @override
   Stream<List<DeleteJob>> watchOutstanding() {
     final query = _database.select(_database.deleteJobRows)
-      ..where((table) => table.status.isNotValue(DeleteJobStatus.completed.name))
+      ..where(
+        (table) => table.status.isNotValue(DeleteJobStatus.completed.name),
+      )
       ..orderBy([(table) => OrderingTerm.asc(table.createdAt)]);
-    return query.watch().map(
-      (rows) => rows.map(_map).toList(growable: false),
-    );
+    return query.watch().map((rows) => rows.map(_map).toList(growable: false));
   }
 
   Future<DeleteJob> _transition(

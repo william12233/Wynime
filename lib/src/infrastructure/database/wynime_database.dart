@@ -25,8 +25,7 @@ class WatchHistoryRows extends Table {
   TextColumn get episodeId => text()();
   IntColumn get positionMs => integer()();
   IntColumn get durationMs => integer()();
-  BoolColumn get isCompleted =>
-      boolean().withDefault(const Constant(false))();
+  BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
   TextColumn get playerBackendId => text().nullable()();
   TextColumn get timelineMapId => text().nullable()();
   DateTimeColumn get updatedAt => dateTime()();

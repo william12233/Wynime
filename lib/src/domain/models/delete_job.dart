@@ -23,7 +23,8 @@ final class DeleteJob {
     if (attempts < 0) {
       throw ArgumentError.value(attempts, 'attempts', 'Must not be negative.');
     }
-    final hasFailureCode = failureCode != null && failureCode!.trim().isNotEmpty;
+    final hasFailureCode =
+        failureCode != null && failureCode!.trim().isNotEmpty;
     if ((status == DeleteJobStatus.failed) != hasFailureCode) {
       throw ArgumentError(
         'failureCode must be non-empty exactly when status is failed.',

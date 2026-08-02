@@ -123,6 +123,32 @@ jobs:
                   raise SystemExit(f'Unexpected constructor token: {old!r}')
               source = source.replace(old, new)
           path.write_text(source)
+
+          test_replacements = {
+              Path('test/platform/mpv_player_backend_test.dart'): (
+                  (
+                      "      backend.open(\n        testPlaybackSession(\n          playbackUri: Uri.parse(\n            'http://localhost:42000/v1/session/token/resource/master',",
+                      "      () => backend.open(\n        testPlaybackSession(\n          playbackUri: Uri.parse(\n            'http://localhost:42000/v1/session/token/resource/master',",
+                  ),
+                  (
+                      "      backend.open(\n        testPlaybackSession(\n          playbackUri: Uri.parse(\n            'http://127.0.0.1:42000/v1/session/token/resource/master?secret=x',",
+                      "      () => backend.open(\n        testPlaybackSession(\n          playbackUri: Uri.parse(\n            'http://127.0.0.1:42000/v1/session/token/resource/master?secret=x',",
+                  ),
+              ),
+              Path('test/platform/media3_player_backend_test.dart'): (
+                  (
+                      "      backend.open(\n        testPlaybackSession(\n          playbackUri: Uri.parse(\n            'http://example.com:42000/v1/session/token/resource/master',",
+                      "      () => backend.open(\n        testPlaybackSession(\n          playbackUri: Uri.parse(\n            'http://example.com:42000/v1/session/token/resource/master',",
+                  ),
+              ),
+          }
+          for test_path, replacements in test_replacements.items():
+              test_source = test_path.read_text()
+              for old, new in replacements:
+                  if test_source.count(old) != 1:
+                      raise SystemExit(f'Unexpected test shape in {test_path}: {old!r}')
+                  test_source = test_source.replace(old, new)
+              test_path.write_text(test_source)
           PY
           rm -rf .phase6 .github/workflows/phase6-apply.yml
 

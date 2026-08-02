@@ -2,12 +2,8 @@ name: Apply validated Phase 5 implementation
 
 on:
   pull_request:
-    branches:
-      - main
-    types:
-      - opened
-      - reopened
-      - synchronize
+    branches: [main]
+    types: [opened, reopened, synchronize]
 
 permissions:
   contents: write
@@ -35,7 +31,6 @@ jobs:
         run: |
           if test -f lib/src/infrastructure/playback/hls_manifest_parser.dart; then
             echo 'applied=true' >> "$GITHUB_OUTPUT"
-            echo 'Phase 5 implementation already exists; nothing to reapply.'
           else
             echo 'applied=false' >> "$GITHUB_OUTPUT"
           fi
@@ -56,7 +51,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Reassemble and verify reviewed payload
+      - name: Reassemble, verify, and apply reviewed corrections
         if: steps.phase5.outputs.applied != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -68,39 +63,39 @@ jobs:
           import io
           import json
           import os
-          from pathlib import PurePosixPath
+          from pathlib import Path, PurePosixPath
           import tarfile
           import urllib.request
 
           digest = 'b243d0d568a33a1df32b6821bbdcbe7104634efbed9277b8c2b27040fad45f28'
           prefix = f'PHASE5_PAYLOAD_{digest}_'
-          expected_paths = {
-              'AGENTS.md',
-              'docs/ARCHITECTURE.md',
-              'docs/DECISIONS.md',
-              'docs/PROJECT_PLAN.md',
-              'lib/src/domain/models/ad_removal_plan.dart',
-              'lib/src/domain/models/hls_manifest.dart',
-              'lib/src/infrastructure/playback/hls_ad_planner.dart',
-              'lib/src/infrastructure/playback/hls_manifest_fingerprinter.dart',
-              'lib/src/infrastructure/playback/hls_manifest_parser.dart',
-              'lib/src/infrastructure/playback/hls_manifest_sanitizer.dart',
-              'lib/src/infrastructure/playback/loopback_playback_proxy.dart',
-              'pubspec.yaml',
-              'pubspec.lock',
-              'test/architecture/playback_dependency_test.dart',
-              'test/domain/ad_removal_plan_test.dart',
-              'test/helpers/playback_test_support.dart',
-              'test/fixtures/hls/ambiguous_discontinuity.m3u8',
-              'test/fixtures/hls/cue_ads.m3u8',
-              'test/fixtures/hls/daterange_ads.m3u8',
-              'test/fixtures/hls/master.m3u8',
-              'test/infrastructure/hls_ad_planner_test.dart',
-              'test/infrastructure/hls_manifest_fingerprinter_test.dart',
-              'test/infrastructure/hls_manifest_parser_test.dart',
-              'test/infrastructure/hls_manifest_sanitizer_test.dart',
-              'test/infrastructure/loopback_playback_proxy_test.dart',
-          }
+          expected_paths = set('''
+          AGENTS.md
+          docs/ARCHITECTURE.md
+          docs/DECISIONS.md
+          docs/PROJECT_PLAN.md
+          lib/src/domain/models/ad_removal_plan.dart
+          lib/src/domain/models/hls_manifest.dart
+          lib/src/infrastructure/playback/hls_ad_planner.dart
+          lib/src/infrastructure/playback/hls_manifest_fingerprinter.dart
+          lib/src/infrastructure/playback/hls_manifest_parser.dart
+          lib/src/infrastructure/playback/hls_manifest_sanitizer.dart
+          lib/src/infrastructure/playback/loopback_playback_proxy.dart
+          pubspec.yaml
+          pubspec.lock
+          test/architecture/playback_dependency_test.dart
+          test/domain/ad_removal_plan_test.dart
+          test/helpers/playback_test_support.dart
+          test/fixtures/hls/ambiguous_discontinuity.m3u8
+          test/fixtures/hls/cue_ads.m3u8
+          test/fixtures/hls/daterange_ads.m3u8
+          test/fixtures/hls/master.m3u8
+          test/infrastructure/hls_ad_planner_test.dart
+          test/infrastructure/hls_manifest_fingerprinter_test.dart
+          test/infrastructure/hls_manifest_parser_test.dart
+          test/infrastructure/hls_manifest_sanitizer_test.dart
+          test/infrastructure/loopback_playback_proxy_test.dart
+          '''.split())
           url = (
               f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}"
               '/issues/12/comments?per_page=100'
@@ -118,8 +113,7 @@ jobs:
 
           parts = {}
           for item in comments:
-              body = item.get('body') or ''
-              marker, separator, payload = body.partition('\n')
+              marker, separator, payload = (item.get('body') or '').partition('\n')
               if not separator or not marker.startswith(prefix):
                   continue
               suffix = marker.removeprefix(prefix)
@@ -135,7 +129,6 @@ jobs:
               raise SystemExit(
                   f'payload parts mismatch: expected {expected_parts}, got {sorted(parts)}'
               )
-
           archive = base64.b64decode(
               ''.join(parts[index] for index in expected_parts),
               validate=True,
@@ -148,18 +141,121 @@ jobs:
               members = bundle.getmembers()
               paths = {member.name for member in members}
               if paths != expected_paths:
-                  missing = sorted(expected_paths - paths)
-                  extra = sorted(paths - expected_paths)
                   raise SystemExit(
-                      f'payload path mismatch; missing={missing}, extra={extra}'
+                      'payload path mismatch; '
+                      f'missing={sorted(expected_paths - paths)}, '
+                      f'extra={sorted(paths - expected_paths)}'
                   )
               for member in members:
                   path = PurePosixPath(member.name)
-                  if path.is_absolute() or '..' in path.parts:
-                      raise SystemExit(f'unsafe payload path: {member.name}')
-                  if not member.isfile():
-                      raise SystemExit(f'non-regular payload member: {member.name}')
+                  if path.is_absolute() or '..' in path.parts or not member.isfile():
+                      raise SystemExit(f'unsafe payload member: {member.name}')
               bundle.extractall(path='.', filter='data')
+
+          path = Path('lib/src/domain/models/ad_removal_plan.dart')
+          content = path.read_text()
+          old = "  String toString() => '${episode.stableKey}|${manifestFingerprint.stableKey}';"
+          new = """  String toString() =>
+              '${episode.sourceId}|${episode.lineId}|${episode.subjectId}|'
+              '${episode.episodeId}|$manifestFingerprint';"""
+          if content.count(old) != 1:
+              raise SystemExit('AdRemovalPlanKey correction precondition failed')
+          path.write_text(content.replace(old, new, 1))
+
+          path = Path('test/infrastructure/hls_ad_planner_test.dart')
+          content = path.read_text()
+          content = content.replace(
+              '  const episode = SourceEpisodeIdentity(',
+              '  final episode = SourceEpisodeIdentity(',
+              1,
+          )
+          helper = """
+
+            HlsMediaPlaylist fixture(String name) => parser.parse(
+              source: File('test/fixtures/hls/$name').readAsStringSync(),
+              sourceUri: Uri.parse('https://media.example/show/index.m3u8'),
+            ) as HlsMediaPlaylist;
+          """
+          anchor = "\n  test('safe mode removes only explicitly cued segments'"
+          if content.count(anchor) != 1:
+              raise SystemExit('planner helper anchor missing')
+          content = content.replace(anchor, helper + anchor, 1).replace('_fixture(', 'fixture(')
+          duplicate = """
+            HlsMediaPlaylist fixture(String name) => parser.parse(
+              source: File('test/fixtures/hls/$name').readAsStringSync(),
+              sourceUri: Uri.parse('https://media.example/show/index.m3u8'),
+            ) as HlsMediaPlaylist;
+          """
+          first = content.find(duplicate)
+          second = content.find(duplicate, first + 1)
+          if second == -1:
+              raise SystemExit('planner bottom helper correction precondition failed')
+          content = content[:second] + content[second + len(duplicate):]
+          path.write_text(content)
+
+          path = Path('test/infrastructure/hls_manifest_fingerprinter_test.dart')
+          content = path.read_text()
+          helper = """
+
+            HlsMediaPlaylist parseMedia(String query, {required String duration}) => parser.parse(
+              source: '''
+          #EXTM3U
+          #EXT-X-VERSION:7
+          #EXT-X-TARGETDURATION:10
+          #EXT-X-MEDIA-SEQUENCE:1
+          #EXT-X-PLAYLIST-TYPE:VOD
+          #EXTINF:$duration,
+          segment-1.ts?$query
+          #EXTINF:6.0,
+          segment-2.ts?$query
+          #EXT-X-ENDLIST
+          ''',
+              sourceUri: Uri.parse('https://media.example/show/index.m3u8'),
+            ) as HlsMediaPlaylist;
+          """
+          anchor = "\n  test('ignores volatile authorization values"
+          if content.count(anchor) != 1:
+              raise SystemExit('fingerprinter helper anchor missing')
+          content = content.replace(anchor, helper + anchor, 1).replace('_parseMedia(', 'parseMedia(')
+          first = content.find(helper)
+          second = content.find(helper, first + 1)
+          if second == -1:
+              raise SystemExit('fingerprinter bottom helper correction precondition failed')
+          content = content[:second] + content[second + len(helper):]
+          path.write_text(content)
+
+          path = Path('test/infrastructure/hls_manifest_sanitizer_test.dart')
+          content = path.read_text()
+          content = content.replace(
+              '  const episode = SourceEpisodeIdentity(',
+              '  final episode = SourceEpisodeIdentity(',
+              1,
+          )
+          helper = """
+
+            HlsMediaPlaylist playlistFixture() => parser.parse(
+              source: File('test/fixtures/hls/cue_ads.m3u8').readAsStringSync(),
+              sourceUri: Uri.parse('https://media.example/show/index.m3u8'),
+            ) as HlsMediaPlaylist;
+          """
+          anchor = "\n  test('removes only approved segments"
+          if content.count(anchor) != 1:
+              raise SystemExit('sanitizer helper anchor missing')
+          content = content.replace(anchor, helper + anchor, 1).replace(
+              '_playlist()',
+              'playlistFixture()',
+          )
+          first = content.find(helper)
+          second = content.find(helper, first + 1)
+          if second == -1:
+              raise SystemExit('sanitizer bottom helper correction precondition failed')
+          content = content[:second] + content[second + len(helper):]
+          content = content.replace(
+              'actualFingerprint: const ManifestFingerprint(',
+              'actualFingerprint: ManifestFingerprint(',
+              1,
+          )
+          path.write_text(content)
           PY
 
       - name: Resolve dependencies

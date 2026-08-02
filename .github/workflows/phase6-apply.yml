@@ -1,0 +1,172 @@
+name: Phase 6 Controlled Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase-6-controlled-gate
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.44.8
+
+jobs:
+  validate-and-commit:
+    if: github.head_ref == 'phase-6/gate'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout controlled branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-6/gate
+          fetch-depth: 0
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Verify and apply bounded source payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum -c <<'EOF'
+          45d3c675d0a96aca406973baf2fae39183c5a55c5ab7929a319f8371b374be1a  .phase6/source-00
+          8faff507c3e7a2d55e1a0918c2777e59706819f28a066dc9fcea82df97e22467  .phase6/source-01
+          986f5ee049315ca24b69c2c456c67cbd49d632f9b7cf4453e5f715f73bd0fcd5  .phase6/source-02
+          e9cfb18d0baeccaceee887a17a96403414a94aed107a930fddf302afac726f5b  .phase6/source-03
+          d2c20c2a34e794d723bfe196d5c8db4c401becc6e33c6724edbd647d77d755ec  .phase6/source-04
+          2967b19343b63aa83661781d5682528d7676efe334e886c2ddd609604d53180f  .phase6/source-05
+          96b366ef0d7864de328900f507baa293078785ddffde242650ae28d06baae1a8  .phase6/source-06
+          18cb1d965fe6aaf6097289aa8e65fea4a9e0cd44fb7e96081b094fee4c5715a3  .phase6/source-07
+          EOF
+          cat .phase6/source-0{0..7} > /tmp/phase6-source.b64
+          base64 --decode /tmp/phase6-source.b64 > /tmp/phase6-source.tar.gz
+          echo '5b7f13760ce16560bd7802701c699f035ee2eda01775e65e53af4cb881f5b4a3  /tmp/phase6-source.tar.gz' | sha256sum -c -
+          python3 - <<'PY'
+          import pathlib
+          import tarfile
+
+          expected = {
+              'AGENTS.md',
+              'android/app/src/main/kotlin/io/github/william12233/wynime/MainActivity.kt',
+              'docs/ARCHITECTURE.md',
+              'docs/DECISIONS.md',
+              'docs/PROJECT_PLAN.md',
+              'lib/main.dart',
+              'lib/src/application/playback/playback_coordinator.dart',
+              'lib/src/application/playback/playback_engine_router.dart',
+              'lib/src/application/playback/playback_failure_classifier.dart',
+              'lib/src/domain/models/playback_events.dart',
+              'lib/src/domain/models/player_backend.dart',
+              'lib/src/domain/services/player_backend.dart',
+              'lib/src/platform/playback/media3_player_backend.dart',
+              'lib/src/platform/playback/media_kit_facade.dart',
+              'lib/src/platform/playback/mpv_player_backend.dart',
+              'lib/src/platform/playback/mpv_player_surface.dart',
+              'lib/src/platform/playback/player_backend_factory.dart',
+              'pubspec.yaml',
+              'test/application/playback_coordinator_test.dart',
+              'test/application/playback_engine_router_test.dart',
+              'test/application/playback_failure_classifier_test.dart',
+              'test/architecture/playback_dependency_test.dart',
+              'test/helpers/fake_player_backend.dart',
+              'test/helpers/playback_test_support.dart',
+              'test/platform/media3_player_backend_test.dart',
+              'test/platform/mpv_player_backend_test.dart',
+          }
+          with tarfile.open('/tmp/phase6-source.tar.gz', 'r:gz') as archive:
+              members = archive.getmembers()
+              actual = {member.name for member in members}
+              if actual != expected:
+                  raise SystemExit(f'Unexpected payload members: {sorted(actual ^ expected)}')
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if member.name.startswith('/') or '..' in path.parts or not member.isfile():
+                      raise SystemExit(f'Unsafe payload member: {member.name}')
+          PY
+          tar -xzf /tmp/phase6-source.tar.gz -C .
+          rm -rf .phase6 .github/workflows/phase6-apply.yml
+
+      - name: Resolve dependencies and generate lockfile
+        run: flutter pub get
+
+      - name: Format Dart sources
+        run: dart format .
+
+      - name: Verify generated Drift code
+        run: dart run build_runner build
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Run all tests
+        run: flutter test
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+
+      - name: Verify final scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check origin/main
+          git diff --name-only origin/main | sort > /tmp/actual-paths.txt
+          cat > /tmp/allowed-paths.txt <<'EOF'
+          AGENTS.md
+          android/app/src/main/kotlin/io/github/william12233/wynime/MainActivity.kt
+          docs/ARCHITECTURE.md
+          docs/DECISIONS.md
+          docs/PROJECT_PLAN.md
+          lib/main.dart
+          lib/src/application/playback/playback_coordinator.dart
+          lib/src/application/playback/playback_engine_router.dart
+          lib/src/application/playback/playback_failure_classifier.dart
+          lib/src/domain/models/playback_events.dart
+          lib/src/domain/models/player_backend.dart
+          lib/src/domain/services/player_backend.dart
+          lib/src/platform/playback/media3_player_backend.dart
+          lib/src/platform/playback/media_kit_facade.dart
+          lib/src/platform/playback/mpv_player_backend.dart
+          lib/src/platform/playback/mpv_player_surface.dart
+          lib/src/platform/playback/player_backend_factory.dart
+          pubspec.lock
+          pubspec.yaml
+          test/application/playback_coordinator_test.dart
+          test/application/playback_engine_router_test.dart
+          test/application/playback_failure_classifier_test.dart
+          test/architecture/playback_dependency_test.dart
+          test/helpers/fake_player_backend.dart
+          test/helpers/playback_test_support.dart
+          test/platform/media3_player_backend_test.dart
+          test/platform/mpv_player_backend_test.dart
+          EOF
+          sort -o /tmp/allowed-paths.txt /tmp/allowed-paths.txt
+          diff -u /tmp/allowed-paths.txt /tmp/actual-paths.txt
+          test ! -e .phase6
+          test ! -e .github/workflows/phase6-apply.yml
+
+      - name: Commit validated Phase 6 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: add Phase 6 libmpv routing prototype'
+          git push origin HEAD:phase-6/gate

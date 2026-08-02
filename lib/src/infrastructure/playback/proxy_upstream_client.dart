@@ -13,7 +13,11 @@ final class ProxyUpstreamRequest {
          Map<String, String>.unmodifiable(headers),
        ) {
     if (this.method != 'GET' && this.method != 'HEAD') {
-      throw ArgumentError.value(method, 'method', 'Only GET and HEAD are valid.');
+      throw ArgumentError.value(
+        method,
+        'method',
+        'Only GET and HEAD are valid.',
+      );
     }
     if ((uri.scheme != 'https' && uri.scheme != 'http') ||
         uri.host.isEmpty ||
@@ -285,7 +289,8 @@ Future<Socket> _connectValidatedAddresses({
     }
   }
 
-  final error = firstError ??
+  final error =
+      firstError ??
       const SocketException('No validated upstream address was reachable.');
   Error.throwWithStackTrace(error, firstStackTrace ?? StackTrace.current);
 }
@@ -318,12 +323,7 @@ bool _isNonPublicAddress(InternetAddress address) {
       bytes[4] == 0x00 &&
       bytes[5] == 0x01;
   final isDiscardOnly =
-      bytes[0] == 0x01 &&
-      bytes[4] == 0x00 &&
-      bytes[5] == 0x01;
-  final isDiscardOnly =
-      bytes[0] == 0x01 &&
-      bytes.skip(1).take(7).every((value) => value == 0);
+      bytes[0] == 0x01 && bytes.skip(1).take(7).every((value) => value == 0);
   final isIetfSpecialPurpose =
       bytes[0] == 0x20 && bytes[1] == 0x01 && bytes[2] <= 0x01;
   final isSixToFour = bytes[0] == 0x20 && bytes[1] == 0x02;

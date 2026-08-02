@@ -5,9 +5,7 @@ import 'package:wynime/src/infrastructure/playback/proxy_upstream_client.dart';
 
 void main() {
   test('rejects non-public DNS before opening a socket', () async {
-    final resolver = _StaticAddressResolver([
-      InternetAddress.loopbackIPv4,
-    ]);
+    final resolver = _StaticAddressResolver([InternetAddress.loopbackIPv4]);
     final client = DartIoProxyUpstreamClient(addressResolver: resolver);
     addTearDown(client.close);
 
@@ -30,24 +28,27 @@ void main() {
     expect(resolver.hosts, ['media.example']);
   });
 
-  test('well-known NAT64 addresses embedding private IPv4 fail closed', () async {
-    final resolver = _StaticAddressResolver([
-      InternetAddress('64:ff9b::c0a8:010a'),
-    ]);
-    final client = DartIoProxyUpstreamClient(addressResolver: resolver);
-    addTearDown(client.close);
+  test(
+    'well-known NAT64 addresses embedding private IPv4 fail closed',
+    () async {
+      final resolver = _StaticAddressResolver([
+        InternetAddress('64:ff9b::c0a8:010a'),
+      ]);
+      final client = DartIoProxyUpstreamClient(addressResolver: resolver);
+      addTearDown(client.close);
 
-    await expectLater(
-      client.send(_request()),
-      throwsA(
-        isA<ProxyUpstreamSecurityException>().having(
-          (error) => error.code,
-          'code',
-          'upstream_address_not_public',
+      await expectLater(
+        client.send(_request()),
+        throwsA(
+          isA<ProxyUpstreamSecurityException>().having(
+            (error) => error.code,
+            'code',
+            'upstream_address_not_public',
+          ),
         ),
-      ),
-    );
-  });
+      );
+    },
+  );
 
   test('IPv4-mapped private IPv6 DNS answers also fail closed', () async {
     final resolver = _StaticAddressResolver([

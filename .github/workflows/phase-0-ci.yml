@@ -17,48 +17,6 @@ env:
   FLUTTER_VERSION: 3.44.8
 
 jobs:
-  phase3-format:
-    name: Apply canonical Phase 3 formatting
-    if: github.event_name == 'pull_request' && github.head_ref == 'phase-3/webview-capture'
-    permissions:
-      contents: write
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - name: Checkout Phase 3 branch
-        uses: actions/checkout@v6
-        with:
-          ref: phase-3/webview-capture
-          fetch-depth: 0
-      - name: Check format request
-        id: gate
-        shell: bash
-        run: |
-          if [[ -f .phase3-format-request ]]; then
-            echo "requested=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "requested=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Install Flutter
-        if: steps.gate.outputs.requested == 'true'
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - name: Apply formatter and commit
-        if: steps.gate.outputs.requested == 'true'
-        shell: bash
-        run: |
-          dart format test/architecture/windows_webview_toolchain_test.dart
-          rm -f .phase3-format-request
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add test/architecture/windows_webview_toolchain_test.dart .phase3-format-request
-          git commit -m "style: apply Windows WebView2 toolchain test formatting"
-          git pull --rebase origin phase-3/webview-capture
-          git push origin HEAD:phase-3/webview-capture
-
   static-analysis:
     name: Generated code, format, analyze, and document generator
     runs-on: ubuntu-24.04

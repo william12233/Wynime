@@ -28,6 +28,35 @@ void main() {
     );
   });
 
+  test('new delete jobs must start pending', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final manifests = DriftArtifactManifestRepository(database);
+    final jobs = DriftDeleteJobRepository(database);
+    await manifests.create(
+      DownloadArtifactManifest(
+        manifestId: 'manifest-1',
+        downloadId: 'download-1',
+        createdAt: createdAt,
+        artifacts: const [],
+      ),
+    );
+
+    await expectLater(
+      jobs.create(
+        DeleteJob(
+          jobId: 'job-1',
+          artifactManifestId: 'manifest-1',
+          status: DeleteJobStatus.running,
+          attempts: 1,
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('running jobs recover as failed without pretending deletion succeeded', () async {
     final database = openTestDatabase();
     addTearDown(database.close);

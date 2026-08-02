@@ -13,6 +13,13 @@ final class DriftDeleteJobRepository implements DeleteJobRepository {
 
   @override
   Future<void> create(DeleteJob job) async {
+    if (job.status != DeleteJobStatus.pending) {
+      throw ArgumentError.value(
+        job.status,
+        'job.status',
+        'New DeleteJobs must start in pending state.',
+      );
+    }
     await _database.into(_database.deleteJobRows).insert(_companion(job));
   }
 

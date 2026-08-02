@@ -10,24 +10,35 @@ final class DriftWatchHistoryRepository implements WatchHistoryRepository {
   final WynimeDatabase _database;
 
   @override
-  Future<void> save(WatchProgress progress) async {
-    await _database
-        .into(_database.watchHistoryRows)
-        .insertOnConflictUpdate(
-          WatchHistoryRowsCompanion(
-            progressId: Value(progress.progressId),
-            sourceId: Value(progress.sourceId),
-            lineId: Value(progress.lineId),
-            subjectId: Value(progress.subjectId),
-            episodeId: Value(progress.episodeId),
-            positionMs: Value(progress.position.inMilliseconds),
-            durationMs: Value(progress.duration.inMilliseconds),
-            isCompleted: Value(progress.isCompleted),
-            playerBackendId: Value(progress.playerBackendId),
-            timelineMapId: Value(progress.timelineMapId),
-            updatedAt: Value(progress.updatedAt),
-          ),
+  Future<void> save(WatchProgress progress) {
+    return _database.transaction(() async {
+      final existingQuery = _database.select(_database.watchHistoryRows)
+        ..where(
+          (table) =>
+              table.sourceId.equals(progress.sourceId) &
+              table.lineId.equals(progress.lineId) &
+              table.subjectId.equals(progress.subjectId) &
+              table.episodeId.equals(progress.episodeId),
         );
+      final existing = await existingQuery.getSingleOrNull();
+      final companion = _companion(progress);
+
+      if (existing == null) {
+        await _database.into(_database.watchHistoryRows).insert(companion);
+        return;
+      }
+
+      final count = await (_database.update(
+        _database.watchHistoryRows,
+      )..where((table) => table.progressId.equals(existing.progressId))).write(
+        companion,
+      );
+      if (count != 1) {
+        throw StateError(
+          'Watch progress update affected $count rows: ${existing.progressId}',
+        );
+      }
+    });
   }
 
   @override
@@ -54,6 +65,22 @@ final class DriftWatchHistoryRepository implements WatchHistoryRepository {
     await (_database.delete(
       _database.watchHistoryRows,
     )..where((table) => table.progressId.equals(progressId))).go();
+  }
+
+  WatchHistoryRowsCompanion _companion(WatchProgress progress) {
+    return WatchHistoryRowsCompanion(
+      progressId: Value(progress.progressId),
+      sourceId: Value(progress.sourceId),
+      lineId: Value(progress.lineId),
+      subjectId: Value(progress.subjectId),
+      episodeId: Value(progress.episodeId),
+      positionMs: Value(progress.position.inMilliseconds),
+      durationMs: Value(progress.duration.inMilliseconds),
+      isCompleted: Value(progress.isCompleted),
+      playerBackendId: Value(progress.playerBackendId),
+      timelineMapId: Value(progress.timelineMapId),
+      updatedAt: Value(progress.updatedAt),
+    );
   }
 
   WatchProgress _map(WatchHistoryRecord row) {

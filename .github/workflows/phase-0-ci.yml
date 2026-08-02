@@ -17,6 +17,61 @@ env:
   FLUTTER_VERSION: 3.44.8
 
 jobs:
+  # BEGIN TEMP DOCX REPAIR JOB
+  repair-docx-workflow:
+    name: Repair DOCX workflow branch tracking
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'phase-1/persistence'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Phase 1 branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-1/persistence
+          fetch-depth: 0
+      - name: Repair workflow and remove temporary machinery
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          docx = Path('.github/workflows/build-detailed-plan-docx.yml')
+          text = docx.read_text(encoding='utf-8')
+          replacements = {
+              'branches:\n      - bootstrap/phase-0': 'branches:\n      - main',
+              '        with:\n          ref: bootstrap/phase-0\n          fetch-depth: 0': '        with:\n          fetch-depth: 0',
+              'git push origin HEAD:bootstrap/phase-0': 'git push origin "HEAD:${GITHUB_REF_NAME}"',
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected one occurrence of {old!r}, found {count}')
+              text = text.replace(old, new)
+          docx.write_text(text, encoding='utf-8')
+
+          ci = Path('.github/workflows/phase-0-ci.yml')
+          ci_text = ci.read_text(encoding='utf-8')
+          start_marker = '  # BEGIN TEMP DOCX REPAIR JOB\n'
+          end_marker = '  # END TEMP DOCX REPAIR JOB\n'
+          start = ci_text.index(start_marker)
+          end = ci_text.index(end_marker, start) + len(end_marker)
+          ci.write_text(ci_text[:start] + ci_text[end:], encoding='utf-8')
+
+          Path('.repair-docx-workflow-request').unlink(missing_ok=True)
+          Path('.github/workflows/repair-docx-workflow.yml').unlink(missing_ok=True)
+          PY
+      - name: Commit repaired long-lived workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "ci: track DOCX snapshots from main"
+          git pull --rebase origin phase-1/persistence
+          git push origin HEAD:phase-1/persistence
+  # END TEMP DOCX REPAIR JOB
+
   static-analysis:
     name: Generated code, format, and analyze
     runs-on: ubuntu-24.04

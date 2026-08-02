@@ -1,0 +1,28 @@
+name: Phase 6 source snapshot
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    if: github.head_ref == 'phase-6/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Archive source
+        run: |
+          tar --exclude=.git -czf wynime-main-source.tar.gz .
+      - name: Upload source
+        uses: actions/upload-artifact@v4
+        with:
+          name: wynime-main-source
+          path: wynime-main-source.tar.gz
+          if-no-files-found: error
+          retention-days: 1

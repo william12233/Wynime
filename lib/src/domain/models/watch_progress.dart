@@ -11,17 +11,26 @@ final class WatchProgress {
     required this.updatedAt,
     this.playerBackendId,
     this.timelineMapId,
-  }) : assert(progressId.trim().isNotEmpty, 'progressId must not be empty.'),
-       assert(sourceId.trim().isNotEmpty, 'sourceId must not be empty.'),
-       assert(lineId.trim().isNotEmpty, 'lineId must not be empty.'),
-       assert(subjectId.trim().isNotEmpty, 'subjectId must not be empty.'),
-       assert(episodeId.trim().isNotEmpty, 'episodeId must not be empty.'),
-       assert(!position.isNegative, 'position must not be negative.'),
-       assert(!duration.isNegative, 'duration must not be negative.'),
-       assert(
-         duration == Duration.zero || position <= duration,
-         'position must not exceed a known duration.',
-       );
+  }) {
+    _requireNonEmpty(progressId, 'progressId');
+    _requireNonEmpty(sourceId, 'sourceId');
+    _requireNonEmpty(lineId, 'lineId');
+    _requireNonEmpty(subjectId, 'subjectId');
+    _requireNonEmpty(episodeId, 'episodeId');
+    if (position.isNegative) {
+      throw ArgumentError.value(position, 'position', 'Must not be negative.');
+    }
+    if (duration.isNegative) {
+      throw ArgumentError.value(duration, 'duration', 'Must not be negative.');
+    }
+    if (duration != Duration.zero && position > duration) {
+      throw ArgumentError.value(
+        position,
+        'position',
+        'Must not exceed a known duration.',
+      );
+    }
+  }
 
   final String progressId;
   final String sourceId;
@@ -34,4 +43,10 @@ final class WatchProgress {
   final DateTime updatedAt;
   final String? playerBackendId;
   final String? timelineMapId;
+
+  static void _requireNonEmpty(String value, String name) {
+    if (value.trim().isEmpty) {
+      throw ArgumentError.value(value, name, 'Must not be empty.');
+    }
+  }
 }

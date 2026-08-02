@@ -9,22 +9,30 @@ final class DeleteJob {
     required this.updatedAt,
     this.attempts = 0,
     this.failureCode,
-  }) : assert(jobId.trim().isNotEmpty, 'jobId must not be empty.'),
-       assert(
-         artifactManifestId.trim().isNotEmpty,
-         'artifactManifestId must not be empty.',
-       ),
-       assert(attempts >= 0, 'attempts must not be negative.'),
-       assert(
-         status == DeleteJobStatus.failed
-             ? failureCode != null && failureCode.trim().isNotEmpty
-             : failureCode == null,
-         'failureCode must exist only for failed jobs.',
-       ),
-       assert(
-         !updatedAt.isBefore(createdAt),
-         'updatedAt must not be before createdAt.',
-       );
+  }) {
+    if (jobId.trim().isEmpty) {
+      throw ArgumentError.value(jobId, 'jobId', 'Must not be empty.');
+    }
+    if (artifactManifestId.trim().isEmpty) {
+      throw ArgumentError.value(
+        artifactManifestId,
+        'artifactManifestId',
+        'Must not be empty.',
+      );
+    }
+    if (attempts < 0) {
+      throw ArgumentError.value(attempts, 'attempts', 'Must not be negative.');
+    }
+    final hasFailureCode = failureCode != null && failureCode!.trim().isNotEmpty;
+    if ((status == DeleteJobStatus.failed) != hasFailureCode) {
+      throw ArgumentError(
+        'failureCode must be non-empty exactly when status is failed.',
+      );
+    }
+    if (updatedAt.isBefore(createdAt)) {
+      throw ArgumentError('updatedAt must not be before createdAt.');
+    }
+  }
 
   final String jobId;
   final String artifactManifestId;
@@ -51,6 +59,9 @@ final class DeleteJob {
   }) {
     if (!canTransitionTo(target)) {
       throw StateError('Illegal DeleteJob transition: $status -> $target');
+    }
+    if (now.isBefore(updatedAt)) {
+      throw ArgumentError.value(now, 'now', 'Must not move time backwards.');
     }
 
     return DeleteJob(

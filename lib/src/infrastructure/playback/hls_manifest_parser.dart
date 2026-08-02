@@ -663,7 +663,10 @@ final class HlsManifestParser {
             line: line.number,
           );
         }
-        final parsed = DateTime.tryParse(value.substring(25));
+        final rawDateTime = value.substring(25);
+        final parsed = _explicitTimeZone.hasMatch(rawDateTime)
+            ? DateTime.tryParse(rawDateTime)
+            : null;
         if (parsed == null) {
           throw HlsManifestParseException(
             'invalid_program_date_time',
@@ -702,6 +705,12 @@ final class HlsManifestParser {
       throw const HlsManifestParseException(
         'missing_segment_uri',
         'The final EXTINF has no media URI.',
+      );
+    }
+    if (explicitAdCue) {
+      throw const HlsManifestParseException(
+        'unterminated_ad_cue',
+        'An explicit ad cue must end with EXT-X-CUE-IN.',
       );
     }
     if (pendingByteRange != null || pendingGap || pendingDiscontinuity) {
@@ -1146,3 +1155,4 @@ const Set<String> _renditionTypes = {
 };
 final RegExp _attributeName = RegExp(r'^[A-Z0-9-]+$');
 final RegExp _aes128Iv = RegExp(r'^0[xX][0-9A-Fa-f]{32}$');
+final RegExp _explicitTimeZone = RegExp(r'(?:Z|[+-]\d{2}:\d{2})$');

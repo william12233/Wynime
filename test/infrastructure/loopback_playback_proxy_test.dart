@@ -190,6 +190,95 @@ segment.ts?token=segment-secret
   );
 
   test(
+    'active media plan passes through a master before sanitizing its child',
+    () async {
+      final mediaSource = File(
+        'test/fixtures/hls/cue_ads.m3u8',
+      ).readAsStringSync();
+      const parser = HlsManifestParser();
+      const fingerprinter = HlsManifestFingerprinter();
+      const planner = HlsAdPlanner();
+      final masterUri = Uri.parse('https://media.example/master.m3u8');
+      final mediaUri = Uri.parse('https://media.example/vod/playlist.m3u8');
+      final playlist =
+          parser.parse(source: mediaSource, sourceUri: mediaUri)
+              as HlsMediaPlaylist;
+      final episode = testEpisode();
+      final plan = planner.createPlan(
+        episode: episode,
+        playlist: playlist,
+        fingerprint: fingerprinter.fingerprint(playlist),
+        mode: AdRemovalMode.safe,
+      );
+      final upstream = _FakeUpstreamClient((request) async {
+        if (request.uri == masterUri) {
+          return _textResponse(
+            200,
+            '''#EXTM3U
+#EXT-X-STREAM-INF:BANDWIDTH=1000000
+vod/playlist.m3u8
+''',
+            headers: const {
+              'content-type': ['application/vnd.apple.mpegurl'],
+            },
+          );
+        }
+        if (request.uri == mediaUri) {
+          return _textResponse(
+            200,
+            mediaSource,
+            headers: const {
+              'content-type': ['application/vnd.apple.mpegurl'],
+            },
+          );
+        }
+        throw StateError('Unexpected fake upstream URI.');
+      });
+      final service = LoopbackPlaybackProxyService(
+        upstreamClient: upstream,
+        random: Random(10),
+      );
+      final client = HttpClient();
+      addTearDown(() async {
+        client.close(force: true);
+        await service.close();
+      });
+      final lease = await service.expose(
+        PlaybackProxyRequest(
+          session: testPlaybackSession(
+            episode: episode,
+            mediaUri: masterUri,
+            adRemovalPlan: plan,
+          ),
+          securityPolicy: testSourcePolicy(),
+          budget: testProxyBudget(),
+        ),
+      );
+
+      final masterResponse = await (await client.getUrl(
+        lease.playbackUri,
+      )).close();
+      final rewrittenMaster = await masterResponse
+          .transform(utf8.decoder)
+          .join();
+      final childUri = Uri.parse(
+        rewrittenMaster
+            .split('\n')
+            .firstWhere((line) => line.startsWith('http://')),
+      );
+      final mediaResponse = await (await client.getUrl(childUri)).close();
+      final sanitizedMedia = await mediaResponse.transform(utf8.decoder).join();
+
+      expect(masterResponse.statusCode, 200);
+      expect(mediaResponse.statusCode, 200);
+      expect(sanitizedMedia, isNot(contains('ad-1.ts')));
+      expect(sanitizedMedia, isNot(contains('ad-2.ts')));
+      expect(sanitizedMedia, contains('#EXTINF:10,content-a'));
+      expect(upstream.requests, hasLength(2));
+    },
+  );
+
+  test(
     'unknown tokens, invalid Range, and closed leases fail closed',
     () async {
       final upstream = _FakeUpstreamClient(

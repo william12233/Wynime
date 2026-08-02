@@ -242,6 +242,75 @@ segment.ts
     );
   });
 
+  test('rejects unterminated explicit ad cues', () {
+    expect(
+      () => parser.parse(
+        source: '''#EXTM3U
+#EXT-X-TARGETDURATION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-CUE-OUT:12
+#EXTINF:6,
+ad-1.ts
+#EXTINF:6,
+content.ts
+#EXT-X-ENDLIST
+''',
+        sourceUri: Uri.parse('https://media.example/vod/playlist.m3u8'),
+      ),
+      throwsA(
+        isA<HlsManifestParseException>().having(
+          (error) => error.code,
+          'code',
+          'unterminated_ad_cue',
+        ),
+      ),
+    );
+  });
+
+  test('requires explicit time zones for deterministic HLS dates', () {
+    expect(
+      () => parser.parse(
+        source: '''#EXTM3U
+#EXT-X-TARGETDURATION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-PROGRAM-DATE-TIME:2026-08-02T12:00:00
+#EXTINF:6,
+segment.ts
+#EXT-X-ENDLIST
+''',
+        sourceUri: Uri.parse('https://media.example/vod/playlist.m3u8'),
+      ),
+      throwsA(
+        isA<HlsManifestParseException>().having(
+          (error) => error.code,
+          'code',
+          'invalid_program_date_time',
+        ),
+      ),
+    );
+
+    expect(
+      () => parser.parse(
+        source: '''#EXTM3U
+#EXT-X-TARGETDURATION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-DATERANGE:ID="ad",CLASS="ad",START-DATE="2026-08-02T12:00:00",DURATION=6
+#EXTINF:6,
+segment.ts
+#EXT-X-ENDLIST
+''',
+        sourceUri: Uri.parse('https://media.example/vod/playlist.m3u8'),
+      ),
+      throwsA(
+        isA<HlsManifestParseException>().having(
+          (error) => error.code,
+          'code',
+          'invalid_date_range',
+        ),
+      ),
+    );
+  });
+
   test('pre-parses bounded ad DATERANGE records without merging cue types', () {
     final playlist =
         parser.parse(

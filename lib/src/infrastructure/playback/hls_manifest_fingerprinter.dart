@@ -19,82 +19,84 @@ final class HlsManifestFingerprinter {
     );
   }
 
-  String _canonicalMedia(HlsMediaPlaylist playlist) {
-    final output = StringBuffer()
-      ..writeln('kind=media')
-      ..writeln('version=${playlist.version ?? -1}')
-      ..writeln('target=${playlist.targetDuration.inMicroseconds}')
-      ..writeln('mediaSequence=${playlist.mediaSequence}')
-      ..writeln('discontinuitySequence=${playlist.discontinuitySequence}')
-      ..writeln('playlistType=${playlist.playlistType?.name ?? 'none'}')
-      ..writeln('endList=${playlist.endList}')
-      ..writeln('independent=${playlist.independentSegments}');
-    for (final range in playlist.dateRanges) {
-      final attributes = range.attributes.entries.toList()
-        ..sort((left, right) => left.key.compareTo(right.key));
-      output
-        ..write('daterange|')
-        ..writeln(
-          attributes
-              .map(
-                (entry) =>
-                    '${entry.key}=${_canonicalAttribute(entry.key, entry.value)}',
-              )
-              .join('|'),
-        );
-    }
-    for (final segment in playlist.segments) {
-      output
-        ..write('segment|${segment.index}|${segment.mediaSequence}|')
-        ..write(
-          '${segment.duration.inMicroseconds}|${segment.discontinuityGroup}|',
-        )
-        ..write(
-          '${segment.discontinuityBefore}|${segment.gap}|'
-          '${segment.explicitAdCue}|${segment.adDateRangeCue}|',
-        )
-        ..write('${_canonicalUri(segment.uri)}|')
-        ..write('${_canonicalByteRange(segment.byteRange)}|')
-        ..write('${_canonicalKey(segment.key)}|')
-        ..write('${_canonicalMap(segment.initializationMap)}|')
-        ..writeln(segment.programDateTime?.toUtc().toIso8601String() ?? '');
-    }
-    return output.toString();
-  }
+  String _canonicalMedia(HlsMediaPlaylist playlist) => jsonEncode({
+    'kind': 'media',
+    'source': _canonicalUri(playlist.sourceUri),
+    'version': playlist.version,
+    'targetMicros': playlist.targetDuration.inMicroseconds,
+    'mediaSequence': playlist.mediaSequence,
+    'discontinuitySequence': playlist.discontinuitySequence,
+    'playlistType': playlist.playlistType?.name,
+    'endList': playlist.endList,
+    'independentSegments': playlist.independentSegments,
+    'dateRanges': [
+      for (final range in playlist.dateRanges)
+        {
+          for (final entry
+              in (range.attributes.entries.toList()
+                ..sort((left, right) => left.key.compareTo(right.key))))
+            entry.key: _canonicalAttribute(entry.key, entry.value),
+        },
+    ],
+    'segments': [
+      for (final segment in playlist.segments)
+        {
+          'index': segment.index,
+          'mediaSequence': segment.mediaSequence,
+          'durationMicros': segment.duration.inMicroseconds,
+          'title': segment.title,
+          'discontinuityGroup': segment.discontinuityGroup,
+          'discontinuityBefore': segment.discontinuityBefore,
+          'gap': segment.gap,
+          'explicitAdCue': segment.explicitAdCue,
+          'adDateRangeCue': segment.adDateRangeCue,
+          'uri': _canonicalUri(segment.uri),
+          'byteRange': _canonicalByteRange(segment.byteRange),
+          'key': _canonicalKey(segment.key),
+          'initializationMap': _canonicalMap(segment.initializationMap),
+          'programDateTime': segment.programDateTime?.toUtc().toIso8601String(),
+        },
+    ],
+  });
 
-  String _canonicalMaster(HlsMasterPlaylist playlist) {
-    final output = StringBuffer()
-      ..writeln('kind=master')
-      ..writeln('version=${playlist.version ?? -1}')
-      ..writeln('independent=${playlist.independentSegments}');
-    for (final rendition in playlist.renditions) {
-      output
-        ..write(
-          'rendition|${rendition.type}|${rendition.groupId}|${rendition.name}|',
-        )
-        ..write(
-          '${rendition.defaultSelection}|${rendition.autoSelect}|${rendition.forced}|',
-        )
-        ..write(
-          '${rendition.language ?? ''}|${rendition.characteristics ?? ''}|',
-        )
-        ..writeln(rendition.uri == null ? '' : _canonicalUri(rendition.uri!));
-    }
-    for (final variant in playlist.variants) {
-      output
-        ..write(
-          'variant|${variant.bandwidth}|${variant.averageBandwidth ?? -1}|',
-        )
-        ..write('${variant.codecs ?? ''}|')
-        ..write(
-          '${variant.resolution?.width ?? -1}x${variant.resolution?.height ?? -1}|',
-        )
-        ..write('${variant.frameRate ?? -1}|${variant.audioGroupId ?? ''}|')
-        ..write('${variant.subtitleGroupId ?? ''}|')
-        ..writeln(_canonicalUri(variant.uri));
-    }
-    return output.toString();
-  }
+  String _canonicalMaster(HlsMasterPlaylist playlist) => jsonEncode({
+    'kind': 'master',
+    'source': _canonicalUri(playlist.sourceUri),
+    'version': playlist.version,
+    'independentSegments': playlist.independentSegments,
+    'renditions': [
+      for (final rendition in playlist.renditions)
+        {
+          'type': rendition.type,
+          'groupId': rendition.groupId,
+          'name': rendition.name,
+          'defaultSelection': rendition.defaultSelection,
+          'autoSelect': rendition.autoSelect,
+          'forced': rendition.forced,
+          'language': rendition.language,
+          'characteristics': rendition.characteristics,
+          'uri': rendition.uri == null ? null : _canonicalUri(rendition.uri!),
+        },
+    ],
+    'variants': [
+      for (final variant in playlist.variants)
+        {
+          'bandwidth': variant.bandwidth,
+          'averageBandwidth': variant.averageBandwidth,
+          'codecs': variant.codecs,
+          'resolution': variant.resolution == null
+              ? null
+              : {
+                  'width': variant.resolution!.width,
+                  'height': variant.resolution!.height,
+                },
+          'frameRate': variant.frameRate,
+          'audioGroupId': variant.audioGroupId,
+          'subtitleGroupId': variant.subtitleGroupId,
+          'uri': _canonicalUri(variant.uri),
+        },
+    ],
+  });
 
   String _canonicalAttribute(String name, String value) {
     final upper = name.toUpperCase();
@@ -104,28 +106,25 @@ final class HlsManifestFingerprinter {
     return value;
   }
 
-  String _canonicalKey(HlsKey? key) {
-    if (key == null) {
-      return '';
-    }
-    return [
-      key.method,
-      key.uri == null ? '' : _canonicalUri(key.uri!),
-      key.iv ?? '',
-      key.keyFormat ?? '',
-      key.keyFormatVersions ?? '',
-    ].join(',');
-  }
+  Map<String, Object?>? _canonicalKey(HlsKey? key) => key == null
+      ? null
+      : {
+          'method': key.method,
+          'uri': key.uri == null ? null : _canonicalUri(key.uri!),
+          'iv': key.iv,
+          'keyFormat': key.keyFormat,
+          'keyFormatVersions': key.keyFormatVersions,
+        };
 
-  String _canonicalMap(HlsInitializationMap? map) {
-    if (map == null) {
-      return '';
-    }
-    return '${_canonicalUri(map.uri)},${_canonicalByteRange(map.byteRange)}';
-  }
+  Map<String, Object?>? _canonicalMap(HlsInitializationMap? map) => map == null
+      ? null
+      : {
+          'uri': _canonicalUri(map.uri),
+          'byteRange': _canonicalByteRange(map.byteRange),
+        };
 
-  String _canonicalByteRange(HlsByteRange? range) =>
-      range == null ? '' : '${range.length}@${range.offset ?? -1}';
+  Map<String, int?>? _canonicalByteRange(HlsByteRange? range) =>
+      range == null ? null : {'length': range.length, 'offset': range.offset};
 
   String _canonicalUri(Uri uri) {
     final query = <String>[];

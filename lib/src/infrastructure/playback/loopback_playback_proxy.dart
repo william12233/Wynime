@@ -282,21 +282,16 @@ final class LoopbackPlaybackProxyService implements PlaybackProxyService {
       if (adRemovalPlan.isActive) {
         try {
           final parsed = _parser.parse(source: playlist, sourceUri: currentUri);
-          final fingerprint = _fingerprinter.fingerprint(parsed);
-          adRemovalPlan.verifyManifestFingerprint(fingerprint);
-          if (parsed is HlsMasterPlaylist &&
-              adRemovalPlan.removals.isNotEmpty) {
-            throw PlaybackProxyException(
-              'media_playlist_required',
-              'A removal plan cannot be applied to a master playlist.',
-            );
-          }
-          if (parsed is HlsMediaPlaylist && adRemovalPlan.removals.isNotEmpty) {
-            playerPlaylist = _sanitizer.sanitize(
-              playlist: parsed,
-              plan: adRemovalPlan,
-              actualFingerprint: fingerprint,
-            );
+          if (parsed is HlsMediaPlaylist) {
+            final fingerprint = _fingerprinter.fingerprint(parsed);
+            adRemovalPlan.verifyManifestFingerprint(fingerprint);
+            if (adRemovalPlan.removals.isNotEmpty) {
+              playerPlaylist = _sanitizer.sanitize(
+                playlist: parsed,
+                plan: adRemovalPlan,
+                actualFingerprint: fingerprint,
+              );
+            }
           }
         } on HlsManifestParseException {
           throw PlaybackProxyException(

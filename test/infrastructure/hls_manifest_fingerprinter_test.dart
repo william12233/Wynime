@@ -85,4 +85,26 @@ media.bin?signature=b
       isNot(fingerprinter.fingerprint(changedRange)),
     );
   });
+
+  test('binds rendered segment metadata with unambiguous JSON framing', () {
+    HlsMediaPlaylist parseTitle(String title) =>
+        parser.parse(
+              source:
+                  '''
+#EXTM3U
+#EXT-X-TARGETDURATION:6
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:6,$title
+segment.ts?token=renewable
+#EXT-X-ENDLIST
+''',
+              sourceUri: Uri.parse('https://media.example/a.m3u8'),
+            )
+            as HlsMediaPlaylist;
+
+    expect(
+      fingerprinter.fingerprint(parseTitle('chapter|one=alpha')),
+      isNot(fingerprinter.fingerprint(parseTitle('chapter|one=beta'))),
+    );
+  });
 }

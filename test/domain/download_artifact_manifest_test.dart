@@ -62,10 +62,13 @@ void main() {
   });
 
   test('delete job references the authoritative artifact manifest', () {
+    final now = DateTime.utc(2026);
     final job = DeleteJob(
       jobId: 'delete-1',
       artifactManifestId: 'manifest-1',
       status: DeleteJobStatus.pending,
+      createdAt: now,
+      updatedAt: now,
     );
 
     expect(job.artifactManifestId, 'manifest-1');

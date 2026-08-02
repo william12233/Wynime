@@ -1,4 +1,4 @@
-name: Phase 0 CI
+name: Flutter CI
 
 on:
   pull_request:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: phase-0-${{ github.event.pull_request.number || github.ref }}
+  group: flutter-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -18,9 +18,9 @@ env:
 
 jobs:
   static-analysis:
-    name: Format and analyze
+    name: Generated code, format, analyze, and document generator
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,15 +32,27 @@ jobs:
           cache: true
       - name: Resolve dependencies
         run: flutter pub get
+      - name: Verify generated Drift code
+        run: |
+          dart run build_runner build
+          test -z "$(git status --porcelain)"
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
       - name: Analyze
         run: flutter analyze --fatal-infos
+      - name: Validate detailed-plan DOCX generator
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          python -m pip install --disable-pip-version-check python-docx==1.2.0
+          python .github/scripts/build_detailed_plan_docx.py
+          test -s "docs/Wynime_完整應用計畫與技術規格_v0.3.docx"
+          unzip -t "docs/Wynime_完整應用計畫與技術規格_v0.3.docx"
 
   tests:
-    name: Unit, widget, architecture, and golden tests
+    name: Unit, persistence, widget, architecture, and golden tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -58,7 +70,7 @@ jobs:
   android-build:
     name: Android debug build
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -82,7 +94,7 @@ jobs:
   windows-build:
     name: Windows debug build
     runs-on: windows-2025
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v6

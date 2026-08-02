@@ -4,350 +4,43 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - bootstrap/phase-0
+      - main
     paths:
       - AGENTS.md
       - docs/PROJECT_PLAN.md
       - docs/ARCHITECTURE.md
       - docs/DECISIONS.md
+      - .github/scripts/build_detailed_plan_docx.py
       - .github/workflows/build-detailed-plan-docx.yml
 
 permissions:
   contents: write
 
+concurrency:
+  group: wynime-detailed-plan-docx-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-docx:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout current ref
+        uses: actions/checkout@v6
         with:
-          ref: bootstrap/phase-0
           fetch-depth: 0
-
       - name: Install document dependency
         run: python -m pip install --disable-pip-version-check python-docx==1.2.0
-
       - name: Generate detailed DOCX snapshot
         env:
           SOURCE_COMMIT: ${{ github.sha }}
-        run: |
-          python - <<'PY'
-          from __future__ import annotations
-
-          import os
-          import re
-          from datetime import datetime, timezone
-          from pathlib import Path
-
-          from docx import Document
-          from docx.enum.section import WD_SECTION
-          from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
-          from docx.enum.text import WD_ALIGN_PARAGRAPH
-          from docx.oxml import OxmlElement
-          from docx.oxml.ns import qn
-          from docx.shared import Cm, Pt, RGBColor
-
-          ROOT = Path('.')
-          OUTPUT = ROOT / 'docs' / 'Wynime_完整應用計畫與技術規格_v0.3.docx'
-          SOURCES = [
-              ('完整產品與技術計畫', ROOT / 'docs' / 'PROJECT_PLAN.md'),
-              ('架構邊界', ROOT / 'docs' / 'ARCHITECTURE.md'),
-              ('已核准技術決策', ROOT / 'docs' / 'DECISIONS.md'),
-              ('Codex／Agent 工作規則', ROOT / 'AGENTS.md'),
-          ]
-
-          def set_cell_shading(cell, fill: str) -> None:
-              tc_pr = cell._tc.get_or_add_tcPr()
-              shd = tc_pr.find(qn('w:shd'))
-              if shd is None:
-                  shd = OxmlElement('w:shd')
-                  tc_pr.append(shd)
-              shd.set(qn('w:fill'), fill)
-
-          def set_repeat_table_header(row) -> None:
-              tr_pr = row._tr.get_or_add_trPr()
-              tbl_header = OxmlElement('w:tblHeader')
-              tbl_header.set(qn('w:val'), 'true')
-              tr_pr.append(tbl_header)
-
-          def set_keep_with_next(paragraph) -> None:
-              p_pr = paragraph._p.get_or_add_pPr()
-              keep_next = OxmlElement('w:keepNext')
-              p_pr.append(keep_next)
-
-          def clean_inline_markdown(text: str) -> str:
-              text = re.sub(r'!\[([^]]*)\]\([^)]*\)', r'\1', text)
-              text = re.sub(r'\[([^]]+)\]\([^)]*\)', r'\1', text)
-              text = text.replace('**', '').replace('__', '').replace('`', '')
-              return text.strip()
-
-          def add_run_with_markup(paragraph, text: str) -> None:
-              # Small, deterministic subset: bold and inline code.
-              parts = re.split(r'(\*\*.*?\*\*|`.*?`)', text)
-              for part in parts:
-                  if not part:
-                      continue
-                  if part.startswith('**') and part.endswith('**'):
-                      run = paragraph.add_run(part[2:-2])
-                      run.bold = True
-                  elif part.startswith('`') and part.endswith('`'):
-                      run = paragraph.add_run(part[1:-1])
-                      run.font.name = 'Consolas'
-                      run._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Consolas')
-                      run.font.size = Pt(9)
-                  else:
-                      paragraph.add_run(re.sub(r'\[([^]]+)\]\([^)]*\)', r'\1', part))
-
-          def add_markdown_table(doc: Document, lines: list[str]) -> None:
-              rows = []
-              for line in lines:
-                  cells = [clean_inline_markdown(c) for c in line.strip().strip('|').split('|')]
-                  rows.append(cells)
-              if len(rows) >= 2 and all(re.fullmatch(r':?-{3,}:?', c.replace(' ', '')) for c in rows[1]):
-                  rows.pop(1)
-              if not rows:
-                  return
-              width = max(len(r) for r in rows)
-              table = doc.add_table(rows=len(rows), cols=width)
-              table.alignment = WD_TABLE_ALIGNMENT.CENTER
-              table.style = 'Table Grid'
-              for r_index, row in enumerate(rows):
-                  for c_index in range(width):
-                      cell = table.cell(r_index, c_index)
-                      cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
-                      value = row[c_index] if c_index < len(row) else ''
-                      cell.text = value
-                      for p in cell.paragraphs:
-                          p.paragraph_format.space_after = Pt(2)
-                          for run in p.runs:
-                              run.font.size = Pt(8.5)
-                      if r_index == 0:
-                          set_cell_shading(cell, 'DCEAF2')
-                          for p in cell.paragraphs:
-                              for run in p.runs:
-                                  run.bold = True
-                  if r_index == 0:
-                      set_repeat_table_header(table.rows[0])
-              for row in table.rows:
-                  tr_pr = row._tr.get_or_add_trPr()
-                  tr_pr.append(OxmlElement('w:cantSplit'))
-              doc.add_paragraph()
-
-          def add_markdown(doc: Document, text: str) -> None:
-              lines = text.splitlines()
-              i = 0
-              in_code = False
-              code_lines: list[str] = []
-              while i < len(lines):
-                  raw = lines[i].rstrip()
-                  stripped = raw.strip()
-
-                  if stripped.startswith('```'):
-                      if in_code:
-                          p = doc.add_paragraph()
-                          p.style = doc.styles['Normal']
-                          p.paragraph_format.left_indent = Cm(0.6)
-                          p.paragraph_format.right_indent = Cm(0.3)
-                          p.paragraph_format.space_before = Pt(3)
-                          p.paragraph_format.space_after = Pt(6)
-                          run = p.add_run('\n'.join(code_lines))
-                          run.font.name = 'Consolas'
-                          run._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Consolas')
-                          run.font.size = Pt(8.5)
-                          set_cell = OxmlElement('w:shd')
-                          set_cell.set(qn('w:fill'), 'F3F5F7')
-                          p._p.get_or_add_pPr().append(set_cell)
-                          code_lines = []
-                          in_code = False
-                      else:
-                          in_code = True
-                      i += 1
-                      continue
-
-                  if in_code:
-                      code_lines.append(raw)
-                      i += 1
-                      continue
-
-                  if stripped.startswith('|') and stripped.endswith('|'):
-                      table_lines = []
-                      while i < len(lines) and lines[i].strip().startswith('|') and lines[i].strip().endswith('|'):
-                          table_lines.append(lines[i])
-                          i += 1
-                      add_markdown_table(doc, table_lines)
-                      continue
-
-                  heading = re.match(r'^(#{1,6})\s+(.+)$', stripped)
-                  if heading:
-                      level = min(len(heading.group(1)), 4)
-                      p = doc.add_heading(clean_inline_markdown(heading.group(2)), level=level)
-                      set_keep_with_next(p)
-                      i += 1
-                      continue
-
-                  bullet = re.match(r'^[-*+]\s+(.+)$', stripped)
-                  if bullet:
-                      p = doc.add_paragraph(style='List Bullet')
-                      add_run_with_markup(p, bullet.group(1))
-                      i += 1
-                      continue
-
-                  numbered = re.match(r'^\d+[.)]\s+(.+)$', stripped)
-                  if numbered:
-                      p = doc.add_paragraph(style='List Number')
-                      add_run_with_markup(p, numbered.group(1))
-                      i += 1
-                      continue
-
-                  quote = re.match(r'^>\s?(.*)$', stripped)
-                  if quote:
-                      p = doc.add_paragraph()
-                      p.paragraph_format.left_indent = Cm(0.7)
-                      p.paragraph_format.right_indent = Cm(0.4)
-                      p.paragraph_format.space_before = Pt(3)
-                      p.paragraph_format.space_after = Pt(5)
-                      run = p.add_run(clean_inline_markdown(quote.group(1)))
-                      run.italic = True
-                      shd = OxmlElement('w:shd')
-                      shd.set(qn('w:fill'), 'EEF4F8')
-                      p._p.get_or_add_pPr().append(shd)
-                      i += 1
-                      continue
-
-                  if not stripped or stripped == '---':
-                      i += 1
-                      continue
-
-                  p = doc.add_paragraph()
-                  add_run_with_markup(p, stripped)
-                  i += 1
-
-          doc = Document()
-          section = doc.sections[0]
-          section.top_margin = Cm(1.8)
-          section.bottom_margin = Cm(1.7)
-          section.left_margin = Cm(2.0)
-          section.right_margin = Cm(2.0)
-
-          props = doc.core_properties
-          props.title = 'Wynime 完整應用計畫與技術規格'
-          props.subject = 'Wynime Android / Windows 跨平台動畫來源播放器產品與技術計畫'
-          props.author = 'Wynime Project'
-          props.keywords = 'Wynime, Flutter, Android, Windows, HLS, M3U8, Bangumi, Download'
-          props.comments = 'Generated from repository Markdown. Markdown and ADR files remain authoritative.'
-
-          normal = doc.styles['Normal']
-          normal.font.name = 'Noto Sans CJK TC'
-          normal._element.rPr.rFonts.set(qn('w:eastAsia'), 'Noto Sans CJK TC')
-          normal.font.size = Pt(10.5)
-          normal.paragraph_format.space_after = Pt(5)
-          normal.paragraph_format.line_spacing = 1.15
-
-          for style_name, size, color in [
-              ('Title', 29, RGBColor(35, 60, 73)),
-              ('Heading 1', 18, RGBColor(35, 60, 73)),
-              ('Heading 2', 14, RGBColor(56, 92, 110)),
-              ('Heading 3', 12, RGBColor(70, 105, 120)),
-              ('Heading 4', 11, RGBColor(80, 105, 115)),
-          ]:
-              style = doc.styles[style_name]
-              style.font.name = 'Noto Sans CJK TC'
-              style._element.rPr.rFonts.set(qn('w:eastAsia'), 'Noto Sans CJK TC')
-              style.font.size = Pt(size)
-              style.font.color.rgb = color
-
-          p = doc.add_paragraph()
-          p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-          p.paragraph_format.space_before = Pt(80)
-          run = p.add_run('Wynime')
-          run.bold = True
-          run.font.size = Pt(30)
-          run.font.color.rgb = RGBColor(35, 60, 73)
-
-          p = doc.add_paragraph()
-          p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-          run = p.add_run('完整應用計畫與技術規格')
-          run.bold = True
-          run.font.size = Pt(18)
-
-          p = doc.add_paragraph()
-          p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-          run = p.add_run('版本 v0.3｜由 GitHub 權威文件自動產生')
-          run.font.size = Pt(11)
-          run.font.color.rgb = RGBColor(95, 95, 95)
-
-          doc.add_paragraph()
-          note_table = doc.add_table(rows=1, cols=1)
-          note_table.alignment = WD_TABLE_ALIGNMENT.CENTER
-          note_table.style = 'Table Grid'
-          cell = note_table.cell(0, 0)
-          set_cell_shading(cell, 'EEF4F8')
-          cell.text = (
-              '文件治理：本 DOCX 是方便人工閱讀與逐項審核的完整快照。'
-              'AGENTS.md、docs/PROJECT_PLAN.md、docs/DECISIONS.md 與 docs/ARCHITECTURE.md '
-              '才是可搜尋、可比較差異、供 Codex／Agent 優先讀取的權威來源。'
-              '有衝突時以 Markdown 與決策紀錄為準。'
-          )
-          for paragraph in cell.paragraphs:
-              for run in paragraph.runs:
-                  run.bold = True
-                  run.font.size = Pt(10)
-
-          doc.add_page_break()
-          doc.add_heading('文件來源與讀取順序', level=1)
-          for index, (_, source) in enumerate(SOURCES, start=1):
-              doc.add_paragraph(f'{index}. {source.as_posix()}', style='List Number')
-          p = doc.add_paragraph()
-          p.add_run('來源 Commit：').bold = True
-          p.add_run(os.environ.get('SOURCE_COMMIT', 'unknown'))
-          p = doc.add_paragraph()
-          p.add_run('產生時間：').bold = True
-          p.add_run(datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC'))
-
-          for title, source in SOURCES:
-              doc.add_page_break()
-              doc.add_heading(title, level=1)
-              add_markdown(doc, source.read_text(encoding='utf-8'))
-
-          doc.add_page_break()
-          doc.add_heading('文件維護規則', level=1)
-          rules = [
-              '產品需求或核准決策變更時，先修改 Markdown／ADR，再重新產生 DOCX。',
-              'DOCX 不作為 Codex 唯一輸入；新工作階段必須先讀 AGENTS.md 與 Markdown 權威文件。',
-              '下載、刪除、去廣告、PlaybackSession 與來源安全屬不可退讓契約，實作不得自行弱化。',
-              '未核准項目不得因 DOCX 排版或摘要文字被誤判為已核准。',
-              '每次重大版本建立新的版本號與 Git commit，保留可追蹤差異。',
-          ]
-          for rule in rules:
-              doc.add_paragraph(rule, style='List Bullet')
-
-          for section in doc.sections:
-              header = section.header
-              hp = header.paragraphs[0]
-              hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-              hr = hp.add_run('Wynime｜完整應用計畫與技術規格｜v0.3')
-              hr.font.size = Pt(7.5)
-              hr.font.color.rgb = RGBColor(110, 110, 110)
-
-              footer = section.footer
-              fp = footer.paragraphs[0]
-              fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-              fr = fp.add_run('Wynime｜GitHub: william12233/Wynime｜人工審核快照')
-              fr.font.size = Pt(7.5)
-              fr.font.color.rgb = RGBColor(110, 110, 110)
-
-          OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-          doc.save(OUTPUT)
-          print(f'Generated {OUTPUT} ({OUTPUT.stat().st_size} bytes)')
-          PY
-
+        run: python .github/scripts/build_detailed_plan_docx.py
       - name: Validate DOCX package
         run: |
           test -s "docs/Wynime_完整應用計畫與技術規格_v0.3.docx"
           unzip -t "docs/Wynime_完整應用計畫與技術規格_v0.3.docx"
-
       - name: Commit generated snapshot
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -357,4 +50,4 @@ jobs:
             exit 0
           fi
           git commit -m "docs: regenerate detailed Wynime plan DOCX"
-          git push origin HEAD:bootstrap/phase-0
+          git push origin "HEAD:${GITHUB_REF_NAME}"

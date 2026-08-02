@@ -12,10 +12,11 @@ void main() {
           .where((file) => file.path.endsWith('.dart'));
 
       const forbiddenImports = [
-        "package:flutter/",
-        "package:flutter_localizations/",
-        "dart:io",
-        "dart:ffi",
+        'package:flutter/',
+        'package:flutter_localizations/',
+        'package:drift/',
+        'dart:io',
+        'dart:ffi',
       ];
 
       for (final file in domainFiles) {

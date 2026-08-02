@@ -19,8 +19,18 @@ final class DownloadArtifact {
     required this.artifactId,
     required this.kind,
     required this.fileUri,
-  }) : assert(artifactId.trim().isNotEmpty, 'artifactId must not be empty.'),
-       assert(fileUri.scheme == 'file', 'fileUri must use the file scheme.');
+  }) {
+    if (artifactId.trim().isEmpty) {
+      throw ArgumentError.value(artifactId, 'artifactId', 'Must not be empty.');
+    }
+    if (fileUri.scheme != 'file' || !fileUri.isAbsolute) {
+      throw ArgumentError.value(
+        fileUri,
+        'fileUri',
+        'Must be an absolute file URI.',
+      );
+    }
+  }
 
   final String artifactId;
   final DownloadArtifactKind kind;
@@ -33,9 +43,14 @@ final class DownloadArtifactManifest {
     required this.downloadId,
     required this.createdAt,
     required Iterable<DownloadArtifact> artifacts,
-  }) : assert(manifestId.trim().isNotEmpty, 'manifestId must not be empty.'),
-       assert(downloadId.trim().isNotEmpty, 'downloadId must not be empty.'),
-       artifacts = UnmodifiableListView(_validateArtifacts(artifacts));
+  }) : artifacts = UnmodifiableListView(_validateArtifacts(artifacts)) {
+    if (manifestId.trim().isEmpty) {
+      throw ArgumentError.value(manifestId, 'manifestId', 'Must not be empty.');
+    }
+    if (downloadId.trim().isEmpty) {
+      throw ArgumentError.value(downloadId, 'downloadId', 'Must not be empty.');
+    }
+  }
 
   final String manifestId;
   final String downloadId;
@@ -61,7 +76,7 @@ final class DownloadArtifactManifest {
         throw ArgumentError.value(
           artifact.fileUri,
           'artifacts',
-          'Every physical artifact path must be registered only once.',
+          'Every physical artifact URI must be registered only once.',
         );
       }
     }

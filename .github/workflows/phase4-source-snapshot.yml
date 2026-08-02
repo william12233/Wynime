@@ -100,6 +100,160 @@ jobs:
           PY
 
           tar -xzf /tmp/phase4.tar.gz
+
+      - name: Apply analyzer style corrections
+        shell: bash
+        run: |
+          cat > /tmp/phase4-lint.patch <<'PATCH'
+          diff --git a/lib/src/application/playback/playback_coordinator.dart b/lib/src/application/playback/playback_coordinator.dart
+          index 1111111..2222222 100644
+          --- a/lib/src/application/playback/playback_coordinator.dart
+          +++ b/lib/src/application/playback/playback_coordinator.dart
+          @@ -38,13 +38,13 @@ final class PlaybackHandle {
+           }
+           
+           final class PlaybackCoordinator {
+          -  PlaybackCoordinator({
+          +  factory PlaybackCoordinator({
+               required PlaybackSessionResolver resolver,
+               required PlaybackProxyService proxy,
+               required PlayerBackend player,
+          -  }) : _resolver = resolver,
+          -       _proxy = proxy,
+          -       _player = player {
+          +  }) => PlaybackCoordinator._(resolver, proxy, player);
+          +
+          +  PlaybackCoordinator._(this._resolver, this._proxy, this._player) {
+               _playerSubscription = _player.events.listen(
+                 _handlePlayerEvent,
+                 onError: (Object error, StackTrace stackTrace) {
+          diff --git a/lib/src/domain/services/playback_proxy.dart b/lib/src/domain/services/playback_proxy.dart
+          index 1111111..2222222 100644
+          --- a/lib/src/domain/services/playback_proxy.dart
+          +++ b/lib/src/domain/services/playback_proxy.dart
+          @@ -73,12 +73,17 @@ final class PlaybackProxyLimits {
+           }
+           
+           final class PlaybackProxyLease {
+          -  PlaybackProxyLease({
+          +  factory PlaybackProxyLease({
+               required String sessionId,
+          -    required this.playbackUri,
+          +    required Uri playbackUri,
+               required Future<void> Function() close,
+          -  }) : sessionId = _requiredSessionId(sessionId),
+          -       _close = close {
+          +  }) => PlaybackProxyLease._(
+          +    _requiredSessionId(sessionId),
+          +    playbackUri,
+          +    close,
+          +  );
+          +
+          +  PlaybackProxyLease._(this.sessionId, this.playbackUri, this._close) {
+               if (!_isNumericLoopback(playbackUri)) {
+                 throw ArgumentError.value(
+                   playbackUri,
+          diff --git a/lib/src/infrastructure/playback/loopback_playback_proxy.dart b/lib/src/infrastructure/playback/loopback_playback_proxy.dart
+          index 1111111..2222222 100644
+          --- a/lib/src/infrastructure/playback/loopback_playback_proxy.dart
+          +++ b/lib/src/infrastructure/playback/loopback_playback_proxy.dart
+          @@ -11,13 +11,21 @@ import 'package:wynime/src/infrastructure/playback/proxy_upstream_client.dart';
+           import 'package:wynime/src/infrastructure/playback/proxy_upstream_client.dart';
+           
+           final class LoopbackPlaybackProxyService implements PlaybackProxyService {
+          -  LoopbackPlaybackProxyService({
+          +  factory LoopbackPlaybackProxyService({
+               ProxyUpstreamClient? upstreamClient,
+               Random? random,
+               HlsPlaylistRewriter rewriter = const HlsPlaylistRewriter(),
+          -  }) : _upstreamClient = upstreamClient ?? DartIoProxyUpstreamClient(),
+          -       _random = random ?? Random.secure(),
+          -       _rewriter = rewriter;
+          +  }) => LoopbackPlaybackProxyService._(
+          +    upstreamClient ?? DartIoProxyUpstreamClient(),
+          +    random ?? Random.secure(),
+          +    rewriter,
+          +  );
+          +
+          +  LoopbackPlaybackProxyService._(
+          +    this._upstreamClient,
+          +    this._random,
+          +    this._rewriter,
+          +  );
+           
+             final ProxyUpstreamClient _upstreamClient;
+             final Random _random;
+          diff --git a/lib/src/infrastructure/playback/proxy_upstream_client.dart b/lib/src/infrastructure/playback/proxy_upstream_client.dart
+          index 1111111..2222222 100644
+          --- a/lib/src/infrastructure/playback/proxy_upstream_client.dart
+          +++ b/lib/src/infrastructure/playback/proxy_upstream_client.dart
+          @@ -76,12 +76,16 @@ final class ProxyUpstreamResponse {
+           }
+           
+           final class DartIoProxyUpstreamClient implements ProxyUpstreamClient {
+          -  DartIoProxyUpstreamClient({
+          +  factory DartIoProxyUpstreamClient({
+               HttpClient? client,
+               UpstreamAddressResolver addressResolver =
+                   const SystemUpstreamAddressResolver(),
+          -  }) : _client = client ?? HttpClient(),
+          -       _addressResolver = addressResolver {
+          +  }) => DartIoProxyUpstreamClient._(
+          +    client ?? HttpClient(),
+          +    addressResolver,
+          +  );
+          +
+          +  DartIoProxyUpstreamClient._(this._client, this._addressResolver) {
+               _client.autoUncompress = false;
+               _client.maxConnectionsPerHost = 8;
+             }
+          diff --git a/lib/src/platform/playback/media3_player_backend.dart b/lib/src/platform/playback/media3_player_backend.dart
+          index 1111111..2222222 100644
+          --- a/lib/src/platform/playback/media3_player_backend.dart
+          +++ b/lib/src/platform/playback/media3_player_backend.dart
+          @@ -13,15 +13,16 @@ abstract interface class Media3PlatformTransport {
+           }
+           
+           final class MethodChannelMedia3Transport implements Media3PlatformTransport {
+          -  MethodChannelMedia3Transport({
+          +  factory MethodChannelMedia3Transport({
+               MethodChannel methodChannel = const MethodChannel(
+                 'io.github.william12233.wynime/media3',
+               ),
+               EventChannel eventChannel = const EventChannel(
+                 'io.github.william12233.wynime/media3/events',
+               ),
+          -  }) : _methodChannel = methodChannel,
+          -       _eventChannel = eventChannel;
+          +  }) => MethodChannelMedia3Transport._(methodChannel, eventChannel);
+          +
+          +  MethodChannelMedia3Transport._(this._methodChannel, this._eventChannel);
+           
+             final MethodChannel _methodChannel;
+             final EventChannel _eventChannel;
+          @@ -40,11 +41,15 @@ final class MethodChannelMedia3Transport implements Media3PlatformTransport {
+           }
+           
+           final class Media3PlayerBackend implements PlayerBackend {
+          -  Media3PlayerBackend({
+          +  factory Media3PlayerBackend({
+               Media3PlatformTransport? transport,
+               PlaybackErrorClassifier classifier = const PlaybackErrorClassifier(),
+          -  }) : _transport = transport ?? MethodChannelMedia3Transport(),
+          -       _classifier = classifier {
+          +  }) => Media3PlayerBackend._(
+          +    transport ?? MethodChannelMedia3Transport(),
+          +    classifier,
+          +  );
+          +
+          +  Media3PlayerBackend._(this._transport, this._classifier) {
+               _events = _transport.events.map(_mapEvent).asBroadcastStream();
+             }
+           
+          PATCH
+
+          git apply --check /tmp/phase4-lint.patch
+          git apply /tmp/phase4-lint.patch
           rm -f .github/workflows/phase4-source-snapshot.yml
 
       - name: Resolve dependencies
@@ -109,7 +263,7 @@ jobs:
         run: dart format .
 
       - name: Generate Drift mappings
-        run: dart run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build
 
       - name: Analyze
         run: flutter analyze --fatal-infos

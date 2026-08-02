@@ -1,0 +1,14 @@
+#EXTM3U
+#EXT-X-VERSION:7
+#EXT-X-TARGETDURATION:10
+#EXT-X-MEDIA-SEQUENCE:1
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-PROGRAM-DATE-TIME:2026-01-01T00:00:00Z
+#EXTINF:10.0,content-a
+segments/content-1.ts
+#EXTINF:10.0,interstitial
+segments/interstitial-2.ts
+#EXTINF:10.0,content-b
+segments/content-3.ts
+#EXT-X-DATERANGE:ID="ad-1",CLASS="com.wynime.interstitial",START-DATE="2026-01-01T00:00:10Z",DURATION=10
+#EXT-X-ENDLIST

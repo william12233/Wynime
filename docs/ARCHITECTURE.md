@@ -34,7 +34,7 @@ Platform ───────────────────→ Domain
 
 Domain must not import upper or outer layers. Architecture tests reject Flutter, Drift, HTML parser, WebView plugins, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
 
-## Package layout through Phase 4
+## Package layout through Phase 5
 
 ```text
 lib/
@@ -199,7 +199,7 @@ A selected `WebMediaCandidate` is converted once into a `PlaybackSession`. The r
 
 `LoopbackPlaybackProxyService` binds only `127.0.0.1` or `::1` on an ephemeral port. Each lease creates an unguessable capability token and opaque resource IDs. The native player receives only the loopback URI; upstream media URLs, query tokens, cookies and authorization values remain inside the proxy session.
 
-Every initial URI, redirect and HLS child URI must pass the same source allowlist. The production upstream client also performs a public-address DNS preflight to reject loopback, link-local, private, carrier-grade NAT, documentation and multicast ranges. The proxy is therefore not a general URL forwarder.
+Every initial URI, redirect and HLS child URI must pass the same source allowlist. The production upstream client performs explicit IPv4 and IPv6 public-address DNS preflight, repeats validation inside the `HttpClient.connectionFactory`, and opens the socket directly to that validated numeric address. HTTPS then upgrades the connected socket with the original hostname for TLS validation. This rejects loopback, link-local, private, carrier-grade NAT, documentation, multicast, IPv4-embedded private and standard NAT64-private ranges without leaving a second hostname lookup between validation and connection. The proxy is therefore not a general URL forwarder.
 
 ### Forwarding and resource budgets
 
@@ -220,6 +220,32 @@ Android pins Media3 ExoPlayer and the HLS module to `1.10.1`. Flutter communicat
 The Android manifest requests network access but keeps cleartext traffic disabled globally. A Network Security Config permits cleartext only for numeric loopback `127.0.0.1` and `::1`, matching the proxy listener and native URI validation instead of allowing arbitrary external HTTP.
 
 Windows remains buildable through an explicit unsupported Phase 4 backend. Windows mpv begins only in Phase 6.
+
+## Phase 5 HLS sanitization architecture
+
+### Strict typed parser
+
+Phase 5 parses HLS text into immutable master or media models before any ad decision. Character, line, URI, attribute, rendition, date-range, variant and segment budgets are enforced before unbounded accumulation. Duplicate singleton tags, mixed master／media semantics, unsafe URI forms, malformed byte ranges, ambiguous segment-scoped tags and content after `EXT-X-ENDLIST` fail closed.
+
+The sanitizer boundary deliberately excludes live／event playlists, low-latency HLS, delta updates, I-frame-only media, `END-ON-NEXT` date ranges and other semantics that cannot yet be rewritten deterministically. Encryption parsing accepts only identity `AES-128`; SAMPLE-AES and non-identity key formats remain outside scope and are not interpreted as authorization to bypass DRM.
+
+### Canonical fingerprint
+
+`HlsManifestFingerprinter` hashes a canonical structural representation with SHA-256. It retains playlist kind, sequence numbers, durations, discontinuities, byte ranges, effective key／map context, date ranges, program dates, variants and resource structure. Volatile token, signature, credential and expiry query values are replaced by bounded placeholders before hashing, so ordinary URL renewal does not invalidate an otherwise identical manifest while structural changes do.
+
+The fingerprint contains no recoverable manifest or credential data. Every active `AdRemovalPlan` must match the current fingerprint before the proxy exposes transformed bytes.
+
+### Evidence and planning policy
+
+The authoritative planner distinguishes explicit CUE evidence from bounded ad `EXT-X-DATERANGE` evidence. Safe mode removes only segments covered by those explicit signals. Smart and aggressive modes may additionally use authority changes, suspicious path signatures, short interior discontinuity groups and duration outliers, but require at least two independent evidence kinds.
+
+Heuristics never target the first or last discontinuity group and cannot exceed the configured share of the original duration. A discontinuity by itself is never evidence. Any result that would remove the complete playlist fails closed.
+
+### Sanitizer and timeline map
+
+`HlsManifestSanitizer` consumes the parsed media playlist, exact fingerprint and authoritative plan. Every removal is re-bound to media sequence, segment index, original start and duration before output. The sanitizer preserves the effective `EXT-X-KEY`, `EXT-X-MAP`, byte range, gap and program-date-time context of retained segments; recalculates target duration, media sequence and discontinuity sequence; and emits a complete VOD playlist.
+
+`AdTimelineMap` covers the original duration exactly once with kept and removed intervals. Playback progress can therefore map monotonically in both directions across removed gaps. The proxy applies sanitization before Phase 4 opaque loopback URI rewriting, so players still receive only capability-scoped loopback resources.
 
 ## Platform strategy
 

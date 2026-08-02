@@ -20,7 +20,7 @@ env:
 jobs:
   generate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 25
     steps:
       - name: Checkout Phase 1 branch
         uses: actions/checkout@v6
@@ -35,16 +35,10 @@ jobs:
           cache: true
       - name: Resolve dependencies
         run: flutter pub get
-      - name: Generate Drift code
+      - name: Generate Drift and plugin artifacts
         run: dart run build_runner build
       - name: Format generated and source files
         run: dart format .
-      - name: Analyze
-        run: flutter analyze --fatal-infos
-      - name: Run complete tests
-        run: flutter test
-      - name: Build Android debug APK
-        run: flutter build apk --debug
       - name: Commit generated artifacts
         shell: bash
         run: |

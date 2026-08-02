@@ -1,1 +1,1 @@
-Retry generation after Phase 1 source and compatibility fixes.
+Generate and commit Phase 1 artifacts; permanent CI performs validation.

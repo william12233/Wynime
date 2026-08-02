@@ -35,7 +35,7 @@ jobs:
       - name: Verify generated Drift code
         run: |
           dart run build_runner build
-          git diff --exit-code
+          test -z "$(git status --porcelain)"
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
       - name: Analyze

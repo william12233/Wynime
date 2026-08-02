@@ -1,15 +1,14 @@
 name: Phase 6 source snapshot
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [phase-6/staging]
 
 permissions:
   contents: read
 
 jobs:
   snapshot:
-    if: github.head_ref == 'phase-6/staging'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main

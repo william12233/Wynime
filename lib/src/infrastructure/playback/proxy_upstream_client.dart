@@ -116,7 +116,7 @@ final class DartIoProxyUpstreamClient implements ProxyUpstreamClient {
     _client
       ..autoUncompress = false
       ..maxConnectionsPerHost = 8
-      ..findProxy = (_) => 'DIRECT'
+      ..findProxy = ((_) => 'DIRECT')
       ..connectionFactory = _createPinnedConnection;
   }
 
@@ -315,6 +315,10 @@ bool _isNonPublicAddress(InternetAddress address) {
       bytes[1] == 0x64 &&
       bytes[2] == 0xff &&
       bytes[3] == 0x9b &&
+      bytes[4] == 0x00 &&
+      bytes[5] == 0x01;
+  final isDiscardOnly =
+      bytes[0] == 0x01 &&
       bytes[4] == 0x00 &&
       bytes[5] == 0x01;
   final isDiscardOnly =

@@ -9,7 +9,7 @@ Flutter widgets, responsive shells, navigation, localization, player controls, s
 Use cases and coordinators. This layer owns source selection, playback session lifecycle, failover decisions, download orchestration, Bangumi sync orchestration and settings policy.
 
 ### Domain
-Pure models and interfaces. No Flutter widgets, WebView, Media3, mpv, FFmpeg, HTTP client, Drift or database implementation details.
+Pure models and interfaces. No Flutter widgets, WebView, Media3, mpv, FFmpeg, HTTP client, Drift, HTML parser or database implementation details.
 
 ### Infrastructure
 Database, network clients, source engines, HLS processing, download implementation, Bangumi client and platform bridges.
@@ -32,9 +32,9 @@ Infrastructure ─────────────→ Domain
 Platform ───────────────────→ Domain
 ```
 
-Domain must not import upper or outer layers. Architecture tests reject Flutter, Drift, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
+Domain must not import upper or outer layers. Architecture tests reject Flutter, Drift, HTML parser, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
 
-## Package layout through Phase 1
+## Package layout through Phase 2
 
 ```text
 lib/
@@ -50,7 +50,8 @@ lib/
    │  └─ services/
    └─ infrastructure/
       ├─ database/
-      └─ repositories/
+      ├─ repositories/
+      └─ source_rules/
 ```
 
 - `app` owns application bootstrap and navigation destination definitions.
@@ -59,6 +60,7 @@ lib/
 - `domain` contains pure Dart models and typed interfaces only.
 - `infrastructure/database` owns the Drift schema and generated database mapping.
 - `infrastructure/repositories` implements Domain repository interfaces without exposing Drift records outside Infrastructure.
+- `infrastructure/source_rules` owns strict package decoding and fixture-only declarative rule evaluation.
 - Generated Android and Windows runners remain platform bootstrap shells until later phases add typed platform adapters.
 
 ## Phase 1 persistence architecture
@@ -107,6 +109,38 @@ pending → running → completed
 ### Persistence privacy boundary
 
 Phase 1 stores settings, source/line/episode identities, resume positions, registered local artifact URIs and deletion state. It does not store complete media URLs, cookies, authentication tokens or source-package executable code.
+
+## Phase 2 source-rule architecture
+
+### Source Package schema version 1
+
+A package declares identity, semantic version, compatible Wynime version range, security policy, bounded declarative programs and optional Ed25519-shaped signature metadata. Unknown JSON keys and unsupported selector types fail closed.
+
+Signature metadata is not cryptographic verification and never raises runtime authority. Signed and unsigned packages use identical allowlist, permission, consent and budget checks.
+
+### URI and consent policy
+
+- URI schemes are limited to HTTPS and explicitly consented HTTP.
+- Schema version 1 permits only standard ports 443 and 80.
+- User-info URIs, localhost, `.localhost`, `.local`, IPv4 literals and deceptive suffix hosts are rejected.
+- Host matching uses exact equality or a dot-boundary subdomain rule.
+- Adding a permission or domain, enabling subdomains or broadening any resource budget requires fresh consent.
+- A package contains at most 32 domain rules and 32 programs; each program contains at most 64 fields.
+
+### Declarative dialects
+
+- HTML fixtures: bounded CSS subset using tag, id and class simple selectors with descendant or child combinators.
+- JSON fixtures: `$`, property segments, non-negative array indexes and `[*]` only.
+- Regex captures: short input and pattern budgets with no lookaround, backreference, alternation, braced quantifier, quantified wildcard, nested group or quantified group.
+- XPath and executable Dart, JavaScript, WASM or native adapters are explicitly rejected in schema version 1.
+
+### Evaluation budgets
+
+Before and during evaluation, the engine enforces document bytes, redirect count, result count, selector matches, evaluation steps, regex pattern length and regex input length. Security exceptions retain their classification and are not converted into parser failures.
+
+### Fixture-only boundary
+
+Phase 2 accepts a supplied `SourceFixture` containing the intended URI, redirect chain and HTML or JSON body. The source-rule implementation imports no HTTP client, WebView, `dart:io`, `dart:ffi` or executable-code API. Real network and browser capture begin only in Phase 3 behind typed interfaces.
 
 ## Platform strategy
 

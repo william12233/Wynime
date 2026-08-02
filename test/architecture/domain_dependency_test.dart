@@ -15,6 +15,7 @@ void main() {
         'package:flutter/',
         'package:flutter_localizations/',
         'package:drift/',
+        'package:html/',
         'dart:io',
         'dart:ffi',
       ];

@@ -29,22 +29,25 @@ Before changing code, read in this order:
 - Architecture changes require updating `docs/DECISIONS.md`.
 - Public interfaces require tests before implementation dependencies are added.
 - Platform-specific code must stay behind typed interfaces.
-- Domain must remain pure Dart and must not import Flutter, Drift, `dart:io`, or `dart:ffi`.
+- Domain must remain pure Dart and must not import Flutter, Drift, HTML parsers, `dart:io`, or `dart:ffi`.
 
-## Phase 1 scope
+## Phase 2 scope
 
 Allowed:
-- Drift and SQLite schema version 1
-- Typed settings persistence
-- Watch history and resume-position persistence
-- Atomic `DownloadArtifactManifest` and artifact inventory persistence
-- Persistent `DeleteJob` state machine and interrupted-job recovery
-- In-memory persistence tests and Android/Windows build gates
+- Source Package schema version 1 and strict JSON decoding
+- Package version and Wynime compatibility validation
+- Domain allowlists, declared permissions, resource budgets and re-consent decisions
+- Optional signature metadata that never increases runtime authority
+- CSS selector evaluation over supplied HTML fixtures
+- Restricted JSONPath evaluation over supplied JSON fixtures
+- Restricted regular-expression capture over bounded strings
+- Fixture-only security, budget and regression tests
 
 Not allowed yet:
-- Live website scraping or source execution
-- Real media playback or player dependencies
-- Real downloads or physical file deletion
-- FFmpeg or mpv binaries
-- Bangumi production authentication
-- Phase 2 source-rule engine work
+- Live HTTP, XHR or fetch
+- Android WebView or Windows WebView2
+- Cookie jars, login sessions or media-request interception
+- Site-specific executable adapters
+- Arbitrary Dart, JavaScript, WASM or native code execution
+- Real playback, downloads, FFmpeg, mpv or Bangumi authentication
+- Phase 3 WebView integration work

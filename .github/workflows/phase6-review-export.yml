@@ -1,0 +1,28 @@
+name: Phase 6 Review Source Export
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.head_ref == 'phase-6/media-kit-routing'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reviewed branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-6/media-kit-routing
+
+      - name: Upload exact reviewed source
+        uses: actions/upload-artifact@v4
+        with:
+          name: wynime-phase6-reviewed-source
+          path: .
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1

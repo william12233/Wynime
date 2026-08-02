@@ -8,6 +8,8 @@
 
 #include "win32_window.h"
 
+class MpvWindowsBridge;
+
 // A window that does nothing but host a Flutter view.
 class FlutterWindow : public Win32Window {
  public:
@@ -19,7 +21,9 @@ class FlutterWindow : public Win32Window {
   // Win32Window:
   bool OnCreate() override;
   void OnDestroy() override;
-  LRESULT MessageHandler(HWND window, UINT const message, WPARAM const wparam,
+  LRESULT MessageHandler(HWND window,
+                         UINT const message,
+                         WPARAM const wparam,
                          LPARAM const lparam) noexcept override;
 
  private:
@@ -28,6 +32,9 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+
+  // Wynime-owned Windows libmpv capability and command bridge.
+  std::unique_ptr<MpvWindowsBridge> mpv_bridge_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

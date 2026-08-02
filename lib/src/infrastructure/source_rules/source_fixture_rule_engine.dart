@@ -148,7 +148,8 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
 
     final String? extracted = switch (field.valueKind) {
       SourceValueKind.text => _normalizeWhitespace(target.text),
-      SourceValueKind.attribute => target.attributes[field.attributeName!]?.trim(),
+      SourceValueKind.attribute =>
+        target.attributes[field.attributeName!]?.trim(),
       SourceValueKind.raw => target.outerHtml.trim(),
     };
     return _applyRegex(extracted, field.regexCapture, meter);

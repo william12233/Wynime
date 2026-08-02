@@ -31,12 +31,7 @@ SourceSecurityPolicy testSourcePolicy({
   return SourceSecurityPolicy(
     allowedDomains:
         domains ??
-        [
-          SourceDomainRule(
-            host: 'example.com',
-            includeSubdomains: true,
-          ),
-        ],
+        [SourceDomainRule(host: 'example.com', includeSubdomains: true)],
     permissions: permissions ?? {SourcePermission.network},
     budget: budget ?? testSourceBudget(),
   );

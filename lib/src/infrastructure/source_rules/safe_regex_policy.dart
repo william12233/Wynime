@@ -130,7 +130,8 @@ final class SafeRegexPolicy {
       }
       if (char == '*' || char == '+') {
         unboundedQuantifiers++;
-        if (unboundedQuantifiers > 4 || !_hasSafeQuantifiedAtom(pattern, index)) {
+        if (unboundedQuantifiers > 4 ||
+            !_hasSafeQuantifiedAtom(pattern, index)) {
           throw SourceRuleSecurityException(
             'regex_unbounded_quantifier_disallowed',
             'Unbounded quantifiers are limited to character classes and escaped character classes.',
@@ -165,9 +166,11 @@ final class SafeRegexPolicy {
       return false;
     }
     var slashCount = 0;
-    for (var index = quantifierIndex - 2;
-        index >= 0 && pattern[index] == r'\';
-        index--) {
+    for (
+      var index = quantifierIndex - 2;
+      index >= 0 && pattern[index] == r'\';
+      index--
+    ) {
       slashCount++;
     }
     return slashCount.isOdd;

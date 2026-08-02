@@ -64,10 +64,7 @@ void main() {
     final version = Version.parse('1.0.0');
     final constraint = VersionConstraint.parse('^1.0.0');
     final policy = testSourcePolicy(
-      budget: testSourceBudget(
-        maxRecords: 2,
-        maxRegexPatternChars: 4,
-      ),
+      budget: testSourceBudget(maxRecords: 2, maxRegexPatternChars: 4),
     );
 
     expect(
@@ -90,9 +87,7 @@ void main() {
         version: version,
         wynimeVersionConstraint: constraint,
         securityPolicy: policy,
-        programs: [
-          program(capture: SourceRegexCapture(pattern: r'^(\d+)$')),
-        ],
+        programs: [program(capture: SourceRegexCapture(pattern: r'^(\d+)$'))],
       ),
       throwsArgumentError,
     );

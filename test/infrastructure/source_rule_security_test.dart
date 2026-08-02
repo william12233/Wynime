@@ -100,9 +100,7 @@ void main() {
 
     final matchPackage = testSourcePackage(
       program: program,
-      policy: testSourcePolicy(
-        budget: testSourceBudget(maxSelectorMatches: 1),
-      ),
+      policy: testSourcePolicy(budget: testSourceBudget(maxSelectorMatches: 1)),
     );
     expect(
       () => engine.evaluate(

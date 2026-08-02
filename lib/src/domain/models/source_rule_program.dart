@@ -93,7 +93,9 @@ final class SourceRuleProgram {
     required Iterable<SourceFieldRule> fields,
     required this.resultLimit,
   }) : programId = programId.trim(),
-       fields = UnmodifiableListView(List<SourceFieldRule>.unmodifiable(fields)) {
+       fields = UnmodifiableListView(
+         List<SourceFieldRule>.unmodifiable(fields),
+       ) {
     if (this.programId.isEmpty ||
         !RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(this.programId)) {
       throw ArgumentError.value(
@@ -160,7 +162,9 @@ final class SourceFixture {
     required this.initialUri,
     Iterable<Uri> redirectChain = const [],
     required this.body,
-  }) : redirectChain = UnmodifiableListView(List<Uri>.unmodifiable(redirectChain));
+  }) : redirectChain = UnmodifiableListView(
+         List<Uri>.unmodifiable(redirectChain),
+       );
 
   final Uri initialUri;
   final UnmodifiableListView<Uri> redirectChain;
@@ -194,7 +198,9 @@ final class SourceEvaluationResult {
     required Iterable<SourceEvaluationDiagnostic> diagnostics,
     required this.consumedSteps,
     required this.selectorMatches,
-  }) : records = UnmodifiableListView(List<SourceEvaluationRecord>.unmodifiable(records)),
+  }) : records = UnmodifiableListView(
+         List<SourceEvaluationRecord>.unmodifiable(records),
+       ),
        diagnostics = UnmodifiableListView(
          List<SourceEvaluationDiagnostic>.unmodifiable(diagnostics),
        );

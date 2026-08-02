@@ -130,7 +130,9 @@ final class SourceDomainRule {
     if (values.isEmpty) {
       throw ArgumentError.value(values, 'schemes', 'Must not be empty.');
     }
-    final normalized = values.map((value) => value.trim().toLowerCase()).toSet();
+    final normalized = values
+        .map((value) => value.trim().toLowerCase())
+        .toSet();
     const supported = {'https', 'http'};
     if (!supported.containsAll(normalized)) {
       throw ArgumentError.value(

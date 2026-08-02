@@ -14,7 +14,10 @@ final class SourcePackageDecoder {
     try {
       decoded = jsonDecode(source);
     } on FormatException catch (error) {
-      throw SourcePackageFormatException(r'$', 'Invalid JSON: ${error.message}');
+      throw SourcePackageFormatException(
+        r'$',
+        'Invalid JSON: ${error.message}',
+      );
     }
 
     final root = _asMap(decoded, r'$');
@@ -29,7 +32,10 @@ final class SourcePackageDecoder {
       'signature',
     });
 
-    final version = _parseVersion(_requiredString(root, 'version', r'$'), r'$.version');
+    final version = _parseVersion(
+      _requiredString(root, 'version', r'$'),
+      r'$.version',
+    );
     final constraint = _parseConstraint(
       _requiredString(root, 'wynimeVersion', r'$'),
       r'$.wynimeVersion',
@@ -57,7 +63,10 @@ final class SourcePackageDecoder {
         signatureMetadata: signature,
       );
     } on ArgumentError catch (error) {
-      throw SourcePackageFormatException(r'$', error.message?.toString() ?? '$error');
+      throw SourcePackageFormatException(
+        r'$',
+        error.message?.toString() ?? '$error',
+      );
     }
   }
 
@@ -66,61 +75,65 @@ final class SourcePackageDecoder {
     final map = _asMap(value, path);
     _expectKeys(map, path, {'domains', 'permissions', 'budget'});
 
-    final permissions = _asList(
-      _required(map, 'permissions', path),
-      '$path.permissions',
-    ).indexed.map((entry) {
-      final permissionName = _asString(
-        entry.$2,
-        '$path.permissions[${entry.$1}]',
-      );
-      try {
-        return SourcePermission.values.byName(permissionName);
-      } on ArgumentError {
-        throw SourcePackageFormatException(
-          '$path.permissions[${entry.$1}]',
-          'Unsupported permission: $permissionName',
-        );
-      }
-    }).toSet();
+    final permissions =
+        _asList(
+          _required(map, 'permissions', path),
+          '$path.permissions',
+        ).indexed.map((entry) {
+          final permissionName = _asString(
+            entry.$2,
+            '$path.permissions[${entry.$1}]',
+          );
+          try {
+            return SourcePermission.values.byName(permissionName);
+          } on ArgumentError {
+            throw SourcePackageFormatException(
+              '$path.permissions[${entry.$1}]',
+              'Unsupported permission: $permissionName',
+            );
+          }
+        }).toSet();
 
-    final domains = _asList(
-      _required(map, 'domains', path),
-      '$path.domains',
-    ).indexed.map((entry) {
-      final domainPath = '$path.domains[${entry.$1}]';
-      final domain = _asMap(entry.$2, domainPath);
-      _expectKeys(domain, domainPath, {
-        'host',
-        'includeSubdomains',
-        'schemes',
-      });
-      final schemes = _asList(
-        _required(domain, 'schemes', domainPath),
-        '$domainPath.schemes',
-      ).indexed.map(
-        (scheme) => _asString(
-          scheme.$2,
-          '$domainPath.schemes[${scheme.$1}]',
-        ),
-      ).toSet();
-      try {
-        return SourceDomainRule(
-          host: _requiredString(domain, 'host', domainPath),
-          includeSubdomains: _requiredBool(
-            domain,
+    final domains = _asList(_required(map, 'domains', path), '$path.domains')
+        .indexed
+        .map((entry) {
+          final domainPath = '$path.domains[${entry.$1}]';
+          final domain = _asMap(entry.$2, domainPath);
+          _expectKeys(domain, domainPath, {
+            'host',
             'includeSubdomains',
-            domainPath,
-          ),
-          schemes: schemes,
-        );
-      } on ArgumentError catch (error) {
-        throw SourcePackageFormatException(
-          domainPath,
-          error.message?.toString() ?? '$error',
-        );
-      }
-    }).toList(growable: false);
+            'schemes',
+          });
+          final schemes =
+              _asList(
+                    _required(domain, 'schemes', domainPath),
+                    '$domainPath.schemes',
+                  ).indexed
+                  .map(
+                    (scheme) => _asString(
+                      scheme.$2,
+                      '$domainPath.schemes[${scheme.$1}]',
+                    ),
+                  )
+                  .toSet();
+          try {
+            return SourceDomainRule(
+              host: _requiredString(domain, 'host', domainPath),
+              includeSubdomains: _requiredBool(
+                domain,
+                'includeSubdomains',
+                domainPath,
+              ),
+              schemes: schemes,
+            );
+          } on ArgumentError catch (error) {
+            throw SourcePackageFormatException(
+              domainPath,
+              error.message?.toString() ?? '$error',
+            );
+          }
+        })
+        .toList(growable: false);
 
     final budgetPath = '$path.budget';
     final budgetMap = _asMap(_required(map, 'budget', path), budgetPath);
@@ -165,11 +178,7 @@ final class SourcePackageDecoder {
             'maxRegexInputChars',
             budgetPath,
           ),
-          maxRedirects: _requiredInt(
-            budgetMap,
-            'maxRedirects',
-            budgetPath,
-          ),
+          maxRedirects: _requiredInt(budgetMap, 'maxRedirects', budgetPath),
         ),
       );
     } on ArgumentError catch (error) {
@@ -199,17 +208,17 @@ final class SourcePackageDecoder {
         'Unsupported document kind: $documentKindName',
       );
     }
-    final fields = _asList(
-      _required(map, 'fields', path),
-      '$path.fields',
-    ).indexed.map(
-      (entry) => _decodeField(entry.$2, '$path.fields[${entry.$1}]'),
-    );
+    final fields = _asList(_required(map, 'fields', path), '$path.fields')
+        .indexed
+        .map((entry) => _decodeField(entry.$2, '$path.fields[${entry.$1}]'));
     try {
       return SourceRuleProgram(
         programId: _requiredString(map, 'id', path),
         documentKind: documentKind,
-        rootSelector: _decodeSelector(_required(map, 'root', path), '$path.root'),
+        rootSelector: _decodeSelector(
+          _required(map, 'root', path),
+          '$path.root',
+        ),
         fields: fields,
         resultLimit: _requiredInt(map, 'resultLimit', path),
       );
@@ -333,7 +342,9 @@ final class SourcePackageDecoder {
     final signature = _requiredString(map, 'signatureBase64', path);
     try {
       if (base64Decode(signature).length != 64) {
-        throw const FormatException('Ed25519 signatures must contain 64 bytes.');
+        throw const FormatException(
+          'Ed25519 signatures must contain 64 bytes.',
+        );
       }
     } on FormatException catch (error) {
       throw SourcePackageFormatException(
@@ -374,7 +385,10 @@ final class SourcePackageDecoder {
 
   static Object? _required(Map<String, Object?> map, String key, String path) {
     if (!map.containsKey(key) || map[key] == null) {
-      throw SourcePackageFormatException('$path.$key', 'Required value is missing.');
+      throw SourcePackageFormatException(
+        '$path.$key',
+        'Required value is missing.',
+      );
     }
     return map[key];
   }
@@ -415,7 +429,10 @@ final class SourcePackageDecoder {
     final result = <String, Object?>{};
     for (final entry in value.entries) {
       if (entry.key is! String) {
-        throw SourcePackageFormatException(path, 'Object keys must be strings.');
+        throw SourcePackageFormatException(
+          path,
+          'Object keys must be strings.',
+        );
       }
       result[entry.key as String] = entry.value;
     }

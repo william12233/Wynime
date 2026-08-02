@@ -42,7 +42,9 @@ final class SourcePackageSignatureMetadata {
     final signature = _requireNonEmpty(value, 'signatureBase64', 4096);
     try {
       if (base64Decode(signature).length != 64) {
-        throw const FormatException('Ed25519 signatures must contain 64 bytes.');
+        throw const FormatException(
+          'Ed25519 signatures must contain 64 bytes.',
+        );
       }
     } on FormatException catch (error) {
       throw ArgumentError.value(
@@ -126,7 +128,8 @@ final class SourcePackageManifest {
       for (final field in program.fields) {
         final capture = field.regexCapture;
         if (capture != null &&
-            capture.pattern.length > securityPolicy.budget.maxRegexPatternChars) {
+            capture.pattern.length >
+                securityPolicy.budget.maxRegexPatternChars) {
           throw ArgumentError.value(
             capture.pattern.length,
             'programs',

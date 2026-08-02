@@ -46,9 +46,7 @@ void main() {
           ),
           valueKind: SourceValueKind.text,
           required: true,
-          regexCapture: SourceRegexCapture(
-            pattern: r'^Episode (\d+)$',
-          ),
+          regexCapture: SourceRegexCapture(pattern: r'^Episode (\d+)$'),
         ),
       ],
     );
@@ -152,7 +150,8 @@ void main() {
       program: program,
       fixture: SourceFixture(
         initialUri: Uri.parse('https://example.com'),
-        body: '<div class="item"><span class="title">A</span></div>'
+        body:
+            '<div class="item"><span class="title">A</span></div>'
             '<div class="item"></div>',
       ),
     );

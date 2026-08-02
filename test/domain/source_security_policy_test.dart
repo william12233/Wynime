@@ -7,9 +7,15 @@ void main() {
   test('subdomain allowlist uses a dot boundary', () {
     final policy = testSourcePolicy();
 
-    expect(policy.allowsUri(Uri.parse('https://api.example.com/search')), isTrue);
+    expect(
+      policy.allowsUri(Uri.parse('https://api.example.com/search')),
+      isTrue,
+    );
     expect(policy.allowsUri(Uri.parse('https://example.com/search')), isTrue);
-    expect(policy.allowsUri(Uri.parse('https://evil-example.com/search')), isFalse);
+    expect(
+      policy.allowsUri(Uri.parse('https://evil-example.com/search')),
+      isFalse,
+    );
     expect(
       policy.allowsUri(Uri.parse('https://user@example.com/search')),
       isFalse,
@@ -20,7 +26,10 @@ void main() {
     final policy = testSourcePolicy();
 
     expect(policy.allowsUri(Uri.parse('https://example.com:443/path')), isTrue);
-    expect(policy.allowsUri(Uri.parse('https://example.com:8443/path')), isFalse);
+    expect(
+      policy.allowsUri(Uri.parse('https://example.com:8443/path')),
+      isFalse,
+    );
   });
 
   test('network permission is mandatory even for an allowed domain', () {
@@ -32,17 +41,18 @@ void main() {
   test('http rules require the explicit insecureHttp permission', () {
     expect(
       () => testSourcePolicy(
-        domains: [SourceDomainRule(host: 'example.com', schemes: {'http'})],
+        domains: [
+          SourceDomainRule(host: 'example.com', schemes: {'http'}),
+        ],
       ),
       throwsArgumentError,
     );
 
     final policy = testSourcePolicy(
-      domains: [SourceDomainRule(host: 'example.com', schemes: {'http'})],
-      permissions: {
-        SourcePermission.network,
-        SourcePermission.insecureHttp,
-      },
+      domains: [
+        SourceDomainRule(host: 'example.com', schemes: {'http'}),
+      ],
+      permissions: {SourcePermission.network, SourcePermission.insecureHttp},
     );
     expect(policy.allowsUri(Uri.parse('http://example.com')), isTrue);
     expect(policy.allowsUri(Uri.parse('http://example.com:80')), isTrue);

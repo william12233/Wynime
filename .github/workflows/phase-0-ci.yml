@@ -17,6 +17,68 @@ env:
   FLUTTER_VERSION: 3.44.8
 
 jobs:
+  harden-phase-2-decoder:
+    name: Add source package size fail-fast
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'phase-2/source-rules'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Phase 2 branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-2/source-rules
+          fetch-depth: 0
+      - name: Patch decoder when requested
+        shell: bash
+        run: |
+          if [[ ! -f .phase2-decoder-limit-request ]]; then
+            exit 0
+          fi
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/infrastructure/source_rules/source_package_decoder.dart')
+          text = path.read_text(encoding='utf-8')
+          old = """final class SourcePackageDecoder {
+            const SourcePackageDecoder();
+
+            SourcePackageManifest decode(String source) {
+              final Object? decoded;
+          """
+          new = """final class SourcePackageDecoder {
+            const SourcePackageDecoder();
+
+            static const maxPackageBytes = 256 * 1024;
+
+            SourcePackageManifest decode(String source) {
+              final sourceBytes = utf8.encode(source).length;
+              if (sourceBytes > maxPackageBytes) {
+                throw SourcePackageFormatException(
+                  r'$',
+                  'Source package exceeds the $maxPackageBytes-byte limit.',
+                );
+              }
+
+              final Object? decoded;
+          """
+          if text.count(old) != 1:
+              raise SystemExit('Decoder insertion point did not match exactly once.')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+          rm -f .phase2-decoder-limit-request
+      - name: Format and commit decoder hardening
+        shell: bash
+        run: |
+          dart format lib/src/infrastructure/source_rules/source_package_decoder.dart
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: bound Phase 2 source package decoding"
+          git pull --rebase origin phase-2/source-rules
+          git push origin HEAD:phase-2/source-rules
+
   static-analysis:
     name: Generated code, format, analyze, and document generator
     runs-on: ubuntu-24.04

@@ -23,7 +23,7 @@ Media3 `1.10.1` is the newest stable release verified compatible with the locked
 - IPv4／IPv6 numeric-loopback-only HTTP proxy
 - Per-session unguessable capability path and opaque resource registry
 - Source allowlist reuse for the initial resource, redirects and all HLS child resources
-- Public-address DNS preflight in the production upstream client
+- Public-address DNS preflight plus socket pinning to the validated address in the production upstream client
 - Independent request-header, cookie, redirect, playlist, response and registered-resource budgets
 - GET, HEAD and one-range forwarding
 - HLS media-line and `URI=` attribute rewriting

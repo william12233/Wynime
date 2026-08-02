@@ -17,6 +17,56 @@ env:
   FLUTTER_VERSION: 3.44.8
 
 jobs:
+  generate-phase-1-schema:
+    name: Generate corrected Phase 1 schema mapping
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'phase-1/persistence'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Phase 1 branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-1/persistence
+          fetch-depth: 0
+      - name: Check generation request
+        id: request
+        shell: bash
+        run: |
+          if [[ -f .phase1-schema-generation-request ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Flutter
+        if: steps.request.outputs.required == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        if: steps.request.outputs.required == 'true'
+        run: flutter pub get
+      - name: Generate Drift mapping
+        if: steps.request.outputs.required == 'true'
+        run: dart run build_runner build
+      - name: Commit generated database mapping
+        if: steps.request.outputs.required == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/infrastructure/database/wynime_database.g.dart
+          if git diff --cached --quiet; then
+            echo "Generated mapping is already current."
+            exit 0
+          fi
+          git commit -m "build: regenerate Phase 1 Drift schema"
+          git pull --rebase origin phase-1/persistence
+          git push origin HEAD:phase-1/persistence
+
   static-analysis:
     name: Generated code, format, analyze, and document generator
     runs-on: ubuntu-24.04

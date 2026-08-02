@@ -47,6 +47,38 @@ void main() {
     },
   );
 
+  test('artifact IDs are scoped to their owning manifest', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final repository = DriftArtifactManifestRepository(database);
+
+    await repository.create(
+      manifest(
+        manifestId: 'manifest-1',
+        downloadId: 'download-1',
+        artifactId: 'video',
+        path: '/downloads/episode-1.mp4',
+      ),
+    );
+    await repository.create(
+      manifest(
+        manifestId: 'manifest-2',
+        downloadId: 'download-2',
+        artifactId: 'video',
+        path: '/downloads/episode-2.mp4',
+      ),
+    );
+
+    expect(
+      (await repository.findById('manifest-1'))!.artifacts.single.artifactId,
+      'video',
+    );
+    expect(
+      (await repository.findById('manifest-2'))!.artifacts.single.artifactId,
+      'video',
+    );
+  });
+
   test(
     'artifact conflict rolls back the whole new manifest transaction',
     () async {

@@ -1,0 +1,52 @@
+name: Generate Phase 1 schema artifact
+
+on:
+  push:
+    branches:
+      - phase-1/persistence
+    paths:
+      - .phase1-schema-generation-request
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wynime-phase-1-schema-generation
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.44.8
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Phase 1 branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-1/persistence
+          fetch-depth: 0
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Generate Drift mapping
+        run: dart run build_runner build
+      - name: Commit generated database mapping
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/src/infrastructure/database/wynime_database.g.dart
+          if git diff --cached --quiet; then
+            echo "Generated mapping is already current."
+            exit 0
+          fi
+          git commit -m "build: regenerate Phase 1 Drift schema"
+          git pull --rebase origin phase-1/persistence
+          git push origin HEAD:phase-1/persistence

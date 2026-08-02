@@ -61,7 +61,7 @@ class ArtifactRows extends Table {
   TextColumn get fileUri => text().unique()();
 
   @override
-  Set<Column<Object>> get primaryKey => {artifactId};
+  Set<Column<Object>> get primaryKey => {manifestId, artifactId};
 }
 
 @DataClassName('DeleteJobRecord')

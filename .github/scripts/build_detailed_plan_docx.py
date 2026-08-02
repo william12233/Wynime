@@ -84,7 +84,7 @@ def add_table(document: Document, lines: list[str]) -> None:
                         run.bold = True
             if row_index == 0:
                 set_shading(cell._tc, "DCEAF2")
-        row._tr.get_or_add_trPr().append(OxmlElement("w:cantSplit"))
+        table.rows[row_index]._tr.get_or_add_trPr().append(OxmlElement("w:cantSplit"))
     set_repeat_header(table.rows[0])
     document.add_paragraph()
 

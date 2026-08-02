@@ -77,3 +77,10 @@
 **Status:** Accepted  
 **Decision:** Signature metadata may identify an author, but signed and unsigned packages are subject to identical domain allowlists, permissions, user-consent rules and resource budgets.  
 **Reason:** Identity and runtime authority are separate security properties; trusting an author must not bypass sandbox controls.
+
+## ADR-014 — One typed WebView plugin boundary for Android and Windows
+
+**Status:** Accepted  
+**Decision:** Phase 3 pins `flutter_inappwebview 6.2.0-beta.3` and permits it only under `lib/src/platform/web_capture`. Android uses `flutter_inappwebview_android 1.2.0-beta.3`; Windows uses the endorsed `flutter_inappwebview_windows 0.7.0-beta.3` WebView2 implementation. Domain and plugin-independent Infrastructure depend only on Wynime-owned typed models and ports.  
+**Reason:** The official `webview_flutter` family does not provide a Windows implementation, while maintaining separate Android and Windows APIs would duplicate security policy and interception mapping. The latest stable `6.1.5` was rejected after its Android `1.1.3` package failed under Flutter-generated AGP `9.0.1`; the selected prerelease explicitly contains the upstream AGP 9 fix and supports the locked Flutter 3.44.8／Dart 3.12.2 toolchain.  
+**Safety:** Download handling, HTTP authentication, invalid server trust, camera, microphone, geolocation, new windows, file access and mixed content fail closed. Plugin types cannot cross into Domain, and a signed source package receives no additional WebView authority.

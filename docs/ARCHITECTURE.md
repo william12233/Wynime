@@ -34,7 +34,7 @@ Platform ───────────────────→ Domain
 
 Domain must not import upper or outer layers. Architecture tests reject Flutter, Drift, HTML parser, WebView plugins, `dart:io` and `dart:ffi` imports from `lib/src/domain`.
 
-## Package layout through Phase 3
+## Package layout through Phase 4
 
 ```text
 lib/
@@ -52,9 +52,11 @@ lib/
    │  ├─ database/
    │  ├─ repositories/
    │  ├─ source_rules/
-   │  └─ web_capture/
+   │  ├─ web_capture/
+   │  └─ playback/
    └─ platform/
-      └─ web_capture/
+      ├─ web_capture/
+      └─ playback/
 ```
 
 - `app` owns application bootstrap and navigation destination definitions.
@@ -66,6 +68,8 @@ lib/
 - `infrastructure/source_rules` owns strict package decoding and fixture-only declarative rule evaluation.
 - `infrastructure/web_capture` owns plugin-independent event accumulation, budgets, classification and redaction.
 - `platform/web_capture` is the only layer that imports the WebView plugin and maps plugin values into Domain capture models.
+- `infrastructure/playback` owns candidate resolution, the loopback HTTP proxy, bounded upstream I/O and HLS URI rewriting.
+- `platform/playback` is the only Dart layer that imports Flutter platform channels for native player integration.
 
 ## Phase 1 persistence architecture
 
@@ -184,6 +188,38 @@ Source packages cannot inject Dart, JavaScript, WASM or native executable adapte
 `WebCaptureAccumulator` stores bounded events and deduplicated media candidates in memory only. Candidate classification recognizes HLS, DASH, common direct audio/video files and media segments using response content type or URL path.
 
 Diagnostic output contains scheme, host, path-segment count, method and header names only. Cookie values, Authorization values, query strings, fragments and complete media URLs are not logged or persisted. Phase 3 does not create a `PlaybackSession`; Phase 4 must validate and transform a chosen candidate through its own Gate.
+
+## Phase 4 playback architecture
+
+### Authoritative session resolution
+
+A selected `WebMediaCandidate` is converted once into a `PlaybackSession`. The resolver rejects segment-only and deferred DASH candidates, reuses the Phase 2 `SourceSecurityPolicy`, separates Referer／Origin／User-Agent from generic headers, and includes only cookies valid for the candidate host, path, security scheme and expiry. Refresh callbacks may replace expiring URLs and authority values but must preserve `sessionId` and the complete source／line／subject／episode identity.
+
+### Loopback proxy capability model
+
+`LoopbackPlaybackProxyService` binds only `127.0.0.1` or `::1` on an ephemeral port. Each lease creates an unguessable capability token and opaque resource IDs. The native player receives only the loopback URI; upstream media URLs, query tokens, cookies and authorization values remain inside the proxy session.
+
+Every initial URI, redirect and HLS child URI must pass the same source allowlist. The production upstream client also performs a public-address DNS preflight to reject loopback, link-local, private, carrier-grade NAT, documentation and multicast ranges. The proxy is therefore not a general URL forwarder.
+
+### Forwarding and resource budgets
+
+The proxy accepts only GET and HEAD plus one syntactically valid byte range. It forwards the authoritative session headers, scoped cookies, Referer, Origin and User-Agent under independent byte budgets. Redirect count, playlist bytes, total response bytes and registered HLS resources are bounded. Upstream Set-Cookie and redirect Location are never exposed downstream. Closing a lease invalidates its capability and cancels active body subscriptions; service shutdown closes all leases, the listener and the upstream client.
+
+### HLS rewrite boundary
+
+Phase 4 validates `#EXTM3U` and rewrites standalone media lines and `URI=` attributes to opaque loopback resources. It does not remove segments, infer advertisements, alter discontinuities, generate an `AdRemovalPlan` or rewrite media time. Those decisions remain Phase 5.
+
+### Playback lifecycle coordinator
+
+`PlaybackCoordinator` is the Application-layer owner of one playback operation. It resolves a session, refreshes it before exposure when expiry is near, creates exactly one proxy lease, hands the loopback URI to the selected backend, and releases both player and lease on stop, replacement or failure. Authorization or explicit-expiry events may trigger a bounded refresh cycle that preserves session and episode identity; superseded operations cannot reopen an old lease.
+
+### Android Media3 boundary
+
+Android pins Media3 ExoPlayer and the HLS module to `1.10.1`. Flutter communicates through Wynime-owned MethodChannel and EventChannel messages under `platform/playback`; Media3 types never enter Domain. The native bridge accepts only numeric loopback HTTP URIs, exposes open／pause／seek／close, emits monotonic state and failure events bound to the active session, and reports HTTP status when available. Pure Dart classification routes 401／403 and explicit expiry to session refresh rather than decoder fallback.
+
+The Android manifest requests network access but keeps cleartext traffic disabled globally. A Network Security Config permits cleartext only for numeric loopback `127.0.0.1` and `::1`, matching the proxy listener and native URI validation instead of allowing arbitrary external HTTP.
+
+Windows remains buildable through an explicit unsupported Phase 4 backend. Windows mpv begins only in Phase 6.
 
 ## Platform strategy
 

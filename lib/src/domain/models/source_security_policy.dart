@@ -94,10 +94,7 @@ final class SourceDomainRule {
     if (candidate.host == host) {
       return includeSubdomains || !candidate.includeSubdomains;
     }
-    if (!includeSubdomains || !candidate.host.endsWith('.$host')) {
-      return false;
-    }
-    return true;
+    return includeSubdomains && candidate.host.endsWith('.$host');
   }
 
   static String _normalizeHost(String value) {
@@ -140,7 +137,9 @@ final class SourceSecurityPolicy {
   }) : allowedDomains = UnmodifiableListView(
          List<SourceDomainRule>.unmodifiable(allowedDomains),
        ),
-       permissions = UnmodifiableSetView(Set<SourcePermission>.unmodifiable(permissions)) {
+       permissions = UnmodifiableSetView(
+         Set<SourcePermission>.unmodifiable(permissions),
+       ) {
     if (this.allowedDomains.isEmpty) {
       throw ArgumentError.value(
         allowedDomains,
@@ -164,7 +163,8 @@ final class SourceSecurityPolicy {
   final SourceResourceBudget budget;
 
   bool allowsUri(Uri uri) {
-    return allowedDomains.any((rule) => rule.allows(uri, permissions));
+    return permissions.contains(SourcePermission.network) &&
+        allowedDomains.any((rule) => rule.allows(uri, permissions));
   }
 
   bool requiresReconsentComparedTo(SourceSecurityPolicy previous) {

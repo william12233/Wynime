@@ -22,6 +22,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private var eventSink: EventChannel.EventSink? = null
     private var eventSequence = 0L
     private var activeSessionId: String? = null
+    private var mpvPrototypeBridge: MpvPrototypeBridge? = null
 
     private val playerListener =
         object : Player.Listener {
@@ -62,6 +63,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
             .setMethodCallHandler(::handleMethodCall)
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL)
             .setStreamHandler(this)
+        mpvPrototypeBridge = MpvPrototypeBridge(flutterEngine.dartExecutor.binaryMessenger)
     }
 
     private fun handleMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -193,6 +195,8 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     override fun onDestroy() {
         closePlayer(emitClosed = false)
         eventSink = null
+        mpvPrototypeBridge?.dispose()
+        mpvPrototypeBridge = null
         super.onDestroy()
     }
 }

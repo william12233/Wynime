@@ -14,21 +14,15 @@ final class PlaybackHandoffSnapshot {
          'timelineMapIdentity',
          1024,
        ),
-       sourceBackendId = _requiredText(
-         sourceBackendId,
-         'sourceBackendId',
-         96,
-       ),
-       targetBackendId = _requiredText(
-         targetBackendId,
-         'targetBackendId',
-         96,
-       ) {
+       sourceBackendId = _requiredText(sourceBackendId, 'sourceBackendId', 96),
+       targetBackendId = _requiredText(targetBackendId, 'targetBackendId', 96) {
     if (position.isNegative) {
       throw ArgumentError.value(position, 'position', 'Must not be negative.');
     }
     if (this.sourceBackendId == this.targetBackendId) {
-      throw ArgumentError('A handoff requires distinct source and target backends.');
+      throw ArgumentError(
+        'A handoff requires distinct source and target backends.',
+      );
     }
   }
 

@@ -1,0 +1,86 @@
+name: Validate Phase 6 typed contracts
+
+on:
+  push:
+    branches: [phase-6/staging]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase6-staging-format
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: phase-6/staging
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.8
+          channel: stable
+          cache: true
+
+      - name: Apply reviewed capability cast correction
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/src/application/playback/switchable_player_backend.dart')
+          content = path.read_text()
+          replacements = {
+              '    final capability = await primary.probe();\n': (
+                  '    final capabilitySource = '\
+                  'primary as PlayerBackendCapabilitySource;\n'
+                  '    final capability = await capabilitySource.probe();\n'
+              ),
+              '    final capability = await backend.probe();\n': (
+                  '    final capabilitySource = '\
+                  'backend as PlayerBackendCapabilitySource;\n'
+                  '    final capability = await capabilitySource.probe();\n'
+              ),
+          }
+          for old, new in replacements.items():
+              if content.count(old) != 1:
+                  raise SystemExit(f'capability cast precondition failed: {old!r}')
+              content = content.replace(old, new, 1)
+          path.write_text(content)
+          PY
+
+      - name: Format Phase 6 scope
+        run: |
+          dart format \
+            lib/src/application/playback/switchable_player_backend.dart \
+            lib/src/domain/models/playback_handoff.dart \
+            lib/src/platform/playback/mpv_player_backend.dart \
+            test/application/switchable_player_backend_test.dart \
+            test/platform/mpv_player_backend_test.dart
+
+      - run: flutter pub get
+      - run: flutter analyze --fatal-infos
+      - run: flutter test
+
+      - name: Commit validated typed contracts
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/src/application/playback/switchable_player_backend.dart \
+            lib/src/domain/models/playback_handoff.dart \
+            lib/src/platform/playback/mpv_player_backend.dart \
+            test/application/switchable_player_backend_test.dart \
+            test/platform/mpv_player_backend_test.dart
+          if git diff --cached --quiet; then
+            echo 'Typed contracts already match the validated form.'
+            exit 0
+          fi
+          git commit -m 'fix: validate Phase 6 typed backend contracts'
+          git push origin HEAD:phase-6/staging

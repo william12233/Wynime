@@ -132,9 +132,12 @@ final class SwitchablePlayerBackend implements PlayerBackend {
     if (primary is! PlayerBackendCapabilitySource) {
       return primary;
     }
-    final capability = await primary.probe();
+    final capabilitySource = primary as PlayerBackendCapabilitySource;
+    final capability = await capabilitySource.probe();
     if (capability.backendId != primary.backendId) {
-      throw StateError('Backend capability identity does not match its backend.');
+      throw StateError(
+        'Backend capability identity does not match its backend.',
+      );
     }
     if (capability.isAvailable) {
       return primary;
@@ -254,9 +257,12 @@ final class SwitchablePlayerBackend implements PlayerBackend {
     if (backend is! PlayerBackendCapabilitySource) {
       return;
     }
-    final capability = await backend.probe();
+    final capabilitySource = backend as PlayerBackendCapabilitySource;
+    final capability = await capabilitySource.probe();
     if (capability.backendId != backend.backendId) {
-      throw StateError('Backend capability identity does not match its backend.');
+      throw StateError(
+        'Backend capability identity does not match its backend.',
+      );
     }
     if (!capability.isAvailable) {
       throw UnsupportedError(

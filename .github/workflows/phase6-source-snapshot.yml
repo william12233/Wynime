@@ -1,0 +1,34 @@
+name: Phase 6 source snapshot
+
+on:
+  push:
+    branches: [phase-6/staging]
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v4
+        with:
+          ref: phase-6/staging
+          fetch-depth: 0
+      - name: Export main and commit chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          rm -rf .snapshot
+          mkdir .snapshot
+          git archive --format=tar.gz --output=/tmp/wynime-main-source.tar.gz origin/main
+          sha256sum /tmp/wynime-main-source.tar.gz > .snapshot/SHA256SUMS
+          base64 -w 0 /tmp/wynime-main-source.tar.gz | split -b 45000 - .snapshot/source-
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .snapshot
+          git commit -m 'ci: export main source for Phase 6 validation'
+          git push origin HEAD:phase-6/staging

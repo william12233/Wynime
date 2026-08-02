@@ -57,10 +57,7 @@ void main() {
       transport: transport,
     );
 
-    expect(
-      () => backend.open(testPlaybackSession()),
-      throwsArgumentError,
-    );
+    expect(() => backend.open(testPlaybackSession()), throwsArgumentError);
     expect(
       () => backend.open(
         testPlaybackSession(
@@ -78,10 +75,7 @@ void main() {
       transport: transport,
     );
     final errors = <Object>[];
-    final subscription = backend.events.listen(
-      (_) {},
-      onError: errors.add,
-    );
+    final subscription = backend.events.listen((_) {}, onError: errors.add);
     addTearDown(subscription.cancel);
     await backend.open(
       testPlaybackSession(

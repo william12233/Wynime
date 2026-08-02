@@ -38,9 +38,8 @@ final class MethodChannelMpvTransport implements MpvPlatformTransport {
       .asBroadcastStream();
 
   @override
-  Future<Map<String, Object?>> probe() async => _stringObjectMap(
-    await _methodChannel.invokeMethod<Object?>('probe'),
-  );
+  Future<Map<String, Object?>> probe() async =>
+      _stringObjectMap(await _methodChannel.invokeMethod<Object?>('probe'));
 
   @override
   Future<void> invoke(String method, Map<String, Object?> arguments) async {
@@ -87,9 +86,7 @@ final class MpvPlayerBackend
     }
     return PlayerBackendCapability(
       backendId: reportedBackendId,
-      availability: _availabilityFromName(
-        _requiredString(raw, 'availability'),
-      ),
+      availability: _availabilityFromName(_requiredString(raw, 'availability')),
       code: _requiredString(raw, 'code'),
       clientApiVersion: _optionalInt(raw, 'clientApiVersion'),
       runtimeVersion: _optionalString(raw, 'runtimeVersion'),
@@ -201,7 +198,11 @@ String _validateBackendId(String value) {
   if (normalized.isEmpty ||
       normalized.length > 96 ||
       !RegExp(r'^[a-z0-9][a-z0-9._-]*$').hasMatch(normalized)) {
-    throw ArgumentError.value(value, 'backendId', 'Invalid backend identifier.');
+    throw ArgumentError.value(
+      value,
+      'backendId',
+      'Invalid backend identifier.',
+    );
   }
   return normalized;
 }
@@ -247,12 +248,13 @@ int? _optionalInt(Map<String, Object?> map, String key) {
   throw FormatException('mpv payload field $key must be an integer.');
 }
 
-PlayerBackendAvailability _availabilityFromName(String value) => switch (value) {
-  'available' => PlayerBackendAvailability.available,
-  'unavailable' => PlayerBackendAvailability.unavailable,
-  'incompatible' => PlayerBackendAvailability.incompatible,
-  _ => throw FormatException('Unknown mpv availability: $value'),
-};
+PlayerBackendAvailability _availabilityFromName(String value) =>
+    switch (value) {
+      'available' => PlayerBackendAvailability.available,
+      'unavailable' => PlayerBackendAvailability.unavailable,
+      'incompatible' => PlayerBackendAvailability.incompatible,
+      _ => throw FormatException('Unknown mpv availability: $value'),
+    };
 
 PlaybackState _stateFromName(String value) => switch (value) {
   'idle' => PlaybackState.idle,

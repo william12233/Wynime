@@ -1,7 +1,5 @@
 import 'dart:collection';
 
-import 'source_security_policy.dart';
-
 enum SourceDocumentKind { html, json }
 
 enum SourceSelectorKind { css, jsonPath }

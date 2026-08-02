@@ -46,7 +46,11 @@ jobs:
             .phase5-review-payload/{01..08}.txt \
             .phase5-review-payload/09a.txt \
             .phase5-review-payload/09b.txt \
-            .phase5-review-payload/09c.txt \
+            .phase5-review-payload/09c1.txt \
+            .phase5-review-payload/09c2.txt \
+            .phase5-review-payload/09c3.txt \
+            .phase5-review-payload/09c4.txt \
+            .phase5-review-payload/09c5.txt \
             .phase5-review-payload/10.txt \
             > /tmp/phase5-review.b64
           base64 --decode /tmp/phase5-review.b64 > /tmp/phase5-review.tar.gz

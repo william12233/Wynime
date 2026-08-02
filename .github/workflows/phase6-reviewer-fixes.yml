@@ -1,0 +1,926 @@
+name: Phase 6 Reviewer Fixes
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: phase-6-reviewer-fixes
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.44.8
+
+jobs:
+  apply-and-verify:
+    if: github.head_ref == 'phase-6/media-kit-routing'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout reviewed branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-6/media-kit-routing
+          fetch-depth: 0
+
+      - name: Verify reviewed parent
+        shell: bash
+        run: test "$(git rev-parse HEAD^)" = "e495b48c25c08459fb30ca40817d810b4ce70cec"
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Apply bounded reviewer fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file = Path(path)
+              text = file.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f'Unexpected source shape in {path}: {old[:80]!r}')
+              file.write_text(text.replace(old, new))
+
+          replace_once(
+              'lib/src/domain/models/player_backend.dart',
+              """final class PlayerBackendAvailability {
+            const PlayerBackendAvailability({
+              required this.status,
+              required this.backendId,
+              this.reasonCode,
+            }) : assert(backendId != ''),
+                 assert(
+                   status != PlayerBackendAvailabilityStatus.available ||
+                       reasonCode == null,
+                 );
+
+            const PlayerBackendAvailability.available(String backendId)
+              : this(
+                  status: PlayerBackendAvailabilityStatus.available,
+                  backendId: backendId,
+                );
+
+            const PlayerBackendAvailability.unavailable(
+              String backendId, {
+              required String reasonCode,
+            }) : this(
+                   status: PlayerBackendAvailabilityStatus.unavailable,
+                   backendId: backendId,
+                   reasonCode: reasonCode,
+                 );
+
+            const PlayerBackendAvailability.probeFailed(
+              String backendId, {
+              required String reasonCode,
+            }) : this(
+                   status: PlayerBackendAvailabilityStatus.probeFailed,
+                   backendId: backendId,
+                   reasonCode: reasonCode,
+                 );
+          """,
+              """final class PlayerBackendAvailability {
+            PlayerBackendAvailability({
+              required this.status,
+              required String backendId,
+              String? reasonCode,
+            }) : backendId = _requiredAvailabilityToken(backendId, 'backendId'),
+                 reasonCode = reasonCode == null
+                     ? null
+                     : _requiredAvailabilityToken(reasonCode, 'reasonCode') {
+              if (status == PlayerBackendAvailabilityStatus.available &&
+                  this.reasonCode != null) {
+                throw ArgumentError(
+                  'An available backend must not carry a failure reason.',
+                );
+              }
+              if (status != PlayerBackendAvailabilityStatus.available &&
+                  this.reasonCode == null) {
+                throw ArgumentError(
+                  'An unavailable backend requires a stable reason code.',
+                );
+              }
+            }
+
+            PlayerBackendAvailability.available(String backendId)
+              : this(
+                  status: PlayerBackendAvailabilityStatus.available,
+                  backendId: backendId,
+                );
+
+            PlayerBackendAvailability.unavailable(
+              String backendId, {
+              required String reasonCode,
+            }) : this(
+                   status: PlayerBackendAvailabilityStatus.unavailable,
+                   backendId: backendId,
+                   reasonCode: reasonCode,
+                 );
+
+            PlayerBackendAvailability.probeFailed(
+              String backendId, {
+              required String reasonCode,
+            }) : this(
+                   status: PlayerBackendAvailabilityStatus.probeFailed,
+                   backendId: backendId,
+                   reasonCode: reasonCode,
+                 );
+          """,
+          )
+          replace_once(
+              'lib/src/domain/models/player_backend.dart',
+              """const Object _notProvided = Object();
+
+          String _requiredIdentifier(String value, String name) {
+          """,
+              """const Object _notProvided = Object();
+
+          String _requiredAvailabilityToken(String value, String name) {
+            final normalized = value.trim().toLowerCase();
+            if (!RegExp(r'^[a-z0-9][a-z0-9._-]{0,95}$').hasMatch(normalized)) {
+              throw ArgumentError.value(value, name, 'Invalid backend token.');
+            }
+            return normalized;
+          }
+
+          String _requiredIdentifier(String value, String name) {
+          """,
+          )
+          for root in (Path('lib'), Path('test')):
+              for file in root.rglob('*.dart'):
+                  text = file.read_text()
+                  updated = text
+                  for constructor in ('available', 'unavailable', 'probeFailed'):
+                      updated = updated.replace(
+                          f'const PlayerBackendAvailability.{constructor}(',
+                          f'PlayerBackendAvailability.{constructor}(',
+                      )
+                  if updated != text:
+                      file.write_text(updated)
+
+          replace_once(
+              'lib/src/application/playback/playback_failure_classifier.dart',
+              """  PlaybackFailure classifyMediaKitError(String rawMessage) {
+            final normalized = rawMessage.toLowerCase();
+          """,
+              """  PlaybackFailure classifyMediaKitError(String rawMessage) {
+            final bounded = rawMessage.length <= 8192
+                ? rawMessage
+                : rawMessage.substring(0, 8192);
+            final normalized = bounded.toLowerCase();
+          """,
+          )
+
+          replace_once(
+              'lib/src/application/playback/playback_engine_router.dart',
+              """      try {
+                await _switchTo(backend, _requireSession(), operation);
+                return true;
+              } on Object {
+                await _detachActiveBackend();
+                if (operation != _operation) {
+                  return false;
+                }
+              }
+          """,
+              """      try {
+                await _switchTo(backend, _requireSession(), operation);
+                return true;
+              } on UnsupportedError {
+                try {
+                  await _detachActiveBackend();
+                } on Object {
+                  // Preserve the explicit unsupported result and try the next engine.
+                }
+                if (operation != _operation) {
+                  return false;
+                }
+              } on Object catch (error, stackTrace) {
+                try {
+                  await _detachActiveBackend();
+                } on Object {
+                  // Preserve the authoritative non-fallback failure.
+                }
+                if (operation != _operation) {
+                  return false;
+                }
+                Error.throwWithStackTrace(error, stackTrace);
+              }
+          """,
+          )
+          replace_once(
+              'lib/src/application/playback/playback_engine_router.dart',
+              """    } on Object {
+              _handoffPending = false;
+              _pendingHandoffFailure = null;
+              await _detachActiveBackend();
+              rethrow;
+            }
+          """,
+              """    } on Object catch (error, stackTrace) {
+              _handoffPending = false;
+              _pendingHandoffFailure = null;
+              try {
+                await _detachActiveBackend();
+              } on Object {
+                // Preserve the original engine-open or handoff failure.
+              }
+              Error.throwWithStackTrace(error, stackTrace);
+            }
+          """,
+          )
+          replace_once(
+              'lib/src/application/playback/playback_engine_router.dart',
+              """      unawaited(_detachActiveBackend());
+              return;
+          """,
+              """      unawaited(
+                _detachActiveBackend().catchError((Object error, StackTrace stackTrace) {
+                  if (!_events.isClosed) {
+                    _events.addError(
+                      StateError('Playback backend cleanup failed.'),
+                      stackTrace,
+                    );
+                  }
+                }),
+              );
+              return;
+          """,
+          )
+          replace_once(
+              'lib/src/application/playback/playback_engine_router.dart',
+              """  Future<void> _detachActiveBackend() async {
+            final subscription = _backendSubscription;
+            final backend = _activeBackend;
+            _backendSubscription = null;
+            _activeBackend = null;
+            _handoffPending = false;
+            _pendingHandoffFailure = null;
+            ++_generation;
+            await subscription?.cancel();
+            if (backend != null) {
+              await backend.close();
+            }
+          }
+          """,
+              """  Future<void> _detachActiveBackend() async {
+            final subscription = _backendSubscription;
+            final backend = _activeBackend;
+            _backendSubscription = null;
+            _activeBackend = null;
+            _handoffPending = false;
+            _pendingHandoffFailure = null;
+            ++_generation;
+
+            Object? firstError;
+            StackTrace? firstStackTrace;
+            try {
+              await subscription?.cancel();
+            } on Object catch (error, stackTrace) {
+              firstError = error;
+              firstStackTrace = stackTrace;
+            }
+            try {
+              if (backend != null) {
+                await backend.close();
+              }
+            } on Object catch (error, stackTrace) {
+              firstError ??= error;
+              firstStackTrace ??= stackTrace;
+            }
+            if (firstError != null) {
+              Error.throwWithStackTrace(firstError, firstStackTrace!);
+            }
+          }
+          """,
+          )
+
+          replace_once(
+              'lib/src/platform/playback/mpv_player_backend.dart',
+              """    } on Object {
+              _emitFailure(_classifier.classifyMediaKitError('open_failed'));
+              await _releasePlayer();
+              _session = null;
+              rethrow;
+            }
+          """,
+              """    } on Object {
+              _emitFailure(
+                _classifier.classifyMediaKitError('unsupported open failed'),
+              );
+              try {
+                await _releasePlayer();
+              } on Object {
+                // Preserve the stable, secret-safe initialization failure.
+              }
+              _session = null;
+              throw UnsupportedError('libmpv failed to initialize playback.');
+            }
+          """,
+          )
+          replace_once(
+              'lib/src/platform/playback/mpv_player_backend.dart',
+              """  Future<void> close() async {
+            final identity = _session?.timelineMapIdentity;
+            final hadPlayer = _player != null || _session != null;
+            await _releasePlayer();
+            _session = null;
+            _playing = false;
+            if (hadPlayer && identity != null) {
+              _events.add(
+                PlaybackEvent(
+                  sequence: _sequence++,
+                  state: PlaybackState.closed,
+                  position: _position,
+                  bufferedPosition: _bufferedPosition,
+                  volume: _volume,
+                  rate: _rate,
+                  audioTrackId: _audioTrackId,
+                  subtitleTrackId: _subtitleTrackId,
+                  timelineMapIdentity: identity,
+                ),
+              );
+            }
+          }
+          """,
+              """  Future<void> close() async {
+            final identity = _session?.timelineMapIdentity;
+            final hadPlayer = _player != null || _session != null;
+            Object? closeError;
+            StackTrace? closeStackTrace;
+            try {
+              await _releasePlayer();
+            } on Object catch (error, stackTrace) {
+              closeError = error;
+              closeStackTrace = stackTrace;
+            } finally {
+              _session = null;
+              _playing = false;
+            }
+            if (hadPlayer && identity != null) {
+              _events.add(
+                PlaybackEvent(
+                  sequence: _sequence++,
+                  state: PlaybackState.closed,
+                  position: _position,
+                  bufferedPosition: _bufferedPosition,
+                  volume: _volume,
+                  rate: _rate,
+                  audioTrackId: _audioTrackId,
+                  subtitleTrackId: _subtitleTrackId,
+                  timelineMapIdentity: identity,
+                ),
+              );
+            }
+            if (closeError != null) {
+              Error.throwWithStackTrace(closeError, closeStackTrace!);
+            }
+          }
+          """,
+          )
+          replace_once(
+              'lib/src/platform/playback/mpv_player_backend.dart',
+              """  Future<void> _releasePlayer() async {
+            final subscription = _subscription;
+            final player = _player;
+            _subscription = null;
+            _player = null;
+            await subscription?.cancel();
+            await player?.dispose();
+          }
+          """,
+              """  Future<void> _releasePlayer() async {
+            final subscription = _subscription;
+            final player = _player;
+            _subscription = null;
+            _player = null;
+
+            Object? firstError;
+            StackTrace? firstStackTrace;
+            try {
+              await subscription?.cancel();
+            } on Object catch (error, stackTrace) {
+              firstError = error;
+              firstStackTrace = stackTrace;
+            }
+            try {
+              await player?.dispose();
+            } on Object catch (error, stackTrace) {
+              firstError ??= error;
+              firstStackTrace ??= stackTrace;
+            }
+            if (firstError != null) {
+              Error.throwWithStackTrace(firstError, firstStackTrace!);
+            }
+          }
+          """,
+          )
+
+          replace_once(
+              'lib/src/platform/playback/media_kit_facade.dart',
+              """  Future<void> dispose() async {
+            if (_disposed) {
+              return;
+            }
+            _disposed = true;
+            for (final subscription in _subscriptions) {
+              await subscription.cancel();
+            }
+            _subscriptions.clear();
+            await _player.dispose();
+            await _events.close();
+          }
+          """,
+              """  Future<void> dispose() async {
+            if (_disposed) {
+              return;
+            }
+            _disposed = true;
+            Object? firstError;
+            StackTrace? firstStackTrace;
+            for (final subscription in _subscriptions) {
+              try {
+                await subscription.cancel();
+              } on Object catch (error, stackTrace) {
+                firstError ??= error;
+                firstStackTrace ??= stackTrace;
+              }
+            }
+            _subscriptions.clear();
+            try {
+              await _player.dispose();
+            } on Object catch (error, stackTrace) {
+              firstError ??= error;
+              firstStackTrace ??= stackTrace;
+            }
+            try {
+              await _events.close();
+            } on Object catch (error, stackTrace) {
+              firstError ??= error;
+              firstStackTrace ??= stackTrace;
+            }
+            if (firstError != null) {
+              Error.throwWithStackTrace(firstError, firstStackTrace!);
+            }
+          }
+          """,
+          )
+
+          replace_once(
+              'lib/src/platform/playback/media3_player_backend.dart',
+              """    } on Object {
+              _activeSessionId = null;
+              _timelineMapIdentity = null;
+              rethrow;
+            }
+          """,
+              """    } on MissingPluginException {
+              _activeSessionId = null;
+              _timelineMapIdentity = null;
+              throw UnsupportedError('Media3 platform bridge is unavailable.');
+            } on PlatformException {
+              _activeSessionId = null;
+              _timelineMapIdentity = null;
+              throw UnsupportedError('Media3 failed to initialize playback.');
+            } on Object catch (error, stackTrace) {
+              _activeSessionId = null;
+              _timelineMapIdentity = null;
+              Error.throwWithStackTrace(error, stackTrace);
+            }
+          """,
+          )
+          replace_once(
+              'lib/src/platform/playback/media3_player_backend.dart',
+              """  Future<void> close() async {
+            await _transport.invoke('close', const {});
+            _activeSessionId = null;
+            _timelineMapIdentity = null;
+          }
+          """,
+              """  Future<void> close() async {
+            try {
+              await _transport.invoke('close', const {});
+            } finally {
+              _activeSessionId = null;
+              _timelineMapIdentity = null;
+            }
+          }
+          """,
+          )
+          replace_once(
+              'lib/src/platform/playback/media3_player_backend.dart',
+              """      if (activeSessionId != null && eventSessionId != activeSessionId) {
+                throw StateError('Media3 event belongs to a stale PlaybackSession.');
+              }
+              if (activeTimelineIdentity != null &&
+                  eventTimelineIdentity != activeTimelineIdentity) {
+                throw StateError('Media3 event belongs to a stale timeline map.');
+              }
+          """,
+              """      if (activeSessionId == null || activeTimelineIdentity == null) {
+                throw StateError('Media3 event has no active PlaybackSession.');
+              }
+              if (eventSessionId != activeSessionId) {
+                throw StateError('Media3 event belongs to a stale PlaybackSession.');
+              }
+              if (eventTimelineIdentity != activeTimelineIdentity) {
+                throw StateError('Media3 event belongs to a stale timeline map.');
+              }
+          """,
+          )
+
+          replace_once(
+              'android/app/src/main/kotlin/io/github/william12233/wynime/MainActivity.kt',
+              """    private fun closePlayer(emitClosed: Boolean) {
+                  val closingSessionId = activeSessionId
+                  val closingTimelineMapIdentity = activeTimelineMapIdentity
+                  player?.let { existing ->
+                      existing.removeListener(playerListener)
+                      existing.stop()
+                      existing.release()
+                  }
+                  player = null
+                  activeSessionId = null
+                  activeTimelineMapIdentity = null
+                  if (emitClosed && closingSessionId != null && closingTimelineMapIdentity != null) {
+                      emitState("closed", closingSessionId, closingTimelineMapIdentity)
+                  }
+              }
+          """,
+              """    private fun closePlayer(emitClosed: Boolean) {
+                  val closingSessionId = activeSessionId
+                  val closingTimelineMapIdentity = activeTimelineMapIdentity
+                  val existing = player
+                  player = null
+                  activeSessionId = null
+                  activeTimelineMapIdentity = null
+                  existing?.let {
+                      it.removeListener(playerListener)
+                      try {
+                          it.stop()
+                      } finally {
+                          it.release()
+                      }
+                  }
+                  if (emitClosed && closingSessionId != null && closingTimelineMapIdentity != null) {
+                      emitState("closed", closingSessionId, closingTimelineMapIdentity)
+                  }
+              }
+          """,
+          )
+
+          replace_once(
+              'test/helpers/fake_player_backend.dart',
+              """    this.openError,
+              this.emitDuringOpen,
+          """,
+              """    this.openError,
+              this.closeError,
+              this.emitDuringOpen,
+          """,
+          )
+          replace_once(
+              'test/helpers/fake_player_backend.dart',
+              """  Object? openError;
+            PlaybackEvent? emitDuringOpen;
+          """,
+              """  Object? openError;
+            Object? closeError;
+            PlaybackEvent? emitDuringOpen;
+          """,
+          )
+          replace_once(
+              'test/helpers/fake_player_backend.dart',
+              """  Future<void> close() async {
+            closeCount += 1;
+          }
+          """,
+              """  Future<void> close() async {
+            closeCount += 1;
+            final error = closeError;
+            if (error != null) {
+              throw error;
+            }
+          }
+          """,
+          )
+
+          router_test = Path('test/application/playback_engine_router_test.dart')
+          router_source = router_test.read_text()
+          router_marker = "}\n\nPlaybackSession _session({"
+          if router_source.count(router_marker) != 1:
+              raise SystemExit('Unexpected router test footer.')
+          router_tests = r'''
+
+            test('initial open falls through only explicit unsupported failures', () async {
+              final unavailable = FakePlayerBackend(
+                kind: PlayerBackendKind.media3,
+                backendId: 'media3',
+                openError: UnsupportedError('native runtime unavailable'),
+                closeError: StateError('cleanup failed'),
+              );
+              final mpv = FakePlayerBackend(
+                kind: PlayerBackendKind.mpv,
+                backendId: 'mpv',
+              );
+              final router = PlaybackEngineRouter(
+                backends: {
+                  PlayerBackendKind.media3: unavailable,
+                  PlayerBackendKind.mpv: mpv,
+                },
+                preference: const [PlayerBackendKind.media3, PlayerBackendKind.mpv],
+              );
+              final session = _session();
+
+              await router.open(session);
+
+              expect(unavailable.closeCount, 1);
+              expect(mpv.openedSessions, [same(session)]);
+            });
+
+            test('initial open preserves non-fallback backend failures', () async {
+              final primary = FakePlayerBackend(
+                kind: PlayerBackendKind.media3,
+                backendId: 'media3',
+                openError: StateError('authoritative open failure'),
+              );
+              final fallback = FakePlayerBackend(
+                kind: PlayerBackendKind.mpv,
+                backendId: 'mpv',
+              );
+              final router = PlaybackEngineRouter(
+                backends: {
+                  PlayerBackendKind.media3: primary,
+                  PlayerBackendKind.mpv: fallback,
+                },
+                preference: const [PlayerBackendKind.media3, PlayerBackendKind.mpv],
+              );
+
+              await expectLater(router.open(_session()), throwsStateError);
+
+              expect(primary.closeCount, 1);
+              expect(fallback.openedSessions, isEmpty);
+            });
+          '''
+          router_test.write_text(
+              router_source.replace(router_marker, router_tests + router_marker),
+          )
+
+          replace_once(
+              'test/platform/mpv_player_backend_test.dart',
+              """    await expectLater(backend.open(_loopbackSession()), throwsStateError);
+
+              expect(backend.activePlayer, isNull);
+          """,
+              """    await expectLater(
+                backend.open(_loopbackSession()),
+                throwsUnsupportedError,
+              );
+
+              expect(backend.activePlayer, isNull);
+          """,
+          )
+          replace_once(
+              'test/platform/mpv_player_backend_test.dart',
+              """  int playCount = 0;
+            int pauseCount = 0;
+            int disposeCount = 0;
+          """,
+              """  int playCount = 0;
+            int pauseCount = 0;
+            int disposeCount = 0;
+            Object? disposeError;
+          """,
+          )
+          replace_once(
+              'test/platform/mpv_player_backend_test.dart',
+              """  Future<void> dispose() async {
+            disposeCount += 1;
+          }
+          """,
+              """  Future<void> dispose() async {
+            disposeCount += 1;
+            final error = disposeError;
+            if (error != null) {
+              throw error;
+            }
+          }
+          """,
+          )
+          mpv_test = Path('test/platform/mpv_player_backend_test.dart')
+          mpv_source = mpv_test.read_text()
+          mpv_marker = "}\n\nPlaybackSession _loopbackSession({"
+          if mpv_source.count(mpv_marker) != 1:
+              raise SystemExit('Unexpected mpv test footer.')
+          mpv_extra = r'''
+
+            test('mpv clears the active player even when native disposal fails', () async {
+              final player = _FakeMediaKitPlayer()
+                ..disposeError = StateError('native dispose failed');
+              final backend = MpvPlayerBackend(
+                facade: _FakeMediaKitFacade(player: player),
+              );
+              await backend.open(_loopbackSession());
+
+              await expectLater(backend.close(), throwsStateError);
+
+              expect(backend.activePlayer, isNull);
+              expect(player.disposeCount, 1);
+            });
+          '''
+          mpv_test.write_text(mpv_source.replace(mpv_marker, mpv_extra + mpv_marker))
+
+          media3_test = Path('test/platform/media3_player_backend_test.dart')
+          media3_source = media3_test.read_text()
+          media3_marker = "  test(\n    'unsupported backend reports explicit unavailability and failure',"
+          if media3_source.count(media3_marker) != 1:
+              raise SystemExit('Unexpected Media3 test marker.')
+          media3_extra = r'''
+            test('Media3 sanitizes platform initialization failures', () async {
+              final transport = _FakeMedia3Transport()
+                ..errors['open'] = const PlatformException(
+                  code: 'open_failed',
+                  message: 'token=must-not-escape',
+                );
+              final backend = Media3PlayerBackend(transport: transport);
+
+              await expectLater(
+                backend.open(_loopbackSession()),
+                throwsUnsupportedError,
+              );
+            });
+
+            test('Media3 rejects late events after a failed close', () async {
+              final transport = _FakeMedia3Transport();
+              final backend = Media3PlayerBackend(transport: transport);
+              final session = _loopbackSession();
+              await backend.open(session);
+              transport.errors['close'] = const PlatformException(
+                code: 'close_failed',
+              );
+
+              await expectLater(backend.close(), throwsA(isA<PlatformException>()));
+              final staleError = expectLater(
+                backend.events,
+                emitsError(isA<StateError>()),
+              );
+              transport.add({
+                'sequence': 0,
+                'sessionId': session.sessionId,
+                'timelineMapIdentity': session.timelineMapIdentity,
+                'state': 'playing',
+              });
+              await staleError;
+            });
+
+          '''
+          media3_test.write_text(
+              media3_source.replace(media3_marker, media3_extra + media3_marker),
+          )
+
+          classifier_test = Path(
+              'test/application/playback_failure_classifier_test.dart',
+          )
+          classifier_source = classifier_test.read_text()
+          classifier_marker = "  test('unknown raw errors collapse to one stable diagnostic code', () {"
+          if classifier_source.count(classifier_marker) != 1:
+              raise SystemExit('Unexpected classifier test marker.')
+          classifier_extra = r'''
+            test('raw native error scanning is bounded', () {
+              final raw = '${'x' * 9000} decoder failed';
+              final failure = classifier.classifyMediaKitError(raw);
+              expect(failure.kind, PlaybackFailureKind.unknown);
+              expect(failure.code, 'unknown_playback_failure');
+            });
+
+          '''
+          classifier_test.write_text(
+              classifier_source.replace(
+                  classifier_marker,
+                  classifier_extra + classifier_marker,
+              ),
+          )
+
+          Path('test/domain/player_backend_test.dart').write_text(r'''import 'package:flutter_test/flutter_test.dart';
+          import 'package:wynime/src/domain/models/player_backend.dart';
+
+          void main() {
+            test('backend availability enforces runtime-safe identifiers', () {
+              expect(
+                () => PlayerBackendAvailability.available('bad backend id'),
+                throwsArgumentError,
+              );
+              expect(
+                () => PlayerBackendAvailability(
+                  status: PlayerBackendAvailabilityStatus.available,
+                  backendId: 'mpv',
+                  reasonCode: 'should-not-exist',
+                ),
+                throwsArgumentError,
+              );
+              expect(
+                () => PlayerBackendAvailability(
+                  status: PlayerBackendAvailabilityStatus.unavailable,
+                  backendId: 'mpv',
+                ),
+                throwsArgumentError,
+              );
+            });
+          }
+          ''')
+
+          replace_once(
+              'test/architecture/playback_dependency_test.dart',
+              """    expect(File('.github/workflows/phase6-apply.yml').existsSync(), isFalse);
+              expect(Directory('.phase6').existsSync(), isFalse);
+          """,
+              """    expect(File('.github/workflows/phase6-apply.yml').existsSync(), isFalse);
+              expect(
+                File('.github/workflows/phase6-reviewer-fixes.yml').existsSync(),
+                isFalse,
+              );
+              expect(Directory('.phase6').existsSync(), isFalse);
+          """,
+          )
+
+          Path('.github/workflows/phase6-reviewer-fixes.yml').unlink()
+          PY
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Format
+        run: dart format .
+
+      - name: Verify generated Drift code
+        run: dart run build_runner build
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Run all tests
+        run: flutter test
+
+      - name: Build Android debug APK
+        run: flutter build apk --debug
+
+      - name: Verify reviewer-fix scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          test ! -e .github/workflows/phase6-reviewer-fixes.yml
+          {
+            git diff --name-only
+            git ls-files --others --exclude-standard
+          } | sort -u > /tmp/actual.txt
+          cat > /tmp/allowed.txt <<'EOF'
+          .github/workflows/phase6-reviewer-fixes.yml
+          android/app/src/main/kotlin/io/github/william12233/wynime/MainActivity.kt
+          lib/src/application/playback/playback_engine_router.dart
+          lib/src/application/playback/playback_failure_classifier.dart
+          lib/src/domain/models/player_backend.dart
+          lib/src/platform/playback/media3_player_backend.dart
+          lib/src/platform/playback/media_kit_facade.dart
+          lib/src/platform/playback/mpv_player_backend.dart
+          test/application/playback_engine_router_test.dart
+          test/application/playback_failure_classifier_test.dart
+          test/architecture/playback_dependency_test.dart
+          test/domain/player_backend_test.dart
+          test/helpers/fake_player_backend.dart
+          test/platform/media3_player_backend_test.dart
+          test/platform/mpv_player_backend_test.dart
+          EOF
+          sort -o /tmp/allowed.txt /tmp/allowed.txt
+          comm -23 /tmp/actual.txt /tmp/allowed.txt > /tmp/unexpected.txt
+          if test -s /tmp/unexpected.txt; then
+            cat /tmp/unexpected.txt
+            exit 1
+          fi
+
+      - name: Commit reviewer fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: harden Phase 6 engine lifecycle boundaries'
+          git push origin HEAD:phase-6/media-kit-routing

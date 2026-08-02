@@ -7,6 +7,9 @@ import '../../domain/models/source_package_manifest.dart';
 import '../../domain/models/source_rule_program.dart';
 import '../../domain/models/source_security_policy.dart';
 import '../../domain/services/source_rule_evaluator.dart';
+import 'evaluation_budget_meter.dart';
+import 'json_path_subset.dart';
+import 'safe_regex_policy.dart';
 
 final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   const SourceFixtureRuleEngine();
@@ -19,7 +22,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   }) {
     final policy = package.securityPolicy;
     _validateFixtureSecurity(policy, program, fixture);
-    final meter = _BudgetMeter(policy.budget);
+    final meter = EvaluationBudgetMeter(policy.budget);
     return switch (program.documentKind) {
       SourceDocumentKind.html => _evaluateHtml(program, fixture, meter),
       SourceDocumentKind.json => _evaluateJson(program, fixture, meter),
@@ -69,7 +72,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   SourceEvaluationResult _evaluateHtml(
     SourceRuleProgram program,
     SourceFixture fixture,
-    _BudgetMeter meter,
+    EvaluationBudgetMeter meter,
   ) {
     final Document document;
     try {
@@ -129,7 +132,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   String? _extractHtmlField(
     Element root,
     SourceFieldRule field,
-    _BudgetMeter meter,
+    EvaluationBudgetMeter meter,
   ) {
     final Element? target;
     if (field.selector == null) {
@@ -153,13 +156,16 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   List<Element> _queryAll(
     dynamic root,
     String expression,
-    _BudgetMeter meter,
+    EvaluationBudgetMeter meter,
   ) {
     meter.consumeStep();
     try {
-      final List<Element> matches = (root.querySelectorAll(expression) as List<Element>);
+      final rawMatches = root.querySelectorAll(expression) as Iterable;
+      final matches = rawMatches.cast<Element>().toList(growable: false);
       meter.addSelectorMatches(matches.length);
       return matches;
+    } on SourceRuleSecurityException {
+      rethrow;
     } on Object catch (error) {
       throw SourceRuleEvaluationException(
         'invalid_css_selector',
@@ -171,20 +177,17 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   SourceEvaluationResult _evaluateJson(
     SourceRuleProgram program,
     SourceFixture fixture,
-    _BudgetMeter meter,
+    EvaluationBudgetMeter meter,
   ) {
     final Object? document;
     try {
       meter.consumeStep();
       document = jsonDecode(fixture.body);
     } on FormatException catch (error) {
-      throw SourceRuleEvaluationException(
-        'json_parse_failed',
-        error.message,
-      );
+      throw SourceRuleEvaluationException('json_parse_failed', error.message);
     }
 
-    final roots = _JsonPathSubset.evaluate(
+    final roots = JsonPathSubset.evaluate(
       document,
       program.rootSelector.expression,
       meter,
@@ -204,7 +207,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
         meter.consumeStep();
         final selected = field.selector == null
             ? <Object?>[roots[index]]
-            : _JsonPathSubset.evaluate(
+            : JsonPathSubset.evaluate(
                 roots[index],
                 field.selector!.expression,
                 meter,
@@ -253,7 +256,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   String? _applyRegex(
     String? input,
     SourceRegexCapture? capture,
-    _BudgetMeter meter,
+    EvaluationBudgetMeter meter,
   ) {
     if (input == null || input.isEmpty) {
       return null;
@@ -262,31 +265,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
       return input;
     }
     meter.consumeStep();
-    _SafeRegexPolicy.validate(capture, input, meter.budget);
-    final RegExp expression;
-    try {
-      expression = RegExp(
-        capture.pattern,
-        caseSensitive: capture.caseSensitive,
-      );
-    } on FormatException catch (error) {
-      throw SourceRuleEvaluationException(
-        'invalid_regex',
-        error.message,
-      );
-    }
-    final match = expression.firstMatch(input);
-    if (match == null) {
-      return null;
-    }
-    try {
-      return match.group(capture.group)?.trim();
-    } on RangeError {
-      throw SourceRuleEvaluationException(
-        'invalid_regex_group',
-        'Requested capture group ${capture.group} does not exist.',
-      );
-    }
+    return SafeRegexPolicy.capture(capture, input, meter.budget);
   }
 
   static String _normalizeWhitespace(String value) {
@@ -294,215 +273,18 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
   }
 
   static String? _jsonValueToString(Object? value) {
-    return switch (value) {
-      null => null,
-      String string => string.trim(),
-      num number => number.toString(),
-      bool boolean => boolean.toString(),
-      List() || Map() => jsonEncode(value),
-      _ => value.toString(),
-    };
-  }
-}
-
-final class _BudgetMeter {
-  _BudgetMeter(this.budget);
-
-  final SourceResourceBudget budget;
-  int consumedSteps = 0;
-  int selectorMatches = 0;
-
-  void consumeStep([int count = 1]) {
-    consumedSteps += count;
-    if (consumedSteps > budget.maxEvaluationSteps) {
-      throw SourceRuleSecurityException(
-        'evaluation_budget_exceeded',
-        'Evaluation step budget was exceeded.',
-      );
+    if (value == null) {
+      return null;
     }
-  }
-
-  void addSelectorMatches(int count) {
-    selectorMatches += count;
-    if (selectorMatches > budget.maxSelectorMatches) {
-      throw SourceRuleSecurityException(
-        'selector_match_budget_exceeded',
-        'Selector match budget was exceeded.',
-      );
+    if (value is String) {
+      return value.trim();
     }
-  }
-}
-
-final class _JsonPathSubset {
-  static List<Object?> evaluate(
-    Object? root,
-    String expression,
-    _BudgetMeter meter,
-  ) {
-    final segments = _parse(expression);
-    var current = <Object?>[root];
-    for (final segment in segments) {
-      meter.consumeStep(current.length + 1);
-      final next = <Object?>[];
-      for (final value in current) {
-        switch (segment) {
-          case _JsonPropertySegment(:final name):
-            if (value is Map && value.containsKey(name)) {
-              next.add(value[name]);
-            }
-          case _JsonIndexSegment(:final index):
-            if (value is List && index < value.length) {
-              next.add(value[index]);
-            }
-          case _JsonWildcardSegment():
-            if (value is List) {
-              next.addAll(value);
-            }
-        }
-      }
-      current = next;
+    if (value is num || value is bool) {
+      return value.toString();
     }
-    return current;
-  }
-
-  static List<_JsonPathSegment> _parse(String expression) {
-    if (!expression.startsWith(r'$')) {
-      throw SourceRuleEvaluationException(
-        'invalid_json_path',
-        r'JSONPath must start with $.',
-      );
+    if (value is List || value is Map) {
+      return jsonEncode(value);
     }
-    final segments = <_JsonPathSegment>[];
-    var index = 1;
-    while (index < expression.length) {
-      final char = expression[index];
-      if (char == '.') {
-        index++;
-        final start = index;
-        while (index < expression.length &&
-            RegExp(r'[A-Za-z0-9_-]').hasMatch(expression[index])) {
-          index++;
-        }
-        if (start == index ||
-            !RegExp(r'[A-Za-z_]').hasMatch(expression[start])) {
-          throw SourceRuleEvaluationException(
-            'invalid_json_path',
-            'Invalid property segment in $expression.',
-          );
-        }
-        segments.add(_JsonPropertySegment(expression.substring(start, index)));
-        continue;
-      }
-      if (char == '[') {
-        final end = expression.indexOf(']', index + 1);
-        if (end < 0) {
-          throw SourceRuleEvaluationException(
-            'invalid_json_path',
-            'Unclosed index segment in $expression.',
-          );
-        }
-        final token = expression.substring(index + 1, end);
-        if (token == '*') {
-          segments.add(const _JsonWildcardSegment());
-        } else {
-          final parsed = int.tryParse(token);
-          if (parsed == null || parsed < 0) {
-            throw SourceRuleEvaluationException(
-              'invalid_json_path',
-              'Only non-negative indexes and [*] are supported.',
-            );
-          }
-          segments.add(_JsonIndexSegment(parsed));
-        }
-        index = end + 1;
-        continue;
-      }
-      throw SourceRuleEvaluationException(
-        'invalid_json_path',
-        'Unsupported JSONPath syntax at offset $index.',
-      );
-    }
-    return segments;
-  }
-}
-
-sealed class _JsonPathSegment {
-  const _JsonPathSegment();
-}
-
-final class _JsonPropertySegment extends _JsonPathSegment {
-  const _JsonPropertySegment(this.name);
-
-  final String name;
-}
-
-final class _JsonIndexSegment extends _JsonPathSegment {
-  const _JsonIndexSegment(this.index);
-
-  final int index;
-}
-
-final class _JsonWildcardSegment extends _JsonPathSegment {
-  const _JsonWildcardSegment();
-}
-
-final class _SafeRegexPolicy {
-  static void validate(
-    SourceRegexCapture capture,
-    String input,
-    SourceResourceBudget budget,
-  ) {
-    final pattern = capture.pattern;
-    if (pattern.length > budget.maxRegexPatternChars) {
-      throw SourceRuleSecurityException(
-        'regex_pattern_budget_exceeded',
-        'Regular-expression pattern is too long.',
-      );
-    }
-    if (input.length > budget.maxRegexInputChars) {
-      throw SourceRuleSecurityException(
-        'regex_input_budget_exceeded',
-        'Regular-expression input is too long.',
-      );
-    }
-    if (pattern.contains('(?')) {
-      throw SourceRuleSecurityException(
-        'regex_lookaround_disallowed',
-        'Lookaround, named groups and inline modes are not allowed.',
-      );
-    }
-    if (RegExp(r'\\[1-9]').hasMatch(pattern) || pattern.contains(r'\k<')) {
-      throw SourceRuleSecurityException(
-        'regex_backreference_disallowed',
-        'Backreferences are not allowed.',
-      );
-    }
-    final nestedQuantifier = RegExp(
-      r'\((?:\\.|[^()])*(?:[*+?]|\{\d+(?:,\d*)?\})'
-      r'(?:\\.|[^()])*\)(?:[*+?]|\{\d+(?:,\d*)?\})',
-    );
-    if (nestedQuantifier.hasMatch(pattern)) {
-      throw SourceRuleSecurityException(
-        'regex_nested_quantifier_disallowed',
-        'Nested quantifiers are not allowed.',
-      );
-    }
-    final quantifiedAlternation = RegExp(
-      r'\((?:\\.|[^()])*\|(?:\\.|[^()])*\)'
-      r'(?:[*+?]|\{\d+(?:,\d*)?\})',
-    );
-    if (quantifiedAlternation.hasMatch(pattern)) {
-      throw SourceRuleSecurityException(
-        'regex_quantified_alternation_disallowed',
-        'Quantified alternations are not allowed.',
-      );
-    }
-    final repeatedWildcard = RegExp(r'(?:\.\*|\.\+).*(?:\.\*|\.\+)');
-    if (repeatedWildcard.hasMatch(pattern)) {
-      throw SourceRuleSecurityException(
-        'regex_repeated_wildcard_disallowed',
-        'Repeated wildcard quantifiers are not allowed.',
-      );
-    }
+    return value.toString();
   }
 }

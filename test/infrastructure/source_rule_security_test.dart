@@ -112,7 +112,13 @@ void main() {
           body: '<div class="item">A</div><div class="item">B</div>',
         ),
       ),
-      throwsA(isA<SourceRuleSecurityException>()),
+      throwsA(
+        isA<SourceRuleSecurityException>().having(
+          (error) => error.code,
+          'code',
+          'selector_match_budget_exceeded',
+        ),
+      ),
     );
   });
 
@@ -123,6 +129,8 @@ void main() {
       r'(.*).*(x)',
       r'(a)\1',
       r'(?=a)a',
+      r'a+',
+      r'(\d+)?',
     ];
 
     for (final pattern in unsafePatterns) {

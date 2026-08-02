@@ -23,8 +23,8 @@ final class SourceResourceBudget {
     _validateRange(maxRecords, 'maxRecords', 1, 1000);
     _validateRange(maxSelectorMatches, 'maxSelectorMatches', 1, 5000);
     _validateRange(maxEvaluationSteps, 'maxEvaluationSteps', 1, 50000);
-    _validateRange(maxRegexPatternChars, 'maxRegexPatternChars', 1, 512);
-    _validateRange(maxRegexInputChars, 'maxRegexInputChars', 1, 16384);
+    _validateRange(maxRegexPatternChars, 'maxRegexPatternChars', 1, 256);
+    _validateRange(maxRegexInputChars, 'maxRegexInputChars', 1, 4096);
     _validateRange(maxRedirects, 'maxRedirects', 0, 10);
   }
 

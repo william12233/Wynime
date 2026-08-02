@@ -31,31 +31,33 @@ Before changing code, read in this order:
 - Platform-specific code must stay behind typed interfaces.
 - Domain must remain pure Dart and must not import Flutter, Drift, HTML parsers, WebView plugins, `dart:io`, or `dart:ffi`.
 
-## Phase 3 scope
+## Phase 4 scope
 
 Allowed:
-- Android native WebView and Windows WebView2 behind typed interfaces
-- Explicit runtime availability reporting
-- Desktop user-agent policy guarded by declared permission
-- Cookie import, export, and scoped clearing guarded by declared permission
-- Navigation, iframe, resource, XHR, and fetch request observation
-- Allowlist enforcement and bounded in-memory media-candidate capture
-- Redacted diagnostics and deterministic replay tests
-- Android and Windows build gates
+- Hardened authoritative `PlaybackSession` models and refresh invariants
+- Controlled media-candidate to `PlaybackSession` resolution
+- Loopback-only IPv4 or IPv6 HTTP proxy with per-session capability paths
+- Source-allowlist enforcement, DNS public-address preflight and bounded redirects
+- Bounded forwarding of approved headers, cookies, Referer, Origin and User-Agent
+- HLS master/media playlist URI rewriting without ad decisions or timeline edits
+- GET, HEAD, one-range forwarding, lease cancellation and service shutdown
+- Android Media3 1.10.1 behind typed Flutter platform interfaces
+- Pure-Dart playback state and failure classification
+- Explicit Windows unsupported backend while preserving Windows buildability
+- Android and Windows build gates, proxy integration tests and architecture tests
 
 Required defaults:
-- File and content URI access disabled
-- File-URL cross-origin and universal access disabled
-- Mixed content blocked
-- Camera, microphone, geolocation, and new-window requests denied
-- Media playback requires a user gesture
-- Captured cookies, tokens, Authorization values, and full URLs must not be logged or persisted
-- A missing WebView2 Runtime returns an explicit unavailable status
+- Proxy listeners bind only to numeric loopback addresses and ephemeral ports
+- Every exposed session receives an unguessable capability token and opaque resource IDs
+- Unknown tokens, undeclared authorities, non-public DNS results and excess budgets fail closed
+- Upstream redirects and HLS child resources reuse the Phase 2 `SourceSecurityPolicy`
+- Set-Cookie, upstream Location, Authorization, Cookie, tokens and full upstream URLs are never returned to players or diagnostics
+- Media3 accepts only a validated loopback proxy URI, never a raw upstream URI
+- HTTP 401／403 and explicit expiry request `PlaybackSession` refresh instead of decoder fallback
+- Playback events remain bound to the current session identity
 
 Not allowed yet:
-- Source-provided Dart, JavaScript, WASM, or native executable adapters
-- DRM, paywall, login, or access-control bypass
-- `PlaybackSession` resolution or refresh callbacks
-- Local HLS proxy, sanitizer, ad detection, or timeline mapping
-- Media3, mpv, playback backend selection, or playback error recovery
-- Real downloads, FFmpeg, Bangumi authentication, or Phase 4 work
+- Manifest sanitization, ad detection, `AdRemovalPlan` generation or timeline rewriting
+- Source-provided Dart, JavaScript, WASM or native executable adapters
+- DRM, paywall, login or access-control bypass
+- mpv, FFmpeg, real downloads, Bangumi authentication or Phase 5 work

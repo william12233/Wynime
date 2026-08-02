@@ -87,6 +87,16 @@ jobs:
                   if path.is_absolute() or '..' in path.parts or not member.isfile():
                       raise SystemExit(f'unsafe review payload member: {member.name}')
               bundle.extractall(path='.', filter='data')
+
+          test_path = Path(
+              'test/infrastructure/loopback_playback_proxy_test.dart'
+          )
+          content = test_path.read_text()
+          broken = "rewrittenMaster.split('\n')"
+          fixed = "rewrittenMaster.split('\\n')"
+          if content.count(broken) != 1:
+              raise SystemExit('proxy newline correction precondition failed')
+          test_path.write_text(content.replace(broken, fixed, 1))
           PY
 
       - name: Format reviewer scope

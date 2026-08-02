@@ -17,6 +17,59 @@ env:
   FLUTTER_VERSION: 3.44.8
 
 jobs:
+  generate-phase-1-artifacts:
+    name: Generate missing Phase 1 artifacts
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'phase-1/persistence'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    concurrency:
+      group: wynime-phase-1-persistence-generation
+      cancel-in-progress: true
+    steps:
+      - name: Checkout Phase 1 branch
+        uses: actions/checkout@v6
+        with:
+          ref: phase-1/persistence
+          fetch-depth: 0
+      - name: Skip when generation is complete
+        id: marker
+        shell: bash
+        run: |
+          if [[ -f .phase1-persistence-request ]]; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Flutter
+        if: steps.marker.outputs.required == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        if: steps.marker.outputs.required == 'true'
+        run: flutter pub get
+      - name: Generate and format artifacts
+        if: steps.marker.outputs.required == 'true'
+        run: |
+          dart run build_runner build
+          dart format .
+      - name: Commit generated artifacts
+        if: steps.marker.outputs.required == 'true'
+        shell: bash
+        run: |
+          rm -f .phase1-persistence-request
+          rm -f .github/workflows/generate-phase-1-persistence.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "build: generate Phase 1 persistence artifacts"
+          git pull --rebase origin phase-1/persistence
+          git push origin HEAD:phase-1/persistence
+
   static-analysis:
     name: Generated code, format, and analyze
     runs-on: ubuntu-24.04

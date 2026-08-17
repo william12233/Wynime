@@ -2,9 +2,11 @@ package io.github.william12233.wynime
 
 import android.net.Uri
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackGroup
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.datasource.HttpDataSource
@@ -21,11 +23,32 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         const val EVENT_CHANNEL = "io.github.william12233.wynime/media3/events"
     }
 
+    private data class TrackDescriptor(
+        val id: String,
+        val label: String,
+        val languageCode: String?,
+        val mimeType: String?,
+        val isDefault: Boolean,
+    )
+
+    private data class BoundTrack(
+        val group: TrackGroup,
+        val trackIndex: Int,
+        val authoritativeId: String,
+    )
+
+    private data class NativeTrack(
+        val group: Tracks.Group,
+        val trackIndex: Int,
+        val format: Format,
+    )
+
     private var player: ExoPlayer? = null
     private var eventSink: EventChannel.EventSink? = null
     private var eventSequence = 0L
     private var activeSessionId: String? = null
     private var activeTimelineMapIdentity: String? = null
+    private val boundTracks = mutableMapOf<Int, BoundTrack>()
 
     private val playerListener =
         object : Player.Listener {
@@ -45,6 +68,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
             }
 
             override fun onTracksChanged(tracks: Tracks) {
+                discardStaleTrackBindings(tracks)
                 if (player?.playbackState == Player.STATE_READY) {
                     emitState(if (player?.isPlaying == true) "playing" else "ready")
                 }
@@ -128,7 +152,8 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                 "selectTrack" -> {
                     val type = requiredString(call, "type")
                     val id = call.argument<String>("id")?.trim()?.takeIf { it.isNotEmpty() }
-                    selectTrack(type, id)
+                    val descriptor = id?.let { trackDescriptor(call, it) }
+                    selectTrack(type, descriptor)
                     emitCurrentState()
                     result.success(null)
                 }
@@ -158,6 +183,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         closePlayer(emitClosed = false)
         activeSessionId = sessionId
         activeTimelineMapIdentity = timelineMapIdentity
+        boundTracks.clear()
         emitState("opening")
         try {
             player =
@@ -170,11 +196,12 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         } catch (error: RuntimeException) {
             activeSessionId = null
             activeTimelineMapIdentity = null
+            boundTracks.clear()
             throw IllegalStateException("Unable to initialize Media3", error)
         }
     }
 
-    private fun selectTrack(type: String, id: String?) {
+    private fun selectTrack(type: String, descriptor: TrackDescriptor?) {
         val exoPlayer = player ?: throw IllegalStateException("Media3 player is not open")
         val trackType =
             when (type) {
@@ -186,24 +213,85 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
             exoPlayer.trackSelectionParameters
                 .buildUpon()
                 .clearOverridesOfType(trackType)
-        if (id == null) {
+        if (descriptor == null) {
+            boundTracks.remove(trackType)
             exoPlayer.trackSelectionParameters =
                 builder.setTrackTypeDisabled(trackType, true).build()
             return
         }
-        val match = Regex("^(\\d+):(\\d+)$").matchEntire(id)
-            ?: throw IllegalArgumentException("Track ID must use groupIndex:trackIndex")
-        val groupIndex = match.groupValues[1].toInt()
-        val trackIndex = match.groupValues[2].toInt()
-        val groups = exoPlayer.currentTracks.groups.filter { it.type == trackType }
-        val group = groups.getOrNull(groupIndex)
-            ?: throw IllegalStateException("Requested track group is unavailable")
-        require(trackIndex in 0 until group.length) { "Requested track is unavailable" }
+        val match = findUniqueNativeTrack(exoPlayer.currentTracks, trackType, descriptor)
+        boundTracks[trackType] =
+            BoundTrack(
+                group = match.group.mediaTrackGroup,
+                trackIndex = match.trackIndex,
+                authoritativeId = descriptor.id,
+            )
         exoPlayer.trackSelectionParameters =
             builder
                 .setTrackTypeDisabled(trackType, false)
-                .addOverride(TrackSelectionOverride(group.mediaTrackGroup, trackIndex))
+                .addOverride(TrackSelectionOverride(match.group.mediaTrackGroup, match.trackIndex))
                 .build()
+    }
+
+    private fun findUniqueNativeTrack(
+        tracks: Tracks,
+        trackType: Int,
+        descriptor: TrackDescriptor,
+    ): NativeTrack {
+        val candidates = mutableListOf<NativeTrack>()
+        tracks.groups.filter { it.type == trackType }.forEach { group ->
+            for (trackIndex in 0 until group.length) {
+                if (!group.isTrackSupported(trackIndex)) {
+                    continue
+                }
+                candidates += NativeTrack(group, trackIndex, group.getTrackFormat(trackIndex))
+            }
+        }
+
+        val exactId = candidates.filter { it.format.id == descriptor.id }
+        if (exactId.size == 1) {
+            return exactId.single()
+        }
+        if (exactId.size > 1) {
+            throw IllegalStateException("Requested track ID maps to multiple native tracks")
+        }
+
+        val metadataMatches =
+            candidates.filter { candidate ->
+                val format = candidate.format
+                format.label == descriptor.label &&
+                    descriptor.languageCode.matchesOptional(format.language) &&
+                    descriptor.mimeType.matchesOptional(format.sampleMimeType) &&
+                    (!descriptor.isDefault ||
+                        (format.selectionFlags and C.SELECTION_FLAG_DEFAULT) != 0)
+            }
+        if (metadataMatches.size != 1) {
+            throw IllegalStateException(
+                if (metadataMatches.isEmpty()) {
+                    "Requested authoritative track is unavailable"
+                } else {
+                    "Requested authoritative track mapping is ambiguous"
+                },
+            )
+        }
+        return metadataMatches.single()
+    }
+
+    private fun discardStaleTrackBindings(tracks: Tracks) {
+        val iterator = boundTracks.iterator()
+        while (iterator.hasNext()) {
+            val entry = iterator.next()
+            val binding = entry.value
+            val stillPresent =
+                tracks.groups.any { group ->
+                    group.type == entry.key &&
+                        group.mediaTrackGroup == binding.group &&
+                        binding.trackIndex in 0 until group.length
+                }
+            if (!stillPresent) {
+                iterator.remove()
+            }
+        }
     }
 
     private fun closePlayer(emitClosed: Boolean) {
@@ -218,6 +306,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         player = null
         activeSessionId = null
         activeTimelineMapIdentity = null
+        boundTracks.clear()
         if (emitClosed && closingSessionId != null && closingTimelineMapIdentity != null) {
             emitState("closed", closingSessionId, closingTimelineMapIdentity)
         }
@@ -257,15 +346,47 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     }
 
     private fun selectedTrackId(trackType: Int): String? {
-        val groups = player?.currentTracks?.groups?.filter { it.type == trackType } ?: return null
-        groups.forEachIndexed { groupIndex, group ->
-            for (trackIndex in 0 until group.length) {
-                if (group.isTrackSelected(trackIndex)) {
-                    return "$groupIndex:$trackIndex"
-                }
-            }
+        val binding = boundTracks[trackType] ?: return null
+        val selected =
+            player?.currentTracks?.groups?.any { group ->
+                group.type == trackType &&
+                    group.mediaTrackGroup == binding.group &&
+                    binding.trackIndex in 0 until group.length &&
+                    group.isTrackSelected(binding.trackIndex)
+            } ?: false
+        return if (selected) binding.authoritativeId else null
+    }
+
+    private fun trackDescriptor(call: MethodCall, id: String): TrackDescriptor {
+        require(id.length <= 256 && id.none { it.code < 0x20 || it.code == 0x7f }) {
+            "Invalid authoritative track ID"
         }
-        return null
+        val label = requiredString(call, "label")
+        require(label.length <= 256 && label.none { it.code < 0x20 || it.code == 0x7f }) {
+            "Invalid track label"
+        }
+        return TrackDescriptor(
+            id = id,
+            label = label,
+            languageCode = optionalBoundedString(call, "languageCode", 64),
+            mimeType = optionalBoundedString(call, "mimeType", 128),
+            isDefault = call.argument<Boolean>("isDefault") == true,
+        )
+    }
+
+    private fun optionalBoundedString(call: MethodCall, key: String, maxLength: Int): String? {
+        val value = call.argument<String>(key)?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        require(value.length <= maxLength && value.none { it.code < 0x20 || it.code == 0x7f }) {
+            "Invalid $key"
+        }
+        return value
+    }
+
+    private fun String?.matchesOptional(actual: String?): Boolean {
+        if (this == null) {
+            return true
+        }
+        return actual != null && equals(actual, ignoreCase = true)
     }
 
     private fun nextSequence(): Long = eventSequence++

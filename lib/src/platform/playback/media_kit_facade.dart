@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:wynime/src/domain/models/playback_session.dart';
 
 abstract interface class MediaKitFacade {
   Future<bool> probe();
@@ -26,9 +27,9 @@ abstract interface class MediaKitFacadePlayer {
 
   Future<void> setRate(double rate);
 
-  Future<void> selectAudioTrack(String? trackId);
+  Future<void> selectAudioTrack(MediaTrack? track);
 
-  Future<void> selectSubtitleTrack(String? trackId);
+  Future<void> selectSubtitleTrack(MediaTrack? track);
 
   Future<void> dispose();
 }
@@ -151,14 +152,21 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
       _player.stream.rate.listen(
         (value) => _emit(MediaKitFacadeEvent.rate(value)),
       ),
-      _player.stream.track.listen(
-        (value) => _emit(
+      _player.stream.track.listen((value) {
+        final selectedAudio = _normalizedSelectedTrack(value.audio.id);
+        final selectedSubtitle = _normalizedSelectedTrack(value.subtitle.id);
+        _emit(
           MediaKitFacadeEvent.track(
-            audioTrackId: _normalizedSelectedTrack(value.audio.id),
-            subtitleTrackId: _normalizedSelectedTrack(value.subtitle.id),
+            audioTrackId: selectedAudio != null && selectedAudio == _audioNativeId
+                ? _audioAuthoritativeId
+                : null,
+            subtitleTrackId:
+                selectedSubtitle != null && selectedSubtitle == _subtitleNativeId
+                ? _subtitleAuthoritativeId
+                : null,
           ),
-        ),
-      ),
+        );
+      }),
       _player.stream.error.listen(
         (value) => _emit(MediaKitFacadeEvent.failure(value)),
       ),
@@ -171,6 +179,10 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
       StreamController<MediaKitFacadeEvent>.broadcast();
   final List<StreamSubscription<dynamic>> _subscriptions = [];
   bool _disposed = false;
+  String? _audioNativeId;
+  String? _audioAuthoritativeId;
+  String? _subtitleNativeId;
+  String? _subtitleAuthoritativeId;
 
   @override
   Stream<MediaKitFacadeEvent> get events => _events.stream;
@@ -181,6 +193,7 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
   @override
   Future<void> open(Uri uri, {Duration startPosition = Duration.zero}) async {
     _ensureActive();
+    _clearTrackBindings();
     await _player.open(
       Media(
         uri.toString(),
@@ -222,37 +235,55 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
   }
 
   @override
-  Future<void> selectAudioTrack(String? trackId) async {
+  Future<void> selectAudioTrack(MediaTrack? track) async {
     _ensureActive();
-    if (trackId == null) {
+    if (track == null) {
+      _audioNativeId = null;
+      _audioAuthoritativeId = null;
       await _player.setAudioTrack(AudioTrack.no());
       return;
     }
-    final track = _firstWhereOrNull(
-      _player.state.tracks.audio,
-      (candidate) => candidate.id == trackId,
-    );
-    if (track == null) {
-      throw StateError('Requested audio track is unavailable.');
+    if (track.uri != null) {
+      throw StateError('External audio track mapping is not supported.');
     }
-    await _player.setAudioTrack(track);
+    final candidate = _uniqueAudioTrack(_player.state.tracks.audio, track);
+    final previousNative = _audioNativeId;
+    final previousAuthoritative = _audioAuthoritativeId;
+    _audioNativeId = candidate.id;
+    _audioAuthoritativeId = track.id;
+    try {
+      await _player.setAudioTrack(candidate);
+    } on Object {
+      _audioNativeId = previousNative;
+      _audioAuthoritativeId = previousAuthoritative;
+      rethrow;
+    }
   }
 
   @override
-  Future<void> selectSubtitleTrack(String? trackId) async {
+  Future<void> selectSubtitleTrack(MediaTrack? track) async {
     _ensureActive();
-    if (trackId == null) {
+    if (track == null) {
+      _subtitleNativeId = null;
+      _subtitleAuthoritativeId = null;
       await _player.setSubtitleTrack(SubtitleTrack.no());
       return;
     }
-    final track = _firstWhereOrNull(
-      _player.state.tracks.subtitle,
-      (candidate) => candidate.id == trackId,
-    );
-    if (track == null) {
-      throw StateError('Requested subtitle track is unavailable.');
+    if (track.uri != null) {
+      throw StateError('External subtitle track mapping is not supported.');
     }
-    await _player.setSubtitleTrack(track);
+    final candidate = _uniqueSubtitleTrack(_player.state.tracks.subtitle, track);
+    final previousNative = _subtitleNativeId;
+    final previousAuthoritative = _subtitleAuthoritativeId;
+    _subtitleNativeId = candidate.id;
+    _subtitleAuthoritativeId = track.id;
+    try {
+      await _player.setSubtitleTrack(candidate);
+    } on Object {
+      _subtitleNativeId = previousNative;
+      _subtitleAuthoritativeId = previousAuthoritative;
+      rethrow;
+    }
   }
 
   @override
@@ -261,12 +292,20 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
       return;
     }
     _disposed = true;
+    _clearTrackBindings();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
     _subscriptions.clear();
     await _player.dispose();
     await _events.close();
+  }
+
+  void _clearTrackBindings() {
+    _audioNativeId = null;
+    _audioAuthoritativeId = null;
+    _subtitleNativeId = null;
+    _subtitleAuthoritativeId = null;
   }
 
   void _emit(MediaKitFacadeEvent event) {
@@ -282,14 +321,76 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
   }
 }
 
-T? _firstWhereOrNull<T>(Iterable<T> values, bool Function(T) test) {
-  for (final value in values) {
-    if (test(value)) {
-      return value;
-    }
+AudioTrack _uniqueAudioTrack(List<AudioTrack> candidates, MediaTrack target) {
+  final internal = candidates
+      .where((candidate) => !candidate.uri && !_reservedTrackId(candidate.id))
+      .toList(growable: false);
+  final exact = internal.where((candidate) => candidate.id == target.id).toList();
+  if (exact.length == 1) {
+    return exact.single;
   }
-  return null;
+  if (exact.length > 1) {
+    throw StateError('Requested audio track ID is ambiguous.');
+  }
+  final metadata = internal.where(
+    (candidate) =>
+        candidate.title == target.label &&
+        _optionalCaseInsensitiveEquals(target.languageCode, candidate.language) &&
+        (!target.isDefault || candidate.isDefault == true),
+  );
+  final matches = metadata.toList(growable: false);
+  if (matches.length != 1) {
+    throw StateError(
+      matches.isEmpty
+          ? 'Requested authoritative audio track is unavailable.'
+          : 'Requested authoritative audio track mapping is ambiguous.',
+    );
+  }
+  return matches.single;
 }
 
+SubtitleTrack _uniqueSubtitleTrack(
+  List<SubtitleTrack> candidates,
+  MediaTrack target,
+) {
+  final internal = candidates
+      .where(
+        (candidate) =>
+            !candidate.uri && !candidate.data && !_reservedTrackId(candidate.id),
+      )
+      .toList(growable: false);
+  final exact = internal.where((candidate) => candidate.id == target.id).toList();
+  if (exact.length == 1) {
+    return exact.single;
+  }
+  if (exact.length > 1) {
+    throw StateError('Requested subtitle track ID is ambiguous.');
+  }
+  final metadata = internal.where(
+    (candidate) =>
+        candidate.title == target.label &&
+        _optionalCaseInsensitiveEquals(target.languageCode, candidate.language) &&
+        (!target.isDefault || candidate.isDefault == true),
+  );
+  final matches = metadata.toList(growable: false);
+  if (matches.length != 1) {
+    throw StateError(
+      matches.isEmpty
+          ? 'Requested authoritative subtitle track is unavailable.'
+          : 'Requested authoritative subtitle track mapping is ambiguous.',
+    );
+  }
+  return matches.single;
+}
+
+bool _optionalCaseInsensitiveEquals(String? expected, String? actual) {
+  if (expected == null) {
+    return true;
+  }
+  return actual != null && expected.toLowerCase() == actual.toLowerCase();
+}
+
+bool _reservedTrackId(String id) => id == 'auto' || id == 'no';
+
 String? _normalizedSelectedTrack(String id) =>
-    id == 'auto' || id == 'no' ? null : id;
+    _reservedTrackId(id) ? null : id;

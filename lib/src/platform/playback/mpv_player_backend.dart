@@ -140,15 +140,17 @@ final class MpvPlayerBackend implements PlayerBackend {
 
   @override
   Future<void> selectAudioTrack(String? trackId) async {
-    _verifyTrack(_requireSession().audioTracks, trackId, 'audio');
-    await _requirePlayer().selectAudioTrack(trackId);
+    final session = _requireSession();
+    final track = _trackById(session.audioTracks, trackId, 'audio');
+    await _requirePlayer().selectAudioTrack(track);
     _audioTrackId = trackId;
   }
 
   @override
   Future<void> selectSubtitleTrack(String? trackId) async {
-    _verifyTrack(_requireSession().subtitles, trackId, 'subtitle');
-    await _requirePlayer().selectSubtitleTrack(trackId);
+    final session = _requireSession();
+    final track = _trackById(session.subtitles, trackId, 'subtitle');
+    await _requirePlayer().selectSubtitleTrack(track);
     _subtitleTrackId = trackId;
   }
 
@@ -177,7 +179,8 @@ final class MpvPlayerBackend implements PlayerBackend {
   }
 
   void _onFacadeEvent(MediaKitFacadeEvent event) {
-    if (_session == null || _player == null) {
+    final session = _session;
+    if (session == null || _player == null) {
       return;
     }
     switch (event.type) {
@@ -208,6 +211,24 @@ final class MpvPlayerBackend implements PlayerBackend {
           _emit(_playing ? PlaybackState.playing : PlaybackState.ready);
         }
       case MediaKitFacadeEventType.track:
+        if (!_isAuthoritativeTrackId(session.audioTracks, event.audioTrackId) ||
+            !_isAuthoritativeTrackId(
+              session.subtitles,
+              event.subtitleTrackId,
+            )) {
+          _playing = false;
+          _emitFailure(
+            PlaybackFailure(
+              code: 'track_identity_mismatch',
+              kind: PlaybackFailureKind.unknown,
+              stage: PlaybackErrorStage.player,
+              retryable: false,
+              shouldRefreshSession: false,
+            ),
+          );
+          unawaited(_releasePlayer());
+          return;
+        }
         _audioTrackId = event.audioTrackId;
         _subtitleTrackId = event.subtitleTrackId;
         _emit(_playing ? PlaybackState.playing : PlaybackState.ready);
@@ -314,11 +335,24 @@ Uri _validatedCapabilityUri(PlaybackSession session) {
   return uri;
 }
 
-void _verifyTrack(Iterable<MediaTrack> tracks, String? id, String type) {
+MediaTrack? _trackById(
+  Iterable<MediaTrack> tracks,
+  String? id,
+  String type,
+) {
   if (id == null) {
-    return;
+    return null;
   }
-  if (!tracks.any((track) => track.id == id)) {
-    throw StateError('Requested $type track is unavailable.');
+  for (final track in tracks) {
+    if (track.id == id) {
+      if (track.uri != null) {
+        throw StateError('External $type track mapping is not supported.');
+      }
+      return track;
+    }
   }
+  throw StateError('Requested $type track is unavailable.');
 }
+
+bool _isAuthoritativeTrackId(Iterable<MediaTrack> tracks, String? id) =>
+    id == null || tracks.any((track) => track.id == id && track.uri == null);

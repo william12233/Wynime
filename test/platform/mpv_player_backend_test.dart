@@ -82,6 +82,30 @@ void main() {
     expect(player.disposeCount, 1);
   });
 
+  test('mpv rejects external track identity instead of loading its URI', () async {
+    final player = _FakeMediaKitPlayer();
+    final backend = MpvPlayerBackend(
+      facade: _FakeMediaKitFacade(player: player),
+    );
+    await backend.open(
+      _loopbackSession(
+        audioTracks: [
+          MediaTrack(
+            id: 'external-audio',
+            label: 'External',
+            uri: Uri.parse('https://media.example/audio.m4a'),
+          ),
+        ],
+      ),
+    );
+
+    await expectLater(
+      backend.selectAudioTrack('external-audio'),
+      throwsStateError,
+    );
+    expect(player.audioTracks, isEmpty);
+  });
+
   test('mpv maps facade state without exposing raw errors', () async {
     final player = _FakeMediaKitPlayer();
     final backend = MpvPlayerBackend(
@@ -113,6 +137,32 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  test('mpv fails closed on a non-session track event', () async {
+    final player = _FakeMediaKitPlayer();
+    final backend = MpvPlayerBackend(
+      facade: _FakeMediaKitFacade(player: player),
+    );
+    final session = _loopbackSession(
+      audioTracks: [MediaTrack(id: 'audio-1', label: 'Japanese')],
+    );
+    await backend.open(session);
+    final failureFuture = backend.events.firstWhere(
+      (event) => event.failure?.code == 'track_identity_mismatch',
+    );
+
+    player.emit(
+      const MediaKitFacadeEvent.track(
+        audioTrackId: 'native-only-id',
+        subtitleTrackId: null,
+      ),
+    );
+
+    final failure = await failureFuture;
+    expect(failure.failure?.kind, PlaybackFailureKind.unknown);
+    await Future<void>.delayed(Duration.zero);
+    expect(backend.activePlayer, isNull);
   });
 
   test('mpv facade creation failure leaves no active player', () async {
@@ -213,13 +263,13 @@ final class _FakeMediaKitPlayer implements MediaKitFacadePlayer {
   }
 
   @override
-  Future<void> selectAudioTrack(String? trackId) async {
-    audioTracks.add(trackId);
+  Future<void> selectAudioTrack(MediaTrack? track) async {
+    audioTracks.add(track?.id);
   }
 
   @override
-  Future<void> selectSubtitleTrack(String? trackId) async {
-    subtitleTracks.add(trackId);
+  Future<void> selectSubtitleTrack(MediaTrack? track) async {
+    subtitleTracks.add(track?.id);
   }
 
   @override

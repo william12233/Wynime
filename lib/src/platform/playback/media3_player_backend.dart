@@ -60,6 +60,7 @@ final class Media3PlayerBackend implements PlayerBackend {
   int _lastSequence = -1;
   String? _activeSessionId;
   String? _timelineMapIdentity;
+  PlaybackSession? _activeSession;
 
   @override
   String get backendId => 'android-media3';
@@ -105,6 +106,7 @@ final class Media3PlayerBackend implements PlayerBackend {
     }
     _activeSessionId = session.sessionId;
     _timelineMapIdentity = session.timelineMapIdentity;
+    _activeSession = session;
     try {
       await _transport.invoke('open', {
         'sessionId': session.sessionId,
@@ -114,6 +116,7 @@ final class Media3PlayerBackend implements PlayerBackend {
     } on Object {
       _activeSessionId = null;
       _timelineMapIdentity = null;
+      _activeSession = null;
       rethrow;
     }
   }
@@ -157,10 +160,33 @@ final class Media3PlayerBackend implements PlayerBackend {
       _selectTrack('subtitle', trackId);
 
   Future<void> _selectTrack(String type, String? trackId) async {
-    if (trackId != null && !_validTrackId(trackId)) {
+    if (trackId == null) {
+      await _transport.invoke('selectTrack', {'type': type, 'id': null});
+      return;
+    }
+    if (!_validTrackId(trackId)) {
       throw ArgumentError.value(trackId, 'trackId', 'Invalid track ID.');
     }
-    await _transport.invoke('selectTrack', {'type': type, 'id': trackId});
+    final session = _activeSession;
+    if (session == null) {
+      throw StateError('Media3 player does not have an active PlaybackSession.');
+    }
+    final tracks = type == 'audio' ? session.audioTracks : session.subtitles;
+    final track = _trackById(tracks, trackId);
+    if (track == null) {
+      throw StateError('Requested $type track is unavailable.');
+    }
+    if (track.uri != null) {
+      throw StateError('External $type track mapping is not supported.');
+    }
+    await _transport.invoke('selectTrack', {
+      'type': type,
+      'id': track.id,
+      'label': track.label,
+      'languageCode': track.languageCode,
+      'mimeType': track.mimeType,
+      'isDefault': track.isDefault,
+    });
   }
 
   @override
@@ -168,6 +194,7 @@ final class Media3PlayerBackend implements PlayerBackend {
     await _transport.invoke('close', const {});
     _activeSessionId = null;
     _timelineMapIdentity = null;
+    _activeSession = null;
   }
 
   PlaybackEvent _mapEvent(Map<String, Object?> raw) {
@@ -222,8 +249,16 @@ final class Media3PlayerBackend implements PlayerBackend {
       failure: failure,
       volume: _optionalDouble(raw, 'volume'),
       rate: _optionalDouble(raw, 'rate'),
-      audioTrackId: _optionalString(raw, 'audioTrackId'),
-      subtitleTrackId: _optionalString(raw, 'subtitleTrackId'),
+      audioTrackId: _validatedEventTrackId(
+        _optionalString(raw, 'audioTrackId'),
+        _activeSession?.audioTracks,
+        'audio',
+      ),
+      subtitleTrackId: _validatedEventTrackId(
+        _optionalString(raw, 'subtitleTrackId'),
+        _activeSession?.subtitles,
+        'subtitle',
+      ),
       timelineMapIdentity: eventTimelineIdentity,
     );
   }
@@ -313,6 +348,29 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
       );
     }
   }
+}
+
+MediaTrack? _trackById(Iterable<MediaTrack> tracks, String id) {
+  for (final track in tracks) {
+    if (track.id == id) {
+      return track;
+    }
+  }
+  return null;
+}
+
+String? _validatedEventTrackId(
+  String? id,
+  Iterable<MediaTrack>? tracks,
+  String type,
+) {
+  if (id == null) {
+    return null;
+  }
+  if (tracks == null || _trackById(tracks, id) == null) {
+    throw StateError('Media3 reported a non-authoritative $type track ID.');
+  }
+  return id;
 }
 
 Map<String, Object?> _stringObjectMap(Object? value) {

@@ -67,7 +67,9 @@ void main() {
     () async {
       final transport = _FakeMedia3Transport();
       final backend = Media3PlayerBackend(transport: transport);
-      final session = _loopbackSession();
+      final session = _loopbackSession(
+        audioTracks: [MediaTrack(id: 'audio-1', label: 'Japanese')],
+      );
       await backend.open(session);
 
       final eventsFuture = backend.events.take(2).toList();
@@ -80,7 +82,7 @@ void main() {
         'bufferedPositionMs': 5000,
         'volume': 0.5,
         'rate': 1.25,
-        'audioTrackId': '0:0',
+        'audioTrackId': 'audio-1',
       });
       transport.add({
         'sequence': 1,
@@ -99,11 +101,31 @@ void main() {
       expect(events.first.position, const Duration(milliseconds: 1200));
       expect(events.first.volume, 0.5);
       expect(events.first.rate, 1.25);
-      expect(events.first.audioTrackId, '0:0');
+      expect(events.first.audioTrackId, 'audio-1');
       expect(events.last.failure?.kind, PlaybackFailureKind.sessionExpired);
       expect(events.last.failure?.shouldRefreshSession, isTrue);
     },
   );
+
+  test('Media3 rejects a backend-native track ID as non-authoritative', () async {
+    final transport = _FakeMedia3Transport();
+    final backend = Media3PlayerBackend(transport: transport);
+    final session = _loopbackSession(
+      audioTracks: [MediaTrack(id: 'audio-1', label: 'Japanese')],
+    );
+    await backend.open(session);
+
+    final mismatch = expectLater(backend.events, emitsError(isA<StateError>()));
+    transport.add({
+      'sequence': 0,
+      'sessionId': session.sessionId,
+      'timelineMapIdentity': session.timelineMapIdentity,
+      'state': 'playing',
+      'audioTrackId': '0:0',
+    });
+
+    await mismatch;
+  });
 
   test('Media3 rejects stale session and timeline events', () async {
     final transport = _FakeMedia3Transport();
@@ -139,17 +161,30 @@ void main() {
   test('Media3 exposes the complete typed control surface', () async {
     final transport = _FakeMedia3Transport();
     final backend = Media3PlayerBackend(transport: transport);
+    final session = _loopbackSession(
+      audioTracks: [
+        MediaTrack(
+          id: 'audio-1',
+          label: 'Japanese',
+          languageCode: 'ja',
+          mimeType: 'audio/mp4a-latm',
+          isDefault: true,
+        ),
+      ],
+    );
 
+    await backend.open(session);
     await backend.play();
     await backend.pause();
     await backend.seek(const Duration(seconds: 42));
     await backend.setVolume(0.4);
     await backend.setRate(1.5);
-    await backend.selectAudioTrack('0:1');
+    await backend.selectAudioTrack('audio-1');
     await backend.selectSubtitleTrack(null);
     await backend.close();
 
     expect(transport.calls.map((call) => call.method), [
+      'open',
       'play',
       'pause',
       'seek',
@@ -159,11 +194,18 @@ void main() {
       'selectTrack',
       'close',
     ]);
-    expect(transport.calls[2].arguments['positionMs'], 42000);
-    expect(transport.calls[3].arguments['volume'], 0.4);
-    expect(transport.calls[4].arguments['rate'], 1.5);
-    expect(transport.calls[5].arguments, {'type': 'audio', 'id': '0:1'});
-    expect(transport.calls[6].arguments, {'type': 'subtitle', 'id': null});
+    expect(transport.calls[3].arguments['positionMs'], 42000);
+    expect(transport.calls[4].arguments['volume'], 0.4);
+    expect(transport.calls[5].arguments['rate'], 1.5);
+    expect(transport.calls[6].arguments, {
+      'type': 'audio',
+      'id': 'audio-1',
+      'label': 'Japanese',
+      'languageCode': 'ja',
+      'mimeType': 'audio/mp4a-latm',
+      'isDefault': true,
+    });
+    expect(transport.calls[7].arguments, {'type': 'subtitle', 'id': null});
 
     await expectLater(
       backend.seek(const Duration(milliseconds: -1)),
@@ -171,6 +213,31 @@ void main() {
     );
     await expectLater(backend.setVolume(2), throwsArgumentError);
     await expectLater(backend.setRate(0), throwsArgumentError);
+  });
+
+  test('Media3 rejects external track mapping', () async {
+    final transport = _FakeMedia3Transport();
+    final backend = Media3PlayerBackend(transport: transport);
+    await backend.open(
+      _loopbackSession(
+        subtitles: [
+          MediaTrack(
+            id: 'external-subtitle',
+            label: 'External',
+            uri: Uri.parse('https://media.example/subtitle.vtt'),
+          ),
+        ],
+      ),
+    );
+
+    await expectLater(
+      backend.selectSubtitleTrack('external-subtitle'),
+      throwsStateError,
+    );
+    expect(
+      transport.calls.where((call) => call.method == 'selectTrack'),
+      isEmpty,
+    );
   });
 
   test(
@@ -194,10 +261,15 @@ void main() {
   );
 }
 
-PlaybackSession _loopbackSession() => testPlaybackSession(
+PlaybackSession _loopbackSession({
+  Iterable<MediaTrack> audioTracks = const [],
+  Iterable<MediaTrack> subtitles = const [],
+}) => testPlaybackSession(
   playbackUri: Uri.parse(
     'http://127.0.0.1:42000/v1/session/token/resource/master',
   ),
+  audioTracks: audioTracks,
+  subtitles: subtitles,
 );
 
 final class _FakeMedia3Transport implements Media3PlatformTransport {

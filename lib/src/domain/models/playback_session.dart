@@ -305,13 +305,6 @@ String _requiredToken(String value, String name, int maxLength) {
   return normalized;
 }
 
-String? _optionalToken(String? value, String name, int maxLength) {
-  if (value == null) {
-    return null;
-  }
-  return _requiredToken(value, name, maxLength);
-}
-
 String? _optionalMimeType(String? value) {
   if (value == null) {
     return null;

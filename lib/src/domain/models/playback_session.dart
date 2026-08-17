@@ -17,7 +17,7 @@ final class MediaTrack {
   }) : id = _requiredText(id, 'id', 128),
        label = _requiredText(label, 'label', 256),
        languageCode = _optionalLanguageCode(languageCode),
-       mimeType = _optionalToken(mimeType, 'mimeType', 128) {
+       mimeType = _optionalMimeType(mimeType) {
     if (uri != null) {
       _safeRemoteUri(uri!, 'uri');
     }
@@ -310,6 +310,25 @@ String? _optionalToken(String? value, String name, int maxLength) {
     return null;
   }
   return _requiredToken(value, name, maxLength);
+}
+
+String? _optionalMimeType(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final normalized = value.trim().toLowerCase();
+  if (normalized.isEmpty ||
+      normalized.length > 128 ||
+      !RegExp(
+        r"^[!#$%&'*+.^_`|~0-9a-z-]+/[!#$%&'*+.^_`|~0-9a-z-]+$",
+      ).hasMatch(normalized)) {
+    throw ArgumentError.value(
+      value,
+      'mimeType',
+      'Must be a valid type/subtype MIME value.',
+    );
+  }
+  return normalized;
 }
 
 String? _optionalHeaderValue(String? value, String name, int maxLength) {

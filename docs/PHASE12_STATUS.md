@@ -45,15 +45,15 @@ fail-closed on the release gate.
 
 Operation: `wynime-release-0.1.0-20260906-7K4M`.
 
-- Android phone AVD: `PASS_UI` for the exercised runtime path. `Pixel_API_36_Google_Play` on Android 16 / API 36, `1080x2400`, density `420`, launched the `c8335f9` candidate debug APK; Search navigation, `Wynime` entry and submission, Home / Library / Watching / Downloads / Sources / Settings navigation, and the diagnostics `false → true → false` transition were exercised without an app crash.
-- Android tablet AVD: `PASS_UI` for the exercised runtime path. `Pixel_Tablet_API_36_Google_Play` on Android 16 / API 36, `2560x1600`, density `320`, launched the `c8335f9` candidate debug APK; the expanded navigation rail, Search query submission, Library → Watching, Downloads, Sources, Settings and the diagnostics `false → true → false` transition were exercised without an app crash.
-- Windows desktop: `BLOCKED_UI_ENVIRONMENT`. The `c8335f9` Release binary launched and remained responsive, but a freshly re-established `mcp__cua_repl.getState()` exposed no native Windows app surface (`apps: []`); only the in-app browser was observable. No Windows compact/expanded/live-resize/mouse/keyboard action-level result is claimed.
+- Android phone AVD: `PASS_UI` for the exercised runtime path. `Pixel_API_36_Google_Play` on Android 16 / API 36, `1080x2400`, density `420`, launched the current candidate debug APK; Search navigation, `Wynime` entry and submission, Home / Library / Watching / Downloads / Sources / Settings navigation, and the diagnostics `false → true → false` transition were exercised without an app crash.
+- Android tablet AVD: `PASS_UI` for the exercised runtime path. `Pixel_Tablet_API_36_Google_Play` on Android 16 / API 36, `2560x1600`, density `320`, launched the current candidate debug APK; the expanded navigation rail, Search query submission, Library → Watching, Downloads, Sources, Settings and the diagnostics `false → true → false` transition were exercised without an app crash.
+- Windows desktop: `BLOCKED_UI_ENVIRONMENT`. The current Release binary launched and remained responsive, but a freshly re-established `mcp__cua_repl.getState()` exposed no native Windows app surface (`apps: []`); only the in-app browser was observable. No Windows compact/expanded/live-resize/mouse/keyboard action-level result is claimed.
 - Required independent Sol review: `SOL_REVIEW_FAIL` for this operation. The complete finding is retained in the Sol conversation; the candidate must be pushed and re-reviewed against the final SHA after the remaining gates close.
 
 Phone/tablet evidence was collected under the operation directory
-`C:\Users\william\.cache\wynime-ui\wynime-release-0.1.0-20260906-7K4M\phone-c8335f9`
-and `tablet-c8335f9` subdirectories; the emulators were stopped after each
-run. The ADB workaround used a sandbox-writable home/elevated ADB process and
+`C:\Users\william\.cache\wynime-ui\wynime-release-0.1.0-20260906-7K4M\phone-final`
+and `tablet-final` subdirectories; the emulators were stopped after each run.
+The ADB workaround used a sandbox-writable home/elevated ADB process and
 did not change Windows ACLs.
 The emulator results do not substitute for supported physical Android or
 Windows hardware playback evidence, so the overall UI/release gate remains

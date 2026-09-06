@@ -99,28 +99,26 @@ license set still require independent provenance review.
 
 `dumpbin /DEPENDENTS` showed that the Release libmpv DLL has no separate
 FFmpeg DLL dependency; FFmpeg is statically linked into the libmpv artifact.
-The Release tree's redistributed native files and their SHA-256 values are:
+The stable third-party native files in the Release tree and their SHA-256
+values are:
 
 | File | SHA-256 |
 | --- | --- |
 | `d3dcompiler_47.dll` | `5653BC7B0E2701561464EF36602FF6171C96BFFE96E4C3597359CD7ADDCBA88A` |
-| `dartjni.dll` | `A0324DECF2BB366219B3797086023CCCA8597C18524071500D3BA50A09038515` |
-| `flutter_inappwebview_windows_plugin.dll` | `63123C3D89E2EDC55DC86EDFC57429A7BF109FF894409C99D4D7DE08131C3B63` |
-| `flutter_windows.dll` | `890B23404E770D3A01A978E6EE8DBEEF9006C85C39A9F5D75E3F91E5BCF3BB80` |
 | `libmpv-2.dll` | `D5F0694B08C124E785D858D00082F3E3B158DD9138BFC48C0382BF1EB443A5FC` |
 | `libEGL.dll` | `B2590BD0692F0381FC45C20BF1C7F7F713C9EA19C7EA6BAB62EFDD1FADC4EAAC` |
 | `libGLESv2.dll` | `620BB6E38D7ED6C760A0CF4A8EB6A8F64B259B96FF286551CD32CEFC6C35CA39` |
-| `media_kit_libs_windows_video_plugin.dll` | `BFDFDED8607DFAC10A1F145750FB2426F6DF9B08B4409A43085F3FF4C729663E` |
-| `media_kit_video_plugin.dll` | `171870AA900AF30A6C635E0D67203364D80DFB4BD2670B1D167E13651748DC6F` |
 | `sqlite3.dll` | `858141A2826F53E8374CB07DE2638E0F1AC944F49B897DD558FEBA5597E86D1C` |
 | `vk_swiftshader.dll` | `4F33EEA716491972CB1AD123A78ACEF485F852581130D3F3A98A1981009004F2` |
 | `vulkan-1.dll` | `3BE9A95DD9019AA1ACA47ADE26F5C1C7C0047F3CF6F633D586C9EC0D3B459566` |
 | `WebView2Loader.dll` | `8427B1FC58EC707813E5C0A51EB5D69397BB333250A7B891BE4D3B123F1E0F1C` |
-| `wynime.exe` | `07B674920F70D84E3062C9DCBCE692DC3474285A215D680747DCE29006C6569C` |
 | `zlib.dll` | `82D5BF175CF882AC9AFC1558B416E674606D055966BC09529076B28A498FC0E4` |
 
-This closes the local binary-to-runtime identity gap for the Windows
-artifact and records every native file in the Release directory. It does not
+The complete per-file SHA-256 list, including generated Flutter/plugin
+libraries and `wynime.exe`, is recorded in the candidate-specific transcript
+referenced below because those outputs can vary between clean toolchain
+builds. This closes the local binary-to-runtime identity gap for the stable
+third-party Windows assets. It does not
 by itself grant a license: mpv's own copyright guidance states that a build
 flag is not a license grant and that linked libraries can affect the resulting
 terms. The candidate therefore ships
@@ -158,7 +156,7 @@ review is complete.
 
 The 2026-09-07 candidate-specific hash transcript is stored outside the
 repository at
-`C:\Users\william\.cache\wynime-ui\wynime-release-0.1.0-20260906-7K4M\final-candidate-evidence-c8335f9.txt`.
+`C:\Users\william\.cache\wynime-ui\wynime-release-0.1.0-20260906-7K4M\final-candidate-evidence-latest.txt`.
 It is bound to the exact SHA printed by `git rev-parse HEAD` when the clean
 candidate tree is verified; a later candidate SHA must generate a new
 transcript rather than reusing this one.

@@ -84,13 +84,12 @@ The release build is intentionally unsigned when the external keystore propertie
 - secret values were not read or recorded by the audit;
 - no official signed CI artifact is claimed until the checked-in workflow is available on GitHub and a tagged run verifies the alias, APK metadata, alignment and signature.
 
-Current artifact hashes:
-
-- release APK SHA-256: `46B9BE917F6761FB8B5E9A1C7BA19CA992892EE455731CA5585204541B5486E9`;
-- release AAB SHA-256: `B9DD385D8A1C90F4FF212DAB1C1A33C0C5EA8DAD88432B36B3A73A15626F84E5`;
-- debug APK SHA-256: `E07E7E87151C05DE48F0A494498C4D6ED202C8F1BDAA5DABFA0E523C0EF18227` (test-only and debug-signed);
-- Windows release `wynime.exe` SHA-256: `7F54C7B4012D5AF2FD96AB992EA0D429350844486A5C66C11FECC605A76A1AC2`;
-- Windows portable `wynime-1.0.1.zip` SHA-256: `B547F0DEC4115E99853FDF77B50FE205D4E8A9B74A31F79293792C0ADCAD7DA4`.
+The exact APK, AAB, debug APK, Windows executable and portable ZIP SHA-256
+values are recorded together in the final-SHA verification transcript after
+the final evidence commit. Native linker and ZIP output can vary between
+clean builds, so hashes from an earlier candidate or an earlier build run
+must not be copied into this status document. The transcript also records
+the helper output that verifies the packaged notice and version metadata.
 
 The local release-preparation script produced `wynime-1.0.1.apk` and
 `wynime-1.0.1.zip` under the ignored `build/release` directory; both sidecars

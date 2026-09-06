@@ -69,22 +69,70 @@ upstream build scripts are not sufficient evidence for the historical
 2023-09-24 binary, so the exact binary build provenance and license notice
 set remain open.
 
+### Candidate runtime probe
+
+On 2026-09-07 the Release `libmpv-2.dll` was loaded directly through its C
+API. The probe set `config=no`, `terminal=no`, `vo=null` and `ao=null`, then
+called `mpv_initialize` and read the public string properties. It returned:
+
+```text
+mpv_initialize rc=0
+mpv-version=mpv v0.36.0-403-g652a1dd907
+ffmpeg-version=n6.0
+libass-version=24121344
+```
+
+The same probe returned the complete embedded Meson configuration. The
+important release-relevant entries are `-Dgpl=false`, `-Dlibmpv=true`,
+`-Dprefer_static=True`, `-Djavascript=enabled`, `-Duchardet=enabled`,
+`-Dlcms2=enabled`, `-Dspirv-cross=enabled`, `-Dvulkan=disabled`,
+`-Dlibplacebo=disabled` and `-Degl-angle=enabled`. The full output is kept in
+the operation evidence directory under
+`%TEMP%\codex-ui-verification\wynime-release-0.1.0-20260906-7K4M\native\windows-libmpv-runtime.txt`.
+
+`dumpbin /DEPENDENTS` showed that the Release libmpv DLL has no separate
+FFmpeg DLL dependency; FFmpeg is statically linked into the libmpv artifact.
+The other redistributed graphics DLLs and their Release SHA-256 values are:
+
+| File | SHA-256 |
+| --- | --- |
+| `libmpv-2.dll` | `D5F0694B08C124E785D858D00082F3E3B158DD9138BFC48C0382BF1EB443A5FC` |
+| `libEGL.dll` | `B2590BD0692F0381FC45C20BF1C7F7F713C9EA19C7EA6BAB62EFDD1FADC4EAAC` |
+| `libGLESv2.dll` | `620BB6E38D7ED6C760A0CF4A8EB6A8F64B259B96FF286551CD32CEFC6C35CA39` |
+| `vulkan-1.dll` | `3BE9A95DD9019AA1ACA47ADE26F5C1C7C0047F3CF6F633D586C9EC0D3B459566` |
+| `zlib.dll` | `82D5BF175CF882AC9AFC1558B416E674606D055966BC09529076B28A498FC0E4` |
+
+This closes the local binary-to-runtime identity gap for the Windows
+artifact. It does not by itself grant a license: mpv's own copyright guidance
+states that `-Dgpl=false` alone is not a license grant and that linked
+libraries can affect the resulting terms. The candidate therefore ships
+`assets/third_party/THIRD_PARTY_NOTICES.md`, and the release packaging checks
+that notice in both Android and Windows artifacts. The exact transitive
+license and redistribution review remains open until independently reviewed.
+
 ## Package notice audit
 
 The candidate Android APK contains Flutter's generated `NOTICES.Z` and
 package notices, but the decompressed notice text did not contain a dedicated
 `libmpv` or `FFmpeg` native notice section. The repository has no root
 `LICENSE` or `NOTICE` file that can be used to infer a project-wide license.
-Neither observation is resolved by the wrapper package licenses above.
+The candidate now adds an explicit `assets/third_party/THIRD_PARTY_NOTICES.md`
+to the Android asset graph and copies the same file into the Windows portable
+bundle. The release helper and publisher workflow verify both packaged copies.
+That is a packaging correction, not an assertion that independent legal
+review is complete.
 
 ## Required closure before publishing
 
-- [ ] Identify the exact Android and Windows native binary flavor/build
-  inputs, including the FFmpeg/mpv license combination actually shipped.
-- [ ] Obtain and review the authoritative notices for every shipped native
-  binary, including ANGLE and transitive codec/dependency components.
-- [ ] Add the approved notice/license material to the APK and Windows bundle
-  and verify it from the final package contents.
+- [ ] Independently review the exact Android and Windows native binary
+  flavor/build inputs, including the FFmpeg/mpv license combination actually
+  shipped. Android's selected flavor and Windows' embedded runtime metadata
+  are now recorded above.
+- [ ] Obtain independent review of the authoritative notices for every
+  shipped native binary, including ANGLE and transitive codec/dependency
+  components.
+- [x] Add the candidate notice material to the APK and Windows bundle and
+  make the release helper/workflow verify it from package contents.
 - [ ] Preserve archive and packaged-binary hashes in the final release
   evidence, with an independent review of the mapping.
 - [ ] Obtain independent legal/license sign-off before a signed release is

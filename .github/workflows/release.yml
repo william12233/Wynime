@@ -66,6 +66,9 @@ jobs:
             exit 1
           fi
 
+          test -s "assets/third_party/THIRD_PARTY_NOTICES.md"
+          grep -F "Candidate-specific evidence" "assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
+
           {
             echo "tag=$tag"
             echo "version=$version"
@@ -165,6 +168,7 @@ jobs:
           grep -F "native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'" <("$aapt2" dump badging "$apk")
           "$zipalign" -c -v 4 "$apk"
           "$apksigner" verify --verbose "$apk"
+          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
 
       - name: Name and hash Android artifact
         shell: bash
@@ -237,10 +241,14 @@ jobs:
           New-Item -ItemType Directory -Force -Path $stage, $dist | Out-Null
           Copy-Item -Path (Join-Path $releaseDir '*') -Destination $stage -Recurse -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'README.md') -Destination (Join-Path $stage 'README.md') -Force
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/THIRD_PARTY_NOTICES.md') -Destination (Join-Path $stage 'THIRD_PARTY_NOTICES.md') -Force
           Set-Content -LiteralPath (Join-Path $stage 'version.txt') -Value $version -NoNewline -Encoding ascii
 
           if ((Get-Content -Raw -LiteralPath (Join-Path $stage 'version.txt')) -ne $version) {
             throw 'version.txt does not match the release version.'
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $stage 'THIRD_PARTY_NOTICES.md') -PathType Leaf)) {
+            throw 'THIRD_PARTY_NOTICES.md is missing from the Windows bundle.'
           }
           Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue
           Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zipPath -CompressionLevel Optimal

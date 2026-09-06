@@ -42,11 +42,15 @@ if (-not $SkipBuild) {
 
 $apkPath = Join-Path $repoRoot 'build\app\outputs\flutter-apk\app-release.apk'
 $windowsPath = Join-Path $repoRoot 'build\windows\x64\runner\Release'
+$thirdPartyNoticePath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_NOTICES.md'
 if (-not (Test-Path -LiteralPath $apkPath -PathType Leaf)) {
     throw "Android release APK is missing: $apkPath"
 }
 if (-not (Test-Path -LiteralPath (Join-Path $windowsPath 'wynime.exe') -PathType Leaf)) {
     throw "Windows release executable is missing: $windowsPath"
+}
+if (-not (Test-Path -LiteralPath $thirdPartyNoticePath -PathType Leaf)) {
+    throw "Third-party notice is missing: $thirdPartyNoticePath"
 }
 
 $outputPath = Join-Path $repoRoot 'build\release'
@@ -55,6 +59,10 @@ New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
 $apkAssetName = "wynime-$version.apk"
 $apkAssetPath = Join-Path $outputPath $apkAssetName
 Copy-Item -LiteralPath $apkPath -Destination $apkAssetPath -Force
+$apkNoticeCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md'
+if (-not $apkNoticeCheck) {
+    throw 'Android APK does not contain the bundled third-party notice.'
+}
 $apkHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $apkAssetPath).Hash.ToLowerInvariant()
 Set-Content -LiteralPath "$apkAssetPath.sha256" -Value "$apkHash  $apkAssetName" -NoNewline -Encoding ascii
 
@@ -65,7 +73,12 @@ if (Test-Path -LiteralPath $stagePath) {
 New-Item -ItemType Directory -Force -Path $stagePath | Out-Null
 Copy-Item -Path (Join-Path $windowsPath '*') -Destination $stagePath -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md') -Destination (Join-Path $stagePath 'README.md') -Force
+Copy-Item -LiteralPath $thirdPartyNoticePath -Destination (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md') -Force
 Set-Content -LiteralPath (Join-Path $stagePath 'version.txt') -Value $version -NoNewline -Encoding ascii
+
+if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md') -PathType Leaf)) {
+    throw 'Windows bundle does not contain the bundled third-party notice.'
+}
 
 $zipAssetName = "wynime-$version.zip"
 $zipAssetPath = Join-Path $outputPath $zipAssetName

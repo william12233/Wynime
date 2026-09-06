@@ -34,3 +34,5 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/third_party/THIRD_PARTY_NOTICES.md

@@ -1,0 +1,158 @@
+name: Release candidate signing
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: 'Exact 40-character candidate commit SHA'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wynime-release-candidate-signing-${{ inputs.candidate_sha }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: '3.44.8'
+
+jobs:
+  sign:
+    name: Build and verify signed Android candidate
+    runs-on: ubuntu-24.04
+    environment:
+      name: release
+    steps:
+      - name: Check out exact candidate SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+
+      - name: Validate candidate branch binding and metadata
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "candidate_sha must be a 40-character lowercase commit SHA." >&2
+            exit 1
+          fi
+          git fetch origin refs/heads/codex/release-1.0.1-candidate:refs/remotes/origin/codex/release-1.0.1-candidate --no-tags
+          branch_sha="$(git rev-parse refs/remotes/origin/codex/release-1.0.1-candidate^{commit})"
+          checked_out_sha="$(git rev-parse HEAD^{commit})"
+          if [[ "$checked_out_sha" != "$CANDIDATE_SHA" || "$branch_sha" != "$CANDIDATE_SHA" ]]; then
+            echo "The requested SHA must equal both the checked-out commit and the pushed candidate branch." >&2
+            echo "checked_out_sha=$checked_out_sha branch_sha=$branch_sha candidate_sha=$CANDIDATE_SHA" >&2
+            exit 1
+          fi
+          version_line="$(grep -m1 -E '^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+[[:space:]]*$' pubspec.yaml)"
+          if [[ "$version_line" != 'version: 1.0.1+2' ]]; then
+            echo "Unexpected candidate version: $version_line" >&2
+            exit 1
+          fi
+          status="$(sed -n 's/^`\([^`]*\)`[[:space:]]*$/\1/p' docs/PHASE12_STATUS.md | head -n 1)"
+          if [[ "$status" != 'AUDIT_COMPLETE_RELEASE_BLOCKED' && "$status" != 'RELEASE_READY' ]]; then
+            echo "Unexpected Phase 12 status for candidate signing: $status." >&2
+            exit 1
+          fi
+          echo "This workflow only creates protected signed inspection artifacts; it never creates a tag or GitHub Release."
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Configure external release signing
+        shell: bash
+        env:
+          WYNIME_RELEASE_KEYSTORE_BASE64: ${{ secrets.WYNIME_RELEASE_KEYSTORE_BASE64 }}
+          WYNIME_RELEASE_STORE_PASSWORD: ${{ secrets.WYNIME_RELEASE_STORE_PASSWORD }}
+          WYNIME_RELEASE_KEY_ALIAS: ${{ secrets.WYNIME_RELEASE_KEY_ALIAS }}
+          WYNIME_RELEASE_KEY_PASSWORD: ${{ secrets.WYNIME_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for secret_name in \
+            WYNIME_RELEASE_KEYSTORE_BASE64 \
+            WYNIME_RELEASE_STORE_PASSWORD \
+            WYNIME_RELEASE_KEY_ALIAS \
+            WYNIME_RELEASE_KEY_PASSWORD; do
+            if [[ -z "${!secret_name:-}" ]]; then
+              echo "Missing required GitHub Actions secret: $secret_name" >&2
+              exit 1
+            fi
+          done
+          keystore="$GITHUB_WORKSPACE/android/app/wynime-release.jks"
+          printf '%s' "$WYNIME_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          {
+            echo "WYNIME_RELEASE_STORE_FILE=$keystore"
+            echo "WYNIME_RELEASE_STORE_PASSWORD=$WYNIME_RELEASE_STORE_PASSWORD"
+            echo "WYNIME_RELEASE_KEY_ALIAS=$WYNIME_RELEASE_KEY_ALIAS"
+            echo "WYNIME_RELEASE_KEY_PASSWORD=$WYNIME_RELEASE_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Verify release keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$WYNIME_RELEASE_STORE_FILE"
+          keytool -list -keystore "$WYNIME_RELEASE_STORE_FILE" -storepass "$WYNIME_RELEASE_STORE_PASSWORD" -alias "$WYNIME_RELEASE_KEY_ALIAS" >/dev/null
+
+      - name: Build signed APK and AAB
+        run: |
+          flutter build apk --release --no-pub --build-name 1.0.1 --build-number 2
+          flutter build appbundle --release --no-pub --build-name 1.0.1 --build-number 2
+
+      - name: Verify signed APK metadata, alignment and signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="build/app/outputs/flutter-apk/app-release.apk"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          aapt2="$build_tools/aapt2"
+          zipalign="$build_tools/zipalign"
+          apksigner="$build_tools/apksigner"
+          package_line="$($aapt2 dump badging "$apk" | grep -m 1 '^package:')"
+          grep -F "versionCode='2'" <<< "$package_line"
+          grep -F "versionName='1.0.1'" <<< "$package_line"
+          grep -F "native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'" <("$aapt2" dump badging "$apk")
+          "$zipalign" -c -v 4 "$apk"
+          "$apksigner" verify --verbose "$apk"
+          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
+          jarsigner -verify -strict build/app/outputs/bundle/release/app-release.aab >/dev/null
+
+      - name: Hash signed candidate artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/wynime-1.0.1-signed.apk
+          cp build/app/outputs/bundle/release/app-release.aab dist/wynime-1.0.1-signed.aab
+          (cd dist && sha256sum wynime-1.0.1-signed.apk wynime-1.0.1-signed.aab > wynime-1.0.1-signed.sha256)
+
+      - name: Upload signed inspection artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-signed-candidate-${{ inputs.candidate_sha }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Remove signing material
+        if: always()
+        shell: bash
+        run: rm -f android/app/wynime-release.jks

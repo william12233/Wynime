@@ -55,13 +55,35 @@ The candidate's release `libmpv-2.dll` runtime reports:
 ```text
 mpv-version=mpv v0.36.0-403-g652a1dd907
 ffmpeg-version=n6.0
-mpv-configuration=... -Dgpl=false ... -Dlibmpv=true ... -Degl-angle=enabled ...
 ```
 
-The full probe output, archive hashes, PE dependency audit and the exact
-source URLs are recorded in the provenance document. The runtime has FFmpeg
-statically linked into libmpv; no separate FFmpeg DLL is redistributed by the
-Windows bundle.
+The current C API probe does not expose a non-null configuration property, so
+this notice does not claim embedded configure flags. The archive hashes, PE
+dependency audit and exact source URLs are recorded in the provenance
+document. The runtime has FFmpeg statically linked into libmpv; no separate
+FFmpeg DLL is redistributed by the Windows bundle.
+
+The Windows Release directory also contains these native components. The
+source/license references are listed so the exact redistribution review can
+cover the whole bundle rather than only `libmpv-2.dll`:
+
+| Component | Origin / notice reference |
+| --- | --- |
+| `libmpv-2.dll` | media-kit Windows libmpv archive; mpv `Copyright`, LGPL/GPL texts, and linked FFmpeg terms below |
+| `d3dcompiler_47.dll` | Microsoft Direct3D compiler redistributable terms shipped with the Windows toolchain/runtime |
+| `libEGL.dll`, `libGLESv2.dll` | ANGLE archive `v1.0.1`; <https://chromium.googlesource.com/angle/angle/+/main/LICENSE> |
+| `vk_swiftshader.dll` | SwiftShader; <https://github.com/google/swiftshader/blob/main/LICENSE.txt> |
+| `vulkan-1.dll` | Khronos Vulkan Loader; <https://github.com/KhronosGroup/Vulkan-Loader/blob/main/LICENSE.txt> |
+| `zlib.dll` | zlib; <https://zlib.net/zlib_license.html> |
+| `sqlite3.dll` | SQLite public-domain notice; <https://www.sqlite.org/copyright.html> |
+| `flutter_windows.dll`, `dartjni.dll` | Flutter/Dart SDK runtime; <https://github.com/flutter/flutter/blob/master/LICENSE> |
+| `WebView2Loader.dll` | Microsoft WebView2 loader; <https://github.com/MicrosoftEdge/WebView2/blob/main/LICENSE> |
+| `media_kit_libs_windows_video_plugin.dll`, `media_kit_video_plugin.dll` | MIT wrapper/plugin sources listed above |
+| `flutter_inappwebview_windows_plugin.dll` | Apache-2.0 plugin source listed above |
+
+The Microsoft Direct3D compiler redistribution terms and the exact historical
+native archive notice sets still require independent legal confirmation before
+the release gate can be closed.
 
 Important mpv licensing guidance:
 

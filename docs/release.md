@@ -83,6 +83,14 @@ The native provenance inventory and its open notice/license checklist are
 maintained in
 [`docs/THIRD_PARTY_PROVENANCE.md`](THIRD_PARTY_PROVENANCE.md).
 
+The separate `.github/workflows/release-candidate-signing.yml` workflow may be
+manually dispatched with the exact pushed candidate SHA while the audit is
+still blocked. It uses the protected `release` environment, verifies that the
+SHA is still the candidate branch tip, and uploads only signed APK/AAB
+inspection artifacts. It never creates a tag or GitHub Release. This split
+allows the exact signed artifacts to be independently inspected without
+turning signing into a publication approval.
+
 ## Publication sequence
 
 1. Update `pubspec.yaml`, `CHANGELOG.md` and the versioned release notes.
@@ -92,9 +100,13 @@ maintained in
 4. Re-fetch `origin/main`, verify it is unchanged and an ancestor of the
    final candidate, then fast-forward local `main` only and push it
    non-force. Verify remote `main` equals the final candidate SHA.
-5. Configure the four GitHub Actions signing secrets and create/push the
-   matching annotated `vX.Y.Z` tag at that same SHA.
-6. Let `release.yml` revalidate the tag target, current `origin/main`, exact
+5. Before publication, manually dispatch the candidate-signing workflow for
+   that exact SHA and complete its protected environment review; inspect the
+   signed artifacts and record their hashes.
+6. Configure the four GitHub Actions signing secrets and create/push the
+   matching annotated `vX.Y.Z` tag at that same SHA only after the user gives
+   the explicit release approval.
+7. Let `release.yml` revalidate the tag target, current `origin/main`, exact
    successful CI SHA, readiness status, signing, provenance/license checks,
    and artifact hashes before the protected `release` environment can publish
    the exact four assets.

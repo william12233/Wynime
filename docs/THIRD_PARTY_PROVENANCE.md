@@ -3,7 +3,7 @@
 Status: `OPEN_RELEASE_BLOCKER`
 
 This document records the native media artifacts observed in the local
-dependency cache and in the candidate packages on 2026-09-03. It is an
+dependency cache and in the candidate packages on 2026-09-07. It is an
 engineering provenance inventory, not a legal approval or a declaration that
 the release license review is complete. The release remains blocked until the
 open items below are closed and independently reviewed.
@@ -47,10 +47,10 @@ The candidate APK contains these `libmpv.so` files:
 | `x86_64` | 15,816,336 bytes | `F030E9A1A4D4664E89D7160A3D4528CD5875EE023FF6262E16E95AAC28FFAEC5` |
 
 The upstream v1.1.7 dependency manifest identifies FFmpeg `6.0` and the mpv
-revision `78d43740f52db817d98bcf24fb30a76ab6fa13ff`. The upstream license
-file distinguishes the default/full flavor from the GPL encoder flavor. The
-repository still needs to record the exact selected flavor and carry the
-corresponding native notices into every distributable package.
+revision `78d43740f52db817d98bcf24fb30a76ab6fa13ff`. The selected `default`
+ABI JARs are the inputs actually resolved by the locked package. The
+corresponding native notices are packaged, but the complete transitive notice
+and redistribution review is still open.
 
 ## Windows libmpv and ANGLE
 
@@ -63,11 +63,20 @@ Windows CMake configuration:
 | ANGLE | `ANGLE.7z` release `v1.0.1` | `e866f13e8d552348058afaafe869b1ed` | `CC5911BB15D596FD5A2B362613AD35B7093B427117269A7359054A65746A5F9A` |
 
 The libmpv archive contains `libmpv-2.dll`, `libmpv.dll.a`, and headers. The
-ANGLE archive contains the ANGLE/Vulkan runtime DLLs and headers. The local
-archive listings did not contain a license or notice file. The current
-upstream build scripts are not sufficient evidence for the historical
-2023-09-24 binary, so the exact binary build provenance and license notice
-set remain open.
+ANGLE archive contains the ANGLE/Vulkan runtime DLLs and headers. Neither
+local archive listing contains a license or notice file. The locked CMake
+source is the authoritative selection mechanism for this candidate:
+
+```text
+libmpv URL: https://github.com/media-kit/libmpv-win32-video-build/releases/download/2023-09-24/mpv-dev-x86_64-20230924-git-652a1dd.7z
+libmpv MD5: a832ef24b3a6ff97cd2560b5b9d04cd8
+ANGLE URL: https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/download/v1.0.1/ANGLE.7z
+ANGLE MD5: e866f13e8d552348058afaafe869b1ed
+```
+
+The exact binary build flags and complete transitive license notice set are
+not recoverable from the historical archive metadata alone, so they remain an
+open release gate rather than being inferred from local hashes.
 
 ### Candidate runtime probe
 
@@ -82,30 +91,39 @@ ffmpeg-version=n6.0
 libass-version=24121344
 ```
 
-The same probe returned the complete embedded Meson configuration. The
-important release-relevant entries are `-Dgpl=false`, `-Dlibmpv=true`,
-`-Dprefer_static=True`, `-Djavascript=enabled`, `-Duchardet=enabled`,
-`-Dlcms2=enabled`, `-Dspirv-cross=enabled`, `-Dvulkan=disabled`,
-`-Dlibplacebo=disabled` and `-Degl-angle=enabled`. The full output is kept in
-the operation evidence directory under
-`%TEMP%\codex-ui-verification\wynime-release-0.1.0-20260906-7K4M\native\windows-libmpv-runtime.txt`.
+The current public C API probe did not expose a non-null configuration
+property, so no embedded Meson/configure flags are claimed from that probe.
+The exact archive selection, MD5 checks and local SHA-256 values come from the
+locked CMake mechanism above. Historical configure flags and the linked
+license set still require independent provenance review.
 
 `dumpbin /DEPENDENTS` showed that the Release libmpv DLL has no separate
 FFmpeg DLL dependency; FFmpeg is statically linked into the libmpv artifact.
-The other redistributed graphics DLLs and their Release SHA-256 values are:
+The Release tree's redistributed native files and their SHA-256 values are:
 
 | File | SHA-256 |
 | --- | --- |
+| `d3dcompiler_47.dll` | `5653BC7B0E2701561464EF36602FF6171C96BFFE96E4C3597359CD7ADDCBA88A` |
+| `dartjni.dll` | `A0324DECF2BB366219B3797086023CCCA8597C18524071500D3BA50A09038515` |
+| `flutter_inappwebview_windows_plugin.dll` | `63123C3D89E2EDC55DC86EDFC57429A7BF109FF894409C99D4D7DE08131C3B63` |
+| `flutter_windows.dll` | `890B23404E770D3A01A978E6EE8DBEEF9006C85C39A9F5D75E3F91E5BCF3BB80` |
 | `libmpv-2.dll` | `D5F0694B08C124E785D858D00082F3E3B158DD9138BFC48C0382BF1EB443A5FC` |
 | `libEGL.dll` | `B2590BD0692F0381FC45C20BF1C7F7F713C9EA19C7EA6BAB62EFDD1FADC4EAAC` |
 | `libGLESv2.dll` | `620BB6E38D7ED6C760A0CF4A8EB6A8F64B259B96FF286551CD32CEFC6C35CA39` |
+| `media_kit_libs_windows_video_plugin.dll` | `BFDFDED8607DFAC10A1F145750FB2426F6DF9B08B4409A43085F3FF4C729663E` |
+| `media_kit_video_plugin.dll` | `171870AA900AF30A6C635E0D67203364D80DFB4BD2670B1D167E13651748DC6F` |
+| `sqlite3.dll` | `858141A2826F53E8374CB07DE2638E0F1AC944F49B897DD558FEBA5597E86D1C` |
+| `vk_swiftshader.dll` | `4F33EEA716491972CB1AD123A78ACEF485F852581130D3F3A98A1981009004F2` |
 | `vulkan-1.dll` | `3BE9A95DD9019AA1ACA47ADE26F5C1C7C0047F3CF6F633D586C9EC0D3B459566` |
+| `WebView2Loader.dll` | `8427B1FC58EC707813E5C0A51EB5D69397BB333250A7B891BE4D3B123F1E0F1C` |
+| `wynime.exe` | `07B674920F70D84E3062C9DCBCE692DC3474285A215D680747DCE29006C6569C` |
 | `zlib.dll` | `82D5BF175CF882AC9AFC1558B416E674606D055966BC09529076B28A498FC0E4` |
 
 This closes the local binary-to-runtime identity gap for the Windows
-artifact. It does not by itself grant a license: mpv's own copyright guidance
-states that `-Dgpl=false` alone is not a license grant and that linked
-libraries can affect the resulting terms. The candidate therefore ships
+artifact and records every native file in the Release directory. It does not
+by itself grant a license: mpv's own copyright guidance states that a build
+flag is not a license grant and that linked libraries can affect the resulting
+terms. The candidate therefore ships
 `assets/third_party/THIRD_PARTY_NOTICES.md`, and the release packaging checks
 that notice in both Android and Windows artifacts. The exact transitive
 license and redistribution review remains open until independently reviewed.
@@ -137,6 +155,13 @@ review is complete.
   evidence, with an independent review of the mapping.
 - [ ] Obtain independent legal/license sign-off before a signed release is
   published.
+
+The 2026-09-07 candidate-specific hash transcript is stored outside the
+repository at
+`C:\Users\william\.cache\wynime-ui\wynime-release-0.1.0-20260906-7K4M\final-candidate-evidence-c8335f9.txt`.
+It is bound to the exact SHA printed by `git rev-parse HEAD` when the clean
+candidate tree is verified; a later candidate SHA must generate a new
+transcript rather than reusing this one.
 
 This document does not change the `AUDIT_COMPLETE_RELEASE_BLOCKED` status in
 `docs/PHASE12_STATUS.md`.

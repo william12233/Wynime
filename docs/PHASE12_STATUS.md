@@ -45,15 +45,16 @@ fail-closed on the release gate.
 
 Operation: `wynime-release-0.1.0-20260906-7K4M`.
 
-- Android phone AVD: `PASS_UI` for the exercised runtime path. `Pixel_API_36_Google_Play` on Android 16 / API 36, `1080x2400`, density `420`, launched the candidate debug APK; Search navigation, `Wynime` entry and submission, Home / Library / Downloads / Sources / Settings navigation, and the diagnostics `false → true → false` transition were exercised without an app crash.
-- Android tablet AVD: `PASS_UI` for the exercised runtime path. `Pixel_Tablet_API_36_Google_Play` on Android 16 / API 36, `2560x1600`, density `320`, launched the candidate debug APK; the expanded navigation rail, Search query submission, Library → Watching, Downloads, Sources, Settings and the diagnostics `false → true → false` transition were exercised without an app crash.
-- Windows desktop: `BLOCKED_UI_ENVIRONMENT`. The Release binary launched and remained responsive, but `mcp__cua_repl.getState()` exposed no native Windows app surface (`apps: []`); only the in-app browser was observable. No Windows compact/expanded/live-resize/mouse/keyboard action-level result is claimed.
+- Android phone AVD: `PASS_UI` for the exercised runtime path. `Pixel_API_36_Google_Play` on Android 16 / API 36, `1080x2400`, density `420`, launched the `c8335f9` candidate debug APK; Search navigation, `Wynime` entry and submission, Home / Library / Watching / Downloads / Sources / Settings navigation, and the diagnostics `false → true → false` transition were exercised without an app crash.
+- Android tablet AVD: `PASS_UI` for the exercised runtime path. `Pixel_Tablet_API_36_Google_Play` on Android 16 / API 36, `2560x1600`, density `320`, launched the `c8335f9` candidate debug APK; the expanded navigation rail, Search query submission, Library → Watching, Downloads, Sources, Settings and the diagnostics `false → true → false` transition were exercised without an app crash.
+- Windows desktop: `BLOCKED_UI_ENVIRONMENT`. The `c8335f9` Release binary launched and remained responsive, but a freshly re-established `mcp__cua_repl.getState()` exposed no native Windows app surface (`apps: []`); only the in-app browser was observable. No Windows compact/expanded/live-resize/mouse/keyboard action-level result is claimed.
 - Required independent Sol review: `SOL_REVIEW_FAIL` for this operation. The complete finding is retained in the Sol conversation; the candidate must be pushed and re-reviewed against the final SHA after the remaining gates close.
 
-Phone/tablet evidence was collected under the temporary operation directory
-`%TEMP%\\codex-ui-verification\\wynime-release-0.1.0-20260906-7K4M` in the
-`phone-f4f7af1` and `tablet-f4f7af1` subdirectories and the emulators were
-stopped after each run.
+Phone/tablet evidence was collected under the operation directory
+`C:\Users\william\.cache\wynime-ui\wynime-release-0.1.0-20260906-7K4M\phone-c8335f9`
+and `tablet-c8335f9` subdirectories; the emulators were stopped after each
+run. The ADB workaround used a sandbox-writable home/elevated ADB process and
+did not change Windows ACLs.
 The emulator results do not substitute for supported physical Android or
 Windows hardware playback evidence, so the overall UI/release gate remains
 blocked.
@@ -91,11 +92,12 @@ The release build is intentionally unsigned when the external keystore propertie
 - no official signed CI artifact is claimed until the checked-in workflow is available on GitHub and a tagged run verifies the alias, APK metadata, alignment and signature.
 
 The exact APK, AAB, debug APK, Windows executable and portable ZIP SHA-256
-values are recorded together in the final-SHA verification transcript after
-the final evidence commit. Native linker and ZIP output can vary between
-clean builds, so hashes from an earlier candidate or an earlier build run
-must not be copied into this status document. The transcript also records
-the helper output that verifies the packaged notice and version metadata.
+values are recorded together in the candidate-specific verification transcript
+referenced by `docs/THIRD_PARTY_PROVENANCE.md`. Native linker and ZIP output
+can vary between clean builds, so hashes from an earlier candidate or an
+earlier build run must not be copied into this status document. The transcript
+also records the helper output that verifies the packaged notice and version
+metadata.
 
 The local release-preparation script produced `wynime-1.0.1.apk` and
 `wynime-1.0.1.zip` under the ignored `build/release` directory; both sidecars
@@ -111,8 +113,9 @@ The release APK's packaged `libmpv.so` entries were read back from the ZIP and m
 The locked pub packages and downloaded native archives were inspected. Windows libmpv input is `mpv-dev-x86_64-20230924-git-652a1dd.7z` with MD5 `A832EF24B3A6FF97CD2560B5B9D04CD8` and SHA-256 `DCE982222D7A23E4A1C6F0FB6CC39F6E899A6714624B95EA49CFF6558EE97572`; ANGLE input `ANGLE.7z` has MD5 `E866F13E8D552348058AFAAFE869B1ED` and SHA-256 `CC5911BB15D596FD5A2B362613AD35B7093B427117269A7359054A65746A5F9A`. The package build scripts verify MD5 and download from their declared GitHub release URLs.
 
 These hashes establish the selected archive bytes. The candidate now also
-records the embedded Windows runtime identity, configure flags, PE dependency
-list and redistributed DLL hashes in `docs/THIRD_PARTY_PROVENANCE.md`, and
+records the embedded Windows runtime identity, the locked CMake archive
+selection, PE dependency list and every redistributed DLL hash in
+`docs/THIRD_PARTY_PROVENANCE.md`, and
 ships the explicit notice asset in both platforms. The historical Windows
 FFmpeg configure record and complete transitive license closure are still not
 independently reviewed, so native provenance/license review remains a release
@@ -131,10 +134,10 @@ The checkout has no root project `LICENSE` or `NOTICE` file. The application's o
 
 - The official [`libmpv-android-video-build` v1.1.7 release](https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7) exposes these SHA-256 digests for the four ABI JARs: `default-arm64-v8a.jar` `4363dfa5d3d415b91c1f16f6fb90c3fe59a77dfd3f9b824d2b24b492d6b09df9`, `default-armeabi-v7a.jar` `8ead114fc5a43348d89dc0eb8f41823e549b15115c29f73ee26973f973620995`, `default-x86.jar` `94c13cb6188b774710e5e487afff6e500c4af504df74b2494d7b12cf9be8a66a`, and `default-x86_64.jar` `90268cd15f0766e07fb8e427388c621161177c9eb343c544f327bd63232bb236`. Its [`v1.1.7` dependency manifest](https://github.com/media-kit/libmpv-android-video-build/blob/v1.1.7/buildscripts/include/depinfo.sh) records FFmpeg 6.0, mpv commit `78d43740f52db817d98bcf24fb30a76ab6fa13ff` and the supporting dependency versions; the default flavor uses `--disable-gpl`, `--disable-nonfree` FFmpeg and `gpl=false` for libmpv. The upstream [`LICENSE`](https://github.com/media-kit/libmpv-android-video-build/blob/v1.1.7/LICENSE) is evidence for that source build repository, not a substitute for a complete transitive redistribution notice set for the APK.
 - The current build output contains the original v1.1.7 ABI JARs. Their local SHA-256 values directly match the official release digests: `default-arm64-v8a.jar` `4363dfa5d3d415b91c1f16f6fb90c3fe59a77dfd3f9b824d2b24b492d6b09df9`, `default-armeabi-v7a.jar` `8ead114fc5a43348d89dc0eb8f41823e549b15115c29f73ee26973f973620995`, `default-x86.jar` `94c13cb6188b774710e5e487afff6e500c4af504df74b2494d7b12cf9be8a66a`, and `default-x86_64.jar` `90268cd15f0766e07fb8e427388c621161177c9eb343c544f327bd63232bb236`. This closes the Android upstream archive identity check only; it does not close the transitive license notice or native redistribution review.
-- The official [Windows 2023-09-24 release](https://github.com/media-kit/libmpv-win32-video-build/releases/tag/2023-09-24) identifies the selected mpv development archive and links it to mpv commit `652a1dd90711839acdccc08004056d25514ef2d`; its release asset metadata did not provide a SHA-256 digest. The candidate's direct runtime probe now proves `mpv v0.36.0-403-g652a1dd907`, FFmpeg `n6.0`, `-Dgpl=false`, `-Dlibmpv=true`, static preference and ANGLE configuration for the actual DLL. The historical FFmpeg configure recipe and complete transitive notice set are still not independently proven.
+- The official [Windows 2023-09-24 release](https://github.com/media-kit/libmpv-win32-video-build/releases/tag/2023-09-24) identifies the selected mpv development archive and links it to mpv commit `652a1dd90711839acdccc08004056d25514ef2d`; its release asset metadata did not provide a SHA-256 digest. The candidate's direct runtime probe proves `mpv v0.36.0-403-g652a1dd907` and FFmpeg `n6.0` for the actual DLL. The historical FFmpeg configure recipe and complete transitive notice set are still not independently proven.
 - The official [ANGLE v1.0.1 release](https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/tag/v1.0.1) identifies the selected archive, but the audited archive/repository listing did not yield a complete license bundle for redistribution. The local archive hashes remain the authoritative bytes actually inspected in this checkout.
 
-This cross-check narrows the provenance gap but does not close it: exact historical Windows build inputs/flags, complete linked-library license notices and a reproducible redistribution record are still required before release packaging.
+This cross-check narrows the provenance gap but does not close it: exact historical Windows build flags, complete linked-library license notices and a reproducible redistribution record are still required before release packaging.
 
 ## Runtime and document boundaries
 

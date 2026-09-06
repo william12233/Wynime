@@ -66,8 +66,8 @@ blocked.
 
 ## Android package audit
 
-The latest audited candidate inspection APK was built from candidate commit
-`f4f7af1d9061cea5f94a56a7eae75ed33d183f39`; it is
+The latest audited candidate inspection APK is rebuilt from the final
+candidate source tree after the release-evidence commit; it is
 `build/app/outputs/flutter-apk/app-release.apk`, package
 `io.github.william12233.wynime`, version `1.0.1` / versionCode `2`, min SDK
 24, target/compile SDK 36, and ABIs `arm64-v8a`, `armeabi-v7a`, `x86_64`.

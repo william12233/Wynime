@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:wynime/l10n/app_localizations.dart';
 import 'package:wynime/src/app/app_destination.dart';
+import 'package:wynime/src/domain/models/app_settings.dart';
 import 'package:wynime/src/design_system/tokens/breakpoints.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
-import 'package:wynime/src/presentation/pages/placeholder_page.dart';
+import 'package:wynime/src/presentation/pages/product_pages.dart';
 
 class ResponsiveAppShell extends StatefulWidget {
-  const ResponsiveAppShell({super.key});
+  const ResponsiveAppShell({
+    required this.settings,
+    required this.onSettingsChanged,
+    super.key,
+  });
+
+  final AppSettings settings;
+  final ValueChanged<AppSettings> onSettingsChanged;
 
   @override
   State<ResponsiveAppShell> createState() => _ResponsiveAppShellState();
@@ -28,16 +36,17 @@ class _ResponsiveAppShellState extends State<ResponsiveAppShell> {
     final destinations = AppDestination.values;
     final selectedDestination = destinations[_selectedIndex];
 
-    final page = PlaceholderPage(
-      key: ValueKey(selectedDestination),
-      icon: selectedDestination.selectedIcon,
-      title: selectedDestination.label(localizations),
-      description: selectedDestination.description(localizations),
-    );
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final windowClass = WynimeBreakpoints.classify(constraints.maxWidth);
+        final page = buildWynimePage(
+          selectedDestination,
+          localizations,
+          settings: widget.settings,
+          onSettingsChanged: widget.onSettingsChanged,
+          onNavigate: (destination) => _selectDestination(destination.index),
+          showPageHeader: windowClass != WynimeWindowClass.compact,
+        );
 
         return switch (windowClass) {
           WynimeWindowClass.compact => Scaffold(

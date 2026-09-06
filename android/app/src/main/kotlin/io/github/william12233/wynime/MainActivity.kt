@@ -164,9 +164,11 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                 else -> result.notImplemented()
             }
         } catch (error: IllegalArgumentException) {
-            result.error("invalid_media3_request", error.message, null)
+            result.error("invalid_media3_request", null, null)
         } catch (error: IllegalStateException) {
-            result.error("media3_state_error", error.message, null)
+            result.error("media3_state_error", null, null)
+        } catch (error: Exception) {
+            result.error("media3_operation_failed", null, null)
         }
     }
 

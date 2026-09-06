@@ -33,17 +33,12 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
   });
 
-  testWidgets('navigation changes the selected placeholder', (tester) async {
+  testWidgets('navigation changes the selected page', (tester) async {
     await pumpAtSize(tester, const Size(360, 800));
 
     await tester.tap(find.byIcon(Icons.search_outlined));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(
-        'Search UI is scaffolded only. No website or source is queried in Phase 0.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Source access is unavailable'), findsOneWidget);
   });
 }

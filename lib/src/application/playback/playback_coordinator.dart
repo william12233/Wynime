@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
+import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/domain/services/playback_proxy.dart';
 import 'package:wynime/src/domain/services/playback_session_resolver.dart';
 import 'package:wynime/src/domain/services/player_backend.dart';
@@ -47,8 +48,10 @@ final class PlaybackCoordinator {
   PlaybackCoordinator._(this._resolver, this._proxy, this._player) {
     _playerSubscription = _player.events.listen(
       _handlePlayerEvent,
-      onError: (Object error, StackTrace stackTrace) {
-        _events.addError(error, stackTrace);
+      onError: (Object error, StackTrace _) {
+        _events.addError(
+          _errorBoundary.exceptionFrom(error, stage: PlaybackErrorStage.player),
+        );
       },
     );
   }
@@ -56,6 +59,7 @@ final class PlaybackCoordinator {
   final PlaybackSessionResolver _resolver;
   final PlaybackProxyService _proxy;
   final PlayerBackend _player;
+  final PlaybackErrorBoundary _errorBoundary = const PlaybackErrorBoundary();
   final StreamController<PlaybackEvent> _events =
       StreamController<PlaybackEvent>.broadcast();
   late final StreamSubscription<PlaybackEvent> _playerSubscription;
@@ -72,6 +76,17 @@ final class PlaybackCoordinator {
   bool get hasActivePlayback => _active != null;
 
   Future<PlaybackSession> open(PlaybackOpenRequest request) async {
+    try {
+      return await _open(request);
+    } on Object catch (error) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+    }
+  }
+
+  Future<PlaybackSession> _open(PlaybackOpenRequest request) async {
     _ensureOpen();
     final operation = ++_operation;
     await _stopActive();
@@ -124,37 +139,37 @@ final class PlaybackCoordinator {
 
   Future<void> play() async {
     _ensureActive();
-    await _player.play();
+    await _runPlayerOperation(_player.play);
   }
 
   Future<void> pause() async {
     _ensureActive();
-    await _player.pause();
+    await _runPlayerOperation(_player.pause);
   }
 
   Future<void> seek(Duration position) async {
     _ensureActive();
-    await _player.seek(position);
+    await _runPlayerOperation(() => _player.seek(position));
   }
 
   Future<void> setVolume(double volume) async {
     _ensureActive();
-    await _player.setVolume(volume);
+    await _runPlayerOperation(() => _player.setVolume(volume));
   }
 
   Future<void> setRate(double rate) async {
     _ensureActive();
-    await _player.setRate(rate);
+    await _runPlayerOperation(() => _player.setRate(rate));
   }
 
   Future<void> selectAudioTrack(String? trackId) async {
     _ensureActive();
-    await _player.selectAudioTrack(trackId);
+    await _runPlayerOperation(() => _player.selectAudioTrack(trackId));
   }
 
   Future<void> selectSubtitleTrack(String? trackId) async {
     _ensureActive();
-    await _player.selectSubtitleTrack(trackId);
+    await _runPlayerOperation(() => _player.selectSubtitleTrack(trackId));
   }
 
   Future<void> stop() async {
@@ -239,9 +254,11 @@ final class PlaybackCoordinator {
         await lease.close();
         rethrow;
       }
-    } on Object catch (error, stackTrace) {
+    } on Object catch (error) {
       if (!_events.isClosed) {
-        _events.addError(error, stackTrace);
+        _events.addError(
+          _errorBoundary.exceptionFrom(error, stage: PlaybackErrorStage.player),
+        );
       }
     } finally {
       if (_refreshingOperation == expected.operation) {
@@ -257,7 +274,7 @@ final class PlaybackCoordinator {
       return;
     }
     try {
-      await _player.close();
+      await _runPlayerOperation(_player.close);
     } finally {
       await active.lease.close();
     }
@@ -273,6 +290,17 @@ final class PlaybackCoordinator {
     _ensureOpen();
     if (_active == null) {
       throw StateError('No active PlaybackSession.');
+    }
+  }
+
+  Future<void> _runPlayerOperation(Future<void> Function() operation) async {
+    try {
+      await operation();
+    } on Object catch (error) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
     }
   }
 }

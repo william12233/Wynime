@@ -51,11 +51,22 @@ final class Media3PlayerBackend implements PlayerBackend {
   );
 
   Media3PlayerBackend._(this._transport, this._classifier) {
-    _events = _transport.events.map(_mapEvent).asBroadcastStream();
+    _events = _transport.events.map(_mapEvent).handleError((
+      Object error,
+      StackTrace _,
+    ) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+    }).asBroadcastStream();
   }
 
   final Media3PlatformTransport _transport;
   final PlaybackErrorClassifier _classifier;
+  late final PlaybackErrorBoundary _errorBoundary = PlaybackErrorBoundary(
+    classifier: _classifier,
+  );
   late final Stream<PlaybackEvent> _events;
   int _lastSequence = -1;
   String? _activeSessionId;
@@ -104,11 +115,12 @@ final class Media3PlayerBackend implements PlayerBackend {
         'Media3 accepts only a loopback capability endpoint.',
       );
     }
+    _lastSequence = -1;
     _activeSessionId = session.sessionId;
     _timelineMapIdentity = session.timelineMapIdentity;
     _activeSession = session;
     try {
-      await _transport.invoke('open', {
+      await _invoke('open', {
         'sessionId': session.sessionId,
         'uri': uri.toString(),
         'timelineMapIdentity': session.timelineMapIdentity,
@@ -122,17 +134,17 @@ final class Media3PlayerBackend implements PlayerBackend {
   }
 
   @override
-  Future<void> play() => _transport.invoke('play', const {});
+  Future<void> play() => _invoke('play', const {});
 
   @override
-  Future<void> pause() => _transport.invoke('pause', const {});
+  Future<void> pause() => _invoke('pause', const {});
 
   @override
   Future<void> seek(Duration position) async {
     if (position.isNegative) {
       throw ArgumentError.value(position, 'position', 'Must not be negative.');
     }
-    await _transport.invoke('seek', {'positionMs': position.inMilliseconds});
+    await _invoke('seek', {'positionMs': position.inMilliseconds});
   }
 
   @override
@@ -140,7 +152,7 @@ final class Media3PlayerBackend implements PlayerBackend {
     if (!volume.isFinite || volume < 0 || volume > 1) {
       throw ArgumentError.value(volume, 'volume', 'Must be between 0 and 1.');
     }
-    await _transport.invoke('setVolume', {'volume': volume});
+    await _invoke('setVolume', {'volume': volume});
   }
 
   @override
@@ -148,7 +160,7 @@ final class Media3PlayerBackend implements PlayerBackend {
     if (!rate.isFinite || rate < 0.25 || rate > 4) {
       throw ArgumentError.value(rate, 'rate', 'Must be between 0.25 and 4.');
     }
-    await _transport.invoke('setRate', {'rate': rate});
+    await _invoke('setRate', {'rate': rate});
   }
 
   @override
@@ -161,7 +173,7 @@ final class Media3PlayerBackend implements PlayerBackend {
 
   Future<void> _selectTrack(String type, String? trackId) async {
     if (trackId == null) {
-      await _transport.invoke('selectTrack', {'type': type, 'id': null});
+      await _invoke('selectTrack', {'type': type, 'id': null});
       return;
     }
     if (!_validTrackId(trackId)) {
@@ -169,7 +181,9 @@ final class Media3PlayerBackend implements PlayerBackend {
     }
     final session = _activeSession;
     if (session == null) {
-      throw StateError('Media3 player does not have an active PlaybackSession.');
+      throw StateError(
+        'Media3 player does not have an active PlaybackSession.',
+      );
     }
     final tracks = type == 'audio' ? session.audioTracks : session.subtitles;
     final track = _trackById(tracks, trackId);
@@ -179,7 +193,7 @@ final class Media3PlayerBackend implements PlayerBackend {
     if (track.uri != null) {
       throw StateError('External $type track mapping is not supported.');
     }
-    await _transport.invoke('selectTrack', {
+    await _invoke('selectTrack', {
       'type': type,
       'id': track.id,
       'label': track.label,
@@ -191,10 +205,25 @@ final class Media3PlayerBackend implements PlayerBackend {
 
   @override
   Future<void> close() async {
-    await _transport.invoke('close', const {});
-    _activeSessionId = null;
-    _timelineMapIdentity = null;
-    _activeSession = null;
+    try {
+      await _invoke('close', const {});
+    } finally {
+      _activeSessionId = null;
+      _timelineMapIdentity = null;
+      _activeSession = null;
+      _lastSequence = -1;
+    }
+  }
+
+  Future<void> _invoke(String method, Map<String, Object?> arguments) async {
+    try {
+      await _transport.invoke(method, arguments);
+    } on Object catch (error) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+    }
   }
 
   PlaybackEvent _mapEvent(Map<String, Object?> raw) {
@@ -367,7 +396,8 @@ String? _validatedEventTrackId(
   if (id == null) {
     return null;
   }
-  if (tracks == null || _trackById(tracks, id) == null) {
+  final track = tracks == null ? null : _trackById(tracks, id);
+  if (track == null || track.uri != null) {
     throw StateError('Media3 reported a non-authoritative $type track ID.');
   }
   return id;

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
 import 'package:wynime/src/domain/models/player_backend.dart';
+import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/domain/services/player_backend.dart';
 
 final class PlaybackEngineRouter implements PlayerBackend {
@@ -39,6 +40,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
   final StreamController<PlaybackEvent> _events =
       StreamController<PlaybackEvent>.broadcast();
   final Set<PlayerBackendKind> _attempted = <PlayerBackendKind>{};
+  final PlaybackErrorBoundary _errorBoundary = const PlaybackErrorBoundary();
 
   StreamSubscription<PlaybackEvent>? _backendSubscription;
   PlayerBackend? _activeBackend;
@@ -100,19 +102,28 @@ final class PlaybackEngineRouter implements PlayerBackend {
     _automaticFallbackCount = 0;
     _pendingHandoffFailure = null;
 
-    final opened = await _openNextAvailable(operation);
-    if (!opened) {
-      _session = null;
-      final failure = _backendUnavailableFailure();
-      _emit(
-        PlaybackEvent(
-          sequence: 0,
-          state: PlaybackState.failed,
-          failure: failure,
-          timelineMapIdentity: session.timelineMapIdentity,
-        ),
-      );
-      throw UnsupportedError('No playback backend is available.');
+    try {
+      final result = await _openNextAvailable(operation);
+      if (operation != _operation || !identical(_session, session)) {
+        throw StateError('Playback open was superseded.');
+      }
+      if (result.failure case final failure?) {
+        _session = null;
+        _emitFailure(failure, session);
+        throw PlaybackOperationException(failure);
+      }
+      if (!result.opened) {
+        _session = null;
+        final failure = _backendUnavailableFailure();
+        _emitFailure(failure, session);
+        throw PlaybackOperationException(failure);
+      }
+    } on Object {
+      if (operation == _operation) {
+        _session = null;
+        await _detachActiveBackend();
+      }
+      rethrow;
     }
   }
 
@@ -123,13 +134,18 @@ final class PlaybackEngineRouter implements PlayerBackend {
     }
     final backend = _backends[target];
     if (backend == null) {
-      throw UnsupportedError('Requested playback backend is not registered.');
+      throw PlaybackOperationException(
+        _backendUnavailableFailure(code: 'backend_not_registered'),
+      );
     }
-    final availability = await backend.probe();
+    final availability = await _probeBackend(backend);
     if (!availability.isAvailable) {
-      throw UnsupportedError('Requested playback backend is unavailable.');
+      throw PlaybackOperationException(
+        _backendUnavailableFailure(code: 'backend_unavailable'),
+      );
     }
     final operation = _operation;
+    _validateRestoredTracks(session, _state);
     _attempted.add(target);
     await _switchTo(backend, session, operation);
   }
@@ -137,14 +153,14 @@ final class PlaybackEngineRouter implements PlayerBackend {
   @override
   Future<void> play() async {
     final backend = _requireBackend();
-    await backend.play();
+    await _runBackendOperation(backend.play);
     _state = _state.copyWith(isPlaying: true);
   }
 
   @override
   Future<void> pause() async {
     final backend = _requireBackend();
-    await backend.pause();
+    await _runBackendOperation(backend.pause);
     _state = _state.copyWith(isPlaying: false);
   }
 
@@ -155,7 +171,9 @@ final class PlaybackEngineRouter implements PlayerBackend {
     }
     final session = _requireSession();
     final backend = _requireBackend();
-    await backend.seek(_toSanitized(session, position));
+    await _runBackendOperation(
+      () => backend.seek(_toSanitized(session, position)),
+    );
     _state = _state.copyWith(position: position);
   }
 
@@ -165,7 +183,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
       throw ArgumentError.value(volume, 'volume', 'Must be between 0 and 1.');
     }
     final backend = _requireBackend();
-    await backend.setVolume(volume);
+    await _runBackendOperation(() => backend.setVolume(volume));
     _state = _state.copyWith(volume: volume);
   }
 
@@ -175,7 +193,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
       throw ArgumentError.value(rate, 'rate', 'Must be between 0.25 and 4.');
     }
     final backend = _requireBackend();
-    await backend.setRate(rate);
+    await _runBackendOperation(() => backend.setRate(rate));
     _state = _state.copyWith(rate: rate);
   }
 
@@ -184,7 +202,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
     final session = _requireSession();
     _verifyTrack(session.audioTracks, trackId, 'audio');
     final backend = _requireBackend();
-    await backend.selectAudioTrack(trackId);
+    await _runBackendOperation(() => backend.selectAudioTrack(trackId));
     _state = _state.copyWith(
       audioTrack: trackId == null
           ? const PlayerTrackSelection.disabled()
@@ -197,7 +215,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
     final session = _requireSession();
     _verifyTrack(session.subtitles, trackId, 'subtitle');
     final backend = _requireBackend();
-    await backend.selectSubtitleTrack(trackId);
+    await _runBackendOperation(() => backend.selectSubtitleTrack(trackId));
     _state = _state.copyWith(
       subtitleTrack: trackId == null
           ? const PlayerTrackSelection.disabled()
@@ -218,7 +236,12 @@ final class PlaybackEngineRouter implements PlayerBackend {
     await _detachActiveBackend();
   }
 
-  Future<bool> _openNextAvailable(int operation) async {
+  Future<_OpenAttemptResult> _openNextAvailable(
+    int operation, {
+    bool allowAutomaticFallback = true,
+  }) async {
+    PlaybackFailure? lastFailure;
+    var mayFallback = allowAutomaticFallback && _automaticFallbackCount == 0;
     for (final kind in _preference) {
       if (_attempted.contains(kind)) {
         continue;
@@ -236,15 +259,27 @@ final class PlaybackEngineRouter implements PlayerBackend {
       }
       try {
         await _switchTo(backend, _requireSession(), operation);
-        return true;
-      } on Object {
+        return const _OpenAttemptResult.opened();
+      } on Object catch (error) {
         await _detachActiveBackend();
         if (operation != _operation) {
-          return false;
+          return const _OpenAttemptResult.unavailable();
         }
+        final stableError = _errorBoundary.exceptionFrom(
+          error,
+          stage: PlaybackErrorStage.player,
+        );
+        lastFailure = stableError.failure;
+        if (!mayFallback || !_mayAutomaticallyFallback(stableError.failure)) {
+          return _OpenAttemptResult.failed(stableError.failure);
+        }
+        _automaticFallbackCount += 1;
+        mayFallback = false;
       }
     }
-    return false;
+    return lastFailure == null
+        ? const _OpenAttemptResult.unavailable()
+        : _OpenAttemptResult.failed(lastFailure);
   }
 
   Future<void> _switchTo(
@@ -252,6 +287,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
     PlaybackSession session,
     int operation,
   ) async {
+    _validateRestoredTracks(session, _state);
     await _detachActiveBackend();
     if (operation != _operation || !identical(_session, session)) {
       throw StateError('Playback engine switch was superseded.');
@@ -263,10 +299,8 @@ final class PlaybackEngineRouter implements PlayerBackend {
     _pendingHandoffFailure = null;
     _backendSubscription = backend.events.listen(
       (event) => _onBackendEvent(event, generation, operation),
-      onError: (Object error, StackTrace stackTrace) {
-        if (generation == _generation && operation == _operation) {
-          _events.addError(StateError('Playback backend event stream failed.'));
-        }
+      onError: (Object error, StackTrace _) {
+        _onBackendStreamError(error, generation, operation);
       },
     );
 
@@ -285,14 +319,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
       final handoffFailure = _pendingHandoffFailure;
       _pendingHandoffFailure = null;
       if (handoffFailure != null) {
-        if (_mayAutomaticallyFallback(handoffFailure)) {
-          _automaticFallbackCount += 1;
-          _fallbackPending = true;
-          unawaited(_fallback(operation, handoffFailure));
-          return;
-        }
-        _emitFailure(handoffFailure, session);
-        return;
+        throw PlaybackOperationException(handoffFailure);
       }
       _emit(
         PlaybackEvent(
@@ -309,11 +336,14 @@ final class PlaybackEngineRouter implements PlayerBackend {
           timelineMapIdentity: session.timelineMapIdentity,
         ),
       );
-    } on Object {
+    } on Object catch (error) {
       _handoffPending = false;
       _pendingHandoffFailure = null;
       await _detachActiveBackend();
-      rethrow;
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
     }
   }
 
@@ -322,6 +352,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
     PlaybackSession session,
     PlayerPlaybackState state,
   ) async {
+    _validateRestoredTracks(session, state);
     if (state.position > Duration.zero) {
       await backend.seek(_toSanitized(session, state.position));
     }
@@ -369,7 +400,18 @@ final class PlaybackEngineRouter implements PlayerBackend {
           timelineMapIdentity: session.timelineMapIdentity,
         ),
       );
-      unawaited(_detachActiveBackend());
+      unawaited(_detachActiveBackend().catchError((_) {}));
+      return;
+    }
+    final trackFailure = _trackIdentityFailure(session, event);
+    if (trackFailure != null) {
+      if (_handoffPending) {
+        _pendingHandoffFailure ??= trackFailure;
+        return;
+      }
+      _state = _state.copyWith(isPlaying: false);
+      _emitFailure(trackFailure, session);
+      unawaited(_detachActiveBackend().catchError((_) {}));
       return;
     }
     if (_handoffPending) {
@@ -429,6 +471,36 @@ final class PlaybackEngineRouter implements PlayerBackend {
     );
   }
 
+  void _onBackendStreamError(Object error, int generation, int operation) {
+    if (generation != _generation || operation != _operation) {
+      return;
+    }
+    final session = _session;
+    if (session == null) {
+      return;
+    }
+    final failure = _errorBoundary.failureFrom(
+      error,
+      stage: PlaybackErrorStage.player,
+    );
+    if (_handoffPending) {
+      _pendingHandoffFailure ??= failure;
+      return;
+    }
+    final willFallback = _mayAutomaticallyFallback(failure);
+    _state = _state.copyWith(
+      isPlaying: willFallback ? _state.isPlaying : false,
+    );
+    if (willFallback) {
+      _automaticFallbackCount += 1;
+      _fallbackPending = true;
+      unawaited(_fallback(operation, failure));
+      return;
+    }
+    _emitFailure(failure, session);
+    unawaited(_detachActiveBackend().catchError((_) {}));
+  }
+
   void _emitFailure(PlaybackFailure failure, PlaybackSession session) {
     _emit(
       PlaybackEvent(
@@ -444,17 +516,25 @@ final class PlaybackEngineRouter implements PlayerBackend {
 
   Future<void> _fallback(int operation, PlaybackFailure original) async {
     try {
-      final opened = await _openNextAvailable(operation);
-      if (!opened && operation == _operation && _session != null) {
-        _emit(
-          PlaybackEvent(
-            sequence: 0,
-            state: PlaybackState.failed,
-            position: _state.position,
-            bufferedPosition: _state.bufferedPosition,
-            failure: original,
-            timelineMapIdentity: _session!.timelineMapIdentity,
-          ),
+      if (operation != _operation || _session == null) {
+        return;
+      }
+      await _detachActiveBackend();
+      if (operation != _operation || _session == null) {
+        return;
+      }
+      final result = await _openNextAvailable(
+        operation,
+        allowAutomaticFallback: false,
+      );
+      if (!result.opened && operation == _operation && _session != null) {
+        _emitFailure(result.failure ?? original, _session!);
+      }
+    } on Object catch (error) {
+      if (operation == _operation && _session != null) {
+        _emitFailure(
+          _errorBoundary.failureFrom(error, stage: PlaybackErrorStage.player),
+          _session!,
         );
       }
     } finally {
@@ -502,7 +582,7 @@ final class PlaybackEngineRouter implements PlayerBackend {
     ++_generation;
     await subscription?.cancel();
     if (backend != null) {
-      await backend.close();
+      await _runBackendOperation(backend.close);
     }
   }
 
@@ -521,16 +601,90 @@ final class PlaybackEngineRouter implements PlayerBackend {
     }
     return backend;
   }
+
+  Future<PlayerBackendAvailability> _probeBackend(PlayerBackend backend) async {
+    try {
+      return await backend.probe();
+    } on Object catch (error) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+    }
+  }
+
+  Future<void> _runBackendOperation(Future<void> Function() operation) async {
+    try {
+      await operation();
+    } on Object catch (error) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+    }
+  }
+}
+
+final class _OpenAttemptResult {
+  const _OpenAttemptResult.opened() : opened = true, failure = null;
+
+  const _OpenAttemptResult.unavailable() : opened = false, failure = null;
+
+  const _OpenAttemptResult.failed(this.failure) : opened = false;
+
+  final bool opened;
+  final PlaybackFailure? failure;
+}
+
+void _validateRestoredTracks(
+  PlaybackSession session,
+  PlayerPlaybackState state,
+) {
+  _validateRestoredTrack(session.audioTracks, state.audioTrack, 'audio');
+  _validateRestoredTrack(session.subtitles, state.subtitleTrack, 'subtitle');
+}
+
+void _validateRestoredTrack(
+  Iterable<MediaTrack> tracks,
+  PlayerTrackSelection selection,
+  String type,
+) {
+  if (!selection.isSpecified || selection.id == null) {
+    return;
+  }
+  if (!tracks.any((track) => track.id == selection.id && track.uri == null)) {
+    throw StateError('Cannot restore an authoritative $type track.');
+  }
 }
 
 void _verifyTrack(Iterable<MediaTrack> tracks, String? id, String type) {
   if (id == null) {
     return;
   }
-  if (!tracks.any((track) => track.id == id)) {
+  if (!tracks.any((track) => track.id == id && track.uri == null)) {
     throw StateError('Requested $type track is unavailable.');
   }
 }
+
+PlaybackFailure? _trackIdentityFailure(
+  PlaybackSession session,
+  PlaybackEvent event,
+) {
+  if (!_isAuthoritativeTrackId(session.audioTracks, event.audioTrackId) ||
+      !_isAuthoritativeTrackId(session.subtitles, event.subtitleTrackId)) {
+    return PlaybackFailure(
+      code: 'track_identity_mismatch',
+      kind: PlaybackFailureKind.unknown,
+      stage: PlaybackErrorStage.player,
+      retryable: false,
+      shouldRefreshSession: false,
+    );
+  }
+  return null;
+}
+
+bool _isAuthoritativeTrackId(Iterable<MediaTrack> tracks, String? id) =>
+    id == null || tracks.any((track) => track.id == id && track.uri == null);
 
 Duration _toSanitized(PlaybackSession session, Duration original) {
   final timeline = session.adRemovalPlan.timeline;
@@ -553,8 +707,10 @@ Duration _toOriginal(PlaybackSession session, Duration sanitized) {
   return timeline.toOriginal(bounded);
 }
 
-PlaybackFailure _backendUnavailableFailure() => PlaybackFailure(
-  code: 'backend_unavailable',
+PlaybackFailure _backendUnavailableFailure({
+  String code = 'backend_unavailable',
+}) => PlaybackFailure(
+  code: code,
   kind: PlaybackFailureKind.unsupported,
   stage: PlaybackErrorStage.player,
   retryable: false,

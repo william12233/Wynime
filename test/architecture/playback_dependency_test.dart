@@ -54,6 +54,15 @@ void main() {
       expect(activity, contains('uri.userInfo == null'));
       expect(activity, contains('METHOD_CHANNEL'));
       expect(activity, contains('EVENT_CHANNEL'));
+      expect(activity, isNot(contains('error.message')));
+      expect(
+        activity,
+        contains('result.error("invalid_media3_request", null, null)'),
+      );
+      expect(
+        activity,
+        contains('result.error("media3_state_error", null, null)'),
+      );
       expect(manifest, contains('android.permission.INTERNET'));
       expect(
         manifest,
@@ -138,7 +147,9 @@ void main() {
         expect(content, isNot(contains('package:media_kit_video/')));
         expect(content, isNot(contains('VideoController')));
       }
-      expect(content, isNot(contains('FFmpeg')));
+      if (!path.startsWith('lib/src/infrastructure/remux/')) {
+        expect(content, isNot(contains('FFmpeg')));
+      }
       expect(content, isNot(contains('DownloadExecutor')));
       expect(content, isNot(contains('Aes128Downloader')));
     }

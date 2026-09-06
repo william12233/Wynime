@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/player_backend.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
+import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/platform/playback/media3_player_backend.dart';
 
 import '../helpers/playback_test_support.dart';
@@ -107,25 +108,31 @@ void main() {
     },
   );
 
-  test('Media3 rejects a backend-native track ID as non-authoritative', () async {
-    final transport = _FakeMedia3Transport();
-    final backend = Media3PlayerBackend(transport: transport);
-    final session = _loopbackSession(
-      audioTracks: [MediaTrack(id: 'audio-1', label: 'Japanese')],
-    );
-    await backend.open(session);
+  test(
+    'Media3 rejects a backend-native track ID as non-authoritative',
+    () async {
+      final transport = _FakeMedia3Transport();
+      final backend = Media3PlayerBackend(transport: transport);
+      final session = _loopbackSession(
+        audioTracks: [MediaTrack(id: 'audio-1', label: 'Japanese')],
+      );
+      await backend.open(session);
 
-    final mismatch = expectLater(backend.events, emitsError(isA<StateError>()));
-    transport.add({
-      'sequence': 0,
-      'sessionId': session.sessionId,
-      'timelineMapIdentity': session.timelineMapIdentity,
-      'state': 'playing',
-      'audioTrackId': '0:0',
-    });
+      final mismatch = expectLater(
+        backend.events,
+        emitsError(isA<StateError>()),
+      );
+      transport.add({
+        'sequence': 0,
+        'sessionId': session.sessionId,
+        'timelineMapIdentity': session.timelineMapIdentity,
+        'state': 'playing',
+        'audioTrackId': '0:0',
+      });
 
-    await mismatch;
-  });
+      await mismatch;
+    },
+  );
 
   test('Media3 rejects stale session and timeline events', () async {
     final transport = _FakeMedia3Transport();
@@ -238,6 +245,26 @@ void main() {
       transport.calls.where((call) => call.method == 'selectTrack'),
       isEmpty,
     );
+  });
+
+  test('Media3 redacts synchronous native error messages', () async {
+    final transport = _FakeMedia3Transport()
+      ..errors['open'] = PlatformException(
+        code: 'media3_state_error',
+        message: 'https://secret.example/master.m3u8?token=private',
+      );
+    final backend = Media3PlayerBackend(transport: transport);
+
+    Object? caught;
+    try {
+      await backend.open(_loopbackSession());
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught, isA<PlaybackOperationException>());
+    expect(caught.toString(), isNot(contains('secret.example')));
+    expect(caught.toString(), isNot(contains('private')));
   });
 
   test(

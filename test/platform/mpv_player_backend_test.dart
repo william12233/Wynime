@@ -82,29 +82,32 @@ void main() {
     expect(player.disposeCount, 1);
   });
 
-  test('mpv rejects external track identity instead of loading its URI', () async {
-    final player = _FakeMediaKitPlayer();
-    final backend = MpvPlayerBackend(
-      facade: _FakeMediaKitFacade(player: player),
-    );
-    await backend.open(
-      _loopbackSession(
-        audioTracks: [
-          MediaTrack(
-            id: 'external-audio',
-            label: 'External',
-            uri: Uri.parse('https://media.example/audio.m4a'),
-          ),
-        ],
-      ),
-    );
+  test(
+    'mpv rejects external track identity instead of loading its URI',
+    () async {
+      final player = _FakeMediaKitPlayer();
+      final backend = MpvPlayerBackend(
+        facade: _FakeMediaKitFacade(player: player),
+      );
+      await backend.open(
+        _loopbackSession(
+          audioTracks: [
+            MediaTrack(
+              id: 'external-audio',
+              label: 'External',
+              uri: Uri.parse('https://media.example/audio.m4a'),
+            ),
+          ],
+        ),
+      );
 
-    await expectLater(
-      backend.selectAudioTrack('external-audio'),
-      throwsStateError,
-    );
-    expect(player.audioTracks, isEmpty);
-  });
+      await expectLater(
+        backend.selectAudioTrack('external-audio'),
+        throwsStateError,
+      );
+      expect(player.audioTracks, isEmpty);
+    },
+  );
 
   test('mpv maps facade state without exposing raw errors', () async {
     final player = _FakeMediaKitPlayer();

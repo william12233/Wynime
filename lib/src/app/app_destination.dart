@@ -37,11 +37,11 @@ enum AppDestination {
   };
 
   String description(AppLocalizations localizations) => switch (this) {
-    AppDestination.home => localizations.homePlaceholder,
-    AppDestination.search => localizations.searchPlaceholder,
-    AppDestination.library => localizations.libraryPlaceholder,
-    AppDestination.downloads => localizations.downloadsPlaceholder,
-    AppDestination.sources => localizations.sourcesPlaceholder,
-    AppDestination.settings => localizations.settingsPlaceholder,
+    AppDestination.home => localizations.homeTagline,
+    AppDestination.search => localizations.searchPageDescription,
+    AppDestination.library => localizations.libraryPageDescription,
+    AppDestination.downloads => localizations.downloadsPageDescription,
+    AppDestination.sources => localizations.sourcesPageDescription,
+    AppDestination.settings => localizations.settingsPageDescription,
   };
 }

@@ -4,6 +4,7 @@ import 'package:wynime/src/application/playback/playback_failure_classifier.dart
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
 import 'package:wynime/src/domain/models/player_backend.dart';
+import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/domain/services/player_backend.dart';
 import 'package:wynime/src/platform/playback/media_kit_facade.dart';
 
@@ -16,6 +17,7 @@ final class MpvPlayerBackend implements PlayerBackend {
 
   final MediaKitFacade _facade;
   final PlaybackFailureClassifier _classifier;
+  final PlaybackErrorBoundary _errorBoundary = const PlaybackErrorBoundary();
 
   @override
   final String backendId;
@@ -84,30 +86,37 @@ final class MpvPlayerBackend implements PlayerBackend {
       _player = player;
       _subscription = player.events.listen(
         _onFacadeEvent,
-        onError: (Object error, StackTrace stackTrace) {
+        onError: (Object _) {
           _emitFailure(
             _classifier.classifyMediaKitError('event_stream_failed'),
           );
         },
       );
       await player.open(uri);
-    } on Object {
-      _emitFailure(_classifier.classifyMediaKitError('open_failed'));
-      await _releasePlayer();
-      _session = null;
-      rethrow;
+    } on Object catch (error) {
+      final stableError = _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+      _emitFailure(stableError.failure);
+      try {
+        await _releasePlayer();
+      } finally {
+        _session = null;
+      }
+      throw stableError;
     }
   }
 
   @override
   Future<void> play() async {
-    await _requirePlayer().play();
+    await _runPlayerOperation(_requirePlayer().play);
     _playing = true;
   }
 
   @override
   Future<void> pause() async {
-    await _requirePlayer().pause();
+    await _runPlayerOperation(_requirePlayer().pause);
     _playing = false;
   }
 
@@ -116,7 +125,7 @@ final class MpvPlayerBackend implements PlayerBackend {
     if (position.isNegative) {
       throw ArgumentError.value(position, 'position', 'Must not be negative.');
     }
-    await _requirePlayer().seek(position);
+    await _runPlayerOperation(() => _requirePlayer().seek(position));
     _position = position;
   }
 
@@ -125,7 +134,7 @@ final class MpvPlayerBackend implements PlayerBackend {
     if (!volume.isFinite || volume < 0 || volume > 1) {
       throw ArgumentError.value(volume, 'volume', 'Must be between 0 and 1.');
     }
-    await _requirePlayer().setVolume(volume);
+    await _runPlayerOperation(() => _requirePlayer().setVolume(volume));
     _volume = volume;
   }
 
@@ -134,7 +143,7 @@ final class MpvPlayerBackend implements PlayerBackend {
     if (!rate.isFinite || rate < 0.25 || rate > 4) {
       throw ArgumentError.value(rate, 'rate', 'Must be between 0.25 and 4.');
     }
-    await _requirePlayer().setRate(rate);
+    await _runPlayerOperation(() => _requirePlayer().setRate(rate));
     _rate = rate;
   }
 
@@ -142,7 +151,7 @@ final class MpvPlayerBackend implements PlayerBackend {
   Future<void> selectAudioTrack(String? trackId) async {
     final session = _requireSession();
     final track = _trackById(session.audioTracks, trackId, 'audio');
-    await _requirePlayer().selectAudioTrack(track);
+    await _runPlayerOperation(() => _requirePlayer().selectAudioTrack(track));
     _audioTrackId = trackId;
   }
 
@@ -150,7 +159,9 @@ final class MpvPlayerBackend implements PlayerBackend {
   Future<void> selectSubtitleTrack(String? trackId) async {
     final session = _requireSession();
     final track = _trackById(session.subtitles, trackId, 'subtitle');
-    await _requirePlayer().selectSubtitleTrack(track);
+    await _runPlayerOperation(
+      () => _requirePlayer().selectSubtitleTrack(track),
+    );
     _subtitleTrackId = trackId;
   }
 
@@ -286,8 +297,26 @@ final class MpvPlayerBackend implements PlayerBackend {
     final player = _player;
     _subscription = null;
     _player = null;
-    await subscription?.cancel();
-    await player?.dispose();
+    try {
+      await subscription?.cancel();
+      await player?.dispose();
+    } on Object catch (error) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+    }
+  }
+
+  Future<void> _runPlayerOperation(Future<void> Function() operation) async {
+    try {
+      await operation();
+    } on Object catch (error) {
+      throw _errorBoundary.exceptionFrom(
+        error,
+        stage: PlaybackErrorStage.player,
+      );
+    }
   }
 
   MediaKitFacadePlayer _requirePlayer() {
@@ -335,11 +364,7 @@ Uri _validatedCapabilityUri(PlaybackSession session) {
   return uri;
 }
 
-MediaTrack? _trackById(
-  Iterable<MediaTrack> tracks,
-  String? id,
-  String type,
-) {
+MediaTrack? _trackById(Iterable<MediaTrack> tracks, String? id, String type) {
   if (id == null) {
     return null;
   }

@@ -1,0 +1,328 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wynime-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: '3.44.8'
+
+jobs:
+  metadata:
+    name: Validate release metadata and readiness
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Validate tag, version, notes and release gate
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tags must match vX.Y.Z; received: $tag" >&2
+            exit 1
+          fi
+
+          version="${tag#v}"
+          version_line="$(grep -m1 -E '^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+[[:space:]]*$' pubspec.yaml || true)"
+          app_version="$(printf '%s' "$version_line" | sed -E 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+)\+[0-9]+[[:space:]]*$/\1/')"
+          version_code="$(printf '%s' "$version_line" | sed -E 's/^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\+([0-9]+)[[:space:]]*$/\1/')"
+          if [[ -z "$app_version" || "$app_version" != "$version" ]]; then
+            echo "Tag $tag does not match pubspec.yaml base version $app_version" >&2
+            exit 1
+          fi
+          if [[ -z "$version_code" || "$version_code" -le 0 ]]; then
+            echo "pubspec.yaml must contain a positive Android versionCode." >&2
+            exit 1
+          fi
+
+          notes_file="docs/release-notes-$version.md"
+          if [[ ! -s "$notes_file" ]]; then
+            echo "Missing versioned release notes: $notes_file" >&2
+            exit 1
+          fi
+
+          release_status="$(sed -n 's/^`\([^`]*\)`[[:space:]]*$/\1/p' docs/PHASE12_STATUS.md | head -n 1)"
+          if [[ "$release_status" != 'RELEASE_READY' ]]; then
+            echo "Phase 12 release gate is $release_status, not RELEASE_READY." >&2
+            exit 1
+          fi
+
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "version_code=$version_code"
+          } >> "$GITHUB_OUTPUT"
+
+  android:
+    name: Signed Android APK
+    needs: metadata
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.metadata.outputs.tag }}
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Configure external release signing
+        shell: bash
+        env:
+          WYNIME_RELEASE_KEYSTORE_BASE64: ${{ secrets.WYNIME_RELEASE_KEYSTORE_BASE64 }}
+          WYNIME_RELEASE_STORE_PASSWORD: ${{ secrets.WYNIME_RELEASE_STORE_PASSWORD }}
+          WYNIME_RELEASE_KEY_ALIAS: ${{ secrets.WYNIME_RELEASE_KEY_ALIAS }}
+          WYNIME_RELEASE_KEY_PASSWORD: ${{ secrets.WYNIME_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for secret_name in \
+            WYNIME_RELEASE_KEYSTORE_BASE64 \
+            WYNIME_RELEASE_STORE_PASSWORD \
+            WYNIME_RELEASE_KEY_ALIAS \
+            WYNIME_RELEASE_KEY_PASSWORD; do
+            if [[ -z "${!secret_name:-}" ]]; then
+              echo "Missing required GitHub Actions secret: $secret_name" >&2
+              exit 1
+            fi
+          done
+
+          keystore="$GITHUB_WORKSPACE/android/app/wynime-release.jks"
+          printf '%s' "$WYNIME_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          {
+            echo "WYNIME_RELEASE_STORE_FILE=$keystore"
+            echo "WYNIME_RELEASE_STORE_PASSWORD=$WYNIME_RELEASE_STORE_PASSWORD"
+            echo "WYNIME_RELEASE_KEY_ALIAS=$WYNIME_RELEASE_KEY_ALIAS"
+            echo "WYNIME_RELEASE_KEY_PASSWORD=$WYNIME_RELEASE_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Verify release keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$WYNIME_RELEASE_STORE_FILE"
+          keytool -list -keystore "$WYNIME_RELEASE_STORE_FILE" -storepass "$WYNIME_RELEASE_STORE_PASSWORD" -alias "$WYNIME_RELEASE_KEY_ALIAS" >/dev/null
+
+      - name: Build signed Android APK
+        run: >
+          flutter build apk
+          --release
+          --no-pub
+          --build-name "${{ needs.metadata.outputs.version }}"
+          --build-number "${{ needs.metadata.outputs.version_code }}"
+
+      - name: Verify Android metadata, alignment and signature
+        shell: bash
+        env:
+          EXPECTED_VERSION: ${{ needs.metadata.outputs.version }}
+          EXPECTED_VERSION_CODE: ${{ needs.metadata.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          apk="build/app/outputs/flutter-apk/app-release.apk"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          aapt2="$build_tools/aapt2"
+          zipalign="$build_tools/zipalign"
+          apksigner="$build_tools/apksigner"
+          for tool in "$aapt2" "$zipalign" "$apksigner"; do
+            test -x "$tool" || { echo "Missing Android build tool: $tool" >&2; exit 1; }
+          done
+
+          package_line="$($aapt2 dump badging "$apk" | grep -m 1 '^package:')"
+          grep -F "versionCode='$EXPECTED_VERSION_CODE'" <<< "$package_line"
+          grep -F "versionName='$EXPECTED_VERSION'" <<< "$package_line"
+          grep -F "native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'" <("$aapt2" dump badging "$apk")
+          "$zipalign" -c -v 4 "$apk"
+          "$apksigner" verify --verbose "$apk"
+
+      - name: Name and hash Android artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          artifact="wynime-${{ needs.metadata.outputs.version }}.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/$artifact"
+          (cd dist && sha256sum "$artifact" > "$artifact.sha256")
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ needs.metadata.outputs.version }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Remove signing material
+        if: always()
+        shell: bash
+        run: rm -f android/app/wynime-release.jks
+
+  windows:
+    name: Windows x64 portable bundle
+    needs: metadata
+    runs-on: windows-2025
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.metadata.outputs.tag }}
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install NuGet
+        uses: NuGet/setup-nuget@v3
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Build Windows release bundle
+        run: >
+          flutter build windows
+          --release
+          --no-pub
+          --build-name "${{ needs.metadata.outputs.version }}"
+          --build-number "${{ needs.metadata.outputs.version_code }}"
+
+      - name: Package and hash Windows artifact
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ needs.metadata.outputs.version }}'
+          $releaseDir = Join-Path $env:GITHUB_WORKSPACE 'build/windows/x64/runner/Release'
+          $stage = Join-Path $env:RUNNER_TEMP "wynime-$version-windows-x64"
+          $dist = Join-Path $env:GITHUB_WORKSPACE 'dist'
+          $zipName = "wynime-$version.zip"
+          $zipPath = Join-Path $dist $zipName
+
+          if (-not (Test-Path -LiteralPath (Join-Path $releaseDir 'wynime.exe') -PathType Leaf)) {
+            throw "Windows release executable is missing: $releaseDir"
+          }
+
+          Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $stage, $dist | Out-Null
+          Copy-Item -Path (Join-Path $releaseDir '*') -Destination $stage -Recurse -Force
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'README.md') -Destination (Join-Path $stage 'README.md') -Force
+          Set-Content -LiteralPath (Join-Path $stage 'version.txt') -Value $version -NoNewline -Encoding ascii
+
+          if ((Get-Content -Raw -LiteralPath (Join-Path $stage 'version.txt')) -ne $version) {
+            throw 'version.txt does not match the release version.'
+          }
+          Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zipPath -CompressionLevel Optimal
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $zipPath).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath "$zipPath.sha256" -Value "$hash  $zipName" -NoNewline -Encoding ascii
+          Remove-Item -LiteralPath $stage -Recurse -Force
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ needs.metadata.outputs.version }}
+          path: dist/*
+          if-no-files-found: error
+
+  github-release:
+    name: Publish GitHub Release
+    needs:
+      - metadata
+      - android
+      - windows
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check out tagged release notes
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.metadata.outputs.tag }}
+
+      - name: Download Android artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-${{ needs.metadata.outputs.version }}
+          path: dist
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-${{ needs.metadata.outputs.version }}
+          path: dist
+
+      - name: Verify exact release asset set and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ needs.metadata.outputs.version }}'
+          expected=(
+            "wynime-$version.apk"
+            "wynime-$version.apk.sha256"
+            "wynime-$version.zip"
+            "wynime-$version.zip.sha256"
+          )
+          mapfile -t expected_sorted < <(printf '%s\n' "${expected[@]}" | sort)
+          mapfile -t actual_sorted < <(find dist -maxdepth 1 -type f -printf '%f\n' | sort)
+          if [[ "${actual_sorted[*]}" != "${expected_sorted[*]}" ]]; then
+            echo 'Release assets do not match the required naming contract.' >&2
+            printf 'Expected: %s\n' "${expected_sorted[*]}" >&2
+            printf 'Actual: %s\n' "${actual_sorted[*]}" >&2
+            exit 1
+          fi
+          (cd dist && sha256sum --check --strict "wynime-$version.apk.sha256")
+          (cd dist && sha256sum --check --strict "wynime-$version.zip.sha256")
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag='${{ needs.metadata.outputs.tag }}'
+          version='${{ needs.metadata.outputs.version }}'
+          notes="docs/release-notes-$version.md"
+          assets=(
+            "dist/wynime-$version.apk"
+            "dist/wynime-$version.apk.sha256"
+            "dist/wynime-$version.zip"
+            "dist/wynime-$version.zip.sha256"
+          )
+          if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release edit "$tag" --repo "$GH_REPO" --title "Wynime $version" --notes-file "$notes"
+            gh release upload "$tag" --repo "$GH_REPO" "${assets[@]}" --clobber
+          else
+            gh release create "$tag" --repo "$GH_REPO" "${assets[@]}" --title "Wynime $version" --notes-file "$notes"
+          fi

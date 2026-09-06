@@ -21,6 +21,83 @@ final class PlaybackErrorSignal {
 final class PlaybackErrorClassifier {
   const PlaybackErrorClassifier();
 
+  PlaybackFailure classifyRawMessage(
+    String rawMessage, {
+    PlaybackErrorStage stage = PlaybackErrorStage.player,
+  }) {
+    final normalized = rawMessage.toLowerCase();
+    final status = _httpStatusFrom(normalized);
+    final expired = _containsAny(normalized, const [
+      'session expired',
+      'token expired',
+      'authentication expired',
+    ]);
+    final code = switch (true) {
+      _ when expired => 'session_expired',
+      _ when status == 401 || status == 403 => 'http_authorization',
+      _ when status == 404 || status == 410 => 'media_not_found',
+      _ when status != null && status >= 500 => 'upstream_unavailable',
+      _ when _containsAny(normalized, const ['cancel', 'abort', 'closed']) =>
+        'operation_cancelled',
+      _
+          when _containsAny(normalized, const [
+            'manifest',
+            'playlist',
+            'm3u8',
+            'demuxer failed to open',
+          ]) =>
+        'manifest_invalid',
+      _
+          when _containsAny(normalized, const [
+            'network',
+            'timeout',
+            'timed out',
+            'dns',
+            'socket',
+            'connection',
+            'http error',
+          ]) =>
+        'network_failure',
+      _
+          when _containsAny(normalized, const [
+            'unsupported',
+            'not supported',
+            'unrecognized file format',
+            'failed to recognize file format',
+            'codec not found',
+          ]) =>
+        'unsupported',
+      _
+          when _containsAny(normalized, const [
+            'renderer',
+            'rendering',
+            'video output',
+            'gpu',
+            'surface',
+            'vo failed',
+          ]) =>
+        'renderer_failure',
+      _
+          when _containsAny(normalized, const [
+            'decoder',
+            'decoding',
+            'codec',
+            'video format',
+            'audio format',
+          ]) =>
+        'decoder_failure',
+      _ => 'unknown_playback_failure',
+    };
+    return classify(
+      PlaybackErrorSignal(
+        code: code,
+        stage: stage,
+        httpStatus: status,
+        sessionExpired: expired,
+      ),
+    );
+  }
+
   PlaybackFailure classify(PlaybackErrorSignal signal) {
     if (signal.sessionExpired) {
       return PlaybackFailure(
@@ -144,5 +221,52 @@ final class PlaybackErrorClassifier {
   }
 }
 
+final class PlaybackOperationException extends StateError {
+  PlaybackOperationException(this.failure) : super(failure.code);
+
+  final PlaybackFailure failure;
+
+  @override
+  String toString() =>
+      'PlaybackOperationException(code: ${failure.code}, '
+      'kind: ${failure.kind.name}, stage: ${failure.stage.name})';
+}
+
+final class PlaybackErrorBoundary {
+  const PlaybackErrorBoundary({
+    this.classifier = const PlaybackErrorClassifier(),
+  });
+
+  final PlaybackErrorClassifier classifier;
+
+  PlaybackFailure failureFrom(
+    Object error, {
+    PlaybackErrorStage stage = PlaybackErrorStage.player,
+  }) {
+    if (error case final PlaybackOperationException operation) {
+      return operation.failure;
+    }
+    if (error case final PlaybackFailure failure) {
+      return failure;
+    }
+    return classifier.classifyRawMessage(error.toString(), stage: stage);
+  }
+
+  PlaybackOperationException exceptionFrom(
+    Object error, {
+    PlaybackErrorStage stage = PlaybackErrorStage.player,
+  }) {
+    if (error case final PlaybackOperationException operation) {
+      return operation;
+    }
+    return PlaybackOperationException(failureFrom(error, stage: stage));
+  }
+}
+
 bool _containsAny(String value, Iterable<String> needles) =>
     needles.any(value.contains);
+
+int? _httpStatusFrom(String value) {
+  final match = RegExp(r'\b(401|403|404|410|5\d\d)\b').firstMatch(value);
+  return match == null ? null : int.parse(match.group(1)!);
+}

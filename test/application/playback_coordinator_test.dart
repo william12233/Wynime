@@ -6,6 +6,7 @@ import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
 import 'package:wynime/src/domain/models/player_backend.dart';
 import 'package:wynime/src/domain/models/web_capture_models.dart';
+import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/domain/services/playback_proxy.dart';
 import 'package:wynime/src/domain/services/playback_session_resolver.dart';
 import 'package:wynime/src/domain/services/player_backend.dart';
@@ -158,19 +159,63 @@ void main() {
 
   test('player open failure closes the newly-created proxy lease', () async {
     final proxy = _FakeProxy();
-    final player = _FakePlayer()..openError = StateError('native open failed');
+    final player = _FakePlayer()
+      ..openError = StateError(
+        'native open failed https://secret.example/?token=private',
+      );
     final coordinator = PlaybackCoordinator(
       resolver: _FakeResolver(testPlaybackSession()),
       proxy: proxy,
       player: player,
     );
 
-    await expectLater(coordinator.open(_request()), throwsStateError);
+    Object? caught;
+    try {
+      await coordinator.open(_request());
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught, isA<PlaybackOperationException>());
+    expect(caught.toString(), isNot(contains('secret.example')));
+    expect(caught.toString(), isNot(contains('private')));
 
     expect(proxy.leases.single.isClosed, isTrue);
     expect(coordinator.hasActivePlayback, isFalse);
     await coordinator.close();
   });
+
+  test(
+    'player event errors are emitted as stable errors without stack text',
+    () async {
+      final player = _FakePlayer();
+      final coordinator = PlaybackCoordinator(
+        resolver: _FakeResolver(testPlaybackSession()),
+        proxy: _FakeProxy(),
+        player: player,
+      );
+      Object? caught;
+      final subscription = coordinator.events.listen(
+        (_) {},
+        onError: (Object error) => caught = error,
+      );
+
+      await coordinator.open(_request());
+      player.emitError(
+        StateError(
+          'native event https://secret.example/master.m3u8?token=private',
+        ),
+      );
+      await _waitUntil(() => caught != null);
+
+      expect(caught, isA<PlaybackOperationException>());
+      expect(caught.toString(), isNot(contains('secret.example')));
+      expect(caught.toString(), isNot(contains('private')));
+
+      await subscription.cancel();
+      await coordinator.close();
+    },
+  );
 }
 
 PlaybackOpenRequest _request({
@@ -327,4 +372,6 @@ final class _FakePlayer implements PlayerBackend {
   }
 
   void emit(PlaybackEvent event) => _events.add(event);
+
+  void emitError(Object error) => _events.addError(error, StackTrace.current);
 }

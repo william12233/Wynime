@@ -182,11 +182,63 @@ Phase 5 不包含 mpv、FFmpeg、真實下載、下載端 AES-128 解密、內�
 - 所有 backend 先執行 availability probe，不可用或 probe 失敗時 fail closed；
 - libmpv 只接受含有效 port、無 user-info／query／fragment 的數字 loopback capability URI，且不得接收上游 Headers、Cookies 或完整 URL；
 - 引擎切換沿用同一份 `PlaybackSession`、proxy lease、capability URI、`AdRemovalPlan` 與 `timelineMapIdentity`；
-- 切換時保存原時間軸位置、播放／暫停、音量、倍速、音軌與字幕；缺少精確 track ID 時拒絕切換；
+- 切換時保存原時間軸位置、播放／暫停、音量、倍速、音軌與字幕；缺少精確 current-session track ID，或 track 帶有 external URI 時拒絕切換；
 - stale generation／operation 事件不影響目前播放器；timeline identity 不一致立即失敗並關閉 backend；
 - 每次播放 operation 最多一次自動 fallback，且僅允許 decoder、renderer、unsupported；authorization、expiry、network、manifest 不得換引擎；
-- 原生錯誤只輸出固定脫敏 diagnostic code；不得包含 token、cookie、完整媒體 URL 或原始 native message；
+- 原生與 platform 錯誤在 platform／Application boundary 統一輸出固定脫敏 diagnostic code；不得包含 token、cookie、完整媒體 URL、原始 native message 或 stack trace；
 - media-kit／libmpv 原生 artifact 的來源、版本、授權模式與 FFmpeg linkage 在發行前具備可追溯證據；
 - format、fatal analyze、全部 tests、Android debug build 與 Windows debug build。
 
 Phase 6 的 Android／Windows 實際硬體播放若未執行，只能標記 `prototype_not_hardware_validated`。Phase 6 不包含真實下載、FFmpeg、下載端解密、Bangumi 或 Phase 7。
+
+## 16. Phase 9 Gate
+
+必須通過：
+
+- OAuth authorization-code flow 使用 state 綁定，authorization／redirect URI 僅允許標準 HTTPS，access token 只存在記憶體；
+- `/calendar`、`/v0/subjects/{subject_id}` 與 `/v0/episodes` 的資料解析具備 bounded payload、型別驗證與穩定錯誤碼；
+- 收藏狀態與已看集數透過官方目前使用者 endpoint 同步，讀寫不把 token 放入 query string；
+- 本機收藏、已看集數、遠端 revision、人工條目映射與離線同步 operation 持久化於 Drift，佇列可恢復；
+- 重試具備指數退避、最大嘗試次數與不可重試錯誤的 fail-closed 邊界；
+- remote revision conflict 必須停留在可見 conflict 狀態，並可選擇保留遠端或重新以最新 revision 排入本機變更；
+- token、client secret、cookie 與原始 upstream response 不得進入日誌或持久化資料；
+- format、fatal analyze、全部 tests、Android debug build 與 Windows debug build。
+
+## 17. Phase 10 Gate
+
+必須通過：
+
+- 自動來源建立器只接受 bounded observation／fixture 與明確欄位樣本，不直接執行網路、WebView、Dart、JavaScript、WASM 或 native source code；
+- HTML 只產生既有安全 CSS 方言，JSON 只產生既有受限 JSONPath 方言，XPath、未知語法、模糊欄位與無法重現的樣本必須 fail closed；
+- 產生的 `SourcePackageManifest` 必須重新通過 schema、domain allowlist、permission、resource budget 與既有 fixture evaluator 驗證；
+- 觀察到的新網域、HTTP 或較寬資源預算不得靜默套用，必須標示 fresh consent／re-consent；簽章不得提高來源權限；
+- builder 只輸出待審核 proposal，啟用必須綁定相同 proposal ID 並取得明確使用者核准，禁止自動啟用；
+- proposal fingerprint 與 diagnostics 不得包含原始 response、cookie、token 或完整媒體 URL；
+- format、fatal analyze、Phase 10 targeted tests、全部 deterministic tests、Android debug build 與 Windows debug build。
+
+## 18. Phase 11 Gate
+
+必須通過：
+
+- 六個主要 destination 使用實際產品頁面，不再把 Phase 0 placeholder 當作 live shell；Home、Search、Library、Downloads、Sources 與 Settings 的空資料狀態必須明確表示未連線、未啟用或尚未產生資料，不得偽造來源、Bangumi 或下載結果；
+- compact 使用 bottom navigation，medium／expanded 使用 shared breakpoint 與 NavigationRail；頁面骨架、間距、色彩、圓角與互動目標使用共用 design tokens，且固定尺寸 Golden 覆蓋 360×800、412×915、1024×768、1440×900；
+- 介面維持繁中、簡中、日文、英文四語言；Search 未有明確啟用的來源 package 時不得發送查詢；Settings 的 telemetry 必須 default-off，且 UI／diagnostic 不得顯示 secrets 或完整媒體 URL；
+- Search、Settings、scroll、bottom navigation／rail navigation 必須在固定 phone 與 tablet AVD 以真實觸控／鍵盤動作驗證，並保存 action-level screenshots、runtime log 與 AVD physical size／density facts；Windows 必須以真實 resize、mouse、keyboard 互動驗證，launch 或 screenshot alone 不算 PASS_UI；
+- format、fatal analyze、全部 tests、Golden rerun、Android debug build 與 Windows debug build。
+
+本次 Phase 11 的 source、Golden、Android phone/tablet action evidence 與 build/analyze 均完成；Windows Flutter client 在本機正常與 software-rendering launch 均呈現全白，無法觀察 action state，因此整體 gate 記為 `BLOCKED_UI_ENVIRONMENT`，不得宣稱 `PASS_UI` 或 release-ready。字體檔仍不得在 multilingual font review 前加入。
+
+## 19. Phase 12 Gate
+
+必須通過：
+
+- current-head `dart format --set-exit-if-changed`、`flutter analyze --fatal-infos`、全套 deterministic tests 與四個固定尺寸 Goldens；
+- Android debug 與 Windows debug／release build；release 只能使用明確提供的外部 keystore，禁止以 debug key 偽裝成可發行產物；
+- Android manifest 的權限、cleartext policy、ABI、min／target SDK 與 APK signature metadata 完成可追溯稽核；
+- Windows／Android bundled native binaries 的來源、版本、雜湊、build flags、linked libraries 與 license closure 完整；未完成時不得 package 或 release；
+- FFmpeg remux、artifact promotion、download write、deletion 與 orphan scan 均維持 download-root confinement、regular-file/type checks、canonical-parent checks、link／junction fail-closed 與 authoritative manifest-only deletion；
+- FFmpeg subprocess 只能使用 bounded argument vector、`runInShell: false`、root-confined local file URIs、timeout 與 bounded diagnostics；persisted HLS snapshot 不得保存完整 URL、query、credential 或 token；
+- telemetry 維持 default-off，secret-safe diagnostics、source package sandbox、HTTPS／cleartext policy 與 domain／resource budgets 均通過靜態與 deterministic checks；
+- 有 reviewed FFmpeg、原生授權閉合、Windows 可觀察 UI action、Android／Windows 硬體播放與 publish signing evidence 後，才可宣告 release readiness。
+
+目前 Phase 12 稽核若有任何一項僅能取得 source／deterministic evidence，必須標示 `RELEASE_BLOCKED`，不可把 compilation、launch 或 fixture replay 升級成 runtime／hardware／license pass。

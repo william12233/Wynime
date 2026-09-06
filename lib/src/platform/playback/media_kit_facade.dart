@@ -157,11 +157,13 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
         final selectedSubtitle = _normalizedSelectedTrack(value.subtitle.id);
         _emit(
           MediaKitFacadeEvent.track(
-            audioTrackId: selectedAudio != null && selectedAudio == _audioNativeId
+            audioTrackId:
+                selectedAudio != null && selectedAudio == _audioNativeId
                 ? _audioAuthoritativeId
                 : null,
             subtitleTrackId:
-                selectedSubtitle != null && selectedSubtitle == _subtitleNativeId
+                selectedSubtitle != null &&
+                    selectedSubtitle == _subtitleNativeId
                 ? _subtitleAuthoritativeId
                 : null,
           ),
@@ -272,7 +274,10 @@ final class ProductionMediaKitFacadePlayer implements MediaKitFacadePlayer {
     if (track.uri != null) {
       throw StateError('External subtitle track mapping is not supported.');
     }
-    final candidate = _uniqueSubtitleTrack(_player.state.tracks.subtitle, track);
+    final candidate = _uniqueSubtitleTrack(
+      _player.state.tracks.subtitle,
+      track,
+    );
     final previousNative = _subtitleNativeId;
     final previousAuthoritative = _subtitleAuthoritativeId;
     _subtitleNativeId = candidate.id;
@@ -325,7 +330,9 @@ AudioTrack _uniqueAudioTrack(List<AudioTrack> candidates, MediaTrack target) {
   final internal = candidates
       .where((candidate) => !candidate.uri && !_reservedTrackId(candidate.id))
       .toList(growable: false);
-  final exact = internal.where((candidate) => candidate.id == target.id).toList();
+  final exact = internal
+      .where((candidate) => candidate.id == target.id)
+      .toList();
   if (exact.length == 1) {
     return exact.single;
   }
@@ -335,7 +342,10 @@ AudioTrack _uniqueAudioTrack(List<AudioTrack> candidates, MediaTrack target) {
   final metadata = internal.where(
     (candidate) =>
         candidate.title == target.label &&
-        _optionalCaseInsensitiveEquals(target.languageCode, candidate.language) &&
+        _optionalCaseInsensitiveEquals(
+          target.languageCode,
+          candidate.language,
+        ) &&
         (!target.isDefault || candidate.isDefault == true),
   );
   final matches = metadata.toList(growable: false);
@@ -356,10 +366,14 @@ SubtitleTrack _uniqueSubtitleTrack(
   final internal = candidates
       .where(
         (candidate) =>
-            !candidate.uri && !candidate.data && !_reservedTrackId(candidate.id),
+            !candidate.uri &&
+            !candidate.data &&
+            !_reservedTrackId(candidate.id),
       )
       .toList(growable: false);
-  final exact = internal.where((candidate) => candidate.id == target.id).toList();
+  final exact = internal
+      .where((candidate) => candidate.id == target.id)
+      .toList();
   if (exact.length == 1) {
     return exact.single;
   }
@@ -369,7 +383,10 @@ SubtitleTrack _uniqueSubtitleTrack(
   final metadata = internal.where(
     (candidate) =>
         candidate.title == target.label &&
-        _optionalCaseInsensitiveEquals(target.languageCode, candidate.language) &&
+        _optionalCaseInsensitiveEquals(
+          target.languageCode,
+          candidate.language,
+        ) &&
         (!target.isDefault || candidate.isDefault == true),
   );
   final matches = metadata.toList(growable: false);
@@ -392,5 +409,4 @@ bool _optionalCaseInsensitiveEquals(String? expected, String? actual) {
 
 bool _reservedTrackId(String id) => id == 'auto' || id == 'no';
 
-String? _normalizedSelectedTrack(String id) =>
-    _reservedTrackId(id) ? null : id;
+String? _normalizedSelectedTrack(String id) => _reservedTrackId(id) ? null : id;

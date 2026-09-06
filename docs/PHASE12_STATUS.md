@@ -117,9 +117,10 @@ records the embedded Windows runtime identity, the locked CMake archive
 selection, PE dependency list and every redistributed DLL hash in
 `docs/THIRD_PARTY_PROVENANCE.md`, and
 ships the explicit notice asset in both platforms. The historical Windows
-FFmpeg configure record and complete transitive license closure are still not
-independently reviewed, so native provenance/license review remains a release
-blocker.
+FFmpeg configure record is now captured by the final DLL's public runtime
+configuration probe. Complete transitive license closure and the approved
+Wynime distribution license are still not independently reviewed, so the
+legal/native redistribution gate remains blocked.
 
 The rebuilt APK's Flutter `assets/flutter_assets/NOTICES.Z` contains generated
 Flutter/Dart/plugin notices and sections for dependencies such as `media_kit`,
@@ -134,10 +135,13 @@ The checkout has no root project `LICENSE` or `NOTICE` file. The application's o
 
 - The official [`libmpv-android-video-build` v1.1.7 release](https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7) exposes these SHA-256 digests for the four ABI JARs: `default-arm64-v8a.jar` `4363dfa5d3d415b91c1f16f6fb90c3fe59a77dfd3f9b824d2b24b492d6b09df9`, `default-armeabi-v7a.jar` `8ead114fc5a43348d89dc0eb8f41823e549b15115c29f73ee26973f973620995`, `default-x86.jar` `94c13cb6188b774710e5e487afff6e500c4af504df74b2494d7b12cf9be8a66a`, and `default-x86_64.jar` `90268cd15f0766e07fb8e427388c621161177c9eb343c544f327bd63232bb236`. Its [`v1.1.7` dependency manifest](https://github.com/media-kit/libmpv-android-video-build/blob/v1.1.7/buildscripts/include/depinfo.sh) records FFmpeg 6.0, mpv commit `78d43740f52db817d98bcf24fb30a76ab6fa13ff` and the supporting dependency versions; the default flavor uses `--disable-gpl`, `--disable-nonfree` FFmpeg and `gpl=false` for libmpv. The upstream [`LICENSE`](https://github.com/media-kit/libmpv-android-video-build/blob/v1.1.7/LICENSE) is evidence for that source build repository, not a substitute for a complete transitive redistribution notice set for the APK.
 - The current build output contains the original v1.1.7 ABI JARs. Their local SHA-256 values directly match the official release digests: `default-arm64-v8a.jar` `4363dfa5d3d415b91c1f16f6fb90c3fe59a77dfd3f9b824d2b24b492d6b09df9`, `default-armeabi-v7a.jar` `8ead114fc5a43348d89dc0eb8f41823e549b15115c29f73ee26973f973620995`, `default-x86.jar` `94c13cb6188b774710e5e487afff6e500c4af504df74b2494d7b12cf9be8a66a`, and `default-x86_64.jar` `90268cd15f0766e07fb8e427388c621161177c9eb343c544f327bd63232bb236`. This closes the Android upstream archive identity check only; it does not close the transitive license notice or native redistribution review.
-- The official [Windows 2023-09-24 release](https://github.com/media-kit/libmpv-win32-video-build/releases/tag/2023-09-24) identifies the selected mpv development archive and links it to mpv commit `652a1dd90711839acdccc08004056d25514ef2d`; its release asset metadata did not provide a SHA-256 digest. The candidate's direct runtime probe proves `mpv v0.36.0-403-g652a1dd907` and FFmpeg `n6.0` for the actual DLL. The historical FFmpeg configure recipe and complete transitive notice set are still not independently proven.
+- The official [Windows 2023-09-24 release](https://github.com/media-kit/libmpv-win32-video-build/releases/tag/2023-09-24) identifies the selected mpv development archive and links it to mpv commit `652a1dd90711839acdccc08004056d25514ef2d`; its release asset metadata did not provide a SHA-256 digest. The candidate's direct runtime probe proves `mpv v0.36.0-403-g652a1dd907`, FFmpeg `n6.0` and the embedded release Meson configuration for the actual DLL. Complete transitive notice and redistribution review remains open.
 - The official [ANGLE v1.0.1 release](https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/tag/v1.0.1) identifies the selected archive, but the audited archive/repository listing did not yield a complete license bundle for redistribution. The local archive hashes remain the authoritative bytes actually inspected in this checkout.
 
-This cross-check narrows the provenance gap but does not close it: exact historical Windows build flags, complete linked-library license notices and a reproducible redistribution record are still required before release packaging.
+This cross-check closes the technical archive/runtime identity gap for the
+selected Windows build. Complete linked-library license notices, an approved
+Wynime distribution license and a reproducible redistribution record still
+require independent sign-off before release packaging.
 
 ## Runtime and document boundaries
 

@@ -91,11 +91,15 @@ ffmpeg-version=n6.0
 libass-version=24121344
 ```
 
-The current public C API probe did not expose a non-null configuration
-property, so no embedded Meson/configure flags are claimed from that probe.
-The exact archive selection, MD5 checks and local SHA-256 values come from the
-locked CMake mechanism above. Historical configure flags and the linked
-license set still require independent provenance review.
+The current public C API probe also returned the embedded Meson configuration:
+
+```text
+mpv-configuration=-Dc_link_args=-Wl,--gc-sections -Dcpp_link_args=-Wl,--gc-sections -Dgpl=false -Db_lto=true -Db_ndebug=true -Dlibmpv=true -Dpdf-build=enabled -Dlua=disabled -Djavascript=enabled -Duchardet=enabled -Dlcms2=enabled -Dopenal=disabled -Dspirv-cross=enabled -Dvulkan=disabled -Dlibplacebo=disabled -Degl-angle=enabled -Dbuildtype=release -Ddefault_library=shared -Dprefer_static=True
+```
+
+The exact archive selection, MD5 checks, local SHA-256 values and this runtime
+configuration are recorded here. The linked library license and redistribution
+review still requires independent sign-off.
 
 `dumpbin /DEPENDENTS` showed that the Release libmpv DLL has no separate
 FFmpeg DLL dependency; FFmpeg is statically linked into the libmpv artifact.

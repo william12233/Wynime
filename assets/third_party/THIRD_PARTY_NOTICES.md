@@ -57,8 +57,10 @@ mpv-version=mpv v0.36.0-403-g652a1dd907
 ffmpeg-version=n6.0
 ```
 
-The current C API probe does not expose a non-null configuration property, so
-this notice does not claim embedded configure flags. The archive hashes, PE
+The current C API probe returns the embedded release configuration; the
+important entries are `-Dgpl=false`, `-Dlibmpv=true`, `-Dprefer_static=True`,
+`-Djavascript=enabled`, `-Dvulkan=disabled`, `-Dlibplacebo=disabled` and
+`-Degl-angle=enabled`. The complete configuration, archive hashes, PE
 dependency audit and exact source URLs are recorded in the provenance
 document. The runtime has FFmpeg statically linked into libmpv; no separate
 FFmpeg DLL is redistributed by the Windows bundle.

@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: wynime-release-${{ github.ref }}
@@ -23,11 +24,13 @@ jobs:
       tag: ${{ steps.version.outputs.tag }}
       version: ${{ steps.version.outputs.version }}
       version_code: ${{ steps.version.outputs.version_code }}
+      candidate_sha: ${{ steps.version.outputs.candidate_sha }}
     steps:
       - name: Check out tagged source
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - name: Validate tag, version, notes and release gate
         id: version
@@ -54,6 +57,32 @@ jobs:
             exit 1
           fi
 
+          git fetch origin main --no-tags
+          tagged_sha="$(git rev-parse "${GITHUB_REF}^{commit}")"
+          trigger_sha="$(git rev-parse "${GITHUB_SHA}^{commit}")"
+          origin_main_sha="$(git rev-parse "origin/main^{commit}")"
+          if [[ "$tagged_sha" != "$trigger_sha" ]]; then
+            echo "Tag target $tagged_sha does not equal the push trigger SHA $trigger_sha." >&2
+            exit 1
+          fi
+          if [[ "$tagged_sha" != "$origin_main_sha" ]]; then
+            echo "Tag target $tagged_sha is not the current origin/main $origin_main_sha." >&2
+            exit 1
+          fi
+
+          ci_runs="$(GH_TOKEN="$GH_TOKEN" gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow phase-0-ci.yml \
+            --commit "$tagged_sha" \
+            --limit 20 \
+            --json headSha,status,conclusion)"
+          if ! jq -e --arg sha "$tagged_sha" \
+            '[.[] | select(.headSha == $sha and .status == "completed" and .conclusion == "success")] | length > 0' \
+            <<< "$ci_runs" >/dev/null; then
+            echo "No successful phase-0 CI run exists for immutable candidate SHA $tagged_sha." >&2
+            exit 1
+          fi
+
           notes_file="docs/release-notes-$version.md"
           if [[ ! -s "$notes_file" ]]; then
             echo "Missing versioned release notes: $notes_file" >&2
@@ -73,7 +102,10 @@ jobs:
             echo "tag=$tag"
             echo "version=$version"
             echo "version_code=$version_code"
+            echo "candidate_sha=$tagged_sha"
           } >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   android:
     name: Signed Android APK
@@ -83,7 +115,7 @@ jobs:
       - name: Check out tagged source
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.metadata.outputs.tag }}
+          ref: ${{ needs.metadata.outputs.candidate_sha }}
 
       - name: Install Java
         uses: actions/setup-java@v5
@@ -199,7 +231,7 @@ jobs:
       - name: Check out tagged source
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.metadata.outputs.tag }}
+          ref: ${{ needs.metadata.outputs.candidate_sha }}
 
       - name: Install Flutter
         uses: subosito/flutter-action@v2
@@ -270,13 +302,27 @@ jobs:
       - android
       - windows
     runs-on: ubuntu-24.04
+    environment:
+      name: release
     permissions:
       contents: write
     steps:
       - name: Check out tagged release notes
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.metadata.outputs.tag }}
+          ref: ${{ needs.metadata.outputs.candidate_sha }}
+
+      - name: Revalidate immutable publication SHA
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ needs.metadata.outputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          actual_sha="$(git rev-parse HEAD)"
+          if [[ "$actual_sha" != "$EXPECTED_SHA" ]]; then
+            echo "Publication checkout $actual_sha does not equal approved candidate $EXPECTED_SHA." >&2
+            exit 1
+          fi
 
       - name: Download Android artifact
         uses: actions/download-artifact@v4
@@ -329,8 +375,7 @@ jobs:
             "dist/wynime-$version.zip.sha256"
           )
           if gh release view "$tag" --repo "$GH_REPO" >/dev/null 2>&1; then
-            gh release edit "$tag" --repo "$GH_REPO" --title "Wynime $version" --notes-file "$notes"
-            gh release upload "$tag" --repo "$GH_REPO" "${assets[@]}" --clobber
-          else
-            gh release create "$tag" --repo "$GH_REPO" "${assets[@]}" --title "Wynime $version" --notes-file "$notes"
+            echo "GitHub Release $tag already exists; refusing to mutate an existing release." >&2
+            exit 1
           fi
+          gh release create "$tag" --repo "$GH_REPO" "${assets[@]}" --title "Wynime $version" --notes-file "$notes"

@@ -8,14 +8,17 @@ This file records the final current-host audit boundary for performance, securit
 
 The source-level security and packaging checks are complete for the current
 candidate. The local Windows Flutter Release build now passes, but the
-repository is not marked release-ready because the host has no reviewed
-standalone FFmpeg executable/remux fixture, Windows action-level rendering is
-not observable through the available Computer Use surface, supported hardware
-playback was not exercised, and the bundled native binary license/provenance
-closure is incomplete. A dedicated Wynime release keystore exists outside the
-repository and the four required GitHub Actions secret names are confirmed;
-an official signed CI artifact has not yet been produced because the release
-workflow remains fail-closed on the release gate.
+repository is not marked release-ready because Windows action-level rendering
+is not observable through the available Computer Use surface, supported
+hardware playback was not exercised, the bundled native binary
+license/provenance closure is incomplete, and official external signing has
+not yet been exercised. Standalone FFmpeg execution, remuxing and MKV
+fallback are explicitly outside the 1.0.1 release boundary; their absence is
+recorded as future scope rather than treated as a gate for this candidate. A
+dedicated Wynime release keystore exists outside the repository and the four
+required GitHub Actions secret names are confirmed; an official signed CI
+artifact has not yet been produced because the release workflow remains
+fail-closed on the release gate.
 
 ## Current-head automated evidence
 
@@ -57,12 +60,15 @@ blocked.
 
 ## Security and privacy implementation
 
-- `ProcessFfmpegRunner` accepts only local file URIs inside its configured download root, uses an argument vector with `runInShell: false`, bounds timeout and diagnostics, and rejects missing, linked, directory and outside-root paths before spawning;
-- `LocalDownloadFileStore` and `LocalArtifactFileOperations` create parents only after nearest-ancestor and canonical containment checks, refuse linked parents and non-regular targets, and perform atomic temporary-file replacement or same-root promotion;
-- deletion still consumes only the authoritative `DownloadArtifactManifest` and `DeleteJob`; orphan scanning remains report-only;
-- `DownloadService` rejects oversized raw snapshots and persists only bounded structural HLS metadata, excluding full resource URIs, query strings, credentials, cookies and tokens;
-- deterministic tests cover outside-root FFmpeg input, linked destination ancestry, linked download parent, atomic replacement, missing FFmpeg, manifest-only deletion, secret-safe diagnostics, cleartext restrictions, source package budgets and telemetry default-off;
-- Android cleartext traffic is disabled except for the explicitly bounded loopback hosts required by the local proxy. No source code logging call or telemetry backend was introduced.
+- This 1.0.1 candidate contains no standalone download executor, FFmpeg
+  runner, remuxer or MKV fallback path. Those capabilities remain explicitly
+  out of scope and are not represented as release evidence.
+- The Phase 6 playback boundary accepts only the authoritative
+  `PlaybackSession`, numeric loopback capability URI and exact current-session
+  track identity; platform errors are reduced to stable secret-safe codes.
+- Android cleartext traffic is disabled except for the explicitly bounded
+  loopback hosts required by the local proxy. No source logging call or
+  telemetry backend was introduced.
 
 ## Android package audit
 
@@ -132,13 +138,24 @@ This cross-check narrows the provenance gap but does not close it: exact histori
 
 ## Runtime and document boundaries
 
-- `where.exe ffmpeg` finds no executable; real MP4 remux, MKV fallback and media-fixture verification remain `UNVERIFIED_ENVIRONMENT`;
+- `where.exe ffmpeg` finds no executable; standalone MP4 remux and MKV
+  fallback are future scope explicitly excluded from 1.0.1 and therefore are
+  not a release gate for this candidate;
 - Phase 6 playback remains `prototype_not_hardware_validated`; deterministic fake-backed Android/Windows platform tests do not prove hardware decoding/rendering;
 - Android phone and tablet action evidence passed individually, while Phase 11 overall UI remains `BLOCKED_UI_ENVIRONMENT` because the current Computer Use surface exposes no native Windows app (`apps: []`); no Windows action-level result is claimed;
 - The 2026-09-07 operation-specific AVD rerun revalidated phone/tablet search focus, text entry, local submission, navigation and diagnostics toggle state, with empty crash-match files; the emulator results do not substitute for supported physical Android or Windows hardware playback;
 - the detailed plan DOCX was structurally validated after regeneration (69,164 bytes, 544 non-empty paragraphs, with Phase 12 Gate and ADR-024 present in ZIP/OXML); visual page rendering could not run because LibreOffice/`soffice` is unavailable;
-- no Git tag, GitHub Release, installer publication or push was performed; local/remote branch integration and candidate-SHA CI remain to be completed.
+- no Git tag, GitHub Release, installer publication or `main` push was
+  performed; the candidate branch has been pushed only for exact-SHA CI and
+  independent review. Local/remote `main` integration remains gated.
 
 ## Release decision
 
-`RELEASE_BLOCKED` until all of the following are supplied and independently verified: reviewed FFmpeg runtime and real remux fixture, native provenance/build flags/linked-license closure, official external Android signing evidence, observable Windows action-level UI, and supported Android/Windows hardware playback. The current source and deterministic test gates are complete and must not be reworded as those runtime or legal passes.
+`RELEASE_BLOCKED` until all of the following are supplied and independently
+verified: native provenance/build flags/linked-license closure and an
+approved Wynime distribution license, official external Android signing
+evidence, observable Windows action-level UI, and supported Android/Windows
+hardware playback. Standalone FFmpeg/remux/MKV execution is explicitly not a
+1.0.1 gate because it is excluded from this release boundary. The current
+source and deterministic test gates are complete and must not be reworded as
+those runtime or legal passes.

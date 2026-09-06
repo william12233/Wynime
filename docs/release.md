@@ -74,9 +74,10 @@ signing secret belongs in the repository, issue tracker or release notes.
 
 Before changing the status to `RELEASE_READY`, the project must independently
 close the current Phase 12 requirements: source and deterministic checks,
-publish signing, native provenance and linked licenses, reviewed FFmpeg and a
-real remux fixture, observable Windows UI actions, and supported Android /
-Windows hardware playback.
+publish signing, native provenance and linked licenses, observable Windows UI
+actions, and supported Android / Windows hardware playback. Standalone
+FFmpeg execution, remuxing and MKV fallback are explicitly excluded from
+1.0.1 and are future-scope work, not release gates for this candidate.
 
 The native provenance inventory and its open notice/license checklist are
 maintained in
@@ -86,10 +87,22 @@ maintained in
 
 1. Update `pubspec.yaml`, `CHANGELOG.md` and the versioned release notes.
 2. Close and record every Phase 12 gate; do not bypass `RELEASE_BLOCKED`.
-3. Configure the four GitHub Actions signing secrets.
-4. Create and push the matching `vX.Y.Z` tag.
-5. Let `release.yml` build, sign, verify, hash and publish the exact four
-   assets.
+3. Freeze one final candidate SHA and obtain a successful `phase-0-ci.yml`
+   run for that exact SHA.
+4. Re-fetch `origin/main`, verify it is unchanged and an ancestor of the
+   final candidate, then fast-forward local `main` only and push it
+   non-force. Verify remote `main` equals the final candidate SHA.
+5. Configure the four GitHub Actions signing secrets and create/push the
+   matching annotated `vX.Y.Z` tag at that same SHA.
+6. Let `release.yml` revalidate the tag target, current `origin/main`, exact
+   successful CI SHA, readiness status, signing, provenance/license checks,
+   and artifact hashes before the protected `release` environment can publish
+   the exact four assets.
+
+The `github-release` job targets the `release` environment. Repository
+administrators must configure required reviewers for that environment so an
+independent review and release approval remain a protected publication step;
+the workflow itself never treats a tag as approval.
 
 No local preparation step creates a tag, pushes a branch or calls the GitHub
 Release API.

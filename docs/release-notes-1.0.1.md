@@ -27,9 +27,12 @@ source-provided executable adapters remain outside this release candidate.
 ## Verification boundary
 
 Current-head deterministic analyzer, test, golden and local Android／Windows
-build evidence exists, but it is not exact-RC CI evidence. The release remains
-blocked until native provenance and linked-license closure, official signed CI
-artifacts, observable Windows action-level UI, supported Android／Windows
-hardware playback and the required independent review are complete.
+build evidence exists, and the candidate branch must retain successful
+first-party CI for the exact final SHA. The release remains blocked until
+native provenance and linked-license closure, official signed CI artifacts,
+observable Windows action-level UI, supported Android／Windows hardware
+playback and the required independent review are complete. Standalone
+FFmpeg/remux/MKV execution is explicitly future scope and is not a gate for
+this 1.0.1 boundary.
 
 No GitHub Release, tag or official release artifact is claimed by this file.

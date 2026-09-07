@@ -79,6 +79,12 @@ actions, and supported Android / Windows hardware playback. Standalone
 FFmpeg execution, remuxing and MKV fallback are explicitly excluded from
 1.0.1 and are future-scope work, not release gates for this candidate.
 
+The publisher also mechanically requires `docs/THIRD_PARTY_PROVENANCE.md` to
+declare `CLOSED_RELEASE_PROVENANCE`, a non-empty root `LICENSE`, and the exact
+`Approved Wynime distribution license: yes` marker in `docs/PHASE12_STATUS.md`.
+These checks are deliberately independent of the `RELEASE_READY` status so a
+status-only edit cannot bypass native redistribution or project-license review.
+
 The native provenance inventory and its open notice/license checklist are
 maintained in
 [`docs/THIRD_PARTY_PROVENANCE.md`](THIRD_PARTY_PROVENANCE.md).

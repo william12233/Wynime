@@ -95,6 +95,21 @@ jobs:
             exit 1
           fi
 
+          provenance_status="$(sed -n 's/^Status:[[:space:]]*`\([^`]*\)`[[:space:]]*$/\1/p' docs/THIRD_PARTY_PROVENANCE.md | head -n 1)"
+          if [[ "$provenance_status" != 'CLOSED_RELEASE_PROVENANCE' ]]; then
+            echo "Native provenance gate is $provenance_status, not CLOSED_RELEASE_PROVENANCE." >&2
+            exit 1
+          fi
+
+          if [[ ! -s LICENSE ]]; then
+            echo "Missing approved Wynime distribution license: LICENSE" >&2
+            exit 1
+          fi
+          if ! grep -F "Approved Wynime distribution license: yes" docs/PHASE12_STATUS.md >/dev/null; then
+            echo "Approved Wynime distribution license marker is missing." >&2
+            exit 1
+          fi
+
           test -s "assets/third_party/THIRD_PARTY_NOTICES.md"
           grep -F "Candidate-specific evidence" "assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
 

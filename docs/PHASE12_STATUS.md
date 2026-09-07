@@ -16,9 +16,10 @@ not yet been exercised. Standalone FFmpeg execution, remuxing and MKV
 fallback are explicitly outside the 1.0.1 release boundary; their absence is
 recorded as future scope rather than treated as a gate for this candidate. A
 dedicated Wynime release keystore exists outside the repository and the four
-required GitHub Actions secret names are confirmed; an official signed CI
-artifact has not yet been produced because the release workflow remains
-fail-closed on the release gate.
+required GitHub Actions secret names are confirmed. The protected exact-SHA
+candidate-signing workflow has now produced and verified signed APK/AAB
+inspection artifacts; this closes the signing-evidence sub-gate but does not
+publish anything or close the remaining legal, UI and hardware gates.
 
 ## Current-head automated evidence
 
@@ -39,6 +40,11 @@ fail-closed on the release gate.
   reported APK Signature Scheme v2 `true` and the inspection APK SHA-256 was
   `2F4D9B79985D841271A152F4D9EB8A290A904561DD01992F5FF90D575E181612`;
   this is local signing evidence only, not an official GitHub CI artifact;
+- the protected `release-candidate-signing.yml` workflow passed for the exact
+  pushed candidate: it built the externally signed APK and AAB, verified
+  APK metadata/native ABIs/zip alignment/APK Signature Scheme v2, verified
+  the AAB with `jarsigner`, hashed both artifacts and uploaded them as
+  sign-only inspection artifacts; no tag or GitHub Release was created;
 - the Windows CMake CMP0175 warning and third-party WebView2 compiler warnings are non-fatal dependency warnings.
 
 ## Runtime UI evidence
@@ -89,7 +95,10 @@ The release build is intentionally unsigned when the external keystore propertie
 - dedicated Wynime keystore: stored outside the repository;
 - required GitHub Actions secret names confirmed present: `WYNIME_RELEASE_KEYSTORE_BASE64`, `WYNIME_RELEASE_KEY_ALIAS`, `WYNIME_RELEASE_KEY_PASSWORD` and `WYNIME_RELEASE_STORE_PASSWORD`;
 - secret values were not read or recorded by the audit;
-- no official signed CI artifact is claimed until the checked-in workflow is available on GitHub and a tagged run verifies the alias, APK metadata, alignment and signature.
+- the checked-in protected sign-only workflow verified the exact candidate's
+  external keystore binding, APK version/ABIs/alignment/signature and AAB
+  signature; the signed artifacts remain inspection-only until the separate
+  release gate is closed and the user authorizes publication.
 
 The exact APK, AAB, debug APK, Windows executable and portable ZIP SHA-256
 values are recorded together in the candidate-specific verification transcript
@@ -152,17 +161,22 @@ require independent sign-off before release packaging.
 - Android phone and tablet action evidence passed individually, while Phase 11 overall UI remains `BLOCKED_UI_ENVIRONMENT` because the current Computer Use surface exposes no native Windows app (`apps: []`); no Windows action-level result is claimed;
 - The 2026-09-07 operation-specific AVD rerun revalidated phone/tablet search focus, text entry, local submission, navigation and diagnostics toggle state, with empty crash-match files; the emulator results do not substitute for supported physical Android or Windows hardware playback;
 - the detailed plan DOCX was structurally validated after regeneration (69,164 bytes, 544 non-empty paragraphs, with Phase 12 Gate and ADR-024 present in ZIP/OXML); visual page rendering could not run because LibreOffice/`soffice` is unavailable;
-- no Git tag, GitHub Release, installer publication or `main` push was
-  performed; the candidate branch has been pushed only for exact-SHA CI and
-  independent review. Local/remote `main` integration remains gated.
+- no Git tag, GitHub Release or installer publication was performed. `main`
+  was fast-forwarded non-force to an earlier still-blocked candidate only so
+  GitHub could register the protected sign-only workflow; the newer final
+  candidate remains on the candidate branch and requires a final normal
+  fast-forward integration after all remaining gates and re-review close.
 
 ## Release decision
 
 `RELEASE_BLOCKED` until all of the following are supplied and independently
 verified: native provenance/build flags/linked-license closure and an
-approved Wynime distribution license, official external Android signing
-evidence, observable Windows action-level UI, and supported Android/Windows
-hardware playback. Standalone FFmpeg/remux/MKV execution is explicitly not a
-1.0.1 gate because it is excluded from this release boundary. The current
-source and deterministic test gates are complete and must not be reworded as
-those runtime or legal passes.
+approved Wynime distribution license, observable Windows action-level UI,
+supported Android/Windows hardware playback, final-candidate main integration
+and a fresh Sol review of that final SHA. Exact-SHA external signing evidence
+is now present as a protected sign-only inspection run; it must not be
+reworded as publication or as a legal/native-license approval. Standalone
+FFmpeg/remux/MKV execution is explicitly not a 1.0.1 gate because it is
+excluded from this release boundary. The current source and deterministic
+test gates are complete and must not be reworded as those runtime or legal
+passes.

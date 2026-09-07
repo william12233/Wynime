@@ -42,6 +42,8 @@ Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ign
 Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\assets\third_party\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; DestName: "THIRD_PARTY_NOTICES.md"; Flags: ignoreversion
+Source: "..\..\assets\third_party\COPYING.LGPLv2.1"; DestDir: "{app}"; DestName: "COPYING.LGPLv2.1"; Flags: ignoreversion
+Source: "..\..\assets\third_party\THIRD_PARTY_SOURCE_OFFER.md"; DestDir: "{app}"; DestName: "THIRD_PARTY_SOURCE_OFFER.md"; Flags: ignoreversion
 Source: "..\..\docs\release-notes-1.0.1.md"; DestDir: "{app}"; DestName: "RELEASE_NOTES.md"; Flags: ignoreversion
 
 [Icons]

@@ -29,13 +29,17 @@ The following gates are machine-verifiable and block publication:
 6. the Windows x64 Flutter Release build succeeds;
 7. the Android APK, Windows installer and portable ZIP each have a matching
    SHA-256 sidecar;
-8. `THIRD_PARTY_NOTICES.md` is present in the Android and Windows
-   distributions;
+8. `THIRD_PARTY_NOTICES.md`, the complete applicable `COPYING.LGPLv2.1`
+   text and `THIRD_PARTY_SOURCE_OFFER.md` are present in the Android and
+   Windows distributions;
 9. recorded native archive and packaged-binary hashes match the candidate;
-10. no secret, keystore or password is present in source or artifacts;
-11. versioned release notes exist;
-12. the annotated tag points exactly to the release candidate;
-13. GitHub Release assets are built from that same immutable SHA.
+10. the corresponding-source/relink mechanism is concrete, source URLs and
+    pinned revisions are recorded, and release automation fails closed if the
+    materials are absent;
+11. no secret, keystore or password is present in source or artifacts;
+12. versioned release notes exist;
+13. the annotated tag points exactly to the release candidate;
+14. GitHub Release assets are built from that same immutable SHA.
 
 `docs/THIRD_PARTY_PROVENANCE.md` must declare
 `CLOSED_RELEASE_PROVENANCE`, and `LICENSE` plus the exact
@@ -71,6 +75,9 @@ Windows libmpv archive, FFmpeg linkage, ANGLE inputs, WebView2 loader, SQLite,
 Flutter/Dart runtime and all redistributed DLLs are covered by
 `docs/THIRD_PARTY_PROVENANCE.md` and
 `assets/third_party/THIRD_PARTY_NOTICES.md`.
+The complete applicable LGPLv2.1 text is shipped as
+`assets/third_party/COPYING.LGPLv2.1`, and the corresponding-source/relink
+mechanism is shipped as `assets/third_party/THIRD_PARTY_SOURCE_OFFER.md`.
 
 ## GitHub Release assets
 
@@ -94,7 +101,8 @@ available on the `windows-2025` runner. The installer:
 - uses a stable AppId and per-user default directory;
 - creates a Start Menu shortcut;
 - offers an unchecked optional desktop shortcut;
-- includes `LICENSE`, `THIRD_PARTY_NOTICES.md`, `README.md` and release notes;
+- includes `LICENSE`, `COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`,
+  `THIRD_PARTY_NOTICES.md`, `README.md` and release notes;
 - creates a complete uninstaller without deleting Wynime user data;
 - uses app name `Wynime`, version `1.0.1`, publisher `william12233` and
   executable `wynime.exe`.
@@ -105,7 +113,8 @@ warning; no unsigned installer is presented as signed evidence.
 
 The portable ZIP contains the complete
 `build/windows/x64/runner/Release` directory plus `README.md`, `LICENSE`,
-`THIRD_PARTY_NOTICES.md`, `RELEASE_NOTES.md` and a version-only
+`THIRD_PARTY_NOTICES.md`, `COPYING.LGPLv2.1`,
+`THIRD_PARTY_SOURCE_OFFER.md`, `RELEASE_NOTES.md` and a version-only
 `version.txt`.
 
 ## Local preparation

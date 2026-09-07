@@ -33,8 +33,9 @@ native binary, codec or system runtime.
   `WYNIME_RELEASE_*` keystore only; `apksigner verify`, APK alignment,
   version metadata and ABI checks are required and recorded by CI.
 - Windows x64 Flutter Release build: pass on the declared toolchain.
-- Engineering native provenance, archive identity, packaged-binary hashes and
-  shipped notices: `CLOSED_RELEASE_PROVENANCE`.
+- Engineering native provenance, archive identity, packaged-binary hashes,
+  LGPLv2.1 license text, corresponding-source/relink offer and shipped
+  notices: `CLOSED_RELEASE_PROVENANCE`.
 - Android APK, Windows x64 installer and portable ZIP each have a matching
   SHA-256 sidecar.
 - No signing secret, keystore or password is stored in the repository or
@@ -119,6 +120,10 @@ The exact upstream references, archive hashes, packaged hashes, runtime
 probe, dependency versions and notice mapping are maintained in
 `docs/THIRD_PARTY_PROVENANCE.md`. The same candidate notice material is
 verified in the Android APK and Windows distributions by release automation.
+The distributions also carry `COPYING.LGPLv2.1` and
+`THIRD_PARTY_SOURCE_OFFER.md`; the latter identifies the exact corresponding
+source and relink procedure for the statically incorporated FFmpeg/libmpv
+components.
 No independent legal opinion was obtained; this is a disclosure, not a
 machine release blocker under ADR-025.
 
@@ -126,13 +131,15 @@ machine release blocker under ADR-025.
 
 The Windows portable ZIP includes the complete Flutter Release directory plus
 `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`,
-`RELEASE_NOTES.md` and version-only `version.txt`.
+`COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`, `RELEASE_NOTES.md` and
+version-only `version.txt`.
 
 The Windows installer is compiled from
 `installer/windows/wynime.iss` with the runner's `ISCC.exe`. It installs
 the complete bundle, creates a Start Menu shortcut, offers an unchecked
-desktop shortcut, includes the license/notices/release notes and provides a
-complete uninstaller. No Authenticode certificate is configured, so the
+desktop shortcut, includes the license, LGPL text, corresponding-source offer,
+notices and release notes, and provides a complete uninstaller. No Authenticode
+certificate is configured, so the
 installer is intentionally unsigned and may trigger SmartScreen.
 
 Standalone FFmpeg execution, remuxing, MKV fallback, downloads, Bangumi

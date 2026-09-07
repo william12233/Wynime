@@ -46,6 +46,20 @@ The exact JAR and packaged `libmpv.so` hashes are recorded in
 `docs/THIRD_PARTY_PROVENANCE.md` and regenerated in the final candidate
 evidence.
 
+## LGPL-covered native media and corresponding source
+
+The `-Dgpl=false` native media builds use the LGPL path with FFmpeg
+statically incorporated into libmpv. The complete GNU Lesser General Public
+License version 2.1 text is shipped as `COPYING.LGPLv2.1` in the Windows
+distribution and as
+`assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1` in the Android
+APK. The corresponding source and relink offer is shipped as
+`THIRD_PARTY_SOURCE_OFFER.md` in the Windows distribution and as
+`assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md` in
+the Android APK. It provides the immutable FFmpeg n6.0 and media-kit
+libmpv source/build references, the exact dependency records, and a written
+offer valid from 2026-09-07 through 2029-09-07.
+
 ## Windows native media
 
 The locked Windows CMake mechanism selects:

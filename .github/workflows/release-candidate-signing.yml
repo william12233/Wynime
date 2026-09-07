@@ -59,6 +59,15 @@ jobs:
             echo "Phase 12 must be RELEASE_READY before candidate signing: $status." >&2
             exit 1
           fi
+          test -s assets/third_party/COPYING.LGPLv2.1
+          grep -F "GNU LESSER GENERAL PUBLIC LICENSE" assets/third_party/COPYING.LGPLv2.1 >/dev/null
+          test -s assets/third_party/THIRD_PARTY_SOURCE_OFFER.md
+          grep -F "For three years" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "relink" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "FFmpeg" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "https://github.com/FFmpeg/FFmpeg/tree/n6.0" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "media-kit/libmpv-android-video-build/releases/tag/v1.1.7" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "media-kit/libmpv-win32-video-build/releases/tag/2023-09-24" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           echo "This workflow only creates protected signed inspection artifacts; it never creates a tag or GitHub Release."
 
       - name: Install Java
@@ -135,7 +144,13 @@ jobs:
           "$apksigner" verify --verbose "$apk"
           unzip -l "$apk" | grep -F "assets/flutter_assets/LICENSE" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
+          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1" >/dev/null
+          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           aab="build/app/outputs/bundle/release/app-release.aab"
+          unzip -l "$aab" | grep -F "base/assets/flutter_assets/LICENSE" >/dev/null
+          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
+          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1" >/dev/null
+          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           aab_log="$(mktemp)"
           if ! jarsigner -verify -verbose -certs "$aab" >"$aab_log" 2>&1; then
             cat "$aab_log" >&2

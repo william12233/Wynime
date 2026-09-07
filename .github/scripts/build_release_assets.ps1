@@ -44,6 +44,8 @@ if (-not $SkipBuild) {
 $apkPath = Join-Path $repoRoot 'build\app\outputs\flutter-apk\app-release.apk'
 $windowsPath = Join-Path $repoRoot 'build\windows\x64\runner\Release'
 $thirdPartyNoticePath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_NOTICES.md'
+$lgplLicensePath = Join-Path $repoRoot 'assets\third_party\COPYING.LGPLv2.1'
+$sourceOfferPath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_SOURCE_OFFER.md'
 $licensePath = Join-Path $repoRoot 'LICENSE'
 if (-not (Test-Path -LiteralPath $apkPath -PathType Leaf)) {
     throw "Android release APK is missing: $apkPath"
@@ -56,6 +58,12 @@ if (-not (Test-Path -LiteralPath $thirdPartyNoticePath -PathType Leaf)) {
 }
 if (-not (Test-Path -LiteralPath $licensePath -PathType Leaf)) {
     throw "Project license is missing: $licensePath"
+}
+if (-not (Test-Path -LiteralPath $lgplLicensePath -PathType Leaf)) {
+    throw "LGPLv2.1 license text is missing: $lgplLicensePath"
+}
+if (-not (Test-Path -LiteralPath $sourceOfferPath -PathType Leaf)) {
+    throw "Corresponding-source offer is missing: $sourceOfferPath"
 }
 
 $outputPath = Join-Path $repoRoot 'build\release'
@@ -72,6 +80,14 @@ $apkLicenseCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/
 if (-not $apkLicenseCheck) {
     throw 'Android APK does not contain the bundled Wynime LICENSE.'
 }
+$apkLgplCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1'
+if (-not $apkLgplCheck) {
+    throw 'Android APK does not contain the bundled LGPLv2.1 license text.'
+}
+$apkSourceOfferCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md'
+if (-not $apkSourceOfferCheck) {
+    throw 'Android APK does not contain the corresponding-source offer.'
+}
 $apkHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $apkAssetPath).Hash.ToLowerInvariant()
 Set-Content -LiteralPath "$apkAssetPath.sha256" -Value "$apkHash  $apkAssetName" -NoNewline -Encoding ascii
 
@@ -84,6 +100,8 @@ Copy-Item -Path (Join-Path $windowsPath '*') -Destination $stagePath -Recurse -F
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md') -Destination (Join-Path $stagePath 'README.md') -Force
 Copy-Item -LiteralPath $licensePath -Destination (Join-Path $stagePath 'LICENSE') -Force
 Copy-Item -LiteralPath $thirdPartyNoticePath -Destination (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md') -Force
+Copy-Item -LiteralPath $lgplLicensePath -Destination (Join-Path $stagePath 'COPYING.LGPLv2.1') -Force
+Copy-Item -LiteralPath $sourceOfferPath -Destination (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\release-notes-1.0.1.md') -Destination (Join-Path $stagePath 'RELEASE_NOTES.md') -Force
 Set-Content -LiteralPath (Join-Path $stagePath 'version.txt') -Value $version -NoNewline -Encoding ascii
 
@@ -92,6 +110,12 @@ if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md')
 }
 if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'LICENSE') -PathType Leaf)) {
     throw 'Windows bundle does not contain the project license.'
+}
+if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'COPYING.LGPLv2.1') -PathType Leaf)) {
+    throw 'Windows bundle does not contain the LGPLv2.1 license text.'
+}
+if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -PathType Leaf)) {
+    throw 'Windows bundle does not contain the corresponding-source offer.'
 }
 
 $zipAssetName = "wynime-$version.zip"

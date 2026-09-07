@@ -55,8 +55,8 @@ jobs:
             exit 1
           fi
           status="$(sed -n 's/^`\([^`]*\)`[[:space:]]*$/\1/p' docs/PHASE12_STATUS.md | head -n 1)"
-          if [[ "$status" != 'AUDIT_COMPLETE_RELEASE_BLOCKED' && "$status" != 'RELEASE_READY' ]]; then
-            echo "Unexpected Phase 12 status for candidate signing: $status." >&2
+          if [[ "$status" != 'RELEASE_READY' ]]; then
+            echo "Phase 12 must be RELEASE_READY before candidate signing: $status." >&2
             exit 1
           fi
           echo "This workflow only creates protected signed inspection artifacts; it never creates a tag or GitHub Release."
@@ -133,6 +133,7 @@ jobs:
           grep -F "native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'" <("$aapt2" dump badging "$apk")
           "$zipalign" -c -v 4 "$apk"
           "$apksigner" verify --verbose "$apk"
+          unzip -l "$apk" | grep -F "assets/flutter_assets/LICENSE" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
           aab="build/app/outputs/bundle/release/app-release.aab"
           aab_log="$(mktemp)"

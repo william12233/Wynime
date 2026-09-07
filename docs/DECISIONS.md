@@ -111,7 +111,7 @@
 **Status:** Accepted
 **Decision:** Phase 6 pins `media_kit 1.2.6`, `media_kit_video 2.0.1`, `media_kit_libs_android_video 1.3.8` and `media_kit_libs_windows_video 1.0.11`. A Wynime-owned Application router preserves one `PlaybackSession` and loopback proxy lease while selecting Android Media3 → libmpv → WebView or Windows libmpv → WebView. Each playback operation may perform at most one automatic fallback, only for decoder, renderer or unsupported failures.
 **Reason:** media-kit provides a maintained Flutter-facing libmpv API and video surface without allowing third-party types to cross Domain or Application. Keeping routing above Platform avoids resolving a second URL or leaking source credentials when an engine changes.
-**Safety:** libmpv receives only the bounded numeric-loopback capability URI with an empty header map. Authorization, expiry, network and manifest failures do not trigger engine fallback. Handoff preserves original-timeline position, play state, volume, rate, exact audio／subtitle IDs and `timelineMapIdentity`; stale generations and identity mismatches fail closed. Raw native errors are reduced to stable diagnostic codes. The media-kit Dart packages are MIT, but the exact libmpv／FFmpeg artifact may be GPL or a compliant LGPL build; release packaging remains blocked until binary provenance, build flags and linked-library licenses are verified. Real-device playback is not claimed from CI compilation alone.
+**Safety:** libmpv receives only the bounded numeric-loopback capability URI with an empty header map. Authorization, expiry, network and manifest failures do not trigger engine fallback. Handoff preserves original-timeline position, play state, volume, rate, exact audio／subtitle IDs and `timelineMapIdentity`; stale generations and identity mismatches fail closed. Raw native errors are reduced to stable diagnostic codes. The media-kit Dart packages are MIT, but the exact libmpv／FFmpeg artifact may be GPL or a compliant LGPL build; release packaging requires the engineering provenance, build-flag and linked-library license evidence recorded by Phase 12. Real-device playback is not claimed from CI compilation alone.
 
 ## ADR-019 — Phase 6 Application boundary owns track and error authority
 
@@ -171,4 +171,34 @@
 
 **Reason:** Compilation and fixture tests cannot prove a native binary's legal closure, real decoder behavior, hardware rendering or safe filesystem behavior against hostile links. Separating evidence classes prevents a convenient build result from being mistaken for a release or runtime pass, while the redacted snapshot retains enough bounded structure for recovery without retaining upstream secrets.
 
-**Safety:** Missing FFmpeg, unavailable hardware, unobservable Windows UI, absent external signing keys or incomplete native provenance remain explicit blockers. A successful process exit never bypasses artifact signature verification, canonical containment or manifest authority. Telemetry remains disabled by default, and no release/tag/publish action is implied by this decision.
+**Safety:** Missing FFmpeg where the release boundary requires it, absent external signing keys, failed artifact verification or incomplete native engineering provenance remain explicit blockers. Unavailable hardware and unobservable Windows UI remain explicit disclosures and do not become fabricated passes. A successful process exit never bypasses artifact signature verification, canonical containment or manifest authority. Telemetry remains disabled by default.
+
+## ADR-025 — Phase 12 separates hard release gates from external validation
+
+**Status:** Accepted
+
+**Decision:** Phase 12 separates machine-verifiable release integrity gates
+from external validation that may be unavailable in the current audit
+environment. Exact-SHA source integration, CI, tests, analyzer, Android
+release build and signing, APK metadata/alignment, Windows release build,
+engineering native provenance, packaged notices, checksums, release notes,
+tag identity and immutable release assets remain hard gates. Physical Android
+and Windows playback, native Windows Computer Use actions and additional
+manual exploratory UI checks are recorded as
+`HARDWARE_VALIDATION_PENDING` or `WINDOWS_CUA_VALIDATION_UNAVAILABLE` when
+unavailable, and do not by themselves prevent `RELEASE_READY`.
+
+**Reason:** The repository acceptance policy requires truthful current-head
+compilation, static analysis, deterministic replay and independent
+read-only review when real hardware or an external runtime is unavailable.
+Making unavailable external observation a mandatory publication gate would
+conflict with that policy without improving the machine-verifiable integrity
+checks.
+
+**Safety:** Unavailable validation is never rewritten as a pass. A real
+license incompatibility, missing legally required notice/source offering,
+unverified binary identity, signing failure, failed test/build, secret
+exposure or SHA mismatch remains a hard blocker. `LICENSE` applies only to
+Wynime-owned source code; every third-party component retains its own
+upstream terms and notice references. Release automation remains exact-SHA,
+non-force and protected by the GitHub release environment.

@@ -335,10 +335,19 @@ Presentation tests cover compact navigation, local Search submission, Library fi
 
 ## Phase 12 release and security audit boundary
 
-Release evidence is split into source/deterministic, runtime, hardware and legal/provenance classes. A passing analyzer, test suite or platform build proves only the first class. APK metadata and signature inspection, Windows bundle inventory and native archive hashes are recorded separately; an unsigned release APK is a packaging artifact for inspection, not a publishable release. A release signing configuration may consume only explicitly supplied external keystore properties or environment variables and must never fall back to the Android debug key.
+Release evidence is split into source/deterministic, runtime, external-validation and engineering-provenance classes. A passing analyzer, test suite or platform build proves only the first class. APK metadata and signature inspection, Windows bundle inventory and native archive hashes are recorded separately; an unsigned release APK is a packaging artifact for inspection, not a publishable release. A release signing configuration may consume only explicitly supplied external keystore properties or environment variables and must never fall back to the Android debug key.
 
 All local download and remux mutations are confined to one configured download root. Before creating missing parents, the filesystem adapter finds and validates the nearest existing ancestor, rejects link/junction traversal outside the root, rechecks canonical containment and accepts only regular files for writes, promotion and deletion. Delete jobs consume the persisted `DownloadArtifactManifest`; orphan discovery is report-only and never grants deletion authority. The FFmpeg adapter receives a bounded vector of local file arguments, starts with `runInShell: false`, caps process diagnostics and timeout, and fails closed for non-local, outside-root, linked or missing paths.
 
 Persisted HLS recovery data is a structural redacted snapshot: playlist kind, bounded counts, durations, sequence values, segment flags, byte ranges and key/map presence are retained, while complete resource URIs, query strings, credentials, cookies and tokens are omitted. This preserves recovery identity without turning local persistence into an upstream-secret store. The same boundary applies to diagnostics and source-package proposals.
 
-Phase 12 native provenance remains a release prerequisite. The locked media-kit packages and downloaded archive hashes are evidence of the selected inputs, not proof of the libmpv／FFmpeg／ANGLE build flags, linked dependency closure or redistributed licenses. Until those records are supplied and reviewed, native packaging remains `RELEASE_BLOCKED`; until Windows interaction and supported hardware playback are exercised, runtime status remains `BLOCKED_UI_ENVIRONMENT` and `prototype_not_hardware_validated` respectively.
+Phase 12 native engineering provenance remains a release prerequisite. The
+locked media-kit packages and downloaded archive hashes must be joined to the
+libmpv／FFmpeg／ANGLE build flags, linked dependency references, packaged
+binary hashes and shipped notices; this record is maintained in
+`docs/THIRD_PARTY_PROVENANCE.md`. Windows interaction and supported hardware
+playback remain separate external-validation statuses:
+`WINDOWS_CUA_VALIDATION_UNAVAILABLE` and
+`prototype_not_hardware_validated` when unavailable. They must be recorded
+truthfully but do not by themselves change the machine release status under
+ADR-025.

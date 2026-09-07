@@ -1,65 +1,161 @@
 # Wynime Release Contract
 
-This document defines the version, artifact and publication contract. The
-workflow in `.github/workflows/release.yml` is the only supported GitHub
-Release publisher. Creating this file does not publish anything.
+This document defines the version, artifact, machine-verifiable gate and
+publication contract. The workflow in
+`.github/workflows/release.yml` is the only supported GitHub Release
+publisher.
 
-## Version and tag
+## Version and immutable candidate
 
-- A release tag must be `vX.Y.Z`.
-- `X.Y.Z` must exactly match the base version in `pubspec.yaml`.
-- `pubspec.yaml` must also contain a positive, intentionally incremented
-  Android build number after the `+` suffix.
-- The matching `docs/release-notes-X.Y.Z.md` file must exist.
-- The current candidate is `1.0.1+2`, corresponding to tag `v1.0.1` and
-  Android `versionCode` `2`.
+- A release tag is `vX.Y.Z`.
+- `X.Y.Z` must exactly match the base version in `pubspec.yaml`, and the
+  `+` suffix must be a positive Android build number.
+- `docs/release-notes-X.Y.Z.md` must exist.
+- The `v1.0.1` candidate is application version `1.0.1`, Android
+  `versionCode` `2`.
+- The tag target, push trigger SHA and current `origin/main` must be the same
+  immutable commit.
+
+## Hard release gates
+
+The following gates are machine-verifiable and block publication:
+
+1. exact candidate SHA equals `origin/main`;
+2. a successful `phase-0-ci.yml` run exists for that exact SHA;
+3. `dart format`, `flutter analyze --fatal-infos` and the required tests pass;
+4. Android release APK build succeeds with the configured
+   `WYNIME_RELEASE_*` keystore;
+5. `apksigner verify`, APK alignment, version metadata and required ABIs pass;
+6. the Windows x64 Flutter Release build succeeds;
+7. the Android APK, Windows installer and portable ZIP each have a matching
+   SHA-256 sidecar;
+8. `THIRD_PARTY_NOTICES.md` is present in the Android and Windows
+   distributions;
+9. recorded native archive and packaged-binary hashes match the candidate;
+10. no secret, keystore or password is present in source or artifacts;
+11. versioned release notes exist;
+12. the annotated tag points exactly to the release candidate;
+13. GitHub Release assets are built from that same immutable SHA.
+
+`docs/THIRD_PARTY_PROVENANCE.md` must declare
+`CLOSED_RELEASE_PROVENANCE`, and `LICENSE` plus the exact
+`Approved Wynime distribution license: yes` marker must be present.
+This is an engineering provenance and packaging gate; an independent legal
+opinion is not a machine gate for this release.
+
+## Non-blocking external validation
+
+These checks remain explicitly disclosed but do not block `RELEASE_READY`:
+
+- `HARDWARE_VALIDATION_PENDING`: physical Android playback;
+- `HARDWARE_VALIDATION_PENDING`: physical Windows playback;
+- `WINDOWS_CUA_VALIDATION_UNAVAILABLE`: native Windows action-level
+  Computer Use evidence when the audit surface exposes `apps=[]`;
+- additional manual exploratory UI testing.
+
+The project must never claim these checks passed when they were not run.
+Deterministic tests, fixed phone/tablet emulator action evidence, current-head
+builds and independent read-only review are recorded separately.
+
+## Wynime license and third-party provenance
+
+`LICENSE` is the repository owner's MIT license for Wynime-owned source code
+only. It does not relicense or replace any third-party dependency, native
+binary, codec or system runtime license.
+
+The engineering provenance inventory must identify the resolved package
+versions, upstream native artifacts, selected build flavor/configuration,
+archive hashes, packaged-binary hashes, runtime identity, applicable license
+references and shipped notices. The locked media-kit Android default flavor,
+Windows libmpv archive, FFmpeg linkage, ANGLE inputs, WebView2 loader, SQLite,
+Flutter/Dart runtime and all redistributed DLLs are covered by
+`docs/THIRD_PARTY_PROVENANCE.md` and
+`assets/third_party/THIRD_PARTY_NOTICES.md`.
 
 ## GitHub Release assets
 
-The release contains exactly these four uploaded files:
+The release contains exactly these six files:
 
 | Platform | Artifact | SHA-256 sidecar |
 | --- | --- | --- |
-| Android multi-ABI APK | `wynime-X.Y.Z.apk` | `wynime-X.Y.Z.apk.sha256` |
+| Android multi-ABI | `wynime-X.Y.Z.apk` | `wynime-X.Y.Z.apk.sha256` |
+| Windows x64 installer | `wynime-X.Y.Z-windows-x64-setup.exe` | `wynime-X.Y.Z-windows-x64-setup.exe.sha256` |
 | Windows x64 portable | `wynime-X.Y.Z.zip` | `wynime-X.Y.Z.zip.sha256` |
 
-The AAB may be built as an internal/Play Store handoff artifact, but it is not
-uploaded to the GitHub Release by this contract.
+The AAB remains an internal/Play Store handoff artifact and is not uploaded
+to the GitHub Release by this contract.
 
-## Windows portable contents
+## Windows installer
 
-The ZIP must contain the complete contents of
-`build/windows/x64/runner/Release`, including `wynime.exe`, and must add:
+`installer/windows/wynime.iss` is compiled with the `ISCC.exe` already
+available on the `windows-2025` runner. The installer:
 
-- `README.md`;
-- `version.txt` containing exactly `X.Y.Z` with no extra text.
+- installs the complete Flutter Windows Release bundle;
+- uses a stable AppId and per-user default directory;
+- creates a Start Menu shortcut;
+- offers an unchecked optional desktop shortcut;
+- includes `LICENSE`, `THIRD_PARTY_NOTICES.md`, `README.md` and release notes;
+- creates a complete uninstaller without deleting Wynime user data;
+- uses app name `Wynime`, version `1.0.1`, publisher `william12233` and
+  executable `wynime.exe`.
 
-There is no updater executable in Wynime's current architecture, so the
-workflow must not claim updater support or require an updater file.
+No Authenticode certificate is configured for this candidate. The installer
+is therefore intentionally unsigned and may trigger a Windows SmartScreen
+warning; no unsigned installer is presented as signed evidence.
+
+The portable ZIP contains the complete
+`build/windows/x64/runner/Release` directory plus `README.md`, `LICENSE`,
+`THIRD_PARTY_NOTICES.md`, `RELEASE_NOTES.md` and a version-only
+`version.txt`.
 
 ## Local preparation
 
-The checked-in PowerShell helper builds the Android APK and Windows bundle,
-then writes versioned inspection assets and SHA-256 sidecars under the ignored
-`build/release` directory:
+The checked-in helper builds the local inspection APK and Windows bundle,
+creates the portable ZIP, and builds the installer when `ISCC.exe` is
+available:
 
-```powershell
-pwsh -NoProfile -File .github/scripts/build_release_assets.ps1 -AllowBlockedInspection
-```
+~~~powershell
+pwsh -NoProfile -File .github/scripts/build_release_assets.ps1
+~~~
 
-`-AllowBlockedInspection` is intentionally required while Phase 12 is blocked;
-it produces local, unsigned inspection artifacts and cannot publish anything.
-Omit that switch after the status is independently changed to
-`RELEASE_READY`. The helper never creates a tag, pushes a branch or calls the
-GitHub Release API. A clean Windows build also requires the NuGet command-line
-tool because of the Windows WebView2 plugin; the checked-in GitHub workflow
-installs it before resolving dependencies.
+Use `-SkipInstaller` only for portable-only local diagnostics when Inno Setup
+is unavailable. The helper never creates a tag, pushes a branch or calls the
+GitHub Release API. Local APK output is unsigned unless the external signing
+properties are configured; official publication signing is performed and
+verified in GitHub Actions.
 
-## Release gate and secrets
+## Release notes and validation disclosure
 
-The workflow refuses to proceed unless `docs/PHASE12_STATUS.md` contains the
-explicit status `RELEASE_READY`. The current status is
-`AUDIT_COMPLETE_RELEASE_BLOCKED`.
+`docs/release-notes-1.0.1.md` must list Android APK, Windows x64 installer
+and Windows x64 portable ZIP. It must state that automated
+tests/build/signing passed, emulator UI evidence passed where exercised,
+physical Android/Windows validation is pending, and native Windows Computer
+Use action-level validation is unavailable in the audit environment.
+It must also disclose that the Windows installer is unsigned when no
+certificate is configured.
+
+## Publication sequence
+
+1. Update the versioned release notes and release metadata.
+2. Close the engineering provenance and hard release gates; retain external
+   validation disclosures.
+3. Freeze one final candidate SHA and obtain successful exact-SHA phase-0 CI.
+4. Re-fetch `origin/main`, verify the candidate is its exact tip, and push
+   normal non-force history.
+5. Dispatch the protected candidate-signing workflow for that SHA and inspect
+   the signed APK/AAB hashes.
+6. Confirm the worktree is clean and create the annotated `vX.Y.Z` tag at
+   that exact SHA.
+7. Push the tag and let `release.yml` build, verify and publish the six
+   immutable release assets.
+8. Monitor the workflow and verify the GitHub Release URL, tag target,
+   asset set, sidecars and successful conclusion.
+
+The `github-release` job uses the protected `release` environment. GitHub
+deployment approval remains a platform control and must not be bypassed.
+An existing GitHub Release is never mutated.
+
+## Android signing boundary
 
 The Android job requires these GitHub Actions secrets:
 
@@ -68,96 +164,7 @@ The Android job requires these GitHub Actions secrets:
 - `WYNIME_RELEASE_KEY_ALIAS`;
 - `WYNIME_RELEASE_KEY_PASSWORD`.
 
-The keystore is materialized only in the ephemeral CI workspace, passed to the
-existing Gradle signing boundary, and removed after the Android job. No
-signing secret belongs in the repository, issue tracker or release notes.
-
-Before changing the status to `RELEASE_READY`, the project must independently
-close the current Phase 12 requirements: source and deterministic checks,
-publish signing, native provenance and linked licenses, observable Windows UI
-actions, and supported Android / Windows hardware playback. Standalone
-FFmpeg execution, remuxing and MKV fallback are explicitly excluded from
-1.0.1 and are future-scope work, not release gates for this candidate.
-
-The publisher also mechanically requires `docs/THIRD_PARTY_PROVENANCE.md` to
-declare `CLOSED_RELEASE_PROVENANCE`, a non-empty root `LICENSE`, and the exact
-`Approved Wynime distribution license: yes` marker in `docs/PHASE12_STATUS.md`.
-These checks are deliberately independent of the `RELEASE_READY` status so a
-status-only edit cannot bypass native redistribution or project-license review.
-
-The native provenance inventory and its open notice/license checklist are
-maintained in
-[`docs/THIRD_PARTY_PROVENANCE.md`](THIRD_PARTY_PROVENANCE.md).
-
-The separate `.github/workflows/release-candidate-signing.yml` workflow may be
-manually dispatched with the exact pushed candidate SHA while the audit is
-still blocked. It uses the protected `release` environment, verifies that the
-SHA is still the candidate branch tip, and uploads only signed APK/AAB
-inspection artifacts. It never creates a tag or GitHub Release. This split
-allows the exact signed artifacts to be independently inspected without
-turning signing into a publication approval.
-
-## Publication sequence
-
-1. Update `pubspec.yaml`, `CHANGELOG.md` and the versioned release notes.
-2. Close and record every Phase 12 gate; do not bypass `RELEASE_BLOCKED`.
-3. Freeze one final candidate SHA and obtain a successful `phase-0-ci.yml`
-   run for that exact SHA.
-4. Re-fetch `origin/main`, verify it is unchanged and an ancestor of the
-   final candidate, then fast-forward local `main` only and push it
-   non-force. Verify remote `main` equals the final candidate SHA.
-5. Before publication, manually dispatch the candidate-signing workflow for
-   that exact SHA and complete its protected environment review; inspect the
-   signed artifacts and record their hashes.
-6. Configure the four GitHub Actions signing secrets and create/push the
-   matching annotated `vX.Y.Z` tag at that same SHA only after the user gives
-   the explicit release approval.
-7. Let `release.yml` revalidate the tag target, current `origin/main`, exact
-   successful CI SHA, readiness status, signing, provenance/license checks,
-   and artifact hashes before the protected `release` environment can publish
-   the exact four assets.
-
-The `github-release` job targets the `release` environment. Repository
-administrators must configure required reviewers for that environment so an
-independent review and release approval remain a protected publication step;
-the workflow itself never treats a tag as approval.
-
-No local preparation step creates a tag, pushes a branch or calls the GitHub
-Release API.
-
-## GitHub secret setup
-
-The AVACA screenshot is only a reference. Do not copy its keystore path,
-certificate fingerprint or passwords into Wynime. Wynime uses the Android
-application ID 'io.github.william12233.wynime' and should use a dedicated
-Wynime release keystore (or an already-approved Wynime keystore).
-
-Create a keystore outside the repository. keytool prompts for the store and
-key passwords; keep the alias and passwords for the GitHub secret values:
-
-~~~powershell
-keytool -genkeypair -v -keystore C:/secure/wynime-release.jks -alias wynime-release -keyalg RSA -keysize 2048 -validity 10000
-~~~
-
-Convert that exact keystore to one-line Base64 without committing either file:
-
-~~~powershell
-$keystorePath = 'C:/secure/wynime-release.jks'
-$base64Path = 'C:/secure/wynime-release.base64.txt'
-[Convert]::ToBase64String([IO.File]::ReadAllBytes($keystorePath)) |
-  Set-Content -NoNewline -Encoding ascii -LiteralPath $base64Path
-~~~
-
-Create these GitHub Actions repository secrets under
-Settings > Secrets and variables > Actions:
-
-1. WYNIME_RELEASE_KEYSTORE_BASE64: the complete contents of
-   wynime-release.base64.txt;
-2. WYNIME_RELEASE_STORE_PASSWORD: the keystore password;
-3. WYNIME_RELEASE_KEY_ALIAS: normally wynime-release;
-4. WYNIME_RELEASE_KEY_PASSWORD: the key password.
-
-The workflow decodes the keystore only inside the ephemeral Android runner,
-checks the file and alias before building, signs the APK, and removes the
-temporary keystore in an always() cleanup step. Never commit the .jks,
-Base64 file, or passwords.
+The keystore is materialized only in the ephemeral runner, passed through the
+existing Gradle signing boundary, verified with `apksigner`, and removed in
+an `always()` cleanup step. Secret values, `.jks` files and Base64 material
+must never be committed.

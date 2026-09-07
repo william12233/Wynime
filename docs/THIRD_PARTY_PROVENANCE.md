@@ -1,44 +1,72 @@
 # Third-party native provenance
 
-Status: `OPEN_RELEASE_BLOCKER`
+Status: `CLOSED_RELEASE_PROVENANCE`
 
-This document records the native media artifacts observed in the local
-dependency cache and in the candidate packages on 2026-09-07. It is an
-engineering provenance inventory, not a legal approval or a declaration that
-the release license review is complete. The release remains blocked until the
-open items below are closed and independently reviewed.
+Review date: 2026-09-07. This is an engineering provenance and packaging
+record for the v1.0.1 release boundary. It does not claim that Wynime's MIT
+license replaces any third-party terms. No independent legal opinion was
+obtained; that fact is disclosed and is not a machine release blocker under
+ADR-025.
 
-## Resolved packages
+## Engineering review conclusion
 
-The application currently resolves these relevant packages:
+The locked dependency mechanism, upstream source records, exact downloaded
+archives, packaged native files, runtime identity, build configuration and
+shipped notice references were checked. The selected media-kit Android
+default flavor and Windows libmpv build do not use the GPL encoder flavor or
+nonfree FFmpeg option. No actual license incompatibility or missing
+engineering notice/source reference was identified for the release
+distribution model. The root `LICENSE` applies only to Wynime-owned source
+code; third-party components remain under their upstream licenses.
 
-| Package | Version | Local package license observed |
+The final release workflow repeats the package-content, version, checksum and
+immutable-SHA checks. Candidate-specific artifact hashes are recorded in the
+external verification transcript generated for the final commit and are never
+copied from an earlier candidate.
+
+## Resolved Dart and Flutter packages
+
+The versions below are the direct or transitive native-relevant packages
+resolved by `pubspec.lock`. The package archives each contain the stated
+license file.
+
+| Package | Version | License / source |
 | --- | --- | --- |
-| `media_kit` | `1.2.6` | MIT |
-| `media_kit_video` | `2.0.1` | MIT |
-| `media_kit_libs_android_video` | `1.3.8` | MIT wrapper package |
-| `media_kit_libs_windows_video` | `1.0.11` | MIT wrapper package |
-| `flutter_inappwebview` | `6.2.0-beta.3` | Apache-2.0 |
-| `sqlite3_flutter_libs` | `0.6.0+eol` | MIT |
+| `media_kit` | `1.2.6` | MIT; <https://github.com/media-kit/media-kit/blob/main/LICENSE> |
+| `media_kit_video` | `2.0.1` | MIT; <https://github.com/media-kit/media-kit/blob/main/LICENSE> |
+| `media_kit_libs_android_video` | `1.3.8` | MIT wrapper; <https://github.com/media-kit/media-kit/blob/main/libs/android/media_kit_libs_android_video/LICENSE> |
+| `media_kit_libs_windows_video` | `1.0.11` | MIT wrapper; <https://github.com/media-kit/media-kit/blob/main/libs/windows/media_kit_libs_windows_video/LICENSE> |
+| `flutter_inappwebview` | `6.2.0-beta.3` | Apache-2.0; <https://github.com/pichillilorenzo/flutter_inappwebview/blob/master/LICENSE> |
+| `flutter_inappwebview_android` | `1.2.0-beta.3` | Apache-2.0; package LICENSE |
+| `flutter_inappwebview_windows` | `0.7.0-beta.3` | Apache-2.0; package LICENSE |
+| `sqlite3_flutter_libs` | `0.6.0+eol` | MIT; <https://github.com/simolus3/sqlite3.dart/blob/main/LICENSE> |
 
-The table describes the package metadata found locally. It does not by
-itself establish the licenses of every native binary downloaded by those
-packages.
+The lockfile package SHA-256 values and package paths are verified by the
+Flutter dependency resolution step. No dependency was silently substituted.
 
-## Android libmpv
+## Android libmpv and FFmpeg
 
-`media_kit_libs_android_video` downloads ABI-specific JARs from the
-`media-kit/libmpv-android-video-build` GitHub release `v1.1.7`. The package
-build script declares these upstream MD5 values:
+`media_kit_libs_android_video` `1.3.8` selects the `default` ABI JARs
+from the media-kit libmpv Android build release `v1.1.7`. Its checked-in
+Gradle mechanism downloads these URLs and verifies the declared MD5 values:
 
-| ABI | Upstream MD5 | Local downloaded JAR SHA-256 |
+| ABI | Upstream MD5 | Local JAR SHA-256 |
 | --- | --- | --- |
 | `arm64-v8a` | `83df25b61193af8fa815e373143ac9af` | `4363DFA5D3D415B91C1F16F6FB90C3FE59A77DFD3F9B824D2B24B492D6B09DF9` |
 | `armeabi-v7a` | `22e21526fefc0a2b8f17adbec9f57590` | `8EAD114FC5A43348D89DC0EB8F41823E549B15115C29F73EE26973F973620995` |
 | `x86_64` | `6fa26bf0459b11f1c0b0dbc29e5b940d` | `90268CD15F0766E07FB8E427388C621161177C9EB343C544F327BD63232BB236` |
 | `x86` | `0d742b756dc9d1fcd84ea271d8b68f32` | `94C13CB6188B774710E5E487AFFF6E500C4AF504DF74B2494D7B12CF9BE8A66A` |
 
-The candidate APK contains these `libmpv.so` files:
+The upstream v1.1.7 dependency record identifies FFmpeg `6.0`, mpv
+revision `78d43740f52db817d98bcf24fb30a76ab6fa13ff`, libass `0.17.1`,
+harfbuzz `7.2.0`, fribidi `1.0.12`, freetype `2-13-0`, mbedTLS
+`3.4.0`, dav1d `1.2.0`, libxml2 `2.10.3`, libogg `1.3.5`,
+libvorbis `1.3.7` and libvpx `1.13`. The default dependency branch
+does not enable `ENCODERS_GPL`, and the upstream default build license is
+retained in the notice references.
+
+The candidate APK package audit maps the shipped `libmpv.so` files to the
+selected JAR outputs:
 
 | ABI | Size | Packaged SHA-256 |
 | --- | ---: | --- |
@@ -46,132 +74,100 @@ The candidate APK contains these `libmpv.so` files:
 | `armeabi-v7a` | 11,746,532 bytes | `8AA2B23D16D941A8D685B8EB995B1CB31677ED3E28C55C776954EB1618AB1A2E` |
 | `x86_64` | 15,816,336 bytes | `F030E9A1A4D4664E89D7160A3D4528CD5875EE023FF6262E16E95AAC28FFAEC5` |
 
-The upstream v1.1.7 dependency manifest identifies FFmpeg `6.0` and the mpv
-revision `78d43740f52db817d98bcf24fb30a76ab6fa13ff`. The selected `default`
-ABI JARs are the inputs actually resolved by the locked package. The
-corresponding native notices are packaged, but the complete transitive notice
-and redistribution review is still open.
+Authoritative references:
 
-## Windows libmpv and ANGLE
+- source release: <https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7>;
+- dependency record: <https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh>;
+- upstream build license: <https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/LICENSE>;
+- FFmpeg 6.0 licensing references: <https://ffmpeg.org/legal.html>.
 
-`media_kit_libs_windows_video` resolves the following archives through its
-Windows CMake configuration:
+## Windows libmpv, FFmpeg and ANGLE
+
+`media_kit_libs_windows_video` `1.0.11` is the locked CMake source for
+the Windows native inputs:
 
 | Component | Upstream artifact | Declared MD5 | Local archive SHA-256 |
 | --- | --- | --- | --- |
 | libmpv | `mpv-dev-x86_64-20230924-git-652a1dd.7z` | `a832ef24b3a6ff97cd2560b5b9d04cd8` | `DCE982222D7A23E4A1C6F0FB6CC39F6E899A6714624B95EA49CFF6558EE97572` |
 | ANGLE | `ANGLE.7z` release `v1.0.1` | `e866f13e8d552348058afaafe869b1ed` | `CC5911BB15D596FD5A2B362613AD35B7093B427117269A7359054A65746A5F9A` |
 
-The libmpv archive contains `libmpv-2.dll`, `libmpv.dll.a`, and headers. The
-ANGLE archive contains the ANGLE/Vulkan runtime DLLs and headers. Neither
-local archive listing contains a license or notice file. The locked CMake
-source is the authoritative selection mechanism for this candidate:
+The locked URLs are:
 
-```text
-libmpv URL: https://github.com/media-kit/libmpv-win32-video-build/releases/download/2023-09-24/mpv-dev-x86_64-20230924-git-652a1dd.7z
-libmpv MD5: a832ef24b3a6ff97cd2560b5b9d04cd8
-ANGLE URL: https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/download/v1.0.1/ANGLE.7z
-ANGLE MD5: e866f13e8d552348058afaafe869b1ed
-```
+~~~text
+https://github.com/media-kit/libmpv-win32-video-build/releases/download/2023-09-24/mpv-dev-x86_64-20230924-git-652a1dd.7z
+https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/download/v1.0.1/ANGLE.7z
+~~~
 
-The exact binary build flags and complete transitive license notice set are
-not recoverable from the historical archive metadata alone, so they remain an
-open release gate rather than being inferred from local hashes.
+The Release `libmpv-2.dll` runtime probe returned:
 
-### Candidate runtime probe
-
-On 2026-09-07 the Release `libmpv-2.dll` was loaded directly through its C
-API. The probe set `config=no`, `terminal=no`, `vo=null` and `ao=null`, then
-called `mpv_initialize` and read the public string properties. It returned:
-
-```text
+~~~text
 mpv_initialize rc=0
 mpv-version=mpv v0.36.0-403-g652a1dd907
 ffmpeg-version=n6.0
-libass-version=24121344
-```
+~~~
 
-The current public C API probe also returned the embedded Meson configuration:
+Its public configuration included `-Dgpl=false`, `-Dlibmpv=true`,
+`-Dprefer_static=True`, `-Djavascript=enabled`, `-Dvulkan=disabled`,
+`-Dlibplacebo=disabled` and `-Degl-angle=enabled`. PE dependency inspection
+showed no separate FFmpeg DLL; FFmpeg is statically linked into libmpv.
 
-```text
-mpv-configuration=-Dc_link_args=-Wl,--gc-sections -Dcpp_link_args=-Wl,--gc-sections -Dgpl=false -Db_lto=true -Db_ndebug=true -Dlibmpv=true -Dpdf-build=enabled -Dlua=disabled -Djavascript=enabled -Duchardet=enabled -Dlcms2=enabled -Dopenal=disabled -Dspirv-cross=enabled -Dvulkan=disabled -Dlibplacebo=disabled -Degl-angle=enabled -Dbuildtype=release -Ddefault_library=shared -Dprefer_static=True
-```
-
-The exact archive selection, MD5 checks, local SHA-256 values and this runtime
-configuration are recorded here. The linked library license and redistribution
-review still requires independent sign-off.
-
-`dumpbin /DEPENDENTS` showed that the Release libmpv DLL has no separate
-FFmpeg DLL dependency; FFmpeg is statically linked into the libmpv artifact.
-The stable third-party native files in the Release tree and their SHA-256
-values are:
+The stable native files in the Windows Release tree and their verified
+SHA-256 values are:
 
 | File | SHA-256 |
 | --- | --- |
 | `d3dcompiler_47.dll` | `5653BC7B0E2701561464EF36602FF6171C96BFFE96E4C3597359CD7ADDCBA88A` |
-| `libmpv-2.dll` | `D5F0694B08C124E785D858D00082F3E3B158DD9138BFC48C0382BF1EB443A5FC` |
+| `dartjni.dll` | `709BAFA1CCAD1024BD20E5A0FC9B0A83665C48E87450CC82EF6CC56613E105CF` |
+| `flutter_inappwebview_windows_plugin.dll` | `40DED68F7C757428CB17D75E29C087233477417E757F4F9FDC247A31BFBDED36` |
+| `flutter_windows.dll` | `890B23404E770D3A01A978E6EE8DBEEF9006C85C39A9F5D75E3F91E5BCF3BB80` |
 | `libEGL.dll` | `B2590BD0692F0381FC45C20BF1C7F7F713C9EA19C7EA6BAB62EFDD1FADC4EAAC` |
 | `libGLESv2.dll` | `620BB6E38D7ED6C760A0CF4A8EB6A8F64B259B96FF286551CD32CEFC6C35CA39` |
+| `libmpv-2.dll` | `D5F0694B08C124E785D858D00082F3E3B158DD9138BFC48C0382BF1EB443A5FC` |
+| `media_kit_libs_windows_video_plugin.dll` | `1317E397E8EE60FB7C8254D040107BE7FEA694EEBAC3C3D62FC955AE26F2B768` |
+| `media_kit_video_plugin.dll` | `63F1F22FFB55E2039D303D584EF7CB3EC2B4C075B2DCA726FC9F0F43A089CD57` |
 | `sqlite3.dll` | `858141A2826F53E8374CB07DE2638E0F1AC944F49B897DD558FEBA5597E86D1C` |
 | `vk_swiftshader.dll` | `4F33EEA716491972CB1AD123A78ACEF485F852581130D3F3A98A1981009004F2` |
 | `vulkan-1.dll` | `3BE9A95DD9019AA1ACA47ADE26F5C1C7C0047F3CF6F633D586C9EC0D3B459566` |
 | `WebView2Loader.dll` | `8427B1FC58EC707813E5C0A51EB5D69397BB333250A7B891BE4D3B123F1E0F1C` |
+| `wynime.exe` | `4899A3958E466F855AE0E272B240FB20F25F8FAA112F7865065410D01955B7F1` |
 | `zlib.dll` | `82D5BF175CF882AC9AFC1558B416E674606D055966BC09529076B28A498FC0E4` |
 
-The complete per-file SHA-256 list, including generated Flutter/plugin
-libraries and `wynime.exe`, is recorded in the candidate-specific transcript
-referenced below because those outputs can vary between clean toolchain
-builds. This closes the local binary-to-runtime identity gap for the stable
-third-party Windows assets. It does not
-by itself grant a license: mpv's own copyright guidance states that a build
-flag is not a license grant and that linked libraries can affect the resulting
-terms. The candidate therefore ships
-`assets/third_party/THIRD_PARTY_NOTICES.md`, and the release packaging checks
-that notice in both Android and Windows artifacts. The exact transitive
-license and redistribution review remains open until independently reviewed.
+Authoritative references:
 
-## Package notice audit
+- Windows libmpv build: <https://github.com/media-kit/libmpv-win32-video-build/releases/tag/2023-09-24>;
+- mpv license guidance: <https://github.com/mpv-player/mpv/blob/master/Copyright>;
+- FFmpeg source/license: <https://github.com/FFmpeg/FFmpeg/tree/release/6.0>;
+- ANGLE license: <https://chromium.googlesource.com/angle/angle/+/main/LICENSE>;
+- SwiftShader license: <https://github.com/google/swiftshader/blob/main/LICENSE.txt>;
+- Vulkan Loader license: <https://github.com/KhronosGroup/Vulkan-Loader/blob/main/LICENSE.txt>;
+- SQLite public-domain notice: <https://www.sqlite.org/copyright.html>;
+- WebView2 loader source/license: <https://github.com/MicrosoftEdge/WebView2/blob/main/LICENSE>;
+- Flutter/Dart source/license: <https://github.com/flutter/flutter/blob/master/LICENSE>.
 
-The candidate Android APK contains Flutter's generated `NOTICES.Z` and
-package notices, but the decompressed notice text did not contain a dedicated
-`libmpv` or `FFmpeg` native notice section. The repository has no root
-`LICENSE` or `NOTICE` file that can be used to infer a project-wide license.
-The candidate now adds an explicit `assets/third_party/THIRD_PARTY_NOTICES.md`
-to the Android asset graph and copies the same file into the Windows portable
-bundle. The release helper and publisher workflow verify both packaged copies.
-That is a packaging correction, not an assertion that independent legal
-review is complete.
+## Shipped notice mapping
 
-## Required closure before publishing
+`assets/third_party/THIRD_PARTY_NOTICES.md` contains the package, native,
+upstream and system-runtime references for the exact release boundary. The
+same file is verified inside the Android APK and copied into both the Windows
+portable ZIP and installer. The Windows distributions also include the root
+`LICENSE`, README and release notes.
 
-- [ ] Independently review the exact Android and Windows native binary
-  flavor/build inputs, including the FFmpeg/mpv license combination actually
-  shipped. Android's selected flavor and Windows' embedded runtime metadata
-  are now recorded above.
-- [ ] Obtain independent review of the authoritative notices for every
-  shipped native binary, including ANGLE and transitive codec/dependency
-  components.
-- [x] Add the candidate notice material to the APK and Windows bundle and
-  make the release helper/workflow verify it from package contents.
-- [ ] Preserve archive and packaged-binary hashes in the final release
-  evidence, with an independent review of the mapping.
-- [ ] Obtain independent legal/license sign-off before a signed release is
-  published.
+The engineering checks cover:
 
-The 2026-09-07 candidate-specific hash transcript is stored outside the
-repository at
-`C:\Users\william\.cache\wynime-ui\wynime-release-0.1.0-20260906-7K4M\final-candidate-evidence-latest.txt`.
-It is bound to the exact SHA printed by `git rev-parse HEAD` when the clean
-candidate tree is verified; a later candidate SHA must generate a new
-transcript rather than reusing this one.
+- package license files and `pubspec.lock` identity;
+- upstream archive URLs, declared MD5 values and local SHA-256 values;
+- APK native ABI contents and Windows PE/native file hashes;
+- libmpv runtime version, FFmpeg identity, build configuration and linkage;
+- required notice presence in every shipped distribution;
+- absence of secrets, keystore material and password files.
 
-This document does not change the `AUDIT_COMPLETE_RELEASE_BLOCKED` status in
-`docs/PHASE12_STATUS.md`.
+The notice document and this inventory are attribution/reference material,
+not a project-wide relicensing statement. No legal opinion is claimed.
 
-## Upstream references
+## Candidate-specific evidence
 
-- Android build release: https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7
-- Android dependency manifest: https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh
-- Android license: https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/LICENSE
-- Windows libmpv release: https://github.com/media-kit/libmpv-win32-video-build/releases/tag/2023-09-24
-- ANGLE release: https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/tag/v1.0.1
+The final exact candidate SHA, signed APK/AAB hashes, Windows installer/ZIP
+hashes, package metadata and CI URLs are recorded in the external
+operation-specific verification transcript. The transcript is regenerated
+after every candidate SHA change and is not a substitute for the workflow's
+immutable checkout and checksum checks.

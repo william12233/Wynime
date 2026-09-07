@@ -6,7 +6,7 @@ This file records the Phase 11 presentation and cross-platform UI evidence bound
 
 `BLOCKED_UI_ENVIRONMENT_WINDOWS_ANDROID_ACTIONS_VERIFIED`
 
-The six live destinations now use product presentation pages rather than the Phase 0 placeholder. The shell has compact bottom navigation, medium/expanded NavigationRail layouts, shared design tokens, four generated locales and truthful empty states. Android phone and tablet action-level evidence is verified. Windows builds and launches, but the Flutter client surface remained uniformly white through normal, hot-restart and software-rendering launches, so the overall UI gate is blocked instead of being called `PASS_UI`.
+The six live destinations now use product presentation pages rather than the Phase 0 placeholder. The shell has compact bottom navigation, medium/expanded NavigationRail layouts, shared design tokens, four generated locales and truthful empty states. Android phone and tablet action-level evidence is verified. Windows builds and launches, but the native Computer Use surface is unavailable in this audit environment, so the Windows UI result remains `BLOCKED_UI_ENVIRONMENT` instead of being called `PASS_UI`. Under ADR-025 this external validation result is disclosed separately and does not by itself block the Phase 12 machine release status.
 
 ## Implementation
 
@@ -34,15 +34,21 @@ Operation id: `b0ba20c0-37ca-4cf1-95c5-ae1931315ea3`.
 - `Pixel_API_36_Google_Play` / `emulator-5554`: boot completed, `1080x2400`, density `420`; app launched and remained resumed without crash/ANR. Compact bottom navigation changed Home → Search → Settings, Search accepted `Wynime` and showed the no-active-sources state, and Settings showed the telemetry switch off by default after scrolling.
 - `Pixel_Tablet_API_36_Google_Play` / `emulator-5556`: boot completed, `2560x1600`, density `320`; app launched and remained resumed without crash/ANR. Expanded rail navigation changed Home → Search → Settings, Search accepted `Tablet` and showed the no-active-sources state, and Settings scrolled through privacy, playback and storage.
 - AVD facts are recorded in the operation `logs/device-facts.txt`; action logs are in `interaction/android-phone.log` and `interaction/android-tablet.log`. Screenshots are kept under the operation `screenshots` directory, outside the repository as required by the UI verification workflow.
-- Individual Android phone/tablet action evidence is `PASS_UI`; this does not promote the overall cross-platform gate while Windows remains blocked.
+- Individual Android phone/tablet action evidence is `PASS_UI`; the Windows
+  UI result remains an explicitly unavailable external-validation record.
 
 ## Windows runtime boundary
 
 - The operation launched the latest debug app and successfully resized the outer window to `1024x768`.
 - Valid captures `windows-expanded-1024x768-screen5.png`, `windows-expanded-1024x768-printwindow.png` and the software-rendering capture all showed the Wynime title bar but a uniformly white client surface. The first desktop capture that contained an Android emulator was discarded and is not counted as evidence.
 - A hot restart and `--enable-software-rendering` launch did not change the result. No Dart exception appeared in the Flutter run log, but the product page, navigation, click state and keyboard state could not be observed.
-- Result: `BLOCKED_UI_ENVIRONMENT`, not `PASS_UI`. The exact record is `interaction/windows.log` and runtime output is under `logs/windows-flutter-run-2.log`.
+- Result: `BLOCKED_UI_ENVIRONMENT`, not `PASS_UI`. The exact record is `interaction/windows.log` and runtime output is under `logs/windows-flutter-run-2.log`. This remains a non-blocking external-validation disclosure for release policy.
 
 ## Remaining boundary
 
-Windows action-level UI evidence must be repeated after the local Flutter desktop rendering environment is repaired. Until then, Phase 11 is not release-ready even though source analysis, Goldens, Android runtime actions and both debug builds pass. The subsequent Phase 12 audit also keeps release blocked until native provenance/license closure and official signed-CI evidence are recorded.
+Windows action-level UI evidence should be repeated when an observable native
+desktop environment is available. Until then, Phase 11 remains an incomplete
+external UI validation record even though source analysis, Goldens, Android
+runtime actions and both debug builds pass. Phase 12 release readiness is
+decided by its separate machine-verifiable hard gates and preserves this
+pending disclosure.

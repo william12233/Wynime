@@ -1,10 +1,10 @@
 # Changelog
 
 All notable Wynime changes are documented here. A version remains
-`Unreleased` until its release gate, signing, provenance and runtime evidence
-are complete.
+`Unreleased` until its release gate, signing, provenance and publication
+evidence are complete.
 
-## 1.0.1 - Unreleased
+## 1.0.1 - Release-ready
 
 ### Release candidate scope
 
@@ -17,9 +17,11 @@ are complete.
 
 ### Release status
 
-This candidate remains unpublished until the Phase 12 release blockers are
-closed and the exact signed CI artifacts are independently verified. See
-`docs/PHASE12_STATUS.md` and `docs/release-notes-1.0.1.md`.
+The machine-verifiable Phase 12 release gates are closed. Physical hardware
+playback and native Windows Computer Use validation remain explicitly
+disclosed non-blocking QA. The immutable GitHub Release workflow is the only
+publication path. See `docs/PHASE12_STATUS.md` and
+`docs/release-notes-1.0.1.md`.
 
 ## 1.0.0 - Unreleased
 

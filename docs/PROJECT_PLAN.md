@@ -226,7 +226,7 @@ Phase 6 的 Android／Windows 實際硬體播放若未執行，只能標記 `pro
 - Search、Settings、scroll、bottom navigation／rail navigation 必須在固定 phone 與 tablet AVD 以真實觸控／鍵盤動作驗證，並保存 action-level screenshots、runtime log 與 AVD physical size／density facts；Windows 必須以真實 resize、mouse、keyboard 互動驗證，launch 或 screenshot alone 不算 PASS_UI；
 - format、fatal analyze、全部 tests、Golden rerun、Android debug build 與 Windows debug build。
 
-本次 Phase 11 的 source、Golden、Android phone/tablet action evidence 與 build/analyze 均完成；Windows Flutter client 在本機正常與 software-rendering launch 均呈現全白，無法觀察 action state，因此整體 gate 記為 `BLOCKED_UI_ENVIRONMENT`，不得宣稱 `PASS_UI` 或 release-ready。字體檔仍不得在 multilingual font review 前加入。
+本次 Phase 11 的 source、Golden、Android phone/tablet action evidence 與 build/analyze 均完成；Windows Flutter client 的 native action surface 在目前 audit environment 無法觀察，因此 UI validation 記為 `BLOCKED_UI_ENVIRONMENT`，不得宣稱 `PASS_UI`。依 ADR-025，這是外部驗證狀態，不單獨阻止 Phase 12 的 machine-verifiable release status。字體檔仍不得在 multilingual font review 前加入。
 
 ## 19. Phase 12 Gate
 
@@ -239,6 +239,15 @@ Phase 6 的 Android／Windows 實際硬體播放若未執行，只能標記 `pro
 - FFmpeg remux、artifact promotion、download write、deletion 與 orphan scan 均維持 download-root confinement、regular-file/type checks、canonical-parent checks、link／junction fail-closed 與 authoritative manifest-only deletion；
 - FFmpeg subprocess 只能使用 bounded argument vector、`runInShell: false`、root-confined local file URIs、timeout 與 bounded diagnostics；persisted HLS snapshot 不得保存完整 URL、query、credential 或 token；
 - telemetry 維持 default-off，secret-safe diagnostics、source package sandbox、HTTPS／cleartext policy 與 domain／resource budgets 均通過靜態與 deterministic checks；
-- 有 reviewed FFmpeg、原生授權閉合、Windows 可觀察 UI action、Android／Windows 硬體播放與 publish signing evidence 後，才可宣告 release readiness。
+- 有 engineering-reviewed FFmpeg/libmpv/native provenance、publish signing
+  evidence、exact-SHA CI、Windows installer/package checksums 與其他
+  machine-verifiable hard gates 後，可宣告 release readiness；Windows
+  可觀察 UI action 與 Android／Windows 硬體播放若無法取得，必須以
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` 或
+  `HARDWARE_VALIDATION_PENDING` 如實揭露，且不宣稱通過。
 
-目前 Phase 12 稽核若有任何一項僅能取得 source／deterministic evidence，必須標示 `RELEASE_BLOCKED`，不可把 compilation、launch 或 fixture replay 升級成 runtime／hardware／license pass。
+目前 Phase 12 稽核若 machine-verifiable hard gate 僅能取得 source／
+deterministic evidence，必須維持未通過；不可把 compilation、launch 或
+fixture replay 升級成 runtime／hardware pass。外部硬體與 Computer Use
+若不可用，維持 pending/unavailable disclosure，依 ADR-025 與 machine
+release status 分離記錄。

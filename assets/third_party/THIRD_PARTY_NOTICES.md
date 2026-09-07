@@ -1,14 +1,21 @@
 # Wynime third-party notices
 
-This notice is shipped with the Wynime candidate packages. It records the
-exact native media inputs observed for this candidate and points to the
-authoritative upstream license texts. It is not a project-wide license and it
-is not a substitute for independent legal review.
+This notice is shipped with the Wynime v1.0.1 Android APK, Windows installer
+and Windows portable ZIP. It is an engineering attribution and provenance
+record for the release boundary. The Wynime-owned source license is the
+bundled `LICENSE` file; third-party components retain their own upstream
+terms.
+
+## Wynime source
+
+Wynime-owned source code is provided under the MIT License in `LICENSE`.
+The Android APK includes that file as
+`assets/flutter_assets/LICENSE`. Windows distributions include it at their
+root. This notice does not relicense any dependency or native binary.
 
 ## Flutter packages
 
-The following Dart and Flutter wrapper packages are resolved from
-`pubspec.lock`:
+The following packages are resolved from `pubspec.lock`:
 
 | Package | Version | License / source |
 | --- | --- | --- |
@@ -17,99 +24,72 @@ The following Dart and Flutter wrapper packages are resolved from
 | `media_kit_libs_android_video` | 1.3.8 | MIT wrapper; <https://github.com/media-kit/media-kit/blob/main/libs/android/media_kit_libs_android_video/LICENSE> |
 | `media_kit_libs_windows_video` | 1.0.11 | MIT wrapper; <https://github.com/media-kit/media-kit/blob/main/libs/windows/media_kit_libs_windows_video/LICENSE> |
 | `flutter_inappwebview` | 6.2.0-beta.3 | Apache-2.0; <https://github.com/pichillilorenzo/flutter_inappwebview/blob/master/LICENSE> |
+| `flutter_inappwebview_android` | 1.2.0-beta.3 | Apache-2.0; package LICENSE |
+| `flutter_inappwebview_windows` | 0.7.0-beta.3 | Apache-2.0; package LICENSE |
 | `sqlite3_flutter_libs` | 0.6.0+eol | MIT; <https://github.com/simolus3/sqlite3.dart/blob/main/LICENSE> |
 
-## Android native media input
+## Android native media
 
-The Windows and Android packages use the media-kit build repositories rather
-than a locally selected or silently substituted FFmpeg version. Android uses
-the `default` ABI JARs from the `v1.1.7` release:
+The Android video package selects the `default` ABI JARs from the
+media-kit libmpv Android build release `v1.1.7`. The package build script
+verifies the upstream MD5 values before using the JARs. The upstream
+dependency record identifies FFmpeg 6.0, mpv revision
+`78d43740f52db817d98bcf24fb30a76ab6fa13ff`, and the default flavor's
+non-GPL/nonfree dependency branch.
 
-- Source release: <https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7>
-- Build dependency record: <https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh>
-- Upstream build license: <https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/LICENSE>
-- The `default` build records FFmpeg `6.0`, mpv revision
-  `78d43740f52db817d98bcf24fb30a76ab6fa13ff`, `--disable-gpl`,
-  `--disable-nonfree`, and no GPL encoder flavor.
-- The four JAR inputs are verified by the package's declared MD5 values and
-  the candidate records their SHA-256 values in
-  `docs/THIRD_PARTY_PROVENANCE.md`.
+- Release: <https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7>
+- Dependency record: <https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh>
+- Build license: <https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/LICENSE>
+- FFmpeg licensing: <https://ffmpeg.org/legal.html>
 
-The `default` build license file applies to the default/full flavor. The
-transitive source licenses remain governed by each upstream component and are
-listed by the upstream dependency record; a downstream redistributor must
-retain the applicable notices for the exact native binaries shipped.
+The exact JAR and packaged `libmpv.so` hashes are recorded in
+`docs/THIRD_PARTY_PROVENANCE.md` and regenerated in the final candidate
+evidence.
 
-## Windows native media input
+## Windows native media
 
-The locked `media_kit_libs_windows_video` `1.0.11` CMake file selects:
+The locked Windows CMake mechanism selects:
 
-- libmpv archive `mpv-dev-x86_64-20230924-git-652a1dd.7z` from the
+- `mpv-dev-x86_64-20230924-git-652a1dd.7z` from the media-kit
   `2023-09-24` release;
-- ANGLE archive `ANGLE.7z` from `flutter-windows-ANGLE-OpenGL-ES` `v1.0.1`;
-- the exact declared MD5 values and local SHA-256 values recorded in
-  `docs/THIRD_PARTY_PROVENANCE.md`.
+- `ANGLE.7z` from `flutter-windows-ANGLE-OpenGL-ES` `v1.0.1`;
+- package-declared MD5 values, which are checked before extraction.
 
-The candidate's release `libmpv-2.dll` runtime reports:
+The Release `libmpv-2.dll` probe reports mpv
+`v0.36.0-403-g652a1dd907`, FFmpeg `n6.0`, `-Dgpl=false`,
+`-Dlibmpv=true`, `-Dprefer_static=True` and
+`-Degl-angle=enabled`. FFmpeg is statically linked into libmpv; no separate
+FFmpeg DLL is redistributed.
 
-```text
-mpv-version=mpv v0.36.0-403-g652a1dd907
-ffmpeg-version=n6.0
-```
+The Windows distribution also contains:
 
-The current C API probe returns the embedded release configuration; the
-important entries are `-Dgpl=false`, `-Dlibmpv=true`, `-Dprefer_static=True`,
-`-Djavascript=enabled`, `-Dvulkan=disabled`, `-Dlibplacebo=disabled` and
-`-Degl-angle=enabled`. The complete configuration, archive hashes, PE
-dependency audit and exact source URLs are recorded in the provenance
-document. The runtime has FFmpeg statically linked into libmpv; no separate
-FFmpeg DLL is redistributed by the Windows bundle.
-
-The Windows Release directory also contains these native components. The
-source/license references are listed so the exact redistribution review can
-cover the whole bundle rather than only `libmpv-2.dll`:
-
-| Component | Origin / notice reference |
+| Component | License / source reference |
 | --- | --- |
-| `libmpv-2.dll` | media-kit Windows libmpv archive; mpv `Copyright`, LGPL/GPL texts, and linked FFmpeg terms below |
-| `d3dcompiler_47.dll` | Microsoft Direct3D compiler redistributable terms shipped with the Windows toolchain/runtime |
-| `libEGL.dll`, `libGLESv2.dll` | ANGLE archive `v1.0.1`; <https://chromium.googlesource.com/angle/angle/+/main/LICENSE> |
+| `libmpv-2.dll` | media-kit Windows build; <https://github.com/mpv-player/mpv/blob/master/Copyright> |
+| `libEGL.dll`, `libGLESv2.dll` | ANGLE; <https://chromium.googlesource.com/angle/angle/+/main/LICENSE> |
 | `vk_swiftshader.dll` | SwiftShader; <https://github.com/google/swiftshader/blob/main/LICENSE.txt> |
-| `vulkan-1.dll` | Khronos Vulkan Loader; <https://github.com/KhronosGroup/Vulkan-Loader/blob/main/LICENSE.txt> |
+| `vulkan-1.dll` | Vulkan Loader; <https://github.com/KhronosGroup/Vulkan-Loader/blob/main/LICENSE.txt> |
 | `zlib.dll` | zlib; <https://zlib.net/zlib_license.html> |
 | `sqlite3.dll` | SQLite public-domain notice; <https://www.sqlite.org/copyright.html> |
-| `flutter_windows.dll`, `dartjni.dll` | Flutter/Dart SDK runtime; <https://github.com/flutter/flutter/blob/master/LICENSE> |
-| `WebView2Loader.dll` | Microsoft WebView2 loader; <https://github.com/MicrosoftEdge/WebView2/blob/main/LICENSE> |
-| `media_kit_libs_windows_video_plugin.dll`, `media_kit_video_plugin.dll` | MIT wrapper/plugin sources listed above |
-| `flutter_inappwebview_windows_plugin.dll` | Apache-2.0 plugin source listed above |
+| `d3dcompiler_47.dll` | Microsoft Direct3D compiler redistribution terms |
+| `WebView2Loader.dll` | WebView2; <https://github.com/MicrosoftEdge/WebView2/blob/main/LICENSE> |
+| `flutter_windows.dll`, `dartjni.dll` | Flutter/Dart runtime; <https://github.com/flutter/flutter/blob/master/LICENSE> |
+| media-kit and WebView plugin DLLs | package licenses referenced above |
 
-The Microsoft Direct3D compiler redistribution terms and the exact historical
-native archive notice sets still require independent legal confirmation before
-the release gate can be closed.
+The complete archive, runtime, PE dependency and packaged-binary hash
+mapping is recorded in `docs/THIRD_PARTY_PROVENANCE.md`.
 
-Important mpv licensing guidance:
+## Engineering disclosure
 
-- mpv's official `Copyright` file explains the GPLv2+/LGPLv2.1+ modes and
-  warns that `-Dgpl=false` alone is not a license grant;
-- linked FFmpeg and other native libraries retain their own terms;
-- source and license links: <https://github.com/mpv-player/mpv/blob/master/Copyright>,
-  <https://github.com/mpv-player/mpv/blob/master/LICENSE.LGPL>, and
-  <https://github.com/mpv-player/mpv/blob/master/LICENSE.GPL>;
-- FFmpeg licensing references: <https://ffmpeg.org/legal.html> and
-  <https://github.com/FFmpeg/FFmpeg/tree/release/6.0>;
-- ANGLE source and licensing references:
-  <https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/tree/v1.0.1>
-  and <https://chromium.googlesource.com/angle/angle/+/main/LICENSE>.
-
-The archive listings do not contain a complete transitive notice bundle. The
-release workflow therefore requires this notice file in both the Android APK
-and Windows ZIP, while the provenance gate still requires the exact linked
-library/license review to be independently closed before publication.
+The exact source identity, selected versions/configuration, archive hashes,
+packaged hashes and required attribution references were checked for this
+release. No alternate FFmpeg, mpv, ANGLE or WebView2 package was substituted.
+No independent legal opinion is claimed; this notice is not a project-wide
+relicensing statement.
 
 ## Candidate-specific evidence
 
-This file is intentionally version-independent so the package path remains
-stable. The candidate SHA, package hashes, native runtime probe output and
-verification date are recorded in `docs/THIRD_PARTY_PROVENANCE.md`; release
-automation must verify that the packaged copy is present rather than relying
-on the source checkout alone.
+The final candidate SHA and artifact hashes are recorded outside the
+repository in the operation-specific verification transcript. Release
+automation verifies that this notice and `LICENSE` are present in the
+corresponding package contents.

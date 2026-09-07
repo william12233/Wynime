@@ -134,7 +134,15 @@ jobs:
           "$zipalign" -c -v 4 "$apk"
           "$apksigner" verify --verbose "$apk"
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
-          jarsigner -verify -strict build/app/outputs/bundle/release/app-release.aab >/dev/null
+          aab="build/app/outputs/bundle/release/app-release.aab"
+          aab_log="$(mktemp)"
+          if ! jarsigner -verify -verbose -certs "$aab" >"$aab_log" 2>&1; then
+            cat "$aab_log" >&2
+            rm -f "$aab_log"
+            exit 1
+          fi
+          grep -F "jar verified." "$aab_log" >/dev/null
+          rm -f "$aab_log"
 
       - name: Hash signed candidate artifacts
         shell: bash

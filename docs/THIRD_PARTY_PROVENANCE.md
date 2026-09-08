@@ -14,8 +14,10 @@ The locked dependency mechanism, upstream source records, exact downloaded
 archives, packaged native files, runtime identity, build configuration and
 shipped notice references were checked. The selected media-kit Android
 default flavor and Windows libmpv build do not use the GPL encoder flavor or
-nonfree FFmpeg option. The applicable LGPLv2.1 license text is shipped with
-the distributions, and `THIRD_PARTY_SOURCE_OFFER.md` supplies a concrete
+nonfree FFmpeg option. Android's default native media uses the applicable
+LGPLv2.1 text, while the pinned Windows `--enable-version3` FFmpeg build uses
+the applicable LGPLv3 text. Both complete texts are shipped with the
+distributions, and `THIRD_PARTY_SOURCE_OFFER.md` supplies a concrete
 three-year corresponding-source and relink path for the statically
 incorporated FFmpeg/libmpv components. The root `LICENSE` applies only to
 Wynime-owned source code; third-party components remain under their upstream
@@ -65,9 +67,14 @@ harfbuzz `7.2.0`, fribidi `1.0.12`, freetype `2-13-0`, mbedTLS
 `3.4.0`, dav1d `1.2.0`, libxml2 `2.10.3`, libogg `1.3.5`,
 libvorbis `1.3.7` and libvpx `1.13`. The default dependency branch
 does not enable `ENCODERS_GPL`, and the upstream default build license is
-retained in the notice references. The complete `COPYING.LGPLv2.1` text and
-the corresponding-source/relink offer are included in the Android Flutter
-assets and verified by the candidate signing and release workflows.
+retained in the notice references. The complete Android `COPYING.LGPLv2.1`
+text and the complete Windows `COPYING.LGPLv3` text are included in the common
+Android Flutter assets and verified by the candidate signing and release
+workflows. The canonical repository hashes are
+`246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30` for
+LGPLv2.1 and
+`da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768` for
+LGPLv3.
 
 The candidate APK package audit maps the shipped `libmpv.so` files to the
 selected JAR outputs:
@@ -134,9 +141,12 @@ Its embedded and API-reported configuration includes `-Dgpl=false`,
 configuration SHA-256 is
 `f940a8f30f968817e21456395d630c54f8d49304a58a7cc82a259c9699820617`.
 PE dependency inspection showed no separate FFmpeg DLL; FFmpeg is statically
-linked into libmpv. The complete `COPYING.LGPLv2.1` text and the
-corresponding-source/relink offer are copied into both Windows distributions
-and verified by the release workflow.
+linked into libmpv. Because the exact Windows build policy includes
+`--enable-version3`, the complete `COPYING.LGPLv3` text, its locked SHA-256
+and the corresponding-source/relink offer are copied into both Windows
+distributions and verified by the release workflow. `COPYING.LGPLv2.1` is
+retained for the Android native-media license mapping and is also shipped in
+the common package notice set.
 
 The stable native files in the Windows Release tree and their verified
 SHA-256 values are:
@@ -180,9 +190,10 @@ Authoritative references:
 upstream and system-runtime references for the exact release boundary. The
 same file is verified inside the Android APK and copied into both the Windows
 portable ZIP and installer. The Windows distributions also include the root
-`LICENSE`, `COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`, README and
-release notes. Android includes the same LGPL license text and source offer
-under `assets/flutter_assets/assets/third_party/`.
+`LICENSE`, `COPYING.LGPLv2.1`, `COPYING.LGPLv3`,
+`THIRD_PARTY_SOURCE_OFFER.md`, README and release notes. Android includes both
+complete license texts and the source offer under
+`assets/flutter_assets/assets/third_party/`.
 
 The source offer is part of the shipped compliance mechanism: it identifies
 the exact FFmpeg n6.0 and media-kit build inputs, the pinned dependency

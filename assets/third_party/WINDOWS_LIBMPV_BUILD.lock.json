@@ -69,6 +69,25 @@
       "sourceBlob": "ffbcbfc34882110acf2c271bdae994570bd62c39"
     }
   },
+  "licenses": {
+    "androidFfmpeg": {
+      "component": "Android bundled FFmpeg/libmpv native media",
+      "spdx": "LGPL-2.1-or-later",
+      "file": "assets/third_party/COPYING.LGPLv2.1",
+      "sha256": "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30",
+      "sourceUrl": "https://github.com/FFmpeg/FFmpeg/tree/n6.0/COPYING.LGPLv2.1",
+      "sourceNote": "The complete LGPLv2.1 text shipped in the Android assets; its bytes are hash-locked above."
+    },
+    "windowsFfmpeg": {
+      "component": "Windows FFmpeg statically incorporated into libmpv-2.dll",
+      "spdx": "LGPL-3.0-or-later",
+      "file": "assets/third_party/COPYING.LGPLv3",
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "sourceCommit": "8d940a07d19023a98689f353e4425a14688547e9",
+      "sourceUrl": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/8d940a07d19023a98689f353e4425a14688547e9/COPYING.LGPLv3",
+      "sourceNote": "The pinned Windows --enable-version3 build requires the applicable LGPLv3 text."
+    }
+  },
   "runtime": {
     "dll": "libmpv-2.dll",
     "size": 37735936,

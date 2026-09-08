@@ -117,6 +117,12 @@ jobs:
           grep -F "Candidate-specific evidence" "assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
           test -s "assets/third_party/COPYING.LGPLv2.1"
           grep -F "GNU LESSER GENERAL PUBLIC LICENSE" "assets/third_party/COPYING.LGPLv2.1" >/dev/null
+          grep -F "Version 2.1, February 1999" "assets/third_party/COPYING.LGPLv2.1" >/dev/null
+          [[ "$(sha256sum assets/third_party/COPYING.LGPLv2.1 | cut -d' ' -f1)" == "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30" ]]
+          test -s "assets/third_party/COPYING.LGPLv3"
+          grep -F "GNU LESSER GENERAL PUBLIC LICENSE" "assets/third_party/COPYING.LGPLv3" >/dev/null
+          grep -F "Version 3, 29 June 2007" "assets/third_party/COPYING.LGPLv3" >/dev/null
+          [[ "$(sha256sum assets/third_party/COPYING.LGPLv3 | cut -d' ' -f1)" == "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768" ]]
           test -s "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md"
           grep -F "For three years" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           grep -F "relink" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
@@ -127,6 +133,9 @@ jobs:
           grep -F "8ddbe5472465950b87853789f7173f2eedc5586a" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           grep -F "8d940a07d19023a98689f353e4425a14688547e9" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           grep -F "ffbcbfc34882110acf2c271bdae994570bd62c39" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "Android LGPLv2.1" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "Windows LGPLv3" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "COPYING.LGPLv3" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           grep -F "e9abf3b9114fdb565b13a4c194d776c70e416e7d" pubspec.lock >/dev/null
           test -s assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json
           jq -e '
@@ -141,9 +150,17 @@ jobs:
             and .build.ffmpegCommit == "8d940a07d19023a98689f353e4425a14688547e9"
             and .build.ffmpegConfigurePolicy.required == ["--disable-gpl", "--disable-nonfree", "--enable-version3", "--enable-static", "--disable-shared"]
             and .build.ffmpegConfigurePolicy.forbidden == ["--enable-gpl", "--enable-nonfree"]
+            and .licenses.androidFfmpeg.spdx == "LGPL-2.1-or-later"
+            and .licenses.androidFfmpeg.file == "assets/third_party/COPYING.LGPLv2.1"
+            and .licenses.androidFfmpeg.sha256 == "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30"
+            and .licenses.windowsFfmpeg.spdx == "LGPL-3.0-or-later"
+            and .licenses.windowsFfmpeg.file == "assets/third_party/COPYING.LGPLv3"
+            and .licenses.windowsFfmpeg.sha256 == "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+            and .licenses.windowsFfmpeg.sourceCommit == "8d940a07d19023a98689f353e4425a14688547e9"
           ' assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json >/dev/null
           ffmpeg_source="$(mktemp)"
-          trap 'rm -f "$ffmpeg_source"' EXIT
+          lgplv3_source="$(mktemp)"
+          trap 'rm -f "$ffmpeg_source" "$lgplv3_source"' EXIT
           curl --fail --location --retry 3 --silent --show-error \
             -o "$ffmpeg_source" \
             "https://raw.githubusercontent.com/media-kit/libmpv-win32-video-cmake/8ddbe5472465950b87853789f7173f2eedc5586a/packages/ffmpeg.cmake"
@@ -154,6 +171,11 @@ jobs:
             echo 'The pinned Windows FFmpeg build script contains a forbidden enable flag.' >&2
             exit 1
           fi
+          curl --fail --location --retry 3 --silent --show-error \
+            -o "$lgplv3_source" \
+            "$(jq -r '.licenses.windowsFfmpeg.sourceUrl' assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json)"
+          [[ "$(sha256sum "$lgplv3_source" | cut -d' ' -f1)" == "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768" ]]
+          cmp --silent assets/third_party/COPYING.LGPLv3 "$lgplv3_source"
 
           {
             echo "tag=$tag"
@@ -260,6 +282,7 @@ jobs:
           unzip -l "$apk" | grep -F "assets/flutter_assets/LICENSE" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1" >/dev/null
+          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv3" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json" >/dev/null
 
@@ -343,6 +366,7 @@ jobs:
           .github/scripts/verify_windows_native_provenance.ps1
           -DllPath build/windows/x64/runner/Release/libmpv-2.dll
           -LockPath assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json
+          -LicensePath assets/third_party/COPYING.LGPLv3
 
       - name: Package and hash Windows artifact
         shell: pwsh
@@ -366,6 +390,7 @@ jobs:
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'LICENSE') -Destination (Join-Path $stage 'LICENSE') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/THIRD_PARTY_NOTICES.md') -Destination (Join-Path $stage 'THIRD_PARTY_NOTICES.md') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/COPYING.LGPLv2.1') -Destination (Join-Path $stage 'COPYING.LGPLv2.1') -Force
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/COPYING.LGPLv3') -Destination (Join-Path $stage 'COPYING.LGPLv3') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/THIRD_PARTY_SOURCE_OFFER.md') -Destination (Join-Path $stage 'THIRD_PARTY_SOURCE_OFFER.md') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json') -Destination (Join-Path $stage 'WINDOWS_LIBMPV_BUILD.lock.json') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE "docs/release-notes-$version.md") -Destination (Join-Path $stage 'RELEASE_NOTES.md') -Force
@@ -382,6 +407,9 @@ jobs:
           }
           if (-not (Test-Path -LiteralPath (Join-Path $stage 'COPYING.LGPLv2.1') -PathType Leaf)) {
             throw 'COPYING.LGPLv2.1 is missing from the Windows bundle.'
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $stage 'COPYING.LGPLv3') -PathType Leaf)) {
+            throw 'COPYING.LGPLv3 is missing from the Windows bundle.'
           }
           if (-not (Test-Path -LiteralPath (Join-Path $stage 'THIRD_PARTY_SOURCE_OFFER.md') -PathType Leaf)) {
             throw 'THIRD_PARTY_SOURCE_OFFER.md is missing from the Windows bundle.'
@@ -426,7 +454,7 @@ jobs:
             if ($install.ExitCode -ne 0) {
               throw "Installer test install failed with exit code $($install.ExitCode)."
             }
-            foreach ($required in @('wynime.exe', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'COPYING.LGPLv2.1', 'THIRD_PARTY_SOURCE_OFFER.md', 'WINDOWS_LIBMPV_BUILD.lock.json', 'RELEASE_NOTES.md')) {
+            foreach ($required in @('wynime.exe', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'COPYING.LGPLv2.1', 'COPYING.LGPLv3', 'THIRD_PARTY_SOURCE_OFFER.md', 'WINDOWS_LIBMPV_BUILD.lock.json', 'RELEASE_NOTES.md')) {
               if (-not (Test-Path -LiteralPath (Join-Path $installDir $required) -PathType Leaf)) {
                 throw "Installer did not install required file: $required"
               }

@@ -49,12 +49,22 @@ evidence.
 ## LGPL-covered native media and corresponding source
 
 The `-Dgpl=false` native media builds use the LGPL path with FFmpeg
-statically incorporated into libmpv. The complete GNU Lesser General Public
-License version 2.1 text is shipped as `COPYING.LGPLv2.1` in the Windows
-distribution and as
-`assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1` in the Android
-APK. The corresponding source and relink offer is shipped as
-`THIRD_PARTY_SOURCE_OFFER.md` in the Windows distribution and as
+statically incorporated into libmpv. The applicable license differs by
+platform and is not interchangeable:
+
+- **Android LGPLv2.1:** the Android default libmpv build uses the complete
+  `COPYING.LGPLv2.1` text at
+  `assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1`.
+- **Windows LGPLv3:** the pinned Windows FFmpeg build enables
+  `--enable-version3`, so the complete `COPYING.LGPLv3` text is required at
+  the Windows distribution root and is also retained in the common Android
+  asset manifest.
+
+The canonical repository hashes are `246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30`
+for the shipped LGPLv2.1 text and
+`da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768` for the
+FFmpeg-commit LGPLv3 text. The corresponding source and relink offer is
+shipped as `THIRD_PARTY_SOURCE_OFFER.md` in the Windows distribution and as
 `assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md` in
 the Android APK. It provides the immutable Android FFmpeg n6.0 and Windows
 FFmpeg/media-kit source/build references, the exact dependency records, the
@@ -80,8 +90,9 @@ upstream `packages/ffmpeg.cmake` blob
 `--disable-gpl --disable-nonfree --enable-version3 --enable-static
 --disable-shared`; the release gate rejects either forbidden enable flag.
 FFmpeg is statically linked into libmpv; no separate FFmpeg DLL is
-redistributed. The complete machine-readable record is
-`WINDOWS_LIBMPV_BUILD.lock.json`.
+redistributed. Because `--enable-version3` selects the LGPLv3 licensing path,
+the complete machine-readable record and the exact `COPYING.LGPLv3` text are
+shipped together with `WINDOWS_LIBMPV_BUILD.lock.json`.
 
 The exact Windows native hashes are:
 

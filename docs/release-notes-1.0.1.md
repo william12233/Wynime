@@ -21,8 +21,8 @@ is not part of the GitHub Release asset set.
 - English, Traditional Chinese, Simplified Chinese and Japanese localization
   resources.
 - Engineering native provenance, exact archive/binary hashes, the complete
-  applicable LGPLv2.1 text, corresponding-source/relink offer and packaged
-  third-party notices.
+  applicable Android LGPLv2.1 and Windows LGPLv3 texts,
+  corresponding-source/relink offer and packaged third-party notices.
 - A signed Android APK, an unsigned Windows x64 installer and a portable
   Windows x64 ZIP, each with a SHA-256 sidecar.
 
@@ -45,7 +45,7 @@ non-blocking QA, not claimed as passes.
 The installer is built with the `ISCC.exe` available on the `windows-2025`
 runner. It installs the complete Flutter Windows Release bundle, creates a
 Start Menu shortcut, offers an unchecked optional desktop shortcut, includes
-`LICENSE`, `COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`,
+`LICENSE`, `COPYING.LGPLv2.1`, `COPYING.LGPLv3`, `THIRD_PARTY_SOURCE_OFFER.md`,
 `THIRD_PARTY_NOTICES.md`, `README.md` and `RELEASE_NOTES.md`, and supports
 complete uninstall without deleting Wynime user data.
 

@@ -34,8 +34,9 @@ native binary, codec or system runtime.
   version metadata and ABI checks are required and recorded by CI.
 - Windows x64 Flutter Release build: pass on the declared toolchain.
 - Engineering native provenance, archive identity, packaged-binary hashes,
-  LGPLv2.1 license text, corresponding-source/relink offer and shipped
-  notices: `CLOSED_RELEASE_PROVENANCE`.
+  the applicable Android LGPLv2.1 and Windows LGPLv3 license texts,
+  corresponding-source/relink offer and shipped notices:
+  `CLOSED_RELEASE_PROVENANCE`.
 - Android APK, Windows x64 installer and portable ZIP each have a matching
   SHA-256 sidecar.
 - No signing secret, keystore or password is stored in the repository or
@@ -113,24 +114,28 @@ for every native component that enters the release distributions:
   Release directory.
 
 The selected Android default flavor disables GPL/nonfree FFmpeg options
-according to its upstream build record. The Windows release DLL runtime
-reports mpv `v0.39.0-179-g0f78584518`, FFmpeg `N-117622-g8d940a07d` from
-exact commit `8d940a07d19023a98689f353e4425a14688547e9`, `-Dgpl=false`,
-`-Dlibmpv=true`, `-Dprefer_static=True` and static FFmpeg linkage. The exact
-Windows FFmpeg policy is pinned to `packages/ffmpeg.cmake` blob
+according to its upstream build record and is covered by the complete
+`COPYING.LGPLv2.1` text. The Windows release DLL runtime reports mpv
+`v0.39.0-179-g0f78584518`, FFmpeg `N-117622-g8d940a07d` from exact commit
+`8d940a07d19023a98689f353e4425a14688547e9`, `-Dgpl=false`, `-Dlibmpv=true`,
+`-Dprefer_static=True` and static FFmpeg linkage. The exact Windows FFmpeg
+policy is pinned to `packages/ffmpeg.cmake` blob
 `ffbcbfc34882110acf2c271bdae994570bd62c39`, requiring
-`--disable-gpl --disable-nonfree` and rejecting both enable flags. The
-machine-readable lock and runtime verifier close this provenance chain; no
-alternate FFmpeg or native package was substituted to satisfy the gate.
+`--disable-gpl --disable-nonfree --enable-version3 --enable-static
+--disable-shared` and rejecting both forbidden enable flags. The Windows
+`--enable-version3` path is covered by the complete `COPYING.LGPLv3` text.
+The machine-readable lock and runtime verifier close this provenance chain;
+no alternate FFmpeg or native package was substituted to satisfy the gate.
 
 The exact upstream references, archive hashes, packaged hashes, runtime
 probe, dependency versions and notice mapping are maintained in
 `docs/THIRD_PARTY_PROVENANCE.md`. The same candidate notice material is
 verified in the Android APK and Windows distributions by release automation.
-The distributions also carry `COPYING.LGPLv2.1` and
-`THIRD_PARTY_SOURCE_OFFER.md`; the latter identifies the exact corresponding
-source and relink procedure for the statically incorporated FFmpeg/libmpv
-components.
+The distributions carry both `COPYING.LGPLv2.1` for Android's native media
+and `COPYING.LGPLv3` for Windows' `--enable-version3` native media, together
+with `THIRD_PARTY_SOURCE_OFFER.md`. The latter identifies the exact
+corresponding source and relink procedure for the statically incorporated
+FFmpeg/libmpv components.
 No independent legal opinion was obtained; this is a disclosure, not a
 machine release blocker under ADR-025.
 
@@ -138,7 +143,7 @@ machine release blocker under ADR-025.
 
 The Windows portable ZIP includes the complete Flutter Release directory plus
 `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`,
-`COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`,
+`COPYING.LGPLv2.1`, `COPYING.LGPLv3`, `THIRD_PARTY_SOURCE_OFFER.md`,
 `WINDOWS_LIBMPV_BUILD.lock.json`, `RELEASE_NOTES.md` and version-only
 `version.txt`.
 

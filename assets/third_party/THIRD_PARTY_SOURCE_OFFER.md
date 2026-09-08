@@ -2,8 +2,11 @@
 
 This document accompanies every Wynime v1.0.1 distribution. It is the
 corresponding-source and relink manifest for the LGPL-covered native media
-components used by this release. The complete license text is shipped as
-COPYING.LGPLv2.1 beside this document.
+components used by this release. The applicable complete license texts are
+shipped as `COPYING.LGPLv2.1` for Android's native media and `COPYING.LGPLv3`
+for the Windows `--enable-version3` native media. Both texts are retained in
+the common Android asset manifest; the Windows distributions include both at
+their root.
 
 ## Written offer
 
@@ -35,12 +38,14 @@ release automation used to reproduce the application-side relink.
 | Android libmpv build | media-kit libmpv-android-video-build release v1.1.7 (tag object fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768): https://github.com/media-kit/libmpv-android-video-build/tree/v1.1.7 |
 | Android dependency/build record | Pinned record and build scripts: https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh |
 | Android binary input | Exact default ABI JAR release assets and their package-declared MD5 values: https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7 |
+| Android LGPLv2.1 license | Complete shipped text `assets/third_party/COPYING.LGPLv2.1`, canonical repository SHA-256 `246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30`, source reference: https://github.com/FFmpeg/FFmpeg/tree/n6.0/COPYING.LGPLv2.1 |
 | Windows Flutter package input | `media_kit_libs_windows_video` 1.0.12 from the media-kit repository at commit `e9abf3b9114fdb565b13a4c194d776c70e416e7d`, path `libs/windows/media_kit_libs_windows_video`: https://github.com/media-kit/media-kit/tree/e9abf3b9114fdb565b13a4c194d776c70e416e7d/libs/windows/media_kit_libs_windows_video |
 | Windows libmpv build input | Exact x64 development archive `mpv-dev-x86_64-20241021-git-0f78584.7z`, release tag `20241021`, tag commit `8ddbe5472465950b87853789f7173f2eedc5586a`: https://github.com/media-kit/libmpv-win32-video-cmake/releases/tag/20241021 |
 | Windows build workflow/source | Source commit `8ddbe5472465950b87853789f7173f2eedc5586a`; build workflow: https://github.com/media-kit/libmpv-win32-video-cmake/actions/runs/11444402983 |
 | Windows mpv source identity | mpv commit `0f7858451817c5fd5ebdb74a807a7c997662c390`, recorded by the release probe: https://github.com/mpv-player/mpv/tree/0f7858451817c5fd5ebdb74a807a7c997662c390 |
 | Windows FFmpeg source identity | FFmpeg commit `8d940a07d19023a98689f353e4425a14688547e9`, runtime version `N-117622-g8d940a07d`: https://github.com/FFmpeg/FFmpeg/tree/8d940a07d19023a98689f353e4425a14688547e9 |
 | Windows FFmpeg build policy | Exact `packages/ffmpeg.cmake` at source commit `8ddbe5472465950b87853789f7173f2eedc5586a`, blob `ffbcbfc34882110acf2c271bdae994570bd62c39`, requires `--disable-gpl --disable-nonfree --enable-version3 --enable-static --disable-shared`: https://raw.githubusercontent.com/media-kit/libmpv-win32-video-cmake/8ddbe5472465950b87853789f7173f2eedc5586a/packages/ffmpeg.cmake |
+| Windows LGPLv3 license | Exact `COPYING.LGPLv3` from FFmpeg commit `8d940a07d19023a98689f353e4425a14688547e9`, SHA-256 `da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`: https://raw.githubusercontent.com/FFmpeg/FFmpeg/8d940a07d19023a98689f353e4425a14688547e9/COPYING.LGPLv3 |
 | Windows native provenance lock | `assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json`, including archive/DLL hashes, runtime identities, source blobs and custom patch identities |
 | Wynime application/relink inputs | Exact release source and automation at tag v1.0.1: https://github.com/william12233/Wynime/tree/v1.0.1 |
 
@@ -64,7 +69,7 @@ unrecorded FFmpeg or libmpv version.
    workflow. The resulting application can be relinked with the modified
    compatible native library without changing the Wynime source license.
 
-The release workflow fail-closes unless this offer, the full
-COPYING.LGPLv2.1 text, the upstream source references and the package-content
-checks are present. No signing key, password or private material is part of
-the corresponding-source offer.
+The release workflow fail-closes unless this offer, the full applicable
+Android LGPLv2.1 and Windows LGPLv3 texts, their locked hashes, the upstream
+source references and the package-content checks are present. No signing key,
+password or private material is part of the corresponding-source offer.

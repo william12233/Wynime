@@ -132,3 +132,4 @@ jobs:
           .github/scripts/verify_windows_native_provenance.ps1
           -DllPath build/windows/x64/runner/Debug/libmpv-2.dll
           -LockPath assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json
+          -LicensePath assets/third_party/COPYING.LGPLv3

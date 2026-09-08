@@ -4,6 +4,8 @@ param(
     [string]$DllPath,
     [Parameter(Mandatory = $true)]
     [string]$LockPath,
+    [Parameter(Mandatory = $true)]
+    [string]$LicensePath,
     [string]$ArchivePath
 )
 
@@ -11,6 +13,15 @@ $ErrorActionPreference = 'Stop'
 
 function Fail-Provenance([string]$Message) {
     throw "WINDOWS_NATIVE_PROVENANCE_FAIL: $Message"
+}
+
+function Get-CanonicalUtf8Sha256([string]$Path) {
+    $text = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $Path).Path)
+    $text = $text.Replace("`r`n", "`n").Replace("`r", "`n")
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes($text)
+    return [BitConverter]::ToString(
+        [Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+    ).Replace('-', '').ToLowerInvariant()
 }
 
 if (-not (Test-Path -LiteralPath $DllPath -PathType Leaf)) {
@@ -21,6 +32,27 @@ if (-not (Test-Path -LiteralPath $LockPath -PathType Leaf)) {
 }
 
 $lock = Get-Content -Raw -LiteralPath $LockPath | ConvertFrom-Json
+$licenseIdentity = $lock.licenses.windowsFfmpeg
+if ($null -eq $licenseIdentity) {
+    Fail-Provenance 'Windows FFmpeg license identity is missing from the provenance lock.'
+}
+if (-not (Test-Path -LiteralPath $LicensePath -PathType Leaf)) {
+    Fail-Provenance "Windows FFmpeg license is missing: $LicensePath"
+}
+$licenseItem = Get-Item -LiteralPath $LicensePath
+if ($licenseItem.Name -ne [IO.Path]::GetFileName([string]$licenseIdentity.file)) {
+    Fail-Provenance "Windows FFmpeg license filename $($licenseItem.Name) does not match locked file $($licenseIdentity.file)."
+}
+$licenseHash = Get-CanonicalUtf8Sha256 $LicensePath
+if ($licenseHash -ne ([string]$licenseIdentity.sha256).ToLowerInvariant()) {
+    Fail-Provenance "Windows FFmpeg license SHA-256 $licenseHash does not match locked hash $($licenseIdentity.sha256)."
+}
+$licenseText = Get-Content -Raw -LiteralPath $LicensePath
+foreach ($requiredLicenseText in @('GNU LESSER GENERAL PUBLIC LICENSE', 'Version 3, 29 June 2007')) {
+    if (-not $licenseText.Contains($requiredLicenseText)) {
+        Fail-Provenance "Windows FFmpeg license is missing required text: $requiredLicenseText"
+    }
+}
 $dllItem = Get-Item -LiteralPath $DllPath
 $dllHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $DllPath).Hash.ToLowerInvariant()
 if ($dllItem.Length -ne [int64]$lock.runtime.size) {
@@ -159,4 +191,5 @@ Write-Output "dll=$resolvedDllPath"
 Write-Output "dllSha256=$dllHash"
 Write-Output "mpvVersion=$($runtime['mpv-version'])"
 Write-Output "ffmpegVersion=$($runtime['ffmpeg-version'])"
+Write-Output "ffmpegLicenseSha256=$licenseHash"
 Write-Output "configurationSha256=$configurationHash"

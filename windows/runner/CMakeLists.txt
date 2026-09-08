@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.14)
 project(runner LANGUAGES CXX)
 
+# The updater is a separate process so the running Flutter executable can be
+# replaced without elevation. It stages beside the portable folder, waits for
+# the parent to exit, and rolls back when the health marker is not written.
+add_executable(wynime_update WIN32
+  "wynime_update.cpp"
+)
+
+apply_standard_settings(wynime_update)
+target_compile_definitions(wynime_update PRIVATE "NOMINMAX")
+target_link_libraries(wynime_update PRIVATE "shell32.lib")
+
 # Define the application target. To change its name, change BINARY_NAME in the
 # top-level CMakeLists.txt, not the value here, or `flutter run` will no longer
 # work.

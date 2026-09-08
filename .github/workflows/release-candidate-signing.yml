@@ -41,16 +41,16 @@ jobs:
             echo "candidate_sha must be a 40-character lowercase commit SHA." >&2
             exit 1
           fi
-          git fetch origin refs/heads/codex/release-1.0.1-candidate:refs/remotes/origin/codex/release-1.0.1-candidate --no-tags
-          branch_sha="$(git rev-parse refs/remotes/origin/codex/release-1.0.1-candidate^{commit})"
+          git fetch origin refs/heads/main:refs/remotes/origin/main --no-tags
+          branch_sha="$(git rev-parse refs/remotes/origin/main^{commit})"
           checked_out_sha="$(git rev-parse HEAD^{commit})"
           if [[ "$checked_out_sha" != "$CANDIDATE_SHA" || "$branch_sha" != "$CANDIDATE_SHA" ]]; then
-            echo "The requested SHA must equal both the checked-out commit and the pushed candidate branch." >&2
+            echo "The requested SHA must equal both the checked-out commit and origin/main." >&2
             echo "checked_out_sha=$checked_out_sha branch_sha=$branch_sha candidate_sha=$CANDIDATE_SHA" >&2
             exit 1
           fi
           version_line="$(grep -m1 -E '^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+[[:space:]]*$' pubspec.yaml)"
-          if [[ "$version_line" != 'version: 1.0.1+2' ]]; then
+          if [[ "$version_line" != 'version: 1.0.2+3' ]]; then
             echo "Unexpected candidate version: $version_line" >&2
             exit 1
           fi
@@ -250,8 +250,8 @@ jobs:
 
       - name: Build signed APK and AAB
         run: |
-          flutter build apk --release --no-pub --build-name 1.0.1 --build-number 2
-          flutter build appbundle --release --no-pub --build-name 1.0.1 --build-number 2
+          flutter build apk --release --no-pub --build-name 1.0.2 --build-number 3
+          flutter build appbundle --release --no-pub --build-name 1.0.2 --build-number 3
 
       - name: Verify signed APK metadata, alignment and signature
         shell: bash
@@ -263,8 +263,8 @@ jobs:
           zipalign="$build_tools/zipalign"
           apksigner="$build_tools/apksigner"
           package_line="$($aapt2 dump badging "$apk" | grep -m 1 '^package:')"
-          grep -F "versionCode='2'" <<< "$package_line"
-          grep -F "versionName='1.0.1'" <<< "$package_line"
+          grep -F "versionCode='3'" <<< "$package_line"
+          grep -F "versionName='1.0.2'" <<< "$package_line"
           grep -F "native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'" <("$aapt2" dump badging "$apk")
           "$zipalign" -c -v 4 "$apk"
           "$apksigner" verify --verbose "$apk"
@@ -295,9 +295,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/wynime-1.0.1-signed.apk
-          cp build/app/outputs/bundle/release/app-release.aab dist/wynime-1.0.1-signed.aab
-          (cd dist && sha256sum wynime-1.0.1-signed.apk wynime-1.0.1-signed.aab > wynime-1.0.1-signed.sha256)
+          cp build/app/outputs/flutter-apk/app-release.apk dist/wynime-1.0.2-signed.apk
+          cp build/app/outputs/bundle/release/app-release.aab dist/wynime-1.0.2-signed.aab
+          (cd dist && sha256sum wynime-1.0.2-signed.apk wynime-1.0.2-signed.aab > wynime-1.0.2-signed.sha256)
 
       - name: Upload signed inspection artifacts
         uses: actions/upload-artifact@v4

@@ -49,3 +49,7 @@ app.*.map.json
 
 # Phase 0 bootstrap command log
 /docs/phase0-bootstrap.log
+
+# Cloudflare Worker local tooling
+/services/bangumi-broker/node_modules/
+/services/bangumi-broker/.wrangler/

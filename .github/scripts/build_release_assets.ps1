@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [switch]$SkipBuild,
-    [switch]$AllowBlockedInspection,
-    [switch]$SkipInstaller
+    [switch]$AllowBlockedInspection
 )
 
 $ErrorActionPreference = 'Stop'
@@ -58,11 +57,17 @@ $lgplV3LicensePath = Join-Path $repoRoot 'assets\third_party\COPYING.LGPLv3'
 $sourceOfferPath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_SOURCE_OFFER.md'
 $nativeLockPath = Join-Path $repoRoot 'assets\third_party\WINDOWS_LIBMPV_BUILD.lock.json'
 $licensePath = Join-Path $repoRoot 'LICENSE'
+$releaseNotesPath = Join-Path $repoRoot "docs\release-notes-$version.md"
 if (-not (Test-Path -LiteralPath $apkPath -PathType Leaf)) {
     throw "Android release APK is missing: $apkPath"
 }
 if (-not (Test-Path -LiteralPath (Join-Path $windowsPath 'wynime.exe') -PathType Leaf)) {
     throw "Windows release executable is missing: $windowsPath"
+}
+foreach ($requiredWindowsRuntimeFile in @('wynime.exe', 'wynime_update.exe', 'flutter_windows.dll')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $windowsPath $requiredWindowsRuntimeFile) -PathType Leaf)) {
+        throw "Windows ZIP runtime is missing: $requiredWindowsRuntimeFile"
+    }
 }
 if (-not (Test-Path -LiteralPath $thirdPartyNoticePath -PathType Leaf)) {
     throw "Third-party notice is missing: $thirdPartyNoticePath"
@@ -81,6 +86,9 @@ if (-not (Test-Path -LiteralPath $sourceOfferPath -PathType Leaf)) {
 }
 if (-not (Test-Path -LiteralPath $nativeLockPath -PathType Leaf)) {
     throw "Windows native provenance lock is missing: $nativeLockPath"
+}
+if (-not (Test-Path -LiteralPath $releaseNotesPath -PathType Leaf)) {
+    throw "Versioned release notes are missing: $releaseNotesPath"
 }
 $nativeLock = Get-Content -Raw -LiteralPath $nativeLockPath | ConvertFrom-Json
 if ($null -eq $nativeLock.licenses.androidFfmpeg -or $null -eq $nativeLock.licenses.windowsFfmpeg) {
@@ -205,7 +213,7 @@ Copy-Item -LiteralPath $gplV3LicensePath -Destination (Join-Path $stagePath 'COP
 Copy-Item -LiteralPath $lgplV3LicensePath -Destination (Join-Path $stagePath 'COPYING.LGPLv3') -Force
 Copy-Item -LiteralPath $sourceOfferPath -Destination (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -Force
 Copy-Item -LiteralPath $nativeLockPath -Destination (Join-Path $stagePath 'WINDOWS_LIBMPV_BUILD.lock.json') -Force
-Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\release-notes-1.0.1.md') -Destination (Join-Path $stagePath 'RELEASE_NOTES.md') -Force
+Copy-Item -LiteralPath $releaseNotesPath -Destination (Join-Path $stagePath 'RELEASE_NOTES.md') -Force
 Set-Content -LiteralPath (Join-Path $stagePath 'version.txt') -Value $version -NoNewline -Encoding ascii
 
 if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md') -PathType Leaf)) {
@@ -238,40 +246,7 @@ Set-Content -LiteralPath "$zipAssetPath.sha256" -Value "$zipHash  $zipAssetName"
 
 Remove-Item -LiteralPath $stagePath -Recurse -Force
 
-$installerAssetName = "wynime-$version-windows-x64-setup.exe"
-$installerAssetPath = Join-Path $outputPath $installerAssetName
-if (-not $SkipInstaller) {
-    $isccCommand = Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-    $isccPath = if ($isccCommand) { $isccCommand.Source } else {
-        @(
-            'C:\Program Files (x86)\Inno Setup 6\ISCC.exe',
-            'C:\Program Files\Inno Setup 6\ISCC.exe'
-        ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
-    }
-    if ([string]::IsNullOrWhiteSpace($isccPath)) {
-        throw 'Inno Setup compiler ISCC.exe is required to build the Windows installer. Use -SkipInstaller only for portable-only local inspection.'
-    }
-
-    $issPath = Join-Path $repoRoot 'installer\windows\wynime.iss'
-    if (-not (Test-Path -LiteralPath $issPath -PathType Leaf)) {
-        throw "Inno Setup script is missing: $issPath"
-    }
-    Remove-Item -LiteralPath $installerAssetPath -Force -ErrorAction SilentlyContinue
-    & $isccPath $issPath "/DMyAppVersion=$version" "/O$outputPath"
-    if ($LASTEXITCODE -ne 0) {
-        throw "Inno Setup failed with exit code $LASTEXITCODE."
-    }
-    if (-not (Test-Path -LiteralPath $installerAssetPath -PathType Leaf)) {
-        throw "Windows installer is missing: $installerAssetPath"
-    }
-    $installerHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installerAssetPath).Hash.ToLowerInvariant()
-    Set-Content -LiteralPath "$installerAssetPath.sha256" -Value "$installerHash  $installerAssetName" -NoNewline -Encoding ascii
-}
-
 Write-Output "version=$version"
 Write-Output "versionCode=$versionCode"
 Write-Output "android=$apkAssetPath|$apkHash"
 Write-Output "windows=$zipAssetPath|$zipHash"
-if (-not $SkipInstaller) {
-    Write-Output "installer=$installerAssetPath|$installerHash"
-}

@@ -12,34 +12,36 @@ final class DriftArtifactManifestRepository
 
   @override
   Future<void> create(DownloadArtifactManifest manifest) {
-    return _database.transaction(() async {
-      await _database
-          .into(_database.artifactManifests)
-          .insert(
-            ArtifactManifestsCompanion(
-              manifestId: Value(manifest.manifestId),
-              downloadId: Value(manifest.downloadId),
-              createdAt: Value(manifest.createdAt),
-            ),
-          );
-      if (manifest.artifacts.isNotEmpty) {
-        await _database.batch((batch) {
-          batch.insertAll(
-            _database.artifactRows,
-            manifest.artifacts
-                .map(
-                  (artifact) => ArtifactRowsCompanion(
-                    artifactId: Value(artifact.artifactId),
-                    manifestId: Value(manifest.manifestId),
-                    kind: Value(artifact.kind.name),
-                    fileUri: Value(artifact.fileUri.toString()),
-                  ),
-                )
-                .toList(growable: false),
-          );
-        });
-      }
-    });
+    return _database.runWrite(
+      () => _database.transaction(() async {
+        await _database
+            .into(_database.artifactManifests)
+            .insert(
+              ArtifactManifestsCompanion(
+                manifestId: Value(manifest.manifestId),
+                downloadId: Value(manifest.downloadId),
+                createdAt: Value(manifest.createdAt),
+              ),
+            );
+        if (manifest.artifacts.isNotEmpty) {
+          await _database.batch((batch) {
+            batch.insertAll(
+              _database.artifactRows,
+              manifest.artifacts
+                  .map(
+                    (artifact) => ArtifactRowsCompanion(
+                      artifactId: Value(artifact.artifactId),
+                      manifestId: Value(manifest.manifestId),
+                      kind: Value(artifact.kind.name),
+                      fileUri: Value(artifact.fileUri.toString()),
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          });
+        }
+      }),
+    );
   }
 
   @override

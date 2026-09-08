@@ -11,8 +11,10 @@ publisher.
 - `X.Y.Z` must exactly match the base version in `pubspec.yaml`, and the
   `+` suffix must be a positive Android build number.
 - `docs/release-notes-X.Y.Z.md` must exist.
-- The `v1.0.1` candidate is application version `1.0.1`, Android
-  `versionCode` `2`.
+- The `v1.0.2` candidate is application version `1.0.2`, Android
+  `versionCode` `3`.
+- `v1.0.1` remains the historical candidate and its published Release is not
+  modified by this process.
 - The tag target, push trigger SHA and current `origin/main` must be the same
   immutable commit.
 
@@ -27,8 +29,7 @@ The following gates are machine-verifiable and block publication:
    `WYNIME_RELEASE_*` keystore;
 5. `apksigner verify`, APK alignment, version metadata and required ABIs pass;
 6. the Windows x64 Flutter Release build succeeds;
-7. the Android APK, Windows installer and portable ZIP each have a matching
-   SHA-256 sidecar;
+7. the Android APK and Windows ZIP each have a matching SHA-256 sidecar;
 8. `THIRD_PARTY_NOTICES.md`, the complete applicable Android and Windows
    `COPYING.GPLv3` and `COPYING.LGPLv3` texts, and
    `THIRD_PARTY_SOURCE_OFFER.md` are present in the Android and Windows
@@ -85,69 +86,53 @@ Combined Work. The corresponding-source/relink mechanism is shipped as
 
 ## GitHub Release assets
 
-The release contains exactly these six files:
+The release contains exactly these four files. Windows is ZIP-only for all
+releases after the historical `v1.0.1` candidate; no standalone setup.exe is
+published.
 
 | Platform | Artifact | SHA-256 sidecar |
 | --- | --- | --- |
 | Android multi-ABI | `wynime-X.Y.Z.apk` | `wynime-X.Y.Z.apk.sha256` |
-| Windows x64 installer | `wynime-X.Y.Z-windows-x64-setup.exe` | `wynime-X.Y.Z-windows-x64-setup.exe.sha256` |
-| Windows x64 portable | `wynime-X.Y.Z.zip` | `wynime-X.Y.Z.zip.sha256` |
+| Windows x64 ZIP | `wynime-X.Y.Z.zip` | `wynime-X.Y.Z.zip.sha256` |
 
 The AAB remains an internal/Play Store handoff artifact and is not uploaded
 to the GitHub Release by this contract.
 
-## Windows installer
+`installer/windows/wynime.iss` remains in the repository as historical
+`v1.0.1` reference material only. It is not invoked by the current workflow
+or local release helper.
 
-`installer/windows/wynime.iss` is compiled with the `ISCC.exe` already
-available on the `windows-2025` runner. The installer:
-
-- installs the complete Flutter Windows Release bundle;
-- uses a stable AppId and per-user default directory;
-- creates a Start Menu shortcut;
-- offers an unchecked optional desktop shortcut;
-- includes `LICENSE`, `COPYING.GPLv3`, `COPYING.LGPLv3`,
-  `THIRD_PARTY_SOURCE_OFFER.md`,
-  `THIRD_PARTY_NOTICES.md`, `WINDOWS_LIBMPV_BUILD.lock.json`, `README.md` and
-  release notes;
-- creates a complete uninstaller without deleting Wynime user data;
-- uses app name `Wynime`, version `1.0.1`, publisher `william12233` and
-  executable `wynime.exe`.
-
-No Authenticode certificate is configured for this candidate. The installer
-is therefore intentionally unsigned and may trigger a Windows SmartScreen
-warning; no unsigned installer is presented as signed evidence.
-
-The portable ZIP contains the complete
+The Windows ZIP contains the complete
 `build/windows/x64/runner/Release` directory plus `README.md`, `LICENSE`,
 `THIRD_PARTY_NOTICES.md`, `COPYING.GPLv3`, `COPYING.LGPLv3`,
 `THIRD_PARTY_SOURCE_OFFER.md`, `WINDOWS_LIBMPV_BUILD.lock.json`,
-`RELEASE_NOTES.md` and a version-only `version.txt`.
+`RELEASE_NOTES.md` and a version-only `version.txt`. It must also contain the
+portable `wynime_update.exe` helper used by Settings for same-disk staging,
+backup, replacement, health-marker verification and rollback. The helper never
+requests elevation; a non-writable installation reports
+`manual_update_required`.
 
 ## Local preparation
 
-The checked-in helper builds the local inspection APK and Windows bundle,
-creates the portable ZIP, and builds the installer when `ISCC.exe` is
-available:
+The checked-in helper builds the local inspection APK and Windows ZIP:
 
 ~~~powershell
 pwsh -NoProfile -File .github/scripts/build_release_assets.ps1
 ~~~
 
-Use `-SkipInstaller` only for portable-only local diagnostics when Inno Setup
-is unavailable. The helper never creates a tag, pushes a branch or calls the
+The helper never creates a tag, pushes a branch or calls the
 GitHub Release API. Local APK output is unsigned unless the external signing
 properties are configured; official publication signing is performed and
 verified in GitHub Actions.
 
 ## Release notes and validation disclosure
 
-`docs/release-notes-1.0.1.md` must list Android APK, Windows x64 installer
-and Windows x64 portable ZIP. It must state that automated
+Versioned release notes for new releases must list the Android APK and
+Windows x64 ZIP. The historical `docs/release-notes-1.0.1.md` may continue to
+describe its already-published installer. New notes must state that automated
 tests/build/signing passed, emulator UI evidence passed where exercised,
 physical Android/Windows validation is pending, and native Windows Computer
 Use action-level validation is unavailable in the audit environment.
-It must also disclose that the Windows installer is unsigned when no
-certificate is configured.
 
 ## Publication sequence
 
@@ -161,7 +146,7 @@ certificate is configured.
    the signed APK/AAB hashes.
 6. Confirm the worktree is clean and create the annotated `vX.Y.Z` tag at
    that exact SHA.
-7. Push the tag and let `release.yml` build, verify and publish the six
+7. Push the tag and let `release.yml` build, verify and publish the four
    immutable release assets.
 8. Monitor the workflow and verify the GitHub Release URL, tag target,
    asset set, sidecars and successful conclusion.

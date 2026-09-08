@@ -202,3 +202,28 @@ exposure or SHA mismatch remains a hard blocker. `LICENSE` applies only to
 Wynime-owned source code; every third-party component retains its own
 upstream terms and notice references. Release automation remains exact-SHA,
 non-force and protected by the GitHub release environment.
+
+## ADR-026 — Windows portable updates are ZIP-only and database-quiesced
+
+**Status:** Accepted
+
+**Decision:** Future Windows releases publish only the portable ZIP and its
+SHA-256 sidecar; the ZIP contains `wynime.exe`, `wynime_update.exe`,
+`version.txt`, the Flutter runtime and required notices. The Settings update
+flow prepares all staging paths first, then creates a SQLite-consistent
+recovery point through a shared database write gate. The native helper starts
+only after the gate has drained and blocked all application writes, waits for
+the parent to exit, and owns backup, replacement, health-marker and rollback.
+
+**Reason:** A portable ZIP keeps installation reversible without requiring a
+setup executable or elevation. Quiescing every repository write closes the
+window in which a live Drift connection could commit data after the recovery
+snapshot but before replacement, while still allowing a failed process start
+to resume the running application safely.
+
+**Safety:** SHA-256 is an integrity check rather than a signature. A failed
+pre-handoff start resumes writes, deletes the recovery snapshot and removes
+all updater-owned staging. A successful helper handoff leaves the database
+closed by process termination, and the helper restores the prior install and
+database snapshot on failed startup. Historical releases retain their
+original assets and installer evidence.

@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.1 machine release gates are closed for the candidate commit that
+The v1.0.2 machine release gates are closed for the candidate commit that
 contains this status record. The exact candidate SHA is revalidated by
 GitHub Actions against the tag trigger and `origin/main`; all release
 artifacts are rebuilt from that same immutable SHA. No unexecuted hardware or
@@ -38,11 +38,11 @@ native binary, codec or system runtime.
   Combined Work text,
   corresponding-source/relink offer and shipped notices:
   `CLOSED_RELEASE_PROVENANCE`.
-- Android APK, Windows x64 installer and portable ZIP each have a matching
-  SHA-256 sidecar.
+- Android APK and Windows x64 portable ZIP each have a matching SHA-256
+  sidecar.
 - No signing secret, keystore or password is stored in the repository or
   release artifacts.
-- Versioned release notes exist and describe the actual v1.0.1 boundary.
+- Versioned release notes exist and describe the actual v1.0.2 boundary.
 - The release workflow requires the tag, trigger SHA, `origin/main`,
   successful exact-SHA phase-0 CI and publication checkout to agree.
 
@@ -63,11 +63,12 @@ release gates:
   `WINDOWS_CUA_VALIDATION_UNAVAILABLE` (`apps=[]`) in the audit environment.
 - Additional manual exploratory UI testing: `PENDING`.
 
-The fixed Android phone and tablet emulator action paths were exercised and
-recorded as deterministic UI evidence. They do not substitute for physical
-hardware playback. The unavailable Windows Computer Use surface is recorded
-as an environment limitation and does not claim compact, expanded, live
-resize, mouse or keyboard actions passed.
+The fixed Android phone and tablet emulator action paths were exercised for
+the earlier v1.0.1 shell and recorded as deterministic UI evidence. They do
+not substitute for physical hardware playback or action-level validation of
+the new Bangumi/update flows. The unavailable Windows Computer Use surface is
+recorded as an environment limitation and does not claim compact, expanded,
+live resize, mouse or keyboard actions passed.
 
 ## Runtime and UI evidence
 
@@ -145,7 +146,7 @@ FFmpeg/libmpv components.
 No independent legal opinion was obtained; this is a disclosure, not a
 machine release blocker under ADR-025.
 
-## Package and installer boundary
+## Package boundary
 
 The Windows portable ZIP includes the complete Flutter Release directory plus
 `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `COPYING.GPLv3`,
@@ -154,18 +155,16 @@ The Windows portable ZIP includes the complete Flutter Release directory plus
 `WINDOWS_LIBMPV_BUILD.lock.json`, `RELEASE_NOTES.md` and version-only
 `version.txt`.
 
-The Windows installer is compiled from
-`installer/windows/wynime.iss` with the runner's `ISCC.exe`. It installs
-the complete bundle, creates a Start Menu shortcut, offers an unchecked
-desktop shortcut, includes the license, GPLv3/LGPLv3 texts, corresponding-source offer,
-native provenance lock, notices and release notes, and provides a complete
-uninstaller. No Authenticode
-certificate is configured, so the
-installer is intentionally unsigned and may trigger SmartScreen.
+The historical `installer/windows/wynime.iss` file is retained as reference
+material only. It is not invoked by the current release workflow. Windows
+publication is ZIP-only and the ZIP includes the complete Flutter Release
+bundle, the portable `wynime_update.exe` helper, version file, license texts,
+corresponding-source offer, native provenance lock, notices and release notes.
 
-Standalone FFmpeg execution, remuxing, MKV fallback, downloads, Bangumi
-account/synchronization, DRM/paywall bypass, magnet/BT/seeding and
-source-provided executable adapters remain outside this 1.0.1 boundary.
+Standalone FFmpeg execution, remuxing, MKV fallback, DRM/paywall bypass,
+magnet/BT/seeding and source-provided executable adapters remain outside this
+1.0.2 boundary. Bangumi source integration is included, while live account
+validation and production Worker deployment remain external boundaries.
 
 ## Security and privacy
 
@@ -184,5 +183,5 @@ The machine-verifiable status is `RELEASE_READY`. External validation
 disclosures remain visible and must be preserved in release notes; they must
 not be rewritten as passes or used to imply hardware playback. Publication
 still requires the exact annotated tag, exact-SHA CI, signed APK verification,
-installer/ZIP build, six-asset checksum verification and the protected GitHub
-release environment.
+ZIP build, four-asset checksum verification and the protected GitHub release
+environment.

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wynime/l10n/app_localizations.dart';
+import 'package:wynime/src/application/bangumi_session_controller.dart';
+import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/app/app_destination.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
 import 'package:wynime/src/design_system/tokens/breakpoints.dart';
@@ -10,11 +12,15 @@ class ResponsiveAppShell extends StatefulWidget {
   const ResponsiveAppShell({
     required this.settings,
     required this.onSettingsChanged,
+    this.bangumi,
+    this.softwareUpdates,
     super.key,
   });
 
   final AppSettings settings;
   final ValueChanged<AppSettings> onSettingsChanged;
+  final BangumiSessionController? bangumi;
+  final SoftwareUpdateController? softwareUpdates;
 
   @override
   State<ResponsiveAppShell> createState() => _ResponsiveAppShellState();
@@ -32,60 +38,73 @@ class _ResponsiveAppShellState extends State<ResponsiveAppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
-    final destinations = AppDestination.values;
-    final selectedDestination = destinations[_selectedIndex];
+    final listenables = <Listenable>[
+      if (widget.bangumi != null) widget.bangumi!,
+      if (widget.softwareUpdates != null) widget.softwareUpdates!,
+    ];
+    return AnimatedBuilder(
+      animation: Listenable.merge(listenables),
+      builder: (context, _) {
+        final localizations = AppLocalizations.of(context);
+        final destinations = AppDestination.values;
+        final selectedDestination = destinations[_selectedIndex];
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final windowClass = WynimeBreakpoints.classify(
+              constraints.maxWidth,
+            );
+            final page = buildWynimePage(
+              selectedDestination,
+              localizations,
+              settings: widget.settings,
+              onSettingsChanged: widget.onSettingsChanged,
+              onNavigate: (destination) =>
+                  _selectDestination(destination.index),
+              showPageHeader: windowClass != WynimeWindowClass.compact,
+              bangumi: widget.bangumi,
+              softwareUpdates: widget.softwareUpdates,
+            );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final windowClass = WynimeBreakpoints.classify(constraints.maxWidth);
-        final page = buildWynimePage(
-          selectedDestination,
-          localizations,
-          settings: widget.settings,
-          onSettingsChanged: widget.onSettingsChanged,
-          onNavigate: (destination) => _selectDestination(destination.index),
-          showPageHeader: windowClass != WynimeWindowClass.compact,
+            return switch (windowClass) {
+              WynimeWindowClass.compact => Scaffold(
+                appBar: AppBar(
+                  title: Text(selectedDestination.label(localizations)),
+                ),
+                body: page,
+                bottomNavigationBar: NavigationBar(
+                  selectedIndex: _selectedIndex,
+                  labelBehavior:
+                      NavigationDestinationLabelBehavior.onlyShowSelected,
+                  onDestinationSelected: _selectDestination,
+                  destinations: [
+                    for (final destination in destinations)
+                      NavigationDestination(
+                        icon: Icon(destination.icon),
+                        selectedIcon: Icon(destination.selectedIcon),
+                        label: destination.label(localizations),
+                      ),
+                  ],
+                ),
+              ),
+              WynimeWindowClass.medium => _RailShell(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _selectDestination,
+                destinations: destinations,
+                localizations: localizations,
+                page: page,
+                extended: false,
+              ),
+              WynimeWindowClass.expanded => _RailShell(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _selectDestination,
+                destinations: destinations,
+                localizations: localizations,
+                page: page,
+                extended: true,
+              ),
+            };
+          },
         );
-
-        return switch (windowClass) {
-          WynimeWindowClass.compact => Scaffold(
-            appBar: AppBar(
-              title: Text(selectedDestination.label(localizations)),
-            ),
-            body: page,
-            bottomNavigationBar: NavigationBar(
-              selectedIndex: _selectedIndex,
-              labelBehavior:
-                  NavigationDestinationLabelBehavior.onlyShowSelected,
-              onDestinationSelected: _selectDestination,
-              destinations: [
-                for (final destination in destinations)
-                  NavigationDestination(
-                    icon: Icon(destination.icon),
-                    selectedIcon: Icon(destination.selectedIcon),
-                    label: destination.label(localizations),
-                  ),
-              ],
-            ),
-          ),
-          WynimeWindowClass.medium => _RailShell(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _selectDestination,
-            destinations: destinations,
-            localizations: localizations,
-            page: page,
-            extended: false,
-          ),
-          WynimeWindowClass.expanded => _RailShell(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: _selectDestination,
-            destinations: destinations,
-            localizations: localizations,
-            page: page,
-            extended: true,
-          ),
-        };
       },
     );
   }

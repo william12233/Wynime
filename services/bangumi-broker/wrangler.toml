@@ -1,0 +1,16 @@
+name = "wynime-bangumi-broker"
+main = "src/index.ts"
+compatibility_date = "2026-09-08"
+
+[[durable_objects.bindings]]
+name = "REPLAY_MARKERS"
+class_name = "ReplayMarker"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ReplayMarker"]
+
+[vars]
+BANGUMI_AUTHORIZE_URL = "https://bgm.tv/oauth/authorize"
+BANGUMI_TOKEN_URL = "https://bgm.tv/oauth/access_token"
+APP_LINK_HOST = "auth.wynime.app"

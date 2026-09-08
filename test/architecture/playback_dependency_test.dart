@@ -17,8 +17,9 @@ void main() {
         if (content.contains('package:flutter/services.dart')) {
           expect(
             path,
-            startsWith('lib/src/platform/playback/'),
-            reason: '$path imports Flutter channels outside Platform.',
+            startsWith('lib/src/platform/'),
+            reason:
+                '$path imports Flutter channels outside the Platform boundary.',
           );
         }
         if (path.startsWith('lib/src/domain/')) {

@@ -20,7 +20,9 @@ final class DriftDeleteJobRepository implements DeleteJobRepository {
         'New DeleteJobs must start in pending state.',
       );
     }
-    await _database.into(_database.deleteJobRows).insert(_companion(job));
+    await _database.runWrite(
+      () => _database.into(_database.deleteJobRows).insert(_companion(job)),
+    );
   }
 
   @override
@@ -62,22 +64,24 @@ final class DriftDeleteJobRepository implements DeleteJobRepository {
 
   @override
   Future<List<DeleteJob>> recoverInterrupted(DateTime now) {
-    return _database.transaction(() async {
-      final query = _database.select(_database.deleteJobRows)
-        ..where((table) => table.status.equals(DeleteJobStatus.running.name));
-      final running = await query.get();
-      final recovered = <DeleteJob>[];
-      for (final row in running) {
-        final job = _map(row).transitionTo(
-          DeleteJobStatus.failed,
-          now: now,
-          failureCode: interruptedFailureCode,
-        );
-        await _write(job);
-        recovered.add(job);
-      }
-      return List<DeleteJob>.unmodifiable(recovered);
-    });
+    return _database.runWrite(
+      () => _database.transaction(() async {
+        final query = _database.select(_database.deleteJobRows)
+          ..where((table) => table.status.equals(DeleteJobStatus.running.name));
+        final running = await query.get();
+        final recovered = <DeleteJob>[];
+        for (final row in running) {
+          final job = _map(row).transitionTo(
+            DeleteJobStatus.failed,
+            now: now,
+            failureCode: interruptedFailureCode,
+          );
+          await _write(job);
+          recovered.add(job);
+        }
+        return List<DeleteJob>.unmodifiable(recovered);
+      }),
+    );
   }
 
   @override
@@ -96,16 +100,18 @@ final class DriftDeleteJobRepository implements DeleteJobRepository {
     DateTime now, {
     String? failureCode,
   }) {
-    return _database.transaction(() async {
-      final current = await _require(jobId);
-      final updated = current.transitionTo(
-        target,
-        now: now,
-        failureCode: failureCode,
-      );
-      await _write(updated);
-      return updated;
-    });
+    return _database.runWrite(
+      () => _database.transaction(() async {
+        final current = await _require(jobId);
+        final updated = current.transitionTo(
+          target,
+          now: now,
+          failureCode: failureCode,
+        );
+        await _write(updated);
+        return updated;
+      }),
+    );
   }
 
   Future<DeleteJob> _require(String jobId) async {

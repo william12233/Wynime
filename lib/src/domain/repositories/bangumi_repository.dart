@@ -1,4 +1,6 @@
-enum BangumiCollectionStatus { wish, watching, completed, onHold, dropped }
+export '../models/bangumi_models.dart' show BangumiCollectionStatus;
+
+import '../models/bangumi_models.dart';
 
 final class BangumiEpisodeProgress {
   const BangumiEpisodeProgress({

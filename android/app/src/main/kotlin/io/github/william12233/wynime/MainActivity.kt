@@ -1,6 +1,10 @@
 package io.github.william12233.wynime
 
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.core.content.FileProvider
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
@@ -16,11 +20,14 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 
 class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private companion object {
         const val METHOD_CHANNEL = "io.github.william12233.wynime/media3"
         const val EVENT_CHANNEL = "io.github.william12233.wynime/media3/events"
+        const val UPDATE_CHANNEL = "io.github.william12233.wynime/software_update"
+        const val AUTH_CHANNEL = "io.github.william12233.wynime/bangumi_auth"
     }
 
     private data class TrackDescriptor(
@@ -49,6 +56,8 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private var activeSessionId: String? = null
     private var activeTimelineMapIdentity: String? = null
     private val boundTracks = mutableMapOf<Int, BoundTrack>()
+    private var pendingAuthCallback: Map<String, String?>? = null
+    private var pendingAuthResult: MethodChannel.Result? = null
 
     private val playerListener =
         object : Player.Listener {
@@ -99,8 +108,106 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
             .setMethodCallHandler(::handleMethodCall)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_CHANNEL)
+            .setMethodCallHandler(::handleUpdateMethodCall)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AUTH_CHANNEL)
+            .setMethodCallHandler(::handleAuthMethodCall)
+        consumeAuthIntent(intent)
         EventChannel(flutterEngine.dartExecutor.binaryMessenger, EVENT_CHANNEL)
             .setStreamHandler(this)
+    }
+
+    private fun handleAuthMethodCall(call: MethodCall, result: MethodChannel.Result) {
+        when (call.method) {
+            "prepareCallback" -> result.success(null)
+            "waitForCallback" -> {
+                val pending = pendingAuthCallback
+                if (pending != null) {
+                    pendingAuthCallback = null
+                    result.success(pending)
+                } else {
+                    pendingAuthResult = result
+                }
+            }
+            else -> result.notImplemented()
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        consumeAuthIntent(intent)
+    }
+
+    private fun consumeAuthIntent(intent: Intent?) {
+        val data = intent?.data ?: return
+        if (data.scheme != "https" || data.host != "auth.wynime.app" ||
+            data.path != "/oauth/callback") {
+            return
+        }
+        val callback = mapOf(
+            "state" to data.getQueryParameter("state"),
+            "ticket" to data.getQueryParameter("ticket"),
+            "code" to data.getQueryParameter("code"),
+            "error" to data.getQueryParameter("error"),
+        )
+        val waiting = pendingAuthResult
+        if (waiting != null) {
+            pendingAuthResult = null
+            waiting.success(callback)
+        } else {
+            pendingAuthCallback = callback
+        }
+    }
+
+    private fun handleUpdateMethodCall(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            when (call.method) {
+                "canInstallPackages" -> {
+                    val allowed = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        packageManager.canRequestPackageInstalls()
+                    } else {
+                        true
+                    }
+                    result.success(allowed)
+                }
+                "openInstallPermissionSettings" -> {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:$packageName"),
+                    )
+                    startActivity(intent)
+                    result.success(null)
+                }
+                "installApk" -> {
+                    val rawPath = call.argument<String>("path")?.trim()
+                        ?: throw IllegalArgumentException("path is required")
+                    val file = File(rawPath).canonicalFile
+                    require(file.isFile && file.extension.equals("apk", ignoreCase = true)) {
+                        "Invalid APK path"
+                    }
+                    val uri = FileProvider.getUriForFile(
+                        this,
+                        "$packageName.fileprovider",
+                        file,
+                    )
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "application/vnd.android.package-archive")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    startActivity(intent)
+                    // Starting the system installer is deliberately not an
+                    // installation-success signal.
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        } catch (_: IllegalArgumentException) {
+            result.error("invalid_update_request", null, null)
+        } catch (_: Exception) {
+            result.error("update_installer_failed", null, null)
+        }
     }
 
     private fun handleMethodCall(call: MethodCall, result: MethodChannel.Result) {

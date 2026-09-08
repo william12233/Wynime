@@ -4,6 +4,32 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.2 - Release-ready
+
+### Windows distribution and updates
+
+- Changed future Windows publication to a portable ZIP plus SHA-256 sidecar;
+  no standalone setup.exe is published.
+- Added the portable `wynime_update.exe` helper and Settings manual update
+  flow with bounded ZIP validation, same-disk replacement, health marking and
+  rollback/manual-update-required handling.
+
+### Bangumi Phase 9 source implementation
+
+- Added memory-only OAuth session contracts, the Cloudflare OAuth broker,
+  official `api.bgm.tv` client adapter and bounded error/pagination handling.
+- Added account-scoped Drift v3 collections, episodes, calendar cache,
+  local-first queued synchronization, retry and visible conflict resolution.
+- Connected Bangumi state to Settings, Home, Library and subject detail flows;
+  live-account and production Worker validation remain separately disclosed.
+
+### Release status
+
+The machine-verifiable release gates and native provenance checks are closed
+for the immutable candidate. Live Bangumi account/OAuth validation and
+action-level UI validation remain disclosed external boundaries. See
+`docs/PHASE12_STATUS.md` and `docs/release-notes-1.0.2.md`.
+
 ## 1.0.1 - Release-ready
 
 ### Release candidate scope

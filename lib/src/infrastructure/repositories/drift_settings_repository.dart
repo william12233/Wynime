@@ -30,17 +30,19 @@ final class DriftSettingsRepository implements SettingsRepository {
 
   @override
   Future<void> save(AppSettings settings) async {
-    await _database
-        .into(_database.appSettingsRows)
-        .insertOnConflictUpdate(
-          AppSettingsRowsCompanion(
-            singletonId: const Value(0),
-            theme: Value(settings.theme.name),
-            interfaceLanguage: Value(settings.interfaceLanguage.name),
-            telemetryEnabled: Value(settings.telemetryEnabled),
-            updatedAt: Value(settings.updatedAt),
+    await _database.runWrite(
+      () => _database
+          .into(_database.appSettingsRows)
+          .insertOnConflictUpdate(
+            AppSettingsRowsCompanion(
+              singletonId: const Value(0),
+              theme: Value(settings.theme.name),
+              interfaceLanguage: Value(settings.interfaceLanguage.name),
+              telemetryEnabled: Value(settings.telemetryEnabled),
+              updatedAt: Value(settings.updatedAt),
+            ),
           ),
-        );
+    );
   }
 
   AppSettings _map(SettingsRecord row) {

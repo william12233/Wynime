@@ -11,34 +11,36 @@ final class DriftWatchHistoryRepository implements WatchHistoryRepository {
 
   @override
   Future<void> save(WatchProgress progress) {
-    return _database.transaction(() async {
-      final existingQuery = _database.select(_database.watchHistoryRows)
-        ..where(
-          (table) =>
-              table.sourceId.equals(progress.sourceId) &
-              table.lineId.equals(progress.lineId) &
-              table.subjectId.equals(progress.subjectId) &
-              table.episodeId.equals(progress.episodeId),
-        );
-      final existing = await existingQuery.getSingleOrNull();
-      final companion = _companion(progress);
+    return _database.runWrite(
+      () => _database.transaction(() async {
+        final existingQuery = _database.select(_database.watchHistoryRows)
+          ..where(
+            (table) =>
+                table.sourceId.equals(progress.sourceId) &
+                table.lineId.equals(progress.lineId) &
+                table.subjectId.equals(progress.subjectId) &
+                table.episodeId.equals(progress.episodeId),
+          );
+        final existing = await existingQuery.getSingleOrNull();
+        final companion = _companion(progress);
 
-      if (existing == null) {
-        await _database.into(_database.watchHistoryRows).insert(companion);
-        return;
-      }
+        if (existing == null) {
+          await _database.into(_database.watchHistoryRows).insert(companion);
+          return;
+        }
 
-      final count =
-          await (_database.update(
-                _database.watchHistoryRows,
-              )..where((table) => table.progressId.equals(existing.progressId)))
-              .write(companion);
-      if (count != 1) {
-        throw StateError(
-          'Watch progress update affected $count rows: ${existing.progressId}',
-        );
-      }
-    });
+        final count =
+            await (_database.update(_database.watchHistoryRows)..where(
+                  (table) => table.progressId.equals(existing.progressId),
+                ))
+                .write(companion);
+        if (count != 1) {
+          throw StateError(
+            'Watch progress update affected $count rows: ${existing.progressId}',
+          );
+        }
+      }),
+    );
   }
 
   @override
@@ -62,9 +64,11 @@ final class DriftWatchHistoryRepository implements WatchHistoryRepository {
 
   @override
   Future<void> remove(String progressId) async {
-    await (_database.delete(
-      _database.watchHistoryRows,
-    )..where((table) => table.progressId.equals(progressId))).go();
+    await _database.runWrite(
+      () => (_database.delete(
+        _database.watchHistoryRows,
+      )..where((table) => table.progressId.equals(progressId))).go(),
+    );
   }
 
   WatchHistoryRowsCompanion _companion(WatchProgress progress) {

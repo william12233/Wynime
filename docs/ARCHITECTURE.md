@@ -311,7 +311,7 @@ Phase 9 keeps Bangumi metadata and collection state behind pure Domain models an
 
 `BangumiClient` exposes daily calendar, subject, paged episode, remote-state and mutation operations. The production adapter is limited to the official `api.bgm.tv`/`api.bgm38.tv` HTTPS hosts, uses `Authorization: Bearer` headers rather than query tokens, bounds response bodies and maps HTTP/network/payload failures to stable codes. Collection status maps to the official values 1 wish, 2 completed, 3 watching, 4 on-hold and 5 dropped; an episode is watched only for collection type 2. Mutations use the official current-user `-` paths and perform a bounded remote-revision preflight when the queued operation has a base revision.
 
-Drift schema version 3 stores local collection status and remote revision, watched episode rows, manual local-to-Bangumi subject mappings and `BangumiSyncOperation` rows. The sync service updates local state immediately for offline use, then persists a queued operation. Queue recovery selects only queued or due retryable failures below the configured attempt limit. Authorization, malformed payload, unsupported HTTP and exhausted retry failures remain visible rather than being silently retried forever. Remote revision conflicts remain visible and can be resolved by applying the remote state or by requeueing the local mutation against the newly fetched revision.
+Drift schema version 3 stores local collection status and remote revision, watched episode rows, an account-scoped calendar cache with its last-refresh timestamp, manual local-to-Bangumi subject mappings and `BangumiSyncOperation` rows. The sync service updates local state immediately for offline use, then persists a queued operation. Queue recovery selects only queued or due retryable failures below the configured attempt limit. Authorization, malformed payload, unsupported HTTP and exhausted retry failures remain visible rather than being silently retried forever. Remote revision conflicts remain visible and can be resolved by applying the remote state or by requeueing the local mutation against the newly fetched revision. A reauthentication-required session may still render the cached calendar, but the presentation labels it as cached rather than current.
 
 ## Phase 10 automatic source builder
 
@@ -351,3 +351,14 @@ playback remain separate external-validation statuses:
 `prototype_not_hardware_validated` when unavailable. They must be recorded
 truthfully but do not by themselves change the machine release status under
 ADR-025.
+
+Future Windows delivery is portable ZIP-only. The archive includes the main
+executable and a separate `wynime_update.exe` helper, but no standalone setup
+installer. `SoftwareUpdateInstaller` verifies the release version, checksum
+and bounded ZIP contents before preparing a sibling handoff directory. It
+then asks `DatabaseRecoveryPort` to drain the shared repository write gate and
+create a SQLite-consistent `VACUUM INTO` snapshot. No application write is
+admitted between that snapshot and helper handoff. If starting the helper
+fails, the gate is reopened and all updater-owned temporary paths are removed;
+the native helper owns replacement, startup health and rollback after it has
+started.

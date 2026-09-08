@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:wynime/l10n/app_localizations.dart';
 import 'package:wynime/src/app/app_destination.dart';
+import 'package:wynime/src/application/bangumi_session_controller.dart';
+import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
 import 'package:wynime/src/design_system/tokens/spacing.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
+import 'package:wynime/src/domain/models/bangumi_models.dart';
+import 'package:wynime/src/domain/models/software_update_models.dart';
 
 Widget buildWynimePage(
   AppDestination destination,
@@ -12,20 +16,28 @@ Widget buildWynimePage(
   required ValueChanged<AppSettings> onSettingsChanged,
   required ValueChanged<AppDestination> onNavigate,
   required bool showPageHeader,
+  BangumiSessionController? bangumi,
+  SoftwareUpdateController? softwareUpdates,
 }) {
   return switch (destination) {
     AppDestination.home => HomePage(
       showPageHeader: showPageHeader,
       onNavigate: onNavigate,
+      bangumi: bangumi,
     ),
     AppDestination.search => SearchPage(showPageHeader: showPageHeader),
-    AppDestination.library => LibraryPage(showPageHeader: showPageHeader),
+    AppDestination.library => LibraryPage(
+      showPageHeader: showPageHeader,
+      bangumi: bangumi,
+    ),
     AppDestination.downloads => DownloadsPage(showPageHeader: showPageHeader),
     AppDestination.sources => SourcesPage(showPageHeader: showPageHeader),
     AppDestination.settings => SettingsPage(
       showPageHeader: showPageHeader,
       settings: settings,
       onSettingsChanged: onSettingsChanged,
+      bangumi: bangumi,
+      softwareUpdates: softwareUpdates,
     ),
   };
 }
@@ -87,11 +99,13 @@ class HomePage extends StatelessWidget {
   const HomePage({
     required this.showPageHeader,
     required this.onNavigate,
+    this.bangumi,
     super.key,
   });
 
   final bool showPageHeader;
   final ValueChanged<AppDestination> onNavigate;
+  final BangumiSessionController? bangumi;
 
   @override
   Widget build(BuildContext context) {
@@ -102,11 +116,14 @@ class HomePage extends StatelessWidget {
       description: localizations.homeTagline,
       showPageHeader: showPageHeader,
       children: [
-        _ConnectionCard(
-          title: localizations.syncDisconnectedTitle,
-          description: localizations.syncDisconnectedDescription,
-          label: localizations.statusDisconnectedLabel,
-        ),
+        if (bangumi == null)
+          _ConnectionCard(
+            title: localizations.syncDisconnectedTitle,
+            description: localizations.syncDisconnectedDescription,
+            label: localizations.statusDisconnectedLabel,
+          )
+        else
+          _BangumiConnectionCard(controller: bangumi!),
         const SizedBox(height: WynimeSpacing.xl),
         _SectionTitle(label: localizations.continueWatchingTitle),
         const SizedBox(height: WynimeSpacing.sm),
@@ -118,11 +135,27 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: WynimeSpacing.xl),
         _SectionTitle(label: localizations.scheduleTitle),
         const SizedBox(height: WynimeSpacing.sm),
-        _EmptyStateCard(
-          icon: Icons.calendar_month_outlined,
-          title: localizations.emptyScheduleTitle,
-          description: localizations.emptyScheduleDescription,
-        ),
+        if (bangumi != null && bangumi!.schedule.isNotEmpty) ...[
+          _ScheduleList(entries: bangumi!.schedule),
+          if (bangumi!.scheduleUpdatedAt != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: WynimeSpacing.xs),
+                child: Text(
+                  bangumi!.scheduleIsFresh
+                      ? localizations.bangumiScheduleUpdatedLabel
+                      : localizations.bangumiScheduleCachedLabel,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ),
+        ] else
+          _EmptyStateCard(
+            icon: Icons.calendar_month_outlined,
+            title: localizations.emptyScheduleTitle,
+            description: localizations.emptyScheduleDescription,
+          ),
         const SizedBox(height: WynimeSpacing.xl),
         _SectionTitle(label: localizations.quickActionsTitle),
         const SizedBox(height: WynimeSpacing.sm),
@@ -242,12 +275,13 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-enum _LibraryFilter { all, watching, completed }
+enum _LibraryFilter { all, wish, watching, completed, onHold, dropped }
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({required this.showPageHeader, super.key});
+  const LibraryPage({required this.showPageHeader, this.bangumi, super.key});
 
   final bool showPageHeader;
+  final BangumiSessionController? bangumi;
 
   @override
   State<LibraryPage> createState() => _LibraryPageState();
@@ -267,21 +301,19 @@ class _LibraryPageState extends State<LibraryPage> {
       children: [
         SegmentedButton<_LibraryFilter>(
           segments: [
-            ButtonSegment(
-              value: _LibraryFilter.all,
-              label: Text(localizations.libraryFilterAll),
-              icon: const Icon(Icons.grid_view_rounded),
-            ),
-            ButtonSegment(
-              value: _LibraryFilter.watching,
-              label: Text(localizations.libraryFilterWatching),
-              icon: const Icon(Icons.play_arrow_rounded),
-            ),
-            ButtonSegment(
-              value: _LibraryFilter.completed,
-              label: Text(localizations.libraryFilterCompleted),
-              icon: const Icon(Icons.check_circle_outline_rounded),
-            ),
+            for (final filter
+                in widget.bangumi == null
+                    ? const <_LibraryFilter>[
+                        _LibraryFilter.all,
+                        _LibraryFilter.watching,
+                        _LibraryFilter.completed,
+                      ]
+                    : _LibraryFilter.values)
+              ButtonSegment(
+                value: filter,
+                label: Text(_libraryFilterLabel(filter, localizations)),
+                icon: Icon(_libraryFilterIcon(filter)),
+              ),
           ],
           selected: {_filter},
           onSelectionChanged: (selection) {
@@ -289,20 +321,25 @@ class _LibraryPageState extends State<LibraryPage> {
           },
         ),
         const SizedBox(height: WynimeSpacing.lg),
-        _EmptyStateCard(
-          icon: switch (_filter) {
-            _LibraryFilter.all => Icons.video_library_outlined,
-            _LibraryFilter.watching => Icons.play_circle_outline_rounded,
-            _LibraryFilter.completed => Icons.check_circle_outline_rounded,
-          },
-          title: localizations.libraryEmptyTitle,
-          description: localizations.libraryEmptyDescription,
-        ),
+        if (widget.bangumi != null && widget.bangumi!.collections.isNotEmpty)
+          _CollectionList(controller: widget.bangumi!, filter: _filter)
+        else
+          _EmptyStateCard(
+            icon: _libraryFilterIcon(_filter),
+            title: localizations.libraryEmptyTitle,
+            description: localizations.libraryEmptyDescription,
+          ),
         const SizedBox(height: WynimeSpacing.lg),
         _InfoCard(
-          icon: Icons.sync_disabled_rounded,
-          title: localizations.librarySyncHintTitle,
-          description: localizations.librarySyncHintDescription,
+          icon: widget.bangumi?.isAuthenticated == true
+              ? Icons.sync_rounded
+              : Icons.sync_disabled_rounded,
+          title: widget.bangumi?.isAuthenticated == true
+              ? localizations.bangumiPendingLabel(widget.bangumi!.pendingCount)
+              : localizations.librarySyncHintTitle,
+          description: widget.bangumi?.isAuthenticated == true
+              ? localizations.bangumiSyncDescription
+              : localizations.librarySyncHintDescription,
         ),
       ],
     );
@@ -379,17 +416,522 @@ class SourcesPage extends StatelessWidget {
   }
 }
 
+String _libraryFilterLabel(_LibraryFilter filter, AppLocalizations l10n) {
+  return switch (filter) {
+    _LibraryFilter.all => l10n.libraryFilterAll,
+    _LibraryFilter.wish => l10n.libraryFilterWish,
+    _LibraryFilter.watching => l10n.libraryFilterWatching,
+    _LibraryFilter.completed => l10n.libraryFilterCompleted,
+    _LibraryFilter.onHold => l10n.libraryFilterOnHold,
+    _LibraryFilter.dropped => l10n.libraryFilterDropped,
+  };
+}
+
+IconData _libraryFilterIcon(_LibraryFilter filter) {
+  return switch (filter) {
+    _LibraryFilter.all => Icons.video_library_outlined,
+    _LibraryFilter.wish => Icons.bookmark_border_rounded,
+    _LibraryFilter.watching => Icons.play_circle_outline_rounded,
+    _LibraryFilter.completed => Icons.check_circle_outline_rounded,
+    _LibraryFilter.onHold => Icons.pause_circle_outline_rounded,
+    _LibraryFilter.dropped => Icons.remove_circle_outline_rounded,
+  };
+}
+
+String _collectionStatusLabel(
+  BangumiCollectionStatus? status,
+  AppLocalizations l10n,
+) {
+  return switch (status) {
+    BangumiCollectionStatus.wish => l10n.libraryFilterWish,
+    BangumiCollectionStatus.watching => l10n.libraryFilterWatching,
+    BangumiCollectionStatus.completed => l10n.libraryFilterCompleted,
+    BangumiCollectionStatus.onHold => l10n.libraryFilterOnHold,
+    BangumiCollectionStatus.dropped => l10n.libraryFilterDropped,
+    null => l10n.bangumiNotCollectedLabel,
+  };
+}
+
+class _BangumiConnectionCard extends StatelessWidget {
+  const _BangumiConnectionCard({required this.controller});
+
+  final BangumiSessionController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final connected = controller.isAuthenticated;
+    final reauth = controller.status == BangumiConnectionStatus.reauthRequired;
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(WynimeSpacing.lg),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              connected ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+            ),
+            const SizedBox(width: WynimeSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    connected
+                        ? l10n.bangumiConnectedTitle
+                        : reauth
+                        ? l10n.bangumiReauthTitle
+                        : l10n.syncDisconnectedTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: WynimeSpacing.xs),
+                  Text(
+                    connected
+                        ? l10n.bangumiAccountLabel(
+                            controller.account?.username ?? '',
+                          )
+                        : l10n.syncDisconnectedDescription,
+                  ),
+                  const SizedBox(height: WynimeSpacing.sm),
+                  Wrap(
+                    spacing: WynimeSpacing.sm,
+                    runSpacing: WynimeSpacing.sm,
+                    children: [
+                      if (!connected)
+                        FilledButton.icon(
+                          key: const ValueKey('bangumi-login'),
+                          onPressed:
+                              controller.status ==
+                                  BangumiConnectionStatus.authorizing
+                              ? null
+                              : controller.signIn,
+                          icon: const Icon(Icons.login_rounded),
+                          label: Text(l10n.bangumiLoginAction),
+                        )
+                      else ...[
+                        OutlinedButton.icon(
+                          key: const ValueKey('bangumi-sync'),
+                          onPressed: controller.syncNow,
+                          icon: const Icon(Icons.sync_rounded),
+                          label: Text(l10n.bangumiSyncAction),
+                        ),
+                        OutlinedButton.icon(
+                          key: const ValueKey('bangumi-sign-out'),
+                          onPressed: controller.signOut,
+                          icon: const Icon(Icons.logout_rounded),
+                          label: Text(l10n.bangumiSignOutAction),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (controller.errorCode != null) ...[
+                    const SizedBox(height: WynimeSpacing.xs),
+                    Text(
+                      l10n.bangumiErrorLabel(controller.errorCode!),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: WynimeSpacing.sm),
+            Text(
+              connected
+                  ? l10n.statusConnectedLabel
+                  : reauth
+                  ? l10n.bangumiReauthLabel
+                  : l10n.statusDisconnectedLabel,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduleList extends StatelessWidget {
+  const _ScheduleList({required this.entries});
+
+  final List<BangumiScheduleEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = entries.take(12).toList(growable: false);
+    return Card(
+      child: Column(
+        children: [
+          for (var index = 0; index < visible.length; index++)
+            ListTile(
+              leading: const Icon(Icons.live_tv_outlined),
+              title: Text(visible[index].subjectName),
+              subtitle: Text(
+                visible[index].episodeNumber == null
+                    ? 'Bangumi #${visible[index].subjectId}'
+                    : 'EP ${visible[index].episodeNumber}',
+              ),
+              dense: true,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CollectionList extends StatelessWidget {
+  const _CollectionList({required this.controller, required this.filter});
+
+  final BangumiSessionController controller;
+  final _LibraryFilter filter;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final entries = controller.collections
+        .where(
+          (entry) =>
+              filter == _LibraryFilter.all || entry.status.name == filter.name,
+        )
+        .toList(growable: false);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Card(
+          child: Column(
+            children: [
+              for (final entry in entries)
+                ListTile(
+                  leading: const Icon(Icons.bookmark_outline_rounded),
+                  title: Text(entry.nameCn ?? entry.name ?? entry.subjectId),
+                  subtitle: Text(_collectionStatusLabel(entry.status, l10n)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => controller.openSubject(entry.subjectId),
+                ),
+            ],
+          ),
+        ),
+        if (controller.selectedSubject != null) ...[
+          const SizedBox(height: WynimeSpacing.lg),
+          BangumiSubjectDetailPage(controller: controller),
+        ],
+      ],
+    );
+  }
+}
+
+class BangumiSubjectDetailPage extends StatelessWidget {
+  const BangumiSubjectDetailPage({required this.controller, super.key});
+
+  final BangumiSessionController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final subject = controller.selectedSubject;
+    final episodes =
+        controller.selectedEpisodes?.episodes ?? const <BangumiEpisode>[];
+    final remote = controller.selectedRemoteState;
+    if (subject == null) return const SizedBox.shrink();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(WynimeSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              subject.nameCn.isEmpty ? subject.name : subject.nameCn,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            if (subject.summary.isNotEmpty) ...[
+              const SizedBox(height: WynimeSpacing.xs),
+              Text(subject.summary),
+            ],
+            const SizedBox(height: WynimeSpacing.md),
+            DropdownButtonFormField<BangumiCollectionStatus>(
+              key: const ValueKey('bangumi-collection-status'),
+              initialValue: remote?.status,
+              decoration: InputDecoration(
+                labelText: l10n.subjectCollectionLabel,
+                border: const OutlineInputBorder(),
+              ),
+              items: [
+                for (final status in BangumiCollectionStatus.values)
+                  DropdownMenuItem(
+                    value: status,
+                    child: Text(_collectionStatusLabel(status, l10n)),
+                  ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  controller.setCollectionStatus(subject.id, value);
+                }
+              },
+            ),
+            const SizedBox(height: WynimeSpacing.md),
+            Text(
+              l10n.subjectEpisodesLabel,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            for (final episode in episodes)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: remote?.watchedEpisodeIds.contains(episode.id) ?? false,
+                title: Text(
+                  episode.nameCn.isEmpty ? episode.name : episode.nameCn,
+                ),
+                subtitle: Text('EP ${episode.sort}'),
+                onChanged: (value) => controller.setEpisodeWatched(
+                  subject.id,
+                  episode.id,
+                  value ?? false,
+                ),
+              ),
+            if (controller.pendingCount > 0 || controller.conflictCount > 0)
+              Text(
+                l10n.bangumiQueueSummary(
+                  controller.pendingCount,
+                  controller.conflictCount,
+                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BangumiSettingsContent extends StatelessWidget {
+  const _BangumiSettingsContent({required this.controller});
+
+  final BangumiSessionController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final account = controller.account;
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.account_circle_outlined),
+          title: Text(
+            account == null
+                ? l10n.bangumiNotSignedInLabel
+                : l10n.bangumiAccountLabel(account.username),
+          ),
+          subtitle: Text(
+            account == null
+                ? l10n.bangumiReauthDescription
+                : l10n.bangumiCacheDescription,
+          ),
+        ),
+        if (!controller.isAuthenticated)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              key: const ValueKey('bangumi-settings-login'),
+              onPressed: controller.signIn,
+              icon: const Icon(Icons.login_rounded),
+              label: Text(l10n.bangumiLoginAction),
+            ),
+          )
+        else
+          Wrap(
+            spacing: WynimeSpacing.sm,
+            runSpacing: WynimeSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                onPressed: controller.syncNow,
+                icon: const Icon(Icons.sync_rounded),
+                label: Text(l10n.bangumiSyncAction),
+              ),
+              Text(
+                l10n.bangumiQueueSummary(
+                  controller.pendingCount,
+                  controller.conflictCount,
+                ),
+              ),
+              if (controller.failedCount > 0)
+                Text(
+                  l10n.bangumiFailedQueueSummary(controller.failedCount),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              OutlinedButton.icon(
+                key: const ValueKey('bangumi-settings-logout'),
+                onPressed: controller.signOut,
+                icon: const Icon(Icons.logout_rounded),
+                label: Text(l10n.bangumiSignOutAction),
+              ),
+            ],
+          ),
+        if (controller.conflicts.isNotEmpty) ...[
+          const SizedBox(height: WynimeSpacing.md),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              l10n.bangumiConflictTitle,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          const SizedBox(height: WynimeSpacing.xs),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(l10n.bangumiConflictDescription),
+          ),
+          const SizedBox(height: WynimeSpacing.sm),
+          for (final conflict in controller.conflicts)
+            Card(
+              margin: const EdgeInsets.only(bottom: WynimeSpacing.sm),
+              child: Padding(
+                padding: const EdgeInsets.all(WynimeSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      l10n.bangumiConflictSubjectLabel(
+                        conflict.operation.subjectId,
+                      ),
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: WynimeSpacing.xs),
+                    Text(
+                      l10n.bangumiConflictRevisionLabel(
+                        conflict.remoteState.remoteRevision,
+                      ),
+                    ),
+                    const SizedBox(height: WynimeSpacing.sm),
+                    Wrap(
+                      spacing: WynimeSpacing.sm,
+                      runSpacing: WynimeSpacing.sm,
+                      children: [
+                        OutlinedButton(
+                          key: ValueKey(
+                            'bangumi-conflict-adopt-${conflict.operation.operationId}',
+                          ),
+                          onPressed: () => controller.adoptConflict(conflict),
+                          child: Text(l10n.bangumiAdoptRemoteAction),
+                        ),
+                        FilledButton(
+                          key: ValueKey(
+                            'bangumi-conflict-requeue-${conflict.operation.operationId}',
+                          ),
+                          onPressed: () => controller.requeueConflict(conflict),
+                          child: Text(l10n.bangumiRequeueLocalAction),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+        if (controller.errorCode != null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(top: WynimeSpacing.xs),
+              child: Text(
+                l10n.bangumiErrorLabel(controller.errorCode!),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _SoftwareUpdateSettingsContent extends StatelessWidget {
+  const _SoftwareUpdateSettingsContent({required this.controller});
+
+  final SoftwareUpdateController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final current = controller.currentVersion;
+    final latest = controller.latestRelease;
+    final status = switch (controller.status) {
+      UpdateStatus.checking => l10n.softwareUpdateChecking,
+      UpdateStatus.downloading => l10n.softwareUpdateDownloading,
+      UpdateStatus.verifying => l10n.softwareUpdateVerifying,
+      UpdateStatus.updateAvailable => l10n.softwareUpdateAvailable,
+      UpdateStatus.upToDate => l10n.softwareUpdateUpToDate,
+      UpdateStatus.manualUpdateRequired => l10n.softwareUpdateManualRequired,
+      UpdateStatus.failed => l10n.softwareUpdateFailed,
+      _ => l10n.softwareUpdateIdle,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.softwareUpdateCurrentVersion),
+          subtitle: Text(current?.displayVersion ?? l10n.softwareUpdateUnknown),
+        ),
+        if (latest != null)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.softwareUpdateLatestVersion),
+            subtitle: Text(latest.version.toString()),
+          ),
+        Text(status),
+        if (controller.downloadProgress != null) ...[
+          const SizedBox(height: WynimeSpacing.sm),
+          LinearProgressIndicator(value: controller.downloadProgress),
+        ],
+        const SizedBox(height: WynimeSpacing.sm),
+        Wrap(
+          spacing: WynimeSpacing.sm,
+          runSpacing: WynimeSpacing.sm,
+          children: [
+            OutlinedButton.icon(
+              key: const ValueKey('software-update-check'),
+              onPressed: controller.isBusy ? null : controller.check,
+              icon: const Icon(Icons.refresh_rounded),
+              label: Text(l10n.softwareUpdateCheckAction),
+            ),
+            if (controller.status == UpdateStatus.updateAvailable)
+              FilledButton.icon(
+                key: const ValueKey('software-update-now'),
+                onPressed: controller.isBusy ? null : controller.install,
+                icon: const Icon(Icons.download_rounded),
+                label: Text(l10n.softwareUpdateInstallAction),
+              ),
+          ],
+        ),
+        if (controller.error != null) ...[
+          const SizedBox(height: WynimeSpacing.xs),
+          Text(
+            l10n.softwareUpdateError(controller.error!.code),
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class SettingsPage extends StatelessWidget {
   const SettingsPage({
     required this.showPageHeader,
     required this.settings,
     required this.onSettingsChanged,
+    this.bangumi,
+    this.softwareUpdates,
     super.key,
   });
 
   final bool showPageHeader;
   final AppSettings settings;
   final ValueChanged<AppSettings> onSettingsChanged;
+  final BangumiSessionController? bangumi;
+  final SoftwareUpdateController? softwareUpdates;
 
   void _save(AppSettings next) {
     onSettingsChanged(next.copyWith(updatedAt: DateTime.now()));
@@ -496,6 +1038,22 @@ class SettingsPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: WynimeSpacing.lg),
+        if (bangumi != null)
+          _SettingsCard(
+            title: localizations.bangumiSettingsTitle,
+            icon: Icons.bookmark_outline_rounded,
+            children: [_BangumiSettingsContent(controller: bangumi!)],
+          ),
+        if (bangumi != null) const SizedBox(height: WynimeSpacing.lg),
+        if (softwareUpdates != null)
+          _SettingsCard(
+            title: localizations.softwareUpdateTitle,
+            icon: Icons.system_update_alt_rounded,
+            children: [
+              _SoftwareUpdateSettingsContent(controller: softwareUpdates!),
+            ],
+          ),
+        if (softwareUpdates != null) const SizedBox(height: WynimeSpacing.lg),
         _SettingsCard(
           title: localizations.settingsPlaybackTitle,
           icon: Icons.play_circle_outline_rounded,

@@ -240,7 +240,7 @@ Phase 6 的 Android／Windows 實際硬體播放若未執行，只能標記 `pro
 - FFmpeg subprocess 只能使用 bounded argument vector、`runInShell: false`、root-confined local file URIs、timeout 與 bounded diagnostics；persisted HLS snapshot 不得保存完整 URL、query、credential 或 token；
 - telemetry 維持 default-off，secret-safe diagnostics、source package sandbox、HTTPS／cleartext policy 與 domain／resource budgets 均通過靜態與 deterministic checks；
 - 有 engineering-reviewed FFmpeg/libmpv/native provenance、publish signing
-  evidence、exact-SHA CI、Windows installer/package checksums 與其他
+  evidence、exact-SHA CI、Windows ZIP/package checksums 與其他
   machine-verifiable hard gates 後，可宣告 release readiness；Windows
   可觀察 UI action 與 Android／Windows 硬體播放若無法取得，必須以
   `WINDOWS_CUA_VALIDATION_UNAVAILABLE` 或

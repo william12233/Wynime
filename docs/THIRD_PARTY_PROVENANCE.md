@@ -3,7 +3,7 @@
 Status: `CLOSED_RELEASE_PROVENANCE`
 
 Review date: 2026-09-07. This is an engineering provenance and packaging
-record for the v1.0.1 release boundary. It does not claim that Wynime's MIT
+record for the v1.0.2 release boundary. It does not claim that Wynime's MIT
 license replaces any third-party terms. No independent legal opinion was
 obtained; that fact is disclosed and is not a machine release blocker under
 ADR-025.
@@ -201,8 +201,8 @@ Authoritative references:
 
 `assets/third_party/THIRD_PARTY_NOTICES.md` contains the package, native,
 upstream and system-runtime references for the exact release boundary. The
-same file is verified inside the Android APK and copied into both the Windows
-portable ZIP and installer. The Windows distributions also include the root
+same file is verified inside the Android APK and copied into the Windows
+portable ZIP. The Windows distribution also includes the root
 `LICENSE`, `COPYING.LGPLv3`, `THIRD_PARTY_SOURCE_OFFER.md`, README and release
 notes. Android includes the complete applicable `COPYING.GPLv3` and
 `COPYING.LGPLv3` texts and the source offer under
@@ -228,7 +228,7 @@ not a project-wide relicensing statement. No legal opinion is claimed.
 
 ## Candidate-specific evidence
 
-The final exact candidate SHA, signed APK/AAB hashes, Windows installer/ZIP
+The final exact candidate SHA, signed APK/AAB hashes, Windows ZIP
 hashes, package metadata and CI URLs are recorded in the external
 operation-specific verification transcript. The transcript is regenerated
 after every candidate SHA change and is not a substitute for the workflow's

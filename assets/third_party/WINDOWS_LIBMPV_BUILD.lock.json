@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "component": "media_kit_libs_windows_video Windows x64 native media",
+  "package": {
+    "name": "media_kit_libs_windows_video",
+    "version": "1.0.12",
+    "repository": "https://github.com/media-kit/media-kit.git",
+    "path": "libs/windows/media_kit_libs_windows_video",
+    "commit": "e9abf3b9114fdb565b13a4c194d776c70e416e7d",
+    "pubspecBlob": "d2e4ce7ec5a0d1404d82998b8e7a28920c711a1e",
+    "cmakeBlob": "ca4ac3eb58bf966f03da76404b67ff2f2af2847f"
+  },
+  "nativeArchive": {
+    "repository": "https://github.com/media-kit/libmpv-win32-video-cmake",
+    "releaseTag": "20241021",
+    "releaseTagCommit": "8ddbe5472465950b87853789f7173f2eedc5586a",
+    "releaseUrl": "https://github.com/media-kit/libmpv-win32-video-cmake/releases/tag/20241021",
+    "workflowRunUrl": "https://github.com/media-kit/libmpv-win32-video-cmake/actions/runs/11444402983",
+    "asset": "mpv-dev-x86_64-20241021-git-0f78584.7z",
+    "url": "https://github.com/media-kit/libmpv-win32-video-cmake/releases/download/20241021/mpv-dev-x86_64-20241021-git-0f78584.7z",
+    "size": 11601537,
+    "md5": "6ecf18e85b093c3f7edb16f3ee6603f3",
+    "sha256": "e23701df0adc1fe57c8ede3ff313513b0b80519870058c2d35ff02754284a007"
+  },
+  "build": {
+    "sourceCommit": "8ddbe5472465950b87853789f7173f2eedc5586a",
+    "sourceTree": "893a7d217a793a6ada3e80e42085dd7392c7afac",
+    "mpvCommit": "0f7858451817c5fd5ebdb74a807a7c997662c390",
+    "ffmpegCommit": "8d940a07d19023a98689f353e4425a14688547e9",
+    "ffmpegVersion": "N-117622-g8d940a07d",
+    "ffmpegSourceUrl": "https://github.com/FFmpeg/FFmpeg/tree/8d940a07d19023a98689f353e4425a14688547e9",
+    "mpvSourceUrl": "https://github.com/mpv-player/mpv/tree/0f7858451817c5fd5ebdb74a807a7c997662c390",
+    "sourceBlobs": {
+      ".github/workflows/mpv_clang.yml": "2f4bb318796c7fd5f2701eb26850353428830732",
+      "packages/ffmpeg.cmake": "ffbcbfc34882110acf2c271bdae994570bd62c39",
+      "packages/mpv.cmake": "1d9ea2edcd5b6ccbdf313408deedcaeaf01c4925",
+      "packages/mpv-packaging.cmake": "1658f758582bd437c972e2a9444d09b31273f116",
+      "packages/ffmpeg-dash-base-url-escape.patch": "36ed6d5b26c41dd02362525e7fb96b061eaf48ba"
+    },
+    "additionalPatchBlobs": {
+      "packages/cmake-0001-ExternalProject-changes.patch": "cf76c043acb20481d534f1bf8fcfb6853b5452c6",
+      "packages/curl-0001-Skip-compiling-unnecessary-stuff.patch": "1b0144ee20f45649dff9741ab55b2c550a4125d9",
+      "packages/fontconfig-0001-Custom-changes-for-mpv-builds.patch": "4932abda572ab4e11611a8ee6000a167c3349155",
+      "packages/fontconfig-0002-Do-not-use-dirent.h.patch": "c5f2a28b2900c3618fd25a673c4d35ba9153052c",
+      "packages/libbs2b-0001-build-library-only.patch": "44f3be5a54de217ab110f08cfa44371d1abb30eb",
+      "packages/libressl-0001-remove-postfix-in-libs-name.patch": "ba96d7b988799e7f97fc9e09fd7ade36035cf156",
+      "packages/mbedtls-0001-include-cpuid.patch": "60ce5ab3d7248430a9adf2f82e562be2ca17c334",
+      "packages/megasdk-0001-megacli-remove-warn-never-print-file-attributes.patch": "5f923ae4f93ce7da9018fe409d5488bea740d311",
+      "packages/megasdk-0002-fix-compile.patch": "f60edca02cae95b705cea83ea9c0cf5529223825",
+      "packages/nettle-0001-skip-compiling-testsuite-and-examples.patch": "c0278a55a63ef1bfdeef89eaf785aad8996274bd",
+      "packages/spirv-cross-0001-static-linking-hacks.patch": "ef8349191b80a33d9bfc6f7adc758501a510d9e2",
+      "packages/vulkan-0001-cross-compile-static-linking-hacks.patch": "32a22aaefb44f47f1649f03d1af168fa6148e166",
+      "packages/xvidcore-2-win64.patch": "36b716884c4e40cb1887c0c9efc8ece705c5519c",
+      "toolchain/llvm/llvm-openmp-0001-support-static-lib.patch": "0c4e44609fa505c0fa3e794d4e6994f5c43d4015"
+    },
+    "ffmpegConfigurePolicy": {
+      "required": [
+        "--disable-gpl",
+        "--disable-nonfree",
+        "--enable-version3",
+        "--enable-static",
+        "--disable-shared"
+      ],
+      "forbidden": [
+        "--enable-gpl",
+        "--enable-nonfree"
+      ],
+      "sourceUrl": "https://raw.githubusercontent.com/media-kit/libmpv-win32-video-cmake/8ddbe5472465950b87853789f7173f2eedc5586a/packages/ffmpeg.cmake",
+      "sourceBlob": "ffbcbfc34882110acf2c271bdae994570bd62c39"
+    }
+  },
+  "runtime": {
+    "dll": "libmpv-2.dll",
+    "size": 37735936,
+    "sha256": "56f9a69200863c2dcd2fb6367427ffedc35550d26f947d6c36eab37bd2a65fd5",
+    "mpvVersion": "mpv v0.39.0-179-g0f78584518",
+    "ffmpegVersion": "N-117622-g8d940a07d",
+    "configurationSha256": "f940a8f30f968817e21456395d630c54f8d49304a58a7cc82a259c9699820617",
+    "configurationRequired": [
+      "-Dgpl=false",
+      "-Dlibmpv=true",
+      "-Dprefer_static=True",
+      "-Degl-angle=enabled"
+    ],
+    "configurationForbidden": [
+      "-Dgpl=true"
+    ]
+  },
+  "angle": {
+    "asset": "ANGLE.7z",
+    "releaseUrl": "https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/tag/v1.0.1",
+    "url": "https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/download/v1.0.1/ANGLE.7z",
+    "md5": "e866f13e8d552348058afaafe869b1ed",
+    "sha256": "cc5911bb15d596fd5a2b362613ad35b7093b427117269a7359054a65746a5f9a"
+  }
+}

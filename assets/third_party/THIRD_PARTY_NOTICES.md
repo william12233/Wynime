@@ -22,7 +22,7 @@ The following packages are resolved from `pubspec.lock`:
 | `media_kit` | 1.2.6 | MIT; <https://github.com/media-kit/media-kit/blob/main/LICENSE> |
 | `media_kit_video` | 2.0.1 | MIT; <https://github.com/media-kit/media-kit/blob/main/LICENSE> |
 | `media_kit_libs_android_video` | 1.3.8 | MIT wrapper; <https://github.com/media-kit/media-kit/blob/main/libs/android/media_kit_libs_android_video/LICENSE> |
-| `media_kit_libs_windows_video` | 1.0.11 | MIT wrapper; <https://github.com/media-kit/media-kit/blob/main/libs/windows/media_kit_libs_windows_video/LICENSE> |
+| `media_kit_libs_windows_video` | 1.0.12, Git commit `e9abf3b9114fdb565b13a4c194d776c70e416e7d` | MIT wrapper; <https://github.com/media-kit/media-kit/tree/e9abf3b9114fdb565b13a4c194d776c70e416e7d/libs/windows/media_kit_libs_windows_video> |
 | `flutter_inappwebview` | 6.2.0-beta.3 | Apache-2.0; <https://github.com/pichillilorenzo/flutter_inappwebview/blob/master/LICENSE> |
 | `flutter_inappwebview_android` | 1.2.0-beta.3 | Apache-2.0; package LICENSE |
 | `flutter_inappwebview_windows` | 0.7.0-beta.3 | Apache-2.0; package LICENSE |
@@ -56,24 +56,39 @@ distribution and as
 APK. The corresponding source and relink offer is shipped as
 `THIRD_PARTY_SOURCE_OFFER.md` in the Windows distribution and as
 `assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md` in
-the Android APK. It provides the immutable FFmpeg n6.0 and media-kit
-libmpv source/build references, the exact dependency records, and a written
-offer valid from 2026-09-07 through 2029-09-07.
+the Android APK. It provides the immutable Android FFmpeg n6.0 and Windows
+FFmpeg/media-kit source/build references, the exact dependency records, the
+Windows native provenance lock, and a written offer valid from 2026-09-07
+through 2029-09-07.
 
 ## Windows native media
 
 The locked Windows CMake mechanism selects:
 
-- `mpv-dev-x86_64-20230924-git-652a1dd.7z` from the media-kit
-  `2023-09-24` release;
+- `mpv-dev-x86_64-20241021-git-0f78584.7z` from the media-kit
+  `20241021` release at build commit
+  `8ddbe5472465950b87853789f7173f2eedc5586a`;
 - `ANGLE.7z` from `flutter-windows-ANGLE-OpenGL-ES` `v1.0.1`;
 - package-declared MD5 values, which are checked before extraction.
 
 The Release `libmpv-2.dll` probe reports mpv
-`v0.36.0-403-g652a1dd907`, FFmpeg `n6.0`, `-Dgpl=false`,
-`-Dlibmpv=true`, `-Dprefer_static=True` and
-`-Degl-angle=enabled`. FFmpeg is statically linked into libmpv; no separate
-FFmpeg DLL is redistributed.
+`v0.39.0-179-g0f78584518`, FFmpeg `N-117622-g8d940a07d` from exact commit
+`8d940a07d19023a98689f353e4425a14688547e9`, `-Dgpl=false`,
+`-Dlibmpv=true`, `-Dprefer_static=True` and `-Degl-angle=enabled`. The
+upstream `packages/ffmpeg.cmake` blob
+`ffbcbfc34882110acf2c271bdae994570bd62c39` requires
+`--disable-gpl --disable-nonfree --enable-version3 --enable-static
+--disable-shared`; the release gate rejects either forbidden enable flag.
+FFmpeg is statically linked into libmpv; no separate FFmpeg DLL is
+redistributed. The complete machine-readable record is
+`WINDOWS_LIBMPV_BUILD.lock.json`.
+
+The exact Windows native hashes are:
+
+| File | Size | SHA-256 |
+| --- | ---: | --- |
+| `mpv-dev-x86_64-20241021-git-0f78584.7z` | 11,601,537 bytes | `E23701DF0ADC1FE57C8EDE3FF313513B0B80519870058C2D35FF02754284A007` |
+| `libmpv-2.dll` | 37,735,936 bytes | `56F9A69200863C2DCD2FB6367427FFEDC35550D26F947D6C36EAB37BD2A65FD5` |
 
 The Windows distribution also contains:
 
@@ -97,7 +112,7 @@ mapping is recorded in `docs/THIRD_PARTY_PROVENANCE.md`.
 
 The exact source identity, selected versions/configuration, archive hashes,
 packaged hashes and required attribution references were checked for this
-release. No alternate FFmpeg, mpv, ANGLE or WebView2 package was substituted.
+release. No unrecorded FFmpeg, mpv, ANGLE or WebView2 package was substituted.
 No independent legal opinion is claimed; this notice is not a project-wide
 relicensing statement.
 

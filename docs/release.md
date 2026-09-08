@@ -102,7 +102,8 @@ available on the `windows-2025` runner. The installer:
 - creates a Start Menu shortcut;
 - offers an unchecked optional desktop shortcut;
 - includes `LICENSE`, `COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`,
-  `THIRD_PARTY_NOTICES.md`, `README.md` and release notes;
+  `THIRD_PARTY_NOTICES.md`, `WINDOWS_LIBMPV_BUILD.lock.json`, `README.md` and
+  release notes;
 - creates a complete uninstaller without deleting Wynime user data;
 - uses app name `Wynime`, version `1.0.1`, publisher `william12233` and
   executable `wynime.exe`.
@@ -114,8 +115,8 @@ warning; no unsigned installer is presented as signed evidence.
 The portable ZIP contains the complete
 `build/windows/x64/runner/Release` directory plus `README.md`, `LICENSE`,
 `THIRD_PARTY_NOTICES.md`, `COPYING.LGPLv2.1`,
-`THIRD_PARTY_SOURCE_OFFER.md`, `RELEASE_NOTES.md` and a version-only
-`version.txt`.
+`THIRD_PARTY_SOURCE_OFFER.md`, `WINDOWS_LIBMPV_BUILD.lock.json`,
+`RELEASE_NOTES.md` and a version-only `version.txt`.
 
 ## Local preparation
 

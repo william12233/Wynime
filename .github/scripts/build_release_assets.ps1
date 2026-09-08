@@ -46,6 +46,7 @@ $windowsPath = Join-Path $repoRoot 'build\windows\x64\runner\Release'
 $thirdPartyNoticePath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_NOTICES.md'
 $lgplLicensePath = Join-Path $repoRoot 'assets\third_party\COPYING.LGPLv2.1'
 $sourceOfferPath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_SOURCE_OFFER.md'
+$nativeLockPath = Join-Path $repoRoot 'assets\third_party\WINDOWS_LIBMPV_BUILD.lock.json'
 $licensePath = Join-Path $repoRoot 'LICENSE'
 if (-not (Test-Path -LiteralPath $apkPath -PathType Leaf)) {
     throw "Android release APK is missing: $apkPath"
@@ -65,6 +66,16 @@ if (-not (Test-Path -LiteralPath $lgplLicensePath -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $sourceOfferPath -PathType Leaf)) {
     throw "Corresponding-source offer is missing: $sourceOfferPath"
 }
+if (-not (Test-Path -LiteralPath $nativeLockPath -PathType Leaf)) {
+    throw "Windows native provenance lock is missing: $nativeLockPath"
+}
+
+$nativeVerifierPath = Join-Path $repoRoot '.github\scripts\verify_windows_native_provenance.ps1'
+if (-not (Test-Path -LiteralPath $nativeVerifierPath -PathType Leaf)) {
+    throw "Windows native provenance verifier is missing: $nativeVerifierPath"
+}
+$nativeDllPath = Join-Path $windowsPath 'libmpv-2.dll'
+& $nativeVerifierPath -DllPath $nativeDllPath -LockPath $nativeLockPath
 
 $outputPath = Join-Path $repoRoot 'build\release'
 New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
@@ -88,6 +99,10 @@ $apkSourceOfferCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'ass
 if (-not $apkSourceOfferCheck) {
     throw 'Android APK does not contain the corresponding-source offer.'
 }
+$apkNativeLockCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json'
+if (-not $apkNativeLockCheck) {
+    throw 'Android APK does not contain the Windows native provenance lock.'
+}
 $apkHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $apkAssetPath).Hash.ToLowerInvariant()
 Set-Content -LiteralPath "$apkAssetPath.sha256" -Value "$apkHash  $apkAssetName" -NoNewline -Encoding ascii
 
@@ -102,6 +117,7 @@ Copy-Item -LiteralPath $licensePath -Destination (Join-Path $stagePath 'LICENSE'
 Copy-Item -LiteralPath $thirdPartyNoticePath -Destination (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md') -Force
 Copy-Item -LiteralPath $lgplLicensePath -Destination (Join-Path $stagePath 'COPYING.LGPLv2.1') -Force
 Copy-Item -LiteralPath $sourceOfferPath -Destination (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -Force
+Copy-Item -LiteralPath $nativeLockPath -Destination (Join-Path $stagePath 'WINDOWS_LIBMPV_BUILD.lock.json') -Force
 Copy-Item -LiteralPath (Join-Path $repoRoot 'docs\release-notes-1.0.1.md') -Destination (Join-Path $stagePath 'RELEASE_NOTES.md') -Force
 Set-Content -LiteralPath (Join-Path $stagePath 'version.txt') -Value $version -NoNewline -Encoding ascii
 
@@ -116,6 +132,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'COPYING.LGPLv2.1') -Path
 }
 if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -PathType Leaf)) {
     throw 'Windows bundle does not contain the corresponding-source offer.'
+}
+if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'WINDOWS_LIBMPV_BUILD.lock.json') -PathType Leaf)) {
+    throw 'Windows bundle does not contain the native provenance lock.'
 }
 
 $zipAssetName = "wynime-$version.zip"

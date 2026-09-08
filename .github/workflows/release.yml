@@ -123,7 +123,37 @@ jobs:
           grep -F "FFmpeg" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           grep -F "https://github.com/FFmpeg/FFmpeg/tree/n6.0" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           grep -F "media-kit/libmpv-android-video-build/releases/tag/v1.1.7" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
-          grep -F "media-kit/libmpv-win32-video-build/releases/tag/2023-09-24" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "media-kit/libmpv-win32-video-cmake/releases/tag/20241021" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "8ddbe5472465950b87853789f7173f2eedc5586a" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "8d940a07d19023a98689f353e4425a14688547e9" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "ffbcbfc34882110acf2c271bdae994570bd62c39" "assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          grep -F "e9abf3b9114fdb565b13a4c194d776c70e416e7d" pubspec.lock >/dev/null
+          test -s assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json
+          jq -e '
+            .schemaVersion == 1
+            and .package.name == "media_kit_libs_windows_video"
+            and .package.version == "1.0.12"
+            and .package.commit == "e9abf3b9114fdb565b13a4c194d776c70e416e7d"
+            and .nativeArchive.releaseTag == "20241021"
+            and .nativeArchive.releaseTagCommit == "8ddbe5472465950b87853789f7173f2eedc5586a"
+            and .nativeArchive.sha256 == "e23701df0adc1fe57c8ede3ff313513b0b80519870058c2d35ff02754284a007"
+            and .build.mpvCommit == "0f7858451817c5fd5ebdb74a807a7c997662c390"
+            and .build.ffmpegCommit == "8d940a07d19023a98689f353e4425a14688547e9"
+            and .build.ffmpegConfigurePolicy.required == ["--disable-gpl", "--disable-nonfree", "--enable-version3", "--enable-static", "--disable-shared"]
+            and .build.ffmpegConfigurePolicy.forbidden == ["--enable-gpl", "--enable-nonfree"]
+          ' assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json >/dev/null
+          ffmpeg_source="$(mktemp)"
+          trap 'rm -f "$ffmpeg_source"' EXIT
+          curl --fail --location --retry 3 --silent --show-error \
+            -o "$ffmpeg_source" \
+            "https://raw.githubusercontent.com/media-kit/libmpv-win32-video-cmake/8ddbe5472465950b87853789f7173f2eedc5586a/packages/ffmpeg.cmake"
+          [[ "$(git hash-object "$ffmpeg_source")" == "ffbcbfc34882110acf2c271bdae994570bd62c39" ]]
+          grep -F -- "--disable-gpl" "$ffmpeg_source" >/dev/null
+          grep -F -- "--disable-nonfree" "$ffmpeg_source" >/dev/null
+          if grep -F -- "--enable-gpl" "$ffmpeg_source" >/dev/null || grep -F -- "--enable-nonfree" "$ffmpeg_source" >/dev/null; then
+            echo 'The pinned Windows FFmpeg build script contains a forbidden enable flag.' >&2
+            exit 1
+          fi
 
           {
             echo "tag=$tag"
@@ -231,6 +261,7 @@ jobs:
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
+          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json" >/dev/null
 
       - name: Name and hash Android artifact
         shell: bash
@@ -306,6 +337,13 @@ jobs:
           --build-name "${{ needs.metadata.outputs.version }}"
           --build-number "${{ needs.metadata.outputs.version_code }}"
 
+      - name: Verify Windows native provenance
+        shell: pwsh
+        run: >
+          .github/scripts/verify_windows_native_provenance.ps1
+          -DllPath build/windows/x64/runner/Release/libmpv-2.dll
+          -LockPath assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json
+
       - name: Package and hash Windows artifact
         shell: pwsh
         run: |
@@ -329,6 +367,7 @@ jobs:
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/THIRD_PARTY_NOTICES.md') -Destination (Join-Path $stage 'THIRD_PARTY_NOTICES.md') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/COPYING.LGPLv2.1') -Destination (Join-Path $stage 'COPYING.LGPLv2.1') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/THIRD_PARTY_SOURCE_OFFER.md') -Destination (Join-Path $stage 'THIRD_PARTY_SOURCE_OFFER.md') -Force
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json') -Destination (Join-Path $stage 'WINDOWS_LIBMPV_BUILD.lock.json') -Force
           Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE "docs/release-notes-$version.md") -Destination (Join-Path $stage 'RELEASE_NOTES.md') -Force
           Set-Content -LiteralPath (Join-Path $stage 'version.txt') -Value $version -NoNewline -Encoding ascii
 
@@ -346,6 +385,9 @@ jobs:
           }
           if (-not (Test-Path -LiteralPath (Join-Path $stage 'THIRD_PARTY_SOURCE_OFFER.md') -PathType Leaf)) {
             throw 'THIRD_PARTY_SOURCE_OFFER.md is missing from the Windows bundle.'
+          }
+          if (-not (Test-Path -LiteralPath (Join-Path $stage 'WINDOWS_LIBMPV_BUILD.lock.json') -PathType Leaf)) {
+            throw 'WINDOWS_LIBMPV_BUILD.lock.json is missing from the Windows bundle.'
           }
           Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue
           Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zipPath -CompressionLevel Optimal
@@ -384,7 +426,7 @@ jobs:
             if ($install.ExitCode -ne 0) {
               throw "Installer test install failed with exit code $($install.ExitCode)."
             }
-            foreach ($required in @('wynime.exe', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'COPYING.LGPLv2.1', 'THIRD_PARTY_SOURCE_OFFER.md', 'RELEASE_NOTES.md')) {
+            foreach ($required in @('wynime.exe', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'COPYING.LGPLv2.1', 'THIRD_PARTY_SOURCE_OFFER.md', 'WINDOWS_LIBMPV_BUILD.lock.json', 'RELEASE_NOTES.md')) {
               if (-not (Test-Path -LiteralPath (Join-Path $installDir $required) -PathType Leaf)) {
                 throw "Installer did not install required file: $required"
               }

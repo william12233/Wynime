@@ -94,7 +94,8 @@ for every native component that enters the release distributions:
 
 - `media_kit 1.2.6`, `media_kit_video 2.0.1`,
   `media_kit_libs_android_video 1.3.8` and
-  `media_kit_libs_windows_video 1.0.11`;
+  `media_kit_libs_windows_video 1.0.12` from the pinned media-kit commit
+  `e9abf3b9114fdb565b13a4c194d776c70e416e7d`;
 - `flutter_inappwebview 6.2.0-beta.3`,
   `flutter_inappwebview_android 1.2.0-beta.3` and
   `flutter_inappwebview_windows 0.7.0-beta.3`;
@@ -103,18 +104,24 @@ for every native component that enters the release distributions:
   with FFmpeg 6.0, mpv revision
   `78d43740f52db817d98bcf24fb30a76ab6fa13ff`, package-declared MD5 values
   and candidate SHA-256 values;
-- Windows `mpv-dev-x86_64-20230924-git-652a1dd.7z` and
-  `ANGLE.7z` v1.0.1, with package-declared MD5 values, local archive
-  SHA-256 values, runtime version/configuration and packaged DLL hashes;
+- Windows `mpv-dev-x86_64-20241021-git-0f78584.7z` from build source commit
+  `8ddbe5472465950b87853789f7173f2eedc5586a` and `ANGLE.7z` v1.0.1, with
+  package-declared MD5 values, local archive SHA-256 values, runtime
+  version/configuration and packaged DLL hashes;
 - Flutter/Dart runtime, WebView2 loader, SQLite, ANGLE/Vulkan/SwiftShader,
   zlib, media-kit plugin DLLs and all other native files in the Windows
   Release directory.
 
 The selected Android default flavor disables GPL/nonfree FFmpeg options
 according to its upstream build record. The Windows release DLL runtime
-reports mpv `v0.36.0-403-g652a1dd907`, FFmpeg `n6.0`,
-`-Dgpl=false`, `-Dlibmpv=true` and static FFmpeg linkage. No alternate
-FFmpeg or native package was substituted to satisfy the gate.
+reports mpv `v0.39.0-179-g0f78584518`, FFmpeg `N-117622-g8d940a07d` from
+exact commit `8d940a07d19023a98689f353e4425a14688547e9`, `-Dgpl=false`,
+`-Dlibmpv=true`, `-Dprefer_static=True` and static FFmpeg linkage. The exact
+Windows FFmpeg policy is pinned to `packages/ffmpeg.cmake` blob
+`ffbcbfc34882110acf2c271bdae994570bd62c39`, requiring
+`--disable-gpl --disable-nonfree` and rejecting both enable flags. The
+machine-readable lock and runtime verifier close this provenance chain; no
+alternate FFmpeg or native package was substituted to satisfy the gate.
 
 The exact upstream references, archive hashes, packaged hashes, runtime
 probe, dependency versions and notice mapping are maintained in
@@ -131,14 +138,16 @@ machine release blocker under ADR-025.
 
 The Windows portable ZIP includes the complete Flutter Release directory plus
 `README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`,
-`COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`, `RELEASE_NOTES.md` and
-version-only `version.txt`.
+`COPYING.LGPLv2.1`, `THIRD_PARTY_SOURCE_OFFER.md`,
+`WINDOWS_LIBMPV_BUILD.lock.json`, `RELEASE_NOTES.md` and version-only
+`version.txt`.
 
 The Windows installer is compiled from
 `installer/windows/wynime.iss` with the runner's `ISCC.exe`. It installs
 the complete bundle, creates a Start Menu shortcut, offers an unchecked
 desktop shortcut, includes the license, LGPL text, corresponding-source offer,
-notices and release notes, and provides a complete uninstaller. No Authenticode
+native provenance lock, notices and release notes, and provides a complete
+uninstaller. No Authenticode
 certificate is configured, so the
 installer is intentionally unsigned and may trigger SmartScreen.
 

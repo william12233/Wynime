@@ -59,10 +59,6 @@ jobs:
             echo "Phase 12 must be RELEASE_READY before candidate signing: $status." >&2
             exit 1
           fi
-          test -s assets/third_party/COPYING.LGPLv2.1
-          grep -F "GNU LESSER GENERAL PUBLIC LICENSE" assets/third_party/COPYING.LGPLv2.1 >/dev/null
-          grep -F "Version 2.1, February 1999" assets/third_party/COPYING.LGPLv2.1 >/dev/null
-          [[ "$(sha256sum assets/third_party/COPYING.LGPLv2.1 | cut -d' ' -f1)" == "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30" ]]
           test -s assets/third_party/COPYING.LGPLv3
           grep -F "GNU LESSER GENERAL PUBLIC LICENSE" assets/third_party/COPYING.LGPLv3 >/dev/null
           grep -F "Version 3, 29 June 2007" assets/third_party/COPYING.LGPLv3 >/dev/null
@@ -73,38 +69,86 @@ jobs:
           grep -F "FFmpeg" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "https://github.com/FFmpeg/FFmpeg/tree/n6.0" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "media-kit/libmpv-android-video-build/releases/tag/v1.1.7" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "buildscripts/flavors/default.sh" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "5968d5d2dc84dd4726540b846acbd26caa1984c3" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "481757452663bdac8162dea49e1699176411c5c7" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "media-kit/libmpv-win32-video-cmake/releases/tag/20241021" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "8ddbe5472465950b87853789f7173f2eedc5586a" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "8d940a07d19023a98689f353e4425a14688547e9" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "ffbcbfc34882110acf2c271bdae994570bd62c39" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
-          grep -F "Android LGPLv2.1" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
+          grep -F "Android LGPLv3" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "Windows LGPLv3" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "COPYING.LGPLv3" assets/third_party/THIRD_PARTY_SOURCE_OFFER.md >/dev/null
           grep -F "e9abf3b9114fdb565b13a4c194d776c70e416e7d" pubspec.lock >/dev/null
           test -s assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json
           jq -e '
-            .schemaVersion == 1
-            and .package.name == "media_kit_libs_windows_video"
-            and .package.version == "1.0.12"
-            and .package.commit == "e9abf3b9114fdb565b13a4c194d776c70e416e7d"
-            and .nativeArchive.releaseTag == "20241021"
+             .schemaVersion == 1
+             and .package.name == "media_kit_libs_windows_video"
+             and .package.version == "1.0.12"
+             and .package.commit == "e9abf3b9114fdb565b13a4c194d776c70e416e7d"
+             and .androidBuild.releaseTag == "v1.1.7"
+             and .androidBuild.releaseTagCommit == "fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768"
+             and .androidBuild.flavor == "default"
+             and .androidBuild.mpvCommit == "78d43740f52db817d98bcf24fb30a76ab6fa13ff"
+             and .androidBuild.ffmpeg.version == "6.0"
+             and .androidBuild.ffmpeg.sourceTag == "n6.0"
+             and .androidBuild.ffmpeg.sourceTagCommit == "3949db4d261748a9f34358a388ee255ad1a7f0c0"
+             and .androidBuild.ffmpeg.sourceCommit == "ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2"
+             and .androidBuild.ffmpeg.configurePolicy.required == ["--disable-gpl", "--disable-nonfree", "--enable-version3", "--enable-static", "--disable-shared", "--enable-mbedtls"]
+             and .androidBuild.ffmpeg.configurePolicy.forbidden == ["--enable-gpl", "--enable-nonfree"]
+             and .androidBuild.ffmpeg.configurePolicy.script == "buildscripts/flavors/default.sh"
+             and .androidBuild.ffmpeg.configurePolicy.scriptBlob == "5968d5d2dc84dd4726540b846acbd26caa1984c3"
+             and .androidBuild.ffmpeg.configurePolicy.scriptSha256 == "d5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce"
+             and .androidBuild.scripts.defaultFfmpeg.blob == "5968d5d2dc84dd4726540b846acbd26caa1984c3"
+             and .androidBuild.scripts.defaultFfmpeg.sha256 == "d5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce"
+             and .androidBuild.scripts.dependencyRecord.blob == "481757452663bdac8162dea49e1699176411c5c7"
+             and .androidBuild.scripts.dependencyRecord.sha256 == "3ac50b68e1669694f3e0b77d45a66bdae27a7bb23600389f6cfb686b924483b3"
+             and .nativeArchive.releaseTag == "20241021"
             and .nativeArchive.releaseTagCommit == "8ddbe5472465950b87853789f7173f2eedc5586a"
             and .nativeArchive.sha256 == "e23701df0adc1fe57c8ede3ff313513b0b80519870058c2d35ff02754284a007"
             and .build.mpvCommit == "0f7858451817c5fd5ebdb74a807a7c997662c390"
             and .build.ffmpegCommit == "8d940a07d19023a98689f353e4425a14688547e9"
             and .build.ffmpegConfigurePolicy.required == ["--disable-gpl", "--disable-nonfree", "--enable-version3", "--enable-static", "--disable-shared"]
             and .build.ffmpegConfigurePolicy.forbidden == ["--enable-gpl", "--enable-nonfree"]
-            and .licenses.androidFfmpeg.spdx == "LGPL-2.1-or-later"
-            and .licenses.androidFfmpeg.file == "assets/third_party/COPYING.LGPLv2.1"
-            and .licenses.androidFfmpeg.sha256 == "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30"
+             and .licenses.androidFfmpeg.spdx == "LGPL-3.0-or-later"
+             and .licenses.androidFfmpeg.file == "assets/third_party/COPYING.LGPLv3"
+             and .licenses.androidFfmpeg.sha256 == "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+             and .licenses.androidFfmpeg.sourceTag == "n6.0"
+             and .licenses.androidFfmpeg.sourceTagCommit == "3949db4d261748a9f34358a388ee255ad1a7f0c0"
+             and .licenses.androidFfmpeg.sourceCommit == "ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2"
             and .licenses.windowsFfmpeg.spdx == "LGPL-3.0-or-later"
             and .licenses.windowsFfmpeg.file == "assets/third_party/COPYING.LGPLv3"
             and .licenses.windowsFfmpeg.sha256 == "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
             and .licenses.windowsFfmpeg.sourceCommit == "8d940a07d19023a98689f353e4425a14688547e9"
           ' assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json >/dev/null
+          android_ffmpeg_script="$(mktemp)"
+          android_depinfo="$(mktemp)"
+          android_lgplv3_source="$(mktemp)"
           ffmpeg_source="$(mktemp)"
           lgplv3_source="$(mktemp)"
-          trap 'rm -f "$ffmpeg_source" "$lgplv3_source"' EXIT
+          trap 'rm -f "$android_ffmpeg_script" "$android_depinfo" "$android_lgplv3_source" "$ffmpeg_source" "$lgplv3_source"' EXIT
+          curl --fail --location --retry 3 --silent --show-error \
+            -o "$android_ffmpeg_script" \
+            "https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/flavors/default.sh"
+          [[ "$(git hash-object "$android_ffmpeg_script")" == "5968d5d2dc84dd4726540b846acbd26caa1984c3" ]]
+          [[ "$(sha256sum "$android_ffmpeg_script" | cut -d' ' -f1)" == "d5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce" ]]
+          for required_flag in --disable-gpl --disable-nonfree --enable-version3 --enable-static --disable-shared --enable-mbedtls; do
+            grep -F -- "$required_flag" "$android_ffmpeg_script" >/dev/null
+          done
+          if grep -F -- "--enable-gpl" "$android_ffmpeg_script" >/dev/null || grep -F -- "--enable-nonfree" "$android_ffmpeg_script" >/dev/null; then
+            echo 'The pinned Android FFmpeg default script contains a forbidden enable flag.' >&2
+            exit 1
+          fi
+          curl --fail --location --retry 3 --silent --show-error \
+            -o "$android_depinfo" \
+            "https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh"
+          [[ "$(git hash-object "$android_depinfo")" == "481757452663bdac8162dea49e1699176411c5c7" ]]
+          [[ "$(sha256sum "$android_depinfo" | cut -d' ' -f1)" == "3ac50b68e1669694f3e0b77d45a66bdae27a7bb23600389f6cfb686b924483b3" ]]
+          curl --fail --location --retry 3 --silent --show-error \
+            -o "$android_lgplv3_source" \
+            "$(jq -r '.licenses.androidFfmpeg.sourceUrl' assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json)"
+          [[ "$(sha256sum "$android_lgplv3_source" | cut -d' ' -f1)" == "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768" ]]
+          cmp --silent assets/third_party/COPYING.LGPLv3 "$android_lgplv3_source"
           curl --fail --location --retry 3 --silent --show-error \
             -o "$ffmpeg_source" \
             "https://raw.githubusercontent.com/media-kit/libmpv-win32-video-cmake/8ddbe5472465950b87853789f7173f2eedc5586a/packages/ffmpeg.cmake"
@@ -196,15 +240,13 @@ jobs:
           "$apksigner" verify --verbose "$apk"
           unzip -l "$apk" | grep -F "assets/flutter_assets/LICENSE" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
-          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1" >/dev/null
-          unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv3" >/dev/null
+           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv3" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json" >/dev/null
           aab="build/app/outputs/bundle/release/app-release.aab"
           unzip -l "$aab" | grep -F "base/assets/flutter_assets/LICENSE" >/dev/null
           unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
-          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1" >/dev/null
-          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/COPYING.LGPLv3" >/dev/null
+           unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/COPYING.LGPLv3" >/dev/null
           unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json" >/dev/null
           aab_log="$(mktemp)"

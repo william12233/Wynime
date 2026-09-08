@@ -10,6 +10,55 @@
     "pubspecBlob": "d2e4ce7ec5a0d1404d82998b8e7a28920c711a1e",
     "cmakeBlob": "ca4ac3eb58bf966f03da76404b67ff2f2af2847f"
   },
+  "androidBuild": {
+    "repository": "https://github.com/media-kit/libmpv-android-video-build",
+    "releaseTag": "v1.1.7",
+    "releaseTagCommit": "fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768",
+    "releaseUrl": "https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7",
+    "flavor": "default",
+    "mpvCommit": "78d43740f52db817d98bcf24fb30a76ab6fa13ff",
+    "ffmpeg": {
+      "version": "6.0",
+      "sourceTag": "n6.0",
+      "sourceTagCommit": "3949db4d261748a9f34358a388ee255ad1a7f0c0",
+      "sourceCommit": "ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2",
+      "sourceUrl": "https://github.com/FFmpeg/FFmpeg/tree/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2",
+      "configurePolicy": {
+        "required": [
+          "--disable-gpl",
+          "--disable-nonfree",
+          "--enable-version3",
+          "--enable-static",
+          "--disable-shared",
+          "--enable-mbedtls"
+        ],
+        "forbidden": [
+          "--enable-gpl",
+          "--enable-nonfree"
+        ],
+        "script": "buildscripts/flavors/default.sh",
+        "scriptBlob": "5968d5d2dc84dd4726540b846acbd26caa1984c3",
+        "scriptSha256": "d5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce"
+      }
+    },
+    "scripts": {
+      "defaultFfmpeg": {
+        "path": "buildscripts/flavors/default.sh",
+        "blob": "5968d5d2dc84dd4726540b846acbd26caa1984c3",
+        "sha256": "d5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce"
+      },
+      "dependencyRecord": {
+        "path": "buildscripts/include/depinfo.sh",
+        "blob": "481757452663bdac8162dea49e1699176411c5c7",
+        "sha256": "3ac50b68e1669694f3e0b77d45a66bdae27a7bb23600389f6cfb686b924483b3"
+      },
+      "bundleDefault": {
+        "path": "buildscripts/bundle_default.sh",
+        "blob": "b8bc62b7ae8772af3c48e0d28b1bc10bf2412859",
+        "sha256": "c0ab402c1ef9ee07a2c5f246fa1a41f9c1cc3ff2c69c22ceb45a626a0eb2b0b4"
+      }
+    }
+  },
   "nativeArchive": {
     "repository": "https://github.com/media-kit/libmpv-win32-video-cmake",
     "releaseTag": "20241021",
@@ -71,12 +120,15 @@
   },
   "licenses": {
     "androidFfmpeg": {
-      "component": "Android bundled FFmpeg/libmpv native media",
-      "spdx": "LGPL-2.1-or-later",
-      "file": "assets/third_party/COPYING.LGPLv2.1",
-      "sha256": "246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30",
-      "sourceUrl": "https://github.com/FFmpeg/FFmpeg/tree/n6.0/COPYING.LGPLv2.1",
-      "sourceNote": "The complete LGPLv2.1 text shipped in the Android assets; its bytes are hash-locked above."
+      "component": "Android FFmpeg statically incorporated into libmpv.so",
+      "spdx": "LGPL-3.0-or-later",
+      "file": "assets/third_party/COPYING.LGPLv3",
+      "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768",
+      "sourceTag": "n6.0",
+      "sourceTagCommit": "3949db4d261748a9f34358a388ee255ad1a7f0c0",
+      "sourceCommit": "ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2",
+      "sourceUrl": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2/COPYING.LGPLv3",
+      "sourceNote": "FFmpeg 6.0 is configured with --enable-version3 by the pinned Android default flavor; the complete LGPLv3 text is hash-locked above."
     },
     "windowsFfmpeg": {
       "component": "Windows FFmpeg statically incorporated into libmpv-2.dll",

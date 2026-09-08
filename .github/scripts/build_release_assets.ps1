@@ -53,7 +53,6 @@ if (-not $SkipBuild) {
 $apkPath = Join-Path $repoRoot 'build\app\outputs\flutter-apk\app-release.apk'
 $windowsPath = Join-Path $repoRoot 'build\windows\x64\runner\Release'
 $thirdPartyNoticePath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_NOTICES.md'
-$lgplV21LicensePath = Join-Path $repoRoot 'assets\third_party\COPYING.LGPLv2.1'
 $lgplV3LicensePath = Join-Path $repoRoot 'assets\third_party\COPYING.LGPLv3'
 $sourceOfferPath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_SOURCE_OFFER.md'
 $nativeLockPath = Join-Path $repoRoot 'assets\third_party\WINDOWS_LIBMPV_BUILD.lock.json'
@@ -70,9 +69,6 @@ if (-not (Test-Path -LiteralPath $thirdPartyNoticePath -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $licensePath -PathType Leaf)) {
     throw "Project license is missing: $licensePath"
 }
-if (-not (Test-Path -LiteralPath $lgplV21LicensePath -PathType Leaf)) {
-    throw "LGPLv2.1 license text is missing: $lgplV21LicensePath"
-}
 if (-not (Test-Path -LiteralPath $lgplV3LicensePath -PathType Leaf)) {
     throw "LGPLv3 license text is missing: $lgplV3LicensePath"
 }
@@ -84,18 +80,50 @@ if (-not (Test-Path -LiteralPath $nativeLockPath -PathType Leaf)) {
 }
 $nativeLock = Get-Content -Raw -LiteralPath $nativeLockPath | ConvertFrom-Json
 if ($null -eq $nativeLock.licenses.androidFfmpeg -or $null -eq $nativeLock.licenses.windowsFfmpeg) {
-    throw 'Native provenance lock must identify both Android LGPLv2.1 and Windows LGPLv3.'
+    throw 'Native provenance lock must identify the Android and Windows LGPLv3 mappings.'
 }
-$androidLicenseHash = Get-CanonicalUtf8Sha256 $lgplV21LicensePath
-if ($androidLicenseHash -ne ([string]$nativeLock.licenses.androidFfmpeg.sha256).ToLowerInvariant()) {
-    throw "Android LGPLv2.1 license SHA-256 $androidLicenseHash does not match the provenance lock."
+if ($nativeLock.androidBuild.releaseTag -ne 'v1.1.7' -or
+    $nativeLock.androidBuild.releaseTagCommit -ne 'fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768' -or
+    $nativeLock.androidBuild.flavor -ne 'default' -or
+    $nativeLock.androidBuild.mpvCommit -ne '78d43740f52db817d98bcf24fb30a76ab6fa13ff' -or
+    $nativeLock.androidBuild.ffmpeg.version -ne '6.0' -or
+    $nativeLock.androidBuild.ffmpeg.sourceTag -ne 'n6.0' -or
+    $nativeLock.androidBuild.ffmpeg.sourceTagCommit -ne '3949db4d261748a9f34358a388ee255ad1a7f0c0' -or
+    $nativeLock.androidBuild.ffmpeg.sourceCommit -ne 'ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2' -or
+    $nativeLock.androidBuild.ffmpeg.configurePolicy.script -ne 'buildscripts/flavors/default.sh' -or
+    $nativeLock.androidBuild.ffmpeg.configurePolicy.scriptBlob -ne '5968d5d2dc84dd4726540b846acbd26caa1984c3' -or
+    $nativeLock.androidBuild.ffmpeg.configurePolicy.scriptSha256 -ne 'd5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce' -or
+    $nativeLock.androidBuild.scripts.dependencyRecord.blob -ne '481757452663bdac8162dea49e1699176411c5c7' -or
+    $nativeLock.androidBuild.scripts.dependencyRecord.sha256 -ne '3ac50b68e1669694f3e0b77d45a66bdae27a7bb23600389f6cfb686b924483b3') {
+    throw 'Android native provenance lock does not match the pinned v1.1.7 default build record.'
+}
+$requiredAndroidFfmpegFlags = @(
+    '--disable-gpl',
+    '--disable-nonfree',
+    '--enable-version3',
+    '--enable-static',
+    '--disable-shared',
+    '--enable-mbedtls'
+)
+$actualRequiredAndroidFfmpegFlags = @($nativeLock.androidBuild.ffmpeg.configurePolicy.required) -join '|'
+$expectedRequiredAndroidFfmpegFlags = $requiredAndroidFfmpegFlags -join '|'
+$actualForbiddenAndroidFfmpegFlags = @($nativeLock.androidBuild.ffmpeg.configurePolicy.forbidden) -join '|'
+if ($actualRequiredAndroidFfmpegFlags -cne $expectedRequiredAndroidFfmpegFlags -or
+    $actualForbiddenAndroidFfmpegFlags -cne '--enable-gpl|--enable-nonfree') {
+    throw 'Android native provenance lock does not match the pinned FFmpeg configure policy.'
+}
+if ($nativeLock.licenses.androidFfmpeg.spdx -ne 'LGPL-3.0-or-later' -or
+    $nativeLock.licenses.androidFfmpeg.file -ne 'assets/third_party/COPYING.LGPLv3' -or
+    $nativeLock.licenses.windowsFfmpeg.spdx -ne 'LGPL-3.0-or-later' -or
+    $nativeLock.licenses.windowsFfmpeg.file -ne 'assets/third_party/COPYING.LGPLv3') {
+    throw 'Native provenance lock must map both native FFmpeg components to LGPLv3.'
 }
 $windowsLicenseHash = Get-CanonicalUtf8Sha256 $lgplV3LicensePath
-if ($windowsLicenseHash -ne ([string]$nativeLock.licenses.windowsFfmpeg.sha256).ToLowerInvariant()) {
-    throw "Windows LGPLv3 license SHA-256 $windowsLicenseHash does not match the provenance lock."
+if ($windowsLicenseHash -ne ([string]$nativeLock.licenses.androidFfmpeg.sha256).ToLowerInvariant() -or
+    $windowsLicenseHash -ne ([string]$nativeLock.licenses.windowsFfmpeg.sha256).ToLowerInvariant()) {
+    throw "LGPLv3 license SHA-256 $windowsLicenseHash does not match both Android and Windows provenance mappings."
 }
 foreach ($licenseCheck in @(
-        @{ Path = $lgplV21LicensePath; Header = 'Version 2.1, February 1999' },
         @{ Path = $lgplV3LicensePath; Header = 'Version 3, 29 June 2007' }
     )) {
     $licenseText = Get-Content -Raw -LiteralPath $licenseCheck.Path
@@ -125,13 +153,9 @@ $apkLicenseCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/
 if (-not $apkLicenseCheck) {
     throw 'Android APK does not contain the bundled Wynime LICENSE.'
 }
-$apkLgplCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1'
-if (-not $apkLgplCheck) {
-    throw 'Android APK does not contain the bundled LGPLv2.1 license text.'
-}
 $apkLgplV3Check = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/COPYING.LGPLv3'
 if (-not $apkLgplV3Check) {
-    throw 'Android APK does not contain the bundled LGPLv3 license text required by the Windows native dependency.'
+    throw 'Android APK does not contain the bundled LGPLv3 license text required by the Android native dependency.'
 }
 $apkSourceOfferCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md'
 if (-not $apkSourceOfferCheck) {
@@ -153,7 +177,6 @@ Copy-Item -Path (Join-Path $windowsPath '*') -Destination $stagePath -Recurse -F
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md') -Destination (Join-Path $stagePath 'README.md') -Force
 Copy-Item -LiteralPath $licensePath -Destination (Join-Path $stagePath 'LICENSE') -Force
 Copy-Item -LiteralPath $thirdPartyNoticePath -Destination (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md') -Force
-Copy-Item -LiteralPath $lgplV21LicensePath -Destination (Join-Path $stagePath 'COPYING.LGPLv2.1') -Force
 Copy-Item -LiteralPath $lgplV3LicensePath -Destination (Join-Path $stagePath 'COPYING.LGPLv3') -Force
 Copy-Item -LiteralPath $sourceOfferPath -Destination (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -Force
 Copy-Item -LiteralPath $nativeLockPath -Destination (Join-Path $stagePath 'WINDOWS_LIBMPV_BUILD.lock.json') -Force
@@ -165,9 +188,6 @@ if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md')
 }
 if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'LICENSE') -PathType Leaf)) {
     throw 'Windows bundle does not contain the project license.'
-}
-if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'COPYING.LGPLv2.1') -PathType Leaf)) {
-    throw 'Windows bundle does not contain the LGPLv2.1 license text.'
 }
 if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'COPYING.LGPLv3') -PathType Leaf)) {
     throw 'Windows bundle does not contain the LGPLv3 license text required by the Windows native dependency.'

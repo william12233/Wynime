@@ -29,8 +29,8 @@ The following gates are machine-verifiable and block publication:
 6. the Windows x64 Flutter Release build succeeds;
 7. the Android APK, Windows installer and portable ZIP each have a matching
    SHA-256 sidecar;
-8. `THIRD_PARTY_NOTICES.md`, the complete applicable Android
-   `COPYING.LGPLv2.1` and Windows `COPYING.LGPLv3` texts, and
+8. `THIRD_PARTY_NOTICES.md`, the complete applicable Android and Windows
+   `COPYING.LGPLv3` text, and
    `THIRD_PARTY_SOURCE_OFFER.md` are present in the Android and Windows
    distributions;
 9. recorded native archive and packaged-binary hashes match the candidate;
@@ -76,11 +76,10 @@ Windows libmpv archive, FFmpeg linkage, ANGLE inputs, WebView2 loader, SQLite,
 Flutter/Dart runtime and all redistributed DLLs are covered by
 `docs/THIRD_PARTY_PROVENANCE.md` and
 `assets/third_party/THIRD_PARTY_NOTICES.md`.
-The complete Android-applicable LGPLv2.1 text is shipped as
-`assets/third_party/COPYING.LGPLv2.1`. The complete Windows-applicable
-LGPLv3 text selected by `--enable-version3` is shipped as
-`assets/third_party/COPYING.LGPLv3`. The corresponding-source/relink mechanism
-is shipped as `assets/third_party/THIRD_PARTY_SOURCE_OFFER.md`.
+The complete LGPLv3 text applicable to the Android `--enable-version3`
+default flavor and Windows native media is shipped as
+`assets/third_party/COPYING.LGPLv3`. The corresponding-source/relink
+mechanism is shipped as `assets/third_party/THIRD_PARTY_SOURCE_OFFER.md`.
 
 ## GitHub Release assets
 
@@ -104,7 +103,7 @@ available on the `windows-2025` runner. The installer:
 - uses a stable AppId and per-user default directory;
 - creates a Start Menu shortcut;
 - offers an unchecked optional desktop shortcut;
-- includes `LICENSE`, `COPYING.LGPLv2.1`, `COPYING.LGPLv3`,
+- includes `LICENSE`, `COPYING.LGPLv3`,
   `THIRD_PARTY_SOURCE_OFFER.md`,
   `THIRD_PARTY_NOTICES.md`, `WINDOWS_LIBMPV_BUILD.lock.json`, `README.md` and
   release notes;
@@ -118,7 +117,7 @@ warning; no unsigned installer is presented as signed evidence.
 
 The portable ZIP contains the complete
 `build/windows/x64/runner/Release` directory plus `README.md`, `LICENSE`,
-`THIRD_PARTY_NOTICES.md`, `COPYING.LGPLv2.1`, `COPYING.LGPLv3`,
+`THIRD_PARTY_NOTICES.md`, `COPYING.LGPLv3`,
 `THIRD_PARTY_SOURCE_OFFER.md`, `WINDOWS_LIBMPV_BUILD.lock.json`,
 `RELEASE_NOTES.md` and a version-only `version.txt`.
 

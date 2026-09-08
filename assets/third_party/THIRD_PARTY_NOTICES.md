@@ -48,28 +48,36 @@ evidence.
 
 ## LGPL-covered native media and corresponding source
 
-The `-Dgpl=false` native media builds use the LGPL path with FFmpeg
-statically incorporated into libmpv. The applicable license differs by
-platform and is not interchangeable:
+The Android and Windows native media builds use the LGPL path with FFmpeg
+statically incorporated into libmpv. Both pinned FFmpeg builds enable
+`--enable-version3`, so the applicable license for the shipped Android and
+Windows native FFmpeg components is LGPLv3-or-later. The complete
+`COPYING.LGPLv3` text is shipped at
+`assets/flutter_assets/assets/third_party/COPYING.LGPLv3` in Android and at
+the root of both Windows distributions.
 
-- **Android LGPLv2.1:** the Android default libmpv build uses the complete
-  `COPYING.LGPLv2.1` text at
-  `assets/flutter_assets/assets/third_party/COPYING.LGPLv2.1`.
-- **Windows LGPLv3:** the pinned Windows FFmpeg build enables
-  `--enable-version3`, so the complete `COPYING.LGPLv3` text is required at
-  the Windows distribution root and is also retained in the common Android
-  asset manifest.
+The Android default flavor is independently pinned to media-kit
+libmpv-android-video-build `v1.1.7` (tag commit
+`fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768`). Its exact FFmpeg configure
+script is `buildscripts/flavors/default.sh` (Git blob
+`5968d5d2dc84dd4726540b846acbd26caa1984c3`, SHA-256
+`d5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce`), and
+the dependency record is pinned to blob
+`481757452663bdac8162dea49e1699176411c5c7` (SHA-256
+`3ac50b68e1669694f3e0b77d45a66bdae27a7bb23600389f6cfb686b924483b3`). The
+script requires `--disable-gpl --disable-nonfree --enable-version3
+--enable-static --disable-shared --enable-mbedtls`; the release gates verify
+those exact bytes and reject the forbidden GPL/nonfree enable flags.
 
-The canonical repository hashes are `246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30`
-for the shipped LGPLv2.1 text and
-`da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768` for the
-FFmpeg-commit LGPLv3 text. The corresponding source and relink offer is
-shipped as `THIRD_PARTY_SOURCE_OFFER.md` in the Windows distribution and as
+The canonical repository SHA-256 for the shipped LGPLv3 text is
+`da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`, matching
+the FFmpeg n6.0 source tree and the pinned Windows FFmpeg commit. The
+corresponding source and relink offer is shipped as
+`THIRD_PARTY_SOURCE_OFFER.md` in the Windows distribution and as
 `assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md` in
-the Android APK. It provides the immutable Android FFmpeg n6.0 and Windows
-FFmpeg/media-kit source/build references, the exact dependency records, the
-Windows native provenance lock, and a written offer valid from 2026-09-07
-through 2029-09-07.
+the Android APK. It provides immutable Android and Windows FFmpeg/media-kit
+source/build references, the exact dependency records, the native provenance
+lock, and a written offer valid from 2026-09-07 through 2029-09-07.
 
 ## Windows native media
 

@@ -34,7 +34,7 @@ native binary, codec or system runtime.
   version metadata and ABI checks are required and recorded by CI.
 - Windows x64 Flutter Release build: pass on the declared toolchain.
 - Engineering native provenance, archive identity, packaged-binary hashes,
-  the applicable Android LGPLv2.1 and Windows LGPLv3 license texts,
+  the applicable Android and Windows LGPLv3 license text,
   corresponding-source/relink offer and shipped notices:
   `CLOSED_RELEASE_PROVENANCE`.
 - Android APK, Windows x64 installer and portable ZIP each have a matching
@@ -113,9 +113,10 @@ for every native component that enters the release distributions:
   zlib, media-kit plugin DLLs and all other native files in the Windows
   Release directory.
 
-The selected Android default flavor disables GPL/nonfree FFmpeg options
-according to its upstream build record and is covered by the complete
-`COPYING.LGPLv2.1` text. The Windows release DLL runtime reports mpv
+The selected Android default flavor disables GPL/nonfree FFmpeg options and
+enables FFmpeg's version-3 licensing option according to the pinned upstream
+`buildscripts/flavors/default.sh` record; it is covered by the complete
+`COPYING.LGPLv3` text. The Windows release DLL runtime reports mpv
 `v0.39.0-179-g0f78584518`, FFmpeg `N-117622-g8d940a07d` from exact commit
 `8d940a07d19023a98689f353e4425a14688547e9`, `-Dgpl=false`, `-Dlibmpv=true`,
 `-Dprefer_static=True` and static FFmpeg linkage. The exact Windows FFmpeg
@@ -131,9 +132,9 @@ The exact upstream references, archive hashes, packaged hashes, runtime
 probe, dependency versions and notice mapping are maintained in
 `docs/THIRD_PARTY_PROVENANCE.md`. The same candidate notice material is
 verified in the Android APK and Windows distributions by release automation.
-The distributions carry both `COPYING.LGPLv2.1` for Android's native media
-and `COPYING.LGPLv3` for Windows' `--enable-version3` native media, together
-with `THIRD_PARTY_SOURCE_OFFER.md`. The latter identifies the exact
+The distributions carry `COPYING.LGPLv3` for both Android's pinned
+`--enable-version3` native media and Windows' `--enable-version3` native
+media, together with `THIRD_PARTY_SOURCE_OFFER.md`. The latter identifies the exact
 corresponding source and relink procedure for the statically incorporated
 FFmpeg/libmpv components.
 No independent legal opinion was obtained; this is a disclosure, not a
@@ -142,8 +143,8 @@ machine release blocker under ADR-025.
 ## Package and installer boundary
 
 The Windows portable ZIP includes the complete Flutter Release directory plus
-`README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`,
-`COPYING.LGPLv2.1`, `COPYING.LGPLv3`, `THIRD_PARTY_SOURCE_OFFER.md`,
+`README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `COPYING.LGPLv3`,
+`THIRD_PARTY_SOURCE_OFFER.md`,
 `WINDOWS_LIBMPV_BUILD.lock.json`, `RELEASE_NOTES.md` and version-only
 `version.txt`.
 

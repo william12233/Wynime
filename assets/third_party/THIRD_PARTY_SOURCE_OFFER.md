@@ -2,11 +2,10 @@
 
 This document accompanies every Wynime v1.0.1 distribution. It is the
 corresponding-source and relink manifest for the LGPL-covered native media
-components used by this release. The applicable complete license texts are
-shipped as `COPYING.LGPLv2.1` for Android's native media and `COPYING.LGPLv3`
-for the Windows `--enable-version3` native media. Both texts are retained in
-the common Android asset manifest; the Windows distributions include both at
-their root.
+components used by this release. The Android and Windows default FFmpeg
+builds both use `--enable-version3`; the applicable complete license text is
+therefore shipped as `COPYING.LGPLv3` in the Android asset manifest and at the
+root of the Windows distributions.
 
 ## Written offer
 
@@ -35,10 +34,12 @@ release automation used to reproduce the application-side relink.
 | Component | Corresponding source or relink material |
 | --- | --- |
 | FFmpeg | FFmpeg release n6.0 (tag object 3949db4d261748a9f34358a388ee255ad1a7f0c0): https://github.com/FFmpeg/FFmpeg/tree/n6.0 and https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n6.0.tar.gz |
-| Android libmpv build | media-kit libmpv-android-video-build release v1.1.7 (tag object fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768): https://github.com/media-kit/libmpv-android-video-build/tree/v1.1.7 |
-| Android dependency/build record | Pinned record and build scripts: https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh |
+| Android libmpv build | media-kit libmpv-android-video-build release v1.1.7 (tag commit fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768), mpv commit 78d43740f52db817d98bcf24fb30a76ab6fa13ff: https://github.com/media-kit/libmpv-android-video-build/tree/v1.1.7 |
+| Android default FFmpeg build script | `buildscripts/flavors/default.sh`, Git blob `5968d5d2dc84dd4726540b846acbd26caa1984c3`, SHA-256 `d5b84c3398fc673c6210f6b0559a163d5c1e1c146b1dc52eab211c3ad0ba09ce`: https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/flavors/default.sh |
+| Android dependency/build record | `buildscripts/include/depinfo.sh`, Git blob `481757452663bdac8162dea49e1699176411c5c7`, SHA-256 `3ac50b68e1669694f3e0b77d45a66bdae27a7bb23600389f6cfb686b924483b3`: https://raw.githubusercontent.com/media-kit/libmpv-android-video-build/v1.1.7/buildscripts/include/depinfo.sh |
 | Android binary input | Exact default ABI JAR release assets and their package-declared MD5 values: https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7 |
-| Android LGPLv2.1 license | Complete shipped text `assets/third_party/COPYING.LGPLv2.1`, canonical repository SHA-256 `246041b6ecf9bc32d718a62c57877c78b5eb397b6467e74ed7ae2626ab189c30`, source reference: https://github.com/FFmpeg/FFmpeg/tree/n6.0/COPYING.LGPLv2.1 |
+| Android FFmpeg build policy | FFmpeg 6.0 source commit `ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2` (n6.0 tag object `3949db4d261748a9f34358a388ee255ad1a7f0c0`), with `--disable-gpl --disable-nonfree --enable-version3 --enable-static --disable-shared --enable-mbedtls`: https://github.com/FFmpeg/FFmpeg/tree/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2 |
+| Android LGPLv3 license | Complete shipped text `assets/flutter_assets/assets/third_party/COPYING.LGPLv3`, canonical repository SHA-256 `da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`, source reference: https://raw.githubusercontent.com/FFmpeg/FFmpeg/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2/COPYING.LGPLv3 |
 | Windows Flutter package input | `media_kit_libs_windows_video` 1.0.12 from the media-kit repository at commit `e9abf3b9114fdb565b13a4c194d776c70e416e7d`, path `libs/windows/media_kit_libs_windows_video`: https://github.com/media-kit/media-kit/tree/e9abf3b9114fdb565b13a4c194d776c70e416e7d/libs/windows/media_kit_libs_windows_video |
 | Windows libmpv build input | Exact x64 development archive `mpv-dev-x86_64-20241021-git-0f78584.7z`, release tag `20241021`, tag commit `8ddbe5472465950b87853789f7173f2eedc5586a`: https://github.com/media-kit/libmpv-win32-video-cmake/releases/tag/20241021 |
 | Windows build workflow/source | Source commit `8ddbe5472465950b87853789f7173f2eedc5586a`; build workflow: https://github.com/media-kit/libmpv-win32-video-cmake/actions/runs/11444402983 |
@@ -70,6 +71,6 @@ unrecorded FFmpeg or libmpv version.
    compatible native library without changing the Wynime source license.
 
 The release workflow fail-closes unless this offer, the full applicable
-Android LGPLv2.1 and Windows LGPLv3 texts, their locked hashes, the upstream
+Android and Windows LGPLv3 text, its locked hash, the upstream
 source references and the package-content checks are present. No signing key,
 password or private material is part of the corresponding-source offer.

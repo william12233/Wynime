@@ -41,6 +41,7 @@ flutter:
   assets:
     - LICENSE
     - assets/third_party/THIRD_PARTY_NOTICES.md
+    - assets/third_party/COPYING.GPLv3
     - assets/third_party/COPYING.LGPLv3
     - assets/third_party/THIRD_PARTY_SOURCE_OFFER.md
     - assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json

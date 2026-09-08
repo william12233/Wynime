@@ -72,12 +72,27 @@ those exact bytes and reject the forbidden GPL/nonfree enable flags.
 The canonical repository SHA-256 for the shipped LGPLv3 text is
 `da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`, matching
 the FFmpeg n6.0 source tree and the pinned Windows FFmpeg commit. The
+LGPLv3 Section 4(b) Combined Work requirement is satisfied by also shipping
+the complete `COPYING.GPLv3` text at
+`assets/flutter_assets/assets/third_party/COPYING.GPLv3` in Android and at
+the root of both Windows distributions. It is the exact upstream FFmpeg
+license file shared by both pinned source commits: Git blob
+`94a9ed024d3859793618152ea559a168bbcbb5e2`, SHA-256
+`8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903`.
+The corresponding GNU GPL source references are:
+
+- Android FFmpeg commit `ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2`:
+  <https://raw.githubusercontent.com/FFmpeg/FFmpeg/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2/COPYING.GPLv3>
+- Windows FFmpeg commit `8d940a07d19023a98689f353e4425a14688547e9`:
+  <https://raw.githubusercontent.com/FFmpeg/FFmpeg/8d940a07d19023a98689f353e4425a14688547e9/COPYING.GPLv3>
+
 corresponding source and relink offer is shipped as
 `THIRD_PARTY_SOURCE_OFFER.md` in the Windows distribution and as
 `assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md` in
 the Android APK. It provides immutable Android and Windows FFmpeg/media-kit
-source/build references, the exact dependency records, the native provenance
-lock, and a written offer valid from 2026-09-07 through 2029-09-07.
+  source/build references, the exact dependency records, the native provenance
+  lock, both applicable license texts, and a written offer valid from
+  2026-09-07 through 2029-09-07.
 
 ## Windows native media
 

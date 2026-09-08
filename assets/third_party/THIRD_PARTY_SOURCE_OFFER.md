@@ -5,7 +5,9 @@ corresponding-source and relink manifest for the LGPL-covered native media
 components used by this release. The Android and Windows default FFmpeg
 builds both use `--enable-version3`; the applicable complete license text is
 therefore shipped as `COPYING.LGPLv3` in the Android asset manifest and at the
-root of the Windows distributions.
+root of the Windows distributions. LGPLv3 Section 4(b) also requires the
+accompanying GNU GPL text, which is shipped as `COPYING.GPLv3` in the same
+locations.
 
 ## Written offer
 
@@ -40,6 +42,7 @@ release automation used to reproduce the application-side relink.
 | Android binary input | Exact default ABI JAR release assets and their package-declared MD5 values: https://github.com/media-kit/libmpv-android-video-build/releases/tag/v1.1.7 |
 | Android FFmpeg build policy | FFmpeg 6.0 source commit `ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2` (n6.0 tag object `3949db4d261748a9f34358a388ee255ad1a7f0c0`), with `--disable-gpl --disable-nonfree --enable-version3 --enable-static --disable-shared --enable-mbedtls`: https://github.com/FFmpeg/FFmpeg/tree/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2 |
 | Android LGPLv3 license | Complete shipped text `assets/flutter_assets/assets/third_party/COPYING.LGPLv3`, canonical repository SHA-256 `da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`, source reference: https://raw.githubusercontent.com/FFmpeg/FFmpeg/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2/COPYING.LGPLv3 |
+| Combined Work GPLv3 license | Complete shipped text `assets/flutter_assets/assets/third_party/COPYING.GPLv3`, Git blob `94a9ed024d3859793618152ea559a168bbcbb5e2`, canonical repository SHA-256 `8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903`, source references: https://raw.githubusercontent.com/FFmpeg/FFmpeg/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2/COPYING.GPLv3 and https://raw.githubusercontent.com/FFmpeg/FFmpeg/8d940a07d19023a98689f353e4425a14688547e9/COPYING.GPLv3 |
 | Windows Flutter package input | `media_kit_libs_windows_video` 1.0.12 from the media-kit repository at commit `e9abf3b9114fdb565b13a4c194d776c70e416e7d`, path `libs/windows/media_kit_libs_windows_video`: https://github.com/media-kit/media-kit/tree/e9abf3b9114fdb565b13a4c194d776c70e416e7d/libs/windows/media_kit_libs_windows_video |
 | Windows libmpv build input | Exact x64 development archive `mpv-dev-x86_64-20241021-git-0f78584.7z`, release tag `20241021`, tag commit `8ddbe5472465950b87853789f7173f2eedc5586a`: https://github.com/media-kit/libmpv-win32-video-cmake/releases/tag/20241021 |
 | Windows build workflow/source | Source commit `8ddbe5472465950b87853789f7173f2eedc5586a`; build workflow: https://github.com/media-kit/libmpv-win32-video-cmake/actions/runs/11444402983 |
@@ -71,6 +74,7 @@ unrecorded FFmpeg or libmpv version.
    compatible native library without changing the Wynime source license.
 
 The release workflow fail-closes unless this offer, the full applicable
-Android and Windows LGPLv3 text, its locked hash, the upstream
-source references and the package-content checks are present. No signing key,
+Android and Windows LGPLv3 text, the accompanying GPLv3 text and both locked
+hashes, the upstream source references and the package-content checks are
+present. No signing key,
 password or private material is part of the corresponding-source offer.

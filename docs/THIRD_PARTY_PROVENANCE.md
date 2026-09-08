@@ -16,8 +16,10 @@ shipped notice references were checked. The selected media-kit Android
 default flavor and Windows libmpv build do not use the GPL encoder flavor or
 nonfree FFmpeg option. Both the Android default and pinned Windows FFmpeg
 builds enable `--enable-version3`, so their shipped FFmpeg components use the
-applicable LGPLv3 text. The complete text is shipped with the distributions,
-and `THIRD_PARTY_SOURCE_OFFER.md` supplies a concrete
+applicable LGPLv3 text. Under LGPLv3 Section 4(b), the statically incorporated
+Combined Work is also accompanied by the applicable GNU GPLv3 text. The
+complete `COPYING.LGPLv3` and `COPYING.GPLv3` texts are shipped with the
+distributions, and `THIRD_PARTY_SOURCE_OFFER.md` supplies a concrete
 three-year corresponding-source and relink path for the statically
 incorporated FFmpeg/libmpv components. The root `LICENSE` applies only to
 Wynime-owned source code; third-party components remain under their upstream
@@ -77,7 +79,13 @@ requires `--disable-gpl --disable-nonfree --enable-version3 --enable-static
 complete Android and Windows `COPYING.LGPLv3` text is included in the common
 Android Flutter assets and the Windows distributions and verified by the
 candidate signing and release workflows. Its canonical repository SHA-256 is
-`da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`.
+`da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768`. The
+corresponding `COPYING.GPLv3` required by LGPLv3 Section 4(b) is the exact
+upstream Git blob `94a9ed024d3859793618152ea559a168bbcbb5e2`, with canonical
+SHA-256 `8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903`;
+both pinned FFmpeg source commits use this same license text:
+`ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2` and
+`8d940a07d19023a98689f353e4425a14688547e9`.
 
 The candidate APK package audit maps the shipped `libmpv.so` files to the
 selected JAR outputs:
@@ -145,11 +153,12 @@ configuration SHA-256 is
 `f940a8f30f968817e21456395d630c54f8d49304a58a7cc82a259c9699820617`.
 PE dependency inspection showed no separate FFmpeg DLL; FFmpeg is statically
 linked into libmpv. Because the exact Windows build policy includes
-`--enable-version3`, the complete `COPYING.LGPLv3` text, its locked SHA-256
-and the corresponding-source/relink offer are copied into both Windows
-distributions and verified by the release workflow. The same LGPLv3 text is
-the applicable Android native-media license and is verified in the signed
-Android artifacts.
+`--enable-version3`, the complete `COPYING.LGPLv3` text, the accompanying
+`COPYING.GPLv3` text required by LGPLv3 Section 4(b), their locked SHA-256
+values and the corresponding-source/relink offer are copied into both
+Windows distributions and verified by the release workflow. The same two
+license texts are the applicable Android native-media documents and are
+verified in the signed Android artifacts.
 
 The stable native files in the Windows Release tree and their verified
 SHA-256 values are:
@@ -180,6 +189,7 @@ Authoritative references:
 - Windows FFmpeg source: <https://github.com/FFmpeg/FFmpeg/tree/8d940a07d19023a98689f353e4425a14688547e9>;
 - mpv license guidance: <https://github.com/mpv-player/mpv/blob/master/Copyright>;
 - FFmpeg source/license: <https://github.com/FFmpeg/FFmpeg/tree/release/6.0>;
+- pinned FFmpeg GPLv3 text: <https://raw.githubusercontent.com/FFmpeg/FFmpeg/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2/COPYING.GPLv3> and <https://raw.githubusercontent.com/FFmpeg/FFmpeg/8d940a07d19023a98689f353e4425a14688547e9/COPYING.GPLv3>;
 - ANGLE license: <https://chromium.googlesource.com/angle/angle/+/main/LICENSE>;
 - SwiftShader license: <https://github.com/google/swiftshader/blob/main/LICENSE.txt>;
 - Vulkan Loader license: <https://github.com/KhronosGroup/Vulkan-Loader/blob/main/LICENSE.txt>;
@@ -194,8 +204,8 @@ upstream and system-runtime references for the exact release boundary. The
 same file is verified inside the Android APK and copied into both the Windows
 portable ZIP and installer. The Windows distributions also include the root
 `LICENSE`, `COPYING.LGPLv3`, `THIRD_PARTY_SOURCE_OFFER.md`, README and release
-notes. Android includes the complete applicable license text and the source
-offer under
+notes. Android includes the complete applicable `COPYING.GPLv3` and
+`COPYING.LGPLv3` texts and the source offer under
 `assets/flutter_assets/assets/third_party/`.
 
 The source offer is part of the shipped compliance mechanism: it identifies

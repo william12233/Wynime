@@ -119,6 +119,24 @@
     }
   },
   "licenses": {
+    "combinedWorkGpl": {
+      "component": "GNU GPL license accompanying the LGPLv3 Combined Work",
+      "spdx": "GPL-3.0-or-later",
+      "file": "assets/third_party/COPYING.GPLv3",
+      "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903",
+      "sourceBlob": "94a9ed024d3859793618152ea559a168bbcbb5e2",
+      "sourceRefs": [
+        {
+          "sourceCommit": "ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2",
+          "sourceUrl": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/ea3d24bbe3c58b171e55fe2151fc7ffaca3ab3d2/COPYING.GPLv3"
+        },
+        {
+          "sourceCommit": "8d940a07d19023a98689f353e4425a14688547e9",
+          "sourceUrl": "https://raw.githubusercontent.com/FFmpeg/FFmpeg/8d940a07d19023a98689f353e4425a14688547e9/COPYING.GPLv3"
+        }
+      ],
+      "sourceNote": "LGPLv3 Section 4(b) requires the Combined Work to accompany a copy of the GNU GPL and the LGPL license document; both pinned FFmpeg source commits use this exact GPLv3 text."
+    },
     "androidFfmpeg": {
       "component": "Android FFmpeg statically incorporated into libmpv.so",
       "spdx": "LGPL-3.0-or-later",

@@ -42,6 +42,7 @@ Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ign
 Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\assets\third_party\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; DestName: "THIRD_PARTY_NOTICES.md"; Flags: ignoreversion
+Source: "..\..\assets\third_party\COPYING.GPLv3"; DestDir: "{app}"; DestName: "COPYING.GPLv3"; Flags: ignoreversion
 Source: "..\..\assets\third_party\COPYING.LGPLv3"; DestDir: "{app}"; DestName: "COPYING.LGPLv3"; Flags: ignoreversion
 Source: "..\..\assets\third_party\THIRD_PARTY_SOURCE_OFFER.md"; DestDir: "{app}"; DestName: "THIRD_PARTY_SOURCE_OFFER.md"; Flags: ignoreversion
 Source: "..\..\assets\third_party\WINDOWS_LIBMPV_BUILD.lock.json"; DestDir: "{app}"; DestName: "WINDOWS_LIBMPV_BUILD.lock.json"; Flags: ignoreversion

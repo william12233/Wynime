@@ -34,7 +34,8 @@ native binary, codec or system runtime.
   version metadata and ABI checks are required and recorded by CI.
 - Windows x64 Flutter Release build: pass on the declared toolchain.
 - Engineering native provenance, archive identity, packaged-binary hashes,
-  the applicable Android and Windows LGPLv3 license text,
+  the applicable Android and Windows LGPLv3 text, the accompanying GPLv3
+  Combined Work text,
   corresponding-source/relink offer and shipped notices:
   `CLOSED_RELEASE_PROVENANCE`.
 - Android APK, Windows x64 installer and portable ZIP each have a matching
@@ -116,7 +117,10 @@ for every native component that enters the release distributions:
 The selected Android default flavor disables GPL/nonfree FFmpeg options and
 enables FFmpeg's version-3 licensing option according to the pinned upstream
 `buildscripts/flavors/default.sh` record; it is covered by the complete
-`COPYING.LGPLv3` text. The Windows release DLL runtime reports mpv
+`COPYING.LGPLv3` text. LGPLv3 Section 4(b) also requires the accompanying
+`COPYING.GPLv3` text; its exact upstream blob and SHA-256 are locked in the
+native provenance record and both license files are packaged and checked. The
+Windows release DLL runtime reports mpv
 `v0.39.0-179-g0f78584518`, FFmpeg `N-117622-g8d940a07d` from exact commit
 `8d940a07d19023a98689f353e4425a14688547e9`, `-Dgpl=false`, `-Dlibmpv=true`,
 `-Dprefer_static=True` and static FFmpeg linkage. The exact Windows FFmpeg
@@ -124,7 +128,8 @@ policy is pinned to `packages/ffmpeg.cmake` blob
 `ffbcbfc34882110acf2c271bdae994570bd62c39`, requiring
 `--disable-gpl --disable-nonfree --enable-version3 --enable-static
 --disable-shared` and rejecting both forbidden enable flags. The Windows
-`--enable-version3` path is covered by the complete `COPYING.LGPLv3` text.
+`--enable-version3` path is covered by the complete `COPYING.LGPLv3` text
+and the accompanying `COPYING.GPLv3` text required by LGPLv3 Section 4(b).
 The machine-readable lock and runtime verifier close this provenance chain;
 no alternate FFmpeg or native package was substituted to satisfy the gate.
 
@@ -143,7 +148,8 @@ machine release blocker under ADR-025.
 ## Package and installer boundary
 
 The Windows portable ZIP includes the complete Flutter Release directory plus
-`README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `COPYING.LGPLv3`,
+`README.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, `COPYING.GPLv3`,
+`COPYING.LGPLv3`,
 `THIRD_PARTY_SOURCE_OFFER.md`,
 `WINDOWS_LIBMPV_BUILD.lock.json`, `RELEASE_NOTES.md` and version-only
 `version.txt`.
@@ -151,7 +157,7 @@ The Windows portable ZIP includes the complete Flutter Release directory plus
 The Windows installer is compiled from
 `installer/windows/wynime.iss` with the runner's `ISCC.exe`. It installs
 the complete bundle, creates a Start Menu shortcut, offers an unchecked
-desktop shortcut, includes the license, LGPL text, corresponding-source offer,
+desktop shortcut, includes the license, GPLv3/LGPLv3 texts, corresponding-source offer,
 native provenance lock, notices and release notes, and provides a complete
 uninstaller. No Authenticode
 certificate is configured, so the

@@ -53,6 +53,7 @@ if (-not $SkipBuild) {
 $apkPath = Join-Path $repoRoot 'build\app\outputs\flutter-apk\app-release.apk'
 $windowsPath = Join-Path $repoRoot 'build\windows\x64\runner\Release'
 $thirdPartyNoticePath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_NOTICES.md'
+$gplV3LicensePath = Join-Path $repoRoot 'assets\third_party\COPYING.GPLv3'
 $lgplV3LicensePath = Join-Path $repoRoot 'assets\third_party\COPYING.LGPLv3'
 $sourceOfferPath = Join-Path $repoRoot 'assets\third_party\THIRD_PARTY_SOURCE_OFFER.md'
 $nativeLockPath = Join-Path $repoRoot 'assets\third_party\WINDOWS_LIBMPV_BUILD.lock.json'
@@ -72,6 +73,9 @@ if (-not (Test-Path -LiteralPath $licensePath -PathType Leaf)) {
 if (-not (Test-Path -LiteralPath $lgplV3LicensePath -PathType Leaf)) {
     throw "LGPLv3 license text is missing: $lgplV3LicensePath"
 }
+if (-not (Test-Path -LiteralPath $gplV3LicensePath -PathType Leaf)) {
+    throw "GPLv3 license text is missing: $gplV3LicensePath"
+}
 if (-not (Test-Path -LiteralPath $sourceOfferPath -PathType Leaf)) {
     throw "Corresponding-source offer is missing: $sourceOfferPath"
 }
@@ -81,6 +85,13 @@ if (-not (Test-Path -LiteralPath $nativeLockPath -PathType Leaf)) {
 $nativeLock = Get-Content -Raw -LiteralPath $nativeLockPath | ConvertFrom-Json
 if ($null -eq $nativeLock.licenses.androidFfmpeg -or $null -eq $nativeLock.licenses.windowsFfmpeg) {
     throw 'Native provenance lock must identify the Android and Windows LGPLv3 mappings.'
+}
+if ($null -eq $nativeLock.licenses.combinedWorkGpl -or
+    $nativeLock.licenses.combinedWorkGpl.spdx -ne 'GPL-3.0-or-later' -or
+    $nativeLock.licenses.combinedWorkGpl.file -ne 'assets/third_party/COPYING.GPLv3' -or
+    $nativeLock.licenses.combinedWorkGpl.sha256 -ne '8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903' -or
+    $nativeLock.licenses.combinedWorkGpl.sourceBlob -ne '94a9ed024d3859793618152ea559a168bbcbb5e2') {
+    throw 'Native provenance lock must identify the exact GPLv3 Combined Work license material.'
 }
 if ($nativeLock.androidBuild.releaseTag -ne 'v1.1.7' -or
     $nativeLock.androidBuild.releaseTagCommit -ne 'fe8c3ac1a91c09aa6fb1deccbc833f1bafa54768' -or
@@ -123,6 +134,15 @@ if ($windowsLicenseHash -ne ([string]$nativeLock.licenses.androidFfmpeg.sha256).
     $windowsLicenseHash -ne ([string]$nativeLock.licenses.windowsFfmpeg.sha256).ToLowerInvariant()) {
     throw "LGPLv3 license SHA-256 $windowsLicenseHash does not match both Android and Windows provenance mappings."
 }
+$gplV3LicenseHash = Get-CanonicalUtf8Sha256 $gplV3LicensePath
+if ($gplV3LicenseHash -ne ([string]$nativeLock.licenses.combinedWorkGpl.sha256).ToLowerInvariant()) {
+    throw "GPLv3 license SHA-256 $gplV3LicenseHash does not match the Combined Work provenance mapping."
+}
+$gplV3Text = Get-Content -Raw -LiteralPath $gplV3LicensePath
+if (-not $gplV3Text.Contains('GNU GENERAL PUBLIC LICENSE') -or
+    -not $gplV3Text.Contains('Version 3, 29 June 2007')) {
+    throw 'Applicable GPLv3 license text is incomplete.'
+}
 foreach ($licenseCheck in @(
         @{ Path = $lgplV3LicensePath; Header = 'Version 3, 29 June 2007' }
     )) {
@@ -157,6 +177,10 @@ $apkLgplV3Check = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/f
 if (-not $apkLgplV3Check) {
     throw 'Android APK does not contain the bundled LGPLv3 license text required by the Android native dependency.'
 }
+$apkGplV3Check = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/COPYING.GPLv3'
+if (-not $apkGplV3Check) {
+    throw 'Android APK does not contain the bundled GPLv3 license text required by the LGPLv3 Combined Work.'
+}
 $apkSourceOfferCheck = & tar -tf $apkAssetPath | Select-String -SimpleMatch 'assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md'
 if (-not $apkSourceOfferCheck) {
     throw 'Android APK does not contain the corresponding-source offer.'
@@ -177,6 +201,7 @@ Copy-Item -Path (Join-Path $windowsPath '*') -Destination $stagePath -Recurse -F
 Copy-Item -LiteralPath (Join-Path $repoRoot 'README.md') -Destination (Join-Path $stagePath 'README.md') -Force
 Copy-Item -LiteralPath $licensePath -Destination (Join-Path $stagePath 'LICENSE') -Force
 Copy-Item -LiteralPath $thirdPartyNoticePath -Destination (Join-Path $stagePath 'THIRD_PARTY_NOTICES.md') -Force
+Copy-Item -LiteralPath $gplV3LicensePath -Destination (Join-Path $stagePath 'COPYING.GPLv3') -Force
 Copy-Item -LiteralPath $lgplV3LicensePath -Destination (Join-Path $stagePath 'COPYING.LGPLv3') -Force
 Copy-Item -LiteralPath $sourceOfferPath -Destination (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -Force
 Copy-Item -LiteralPath $nativeLockPath -Destination (Join-Path $stagePath 'WINDOWS_LIBMPV_BUILD.lock.json') -Force
@@ -191,6 +216,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'LICENSE') -PathType Leaf
 }
 if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'COPYING.LGPLv3') -PathType Leaf)) {
     throw 'Windows bundle does not contain the LGPLv3 license text required by the Windows native dependency.'
+}
+if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'COPYING.GPLv3') -PathType Leaf)) {
+    throw 'Windows bundle does not contain the GPLv3 license text required by the LGPLv3 Combined Work.'
 }
 if (-not (Test-Path -LiteralPath (Join-Path $stagePath 'THIRD_PARTY_SOURCE_OFFER.md') -PathType Leaf)) {
     throw 'Windows bundle does not contain the corresponding-source offer.'

@@ -92,6 +92,8 @@
   "@bangumiPendingLabel": {"placeholders": {"count": {"type": "int"}}},
   "bangumiSyncDescription": "ローカルの変更はキューに入り、最新の Bangumi revision と照合されます。",
   "bangumiConnectedTitle": "Bangumi に接続済み",
+  "bangumiUnavailableTitle": "Bangumi は有効化されていません",
+  "bangumiUnavailableDescription": "このビルドには Bangumi サービスが設定されていません。",
   "bangumiReauthTitle": "Bangumi の再認証が必要です",
   "bangumiReauthLabel": "再認証",
   "bangumiLoginAction": "Bangumi でログイン",

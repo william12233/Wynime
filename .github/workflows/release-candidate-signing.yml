@@ -17,6 +17,7 @@ concurrency:
 
 env:
   FLUTTER_VERSION: '3.44.8'
+  WYNIME_BANGUMI_BROKER_ORIGIN: ${{ vars.WYNIME_BANGUMI_BROKER_ORIGIN }}
 
 jobs:
   sign:
@@ -250,8 +251,8 @@ jobs:
 
       - name: Build signed APK and AAB
         run: |
-          flutter build apk --release --no-pub --build-name 1.0.2 --build-number 3
-          flutter build appbundle --release --no-pub --build-name 1.0.2 --build-number 3
+          flutter build apk --release --no-pub --build-name 1.0.2 --build-number 3 --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
+          flutter build appbundle --release --no-pub --build-name 1.0.2 --build-number 3 --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
 
       - name: Verify signed APK metadata, alignment and signature
         shell: bash

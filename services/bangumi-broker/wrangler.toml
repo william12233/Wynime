@@ -13,4 +13,5 @@ new_sqlite_classes = ["ReplayMarker"]
 [vars]
 BANGUMI_AUTHORIZE_URL = "https://bgm.tv/oauth/authorize"
 BANGUMI_TOKEN_URL = "https://bgm.tv/oauth/access_token"
-APP_LINK_HOST = "auth.wynime.app"
+# Set APP_LINK_HOST to the exact workers.dev (or explicitly owned custom)
+# hostname returned by the deployment. It is intentionally not committed here.

@@ -15,6 +15,7 @@ concurrency:
 
 env:
   FLUTTER_VERSION: '3.44.8'
+  WYNIME_BANGUMI_BROKER_ORIGIN: ${{ vars.WYNIME_BANGUMI_BROKER_ORIGIN }}
 
 jobs:
   metadata:
@@ -330,6 +331,7 @@ jobs:
           --no-pub
           --build-name "${{ needs.metadata.outputs.version }}"
           --build-number "${{ needs.metadata.outputs.version_code }}"
+          --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
 
       - name: Verify Android metadata, alignment and signature
         shell: bash
@@ -411,6 +413,7 @@ jobs:
           --no-pub
           --build-name "${{ needs.metadata.outputs.version }}"
           --build-number "${{ needs.metadata.outputs.version_code }}"
+          --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=$env:WYNIME_BANGUMI_BROKER_ORIGIN"
 
       - name: Verify Windows native provenance
         shell: pwsh

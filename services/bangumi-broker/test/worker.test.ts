@@ -7,7 +7,7 @@ describe('Bangumi broker public surface', () => {
     BANGUMI_CLIENT_ID: 'client-id',
     BANGUMI_CLIENT_SECRET: 'secret-not-returned',
     TICKET_KEY_B64: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    APP_LINK_HOST: 'auth.wynime.app',
+    APP_LINK_HOST: 'wynime-broker-test.example.workers.dev',
   };
   const env = envValues as never;
 

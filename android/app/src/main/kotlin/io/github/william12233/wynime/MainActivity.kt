@@ -141,7 +141,8 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
 
     private fun consumeAuthIntent(intent: Intent?) {
         val data = intent?.data ?: return
-        if (data.scheme != "https" || data.host != "auth.wynime.app" ||
+        if (!BuildConfig.WYNIME_BANGUMI_BROKER_ENABLED ||
+            data.scheme != "https" || data.host != BuildConfig.WYNIME_BANGUMI_BROKER_HOST ||
             data.path != "/oauth/callback") {
             return
         }

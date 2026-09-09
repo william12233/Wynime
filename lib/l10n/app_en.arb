@@ -106,6 +106,8 @@
   "@bangumiPendingLabel": {"placeholders": {"count": {"type": "int"}}},
   "bangumiSyncDescription": "Local changes are queued and reconciled against the latest Bangumi revision.",
   "bangumiConnectedTitle": "Bangumi connected",
+  "bangumiUnavailableTitle": "Bangumi is not enabled",
+  "bangumiUnavailableDescription": "The Bangumi service is not configured for this build.",
   "bangumiReauthTitle": "Bangumi reauthentication required",
   "bangumiReauthLabel": "Reauth",
   "bangumiLoginAction": "Sign in with Bangumi",

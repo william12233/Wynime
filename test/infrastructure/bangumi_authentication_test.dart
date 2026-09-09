@@ -7,12 +7,15 @@ import 'package:wynime/src/infrastructure/bangumi/bangumi_api_client.dart';
 
 void main() {
   final redirectUri = Uri.parse('http://127.0.0.1:43123/oauth/callback');
+  const brokerHost = 'wynime-broker-test.example.workers.dev';
+  final workerOrigin = Uri.parse('https://$brokerHost');
 
   test('begin creates a high-entropy state and fixed safe callback', () async {
     final transport = AuthTransport();
     final authentication = BangumiBrokerAuthentication(
-      workerOrigin: Uri.parse('https://auth.wynime.app'),
+      workerOrigin: workerOrigin,
       clientId: 'wynime-client',
+      verifiedAppLinkHost: brokerHost,
       redirectUri: redirectUri,
       transport: transport,
     );
@@ -23,7 +26,7 @@ void main() {
     expect(request.state.length, greaterThanOrEqualTo(40));
     expect(request.state, matches(RegExp(r'^[A-Za-z0-9_-]+$')));
     expect(request.state, isNot(contains('=')));
-    expect(request.authorizationUri.host, 'auth.wynime.app');
+    expect(request.authorizationUri.host, brokerHost);
     expect(request.authorizationUri.path, '/oauth/start');
     expect(request.authorizationUri.queryParameters['state'], request.state);
     expect(
@@ -46,8 +49,9 @@ void main() {
       },
     );
     final authentication = BangumiBrokerAuthentication(
-      workerOrigin: Uri.parse('https://auth.wynime.app'),
+      workerOrigin: workerOrigin,
       clientId: 'wynime-client',
+      verifiedAppLinkHost: brokerHost,
       redirectUri: redirectUri,
       transport: transport,
     );
@@ -74,8 +78,9 @@ void main() {
       var now = DateTime.utc(2026, 9, 8, 12);
       final transport = AuthTransport();
       final authentication = BangumiBrokerAuthentication(
-        workerOrigin: Uri.parse('https://auth.wynime.app'),
+        workerOrigin: workerOrigin,
         clientId: 'wynime-client',
+        verifiedAppLinkHost: brokerHost,
         redirectUri: redirectUri,
         transport: transport,
         clock: () => now,
@@ -126,8 +131,9 @@ void main() {
       },
     );
     final authentication = BangumiBrokerAuthentication(
-      workerOrigin: Uri.parse('https://auth.wynime.app'),
+      workerOrigin: workerOrigin,
       clientId: 'wynime-client',
+      verifiedAppLinkHost: brokerHost,
       redirectUri: redirectUri,
       transport: transport,
     );
@@ -161,6 +167,36 @@ void main() {
       ),
     );
   });
+
+  test(
+    'accepts the configured app-link host and rejects a sibling host',
+    () async {
+      final authentication = BangumiBrokerAuthentication(
+        workerOrigin: workerOrigin,
+        clientId: 'wynime-client',
+        verifiedAppLinkHost: brokerHost,
+        redirectUri: Uri.https(brokerHost, '/oauth/callback'),
+        transport: AuthTransport(),
+      );
+
+      final request = await authentication.begin();
+      expect(request.redirectUri, Uri.https(brokerHost, '/oauth/callback'));
+
+      expect(
+        () => BangumiBrokerAuthentication(
+          workerOrigin: workerOrigin,
+          clientId: 'wynime-client',
+          verifiedAppLinkHost: brokerHost,
+          redirectUri: Uri.https(
+            'other.example.workers.dev',
+            '/oauth/callback',
+          ),
+          transport: AuthTransport(),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    },
+  );
 }
 
 final class AuthTransport implements BangumiHttpTransport {

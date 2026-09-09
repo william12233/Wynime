@@ -460,6 +460,7 @@ class _BangumiConnectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final unavailable = !controller.isAvailable;
     final connected = controller.isAuthenticated;
     final reauth = controller.status == BangumiConnectionStatus.reauthRequired;
     return Card(
@@ -479,7 +480,9 @@ class _BangumiConnectionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    connected
+                    unavailable
+                        ? l10n.bangumiUnavailableTitle
+                        : connected
                         ? l10n.bangumiConnectedTitle
                         : reauth
                         ? l10n.bangumiReauthTitle
@@ -488,45 +491,49 @@ class _BangumiConnectionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: WynimeSpacing.xs),
                   Text(
-                    connected
+                    unavailable
+                        ? l10n.bangumiUnavailableDescription
+                        : connected
                         ? l10n.bangumiAccountLabel(
                             controller.account?.username ?? '',
                           )
                         : l10n.syncDisconnectedDescription,
                   ),
-                  const SizedBox(height: WynimeSpacing.sm),
-                  Wrap(
-                    spacing: WynimeSpacing.sm,
-                    runSpacing: WynimeSpacing.sm,
-                    children: [
-                      if (!connected)
-                        FilledButton.icon(
-                          key: const ValueKey('bangumi-login'),
-                          onPressed:
-                              controller.status ==
-                                  BangumiConnectionStatus.authorizing
-                              ? null
-                              : controller.signIn,
-                          icon: const Icon(Icons.login_rounded),
-                          label: Text(l10n.bangumiLoginAction),
-                        )
-                      else ...[
-                        OutlinedButton.icon(
-                          key: const ValueKey('bangumi-sync'),
-                          onPressed: controller.syncNow,
-                          icon: const Icon(Icons.sync_rounded),
-                          label: Text(l10n.bangumiSyncAction),
-                        ),
-                        OutlinedButton.icon(
-                          key: const ValueKey('bangumi-sign-out'),
-                          onPressed: controller.signOut,
-                          icon: const Icon(Icons.logout_rounded),
-                          label: Text(l10n.bangumiSignOutAction),
-                        ),
+                  if (!unavailable) ...[
+                    const SizedBox(height: WynimeSpacing.sm),
+                    Wrap(
+                      spacing: WynimeSpacing.sm,
+                      runSpacing: WynimeSpacing.sm,
+                      children: [
+                        if (!connected)
+                          FilledButton.icon(
+                            key: const ValueKey('bangumi-login'),
+                            onPressed:
+                                controller.status ==
+                                    BangumiConnectionStatus.authorizing
+                                ? null
+                                : controller.signIn,
+                            icon: const Icon(Icons.login_rounded),
+                            label: Text(l10n.bangumiLoginAction),
+                          )
+                        else ...[
+                          OutlinedButton.icon(
+                            key: const ValueKey('bangumi-sync'),
+                            onPressed: controller.syncNow,
+                            icon: const Icon(Icons.sync_rounded),
+                            label: Text(l10n.bangumiSyncAction),
+                          ),
+                          OutlinedButton.icon(
+                            key: const ValueKey('bangumi-sign-out'),
+                            onPressed: controller.signOut,
+                            icon: const Icon(Icons.logout_rounded),
+                            label: Text(l10n.bangumiSignOutAction),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                  if (controller.errorCode != null) ...[
+                    ),
+                  ],
+                  if (!unavailable && controller.errorCode != null) ...[
                     const SizedBox(height: WynimeSpacing.xs),
                     Text(
                       l10n.bangumiErrorLabel(controller.errorCode!),
@@ -540,7 +547,9 @@ class _BangumiConnectionCard extends StatelessWidget {
             ),
             const SizedBox(width: WynimeSpacing.sm),
             Text(
-              connected
+              unavailable
+                  ? l10n.statusUnavailableLabel
+                  : connected
                   ? l10n.statusConnectedLabel
                   : reauth
                   ? l10n.bangumiReauthLabel
@@ -712,6 +721,7 @@ class _BangumiSettingsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final unavailable = !controller.isAvailable;
     final account = controller.account;
     return Column(
       children: [
@@ -719,17 +729,21 @@ class _BangumiSettingsContent extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.account_circle_outlined),
           title: Text(
-            account == null
+            unavailable
+                ? l10n.bangumiUnavailableTitle
+                : account == null
                 ? l10n.bangumiNotSignedInLabel
                 : l10n.bangumiAccountLabel(account.username),
           ),
           subtitle: Text(
-            account == null
+            unavailable
+                ? l10n.bangumiUnavailableDescription
+                : account == null
                 ? l10n.bangumiReauthDescription
                 : l10n.bangumiCacheDescription,
           ),
         ),
-        if (!controller.isAuthenticated)
+        if (!unavailable && !controller.isAuthenticated)
           Align(
             alignment: Alignment.centerLeft,
             child: FilledButton.icon(
@@ -739,7 +753,7 @@ class _BangumiSettingsContent extends StatelessWidget {
               label: Text(l10n.bangumiLoginAction),
             ),
           )
-        else
+        else if (!unavailable)
           Wrap(
             spacing: WynimeSpacing.sm,
             runSpacing: WynimeSpacing.sm,

@@ -24,10 +24,13 @@ Bangumi domain models, state-bound memory-only authentication, official API pars
 - Bangumi broker `npm test`, TypeScript typecheck and Wrangler dry-run: passed; no production Worker deployment was performed;
 - detailed plan DOCX was regenerated from the Markdown sources during the Phase 12 documentation pass and passed ZIP/OXML structural validation; page rendering was not available because LibreOffice/`soffice` is not installed on this host;
 - no access token, client secret, cookie or live-account data was written to the repository or database fixtures.
+- the Bangumi broker origin is now a build-time `WYNIME_BANGUMI_BROKER_ORIGIN` input; an empty input leaves the integration unavailable, while malformed Android build input is rejected, and neither path opens a browser or contacts a hardcoded hostname;
+- Android derives its App Link host and callback receiver from that same build input, while the Worker requires deployment-time `APP_LINK_HOST` configuration.
 
 ## Remaining validation boundary
 
 - no live OAuth login or real-account synchronization was attempted;
+- no production Worker hostname is committed or deployed in this repository; the deployment owner must configure the exact `workers.dev` output before enabling the integration in a release build;
 - HTTP fixture coverage is not a claim that a live account, rate limit or upstream availability is currently healthy;
 - the fixed-size Golden comparisons are covered by the current test suite, but action-level Windows compact／medium／expanded／live-resize and Android phone／tablet flows remain unverified;
 - a direct Windows `flutter run` attempt hit the host Visual Studio FileTracker `E_ACCESSDENIED` failure; this is separate from the successful debug/release builds and leaves native UI observation unavailable;

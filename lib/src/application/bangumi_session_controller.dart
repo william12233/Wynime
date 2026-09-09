@@ -18,6 +18,8 @@ enum BangumiConnectionStatus {
   failed,
 }
 
+enum BangumiAvailability { unavailable, available }
+
 typedef BangumiClientFactory =
     BangumiClient Function(BangumiAuthSession session);
 
@@ -26,6 +28,7 @@ final class BangumiSessionController extends ChangeNotifier {
     required BangumiAuthenticationPort authentication,
     required BangumiLocalStore store,
     required BangumiClientFactory clientFactory,
+    this.availability = BangumiAvailability.available,
     BangumiCallbackPort? callbackPort,
     Future<bool> Function(Uri uri)? openAuthorizationUri,
   }) : _authentication = authentication,
@@ -37,6 +40,7 @@ final class BangumiSessionController extends ChangeNotifier {
   final BangumiAuthenticationPort _authentication;
   final BangumiLocalStore _store;
   final BangumiClientFactory _clientFactory;
+  final BangumiAvailability availability;
   final BangumiCallbackPort? _callbackPort;
   final Future<bool> Function(Uri uri)? _openAuthorizationUri;
 
@@ -61,8 +65,12 @@ final class BangumiSessionController extends ChangeNotifier {
   Future<void>? _syncFuture;
   Future<bool>? _refreshFuture;
 
+  bool get isAvailable => availability == BangumiAvailability.available;
+
   bool get isAuthenticated =>
-      _session != null && status == BangumiConnectionStatus.connected;
+      isAvailable &&
+      _session != null &&
+      status == BangumiConnectionStatus.connected;
 
   BangumiClient get client {
     final value = _client;
@@ -77,7 +85,9 @@ final class BangumiSessionController extends ChangeNotifier {
     scheduleUpdatedAt =
         account?.scheduleUpdatedAt ?? await _store.cachedScheduleUpdatedAt();
     scheduleIsFresh = false;
-    status = account == null
+    status = !isAvailable
+        ? BangumiConnectionStatus.disconnected
+        : account == null
         ? BangumiConnectionStatus.disconnected
         : BangumiConnectionStatus.reauthRequired;
     await _refreshQueueCounts();
@@ -85,6 +95,12 @@ final class BangumiSessionController extends ChangeNotifier {
   }
 
   Future<void> signIn() async {
+    if (!isAvailable) {
+      status = BangumiConnectionStatus.disconnected;
+      errorCode = 'bangumi_service_not_configured';
+      notifyListeners();
+      return;
+    }
     final existing = _loginFuture;
     if (existing != null) return existing;
     final future = _signIn();
@@ -129,6 +145,12 @@ final class BangumiSessionController extends ChangeNotifier {
   }
 
   Future<void> completeSignIn(BangumiAuthCallback callback) async {
+    if (!isAvailable) {
+      status = BangumiConnectionStatus.disconnected;
+      errorCode = 'bangumi_service_not_configured';
+      notifyListeners();
+      return;
+    }
     try {
       final session = await _authentication.redeem(callback);
       final api = _clientFactory(session);
@@ -459,6 +481,9 @@ final class BangumiSessionController extends ChangeNotifier {
   Future<T> _withAuthenticatedClient<T>(
     Future<T> Function(BangumiClient api) operation,
   ) async {
+    if (!isAvailable) {
+      throw const BangumiApiException(code: 'bangumi_service_not_configured');
+    }
     await _ensureFreshSession();
     var api = _client;
     if (api == null) {
@@ -479,6 +504,9 @@ final class BangumiSessionController extends ChangeNotifier {
   }
 
   Future<void> _ensureFreshSession() async {
+    if (!isAvailable) {
+      throw const BangumiApiException(code: 'bangumi_service_not_configured');
+    }
     final session = _session;
     if (session == null) {
       throw const BangumiApiException(code: 'reauth_required');

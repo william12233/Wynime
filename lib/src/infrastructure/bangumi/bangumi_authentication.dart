@@ -9,7 +9,6 @@ import '../../domain/models/bangumi_models.dart';
 import '../../domain/services/bangumi_ports.dart';
 import 'bangumi_api_client.dart';
 
-const _verifiedAppLinkHost = 'auth.wynime.app';
 const _callbackPath = '/oauth/callback';
 const _maxAccessTokenLifetime = Duration(days: 30);
 
@@ -17,22 +16,32 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
   BangumiBrokerAuthentication({
     required Uri workerOrigin,
     required String clientId,
+    required String verifiedAppLinkHost,
     Uri? redirectUri,
     BangumiCallbackPort? callbackPort,
     BangumiHttpTransport? transport,
     DateTime Function()? clock,
     Duration ticketLifetime = const Duration(minutes: 5),
   }) : _workerOrigin = _validateWorkerOrigin(workerOrigin),
+       _verifiedAppLinkHost = _validateVerifiedAppLinkHost(verifiedAppLinkHost),
        _clientId = _validateClientId(clientId),
-       _redirectUri = redirectUri == null
-           ? null
-           : _validateRedirectUri(redirectUri),
+       _redirectUri = null,
        _callbackPort = callbackPort,
        _transport = transport ?? IoBangumiHttpTransport(),
        _clock = clock ?? DateTime.now,
-       _ticketLifetime = ticketLifetime;
+       _ticketLifetime = ticketLifetime {
+    if (_workerOrigin.host != _verifiedAppLinkHost) {
+      throw ArgumentError(
+        'Bangumi broker origin and app-link host must match.',
+      );
+    }
+    if (redirectUri != null) {
+      _redirectUri = _validateRedirectUri(redirectUri);
+    }
+  }
 
   final Uri _workerOrigin;
+  final String _verifiedAppLinkHost;
   final String _clientId;
   Uri? _redirectUri;
   final BangumiCallbackPort? _callbackPort;
@@ -219,15 +228,26 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
   static Uri _validateWorkerOrigin(Uri value) {
     if (value.scheme != 'https' ||
         value.port != 443 ||
+        value.host.isEmpty ||
+        !_isSafeHost(value.host) ||
         value.userInfo.isNotEmpty ||
-        value.fragment.isNotEmpty ||
-        value.queryParameters.isNotEmpty) {
+        value.hasFragment ||
+        value.hasQuery ||
+        (value.path.isNotEmpty && value.path != '/')) {
       throw ArgumentError('Bangumi broker must use HTTPS.');
     }
     return value;
   }
 
-  static Uri _validateRedirectUri(Uri value) {
+  static String _validateVerifiedAppLinkHost(String value) {
+    final host = value.trim().toLowerCase();
+    if (!_isSafeHost(host)) {
+      throw ArgumentError('Bangumi app-link host is invalid.');
+    }
+    return host;
+  }
+
+  Uri _validateRedirectUri(Uri value) {
     final isLoopback =
         value.host == '127.0.0.1' &&
         value.scheme == 'http' &&
@@ -241,11 +261,21 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
         value.path == _callbackPath;
     if ((!isLoopback && !isVerifiedAppLink) ||
         value.userInfo.isNotEmpty ||
-        value.fragment.isNotEmpty ||
-        value.queryParameters.isNotEmpty) {
+        value.hasFragment ||
+        value.hasQuery) {
       throw ArgumentError('Bangumi redirect URI is not allowed.');
     }
     return value;
+  }
+
+  static bool _isSafeHost(String host) {
+    if (host.length > 253) return false;
+    final labels = host.split('.');
+    if (labels.any((label) => label.isEmpty || label.length > 63)) {
+      return false;
+    }
+    final labelPattern = RegExp(r'^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$');
+    return labels.every(labelPattern.hasMatch);
   }
 
   static String _validateClientId(String value) {
@@ -271,4 +301,27 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
     if (normalized.isEmpty) return 'unknown';
     return normalized.length > 64 ? normalized.substring(0, 64) : normalized;
   }
+}
+
+final class UnavailableBangumiAuthentication
+    implements BangumiAuthenticationPort {
+  const UnavailableBangumiAuthentication();
+
+  static const _error = BangumiApiException(
+    code: 'bangumi_service_not_configured',
+  );
+
+  @override
+  Future<BangumiAuthorizationRequest> begin() => Future.error(_error);
+
+  @override
+  Future<BangumiAuthSession> redeem(BangumiAuthCallback callback) =>
+      Future.error(_error);
+
+  @override
+  Future<BangumiAuthSession> refresh(BangumiAuthSession session) =>
+      Future.error(_error);
+
+  @override
+  Future<void> signOut() async {}
 }

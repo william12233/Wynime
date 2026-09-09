@@ -85,17 +85,12 @@ final class WindowsLoopbackBangumiCallbackPort implements BangumiCallbackPort {
 }
 
 final class AndroidAppLinkBangumiCallbackPort implements BangumiCallbackPort {
-  AndroidAppLinkBangumiCallbackPort({MethodChannel? channel, Uri? redirectUri})
-    : redirectUri =
-          redirectUri ??
-          Uri(
-            scheme: 'https',
-            host: 'auth.wynime.app',
-            path: '/oauth/callback',
-          ),
-      _channel =
-          channel ??
-          const MethodChannel('io.github.william12233.wynime/bangumi_auth');
+  AndroidAppLinkBangumiCallbackPort({
+    required this.redirectUri,
+    MethodChannel? channel,
+  }) : _channel =
+           channel ??
+           const MethodChannel('io.github.william12233.wynime/bangumi_auth');
 
   final MethodChannel _channel;
   final Uri redirectUri;

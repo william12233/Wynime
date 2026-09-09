@@ -92,6 +92,8 @@
   "@bangumiPendingLabel": {"placeholders": {"count": {"type": "int"}}},
   "bangumiSyncDescription": "本機變更會排入佇列，並依最新 Bangumi revision 重新協調。",
   "bangumiConnectedTitle": "Bangumi 已連接",
+  "bangumiUnavailableTitle": "Bangumi 尚未啟用",
+  "bangumiUnavailableDescription": "這個版本尚未配置 Bangumi 服務。",
   "bangumiReauthTitle": "需要重新登入 Bangumi",
   "bangumiReauthLabel": "需重新登入",
   "bangumiLoginAction": "使用 Bangumi 登入",

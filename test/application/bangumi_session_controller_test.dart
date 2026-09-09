@@ -51,6 +51,56 @@ void main() {
       expect(controller.pendingCount, 1);
     },
   );
+
+  test('unavailable Bangumi never starts browser authentication', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database);
+    final authentication = _CountingAuthentication();
+    var openedAuthorizationUri = 0;
+    final controller = BangumiSessionController(
+      authentication: authentication,
+      store: store,
+      availability: BangumiAvailability.unavailable,
+      clientFactory: (_) => throw StateError('client must not be created'),
+      openAuthorizationUri: (uri) async {
+        openedAuthorizationUri++;
+        return true;
+      },
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize();
+    await controller.signIn();
+
+    expect(controller.isAvailable, isFalse);
+    expect(controller.isAuthenticated, isFalse);
+    expect(controller.status, BangumiConnectionStatus.disconnected);
+    expect(controller.errorCode, 'bangumi_service_not_configured');
+    expect(authentication.beginCalls, 0);
+    expect(openedAuthorizationUri, 0);
+  });
+}
+
+final class _CountingAuthentication implements BangumiAuthenticationPort {
+  int beginCalls = 0;
+
+  @override
+  Future<BangumiAuthorizationRequest> begin() async {
+    beginCalls++;
+    throw StateError('begin must not be called');
+  }
+
+  @override
+  Future<BangumiAuthSession> redeem(BangumiAuthCallback callback) =>
+      throw StateError('redeem must not be called');
+
+  @override
+  Future<BangumiAuthSession> refresh(BangumiAuthSession session) =>
+      throw StateError('refresh must not be called');
+
+  @override
+  Future<void> signOut() async {}
 }
 
 final class _FakeAuthentication implements BangumiAuthenticationPort {

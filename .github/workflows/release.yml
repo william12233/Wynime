@@ -353,7 +353,10 @@ jobs:
           done
 
           package_line="$($aapt2 dump badging "$apk" | grep -m 1 '^package:')"
-          grep -F "versionCode='$EXPECTED_VERSION_CODE'" <<< "$package_line"
+          # Flutter's split-per-ABI output offsets versionCode by ABI index * 1000.
+          # arm64-v8a is ABI index 2, so build-number 4 is published as 2004.
+          expected_split_version_code=$((2 * 1000 + EXPECTED_VERSION_CODE))
+          grep -F "versionCode='$expected_split_version_code'" <<< "$package_line"
           grep -F "versionName='$EXPECTED_VERSION'" <<< "$package_line"
           grep -F "native-code: 'arm64-v8a'" <("$aapt2" dump badging "$apk")
           if "$aapt2" dump badging "$apk" | grep -E "armeabi-v7a|x86_64" >/dev/null; then

@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.2 machine release gates are closed for the candidate commit that
+The v1.0.3 machine release gates are closed for the candidate commit that
 contains this status record. The exact candidate SHA is revalidated by
 GitHub Actions against the tag trigger and `origin/main`; all release
 artifacts are rebuilt from that same immutable SHA. No unexecuted hardware or
@@ -28,7 +28,8 @@ native binary, codec or system runtime.
 - `flutter analyze --fatal-infos`: pass with no analyzer issues.
 - Full deterministic Flutter test suite and the repository's fixed-size
   golden tests: pass.
-- Android debug, Android release APK and Android release AAB builds: pass.
+- Android debug and arm64-v8a Android release APK builds: pass. No universal
+  APK or release AAB is published.
 - Official Android signing uses the configured Wynime
   `WYNIME_RELEASE_*` keystore only; `apksigner verify`, APK alignment,
   version metadata and ABI checks are required and recorded by CI.
@@ -42,7 +43,7 @@ native binary, codec or system runtime.
   sidecar.
 - No signing secret, keystore or password is stored in the repository or
   release artifacts.
-- Versioned release notes exist and describe the actual v1.0.2 boundary.
+- Versioned release notes exist and describe the actual v1.0.3 boundary.
 - The release workflow requires the tag, trigger SHA, `origin/main`,
   successful exact-SHA phase-0 CI and publication checkout to agree.
 
@@ -163,7 +164,7 @@ corresponding-source offer, native provenance lock, notices and release notes.
 
 Standalone FFmpeg execution, remuxing, MKV fallback, DRM/paywall bypass,
 magnet/BT/seeding and source-provided executable adapters remain outside this
-1.0.2 boundary. Bangumi source integration is included, while live account
+1.0.3 boundary. Bangumi source integration is included, while live account
 validation and production Worker deployment remain external boundaries.
 
 ## Security and privacy

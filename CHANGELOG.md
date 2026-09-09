@@ -4,6 +4,25 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.3 - Release-ready
+
+### Bangumi broker and Android packaging
+
+- Removed the nonexistent hardcoded Bangumi broker host and replaced it with
+  one build-time HTTPS origin contract.
+- Builds without a valid broker origin fail closed and show Bangumi as
+  unavailable instead of opening a dead web page.
+- The Android release artifact is now an arm64-v8a APK only; no universal APK
+  is published.
+
+### Release status
+
+The machine-verifiable release gates and native provenance checks are closed
+for the immutable candidate. Live Bangumi account/OAuth validation,
+production Worker deployment and action-level UI validation remain separately
+disclosed external boundaries. See `docs/PHASE12_STATUS.md` and
+`docs/release-notes-1.0.3.md`.
+
 ## 1.0.2 - Release-ready
 
 ### Windows distribution and updates

@@ -10,7 +10,7 @@ Bangumi domain models, state-bound memory-only authentication, official API pars
 
 ## Verified evidence
 
-- Phase 9 targeted tests are covered by the current full suite: passed (212 tests total);
+- Phase 9 targeted tests are covered by the current full suite: passed (218 tests total);
 - official `/calendar`, `/v0/subjects/{subject_id}`, `/v0/episodes`, current-user collection and episode paths are covered by deterministic HTTP fixtures;
 - OAuth state mismatch, HTTPS endpoint validation, token redaction and token exchange parsing are covered;
 - collection status, watched episodes, remote revision and manual mapping persist through an in-memory SQLite database;
@@ -18,7 +18,7 @@ Bangumi domain models, state-bound memory-only authentication, official API pars
 - queued, failed, retryable, exhausted and conflict operations are covered, including prefer-remote and prefer-local resolution;
 - `dart format --output=none --set-exit-if-changed --suppress-analytics lib test`: passed (149 files, 0 changes);
 - `flutter analyze --fatal-infos`: passed after the Phase 9 implementation;
-- `flutter test --suppress-analytics`: passed (212 tests, including the current fixed-size Goldens);
+- `flutter test --suppress-analytics`: passed (218 tests, including the current fixed-size Goldens);
 - Android debug build: passed; `build/app/outputs/flutter-apk/app-debug.apk` was produced by the isolated Gradle build;
 - Windows debug and release builds: passed after restoring and verifying the pinned media-kit libmpv archive; the release bundle contains `wynime.exe`, `wynime_update.exe` and `flutter_windows.dll`;
 - Bangumi broker `npm test`, TypeScript typecheck and Wrangler dry-run: passed; no production Worker deployment was performed;

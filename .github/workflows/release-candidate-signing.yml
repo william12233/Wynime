@@ -51,7 +51,7 @@ jobs:
             exit 1
           fi
           version_line="$(grep -m1 -E '^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+[[:space:]]*$' pubspec.yaml)"
-          if [[ "$version_line" != 'version: 1.0.2+3' ]]; then
+          if [[ "$version_line" != 'version: 1.0.3+4' ]]; then
             echo "Unexpected candidate version: $version_line" >&2
             exit 1
           fi
@@ -249,24 +249,28 @@ jobs:
           test -s "$WYNIME_RELEASE_STORE_FILE"
           keytool -list -keystore "$WYNIME_RELEASE_STORE_FILE" -storepass "$WYNIME_RELEASE_STORE_PASSWORD" -alias "$WYNIME_RELEASE_KEY_ALIAS" >/dev/null
 
-      - name: Build signed APK and AAB
+      - name: Build signed arm64-v8a APK
         run: |
-          flutter build apk --release --no-pub --build-name 1.0.2 --build-number 3 --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
-          flutter build appbundle --release --no-pub --build-name 1.0.2 --build-number 3 --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
+          flutter build apk --release --no-pub --split-per-abi --target-platform android-arm64 --build-name 1.0.3 --build-number 4 --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
 
       - name: Verify signed APK metadata, alignment and signature
         shell: bash
         run: |
           set -euo pipefail
-          apk="build/app/outputs/flutter-apk/app-release.apk"
+          apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
+          test ! -e "build/app/outputs/flutter-apk/app-release.apk"
           build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
           aapt2="$build_tools/aapt2"
           zipalign="$build_tools/zipalign"
           apksigner="$build_tools/apksigner"
           package_line="$($aapt2 dump badging "$apk" | grep -m 1 '^package:')"
-          grep -F "versionCode='3'" <<< "$package_line"
-          grep -F "versionName='1.0.2'" <<< "$package_line"
-          grep -F "native-code: 'arm64-v8a' 'armeabi-v7a' 'x86_64'" <("$aapt2" dump badging "$apk")
+          grep -F "versionCode='4'" <<< "$package_line"
+          grep -F "versionName='1.0.3'" <<< "$package_line"
+          grep -F "native-code: 'arm64-v8a'" <("$aapt2" dump badging "$apk")
+          if "$aapt2" dump badging "$apk" | grep -E "armeabi-v7a|x86_64" >/dev/null; then
+            echo 'The candidate APK contains an unexpected non-arm64 ABI.' >&2
+            exit 1
+          fi
           "$zipalign" -c -v 4 "$apk"
           "$apksigner" verify --verbose "$apk"
           unzip -l "$apk" | grep -F "assets/flutter_assets/LICENSE" >/dev/null
@@ -275,30 +279,13 @@ jobs:
            unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.GPLv3" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json" >/dev/null
-          aab="build/app/outputs/bundle/release/app-release.aab"
-          unzip -l "$aab" | grep -F "base/assets/flutter_assets/LICENSE" >/dev/null
-          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
-           unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/COPYING.LGPLv3" >/dev/null
-           unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/COPYING.GPLv3" >/dev/null
-          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
-          unzip -l "$aab" | grep -F "base/assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json" >/dev/null
-          aab_log="$(mktemp)"
-          if ! jarsigner -verify -verbose -certs "$aab" >"$aab_log" 2>&1; then
-            cat "$aab_log" >&2
-            rm -f "$aab_log"
-            exit 1
-          fi
-          grep -F "jar verified." "$aab_log" >/dev/null
-          rm -f "$aab_log"
-
       - name: Hash signed candidate artifacts
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-release.apk dist/wynime-1.0.2-signed.apk
-          cp build/app/outputs/bundle/release/app-release.aab dist/wynime-1.0.2-signed.aab
-          (cd dist && sha256sum wynime-1.0.2-signed.apk wynime-1.0.2-signed.aab > wynime-1.0.2-signed.sha256)
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/wynime-1.0.3-arm64-v8a-signed.apk
+          (cd dist && sha256sum wynime-1.0.3-arm64-v8a-signed.apk > wynime-1.0.3-arm64-v8a-signed.apk.sha256)
 
       - name: Upload signed inspection artifacts
         uses: actions/upload-artifact@v4

@@ -19,6 +19,8 @@ import 'package:wynime/src/infrastructure/updates/software_update_service.dart';
 import 'package:wynime/src/infrastructure/updates/update_startup_marker.dart';
 import 'package:wynime/src/domain/services/bangumi_ports.dart';
 
+const _bangumiClientId = 'bgm70916aa140634a4c8';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   ProductionMediaKitFacade.ensureInitialized();
@@ -32,7 +34,7 @@ void main() {
       ? BangumiBrokerAuthentication(
           workerOrigin: runtimeConfiguration.brokerOrigin!,
           verifiedAppLinkHost: runtimeConfiguration.verifiedAppLinkHost!,
-          clientId: 'wynime',
+          clientId: _bangumiClientId,
           callbackPort: callbackPort,
         )
       : const UnavailableBangumiAuthentication();

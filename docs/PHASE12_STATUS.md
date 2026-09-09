@@ -9,11 +9,10 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.3 machine release gates are closed for the candidate commit that
-contains this status record. The exact candidate SHA is revalidated by
-GitHub Actions against the tag trigger and `origin/main`; all release
-artifacts are rebuilt from that same immutable SHA. No unexecuted hardware or
-Computer Use result is represented as a pass.
+The v1.0.4 release boundary is ready for exact-SHA CI and protected
+publication. The final candidate SHA must still be frozen and revalidated by
+the main, signing and release workflows; no unexecuted hardware or Computer
+Use result is represented as a pass.
 
 Approved Wynime distribution license: yes
 
@@ -21,7 +20,7 @@ The root `LICENSE` is the repository owner's MIT license for Wynime-owned
 source code only. It does not change the terms of any third-party dependency,
 native binary, codec or system runtime.
 
-## Hard release gates
+## Prior v1.0.3 machine release baseline
 
 - Current-head `dart format --output=none --set-exit-if-changed lib test`:
   pass.
@@ -43,13 +42,40 @@ native binary, codec or system runtime.
   sidecar.
 - No signing secret, keystore or password is stored in the repository or
   release artifacts.
-- Versioned release notes exist and describe the actual v1.0.3 boundary.
+- The prior versioned release notes described the actual v1.0.3 boundary.
 - The release workflow requires the tag, trigger SHA, `origin/main`,
   successful exact-SHA phase-0 CI and publication checkout to agree.
 
 The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
+
+## 1.0.4 candidate status
+
+- Version authority is `1.0.4+5`; the expected arm64 split APK versionCode is
+  `2005`.
+- GitHub repository variable `WYNIME_BANGUMI_BROKER_ORIGIN` is configured with
+  the production Worker origin.
+- The Worker `ANDROID_CERT_SHA256` configuration is deployed and the public
+  `assetlinks.json` now contains the exact production package and certificate
+  fingerprint.
+- Flutter analyzer, the full deterministic test suite (218 tests), broker
+  typecheck and broker tests (9/9) pass on this candidate worktree.
+- Local Android arm64-v8a Release APK build passes with versionCode `2005` and
+  versionName `1.0.4`; it is unsigned locally and is not the protected CI
+  signing result.
+- Local Windows x64 Release compile/install passes and the Release process
+  stays responsive. The Windows Debug launch still fails in third-party
+  Debug-CRT linking, while the native Computer Use surface exposes `apps=[]`.
+- After the host restart, `WHPX` reports installed and usable. Both fixed
+  Android 16 / API 36 AVDs booted, accepted the Debug APK, and launched
+  Wynime. The phone and tablet Home screens and Bangumi OAuth entry flow were
+  captured. The user subsequently reported completing the account callback
+  test; this remains external manual evidence and is not substituted for
+  physical playback evidence.
+- The App's public Bangumi client ID was aligned with the Worker configuration.
+  Both AVD OAuth entry flows reached the Bangumi login page instead of the
+  Worker `invalid_oauth_request` response.
 
 ## External validation disclosure
 
@@ -73,16 +99,28 @@ live resize, mouse or keyboard actions passed.
 
 ## Runtime and UI evidence
 
-Operation: `wynime-release-0.1.0-20260906-7K4M`.
+Operation: `Wynime-Bangumi-1.0.4-20260909-185900-cf7a`.
+
+- Current local Android arm64-v8a Release APK: metadata and ABI checks pass
+  (`versionCode=2005`, `versionName=1.0.4`, `arm64-v8a`); local
+  `apksigner verify` correctly reports it is unsigned. Protected CI signing
+  remains required.
+- Current local Windows x64 Release binary: compile/install and an 8-second
+  process liveness check pass. Native action-level UI could not be observed
+  because the Computer Use session exposed only the in-app browser and
+  `apps=[]`.
+- Current fixed Android phone/tablet AVD launch: pass after the host restart;
+  both AVDs booted and launched Wynime. Home and OAuth-entry screenshots are
+  retained. User-reported account authorization and OS callback testing
+  completed; physical playback remains pending.
 
 - Android phone AVD `Pixel_API_36_Google_Play`: Android 16 / API 36,
-  1080×2400, density 420. Search submission, Home, Library/Watching,
-  Downloads, Sources, Settings and diagnostics false → true → false were
-  exercised without a crash.
+  1080×2400, density 420. The updated Debug APK launched, the Home screen was
+  captured, and the Bangumi sign-in action reached the Bangumi login page.
 - Android tablet AVD `Pixel_Tablet_API_36_Google_Play`: Android 16 / API 36,
-  2560×1600, density 320. Expanded navigation rail, Search submission,
-  Library/Watching, Downloads, Sources, Settings and diagnostics false → true
-  → false were exercised without a crash.
+  2560×1600, density 320. The updated Debug APK launched, the expanded Home
+  screen was captured, and the Bangumi sign-in action reached the Bangumi
+  login page.
 - Windows Release binary: build completed and the process launched
   responsively. Native action-level UI could not be observed because the
   fresh Computer Use session exposed only the in-app browser and
@@ -164,8 +202,9 @@ corresponding-source offer, native provenance lock, notices and release notes.
 
 Standalone FFmpeg execution, remuxing, MKV fallback, DRM/paywall bypass,
 magnet/BT/seeding and source-provided executable adapters remain outside this
-1.0.3 boundary. Bangumi source integration is included, while live account
-validation and production Worker deployment remain external boundaries.
+1.0.4 candidate boundary. Bangumi source integration and production Worker
+configuration are included, while live account validation and platform runtime
+evidence remain open until directly exercised.
 
 ## Security and privacy
 
@@ -180,9 +219,9 @@ validation and production Worker deployment remain external boundaries.
 
 ## Release decision
 
-The machine-verifiable status is `RELEASE_READY`. External validation
-disclosures remain visible and must be preserved in release notes; they must
-not be rewritten as passes or used to imply hardware playback. Publication
-still requires the exact annotated tag, exact-SHA CI, signed APK verification,
-ZIP build, four-asset checksum verification and the protected GitHub release
-environment.
+The machine-verifiable status is `RELEASE_READY`. External
+validation disclosures remain visible and must be preserved in release notes;
+they must not be rewritten as passes or used to imply hardware playback.
+Publication still requires the exact annotated tag, exact-SHA CI, signed APK
+verification, ZIP build, four-asset checksum verification and the protected
+GitHub release environment.

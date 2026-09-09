@@ -12,7 +12,7 @@ Wynime 是一個以 Android 與 Windows 為首要平台的跨平台動畫來源�
 - Bangumi 放送資訊、收藏與已看集數同步
 - Flutter 共用 UI，平台原生播放器與 WebView 整合
 
-> 狀態：v1.0.1 的 machine-verifiable release gates 已完成，release status 為
+> 狀態：v1.0.4 的 machine-verifiable release gates 已完成，release status 為
 > `RELEASE_READY`。Android physical playback、Windows physical playback 與
 > Windows Computer Use native UI 屬於已揭露的 non-blocking external
 > validation，未執行的項目不宣稱通過。實際 GitHub Release 僅由 immutable

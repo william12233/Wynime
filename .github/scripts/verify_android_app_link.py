@@ -72,7 +72,8 @@ def read_apk_signer(apksigner: Path, apk: Path) -> str:
     if signer_counts != ["1"]:
         fail("APK must report exactly one signer")
     digest_lines = re.findall(
-        r"Signer\s+#\d+\s+certificate\s+SHA-256\s+digest:\s*"
+        r"(?:Signer\s+#\d+|V\d+(?:\.\d+)?\s+Signer):\s*"
+        r"certificate\s+SHA-256\s+digest:\s*"
         r"((?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}|[0-9A-Fa-f]{64})",
         output,
         re.IGNORECASE,

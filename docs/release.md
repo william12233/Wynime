@@ -28,20 +28,25 @@ The following gates are machine-verifiable and block publication:
 4. Android release APK build succeeds with the configured
    `WYNIME_RELEASE_*` keystore;
 5. `apksigner verify`, APK alignment, version metadata and required ABIs pass;
-6. the Windows x64 Flutter Release build succeeds;
-7. the Android APK and Windows ZIP each have a matching SHA-256 sidecar;
-8. `THIRD_PARTY_NOTICES.md`, the complete applicable Android and Windows
+6. the candidate APK's single release signer is byte-exact equal to the
+   canonical signer in `services/bangumi-broker/wrangler.toml`;
+7. the production `assetlinks.json` is a direct HTTP 200 with JSON/no-store
+   headers and its package, relation and signer match the candidate APK before
+   publication;
+8. the Windows x64 Flutter Release build succeeds;
+9. the Android APK and Windows ZIP each have a matching SHA-256 sidecar;
+10. `THIRD_PARTY_NOTICES.md`, the complete applicable Android and Windows
    `COPYING.GPLv3` and `COPYING.LGPLv3` texts, and
    `THIRD_PARTY_SOURCE_OFFER.md` are present in the Android and Windows
    distributions;
-9. recorded native archive and packaged-binary hashes match the candidate;
-10. the corresponding-source/relink mechanism is concrete, source URLs and
+11. recorded native archive and packaged-binary hashes match the candidate;
+12. the corresponding-source/relink mechanism is concrete, source URLs and
     pinned revisions are recorded, and release automation fails closed if the
     materials are absent;
-11. no secret, keystore or password is present in source or artifacts;
-12. versioned release notes exist;
-13. the annotated tag points exactly to the release candidate;
-14. GitHub Release assets are built from that same immutable SHA.
+13. no secret, keystore or password is present in source or artifacts;
+14. versioned release notes exist;
+15. the annotated tag points exactly to the release candidate;
+16. GitHub Release assets are built from that same immutable SHA.
 
 `docs/THIRD_PARTY_PROVENANCE.md` must declare
 `CLOSED_RELEASE_PROVENANCE`, and `LICENSE` plus the exact

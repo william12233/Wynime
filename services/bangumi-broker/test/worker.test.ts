@@ -10,6 +10,95 @@ describe('Bangumi broker public surface', () => {
     APP_LINK_HOST: 'wynime-broker-test.example.workers.dev',
   };
   const env = envValues as never;
+  const compactFingerprint =
+    '32fa14329bda4ddd9c2f9d6be973ef70a4272b5630abbab714ff50f0f6254b53';
+  const canonicalFingerprint =
+    '32:FA:14:32:9B:DA:4D:DD:9C:2F:9D:6B:E9:73:EF:70:A4:27:2B:56:30:AB:BA:B7:14:FF:50:F0:F6:25:4B:53';
+  const assetLinksEnv = (overrides: Record<string, unknown> = {}) => ({
+    ...envValues,
+    ANDROID_PACKAGE_NAME: 'io.github.william12233.wynime',
+    ANDROID_CERT_SHA256: canonicalFingerprint,
+    ...overrides,
+  }) as never;
+  const fetchAssetLinks = (assetLinksEnvironment: never) => worker.fetch(
+    new Request('https://broker.example/.well-known/assetlinks.json'),
+    assetLinksEnvironment,
+  );
+
+  it('normalizes a compact SHA-256 certificate fingerprint to canonical form', async () => {
+    const response = await fetchAssetLinks(
+      assetLinksEnv({ ANDROID_CERT_SHA256: compactFingerprint }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.json()).toEqual([
+      {
+        relation: ['delegate_permission/common.handle_all_urls'],
+        target: {
+          namespace: 'android_app',
+          package_name: 'io.github.william12233.wynime',
+          sha256_cert_fingerprints: [canonicalFingerprint],
+        },
+      },
+    ]);
+  });
+
+  it('normalizes lowercase canonical fingerprint input to uppercase canonical form', async () => {
+    const response = await fetchAssetLinks(
+      assetLinksEnv({ ANDROID_CERT_SHA256: canonicalFingerprint.toLowerCase() }),
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()) as Array<{ target: { sha256_cert_fingerprints: string[] } }>).toEqual([
+      {
+        relation: ['delegate_permission/common.handle_all_urls'],
+        target: {
+          namespace: 'android_app',
+          package_name: 'io.github.william12233.wynime',
+          sha256_cert_fingerprints: [canonicalFingerprint],
+        },
+      },
+    ]);
+  });
+
+  it.each([
+    ['63 hex characters', compactFingerprint.slice(0, 63)],
+    ['65 hex characters', `${compactFingerprint}A`],
+    ['66 hex characters', `${compactFingerprint}AA`],
+    [
+      'the historical malformed production value',
+      '32FA14329BDA4DDD2C9F2D9D6BE973EF70A4272B5630ABBAB714FF50F0F6254B53',
+    ],
+    ['non-hex character', `${compactFingerprint.slice(0, 63)}Z`],
+    ['31 byte pairs', canonicalFingerprint.split(':').slice(1).join(':')],
+    ['33 byte pairs', `${canonicalFingerprint}:AA`],
+    ['double colon', canonicalFingerprint.replace(':', '::')],
+    ['trailing colon', `${canonicalFingerprint}:`],
+    ['leading colon', `:${canonicalFingerprint}`],
+    ['arbitrary colon placement', `${compactFingerprint.slice(0, 1)}:${compactFingerprint.slice(1)}`],
+    ['embedded whitespace', canonicalFingerprint.replace(':', ' :')],
+  ])('rejects %s fingerprint input', async (_label, fingerprint) => {
+    const response = await fetchAssetLinks(
+      assetLinksEnv({ ANDROID_CERT_SHA256: fingerprint }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: 'asset_links_config_invalid' });
+  });
+
+  it.each([
+    ['ANDROID_PACKAGE_NAME', { ANDROID_PACKAGE_NAME: undefined }],
+    ['ANDROID_CERT_SHA256', { ANDROID_CERT_SHA256: undefined }],
+  ])('keeps the empty Asset Links response when %s is missing', async (_label, overrides) => {
+    const response = await fetchAssetLinks(assetLinksEnv(overrides));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(await response.json()).toEqual([]);
+  });
 
   it('exposes a health check without secrets', async () => {
     const response = await worker.fetch(

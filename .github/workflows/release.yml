@@ -372,6 +372,18 @@ jobs:
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_SOURCE_OFFER.md" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/WINDOWS_LIBMPV_BUILD.lock.json" >/dev/null
 
+      - name: Verify APK signer against production association metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          python3 .github/scripts/verify_android_app_link.py \
+            --apk "$apk" \
+            --apksigner "$build_tools/apksigner" \
+            --aapt2 "$build_tools/aapt2" \
+            --config services/bangumi-broker/wrangler.toml
+
       - name: Name and hash Android artifact
         shell: bash
         run: |
@@ -497,12 +509,84 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+  android-app-link-association:
+    name: Verify production Android App Link association
+    needs:
+      - metadata
+      - android
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.metadata.outputs.candidate_sha }}
+
+      - name: Install Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download Android artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-${{ needs.metadata.outputs.version }}
+          path: dist
+
+      - name: Verify Android artifact checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="wynime-${{ needs.metadata.outputs.version }}-arm64-v8a.apk"
+          test -f "dist/$artifact"
+          test -f "dist/$artifact.sha256"
+          (cd dist && sha256sum --check --strict "$artifact.sha256")
+
+      - name: Verify live production association without redirects
+        shell: bash
+        env:
+          EXPECTED_ORIGIN: https://wynime-bangumi-broker.wzhou785.workers.dev
+        run: |
+          set -euo pipefail
+          origin="${WYNIME_BANGUMI_BROKER_ORIGIN%/}"
+          if [[ -z "$origin" || "$origin" != "$EXPECTED_ORIGIN" ]]; then
+            echo 'WYNIME_BANGUMI_BROKER_ORIGIN is missing or is not the production broker origin.' >&2
+            exit 1
+          fi
+
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          for tool in "$build_tools/apksigner" "$build_tools/aapt2"; do
+            test -x "$tool" || { echo "Missing Android build tool: $tool" >&2; exit 1; }
+          done
+
+          dal_body="$RUNNER_TEMP/assetlinks.json"
+          dal_headers="$RUNNER_TEMP/assetlinks.headers"
+          dal_status="$(curl --fail --silent --show-error --max-redirs 0 \
+            --dump-header "$dal_headers" \
+            --output "$dal_body" \
+            --write-out '%{http_code}' \
+            "$origin/.well-known/assetlinks.json")"
+          if [[ "$dal_status" != '200' ]]; then
+            echo "Production assetlinks.json returned HTTP $dal_status, expected direct HTTP 200." >&2
+            exit 1
+          fi
+          grep -Eiq '^content-type:[[:space:]]*application/json([;[:space:]]|$)' "$dal_headers"
+          grep -Eiq '^cache-control:[[:space:]]*no-store([;[:space:]]|$)' "$dal_headers"
+
+          python3 .github/scripts/verify_android_app_link.py \
+            --apk "dist/wynime-${{ needs.metadata.outputs.version }}-arm64-v8a.apk" \
+            --apksigner "$build_tools/apksigner" \
+            --aapt2 "$build_tools/aapt2" \
+            --config services/bangumi-broker/wrangler.toml \
+            --assetlinks "$dal_body"
+
   github-release:
     name: Publish GitHub Release
     needs:
       - metadata
       - android
       - windows
+      - android-app-link-association
     runs-on: ubuntu-24.04
     environment:
       name: release

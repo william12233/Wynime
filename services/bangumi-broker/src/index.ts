@@ -481,12 +481,24 @@ function fromBase64Url(value: string): Uint8Array {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
+function normalizeSha256Fingerprint(value: string): string | null {
+  let compact: string;
+  if (/^[0-9A-Fa-f]{64}$/.test(value)) {
+    compact = value;
+  } else if (/^(?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}$/.test(value)) {
+    compact = value.replaceAll(':', '');
+  } else {
+    return null;
+  }
+  return compact.match(/../g)!.join(':').toUpperCase();
+}
+
 function assetLinks(env: Env): Response {
   const packageName = env.ANDROID_PACKAGE_NAME;
   const fingerprint = env.ANDROID_CERT_SHA256;
   if (packageName == null || fingerprint == null) return json([]);
-  if (!/^[A-Za-z0-9_.]+$/.test(packageName) ||
-      !/^[0-9A-Fa-f:]{32,128}$/.test(fingerprint)) {
+  const normalizedFingerprint = normalizeSha256Fingerprint(fingerprint);
+  if (!/^[A-Za-z0-9_.]+$/.test(packageName) || normalizedFingerprint == null) {
     throw new BrokerError('asset_links_config_invalid', 500);
   }
   return json([
@@ -495,7 +507,7 @@ function assetLinks(env: Env): Response {
       target: {
         namespace: 'android_app',
         package_name: packageName,
-        sha256_cert_fingerprints: [fingerprint.toUpperCase()],
+        sha256_cert_fingerprints: [normalizedFingerprint],
       },
     },
   ]);

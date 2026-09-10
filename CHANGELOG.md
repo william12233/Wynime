@@ -4,6 +4,18 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.6 - Unreleased
+
+### Android Bangumi OAuth App Link
+
+- Corrected the production Android App Link certificate fingerprint from the
+  published v1.0.5 APK signer instead of truncating or guessing the malformed
+  value.
+- Added strict fingerprint validation and release gates for APK signer,
+  package identity and production `assetlinks.json` association.
+- Deployed the existing Bangumi broker with direct health, association and
+  callback verification.
+
 ## 1.0.5 - Unreleased
 
 ### Bangumi OAuth callback

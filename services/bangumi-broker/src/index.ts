@@ -3,6 +3,7 @@ export interface Env {
   BANGUMI_CLIENT_SECRET: string;
   BANGUMI_AUTHORIZE_URL?: string;
   BANGUMI_TOKEN_URL?: string;
+  BANGUMI_TOKEN_STATUS_URL?: string;
   APP_LINK_HOST?: string;
   TICKET_KEY_B64: string;
   ANDROID_PACKAGE_NAME?: string;
@@ -28,9 +29,12 @@ type OAuthState = {
   expiresAt: number;
 };
 
-const API_ORIGIN = 'https://api.bgm.tv';
 const DEFAULT_AUTHORIZE_URL = 'https://bgm.tv/oauth/authorize';
 const DEFAULT_TOKEN_URL = 'https://bgm.tv/oauth/access_token';
+const DEFAULT_TOKEN_STATUS_URL = 'https://bgm.tv/oauth/token_status';
+const BROKER_USER_AGENT = 'Wynime-Bangumi-Broker/1';
+const PROVIDER_CALLBACK_PATH = '/oauth/callback';
+const ANDROID_APP_CALLBACK_PATH = '/oauth/app-callback';
 const TICKET_TTL_SECONDS = 300;
 const MAX_ACCESS_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 const MAX_BODY_BYTES = 64 * 1024;
@@ -70,8 +74,11 @@ export default {
       if (request.method === 'GET' && url.pathname === '/oauth/start') {
         return await start(url, env);
       }
-      if (request.method === 'GET' && url.pathname === '/oauth/callback') {
+      if (request.method === 'GET' && url.pathname === PROVIDER_CALLBACK_PATH) {
         return await callback(url, env);
+      }
+      if (request.method === 'GET' && url.pathname === ANDROID_APP_CALLBACK_PATH) {
+        return androidAppCallback();
       }
       if (request.method === 'POST' && url.pathname === '/oauth/redeem') {
         return await redeem(request, env);
@@ -104,14 +111,17 @@ async function start(url: URL, env: Env): Promise<Response> {
   const authorize = new URL(env.BANGUMI_AUTHORIZE_URL ?? DEFAULT_AUTHORIZE_URL);
   authorize.searchParams.set('response_type', 'code');
   authorize.searchParams.set('client_id', env.BANGUMI_CLIENT_ID);
-  authorize.searchParams.set('redirect_uri', `${new URL(url).origin}/oauth/callback`);
+  authorize.searchParams.set(
+    'redirect_uri',
+    `${new URL(url).origin}${PROVIDER_CALLBACK_PATH}`,
+  );
   authorize.searchParams.set('state', providerState);
   return Response.redirect(authorize.toString(), 302);
 }
 
 async function callback(url: URL, env: Env): Promise<Response> {
   const providerState = url.searchParams.get('state') ?? '';
-  const redirectUri = `${url.origin}/oauth/callback`;
+  const redirectUri = `${url.origin}${PROVIDER_CALLBACK_PATH}`;
   if (providerState.length < 43 || providerState.length > 16384) {
     return json({ error: 'oauth_callback_invalid' }, 400);
   }
@@ -146,10 +156,13 @@ async function callback(url: URL, env: Env): Promise<Response> {
   }
   try {
     const token = await exchangeCode(code, redirectUri, env);
-    const identity = await currentUser(token.access_token);
+    const accountId = token.user_id;
+    if (accountId == null) {
+      throw new BrokerError('oauth_payload_invalid', 502);
+    }
     const issuedAt = Math.floor(Date.now() / 1000);
     const ticket: OAuthTicket = {
-      accountId: identity.id,
+      accountId,
       accessToken: token.access_token,
       refreshToken: token.refresh_token,
       // A redeem ticket is intentionally much shorter lived than the access
@@ -167,8 +180,12 @@ async function callback(url: URL, env: Env): Promise<Response> {
     target.searchParams.set('state', state.state);
     target.searchParams.set('ticket', encoded);
     return Response.redirect(target.toString(), 302);
-  } catch (_) {
-    return redirectWithError(state.redirectUri, state.state, 'oauth_exchange_failed');
+  } catch (error) {
+    return redirectWithError(
+      state.redirectUri,
+      state.state,
+      safeOAuthFailureCode(error),
+    );
   }
 }
 
@@ -199,9 +216,11 @@ async function refresh(request: Request, env: Env): Promise<Response> {
   const accountId = stringField(body, 'account_id', 256);
   const clientId = stringField(body, 'client_id', 256);
   if (clientId !== env.BANGUMI_CLIENT_ID) throw new BrokerError('invalid_client', 401);
-  const redirectUri = `${new URL(request.url).origin}/oauth/callback`;
+  const redirectUri = `${new URL(request.url).origin}${PROVIDER_CALLBACK_PATH}`;
   const token = await exchangeRefresh(refreshToken, redirectUri, env);
-  const identity = await currentUser(token.access_token);
+  const identity = token.user_id == null
+    ? await tokenStatus(token.access_token, env)
+    : { id: token.user_id };
   if (identity.id !== accountId) throw new BrokerError('account_mismatch', 409);
   return json({
     account_id: identity.id,
@@ -218,7 +237,7 @@ async function exchangeCode(code: string, redirectUri: string, env: Env): Promis
     client_secret: env.BANGUMI_CLIENT_SECRET,
     code,
     redirect_uri: redirectUri,
-  });
+  }, true);
 }
 
 async function exchangeRefresh(
@@ -232,19 +251,28 @@ async function exchangeRefresh(
     client_secret: env.BANGUMI_CLIENT_SECRET,
     refresh_token: refreshToken,
     redirect_uri: redirectUri,
-  });
+  }, false);
 }
 
 type TokenResponse = {
   access_token: string;
   refresh_token: string;
   expires_in: number;
+  user_id?: string;
 };
 
-async function tokenRequest(url: URL, fields: Record<string, string>): Promise<TokenResponse> {
+async function tokenRequest(
+  url: URL,
+  fields: Record<string, string>,
+  requireUserId: boolean,
+): Promise<TokenResponse> {
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      accept: 'application/json',
+      'user-agent': BROKER_USER_AGENT,
+    },
     body: new URLSearchParams(fields),
   });
   const body = await boundedText(response);
@@ -261,17 +289,37 @@ async function tokenRequest(url: URL, fields: Record<string, string>): Promise<T
       value.expires_in > MAX_ACCESS_TOKEN_TTL_SECONDS) {
     throw new BrokerError('oauth_payload_invalid', 502);
   }
+  const userId = normalizeUserId(value.user_id);
+  if (value.user_id != null && userId == null) {
+    throw new BrokerError('oauth_payload_invalid', 502);
+  }
+  if (requireUserId && userId == null) {
+    throw new BrokerError('oauth_payload_invalid', 502);
+  }
   return {
     access_token: value.access_token,
     refresh_token: value.refresh_token,
     expires_in: value.expires_in,
+    ...(userId == null ? {} : { user_id: userId }),
   };
 }
 
-async function currentUser(accessToken: string): Promise<{ id: string }> {
-  const response = await fetch(`${API_ORIGIN}/v0/me`, {
-    headers: { accept: 'application/json', authorization: `Bearer ${accessToken}` },
-  });
+async function tokenStatus(
+  accessToken: string,
+  env: Env,
+): Promise<{ id: string }> {
+  const response = await fetch(
+    new URL(env.BANGUMI_TOKEN_STATUS_URL ?? DEFAULT_TOKEN_STATUS_URL),
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        accept: 'application/json',
+        'user-agent': BROKER_USER_AGENT,
+      },
+      body: new URLSearchParams({ access_token: accessToken }),
+    },
+  );
   const body = await boundedText(response);
   if (!response.ok) throw new BrokerError('bangumi_identity_failed', 502);
   let value: unknown;
@@ -280,10 +328,19 @@ async function currentUser(accessToken: string): Promise<{ id: string }> {
   } catch (_) {
     throw new BrokerError('bangumi_identity_invalid', 502);
   }
-  if (!isRecord(value) || (typeof value.id !== 'number' && typeof value.id !== 'string')) {
-    throw new BrokerError('bangumi_identity_invalid', 502);
+  const id = isRecord(value) ? normalizeUserId(value.user_id) : null;
+  if (id == null) throw new BrokerError('bangumi_identity_invalid', 502);
+  return { id };
+}
+
+function normalizeUserId(value: unknown): string | null {
+  if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) {
+    return String(value);
   }
-  return { id: String(value.id) };
+  if (typeof value === 'string' && /^[0-9]{1,256}$/.test(value)) {
+    return value;
+  }
+  return null;
 }
 
 async function encryptTicket(ticket: OAuthTicket, env: Env): Promise<string> {
@@ -387,16 +444,19 @@ function isSafeState(value: string): boolean {
 function isSafeRedirectUri(value: string, env: Env): boolean {
   try {
     const uri = new URL(value);
+    const isLoopbackCallback = uri.pathname === PROVIDER_CALLBACK_PATH;
+    const isAndroidAppCallback = uri.pathname === ANDROID_APP_CALLBACK_PATH;
     return (
-      uri.pathname === '/oauth/callback' &&
       uri.search === '' &&
       uri.hash === '' &&
       ((uri.protocol === 'http:' &&
         uri.hostname === '127.0.0.1' &&
-        uri.port !== '') ||
+        uri.port !== '' &&
+        isLoopbackCallback) ||
         (uri.protocol === 'https:' &&
           uri.hostname === (env.APP_LINK_HOST ?? '') &&
-          uri.port === ''))
+          uri.port === '' &&
+          isAndroidAppCallback))
     );
   } catch (_) {
     return false;
@@ -446,6 +506,33 @@ function redirectWithError(redirectUri: string, state: string, error: string): R
   target.searchParams.set('state', state);
   target.searchParams.set('error', error);
   return Response.redirect(target.toString(), 302);
+}
+
+function safeOAuthFailureCode(error: unknown): string {
+  if (error instanceof BrokerError) {
+    switch (error.code) {
+      case 'oauth_provider_rejected':
+      case 'oauth_payload_invalid':
+      case 'bangumi_identity_failed':
+      case 'bangumi_identity_invalid':
+        return error.code;
+    }
+  }
+  return 'oauth_exchange_failed';
+}
+
+function androidAppCallback(): Response {
+  return new Response(
+    '<!doctype html><title>Wynime</title>' +
+      '<p>請返回 Wynime 完成 Bangumi 登入。</p>',
+    {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+      },
+    },
+  );
 }
 
 function json(value: unknown, status = 200): Response {

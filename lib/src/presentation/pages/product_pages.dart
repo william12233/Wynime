@@ -4,6 +4,7 @@ import 'package:wynime/src/app/app_destination.dart';
 import 'package:wynime/src/application/bangumi_session_controller.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
+import 'package:wynime/src/design_system/tokens/radii.dart';
 import 'package:wynime/src/design_system/tokens/spacing.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
@@ -299,26 +300,29 @@ class _LibraryPageState extends State<LibraryPage> {
       description: localizations.libraryPageDescription,
       showPageHeader: widget.showPageHeader,
       children: [
-        SegmentedButton<_LibraryFilter>(
-          segments: [
-            for (final filter
-                in widget.bangumi == null
-                    ? const <_LibraryFilter>[
-                        _LibraryFilter.all,
-                        _LibraryFilter.watching,
-                        _LibraryFilter.completed,
-                      ]
-                    : _LibraryFilter.values)
-              ButtonSegment(
-                value: filter,
-                label: Text(_libraryFilterLabel(filter, localizations)),
-                icon: Icon(_libraryFilterIcon(filter)),
-              ),
-          ],
-          selected: {_filter},
-          onSelectionChanged: (selection) {
-            setState(() => _filter = selection.first);
-          },
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SegmentedButton<_LibraryFilter>(
+            segments: [
+              for (final filter
+                  in widget.bangumi == null
+                      ? const <_LibraryFilter>[
+                          _LibraryFilter.all,
+                          _LibraryFilter.watching,
+                          _LibraryFilter.completed,
+                        ]
+                      : _LibraryFilter.values)
+                ButtonSegment(
+                  value: filter,
+                  label: Text(_libraryFilterLabel(filter, localizations)),
+                  icon: Icon(_libraryFilterIcon(filter)),
+                ),
+            ],
+            selected: {_filter},
+            onSelectionChanged: (selection) {
+              setState(() => _filter = selection.first);
+            },
+          ),
         ),
         const SizedBox(height: WynimeSpacing.lg),
         if (widget.bangumi != null && widget.bangumi!.collections.isNotEmpty)
@@ -575,7 +579,13 @@ class _ScheduleList extends StatelessWidget {
         children: [
           for (var index = 0; index < visible.length; index++)
             ListTile(
-              leading: const Icon(Icons.live_tv_outlined),
+              leading: _BangumiArtwork(
+                key: ValueKey('bangumi-schedule-artwork-${visible[index].id}'),
+                imageUrl: visible[index].imageUrl,
+                semanticLabel: visible[index].subjectName,
+                width: 42,
+                height: 60,
+              ),
               title: Text(visible[index].subjectName),
               subtitle: Text(
                 visible[index].episodeNumber == null
@@ -608,25 +618,157 @@ class _CollectionList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Card(
-          child: Column(
-            children: [
-              for (final entry in entries)
-                ListTile(
-                  leading: const Icon(Icons.bookmark_outline_rounded),
-                  title: Text(entry.nameCn ?? entry.name ?? entry.subjectId),
-                  subtitle: Text(_collectionStatusLabel(entry.status, l10n)),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => controller.openSubject(entry.subjectId),
-                ),
-            ],
+        if (entries.isEmpty)
+          _EmptyStateCard(
+            icon: _libraryFilterIcon(filter),
+            title: l10n.libraryEmptyTitle,
+            description: l10n.libraryEmptyDescription,
+          )
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columnCount = constraints.maxWidth >= 1000
+                  ? 6
+                  : constraints.maxWidth >= 640
+                  ? 4
+                  : 2;
+              const gap = WynimeSpacing.sm;
+              final cardWidth =
+                  (constraints.maxWidth - gap * (columnCount - 1)) /
+                  columnCount;
+              return Wrap(
+                spacing: gap,
+                runSpacing: WynimeSpacing.md,
+                children: [
+                  for (final entry in entries)
+                    _CollectionCard(
+                      key: ValueKey('bangumi-collection-${entry.subjectId}'),
+                      controller: controller,
+                      entry: entry,
+                      width: cardWidth,
+                      statusLabel: _collectionStatusLabel(entry.status, l10n),
+                    ),
+                ],
+              );
+            },
           ),
-        ),
         if (controller.selectedSubject != null) ...[
           const SizedBox(height: WynimeSpacing.lg),
           BangumiSubjectDetailPage(controller: controller),
         ],
       ],
+    );
+  }
+}
+
+class _CollectionCard extends StatelessWidget {
+  const _CollectionCard({
+    required this.controller,
+    required this.entry,
+    required this.width,
+    required this.statusLabel,
+    super.key,
+  });
+
+  final BangumiSessionController controller;
+  final BangumiCollectionEntry entry;
+  final double width;
+  final String statusLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = entry.nameCn?.isNotEmpty == true
+        ? entry.nameCn!
+        : entry.name?.isNotEmpty == true
+        ? entry.name!
+        : entry.subjectId;
+    final posterWidth = width - (WynimeSpacing.xs * 2);
+    return SizedBox(
+      width: width,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => controller.openSubject(entry.subjectId),
+          child: Padding(
+            padding: const EdgeInsets.all(WynimeSpacing.xs),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _BangumiArtwork(
+                  key: ValueKey(
+                    'bangumi-collection-artwork-${entry.subjectId}',
+                  ),
+                  imageUrl: entry.imageUrl,
+                  semanticLabel: title,
+                  width: posterWidth,
+                  height: posterWidth / 0.68,
+                ),
+                const SizedBox(height: WynimeSpacing.xs),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: WynimeSpacing.xxs),
+                Text(
+                  statusLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BangumiArtwork extends StatelessWidget {
+  const _BangumiArtwork({
+    required this.imageUrl,
+    required this.semanticLabel,
+    required this.width,
+    required this.height,
+    super.key,
+  });
+
+  final Uri? imageUrl;
+  final String semanticLabel;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final placeholder = DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      ),
+      child: Center(
+        child: Icon(
+          Icons.movie_creation_outlined,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: 28,
+        ),
+      ),
+    );
+    final image = imageUrl == null
+        ? placeholder
+        : Image.network(
+            imageUrl.toString(),
+            fit: BoxFit.cover,
+            semanticLabel: semanticLabel,
+            errorBuilder: (context, error, stackTrace) => placeholder,
+            loadingBuilder: (context, child, progress) =>
+                progress == null ? child : placeholder,
+          );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(WynimeRadii.medium),
+      child: SizedBox(width: width, height: height, child: image),
     );
   }
 }
@@ -650,14 +792,35 @@ class BangumiSubjectDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              subject.nameCn.isEmpty ? subject.name : subject.nameCn,
-              style: Theme.of(context).textTheme.titleLarge,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _BangumiArtwork(
+                  imageUrl: subject.imageUrl,
+                  semanticLabel: subject.nameCn.isEmpty
+                      ? subject.name
+                      : subject.nameCn,
+                  width: 96,
+                  height: 141,
+                ),
+                const SizedBox(width: WynimeSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subject.nameCn.isEmpty ? subject.name : subject.nameCn,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      if (subject.summary.isNotEmpty) ...[
+                        const SizedBox(height: WynimeSpacing.xs),
+                        Text(subject.summary),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-            if (subject.summary.isNotEmpty) ...[
-              const SizedBox(height: WynimeSpacing.xs),
-              Text(subject.summary),
-            ],
             const SizedBox(height: WynimeSpacing.md),
             DropdownButtonFormField<BangumiCollectionStatus>(
               key: const ValueKey('bangumi-collection-status'),

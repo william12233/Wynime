@@ -112,7 +112,7 @@
   "subjectEpisodesLabel": "集數",
   "bangumiSettingsTitle": "Bangumi 帳號與同步",
   "bangumiNotSignedInLabel": "尚未登入",
-  "bangumiReauthDescription": "重新啟動後仍可查看快取帳號，但需要重新建立登入工作階段。",
+  "bangumiReauthDescription": "啟動時會自動恢復登入；只有 Bangumi 撤銷工作階段時才需要重新登入。",
   "bangumiCacheDescription": "快取資料會與目前已驗證的登入工作階段分開顯示。",
   "bangumiConflictTitle": "同步衝突",
   "bangumiConflictDescription": "送出本機變更前，遠端收藏已經改變。請選擇要保留哪個狀態。",

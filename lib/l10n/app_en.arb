@@ -126,7 +126,7 @@
   "subjectEpisodesLabel": "Episodes",
   "bangumiSettingsTitle": "Bangumi account and sync",
   "bangumiNotSignedInLabel": "Not signed in",
-  "bangumiReauthDescription": "The cached account remains visible, but a new session is required after restart.",
+  "bangumiReauthDescription": "Wynime restores the session automatically when possible. Sign in again only if Bangumi revoked it.",
   "bangumiCacheDescription": "Cached metadata is shown separately from the current authenticated session.",
   "bangumiConflictTitle": "Sync conflicts",
   "bangumiConflictDescription": "The remote collection changed before the local change was sent. Choose which state to keep.",

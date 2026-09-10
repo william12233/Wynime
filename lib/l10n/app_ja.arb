@@ -112,7 +112,7 @@
   "subjectEpisodesLabel": "エピソード",
   "bangumiSettingsTitle": "Bangumi アカウントと同期",
   "bangumiNotSignedInLabel": "未ログイン",
-  "bangumiReauthDescription": "再起動後もキャッシュ済みアカウントを表示できますが、再認証が必要です。",
+  "bangumiReauthDescription": "可能な場合は起動時にセッションを自動復元します。Bangumi に取り消された場合のみ再認証が必要です。",
   "bangumiCacheDescription": "キャッシュされたデータと現在の認証セッションは分けて表示されます。",
   "bangumiConflictTitle": "同期の競合",
   "bangumiConflictDescription": "ローカル変更を送信する前に、リモートのコレクションが変更されました。保持する状態を選択してください。",

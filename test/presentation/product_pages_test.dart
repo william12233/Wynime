@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wynime/src/app/wynime_app.dart';
 import 'package:wynime/src/application/bangumi_session_controller.dart';
+import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/infrastructure/bangumi/bangumi_authentication.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store.dart';
 
@@ -61,6 +62,62 @@ void main() {
     await tester.tap(find.text('Watching'));
     await tester.pumpAndSettle();
     expect(find.text('Your library is empty'), findsOneWidget);
+  });
+
+  testWidgets('library renders poster artwork for every collection entry', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final controller = BangumiSessionController(
+      authentication: const UnavailableBangumiAuthentication(),
+      store: DriftBangumiLocalStore(database),
+      clientFactory: (_) => throw StateError('client must not be created'),
+    );
+
+    await tester.pumpWidget(
+      WynimeApp(
+        locale: const Locale('en'),
+        bangumi: controller,
+        onReady: () async {
+          controller.collections = [
+            BangumiCollectionEntry(
+              subjectId: '42',
+              status: BangumiCollectionStatus.watching,
+              nameCn: '作品',
+              imageUrl: Uri.parse('https://lain.bgm.tv/pic/cover/c/42.jpg'),
+            ),
+            BangumiCollectionEntry(
+              subjectId: '43',
+              status: BangumiCollectionStatus.completed,
+              nameCn: '沒有封面的作品',
+            ),
+          ];
+          controller.notifyListeners();
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.byIcon(Icons.video_library_outlined),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('bangumi-collection-artwork-42')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('bangumi-collection-artwork-43')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.movie_creation_outlined), findsNWidgets(2));
   });
 
   testWidgets('privacy diagnostics remain off until explicitly enabled', (

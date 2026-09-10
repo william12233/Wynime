@@ -9,16 +9,20 @@ import '../../domain/models/bangumi_models.dart';
 import '../../domain/services/bangumi_ports.dart';
 import 'bangumi_api_client.dart';
 
-const _callbackPath = '/oauth/callback';
+const _loopbackCallbackPath = '/oauth/callback';
+const _androidAppLinkCallbackPath = '/oauth/app-callback';
 const _maxAccessTokenLifetime = Duration(days: 30);
 
-final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
+final class BangumiBrokerAuthentication
+    implements BangumiAuthenticationPort, BangumiPersistentAuthenticationPort {
   BangumiBrokerAuthentication({
     required Uri workerOrigin,
     required String clientId,
     required String verifiedAppLinkHost,
     Uri? redirectUri,
     BangumiCallbackPort? callbackPort,
+    BangumiOAuthStateStore? oauthStateStore,
+    BangumiRefreshTokenStore? refreshTokenStore,
     BangumiHttpTransport? transport,
     DateTime Function()? clock,
     Duration ticketLifetime = const Duration(minutes: 5),
@@ -27,6 +31,8 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
        _clientId = _validateClientId(clientId),
        _redirectUri = null,
        _callbackPort = callbackPort,
+       _oauthStateStore = oauthStateStore,
+       _refreshTokenStore = refreshTokenStore,
        _transport = transport ?? IoBangumiHttpTransport(),
        _clock = clock ?? DateTime.now,
        _ticketLifetime = ticketLifetime {
@@ -45,6 +51,8 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
   final String _clientId;
   Uri? _redirectUri;
   final BangumiCallbackPort? _callbackPort;
+  final BangumiOAuthStateStore? _oauthStateStore;
+  final BangumiRefreshTokenStore? _refreshTokenStore;
   final BangumiHttpTransport _transport;
   final DateTime Function() _clock;
   final Duration _ticketLifetime;
@@ -64,8 +72,13 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
       throw const BangumiApiException(code: 'redirect_uri_unavailable');
     }
     final state = _randomToken(32);
+    final createdAt = _clock().toUtc();
     _pendingState = state;
-    _pendingAt = _clock().toUtc();
+    _pendingAt = createdAt;
+    await _oauthStateStore?.savePendingState(
+      state: state,
+      createdAt: createdAt,
+    );
     final uri = _workerOrigin.replace(
       path:
           '${_workerOrigin.path == '/' ? '' : _workerOrigin.path}/oauth/start',
@@ -84,19 +97,22 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
 
   @override
   Future<BangumiAuthSession> redeem(BangumiAuthCallback callback) async {
-    _validateCallbackState(callback.state);
+    await _validateCallbackState(callback.state);
     if (callback.error != null) {
-      _clearPending();
-      throw BangumiApiException(code: 'oauth_${_safeError(callback.error!)}');
+      await _clearPending();
+      final errorCode = _safeError(callback.error!);
+      throw BangumiApiException(
+        code: errorCode.startsWith('oauth_') ? errorCode : 'oauth_$errorCode',
+      );
     }
     final ticket = callback.ticket ?? callback.code;
     if (ticket == null || ticket.isEmpty || ticket.length > 4096) {
-      _clearPending();
+      await _clearPending();
       throw const BangumiApiException(code: 'oauth_ticket_missing');
     }
-    final redirectUri = _redirectUri;
+    final redirectUri = await _resolveRedirectUri();
     if (redirectUri == null) {
-      _clearPending();
+      await _clearPending();
       throw const BangumiApiException(code: 'redirect_uri_unavailable');
     }
     final response = await _postJson('/oauth/redeem', <String, Object?>{
@@ -105,8 +121,10 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
       'state': callback.state,
       'ticket': ticket,
     });
-    _clearPending();
-    return _sessionFromJson(response);
+    await _clearPending();
+    final session = _sessionFromJson(response);
+    await _persistRefreshToken(session);
+    return session;
   }
 
   @override
@@ -123,12 +141,67 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
     if (refreshed.accountId != session.accountId) {
       throw const BangumiApiException(code: 'oauth_account_mismatch');
     }
+    await _persistRefreshToken(refreshed);
     return refreshed;
   }
 
   @override
+  Future<BangumiAuthSession?> restoreSession() async {
+    final store = _refreshTokenStore;
+    if (store == null) return null;
+    try {
+      final stored = await store.loadRefreshToken();
+      if (stored == null) return null;
+      if (!_isSafeAccountId(stored.accountId) ||
+          stored.refreshToken.isEmpty ||
+          stored.refreshToken.length > 4096) {
+        throw const BangumiPayloadException('oauth_session_storage_invalid');
+      }
+      return BangumiAuthSession(
+        accountId: stored.accountId,
+        // The access token is intentionally empty and is replaced by refresh
+        // before the controller exposes an authenticated client.
+        accessToken: '',
+        refreshToken: stored.refreshToken,
+        expiresAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+      );
+    } on BangumiApiException {
+      rethrow;
+    } on BangumiPayloadException {
+      rethrow;
+    } on Object {
+      throw const BangumiApiException(code: 'oauth_session_storage_failed');
+    }
+  }
+
+  @override
+  Future<void> clearStoredSession() async {
+    try {
+      await _refreshTokenStore?.clearRefreshToken();
+    } on Object {
+      throw const BangumiApiException(code: 'oauth_session_storage_failed');
+    }
+  }
+
+  @override
   Future<void> signOut() async {
-    _clearPending();
+    await _clearPending();
+    await clearStoredSession();
+  }
+
+  Future<void> _persistRefreshToken(BangumiAuthSession session) async {
+    final store = _refreshTokenStore;
+    if (store == null) return;
+    try {
+      await store.saveRefreshToken(
+        accountId: session.accountId,
+        refreshToken: session.refreshToken,
+      );
+    } on BangumiApiException {
+      rethrow;
+    } on Object {
+      throw const BangumiApiException(code: 'oauth_session_storage_failed');
+    }
   }
 
   Future<Map<String, dynamic>> _postJson(
@@ -208,21 +281,45 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
     );
   }
 
-  void _validateCallbackState(String state) {
-    final pendingState = _pendingState;
-    final pendingAt = _pendingAt;
+  Future<void> _validateCallbackState(String state) async {
+    var pendingState = _pendingState;
+    var pendingAt = _pendingAt;
+    if (pendingState == null || pendingAt == null) {
+      final persisted = await _oauthStateStore?.loadPendingState();
+      pendingState = persisted?.state;
+      pendingAt = persisted?.createdAt;
+      _pendingState = pendingState;
+      _pendingAt = pendingAt;
+    }
+    final age = pendingAt == null
+        ? null
+        : _clock().toUtc().difference(pendingAt);
     if (pendingState == null ||
         pendingAt == null ||
         state != pendingState ||
-        _clock().toUtc().difference(pendingAt) > _ticketLifetime) {
-      _clearPending();
+        age == null ||
+        age.isNegative ||
+        age > _ticketLifetime) {
+      await _clearPending();
       throw const BangumiApiException(code: 'oauth_state_mismatch');
     }
   }
 
-  void _clearPending() {
+  Future<Uri?> _resolveRedirectUri() async {
+    final current = _redirectUri;
+    if (current != null) return current;
+    final callbackPort = _callbackPort;
+    if (callbackPort == null) return null;
+    _redirectUri = _validateRedirectUri(
+      await callbackPort.prepareRedirectUri(),
+    );
+    return _redirectUri;
+  }
+
+  Future<void> _clearPending() async {
     _pendingState = null;
     _pendingAt = null;
+    await _oauthStateStore?.clearPendingState();
   }
 
   static Uri _validateWorkerOrigin(Uri value) {
@@ -253,12 +350,12 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
         value.scheme == 'http' &&
         value.port > 0 &&
         value.port <= 65535 &&
-        value.path == _callbackPath;
+        value.path == _loopbackCallbackPath;
     final isVerifiedAppLink =
         value.scheme == 'https' &&
         value.host == _verifiedAppLinkHost &&
         value.port == 443 &&
-        value.path == _callbackPath;
+        value.path == _androidAppLinkCallbackPath;
     if ((!isLoopback && !isVerifiedAppLink) ||
         value.userInfo.isNotEmpty ||
         value.hasFragment ||
@@ -286,6 +383,11 @@ final class BangumiBrokerAuthentication implements BangumiAuthenticationPort {
     }
     return value;
   }
+
+  static bool _isSafeAccountId(String value) =>
+      value.isNotEmpty &&
+      value.length <= 256 &&
+      RegExp(r'^[0-9]+$').hasMatch(value);
 
   static String _randomToken(int bytes) {
     final random = Random.secure();

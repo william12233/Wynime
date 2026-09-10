@@ -68,6 +68,39 @@ describe('Bangumi broker public surface', () => {
     expect(clientLocation.searchParams.get('error')).toBe('oauth_denied');
   });
 
+  it('uses a separate Android app callback so the broker does not parse app state', async () => {
+    const state = 'A'.repeat(43);
+    const appRedirectUri = `https://${envValues.APP_LINK_HOST}/oauth/app-callback`;
+    const start = await worker.fetch(
+      new Request(
+        `https://broker.example/oauth/start?state=${state}&client_id=client-id&redirect_uri=${encodeURIComponent(appRedirectUri)}`,
+      ),
+      env,
+    );
+    expect(start.status).toBe(302);
+    const providerState = new URL(start.headers.get('location')!).searchParams.get('state')!;
+
+    const denial = await worker.fetch(
+      new Request(
+        `https://broker.example/oauth/callback?state=${encodeURIComponent(providerState)}&error=access_denied`,
+      ),
+      env,
+    );
+    expect(denial.status).toBe(302);
+    const appLocation = new URL(denial.headers.get('location')!);
+    expect(appLocation.toString()).toContain(appRedirectUri);
+    expect(appLocation.pathname).toBe('/oauth/app-callback');
+    expect(appLocation.searchParams.get('state')).toBe(state);
+    expect(appLocation.searchParams.get('error')).toBe('oauth_denied');
+
+    const browserFallback = await worker.fetch(
+      new Request(appLocation.toString()),
+      env,
+    );
+    expect(browserFallback.status).toBe(200);
+    expect(await browserFallback.text()).not.toContain('oauth_state_invalid');
+  });
+
   it('redacts invalid tickets and never returns a token for a mismatch', async () => {
     const response = await worker.fetch(
       new Request('https://broker.example/oauth/redeem', {
@@ -84,6 +117,41 @@ describe('Bangumi broker public surface', () => {
     const body = await response.text();
     expect(JSON.parse(body)).toEqual({ error: 'ticket_invalid' });
     expect(body).not.toContain('secret-not-returned');
+  });
+
+  it('returns a stable provider diagnostic when code exchange is rejected', async () => {
+    const tokenFetch = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === 'https://bgm.tv/oauth/access_token') {
+        return new Response(JSON.stringify({ error: 'invalid_client' }), {
+          status: 401,
+        });
+      }
+      throw new Error(`unexpected upstream ${String(input)}`);
+    });
+    vi.stubGlobal('fetch', tokenFetch);
+    try {
+      const state = 'A'.repeat(43);
+      const start = await worker.fetch(
+        new Request(
+          `https://broker.example/oauth/start?state=${state}&client_id=client-id&redirect_uri=${encodeURIComponent('http://127.0.0.1:43123/oauth/callback')}`,
+        ),
+        env,
+      );
+      const providerState = new URL(start.headers.get('location')!).searchParams.get('state')!;
+      const callback = await worker.fetch(
+        new Request(
+          `https://broker.example/oauth/callback?state=${encodeURIComponent(providerState)}&code=authorization-code`,
+        ),
+        env,
+      );
+      const location = new URL(callback.headers.get('location')!);
+
+      expect(callback.status).toBe(302);
+      expect(location.searchParams.get('state')).toBe(state);
+      expect(location.searchParams.get('error')).toBe('oauth_provider_rejected');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('keeps the replay marker separate from ticket contents', () => {
@@ -122,12 +190,10 @@ describe('Bangumi broker public surface', () => {
             access_token: 'access-token',
             refresh_token: 'refresh-token',
             expires_in: 604800,
+            user_id: 7,
           }),
           { status: 200 },
         );
-      }
-      if (url === 'https://api.bgm.tv/v0/me') {
-        return new Response(JSON.stringify({ id: 7 }), { status: 200 });
       }
       throw new Error(`unexpected upstream ${url} ${String(init?.method)}`);
     });
@@ -146,9 +212,10 @@ describe('Bangumi broker public surface', () => {
     } as never;
     try {
       const state = 'A'.repeat(43);
+      const appRedirectUri = `https://${envValues.APP_LINK_HOST}/oauth/app-callback`;
       const start = await worker.fetch(
         new Request(
-          `https://broker.example/oauth/start?state=${state}&client_id=client-id&redirect_uri=${encodeURIComponent('http://127.0.0.1:43123/oauth/callback')}`,
+          `https://broker.example/oauth/start?state=${state}&client_id=client-id&redirect_uri=${encodeURIComponent(appRedirectUri)}`,
         ),
         replayEnv,
       );
@@ -161,6 +228,8 @@ describe('Bangumi broker public surface', () => {
       );
       expect(callback.status, await callback.clone().text()).toBe(302);
       const clientLocation = new URL(callback.headers.get('location')!);
+      expect(clientLocation.origin).toBe(`https://${envValues.APP_LINK_HOST}`);
+      expect(clientLocation.pathname).toBe('/oauth/app-callback');
       const ticket = clientLocation.searchParams.get('ticket')!;
       expect(ticket.length).toBeGreaterThan(40);
       const redeemed = await worker.fetch(
@@ -176,6 +245,10 @@ describe('Bangumi broker public surface', () => {
       );
       const redeemedBody = await redeemed.text();
       expect(redeemed.status, redeemedBody).toBe(200);
+      expect(JSON.parse(redeemedBody)).toMatchObject({
+        account_id: '7',
+        expires_in: expect.any(Number),
+      });
       expect((JSON.parse(redeemedBody) as { expires_in: number }).expires_in).toBeGreaterThan(604000);
     } finally {
       vi.unstubAllGlobals();
@@ -198,8 +271,8 @@ describe('Bangumi broker public surface', () => {
           { status: 200 },
         );
       }
-      if (url === 'https://api.bgm.tv/v0/me') {
-        return new Response(JSON.stringify({ id: 7 }), { status: 200 });
+      if (url === 'https://bgm.tv/oauth/token_status') {
+        return new Response(JSON.stringify({ user_id: 7 }), { status: 200 });
       }
       throw new Error(`unexpected upstream ${url}`);
     });
@@ -221,6 +294,72 @@ describe('Bangumi broker public surface', () => {
       );
       expect(response.status).toBe(200);
       expect((await response.json() as { expires_in: number }).expires_in).toBe(604800);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('uses the authorization response user id without calling an undocumented current-user endpoint', async () => {
+    const tokenFetch = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === 'https://token.example.test/access_token') {
+        return new Response(
+          JSON.stringify({
+            access_token: 'access-token',
+            refresh_token: 'refresh-token',
+            expires_in: 604800,
+            user_id: 42,
+          }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`unexpected upstream ${String(input)}`);
+    });
+    vi.stubGlobal('fetch', tokenFetch);
+    const replayEnv = {
+      ...envValues,
+      BANGUMI_TOKEN_URL: 'https://token.example.test/access_token',
+      REPLAY_MARKERS: {
+        idFromName: (name: string) => name,
+        get: () => ({
+          fetch: async () => new Response(null, { status: 200 }),
+        }),
+      },
+    } as never;
+    try {
+      const state = 'B'.repeat(43);
+      const start = await worker.fetch(
+        new Request(
+          `https://broker.example/oauth/start?state=${state}&client_id=client-id&redirect_uri=${encodeURIComponent(`https://${envValues.APP_LINK_HOST}/oauth/app-callback`)}`,
+        ),
+        replayEnv,
+      );
+      const providerState = new URL(start.headers.get('location')!).searchParams.get('state')!;
+      const callback = await worker.fetch(
+        new Request(
+          `https://broker.example/oauth/callback?state=${encodeURIComponent(providerState)}&code=authorization-code`,
+        ),
+        replayEnv,
+      );
+      expect(callback.status).toBe(302);
+      const location = new URL(callback.headers.get('location')!);
+      expect(location.searchParams.get('error')).toBeNull();
+      const redeemed = await worker.fetch(
+        new Request('https://broker.example/oauth/redeem', {
+          method: 'POST',
+          body: JSON.stringify({
+            client_id: 'client-id',
+            state,
+            ticket: location.searchParams.get('ticket'),
+          }),
+        }),
+        replayEnv,
+      );
+      expect(redeemed.status).toBe(200);
+      expect((await redeemed.json() as { account_id: string }).account_id).toBe('42');
+      expect(tokenFetch).toHaveBeenCalledTimes(1);
+      expect(String(tokenFetch.mock.calls[0]?.[0])).toBe(
+        'https://token.example.test/access_token',
+      );
     } finally {
       vi.unstubAllGlobals();
     }

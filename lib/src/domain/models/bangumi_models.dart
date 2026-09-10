@@ -52,7 +52,22 @@ final class BangumiAuthCallback {
   bool get isError => error != null;
 }
 
-/// Access and refresh tokens are deliberately kept only in memory.
+/// The only OAuth value allowed to survive an Android process restart.
+///
+/// This is a short-lived CSRF handoff value, not an access or refresh token.
+final class BangumiPendingOAuthState {
+  const BangumiPendingOAuthState({
+    required this.state,
+    required this.createdAt,
+  });
+
+  final String state;
+  final DateTime createdAt;
+}
+
+/// Access tokens are deliberately kept only in memory. Refresh tokens may be
+/// kept in a platform-provided encrypted store so a session can be restored
+/// after an application restart.
 final class BangumiAuthSession {
   const BangumiAuthSession({
     required this.accountId,
@@ -180,12 +195,14 @@ final class BangumiCollectionEntry {
     required this.status,
     this.name,
     this.nameCn,
+    this.imageUrl,
   });
 
   final String subjectId;
   final BangumiCollectionStatus status;
   final String? name;
   final String? nameCn;
+  final Uri? imageUrl;
 }
 
 final class BangumiCollectionPage {

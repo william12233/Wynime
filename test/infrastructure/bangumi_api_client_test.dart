@@ -38,7 +38,13 @@ void main() {
               {
                 'subject_id': 42,
                 'type': 1,
-                'subject': {'name': 'Title', 'name_cn': '作品'},
+                'subject': {
+                  'name': 'Title',
+                  'name_cn': '作品',
+                  'images': {
+                    'common': 'https://lain.bgm.tv/pic/cover/c/42.jpg',
+                  },
+                },
               },
               {'subject_id': 43, 'type': 3},
             ],
@@ -88,6 +94,10 @@ void main() {
     );
     expect(collections.collections, hasLength(2));
     expect(collections.collections.first.status, BangumiCollectionStatus.wish);
+    expect(
+      collections.collections.first.imageUrl,
+      Uri.parse('https://lain.bgm.tv/pic/cover/c/42.jpg'),
+    );
     expect(episodes.episodes, hasLength(2));
     expect(episodes.episodes.last.nameCn, '第二集');
   });

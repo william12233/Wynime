@@ -4,6 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
 import androidx.core.content.FileProvider
 import androidx.media3.common.C
 import androidx.media3.common.Format
@@ -21,6 +24,13 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import java.nio.charset.StandardCharsets
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+import org.json.JSONObject
 
 class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private companion object {
@@ -28,6 +38,15 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         const val EVENT_CHANNEL = "io.github.william12233.wynime/media3/events"
         const val UPDATE_CHANNEL = "io.github.william12233.wynime/software_update"
         const val AUTH_CHANNEL = "io.github.william12233.wynime/bangumi_auth"
+        const val AUTH_STATE_PREFS = "bangumi_oauth_state"
+        const val AUTH_STATE_KEY = "state"
+        const val AUTH_STATE_CREATED_AT_KEY = "created_at_epoch_ms"
+        const val AUTH_SESSION_PREFS = "bangumi_oauth_session_v1"
+        const val AUTH_SESSION_CIPHERTEXT_KEY = "refresh_token_ciphertext"
+        const val AUTH_SESSION_IV_KEY = "refresh_token_iv"
+        const val AUTH_SESSION_KEY_ALIAS = "wynime_bangumi_refresh_v1"
+        const val AUTH_SESSION_AAD = "io.github.william12233.wynime/bangumi-refresh-v1"
+        const val AUTH_SESSION_MAX_TOKEN_LENGTH = 4096
     }
 
     private data class TrackDescriptor(
@@ -58,6 +77,12 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private val boundTracks = mutableMapOf<Int, BoundTrack>()
     private var pendingAuthCallback: Map<String, String?>? = null
     private var pendingAuthResult: MethodChannel.Result? = null
+    private val authStatePreferences by lazy {
+        getSharedPreferences(AUTH_STATE_PREFS, MODE_PRIVATE)
+    }
+    private val authSessionPreferences by lazy {
+        getSharedPreferences(AUTH_SESSION_PREFS, MODE_PRIVATE)
+    }
 
     private val playerListener =
         object : Player.Listener {
@@ -118,19 +143,188 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     }
 
     private fun handleAuthMethodCall(call: MethodCall, result: MethodChannel.Result) {
-        when (call.method) {
-            "prepareCallback" -> result.success(null)
-            "waitForCallback" -> {
-                val pending = pendingAuthCallback
-                if (pending != null) {
+        try {
+            when (call.method) {
+                "prepareCallback" -> result.success(null)
+                "waitForCallback" -> {
+                    val pending = pendingAuthCallback
+                    if (pending != null) {
+                        pendingAuthCallback = null
+                        result.success(pending)
+                    } else {
+                        pendingAuthResult = result
+                    }
+                }
+                "takePendingCallback" -> {
+                    val pending = pendingAuthCallback
                     pendingAuthCallback = null
                     result.success(pending)
-                } else {
-                    pendingAuthResult = result
                 }
+                "savePendingState" -> {
+                    val state = requiredString(call, "state")
+                    require(
+                        state.matches(Regex("[A-Za-z0-9_-]{1,256}")),
+                    ) { "Invalid OAuth state" }
+                    val createdAt = call.argument<Number>("createdAtEpochMs")?.toLong()
+                        ?: throw IllegalArgumentException("createdAtEpochMs is required")
+                    require(createdAt > 0) { "Invalid OAuth state timestamp" }
+                    check(
+                        authStatePreferences.edit()
+                            .putString(AUTH_STATE_KEY, state)
+                            .putLong(AUTH_STATE_CREATED_AT_KEY, createdAt)
+                            .commit(),
+                    ) { "Unable to persist OAuth state" }
+                    result.success(null)
+                }
+                "loadPendingState" -> {
+                    val state = authStatePreferences.getString(AUTH_STATE_KEY, null)
+                    val createdAt = authStatePreferences.getLong(
+                        AUTH_STATE_CREATED_AT_KEY,
+                        Long.MIN_VALUE,
+                    )
+                    if (state == null || createdAt == Long.MIN_VALUE) {
+                        result.success(null)
+                    } else {
+                        result.success(
+                            mapOf(
+                                "state" to state,
+                                "createdAtEpochMs" to createdAt,
+                            ),
+                        )
+                    }
+                }
+                "clearPendingState" -> {
+                    authStatePreferences.edit()
+                        .remove(AUTH_STATE_KEY)
+                        .remove(AUTH_STATE_CREATED_AT_KEY)
+                        .apply()
+                    result.success(null)
+                }
+                "saveRefreshToken" -> {
+                    val accountId = requiredString(call, "accountId")
+                    val refreshToken = requiredString(call, "refreshToken")
+                    require(isSafeAuthValue(accountId, 256)) { "Invalid account ID" }
+                    require(refreshToken.length <= AUTH_SESSION_MAX_TOKEN_LENGTH) {
+                        "Invalid refresh token"
+                    }
+                    val payload = JSONObject()
+                        .put("accountId", accountId)
+                        .put("refreshToken", refreshToken)
+                    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                    cipher.init(Cipher.ENCRYPT_MODE, refreshSessionKey())
+                    cipher.updateAAD(AUTH_SESSION_AAD.toByteArray(StandardCharsets.UTF_8))
+                    val ciphertext = cipher.doFinal(
+                        payload.toString().toByteArray(StandardCharsets.UTF_8),
+                    )
+                    check(
+                        authSessionPreferences.edit()
+                            .putString(
+                                AUTH_SESSION_CIPHERTEXT_KEY,
+                                Base64.encodeToString(ciphertext, Base64.NO_WRAP),
+                            )
+                            .putString(
+                                AUTH_SESSION_IV_KEY,
+                                Base64.encodeToString(cipher.iv, Base64.NO_WRAP),
+                            )
+                            .commit(),
+                    ) { "Unable to persist Bangumi session" }
+                    result.success(null)
+                }
+                "loadRefreshToken" -> {
+                    val encodedCiphertext = authSessionPreferences.getString(
+                        AUTH_SESSION_CIPHERTEXT_KEY,
+                        null,
+                    )
+                    val encodedIv = authSessionPreferences.getString(
+                        AUTH_SESSION_IV_KEY,
+                        null,
+                    )
+                    if (encodedCiphertext == null && encodedIv == null) {
+                        result.success(null)
+                    } else {
+                        require(!encodedCiphertext.isNullOrEmpty() && !encodedIv.isNullOrEmpty()) {
+                            "Incomplete Bangumi session"
+                        }
+                        val iv = Base64.decode(encodedIv, Base64.DEFAULT)
+                        require(iv.size == 12) { "Invalid Bangumi session IV" }
+                        val ciphertext = Base64.decode(encodedCiphertext, Base64.DEFAULT)
+                        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+                        cipher.init(
+                            Cipher.DECRYPT_MODE,
+                            refreshSessionKey(),
+                            GCMParameterSpec(128, iv),
+                        )
+                        cipher.updateAAD(AUTH_SESSION_AAD.toByteArray(StandardCharsets.UTF_8))
+                        val payload = JSONObject(
+                            String(cipher.doFinal(ciphertext), StandardCharsets.UTF_8),
+                        )
+                        val accountId = payload.getString("accountId")
+                        val refreshToken = payload.getString("refreshToken")
+                        require(isSafeAuthValue(accountId, 256)) {
+                            "Invalid stored account ID"
+                        }
+                        require(refreshToken.isNotEmpty() &&
+                            refreshToken.length <= AUTH_SESSION_MAX_TOKEN_LENGTH) {
+                            "Invalid stored refresh token"
+                        }
+                        result.success(
+                            mapOf(
+                                "accountId" to accountId,
+                                "refreshToken" to refreshToken,
+                            ),
+                        )
+                    }
+                }
+                "clearRefreshToken" -> {
+                    check(
+                        authSessionPreferences.edit()
+                            .remove(AUTH_SESSION_CIPHERTEXT_KEY)
+                            .remove(AUTH_SESSION_IV_KEY)
+                            .commit(),
+                    ) { "Unable to clear Bangumi session" }
+                    result.success(null)
+                }
+                else -> result.notImplemented()
             }
-            else -> result.notImplemented()
+        } catch (_: IllegalArgumentException) {
+            val code = if (call.method == "saveRefreshToken" ||
+                call.method == "loadRefreshToken") {
+                "invalid_oauth_session"
+            } else {
+                "invalid_oauth_state"
+            }
+            result.error(code, null, null)
+        } catch (_: Exception) {
+            result.error("oauth_state_storage_failed", null, null)
         }
+    }
+
+    private fun refreshSessionKey(): SecretKey {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply {
+            load(null)
+        }
+        val existing = keyStore.getKey(AUTH_SESSION_KEY_ALIAS, null)
+        if (existing is SecretKey) return existing
+        val generator = KeyGenerator.getInstance(
+            KeyProperties.KEY_ALGORITHM_AES,
+            "AndroidKeyStore",
+        )
+        generator.init(
+            KeyGenParameterSpec.Builder(
+                AUTH_SESSION_KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+            )
+                .setKeySize(256)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .build(),
+        )
+        return generator.generateKey()
+    }
+
+    private fun isSafeAuthValue(value: String, maxLength: Int): Boolean {
+        return value.isNotEmpty() && value.length <= maxLength &&
+            value.none { it.code < 0x20 || it.code == 0x7f }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -143,7 +337,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         val data = intent?.data ?: return
         if (!BuildConfig.WYNIME_BANGUMI_BROKER_ENABLED ||
             data.scheme != "https" || data.host != BuildConfig.WYNIME_BANGUMI_BROKER_HOST ||
-            data.path != "/oauth/callback") {
+            data.path != "/oauth/app-callback") {
             return
         }
         val callback = mapOf(

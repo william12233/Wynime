@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.4 release boundary is ready for exact-SHA CI and protected
+The v1.0.5 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -50,32 +50,26 @@ The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
 
-## 1.0.4 candidate status
+## 1.0.5 candidate status
 
-- Version authority is `1.0.4+5`; the expected arm64 split APK versionCode is
-  `2005`.
+- Version authority is `1.0.5+6`; the expected arm64 split APK versionCode is
+  `2006`.
 - GitHub repository variable `WYNIME_BANGUMI_BROKER_ORIGIN` is configured with
   the production Worker origin.
 - The Worker `ANDROID_CERT_SHA256` configuration is deployed and the public
   `assetlinks.json` now contains the exact production package and certificate
   fingerprint.
-- Flutter analyzer, the full deterministic test suite (218 tests), broker
-  typecheck and broker tests (9/9) pass on this candidate worktree.
-- Local Android arm64-v8a Release APK build passes with versionCode `2005` and
-  versionName `1.0.4`; it is unsigned locally and is not the protected CI
-  signing result.
+- Flutter analyzer, the full deterministic test suite (224 tests), broker
+  typecheck and broker tests (12/12) pass on this candidate worktree.
+- The local Android arm64-v8a Release APK passes versionCode `2006`,
+  versionName `1.0.5` and `arm64-v8a` checks; it is unsigned and is not the
+  protected CI signing result.
 - Local Windows x64 Release compile/install passes and the Release process
   stays responsive. The Windows Debug launch still fails in third-party
   Debug-CRT linking, while the native Computer Use surface exposes `apps=[]`.
-- After the host restart, `WHPX` reports installed and usable. Both fixed
-  Android 16 / API 36 AVDs booted, accepted the Debug APK, and launched
-  Wynime. The phone and tablet Home screens and Bangumi OAuth entry flow were
-  captured. The user subsequently reported completing the account callback
-  test; this remains external manual evidence and is not substituted for
-  physical playback evidence.
-- The App's public Bangumi client ID was aligned with the Worker configuration.
-  Both AVD OAuth entry flows reached the Bangumi login page instead of the
-  Worker `invalid_oauth_request` response.
+- The fixed Android phone and tablet AVD OAuth-entry evidence remains the
+  previous 1.0.4 baseline; a fresh 1.0.5 physical callback exercise is still
+  manual validation and is not substituted for physical playback evidence.
 
 ## External validation disclosure
 
@@ -99,12 +93,16 @@ live resize, mouse or keyboard actions passed.
 
 ## Runtime and UI evidence
 
-Operation: `Wynime-Bangumi-1.0.4-20260909-185900-cf7a`.
+Operation: `Wynime-Bangumi-1.0.5-20260910-0026-4f2c`.
 
-- Current local Android arm64-v8a Release APK: metadata and ABI checks pass
-  (`versionCode=2005`, `versionName=1.0.4`, `arm64-v8a`); local
-  `apksigner verify` correctly reports it is unsigned. Protected CI signing
-  remains required.
+- Current candidate Android arm64-v8a Release APK: metadata and ABI checks
+  pass (`versionCode=2006`, `versionName=1.0.5`, `arm64-v8a`); local
+  `apksigner verify` correctly reports unsigned. Protected CI signing remains
+  required.
+- Production Worker deployment `4911bd6c-f254-4590-9b08-5fe10cb0dfc1` passes
+  `/healthz` with 200, routes the provider denial to
+  `/oauth/app-callback`, returns the safe 200 fallback page, and publishes
+  the exact Android package and release certificate in `assetlinks.json`.
 - Current local Windows x64 Release binary: compile/install and an 8-second
   process liveness check pass. Native action-level UI could not be observed
   because the Computer Use session exposed only the in-app browser and
@@ -202,7 +200,7 @@ corresponding-source offer, native provenance lock, notices and release notes.
 
 Standalone FFmpeg execution, remuxing, MKV fallback, DRM/paywall bypass,
 magnet/BT/seeding and source-provided executable adapters remain outside this
-1.0.4 candidate boundary. Bangumi source integration and production Worker
+1.0.5 candidate boundary. Bangumi source integration and production Worker
 configuration are included, while live account validation and platform runtime
 evidence remain open until directly exercised.
 

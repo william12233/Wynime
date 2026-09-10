@@ -158,14 +158,24 @@ final class BangumiApiClient implements BangumiClient {
       if (status == null) {
         throw const BangumiPayloadException('collection_status_missing');
       }
+      final subject = _map(raw['subject']);
+      final subjectImages = subject['images'] is Map
+          ? _map(subject['images'])
+          : const <dynamic, dynamic>{};
       collections.add(
         BangumiCollectionEntry(
-          subjectId: _requiredId(
-            raw['subject_id'] ?? _map(raw['subject'])['id'],
-          ),
+          subjectId: _requiredId(raw['subject_id'] ?? subject['id']),
           status: BangumiCollectionStatus.fromApiType(status),
-          name: _optionalString(_map(raw['subject'])['name']),
-          nameCn: _optionalString(_map(raw['subject'])['name_cn']),
+          name: _optionalString(subject['name']),
+          nameCn: _optionalString(subject['name_cn']),
+          imageUrl: _optionalUri(
+            subjectImages['common'] ??
+                subjectImages['medium'] ??
+                subjectImages['large'] ??
+                subjectImages['small'] ??
+                subject['image'] ??
+                raw['image'],
+          ),
         ),
       );
     }

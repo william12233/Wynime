@@ -195,7 +195,7 @@ Phase 6 的 Android／Windows 實際硬體播放若未執行，只能標記 `pro
 
 必須通過：
 
-- OAuth authorization-code flow 使用 state 綁定，authorization／redirect URI 僅允許標準 HTTPS，access token 只存在記憶體；
+- OAuth authorization-code flow 使用 state 綁定，authorization／redirect URI 僅允許標準 HTTPS，access token 只存在記憶體；Android refresh token 只能進入 Android Keystore 保護的 AES-GCM 加密儲存，啟動時自動換發工作階段；
 - `/calendar`、`/v0/subjects/{subject_id}` 與 `/v0/episodes` 的資料解析具備 bounded payload、型別驗證與穩定錯誤碼；
 - 收藏狀態與已看集數透過官方目前使用者 endpoint 同步，讀寫不把 token 放入 query string；
 - 本機收藏、已看集數、遠端 revision、人工條目映射與離線同步 operation 持久化於 Drift，佇列可恢復；

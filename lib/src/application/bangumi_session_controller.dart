@@ -92,6 +92,87 @@ final class BangumiSessionController extends ChangeNotifier {
         : BangumiConnectionStatus.reauthRequired;
     await _refreshQueueCounts();
     notifyListeners();
+    final resumedCallback = await _resumePendingSignIn();
+    if (!resumedCallback) await _resumePersistedSession();
+  }
+
+  Future<bool> _resumePendingSignIn() async {
+    final callbackPort = _callbackPort;
+    if (callbackPort is! BangumiPendingCallbackPort) return false;
+
+    final recoveryPort = callbackPort as BangumiPendingCallbackPort;
+    final callback = await recoveryPort.takePendingCallback();
+    if (callback == null) return false;
+
+    status = BangumiConnectionStatus.authorizing;
+    errorCode = null;
+    notifyListeners();
+    await completeSignIn(callback);
+    return true;
+  }
+
+  Future<void> _resumePersistedSession() async {
+    final persistence = _authentication is BangumiPersistentAuthenticationPort
+        ? _authentication as BangumiPersistentAuthenticationPort
+        : null;
+    if (!isAvailable || persistence == null) {
+      return;
+    }
+
+    BangumiAuthSession? storedSession;
+    try {
+      storedSession = await persistence.restoreSession();
+    } on BangumiApiException catch (error) {
+      if (error.code == 'oauth_session_storage_invalid') {
+        await _clearStoredSessionBestEffort(persistence);
+      }
+      status = BangumiConnectionStatus.failed;
+      errorCode = error.code;
+      notifyListeners();
+      return;
+    } on BangumiPayloadException catch (error) {
+      await _clearStoredSessionBestEffort(persistence);
+      status = BangumiConnectionStatus.failed;
+      errorCode = error.code;
+      notifyListeners();
+      return;
+    } on Object {
+      status = BangumiConnectionStatus.failed;
+      errorCode = 'oauth_session_storage_failed';
+      notifyListeners();
+      return;
+    }
+    if (storedSession == null) return;
+
+    status = BangumiConnectionStatus.authorizing;
+    errorCode = null;
+    notifyListeners();
+    try {
+      final refreshed = await _authentication.refresh(storedSession);
+      if (refreshed.accountId != storedSession.accountId) {
+        throw const BangumiApiException(code: 'account_mismatch');
+      }
+      await _activateSession(refreshed);
+    } on BangumiApiException catch (error) {
+      _session = null;
+      _client = null;
+      if (_shouldDiscardStoredSession(error.code)) {
+        await _clearStoredSessionBestEffort(persistence);
+      }
+      _handleApiError(error);
+      errorCode = error.code;
+    } on BangumiPayloadException catch (error) {
+      _session = null;
+      _client = null;
+      status = BangumiConnectionStatus.failed;
+      errorCode = error.code;
+    } on Object {
+      _session = null;
+      _client = null;
+      status = BangumiConnectionStatus.failed;
+      errorCode = 'session_restore_failed';
+    }
+    notifyListeners();
   }
 
   Future<void> signIn() async {
@@ -153,25 +234,7 @@ final class BangumiSessionController extends ChangeNotifier {
     }
     try {
       final session = await _authentication.redeem(callback);
-      final api = _clientFactory(session);
-      final identity = await api.currentUser();
-      if (identity.id != session.accountId) {
-        throw const BangumiApiException(code: 'account_mismatch');
-      }
-      _session = session;
-      _client = api;
-      await _store.saveAccount(identity);
-      account = await _store.loadActiveAccount();
-      collections = await _store.cachedCollections();
-      schedule = await _store.cachedSchedule();
-      scheduleUpdatedAt =
-          account?.scheduleUpdatedAt ?? await _store.cachedScheduleUpdatedAt();
-      scheduleIsFresh = false;
-      status = BangumiConnectionStatus.connected;
-      errorCode = null;
-      await refreshSchedule();
-      await refreshCollections();
-      await _refreshQueueCounts();
+      await _activateSession(session);
     } on BangumiApiException catch (error) {
       _session = null;
       _client = null;
@@ -184,6 +247,28 @@ final class BangumiSessionController extends ChangeNotifier {
       errorCode = 'sign_in_failed';
     }
     notifyListeners();
+  }
+
+  Future<void> _activateSession(BangumiAuthSession session) async {
+    final api = _clientFactory(session);
+    final identity = await api.currentUser();
+    if (identity.id != session.accountId) {
+      throw const BangumiApiException(code: 'account_mismatch');
+    }
+    _session = session;
+    _client = api;
+    await _store.saveAccount(identity);
+    account = await _store.loadActiveAccount();
+    collections = await _store.cachedCollections();
+    schedule = await _store.cachedSchedule();
+    scheduleUpdatedAt =
+        account?.scheduleUpdatedAt ?? await _store.cachedScheduleUpdatedAt();
+    scheduleIsFresh = false;
+    status = BangumiConnectionStatus.connected;
+    errorCode = null;
+    await refreshSchedule();
+    await refreshCollections();
+    await _refreshQueueCounts();
   }
 
   Future<void> refreshSession() async {
@@ -326,6 +411,7 @@ final class BangumiSessionController extends ChangeNotifier {
                 status: value,
                 name: entry.name,
                 nameCn: entry.nameCn,
+                imageUrl: entry.imageUrl,
               )
             : entry,
       ),
@@ -549,6 +635,15 @@ final class BangumiSessionController extends ChangeNotifier {
     } on BangumiApiException catch (error) {
       _session = null;
       _client = null;
+      if (_shouldDiscardStoredSession(error.code)) {
+        final sessionPersistence =
+            _authentication is BangumiPersistentAuthenticationPort
+            ? _authentication as BangumiPersistentAuthenticationPort
+            : null;
+        if (sessionPersistence != null) {
+          await _clearStoredSessionBestEffort(sessionPersistence);
+        }
+      }
       status = BangumiConnectionStatus.reauthRequired;
       errorCode = error.code;
       return false;
@@ -594,4 +689,22 @@ final class BangumiSessionController extends ChangeNotifier {
 
   static bool _isAuthenticationError(String code) =>
       code == 'auth_required' || code == 'account_mismatch';
+
+  static bool _shouldDiscardStoredSession(String code) =>
+      code == 'reauth_required' ||
+      code == 'oauth_rejected' ||
+      code == 'oauth_account_mismatch' ||
+      code == 'account_mismatch' ||
+      code == 'oauth_session_storage_invalid';
+
+  Future<void> _clearStoredSessionBestEffort(
+    BangumiPersistentAuthenticationPort persistence,
+  ) async {
+    try {
+      await persistence.clearStoredSession();
+    } on Object {
+      // Keep the original authentication error visible. A later explicit
+      // sign-out can retry clearing the platform store.
+    }
+  }
 }

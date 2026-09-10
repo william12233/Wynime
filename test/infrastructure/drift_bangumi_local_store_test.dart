@@ -64,6 +64,10 @@ void main() {
       (await store.cachedCollections()).single.status,
       BangumiCollectionStatus.watching,
     );
+    expect(
+      (await store.cachedCollections()).single.imageUrl,
+      Uri.parse('https://lain.bgm.tv/pic/cover/c/42.jpg'),
+    );
     final conflicts = await store.conflicts();
 
     expect(conflicts, hasLength(1));
@@ -228,12 +232,13 @@ Future<void> _seed(DriftBangumiLocalStore store) async {
     const BangumiUserIdentity(id: '7', username: 'alice'),
   );
   await store.cacheSubject(
-    const BangumiSubject(
+    BangumiSubject(
       id: '42',
       name: 'Title',
       nameCn: '作品',
       summary: 'Summary',
       eps: 2,
+      imageUrl: Uri.parse('https://lain.bgm.tv/pic/cover/c/42.jpg'),
     ),
   );
   await store.cacheEpisodes(

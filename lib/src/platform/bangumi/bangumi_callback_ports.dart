@@ -84,7 +84,12 @@ final class WindowsLoopbackBangumiCallbackPort implements BangumiCallbackPort {
   }
 }
 
-final class AndroidAppLinkBangumiCallbackPort implements BangumiCallbackPort {
+final class AndroidAppLinkBangumiCallbackPort
+    implements
+        BangumiCallbackPort,
+        BangumiPendingCallbackPort,
+        BangumiOAuthStateStore,
+        BangumiRefreshTokenStore {
   AndroidAppLinkBangumiCallbackPort({
     required this.redirectUri,
     MethodChannel? channel,
@@ -103,9 +108,106 @@ final class AndroidAppLinkBangumiCallbackPort implements BangumiCallbackPort {
 
   @override
   Future<BangumiAuthCallback> waitForCallback() async {
-    final value = await _channel.invokeMapMethod<String, Object?>(
-      'waitForCallback',
+    return _callbackFromPlatform(
+      await _channel.invokeMapMethod<String, Object?>('waitForCallback'),
     );
+  }
+
+  @override
+  Future<BangumiAuthCallback?> takePendingCallback() async {
+    final value = await _channel.invokeMapMethod<String, Object?>(
+      'takePendingCallback',
+    );
+    if (value == null) return null;
+    return _callbackFromPlatform(value);
+  }
+
+  @override
+  Future<void> savePendingState({
+    required String state,
+    required DateTime createdAt,
+  }) async {
+    await _channel.invokeMethod<void>('savePendingState', <String, Object?>{
+      'state': state,
+      'createdAtEpochMs': createdAt.toUtc().millisecondsSinceEpoch,
+    });
+  }
+
+  @override
+  Future<BangumiPendingOAuthState?> loadPendingState() async {
+    final value = await _channel.invokeMapMethod<String, Object?>(
+      'loadPendingState',
+    );
+    if (value == null) return null;
+    final state = value['state'];
+    final epochMs = value['createdAtEpochMs'];
+    if (state is! String ||
+        state.isEmpty ||
+        state.length > 256 ||
+        epochMs is! num ||
+        !epochMs.isFinite) {
+      throw const BangumiApiException(code: 'oauth_state_storage_invalid');
+    }
+    return BangumiPendingOAuthState(
+      state: state,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        epochMs.toInt(),
+        isUtc: true,
+      ),
+    );
+  }
+
+  @override
+  Future<void> clearPendingState() async {
+    await _channel.invokeMethod<void>('clearPendingState');
+  }
+
+  @override
+  Future<void> saveRefreshToken({
+    required String accountId,
+    required String refreshToken,
+  }) async {
+    if (!_isSafeAccountId(accountId) ||
+        refreshToken.isEmpty ||
+        refreshToken.length > 4096) {
+      throw const BangumiApiException(code: 'oauth_session_storage_invalid');
+    }
+    await _channel.invokeMethod<void>('saveRefreshToken', <String, Object?>{
+      'accountId': accountId,
+      'refreshToken': refreshToken,
+    });
+  }
+
+  @override
+  Future<BangumiStoredRefreshToken?> loadRefreshToken() async {
+    final value = await _channel.invokeMapMethod<String, Object?>(
+      'loadRefreshToken',
+    );
+    if (value == null) return null;
+    final accountId = value['accountId'];
+    final refreshToken = value['refreshToken'];
+    if (accountId is! String ||
+        refreshToken is! String ||
+        !_isSafeAccountId(accountId) ||
+        refreshToken.isEmpty ||
+        refreshToken.length > 4096) {
+      throw const BangumiApiException(code: 'oauth_session_storage_invalid');
+    }
+    return BangumiStoredRefreshToken(
+      accountId: accountId,
+      refreshToken: refreshToken,
+    );
+  }
+
+  @override
+  Future<void> clearRefreshToken() async {
+    await _channel.invokeMethod<void>('clearRefreshToken');
+  }
+
+  @override
+  Future<void> close() async {}
+
+  BangumiAuthCallback _callbackFromPlatform(Map<String, Object?>? value) {
     if (value == null || value['state'] is! String) {
       throw const BangumiApiException(code: 'callback_failed');
     }
@@ -117,6 +219,8 @@ final class AndroidAppLinkBangumiCallbackPort implements BangumiCallbackPort {
     );
   }
 
-  @override
-  Future<void> close() async {}
+  static bool _isSafeAccountId(String value) =>
+      value.isNotEmpty &&
+      value.length <= 256 &&
+      RegExp(r'^[0-9]+$').hasMatch(value);
 }

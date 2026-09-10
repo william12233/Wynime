@@ -279,6 +279,7 @@ final class DriftBangumiLocalStore
           status: status,
           name: subject?.name,
           nameCn: subject?.nameCn,
+          imageUrl: _safeCachedUri(subject?.imageUrl),
         ),
       );
     }
@@ -326,6 +327,7 @@ final class DriftBangumiLocalStore
           status: BangumiCollectionStatus.fromApiType(row.collectionStatus!),
           name: subject?.name,
           nameCn: subject?.nameCn,
+          imageUrl: _safeCachedUri(subject?.imageUrl),
         ),
       );
     }

@@ -112,7 +112,7 @@
   "subjectEpisodesLabel": "集数",
   "bangumiSettingsTitle": "Bangumi 帐号与同步",
   "bangumiNotSignedInLabel": "尚未登录",
-  "bangumiReauthDescription": "重新启动后仍可查看缓存帐号，但需要重新建立登录工作阶段。",
+  "bangumiReauthDescription": "启动时会自动恢复登录；只有 Bangumi 撤销工作阶段时才需要重新登录。",
   "bangumiCacheDescription": "缓存资料会与目前已验证的登录工作阶段分开显示。",
   "bangumiConflictTitle": "同步冲突",
   "bangumiConflictDescription": "发送本地变更前，远程收藏已经改变。请选择要保留的状态。",

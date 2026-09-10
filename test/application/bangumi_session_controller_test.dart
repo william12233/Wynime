@@ -80,6 +80,56 @@ void main() {
     expect(authentication.beginCalls, 0);
     expect(openedAuthorizationUri, 0);
   });
+
+  test(
+    'initialize resumes a callback delivered during process restart',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database);
+      final callbackPort = _PendingCallbackPort(
+        const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+      );
+      final controller = BangumiSessionController(
+        authentication: _FakeAuthentication(),
+        store: store,
+        clientFactory: (_) => _FakeBangumiClient(),
+        callbackPort: callbackPort,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.initialize();
+
+      expect(controller.status, BangumiConnectionStatus.connected);
+      expect(controller.isAuthenticated, isTrue);
+      expect(callbackPort.takeCalls, 1);
+    },
+  );
+
+  test('initialize silently restores a persisted Bangumi session', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database);
+    await store.saveAccount(
+      const BangumiUserIdentity(id: '7', username: 'alice'),
+    );
+    final callbackPort = _PendingCallbackPort(null);
+    final authentication = _RestorableAuthentication();
+    final controller = BangumiSessionController(
+      authentication: authentication,
+      store: store,
+      clientFactory: (_) => _FakeBangumiClient(),
+      callbackPort: callbackPort,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.initialize();
+
+    expect(controller.status, BangumiConnectionStatus.connected);
+    expect(controller.isAuthenticated, isTrue);
+    expect(authentication.restoreCalls, 1);
+    expect(authentication.refreshCalls, 1);
+  });
 }
 
 final class _CountingAuthentication implements BangumiAuthenticationPort {
@@ -124,6 +174,68 @@ final class _FakeAuthentication implements BangumiAuthenticationPort {
 
   @override
   Future<void> signOut() async {}
+}
+
+final class _RestorableAuthentication
+    implements BangumiAuthenticationPort, BangumiPersistentAuthenticationPort {
+  int restoreCalls = 0;
+  int refreshCalls = 0;
+
+  @override
+  Future<BangumiAuthorizationRequest> begin() => throw UnimplementedError();
+
+  @override
+  Future<BangumiAuthSession> redeem(BangumiAuthCallback callback) =>
+      throw UnimplementedError();
+
+  @override
+  Future<BangumiAuthSession?> restoreSession() async {
+    restoreCalls++;
+    return BangumiAuthSession(
+      accountId: '7',
+      accessToken: '',
+      refreshToken: 'persisted-refresh',
+      expiresAt: DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    );
+  }
+
+  @override
+  Future<BangumiAuthSession> refresh(BangumiAuthSession session) async {
+    refreshCalls++;
+    return _FakeAuthentication._session;
+  }
+
+  @override
+  Future<void> clearStoredSession() async {}
+
+  @override
+  Future<void> signOut() async {}
+}
+
+final class _PendingCallbackPort
+    implements BangumiCallbackPort, BangumiPendingCallbackPort {
+  _PendingCallbackPort(this.pending);
+
+  final BangumiAuthCallback? pending;
+  int takeCalls = 0;
+
+  @override
+  Future<Uri> prepareRedirectUri() async => Uri.https(
+    'wynime-broker-test.example.workers.dev',
+    '/oauth/app-callback',
+  );
+
+  @override
+  Future<BangumiAuthCallback> waitForCallback() => throw UnimplementedError();
+
+  @override
+  Future<BangumiAuthCallback?> takePendingCallback() async {
+    takeCalls++;
+    return pending;
+  }
+
+  @override
+  Future<void> close() async {}
 }
 
 final class _FakeBangumiClient implements BangumiClient {

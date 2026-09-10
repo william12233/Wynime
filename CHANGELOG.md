@@ -4,6 +4,17 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.5 - Unreleased
+
+### Bangumi OAuth callback
+
+- Separated Bangumi's provider callback at `/oauth/callback` from the final
+  Android App Link return path at `/oauth/app-callback`.
+- Prevented the provider denial/error redirect from re-entering the provider
+  callback and producing `oauth_state_invalid`.
+- Kept the production Android package and signing fingerprint aligned with
+  the Worker `assetlinks.json` configuration.
+
 ## 1.0.3 - Release-ready
 
 ### Bangumi broker and Android packaging

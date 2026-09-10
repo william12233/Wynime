@@ -1,10 +1,16 @@
 # Bangumi broker deployment
 
 The Worker hostname is deployment output, not a source-code default. Keep the
-same hostname in all three places below:
+same hostname in all three configuration places below. The Worker deliberately
+uses separate callback paths:
+
+- `/oauth/callback` is the callback registered with Bangumi and is handled only
+  as the provider callback.
+- `/oauth/app-callback` is the final verified Android App Link return path. It
+  must not be registered as Bangumi's provider callback.
 
 1. `APP_LINK_HOST` on the Worker.
-2. Bangumi's OAuth callback registration:
+2. Bangumi's OAuth provider callback registration:
    `https://<worker-host>/oauth/callback`.
 3. The Flutter build define:
    `--dart-define=WYNIME_BANGUMI_BROKER_ORIGIN=https://<worker-host>`.
@@ -23,8 +29,8 @@ npx wrangler whoami
 npx wrangler deploy
 ```
 
-Configure these non-secret Worker variables with that hostname and the
-production Android release identity:
+These public Worker variables are checked into `wrangler.toml` so a normal
+deployment cannot accidentally clear the App Link configuration:
 
 ```text
 APP_LINK_HOST=<worker-host>

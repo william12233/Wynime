@@ -35,7 +35,7 @@
                 <data
                     android:scheme="https"
                     android:host="${wynimeBangumiBrokerHost}"
-                    android:pathPrefix="/oauth/callback" />
+                    android:pathPrefix="/oauth/app-callback" />
             </intent-filter>
         </activity>
         <provider

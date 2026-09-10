@@ -933,9 +933,9 @@ class _BangumiSettingsContent extends StatelessWidget {
                   controller.conflictCount,
                 ),
               ),
-              if (controller.failedCount > 0)
+              if (controller.blockedCount > 0)
                 Text(
-                  l10n.bangumiFailedQueueSummary(controller.failedCount),
+                  l10n.bangumiBlockedQueueSummary(controller.blockedCount),
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               OutlinedButton.icon(

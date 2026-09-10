@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wynime/src/application/bangumi_sync_service.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
+import 'package:wynime/src/domain/models/bangumi_sync_models.dart';
 import 'package:wynime/src/domain/services/bangumi_ports.dart';
+import 'package:wynime/src/infrastructure/database/wynime_database.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store.dart';
 
 import '../helpers/test_database.dart';
@@ -45,7 +47,7 @@ void main() {
     final result = await first;
     expect(result.processed, 1);
     expect(result.conflicts, 0);
-    expect(result.failed, 0);
+    expect(result.blocked, 0);
     expect(client.collectionMutations, [
       ('42', BangumiCollectionStatus.watching),
     ]);
@@ -85,7 +87,7 @@ void main() {
   );
 
   test(
-    'retryable API failure is bounded and records exhausted state',
+    'retryable API failure remains retryable after the foreground limit',
     () async {
       final database = openTestDatabase();
       addTearDown(database.close);
@@ -107,10 +109,12 @@ void main() {
         maxAttempts: 1,
       ).syncNow();
 
-      expect(result.failed, 1);
-      expect(await store.pendingCount(), 0);
+      expect(result.retryWaiting, 1);
+      expect(result.blocked, 0);
+      expect(await store.pendingCount(), 1);
       final operation = (await store.pendingOperations()).toList();
       expect(operation, isEmpty);
+      expect((await store.pendingOperations(forceRetry: true)), hasLength(1));
       expect((await store.conflictOperations()), isEmpty);
     },
   );
@@ -232,7 +236,7 @@ void main() {
     },
   );
 
-  test('malformed remote payload is a visible failed queue item', () async {
+  test('malformed remote payload remains a retryable queue item', () async {
     final database = openTestDatabase();
     addTearDown(database.close);
     final store = DriftBangumiLocalStore(database, clock: () => now);
@@ -249,10 +253,354 @@ void main() {
       clock: () => now,
     ).syncNow();
 
-    expect(result.failed, 1);
-    expect(await store.pendingCount(), 0);
-    expect(await store.failedCount(), 1);
+    expect(result.retryWaiting, 1);
+    expect(result.blocked, 0);
+    expect(await store.pendingCount(), 1);
+    expect(await store.blockedCount(), 0);
   });
+
+  test(
+    'remote already equals desired state completes without mutation',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      final desired = _remote(BangumiCollectionStatus.watching);
+      await store.applyRemoteState(desired);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      final client = FakeBangumiClient(
+        onRemoteState: (subjectId) async => desired,
+      );
+
+      final result = await BangumiSyncService(
+        client: client,
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+      ).syncNow();
+
+      expect(result.processed, 1);
+      expect(client.collectionMutations, isEmpty);
+      expect(await store.pendingCount(), 0);
+    },
+  );
+
+  test('post-write verification retries a stale remote read', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database, clock: () => now);
+    await _seed(store);
+    final initial = _remote(BangumiCollectionStatus.wish);
+    final desired = _remote(BangumiCollectionStatus.watching);
+    await store.applyRemoteState(initial);
+    await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+    var remoteCalls = 0;
+    final client = FakeBangumiClient(
+      onRemoteState: (subjectId) async {
+        remoteCalls++;
+        return remoteCalls < 3 ? initial : desired;
+      },
+    );
+
+    final result = await BangumiSyncService(
+      client: client,
+      store: store,
+      sessionProvider: () => _session,
+      clock: () => now,
+      delay: (_) async {},
+    ).syncNow();
+
+    expect(result.processed, 1);
+    expect(remoteCalls, 3);
+    expect(await store.pendingCount(), 0);
+  });
+
+  test(
+    'lost mutation response is recovered by observing remote desired state',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      var remote = _remote(BangumiCollectionStatus.wish);
+      await store.applyRemoteState(remote);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      final client = FakeBangumiClient(
+        onRemoteState: (subjectId) async => remote,
+        onCollectionMutation: (subjectId, status) {
+          remote = _remote(status);
+          throw const BangumiApiException(
+            code: 'network_error',
+            retryable: true,
+          );
+        },
+      );
+      final service = BangumiSyncService(
+        client: client,
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+        delay: (_) async {},
+        retryJitter: () => 0,
+      );
+
+      final first = await service.syncNow();
+      expect(first.retryWaiting, 1);
+      expect(await store.pendingCount(), 1);
+
+      final second = await service.syncNow();
+      expect(second.processed, 1);
+      expect(client.collectionMutations, [
+        ('42', BangumiCollectionStatus.watching),
+      ]);
+      expect(await store.pendingCount(), 0);
+    },
+  );
+
+  test('HTTP 429 and 5xx remain retryable with diagnostics', () async {
+    for (final failure in <({int statusCode, String code})>[
+      (statusCode: 429, code: 'rate_limited'),
+      (statusCode: 503, code: 'remote_server_error'),
+    ]) {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      final result = await BangumiSyncService(
+        client: FakeBangumiClient(
+          onRemoteState: (subjectId) async => throw BangumiApiException(
+            code: failure.code,
+            statusCode: failure.statusCode,
+            retryable: true,
+          ),
+        ),
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+        retryJitter: () => 0,
+      ).syncNow();
+
+      expect(result.retryWaiting, 1);
+      expect(await store.pendingCount(), 1);
+      expect(await store.blockedCount(), 0);
+      expect(
+        (await store.pendingOperations(forceRetry: true)).single.statusCode,
+        failure.statusCode,
+      );
+    }
+  });
+
+  test('network timeout and unknown failures remain retryable', () async {
+    for (final error in <Object>[
+      const BangumiApiException(code: 'network_timeout', retryable: true),
+      StateError('temporary provider failure'),
+    ]) {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      final result = await BangumiSyncService(
+        client: FakeBangumiClient(
+          onRemoteState: (subjectId) async => throw error,
+        ),
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+        retryJitter: () => 0,
+      ).syncNow();
+
+      expect(result.retryWaiting, 1);
+      expect(await store.pendingCount(), 1);
+      expect(await store.blockedCount(), 0);
+    }
+  });
+
+  test(
+    'a later manual retry succeeds after an earlier transient failure',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      var calls = 0;
+      var remote = _remote(BangumiCollectionStatus.wish);
+      final client = FakeBangumiClient(
+        onRemoteState: (subjectId) async {
+          calls++;
+          if (calls == 1) {
+            throw const BangumiApiException(
+              code: 'network_error',
+              retryable: true,
+            );
+          }
+          return remote;
+        },
+        onCollectionMutation: (subjectId, status) {
+          remote = _remote(status);
+        },
+      );
+      final service = BangumiSyncService(
+        client: client,
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+        retryJitter: () => 0,
+      );
+
+      expect((await service.syncNow()).retryWaiting, 1);
+      expect((await service.syncNow()).processed, 1);
+      expect(await store.pendingCount(), 0);
+    },
+  );
+
+  test('remote changes to another field are merged safely', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database, clock: () => now);
+    await _seed(store);
+    final initial = _remote(BangumiCollectionStatus.wish);
+    var remote = initial;
+    await store.applyRemoteState(initial);
+    await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+    final client = FakeBangumiClient(
+      onRemoteState: (subjectId) async => remote,
+      onCollectionMutation: (subjectId, status) {
+        remote = _remote(status, watched: {'1001'});
+      },
+    );
+
+    // Another client watched an episode, but did not touch collection status.
+    remote = _remote(BangumiCollectionStatus.wish, watched: {'1001'});
+    final result = await BangumiSyncService(
+      client: client,
+      store: store,
+      sessionProvider: () => _session,
+      clock: () => now,
+    ).syncNow();
+
+    expect(result.processed, 1);
+    expect(result.conflicts, 0);
+    expect(await store.pendingCount(), 0);
+    expect((await store.loadEpisodeProgress('42'))?.watchedEpisodeIds, {
+      '1001',
+    });
+  });
+
+  test(
+    'automatic retry respects backoff while manual retry bypasses it',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      var first = true;
+      final client = FakeBangumiClient(
+        onRemoteState: (subjectId) async {
+          if (first) {
+            first = false;
+            throw const BangumiApiException(
+              code: 'rate_limited',
+              retryable: true,
+            );
+          }
+          return _remote(BangumiCollectionStatus.watching);
+        },
+      );
+      final service = BangumiSyncService(
+        client: client,
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+        retryJitter: () => 0,
+      );
+
+      expect((await service.syncNow()).retryWaiting, 1);
+      expect(await store.pendingOperations(), isEmpty);
+      expect(await store.pendingOperations(forceRetry: true), hasLength(1));
+      expect((await service.syncNow(forceRetry: false)).processed, 0);
+      expect((await service.syncNow()).processed, 1);
+      expect(await store.pendingCount(), 0);
+    },
+  );
+
+  test('retryable queue state survives a store restart', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final firstStore = DriftBangumiLocalStore(database, clock: () => now);
+    await _seed(firstStore);
+    await firstStore.saveCollectionStatus(
+      '42',
+      BangumiCollectionStatus.watching,
+    );
+    await BangumiSyncService(
+      client: FakeBangumiClient(
+        onRemoteState: (subjectId) async => throw const BangumiApiException(
+          code: 'network_timeout',
+          retryable: true,
+        ),
+      ),
+      store: firstStore,
+      sessionProvider: () => _session,
+      clock: () => now,
+      retryJitter: () => 0,
+    ).syncNow();
+
+    final restarted = DriftBangumiLocalStore(database, clock: () => now);
+    await restarted.loadActiveAccount();
+    expect(await restarted.pendingOperations(), isEmpty);
+    final persisted = await restarted.pendingOperations(forceRetry: true);
+    expect(persisted, hasLength(1));
+    expect(persisted.single.attempts, 1);
+    expect(persisted.single.nextAttemptAt, isNotNull);
+  });
+
+  test(
+    'structurally invalid local operation becomes blocked, not poisoned',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      await store.applyRemoteState(_remote(BangumiCollectionStatus.wish));
+      await database
+          .into(database.bangumiSyncOperations)
+          .insert(
+            BangumiSyncOperationsCompanion.insert(
+              operationId: 'invalid-operation',
+              accountId: '7',
+              subjectId: '42',
+              kind: BangumiSyncOperationKind.collectionStatus.name,
+              state: BangumiSyncOperationState.pending.name,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      final result = await BangumiSyncService(
+        client: FakeBangumiClient(
+          onRemoteState: (subjectId) async =>
+              _remote(BangumiCollectionStatus.wish),
+        ),
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+      ).syncNow();
+
+      expect(result.blocked, 1);
+      expect(await store.pendingCount(), 0);
+      expect(await store.blockedCount(), 1);
+      expect(await store.localFirstCollections(), isEmpty);
+      expect(
+        (await store.cachedCollections()).single.status,
+        BangumiCollectionStatus.wish,
+      );
+    },
+  );
 }
 
 final _session = BangumiAuthSession(
@@ -270,9 +618,16 @@ final class FakeBangumiClient implements BangumiClient {
   });
 
   final Future<BangumiRemoteState> Function(String subjectId) onRemoteState;
-  final void Function(String subjectId, BangumiCollectionStatus status)?
+  final FutureOr<void> Function(
+    String subjectId,
+    BangumiCollectionStatus status,
+  )?
   onCollectionMutation;
-  final void Function(String subjectId, String episodeId, bool watched)?
+  final FutureOr<void> Function(
+    String subjectId,
+    String episodeId,
+    bool watched,
+  )?
   onEpisodeMutation;
   Future<BangumiRemoteState> Function(String subjectId)? onRemoteStateOverride;
   final List<(String, BangumiCollectionStatus)> collectionMutations =
@@ -325,7 +680,7 @@ final class FakeBangumiClient implements BangumiClient {
     BangumiCollectionStatus status,
   ) async {
     collectionMutations.add((subjectId, status));
-    onCollectionMutation?.call(subjectId, status);
+    await onCollectionMutation?.call(subjectId, status);
   }
 
   @override
@@ -334,7 +689,7 @@ final class FakeBangumiClient implements BangumiClient {
     String episodeId,
     bool watched,
   ) async {
-    onEpisodeMutation?.call(subjectId, episodeId, watched);
+    await onEpisodeMutation?.call(subjectId, episodeId, watched);
   }
 }
 

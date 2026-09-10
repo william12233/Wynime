@@ -51,7 +51,7 @@ jobs:
             exit 1
           fi
           version_line="$(grep -m1 -E '^version:[[:space:]]*[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+[[:space:]]*$' pubspec.yaml)"
-          if [[ "$version_line" != 'version: 1.0.6+7' ]]; then
+          if [[ "$version_line" != 'version: 1.0.7+8' ]]; then
             echo "Unexpected candidate version: $version_line" >&2
             exit 1
           fi
@@ -251,7 +251,7 @@ jobs:
 
       - name: Build signed arm64-v8a APK
         run: |
-          flutter build apk --release --no-pub --split-per-abi --target-platform android-arm64 --build-name 1.0.6 --build-number 7 --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
+          flutter build apk --release --no-pub --split-per-abi --target-platform android-arm64 --build-name 1.0.7 --build-number 8 --dart-define="WYNIME_BANGUMI_BROKER_ORIGIN=${WYNIME_BANGUMI_BROKER_ORIGIN}"
 
       - name: Verify signed APK metadata, alignment and signature
         shell: bash
@@ -264,8 +264,8 @@ jobs:
           zipalign="$build_tools/zipalign"
           apksigner="$build_tools/apksigner"
           package_line="$($aapt2 dump badging "$apk" | grep -m 1 '^package:')"
-          grep -F "versionCode='2007'" <<< "$package_line"
-          grep -F "versionName='1.0.6'" <<< "$package_line"
+          grep -F "versionCode='2008'" <<< "$package_line"
+          grep -F "versionName='1.0.7'" <<< "$package_line"
           grep -F "native-code: 'arm64-v8a'" <("$aapt2" dump badging "$apk")
           if "$aapt2" dump badging "$apk" | grep -E "armeabi-v7a|x86_64" >/dev/null; then
             echo 'The candidate APK contains an unexpected non-arm64 ABI.' >&2
@@ -284,8 +284,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/wynime-1.0.6-arm64-v8a-signed.apk
-          (cd dist && sha256sum wynime-1.0.6-arm64-v8a-signed.apk > wynime-1.0.6-arm64-v8a-signed.apk.sha256)
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk dist/wynime-1.0.7-arm64-v8a-signed.apk
+          (cd dist && sha256sum wynime-1.0.7-arm64-v8a-signed.apk > wynime-1.0.7-arm64-v8a-signed.apk.sha256)
 
       - name: Upload signed inspection artifacts
         uses: actions/upload-artifact@v4

@@ -2,7 +2,16 @@ import 'bangumi_models.dart';
 
 enum BangumiSyncOperationKind { collectionStatus, episodeWatched }
 
-enum BangumiSyncOperationState { pending, retryWaiting, conflict, failed }
+enum BangumiSyncOperationState {
+  pending,
+  retryWaiting,
+  conflict,
+  blocked,
+
+  /// Kept only so databases created by v1.0.6 can be read during migration.
+  /// New synchronization code must never write this state.
+  failed,
+}
 
 final class BangumiPendingOperation {
   const BangumiPendingOperation({
@@ -13,6 +22,8 @@ final class BangumiPendingOperation {
     required this.state,
     required this.attempts,
     required this.baseRemoteRevision,
+    this.baseCollectionStatus,
+    this.baseWatched,
     required this.createdAt,
     required this.updatedAt,
     this.episodeId,
@@ -20,6 +31,7 @@ final class BangumiPendingOperation {
     this.watched,
     this.nextAttemptAt,
     this.lastErrorCode,
+    this.statusCode,
   });
 
   final String operationId;
@@ -30,10 +42,13 @@ final class BangumiPendingOperation {
   final BangumiCollectionStatus? collectionStatus;
   final bool? watched;
   final String? baseRemoteRevision;
+  final BangumiCollectionStatus? baseCollectionStatus;
+  final bool? baseWatched;
   final BangumiSyncOperationState state;
   final int attempts;
   final DateTime? nextAttemptAt;
   final String? lastErrorCode;
+  final int? statusCode;
   final DateTime createdAt;
   final DateTime updatedAt;
 }

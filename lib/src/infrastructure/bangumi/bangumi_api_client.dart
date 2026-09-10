@@ -462,12 +462,28 @@ final class BangumiApiClient implements BangumiClient {
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw BangumiApiException(
-        code: 'unsupported_request',
+        code: _httpErrorCode(response.statusCode),
         statusCode: response.statusCode,
+        retryable: _isRetryableHttpStatus(response.statusCode),
       );
     }
     return response;
   }
+
+  static String _httpErrorCode(int statusCode) {
+    if (statusCode == 408) return 'http_408';
+    if (statusCode == 409) return 'http_409';
+    if (statusCode == 425) return 'http_425';
+    if (statusCode >= 400 && statusCode < 500) return 'http_$statusCode';
+    return 'http_$statusCode';
+  }
+
+  static bool _isRetryableHttpStatus(int statusCode) =>
+      statusCode == 408 ||
+      statusCode == 409 ||
+      statusCode == 425 ||
+      statusCode == 429 ||
+      statusCode >= 500;
 
   static Uri _validateOrigin(Uri origin, {required bool allowDebugHost}) {
     final isAllowedHost =

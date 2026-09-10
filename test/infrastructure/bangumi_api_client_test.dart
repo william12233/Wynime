@@ -220,6 +220,10 @@ void main() {
       (status: 404, code: 'not_found', retryable: false),
       (status: 429, code: 'rate_limited', retryable: true),
       (status: 503, code: 'remote_server_error', retryable: true),
+      (status: 400, code: 'http_400', retryable: false),
+      (status: 408, code: 'http_408', retryable: true),
+      (status: 409, code: 'http_409', retryable: true),
+      (status: 425, code: 'http_425', retryable: true),
     ]) {
       final transport = RecordingBangumiTransport(
         (method, uri, headers, body) =>
@@ -235,6 +239,7 @@ void main() {
       } on BangumiApiException catch (exception) {
         expect(exception.code, value.code);
         expect(exception.retryable, value.retryable);
+        expect(exception.statusCode, value.status);
       }
     }
   });

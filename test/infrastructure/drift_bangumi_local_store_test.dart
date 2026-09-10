@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/domain/models/bangumi_sync_models.dart';
+import 'package:wynime/src/infrastructure/database/wynime_database.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store.dart';
 
 import '../helpers/test_database.dart';
@@ -223,6 +225,69 @@ void main() {
       await second.cacheSchedule(const <BangumiScheduleEntry>[]);
       expect(await second.cachedSchedule(), isEmpty);
       expect(await second.cachedScheduleUpdatedAt(), now);
+    },
+  );
+
+  test('remote-only Bangumi changes are imported into local cache', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database, clock: () => now);
+    await _seed(store);
+
+    await store.applyRemoteState(
+      _remote(
+        status: BangumiCollectionStatus.completed,
+        watched: const {'1001'},
+      ),
+    );
+
+    expect(
+      (await store.cachedCollections()).single.status,
+      BangumiCollectionStatus.completed,
+    );
+    expect((await store.loadEpisodeProgress('42'))?.watchedEpisodeIds, {
+      '1001',
+    });
+    expect(await store.pendingCount(), 0);
+  });
+
+  test(
+    'blocked and legacy failed rows do not override refreshed remote state',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      await database
+          .into(database.bangumiSyncOperations)
+          .insert(
+            BangumiSyncOperationsCompanion.insert(
+              operationId: 'blocked-operation',
+              accountId: '7',
+              subjectId: '42',
+              kind: BangumiSyncOperationKind.collectionStatus.name,
+              collectionStatus: const Value(3),
+              state: BangumiSyncOperationState.blocked.name,
+              lastErrorCode: const Value('http_403'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      await store.applyRemoteState(
+        _remote(
+          status: BangumiCollectionStatus.completed,
+          watched: const <String>{},
+        ),
+      );
+
+      expect(
+        (await store.cachedCollections()).single.status,
+        BangumiCollectionStatus.completed,
+      );
+      expect(await store.localFirstCollections(), isEmpty);
+      expect(await store.pendingCount(), 0);
+      expect(await store.blockedCount(), 1);
     },
   );
 }

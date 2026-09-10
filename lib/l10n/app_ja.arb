@@ -107,6 +107,8 @@
   "@bangumiQueueSummary": {"placeholders": {"pending": {"type": "int"}, "conflicts": {"type": "int"}}},
   "bangumiFailedQueueSummary": "失敗: {failed}",
   "@bangumiFailedQueueSummary": {"placeholders": {"failed": {"type": "int"}}},
+  "bangumiBlockedQueueSummary": "同期停止: {blocked}",
+  "@bangumiBlockedQueueSummary": {"placeholders": {"blocked": {"type": "int"}}},
   "bangumiNotCollectedLabel": "未登録",
   "subjectCollectionLabel": "コレクション状態",
   "subjectEpisodesLabel": "エピソード",

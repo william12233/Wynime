@@ -4,6 +4,24 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.7 - Unreleased
+
+### Bangumi synchronization reliability
+
+- Replaced terminal retry exhaustion with persistent `retryWaiting` and
+  explicit `blocked` states; legacy v1.0.6 `failed` rows migrate safely.
+- Added capped jittered backoff, manual force retry, HTTP status diagnostics,
+  single-flight synchronization and operation coalescing.
+- Added pre-write reconciliation, post-write remote verification, lost-response
+  recovery, independent-field merging and explicit conflict handling.
+- Explicit collection refresh now imports external Bangumi changes without
+  allowing blocked or legacy failed operations to override remote state.
+
+### Release boundary
+
+- Upgraded the Bangumi operation schema to v4 and added deterministic coverage
+  for migration, retry, conflict, remote pull and blocked-operation behavior.
+
 ## 1.0.6 - Unreleased
 
 ### Android Bangumi OAuth App Link

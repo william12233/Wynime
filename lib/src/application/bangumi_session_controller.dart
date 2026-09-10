@@ -54,6 +54,7 @@ final class BangumiSessionController extends ChangeNotifier {
   BangumiRemoteState? selectedRemoteState;
   int pendingCount = 0;
   int conflictCount = 0;
+  int blockedCount = 0;
   List<BangumiConflict> conflicts = const <BangumiConflict>[];
   String? errorCode;
   DateTime? scheduleUpdatedAt;
@@ -295,6 +296,13 @@ final class BangumiSessionController extends ChangeNotifier {
 
   Future<void> refreshCollections() async {
     try {
+      // Capture subjects before replacing the remote membership page. This
+      // lets an explicit refresh observe remote removals and external edits
+      // for subjects that are no longer returned by Bangumi collections.
+      final cachedBefore = await _store.cachedCollections();
+      final localFirstBefore = await _store.localFirstCollections();
+      final pendingBefore = await _store.pendingOperations(forceRetry: true);
+      final conflictsBefore = await _store.conflictOperations();
       final remoteCollections =
           await _withAuthenticatedClient<List<BangumiCollectionEntry>>((
             api,
@@ -315,20 +323,53 @@ final class BangumiSessionController extends ChangeNotifier {
             return List<BangumiCollectionEntry>.unmodifiable(all);
           });
       collections = remoteCollections;
-      for (final entry in remoteCollections) {
-        try {
-          final subject = await _withAuthenticatedClient(
-            (api) => api.subject(entry.subjectId),
-          );
-          await _store.cacheSubject(subject);
-          await _store.cacheCollection(entry);
-        } on BangumiApiException catch (error) {
-          if (_isAuthenticationError(error.code)) rethrow;
-          // A single unavailable subject must not discard the collection page.
-        } on Object {
-          // A single unavailable subject must not discard the collection page.
+      await _withAuthenticatedClient((api) async {
+        for (final entry in remoteCollections) {
+          try {
+            final subject = await api.subject(entry.subjectId);
+            await _store.cacheSubject(subject);
+            try {
+              final episodes = await api.episodes(entry.subjectId);
+              await _store.cacheEpisodes(episodes);
+            } on BangumiApiException catch (error) {
+              if (_isAuthenticationError(error.code)) rethrow;
+            } on Object {
+              // A single unavailable episode page must not discard the
+              // collection page or other subjects.
+            }
+          } on BangumiApiException catch (error) {
+            if (_isAuthenticationError(error.code)) rethrow;
+            // A single unavailable subject must not discard the collection
+            // page or other subjects.
+          } on Object {
+            // Keep refreshing the remaining subjects.
+          }
         }
-      }
+
+        final subjectIds = <String>{
+          ...remoteCollections.map((entry) => entry.subjectId),
+          ...cachedBefore.map((entry) => entry.subjectId),
+          ...localFirstBefore.map((entry) => entry.subjectId),
+          ...pendingBefore.map((operation) => operation.subjectId),
+          ...conflictsBefore.map((operation) => operation.subjectId),
+        };
+        for (final subjectId in subjectIds) {
+          try {
+            final remote = await api.remoteState(subjectId);
+            if (remote.accountId != _session?.accountId ||
+                remote.subjectId != subjectId) {
+              throw const BangumiApiException(code: 'account_mismatch');
+            }
+            await _store.applyRemoteState(remote);
+          } on BangumiApiException catch (error) {
+            if (_isAuthenticationError(error.code)) rethrow;
+            // Keep the last known remote state when one subject is temporarily
+            // unavailable; a later explicit sync can retry it.
+          } on Object {
+            // A single remote-state failure must not hide other collections.
+          }
+        }
+      });
       final cached = await _store.cachedCollections();
       final localFirst = await _store.localFirstCollections();
       final cachedBySubject = <String, BangumiCollectionEntry>{
@@ -446,10 +487,10 @@ final class BangumiSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> syncNow() async {
+  Future<void> syncNow({bool forceRetry = true}) async {
     final existing = _syncFuture;
     if (existing != null) return existing;
-    final future = _performSyncNow();
+    final future = _performSyncNow(forceRetry: forceRetry);
     _syncFuture = future;
     try {
       await future;
@@ -458,10 +499,11 @@ final class BangumiSessionController extends ChangeNotifier {
     }
   }
 
-  Future<void> _performSyncNow() async {
+  Future<void> _performSyncNow({required bool forceRetry}) async {
     try {
       await _ensureFreshSession();
-      final result = await _syncWithRefresh();
+      await refreshCollections();
+      final result = await _syncWithRefresh(forceRetry: forceRetry);
       final selectedId = selectedSubject?.id;
       if (result.processed > 0 && selectedId != null) {
         await openSubject(selectedId);
@@ -485,6 +527,7 @@ final class BangumiSessionController extends ChangeNotifier {
 
   Future<void> _refreshQueueCounts() async {
     pendingCount = await _store.pendingCount();
+    blockedCount = await _store.blockedCount();
     failedCount = await _store.failedCount();
     conflicts = await _store.conflicts();
     conflictCount = conflicts.length;
@@ -662,7 +705,7 @@ final class BangumiSessionController extends ChangeNotifier {
     }
   }
 
-  Future<BangumiSyncResult> _syncWithRefresh() async {
+  Future<BangumiSyncResult> _syncWithRefresh({required bool forceRetry}) async {
     for (var attempt = 0; attempt < 2; attempt++) {
       final session = _session;
       final api = _client;
@@ -674,7 +717,7 @@ final class BangumiSessionController extends ChangeNotifier {
           client: api,
           store: _store,
           sessionProvider: () => _session ?? session,
-        ).syncNow();
+        ).syncNow(forceRetry: forceRetry);
       } on BangumiApiException catch (error) {
         if (attempt == 0 &&
             _isAuthenticationError(error.code) &&

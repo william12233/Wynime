@@ -121,6 +121,8 @@
   "@bangumiQueueSummary": {"placeholders": {"pending": {"type": "int"}, "conflicts": {"type": "int"}}},
   "bangumiFailedQueueSummary": "Failed: {failed}",
   "@bangumiFailedQueueSummary": {"placeholders": {"failed": {"type": "int"}}},
+  "bangumiBlockedQueueSummary": "Blocked: {blocked}",
+  "@bangumiBlockedQueueSummary": {"placeholders": {"blocked": {"type": "int"}}},
   "bangumiNotCollectedLabel": "Not collected",
   "subjectCollectionLabel": "Collection status",
   "subjectEpisodesLabel": "Episodes",

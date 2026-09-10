@@ -5506,6 +5506,30 @@ class $BangumiSyncOperationsTable extends BangumiSyncOperations
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _baseCollectionStatusMeta =
+      const VerificationMeta('baseCollectionStatus');
+  @override
+  late final GeneratedColumn<int> baseCollectionStatus = GeneratedColumn<int>(
+    'base_collection_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _baseWatchedMeta = const VerificationMeta(
+    'baseWatched',
+  );
+  @override
+  late final GeneratedColumn<bool> baseWatched = GeneratedColumn<bool>(
+    'base_watched',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("base_watched" IN (0, 1))',
+    ),
+  );
   static const VerificationMeta _stateMeta = const VerificationMeta('state');
   @override
   late final GeneratedColumn<String> state = GeneratedColumn<String>(
@@ -5550,6 +5574,17 @@ class $BangumiSyncOperationsTable extends BangumiSyncOperations
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _statusCodeMeta = const VerificationMeta(
+    'statusCode',
+  );
+  @override
+  late final GeneratedColumn<int> statusCode = GeneratedColumn<int>(
+    'status_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -5582,10 +5617,13 @@ class $BangumiSyncOperationsTable extends BangumiSyncOperations
     collectionStatus,
     watched,
     baseRemoteRevision,
+    baseCollectionStatus,
+    baseWatched,
     state,
     attempts,
     nextAttemptAt,
     lastErrorCode,
+    statusCode,
     createdAt,
     updatedAt,
   ];
@@ -5666,6 +5704,24 @@ class $BangumiSyncOperationsTable extends BangumiSyncOperations
         ),
       );
     }
+    if (data.containsKey('base_collection_status')) {
+      context.handle(
+        _baseCollectionStatusMeta,
+        baseCollectionStatus.isAcceptableOrUnknown(
+          data['base_collection_status']!,
+          _baseCollectionStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('base_watched')) {
+      context.handle(
+        _baseWatchedMeta,
+        baseWatched.isAcceptableOrUnknown(
+          data['base_watched']!,
+          _baseWatchedMeta,
+        ),
+      );
+    }
     if (data.containsKey('state')) {
       context.handle(
         _stateMeta,
@@ -5696,6 +5752,12 @@ class $BangumiSyncOperationsTable extends BangumiSyncOperations
           data['last_error_code']!,
           _lastErrorCodeMeta,
         ),
+      );
+    }
+    if (data.containsKey('status_code')) {
+      context.handle(
+        _statusCodeMeta,
+        statusCode.isAcceptableOrUnknown(data['status_code']!, _statusCodeMeta),
       );
     }
     if (data.containsKey('created_at')) {
@@ -5758,6 +5820,14 @@ class $BangumiSyncOperationsTable extends BangumiSyncOperations
         DriftSqlType.string,
         data['${effectivePrefix}base_remote_revision'],
       ),
+      baseCollectionStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}base_collection_status'],
+      ),
+      baseWatched: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}base_watched'],
+      ),
       state: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}state'],
@@ -5773,6 +5843,10 @@ class $BangumiSyncOperationsTable extends BangumiSyncOperations
       lastErrorCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}last_error_code'],
+      ),
+      statusCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status_code'],
       ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -5801,10 +5875,13 @@ class BangumiSyncOperationRecord extends DataClass
   final int? collectionStatus;
   final bool? watched;
   final String? baseRemoteRevision;
+  final int? baseCollectionStatus;
+  final bool? baseWatched;
   final String state;
   final int attempts;
   final DateTime? nextAttemptAt;
   final String? lastErrorCode;
+  final int? statusCode;
   final DateTime createdAt;
   final DateTime updatedAt;
   const BangumiSyncOperationRecord({
@@ -5816,10 +5893,13 @@ class BangumiSyncOperationRecord extends DataClass
     this.collectionStatus,
     this.watched,
     this.baseRemoteRevision,
+    this.baseCollectionStatus,
+    this.baseWatched,
     required this.state,
     required this.attempts,
     this.nextAttemptAt,
     this.lastErrorCode,
+    this.statusCode,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -5842,6 +5922,12 @@ class BangumiSyncOperationRecord extends DataClass
     if (!nullToAbsent || baseRemoteRevision != null) {
       map['base_remote_revision'] = Variable<String>(baseRemoteRevision);
     }
+    if (!nullToAbsent || baseCollectionStatus != null) {
+      map['base_collection_status'] = Variable<int>(baseCollectionStatus);
+    }
+    if (!nullToAbsent || baseWatched != null) {
+      map['base_watched'] = Variable<bool>(baseWatched);
+    }
     map['state'] = Variable<String>(state);
     map['attempts'] = Variable<int>(attempts);
     if (!nullToAbsent || nextAttemptAt != null) {
@@ -5849,6 +5935,9 @@ class BangumiSyncOperationRecord extends DataClass
     }
     if (!nullToAbsent || lastErrorCode != null) {
       map['last_error_code'] = Variable<String>(lastErrorCode);
+    }
+    if (!nullToAbsent || statusCode != null) {
+      map['status_code'] = Variable<int>(statusCode);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -5873,6 +5962,12 @@ class BangumiSyncOperationRecord extends DataClass
       baseRemoteRevision: baseRemoteRevision == null && nullToAbsent
           ? const Value.absent()
           : Value(baseRemoteRevision),
+      baseCollectionStatus: baseCollectionStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseCollectionStatus),
+      baseWatched: baseWatched == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseWatched),
       state: Value(state),
       attempts: Value(attempts),
       nextAttemptAt: nextAttemptAt == null && nullToAbsent
@@ -5881,6 +5976,9 @@ class BangumiSyncOperationRecord extends DataClass
       lastErrorCode: lastErrorCode == null && nullToAbsent
           ? const Value.absent()
           : Value(lastErrorCode),
+      statusCode: statusCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(statusCode),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -5902,10 +6000,15 @@ class BangumiSyncOperationRecord extends DataClass
       baseRemoteRevision: serializer.fromJson<String?>(
         json['baseRemoteRevision'],
       ),
+      baseCollectionStatus: serializer.fromJson<int?>(
+        json['baseCollectionStatus'],
+      ),
+      baseWatched: serializer.fromJson<bool?>(json['baseWatched']),
       state: serializer.fromJson<String>(json['state']),
       attempts: serializer.fromJson<int>(json['attempts']),
       nextAttemptAt: serializer.fromJson<DateTime?>(json['nextAttemptAt']),
       lastErrorCode: serializer.fromJson<String?>(json['lastErrorCode']),
+      statusCode: serializer.fromJson<int?>(json['statusCode']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -5922,10 +6025,13 @@ class BangumiSyncOperationRecord extends DataClass
       'collectionStatus': serializer.toJson<int?>(collectionStatus),
       'watched': serializer.toJson<bool?>(watched),
       'baseRemoteRevision': serializer.toJson<String?>(baseRemoteRevision),
+      'baseCollectionStatus': serializer.toJson<int?>(baseCollectionStatus),
+      'baseWatched': serializer.toJson<bool?>(baseWatched),
       'state': serializer.toJson<String>(state),
       'attempts': serializer.toJson<int>(attempts),
       'nextAttemptAt': serializer.toJson<DateTime?>(nextAttemptAt),
       'lastErrorCode': serializer.toJson<String?>(lastErrorCode),
+      'statusCode': serializer.toJson<int?>(statusCode),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -5940,10 +6046,13 @@ class BangumiSyncOperationRecord extends DataClass
     Value<int?> collectionStatus = const Value.absent(),
     Value<bool?> watched = const Value.absent(),
     Value<String?> baseRemoteRevision = const Value.absent(),
+    Value<int?> baseCollectionStatus = const Value.absent(),
+    Value<bool?> baseWatched = const Value.absent(),
     String? state,
     int? attempts,
     Value<DateTime?> nextAttemptAt = const Value.absent(),
     Value<String?> lastErrorCode = const Value.absent(),
+    Value<int?> statusCode = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => BangumiSyncOperationRecord(
@@ -5959,6 +6068,10 @@ class BangumiSyncOperationRecord extends DataClass
     baseRemoteRevision: baseRemoteRevision.present
         ? baseRemoteRevision.value
         : this.baseRemoteRevision,
+    baseCollectionStatus: baseCollectionStatus.present
+        ? baseCollectionStatus.value
+        : this.baseCollectionStatus,
+    baseWatched: baseWatched.present ? baseWatched.value : this.baseWatched,
     state: state ?? this.state,
     attempts: attempts ?? this.attempts,
     nextAttemptAt: nextAttemptAt.present
@@ -5967,6 +6080,7 @@ class BangumiSyncOperationRecord extends DataClass
     lastErrorCode: lastErrorCode.present
         ? lastErrorCode.value
         : this.lastErrorCode,
+    statusCode: statusCode.present ? statusCode.value : this.statusCode,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -5988,6 +6102,12 @@ class BangumiSyncOperationRecord extends DataClass
       baseRemoteRevision: data.baseRemoteRevision.present
           ? data.baseRemoteRevision.value
           : this.baseRemoteRevision,
+      baseCollectionStatus: data.baseCollectionStatus.present
+          ? data.baseCollectionStatus.value
+          : this.baseCollectionStatus,
+      baseWatched: data.baseWatched.present
+          ? data.baseWatched.value
+          : this.baseWatched,
       state: data.state.present ? data.state.value : this.state,
       attempts: data.attempts.present ? data.attempts.value : this.attempts,
       nextAttemptAt: data.nextAttemptAt.present
@@ -5996,6 +6116,9 @@ class BangumiSyncOperationRecord extends DataClass
       lastErrorCode: data.lastErrorCode.present
           ? data.lastErrorCode.value
           : this.lastErrorCode,
+      statusCode: data.statusCode.present
+          ? data.statusCode.value
+          : this.statusCode,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -6012,10 +6135,13 @@ class BangumiSyncOperationRecord extends DataClass
           ..write('collectionStatus: $collectionStatus, ')
           ..write('watched: $watched, ')
           ..write('baseRemoteRevision: $baseRemoteRevision, ')
+          ..write('baseCollectionStatus: $baseCollectionStatus, ')
+          ..write('baseWatched: $baseWatched, ')
           ..write('state: $state, ')
           ..write('attempts: $attempts, ')
           ..write('nextAttemptAt: $nextAttemptAt, ')
           ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('statusCode: $statusCode, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -6032,10 +6158,13 @@ class BangumiSyncOperationRecord extends DataClass
     collectionStatus,
     watched,
     baseRemoteRevision,
+    baseCollectionStatus,
+    baseWatched,
     state,
     attempts,
     nextAttemptAt,
     lastErrorCode,
+    statusCode,
     createdAt,
     updatedAt,
   );
@@ -6051,10 +6180,13 @@ class BangumiSyncOperationRecord extends DataClass
           other.collectionStatus == this.collectionStatus &&
           other.watched == this.watched &&
           other.baseRemoteRevision == this.baseRemoteRevision &&
+          other.baseCollectionStatus == this.baseCollectionStatus &&
+          other.baseWatched == this.baseWatched &&
           other.state == this.state &&
           other.attempts == this.attempts &&
           other.nextAttemptAt == this.nextAttemptAt &&
           other.lastErrorCode == this.lastErrorCode &&
+          other.statusCode == this.statusCode &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -6069,10 +6201,13 @@ class BangumiSyncOperationsCompanion
   final Value<int?> collectionStatus;
   final Value<bool?> watched;
   final Value<String?> baseRemoteRevision;
+  final Value<int?> baseCollectionStatus;
+  final Value<bool?> baseWatched;
   final Value<String> state;
   final Value<int> attempts;
   final Value<DateTime?> nextAttemptAt;
   final Value<String?> lastErrorCode;
+  final Value<int?> statusCode;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -6085,10 +6220,13 @@ class BangumiSyncOperationsCompanion
     this.collectionStatus = const Value.absent(),
     this.watched = const Value.absent(),
     this.baseRemoteRevision = const Value.absent(),
+    this.baseCollectionStatus = const Value.absent(),
+    this.baseWatched = const Value.absent(),
     this.state = const Value.absent(),
     this.attempts = const Value.absent(),
     this.nextAttemptAt = const Value.absent(),
     this.lastErrorCode = const Value.absent(),
+    this.statusCode = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6102,10 +6240,13 @@ class BangumiSyncOperationsCompanion
     this.collectionStatus = const Value.absent(),
     this.watched = const Value.absent(),
     this.baseRemoteRevision = const Value.absent(),
+    this.baseCollectionStatus = const Value.absent(),
+    this.baseWatched = const Value.absent(),
     required String state,
     this.attempts = const Value.absent(),
     this.nextAttemptAt = const Value.absent(),
     this.lastErrorCode = const Value.absent(),
+    this.statusCode = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -6125,10 +6266,13 @@ class BangumiSyncOperationsCompanion
     Expression<int>? collectionStatus,
     Expression<bool>? watched,
     Expression<String>? baseRemoteRevision,
+    Expression<int>? baseCollectionStatus,
+    Expression<bool>? baseWatched,
     Expression<String>? state,
     Expression<int>? attempts,
     Expression<DateTime>? nextAttemptAt,
     Expression<String>? lastErrorCode,
+    Expression<int>? statusCode,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -6143,10 +6287,14 @@ class BangumiSyncOperationsCompanion
       if (watched != null) 'watched': watched,
       if (baseRemoteRevision != null)
         'base_remote_revision': baseRemoteRevision,
+      if (baseCollectionStatus != null)
+        'base_collection_status': baseCollectionStatus,
+      if (baseWatched != null) 'base_watched': baseWatched,
       if (state != null) 'state': state,
       if (attempts != null) 'attempts': attempts,
       if (nextAttemptAt != null) 'next_attempt_at': nextAttemptAt,
       if (lastErrorCode != null) 'last_error_code': lastErrorCode,
+      if (statusCode != null) 'status_code': statusCode,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -6162,10 +6310,13 @@ class BangumiSyncOperationsCompanion
     Value<int?>? collectionStatus,
     Value<bool?>? watched,
     Value<String?>? baseRemoteRevision,
+    Value<int?>? baseCollectionStatus,
+    Value<bool?>? baseWatched,
     Value<String>? state,
     Value<int>? attempts,
     Value<DateTime?>? nextAttemptAt,
     Value<String?>? lastErrorCode,
+    Value<int?>? statusCode,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -6179,10 +6330,13 @@ class BangumiSyncOperationsCompanion
       collectionStatus: collectionStatus ?? this.collectionStatus,
       watched: watched ?? this.watched,
       baseRemoteRevision: baseRemoteRevision ?? this.baseRemoteRevision,
+      baseCollectionStatus: baseCollectionStatus ?? this.baseCollectionStatus,
+      baseWatched: baseWatched ?? this.baseWatched,
       state: state ?? this.state,
       attempts: attempts ?? this.attempts,
       nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
       lastErrorCode: lastErrorCode ?? this.lastErrorCode,
+      statusCode: statusCode ?? this.statusCode,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -6216,6 +6370,12 @@ class BangumiSyncOperationsCompanion
     if (baseRemoteRevision.present) {
       map['base_remote_revision'] = Variable<String>(baseRemoteRevision.value);
     }
+    if (baseCollectionStatus.present) {
+      map['base_collection_status'] = Variable<int>(baseCollectionStatus.value);
+    }
+    if (baseWatched.present) {
+      map['base_watched'] = Variable<bool>(baseWatched.value);
+    }
     if (state.present) {
       map['state'] = Variable<String>(state.value);
     }
@@ -6227,6 +6387,9 @@ class BangumiSyncOperationsCompanion
     }
     if (lastErrorCode.present) {
       map['last_error_code'] = Variable<String>(lastErrorCode.value);
+    }
+    if (statusCode.present) {
+      map['status_code'] = Variable<int>(statusCode.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -6251,10 +6414,13 @@ class BangumiSyncOperationsCompanion
           ..write('collectionStatus: $collectionStatus, ')
           ..write('watched: $watched, ')
           ..write('baseRemoteRevision: $baseRemoteRevision, ')
+          ..write('baseCollectionStatus: $baseCollectionStatus, ')
+          ..write('baseWatched: $baseWatched, ')
           ..write('state: $state, ')
           ..write('attempts: $attempts, ')
           ..write('nextAttemptAt: $nextAttemptAt, ')
           ..write('lastErrorCode: $lastErrorCode, ')
+          ..write('statusCode: $statusCode, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -12373,10 +12539,13 @@ typedef $$BangumiSyncOperationsTableCreateCompanionBuilder =
       Value<int?> collectionStatus,
       Value<bool?> watched,
       Value<String?> baseRemoteRevision,
+      Value<int?> baseCollectionStatus,
+      Value<bool?> baseWatched,
       required String state,
       Value<int> attempts,
       Value<DateTime?> nextAttemptAt,
       Value<String?> lastErrorCode,
+      Value<int?> statusCode,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -12391,10 +12560,13 @@ typedef $$BangumiSyncOperationsTableUpdateCompanionBuilder =
       Value<int?> collectionStatus,
       Value<bool?> watched,
       Value<String?> baseRemoteRevision,
+      Value<int?> baseCollectionStatus,
+      Value<bool?> baseWatched,
       Value<String> state,
       Value<int> attempts,
       Value<DateTime?> nextAttemptAt,
       Value<String?> lastErrorCode,
+      Value<int?> statusCode,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -12505,6 +12677,16 @@ class $$BangumiSyncOperationsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get baseCollectionStatus => $composableBuilder(
+    column: $table.baseCollectionStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get baseWatched => $composableBuilder(
+    column: $table.baseWatched,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get state => $composableBuilder(
     column: $table.state,
     builder: (column) => ColumnFilters(column),
@@ -12522,6 +12704,11 @@ class $$BangumiSyncOperationsTableFilterComposer
 
   ColumnFilters<String> get lastErrorCode => $composableBuilder(
     column: $table.lastErrorCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get statusCode => $composableBuilder(
+    column: $table.statusCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -12639,6 +12826,16 @@ class $$BangumiSyncOperationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get baseCollectionStatus => $composableBuilder(
+    column: $table.baseCollectionStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get baseWatched => $composableBuilder(
+    column: $table.baseWatched,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get state => $composableBuilder(
     column: $table.state,
     builder: (column) => ColumnOrderings(column),
@@ -12656,6 +12853,11 @@ class $$BangumiSyncOperationsTableOrderingComposer
 
   ColumnOrderings<String> get lastErrorCode => $composableBuilder(
     column: $table.lastErrorCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get statusCode => $composableBuilder(
+    column: $table.statusCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -12769,6 +12971,16 @@ class $$BangumiSyncOperationsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get baseCollectionStatus => $composableBuilder(
+    column: $table.baseCollectionStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get baseWatched => $composableBuilder(
+    column: $table.baseWatched,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get state =>
       $composableBuilder(column: $table.state, builder: (column) => column);
 
@@ -12782,6 +12994,11 @@ class $$BangumiSyncOperationsTableAnnotationComposer
 
   GeneratedColumn<String> get lastErrorCode => $composableBuilder(
     column: $table.lastErrorCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get statusCode => $composableBuilder(
+    column: $table.statusCode,
     builder: (column) => column,
   );
 
@@ -12912,10 +13129,13 @@ class $$BangumiSyncOperationsTableTableManager
                 Value<int?> collectionStatus = const Value.absent(),
                 Value<bool?> watched = const Value.absent(),
                 Value<String?> baseRemoteRevision = const Value.absent(),
+                Value<int?> baseCollectionStatus = const Value.absent(),
+                Value<bool?> baseWatched = const Value.absent(),
                 Value<String> state = const Value.absent(),
                 Value<int> attempts = const Value.absent(),
                 Value<DateTime?> nextAttemptAt = const Value.absent(),
                 Value<String?> lastErrorCode = const Value.absent(),
+                Value<int?> statusCode = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -12928,10 +13148,13 @@ class $$BangumiSyncOperationsTableTableManager
                 collectionStatus: collectionStatus,
                 watched: watched,
                 baseRemoteRevision: baseRemoteRevision,
+                baseCollectionStatus: baseCollectionStatus,
+                baseWatched: baseWatched,
                 state: state,
                 attempts: attempts,
                 nextAttemptAt: nextAttemptAt,
                 lastErrorCode: lastErrorCode,
+                statusCode: statusCode,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -12946,10 +13169,13 @@ class $$BangumiSyncOperationsTableTableManager
                 Value<int?> collectionStatus = const Value.absent(),
                 Value<bool?> watched = const Value.absent(),
                 Value<String?> baseRemoteRevision = const Value.absent(),
+                Value<int?> baseCollectionStatus = const Value.absent(),
+                Value<bool?> baseWatched = const Value.absent(),
                 required String state,
                 Value<int> attempts = const Value.absent(),
                 Value<DateTime?> nextAttemptAt = const Value.absent(),
                 Value<String?> lastErrorCode = const Value.absent(),
+                Value<int?> statusCode = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -12962,10 +13188,13 @@ class $$BangumiSyncOperationsTableTableManager
                 collectionStatus: collectionStatus,
                 watched: watched,
                 baseRemoteRevision: baseRemoteRevision,
+                baseCollectionStatus: baseCollectionStatus,
+                baseWatched: baseWatched,
                 state: state,
                 attempts: attempts,
                 nextAttemptAt: nextAttemptAt,
                 lastErrorCode: lastErrorCode,
+                statusCode: statusCode,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

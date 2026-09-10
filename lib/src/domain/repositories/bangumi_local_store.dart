@@ -41,12 +41,19 @@ abstract interface class BangumiLocalStore {
     bool watched,
   );
 
-  Future<List<BangumiPendingOperation>> pendingOperations({DateTime? now});
+  Future<List<BangumiPendingOperation>> pendingOperations({
+    DateTime? now,
+    bool forceRetry = false,
+  });
 
   Future<List<BangumiPendingOperation>> conflictOperations();
 
   Future<int> pendingCount();
 
+  Future<int> blockedCount();
+
+  /// Legacy compatibility count. New blocked records are exposed by
+  /// [blockedCount], while v1.0.6 `failed` rows are migrated on open.
   Future<int> failedCount();
 
   Future<void> applyRemoteState(BangumiRemoteState state);
@@ -74,8 +81,14 @@ abstract interface class BangumiLocalStore {
   Future<void> markRetry(
     BangumiPendingOperation operation,
     String errorCode, {
-    required bool exhausted,
     required DateTime nextAttemptAt,
+    int? statusCode,
+  });
+
+  Future<void> markBlocked(
+    BangumiPendingOperation operation,
+    String errorCode, {
+    int? statusCode,
   });
 
   Future<void> complete(BangumiPendingOperation operation);

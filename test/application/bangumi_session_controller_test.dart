@@ -81,6 +81,76 @@ void main() {
     expect(openedAuthorizationUri, 0);
   });
 
+  test('explicit collection refresh imports external Bangumi state', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database);
+    await store.cacheSubject(
+      const BangumiSubject(
+        id: '42',
+        name: 'Title',
+        nameCn: '作品',
+        summary: '',
+        eps: 1,
+      ),
+    );
+    await store.cacheEpisodes(
+      const BangumiEpisodePage(
+        episodes: [
+          BangumiEpisode(
+            id: '1001',
+            subjectId: '42',
+            name: 'Episode 1',
+            nameCn: '第一集',
+            sort: 1,
+            type: 0,
+          ),
+        ],
+        offset: 0,
+        limit: 1,
+        total: 1,
+      ),
+    );
+    final remote = BangumiRemoteState(
+      accountId: '7',
+      subjectId: '42',
+      status: BangumiCollectionStatus.completed,
+      watchedEpisodeIds: const {'1001'},
+      remoteRevision: BangumiRemoteState.fingerprint(
+        subjectId: '42',
+        status: BangumiCollectionStatus.completed,
+        watchedEpisodeIds: const ['1001'],
+      ),
+    );
+    final client = _FakeBangumiClient(
+      remoteCollections: const [
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.completed,
+        ),
+      ],
+      remote: remote,
+    );
+    final controller = BangumiSessionController(
+      authentication: _FakeAuthentication(),
+      store: store,
+      clientFactory: (_) => client,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.completeSignIn(
+      const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+    );
+
+    expect(
+      controller.collections.single.status,
+      BangumiCollectionStatus.completed,
+    );
+    expect((await store.loadEpisodeProgress('42'))?.watchedEpisodeIds, {
+      '1001',
+    });
+  });
+
   test(
     'initialize resumes a callback delivered during process restart',
     () async {
@@ -239,6 +309,14 @@ final class _PendingCallbackPort
 }
 
 final class _FakeBangumiClient implements BangumiClient {
+  _FakeBangumiClient({
+    this.remoteCollections = const <BangumiCollectionEntry>[],
+    this.remote,
+  });
+
+  final List<BangumiCollectionEntry> remoteCollections;
+  final BangumiRemoteState? remote;
+
   @override
   Future<BangumiUserIdentity> currentUser() async =>
       const BangumiUserIdentity(id: '7', username: 'alice');
@@ -247,11 +325,11 @@ final class _FakeBangumiClient implements BangumiClient {
   Future<BangumiCollectionPage> collections({
     int offset = 0,
     int limit = 30,
-  }) async => const BangumiCollectionPage(
-    collections: <BangumiCollectionEntry>[],
-    offset: 0,
-    limit: 30,
-    total: 0,
+  }) async => BangumiCollectionPage(
+    collections: remoteCollections,
+    offset: offset,
+    limit: limit,
+    total: remoteCollections.length,
   );
 
   @override
@@ -277,8 +355,11 @@ final class _FakeBangumiClient implements BangumiClient {
       );
 
   @override
-  Future<BangumiRemoteState> remoteState(String subjectId) =>
-      throw UnimplementedError();
+  Future<BangumiRemoteState> remoteState(String subjectId) async {
+    final value = remote;
+    if (value == null) throw UnimplementedError();
+    return value;
+  }
 
   @override
   Future<void> setCollectionStatus(

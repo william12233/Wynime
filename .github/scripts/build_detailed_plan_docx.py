@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 from docx import Document
@@ -221,8 +219,8 @@ def build_document() -> Document:
     document.add_heading("文件來源與讀取順序", level=1)
     for order, (_, source) in enumerate(SOURCES, start=1):
         document.add_paragraph(f"{order}. {source.relative_to(ROOT).as_posix()}", style="List Number")
-    document.add_paragraph(f"來源 Commit：{os.environ.get('SOURCE_COMMIT', 'unknown')}")
-    document.add_paragraph(f"產生時間：{datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    document.add_paragraph("來源：目前 checkout 的 Git 管理 Markdown／ADR")
+    document.add_paragraph("輸出：可重現的文件快照，由 CI 重新產生驗證")
 
     for heading, source in SOURCES:
         document.add_page_break()

@@ -199,7 +199,9 @@ Phase 6 的 Android／Windows 實際硬體播放若未執行，只能標記 `pro
 - `/calendar`、`/v0/subjects/{subject_id}` 與 `/v0/episodes` 的資料解析具備 bounded payload、型別驗證與穩定錯誤碼；
 - 收藏狀態與已看集數透過官方目前使用者 endpoint 同步，讀寫不把 token 放入 query string；
 - 本機收藏、已看集數、遠端 revision、人工條目映射與離線同步 operation 持久化於 Drift，佇列可恢復；
-- 重試具備指數退避、最大嘗試次數與不可重試錯誤的 fail-closed 邊界；
+- 重試具備含 jitter 的封頂指數退避；前景嘗試上限不得把可恢復錯誤變成永久佇列終點，只有結構無法執行的操作才進入可見 blocked 狀態；
+- 每個本機操作在寫入前讀取最新遠端狀態，寫入後以 bounded read-after-write verification 確認 desired state；
+- 明確同步／重新整理會匯入沒有衝突本機意圖的外部 Bangumi 變更，並保留 pending／retryWaiting 的 local-first 顯示語義；
 - remote revision conflict 必須停留在可見 conflict 狀態，並可選擇保留遠端或重新以最新 revision 排入本機變更；
 - token、client secret、cookie 與原始 upstream response 不得進入日誌或持久化資料；
 - format、fatal analyze、全部 tests、Android debug build 與 Windows debug build。

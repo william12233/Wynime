@@ -231,14 +231,16 @@ final class DriftBangumiLocalStore
                         BangumiSyncOperationState.pending.name,
                         BangumiSyncOperationState.retryWaiting.name,
                         BangumiSyncOperationState.conflict.name,
-                        BangumiSyncOperationState.failed.name,
                       ]),
                 )
                 ..orderBy([(table) => OrderingTerm.desc(table.updatedAt)]))
               .get();
-      final localStatus = queuedRows.isEmpty
+      final validQueuedRows = queuedRows
+          .where(_isStructurallyValidSyncOperation)
+          .toList(growable: false);
+      final localStatus = validQueuedRows.isEmpty
           ? collection.status.apiType
-          : queuedRows.first.collectionStatus!;
+          : validQueuedRows.first.collectionStatus!;
       await _database
           .into(_database.bangumiCollections)
           .insertOnConflictUpdate(
@@ -303,7 +305,6 @@ final class DriftBangumiLocalStore
                       BangumiSyncOperationState.pending.name,
                       BangumiSyncOperationState.retryWaiting.name,
                       BangumiSyncOperationState.conflict.name,
-                      BangumiSyncOperationState.failed.name,
                     ]),
               )
               ..orderBy([
@@ -313,6 +314,10 @@ final class DriftBangumiLocalStore
             .get();
     final latestBySubject = <String, BangumiSyncOperationRecord>{};
     for (final row in rows) {
+      if (!_isStructurallyValidSyncOperation(row)) {
+        await _blockMalformedOperation(row, 'operation_payload_invalid');
+        continue;
+      }
       latestBySubject.putIfAbsent(row.subjectId, () => row);
     }
     final entries = <BangumiCollectionEntry>[];
@@ -393,6 +398,9 @@ final class DriftBangumiLocalStore
           kind: BangumiSyncOperationKind.collectionStatus,
           collectionStatus: status,
           baseRemoteRevision: existing?.remoteRevision,
+          baseCollectionStatus: existing?.status == null
+              ? null
+              : BangumiCollectionStatus.fromApiType(existing!.status!),
           now: now,
         );
       }),
@@ -475,6 +483,7 @@ final class DriftBangumiLocalStore
           kind: BangumiSyncOperationKind.episodeWatched,
           watched: watched,
           baseRemoteRevision: existing?.remoteRevision,
+          baseWatched: existing?.watched,
           now: now,
         );
       }),
@@ -484,29 +493,43 @@ final class DriftBangumiLocalStore
   @override
   Future<List<BangumiPendingOperation>> pendingOperations({
     DateTime? now,
+    bool forceRetry = false,
   }) async {
     final current = (now ?? _clock()).toUtc();
     final accountId = activeAccountId;
     if (accountId == null) return const <BangumiPendingOperation>[];
+    final stateFilter = forceRetry
+        ? _database.bangumiSyncOperations.state.isIn(<String>[
+            BangumiSyncOperationState.pending.name,
+            BangumiSyncOperationState.retryWaiting.name,
+          ])
+        : (_database.bangumiSyncOperations.state.equals(
+                BangumiSyncOperationState.pending.name,
+              ) |
+              (_database.bangumiSyncOperations.state.equals(
+                    BangumiSyncOperationState.retryWaiting.name,
+                  ) &
+                  (_database.bangumiSyncOperations.nextAttemptAt.isNull() |
+                      _database.bangumiSyncOperations.nextAttemptAt
+                          .isSmallerOrEqualValue(current))));
     final rows =
         await (_database.select(_database.bangumiSyncOperations)
               ..where(
-                (table) =>
-                    table.accountId.equals(accountId) &
-                    (table.state.equals(
-                          BangumiSyncOperationState.pending.name,
-                        ) |
-                        (table.state.equals(
-                              BangumiSyncOperationState.retryWaiting.name,
-                            ) &
-                            (table.nextAttemptAt.isNull() |
-                                table.nextAttemptAt.isSmallerOrEqualValue(
-                                  current,
-                                )))),
+                (table) => table.accountId.equals(accountId) & stateFilter,
               )
               ..orderBy([(table) => OrderingTerm.asc(table.createdAt)]))
             .get();
-    return rows.map(_mapOperation).toList(growable: false);
+    final operations = <BangumiPendingOperation>[];
+    for (final row in rows) {
+      try {
+        operations.add(_mapOperation(row));
+      } on BangumiPayloadException catch (error) {
+        await _blockMalformedOperation(row, error.code);
+      } on Object {
+        await _blockMalformedOperation(row, 'legacy_operation_invalid');
+      }
+    }
+    return List.unmodifiable(operations);
   }
 
   @override
@@ -520,7 +543,17 @@ final class DriftBangumiLocalStore
                   table.state.equals(BangumiSyncOperationState.conflict.name),
             ))
             .get();
-    return rows.map(_mapOperation).toList(growable: false);
+    final operations = <BangumiPendingOperation>[];
+    for (final row in rows) {
+      try {
+        operations.add(_mapOperation(row));
+      } on BangumiPayloadException catch (error) {
+        await _blockMalformedOperation(row, error.code);
+      } on Object {
+        await _blockMalformedOperation(row, 'legacy_operation_invalid');
+      }
+    }
+    return List.unmodifiable(operations);
   }
 
   @override
@@ -551,6 +584,22 @@ final class DriftBangumiLocalStore
         _database.bangumiSyncOperations.accountId.equals(accountId) &
             _database.bangumiSyncOperations.state.equals(
               BangumiSyncOperationState.failed.name,
+            ),
+      );
+    return (await query.getSingle()).read(count) ?? 0;
+  }
+
+  @override
+  Future<int> blockedCount() async {
+    final accountId = activeAccountId;
+    if (accountId == null) return 0;
+    final count = _database.bangumiSyncOperations.operationId.count();
+    final query = _database.selectOnly(_database.bangumiSyncOperations)
+      ..addColumns([count])
+      ..where(
+        _database.bangumiSyncOperations.accountId.equals(accountId) &
+            _database.bangumiSyncOperations.state.equals(
+              BangumiSyncOperationState.blocked.name,
             ),
       );
     return (await query.getSingle()).read(count) ?? 0;
@@ -685,6 +734,7 @@ final class DriftBangumiLocalStore
                 attempts: const Value(0),
                 nextAttemptAt: const Value(null),
                 lastErrorCode: const Value(null),
+                statusCode: const Value(null),
                 updatedAt: Value(_clock().toUtc()),
               ),
             );
@@ -700,8 +750,8 @@ final class DriftBangumiLocalStore
   Future<void> markRetry(
     BangumiPendingOperation operation,
     String errorCode, {
-    required bool exhausted,
     required DateTime nextAttemptAt,
+    int? statusCode,
   }) async {
     await _database.runWrite(
       () =>
@@ -710,14 +760,35 @@ final class DriftBangumiLocalStore
               ))
               .write(
                 BangumiSyncOperationsCompanion(
-                  state: Value(
-                    exhausted
-                        ? BangumiSyncOperationState.failed.name
-                        : BangumiSyncOperationState.retryWaiting.name,
-                  ),
+                  state: Value(BangumiSyncOperationState.retryWaiting.name),
                   attempts: Value(operation.attempts + 1),
-                  nextAttemptAt: Value(exhausted ? null : nextAttemptAt),
+                  nextAttemptAt: Value(nextAttemptAt),
                   lastErrorCode: Value(errorCode),
+                  statusCode: Value(statusCode),
+                  updatedAt: Value(_clock().toUtc()),
+                ),
+              ),
+    );
+  }
+
+  @override
+  Future<void> markBlocked(
+    BangumiPendingOperation operation,
+    String errorCode, {
+    int? statusCode,
+  }) async {
+    await _database.runWrite(
+      () =>
+          (_database.update(_database.bangumiSyncOperations)..where(
+                (table) => table.operationId.equals(operation.operationId),
+              ))
+              .write(
+                BangumiSyncOperationsCompanion(
+                  state: Value(BangumiSyncOperationState.blocked.name),
+                  attempts: Value(operation.attempts + 1),
+                  nextAttemptAt: const Value(null),
+                  lastErrorCode: Value(errorCode),
+                  statusCode: Value(statusCode),
                   updatedAt: Value(_clock().toUtc()),
                 ),
               ),
@@ -754,6 +825,7 @@ final class DriftBangumiLocalStore
               BangumiSyncOperationsCompanion(
                 state: Value(BangumiSyncOperationState.conflict.name),
                 lastErrorCode: const Value('remote_revision_conflict'),
+                statusCode: const Value(null),
                 updatedAt: Value(_clock().toUtc()),
               ),
             );
@@ -783,6 +855,8 @@ final class DriftBangumiLocalStore
     BangumiCollectionStatus? collectionStatus,
     bool? watched,
     String? baseRemoteRevision,
+    BangumiCollectionStatus? baseCollectionStatus,
+    bool? baseWatched,
     required DateTime now,
   }) async {
     final existing =
@@ -812,11 +886,18 @@ final class DriftBangumiLocalStore
             kind: Value(kind.name),
             collectionStatus: Value(collectionStatus?.apiType),
             watched: Value(watched),
-            baseRemoteRevision: Value(baseRemoteRevision),
+            baseRemoteRevision: Value(
+              existing?.baseRemoteRevision ?? baseRemoteRevision,
+            ),
+            baseCollectionStatus: Value(
+              existing?.baseCollectionStatus ?? baseCollectionStatus?.apiType,
+            ),
+            baseWatched: Value(existing?.baseWatched ?? baseWatched),
             state: Value(BangumiSyncOperationState.pending.name),
             attempts: const Value(0),
             nextAttemptAt: const Value(null),
             lastErrorCode: const Value(null),
+            statusCode: const Value(null),
             createdAt: Value(existing?.createdAt ?? now),
             updatedAt: Value(now),
           ),
@@ -824,6 +905,9 @@ final class DriftBangumiLocalStore
   }
 
   Future<void> _applyRemoteState(BangumiRemoteState state, DateTime now) async {
+    if (_requireAccount() != state.accountId) {
+      throw const BangumiApiException(code: 'account_mismatch');
+    }
     await _requireSubject(state.subjectId);
     final pendingRows =
         await (_database.select(_database.bangumiSyncOperations)
@@ -835,7 +919,6 @@ final class DriftBangumiLocalStore
                       BangumiSyncOperationState.pending.name,
                       BangumiSyncOperationState.retryWaiting.name,
                       BangumiSyncOperationState.conflict.name,
-                      BangumiSyncOperationState.failed.name,
                     ]),
               )
               ..orderBy([
@@ -846,13 +929,15 @@ final class DriftBangumiLocalStore
     final collectionPending = pendingRows
         .where(
           (row) =>
+              _isStructurallyValidSyncOperation(row) &&
               row.kind == BangumiSyncOperationKind.collectionStatus.name &&
               row.collectionStatus != null,
         )
         .toList(growable: false);
     final episodePending = <String, bool>{
       for (final row in pendingRows)
-        if (row.kind == BangumiSyncOperationKind.episodeWatched.name &&
+        if (_isStructurallyValidSyncOperation(row) &&
+            row.kind == BangumiSyncOperationKind.episodeWatched.name &&
             row.episodeId != null &&
             row.watched != null)
           row.episodeId!: row.watched!,
@@ -906,6 +991,24 @@ final class DriftBangumiLocalStore
             ),
           );
     }
+    final watched = state.watchedEpisodeIds.toList()..sort();
+    for (final row in pendingRows.where(
+      (row) => row.state == BangumiSyncOperationState.conflict.name,
+    )) {
+      await _database
+          .into(_database.bangumiConflictSnapshots)
+          .insertOnConflictUpdate(
+            BangumiConflictSnapshotsCompanion(
+              operationId: Value(row.operationId),
+              accountId: Value(state.accountId),
+              subjectId: Value(state.subjectId),
+              status: Value(state.status?.apiType),
+              watchedEpisodeIds: Value(jsonEncode(watched)),
+              remoteRevision: Value(state.remoteRevision),
+              capturedAt: Value(now),
+            ),
+          );
+    }
   }
 
   Future<void> _requireSubject(String subjectId) async {
@@ -940,7 +1043,54 @@ final class DriftBangumiLocalStore
   String _newOperationId() =>
       '${_clock().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
 
+  static bool _isStructurallyValidSyncOperation(
+    BangumiSyncOperationRecord row,
+  ) {
+    if (row.accountId.isEmpty || row.subjectId.isEmpty) return false;
+    if (!RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(row.subjectId)) {
+      return false;
+    }
+    if (row.kind == BangumiSyncOperationKind.collectionStatus.name) {
+      return row.episodeId == null &&
+          row.watched == null &&
+          row.collectionStatus != null &&
+          row.collectionStatus! >= 1 &&
+          row.collectionStatus! <= 5;
+    }
+    if (row.kind == BangumiSyncOperationKind.episodeWatched.name) {
+      return row.collectionStatus == null &&
+          row.episodeId != null &&
+          RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(row.episodeId!) &&
+          row.watched != null;
+    }
+    return false;
+  }
+
+  Future<void> _blockMalformedOperation(
+    BangumiSyncOperationRecord row,
+    String errorCode,
+  ) async {
+    await _database.runWrite(
+      () =>
+          (_database.update(
+            _database.bangumiSyncOperations,
+          )..where((table) => table.operationId.equals(row.operationId))).write(
+            BangumiSyncOperationsCompanion(
+              state: Value(BangumiSyncOperationState.blocked.name),
+              attempts: Value(row.attempts + 1),
+              nextAttemptAt: const Value(null),
+              lastErrorCode: Value(errorCode),
+              statusCode: const Value(null),
+              updatedAt: Value(_clock().toUtc()),
+            ),
+          ),
+    );
+  }
+
   BangumiPendingOperation _mapOperation(BangumiSyncOperationRecord row) {
+    if (!_isStructurallyValidSyncOperation(row)) {
+      throw const BangumiPayloadException('operation_payload_invalid');
+    }
     return BangumiPendingOperation(
       operationId: row.operationId,
       accountId: row.accountId,
@@ -952,10 +1102,15 @@ final class DriftBangumiLocalStore
           : BangumiCollectionStatus.fromApiType(row.collectionStatus!),
       watched: row.watched,
       baseRemoteRevision: row.baseRemoteRevision,
+      baseCollectionStatus: row.baseCollectionStatus == null
+          ? null
+          : BangumiCollectionStatus.fromApiType(row.baseCollectionStatus!),
+      baseWatched: row.baseWatched,
       state: BangumiSyncOperationState.values.byName(row.state),
       attempts: row.attempts,
       nextAttemptAt: row.nextAttemptAt,
       lastErrorCode: row.lastErrorCode,
+      statusCode: row.statusCode,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

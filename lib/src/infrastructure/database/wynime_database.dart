@@ -236,10 +236,13 @@ class BangumiSyncOperations extends Table {
   IntColumn get collectionStatus => integer().nullable()();
   BoolColumn get watched => boolean().nullable()();
   TextColumn get baseRemoteRevision => text().nullable()();
+  IntColumn get baseCollectionStatus => integer().nullable()();
+  BoolColumn get baseWatched => boolean().nullable()();
   TextColumn get state => text()();
   IntColumn get attempts => integer().withDefault(const Constant(0))();
   DateTimeColumn get nextAttemptAt => dateTime().nullable()();
   TextColumn get lastErrorCode => text().nullable()();
+  IntColumn get statusCode => integer().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -302,7 +305,7 @@ final class WynimeDatabase extends _$WynimeDatabase {
       );
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   final DatabaseWriteGate writeGate = DatabaseWriteGate();
 
@@ -341,11 +344,79 @@ final class WynimeDatabase extends _$WynimeDatabase {
         }
         await _createBangumiIndexes();
       }
+      if (from < 4) {
+        // Databases upgraded from v3 need the new diagnostic/base-state
+        // columns. Databases upgraded from v1/v2 just created the table with
+        // the current definition in the earlier branch.
+        if (from >= 3) {
+          await migrator.addColumn(
+            bangumiSyncOperations,
+            bangumiSyncOperations.baseCollectionStatus,
+          );
+          await migrator.addColumn(
+            bangumiSyncOperations,
+            bangumiSyncOperations.baseWatched,
+          );
+          await migrator.addColumn(
+            bangumiSyncOperations,
+            bangumiSyncOperations.statusCode,
+          );
+        }
+        await _migrateLegacyFailedOperations();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  Future<void> _migrateLegacyFailedOperations() async {
+    final rows = await (select(
+      bangumiSyncOperations,
+    )..where((table) => table.state.equals('failed'))).get();
+    if (rows.isEmpty) return;
+
+    final now = DateTime.now().toUtc();
+    for (final row in rows) {
+      final valid = _isStructurallyValidSyncOperation(row);
+      await (update(
+        bangumiSyncOperations,
+      )..where((table) => table.operationId.equals(row.operationId))).write(
+        BangumiSyncOperationsCompanion(
+          state: Value(valid ? 'retryWaiting' : 'blocked'),
+          attempts: const Value(0),
+          nextAttemptAt: Value(valid ? now : null),
+          lastErrorCode: Value(
+            valid
+                ? row.lastErrorCode
+                : (row.lastErrorCode ?? 'legacy_operation_invalid'),
+          ),
+          updatedAt: Value(now),
+        ),
+      );
+    }
+  }
+
+  bool _isStructurallyValidSyncOperation(BangumiSyncOperationRecord row) {
+    if (row.accountId.isEmpty || row.subjectId.isEmpty) return false;
+    if (!RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(row.subjectId)) {
+      return false;
+    }
+    if (row.kind == 'collectionStatus') {
+      return row.episodeId == null &&
+          row.watched == null &&
+          row.collectionStatus != null &&
+          row.collectionStatus! >= 1 &&
+          row.collectionStatus! <= 5;
+    }
+    if (row.kind == 'episodeWatched') {
+      return row.collectionStatus == null &&
+          row.episodeId != null &&
+          RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(row.episodeId!) &&
+          row.watched != null;
+    }
+    return false;
+  }
 
   Future<void> _createBangumiIndexes() async {
     await customStatement(

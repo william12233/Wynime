@@ -107,6 +107,8 @@
   "@bangumiQueueSummary": {"placeholders": {"pending": {"type": "int"}, "conflicts": {"type": "int"}}},
   "bangumiFailedQueueSummary": "失败：{failed}",
   "@bangumiFailedQueueSummary": {"placeholders": {"failed": {"type": "int"}}},
+  "bangumiBlockedQueueSummary": "暂时无法同步：{blocked}",
+  "@bangumiBlockedQueueSummary": {"placeholders": {"blocked": {"type": "int"}}},
   "bangumiNotCollectedLabel": "未收藏",
   "subjectCollectionLabel": "收藏状态",
   "subjectEpisodesLabel": "集数",

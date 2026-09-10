@@ -364,7 +364,7 @@ jobs:
             exit 1
           fi
           "$zipalign" -c -v 4 "$apk"
-          "$apksigner" verify --verbose "$apk"
+          "$apksigner" verify --verbose --print-certs "$apk"
           unzip -l "$apk" | grep -F "assets/flutter_assets/LICENSE" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/THIRD_PARTY_NOTICES.md" >/dev/null
           unzip -l "$apk" | grep -F "assets/flutter_assets/assets/third_party/COPYING.LGPLv3" >/dev/null

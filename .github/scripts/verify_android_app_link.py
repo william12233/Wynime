@@ -17,6 +17,7 @@ COMPACT_SHA256 = re.compile(r"^[0-9A-Fa-f]{64}$")
 COLON_SHA256 = re.compile(r"^(?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}$")
 PACKAGE_NAME = re.compile(r"^[A-Za-z0-9_.]+$")
 REQUIRED_RELATION = "delegate_permission/common.handle_all_urls"
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-_]")
 
 
 def fail(message: str) -> None:
@@ -40,7 +41,8 @@ def run_tool(command: list[str], label: str) -> str:
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         fail(f"{label} returned exit code {result.returncode}")
-    return f"{result.stdout}\n{result.stderr}"
+    output = f"{result.stdout}\n{result.stderr}"
+    return ANSI_ESCAPE.sub("", output).replace("\r\n", "\n").replace("\r", "\n")
 
 
 def load_config(path: Path) -> tuple[str, str]:
@@ -70,9 +72,10 @@ def read_apk_signer(apksigner: Path, apk: Path) -> str:
     if signer_counts != ["1"]:
         fail("APK must report exactly one signer")
     digest_lines = re.findall(
-        r"^\s*Signer #\d+ certificate SHA-256 digest:\s*(\S+)\s*$",
+        r"Signer\s+#\d+\s+certificate\s+SHA-256\s+digest:\s*"
+        r"((?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}|[0-9A-Fa-f]{64})",
         output,
-        re.MULTILINE,
+        re.IGNORECASE,
     )
     if len(digest_lines) != 1:
         fail("APK must report exactly one signer SHA-256 digest")

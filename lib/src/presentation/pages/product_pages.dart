@@ -9,6 +9,7 @@ import 'package:wynime/src/design_system/tokens/spacing.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/domain/models/software_update_models.dart';
+import 'subject_detail_page.dart';
 
 Widget buildWynimePage(
   AppDestination destination,
@@ -30,6 +31,7 @@ Widget buildWynimePage(
     AppDestination.library => LibraryPage(
       showPageHeader: showPageHeader,
       bangumi: bangumi,
+      onNavigate: onNavigate,
     ),
     AppDestination.downloads => DownloadsPage(showPageHeader: showPageHeader),
     AppDestination.sources => SourcesPage(showPageHeader: showPageHeader),
@@ -276,12 +278,26 @@ class _SearchPageState extends State<SearchPage> {
   }
 }
 
-enum _LibraryFilter { all, wish, watching, completed, onHold, dropped }
+enum _LibraryFilter { wish, watching, onHold, completed, dropped }
+
+const _libraryFilterOrder = <_LibraryFilter>[
+  _LibraryFilter.dropped,
+  _LibraryFilter.wish,
+  _LibraryFilter.watching,
+  _LibraryFilter.onHold,
+  _LibraryFilter.completed,
+];
 
 class LibraryPage extends StatefulWidget {
-  const LibraryPage({required this.showPageHeader, this.bangumi, super.key});
+  const LibraryPage({
+    required this.showPageHeader,
+    required this.onNavigate,
+    this.bangumi,
+    super.key,
+  });
 
   final bool showPageHeader;
+  final ValueChanged<AppDestination> onNavigate;
   final BangumiSessionController? bangumi;
 
   @override
@@ -289,7 +305,7 @@ class LibraryPage extends StatefulWidget {
 }
 
 class _LibraryPageState extends State<LibraryPage> {
-  _LibraryFilter _filter = _LibraryFilter.all;
+  _LibraryFilter _filter = _LibraryFilter.watching;
 
   @override
   Widget build(BuildContext context) {
@@ -304,17 +320,15 @@ class _LibraryPageState extends State<LibraryPage> {
           scrollDirection: Axis.horizontal,
           child: SegmentedButton<_LibraryFilter>(
             segments: [
-              for (final filter
-                  in widget.bangumi == null
-                      ? const <_LibraryFilter>[
-                          _LibraryFilter.all,
-                          _LibraryFilter.watching,
-                          _LibraryFilter.completed,
-                        ]
-                      : _LibraryFilter.values)
+              for (final filter in _libraryFilterOrder)
                 ButtonSegment(
                   value: filter,
-                  label: Text(_libraryFilterLabel(filter, localizations)),
+                  label: Text(
+                    localizations.libraryStatusCount(
+                      _libraryFilterLabel(filter, localizations),
+                      _collectionCount(filter, widget.bangumi),
+                    ),
+                  ),
                   icon: Icon(_libraryFilterIcon(filter)),
                 ),
             ],
@@ -326,7 +340,11 @@ class _LibraryPageState extends State<LibraryPage> {
         ),
         const SizedBox(height: WynimeSpacing.lg),
         if (widget.bangumi != null && widget.bangumi!.collections.isNotEmpty)
-          _CollectionList(controller: widget.bangumi!, filter: _filter)
+          _CollectionList(
+            controller: widget.bangumi!,
+            filter: _filter,
+            onOpenSubject: (subjectId) => _openSubject(context, subjectId),
+          )
         else
           _EmptyStateCard(
             icon: _libraryFilterIcon(_filter),
@@ -346,6 +364,34 @@ class _LibraryPageState extends State<LibraryPage> {
               : localizations.librarySyncHintDescription,
         ),
       ],
+    );
+  }
+
+  int _collectionCount(
+    _LibraryFilter filter,
+    BangumiSessionController? controller,
+  ) {
+    if (controller == null) return 0;
+    return controller.collections
+        .where((entry) => entry.status.name == filter.name)
+        .length;
+  }
+
+  void _openSubject(BuildContext context, String subjectId) {
+    final controller = widget.bangumi;
+    if (controller == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: '/bangumi/subjects/$subjectId'),
+        builder: (_) => BangumiSubjectDetailPage(
+          controller: controller,
+          subjectId: subjectId,
+          onHome: () {
+            Navigator.of(context).pop();
+            widget.onNavigate(AppDestination.home);
+          },
+        ),
+      ),
     );
   }
 }
@@ -422,7 +468,6 @@ class SourcesPage extends StatelessWidget {
 
 String _libraryFilterLabel(_LibraryFilter filter, AppLocalizations l10n) {
   return switch (filter) {
-    _LibraryFilter.all => l10n.libraryFilterAll,
     _LibraryFilter.wish => l10n.libraryFilterWish,
     _LibraryFilter.watching => l10n.libraryFilterWatching,
     _LibraryFilter.completed => l10n.libraryFilterCompleted,
@@ -433,7 +478,6 @@ String _libraryFilterLabel(_LibraryFilter filter, AppLocalizations l10n) {
 
 IconData _libraryFilterIcon(_LibraryFilter filter) {
   return switch (filter) {
-    _LibraryFilter.all => Icons.video_library_outlined,
     _LibraryFilter.wish => Icons.bookmark_border_rounded,
     _LibraryFilter.watching => Icons.play_circle_outline_rounded,
     _LibraryFilter.completed => Icons.check_circle_outline_rounded,
@@ -601,19 +645,21 @@ class _ScheduleList extends StatelessWidget {
 }
 
 class _CollectionList extends StatelessWidget {
-  const _CollectionList({required this.controller, required this.filter});
+  const _CollectionList({
+    required this.controller,
+    required this.filter,
+    required this.onOpenSubject,
+  });
 
   final BangumiSessionController controller;
   final _LibraryFilter filter;
+  final ValueChanged<String> onOpenSubject;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final entries = controller.collections
-        .where(
-          (entry) =>
-              filter == _LibraryFilter.all || entry.status.name == filter.name,
-        )
+        .where((entry) => entry.status.name == filter.name)
         .toList(growable: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -627,11 +673,11 @@ class _CollectionList extends StatelessWidget {
         else
           LayoutBuilder(
             builder: (context, constraints) {
-              final columnCount = constraints.maxWidth >= 1000
-                  ? 6
-                  : constraints.maxWidth >= 640
-                  ? 4
-                  : 2;
+              final columnCount = constraints.maxWidth >= 1024
+                  ? 3
+                  : constraints.maxWidth >= 600
+                  ? 2
+                  : 1;
               const gap = WynimeSpacing.sm;
               final cardWidth =
                   (constraints.maxWidth - gap * (columnCount - 1)) /
@@ -643,19 +689,15 @@ class _CollectionList extends StatelessWidget {
                   for (final entry in entries)
                     _CollectionCard(
                       key: ValueKey('bangumi-collection-${entry.subjectId}'),
-                      controller: controller,
                       entry: entry,
                       width: cardWidth,
+                      onOpenSubject: onOpenSubject,
                       statusLabel: _collectionStatusLabel(entry.status, l10n),
                     ),
                 ],
               );
             },
           ),
-        if (controller.selectedSubject != null) ...[
-          const SizedBox(height: WynimeSpacing.lg),
-          BangumiSubjectDetailPage(controller: controller),
-        ],
       ],
     );
   }
@@ -663,16 +705,16 @@ class _CollectionList extends StatelessWidget {
 
 class _CollectionCard extends StatelessWidget {
   const _CollectionCard({
-    required this.controller,
     required this.entry,
     required this.width,
+    required this.onOpenSubject,
     required this.statusLabel,
     super.key,
   });
 
-  final BangumiSessionController controller;
   final BangumiCollectionEntry entry;
   final double width;
+  final ValueChanged<String> onOpenSubject;
   final String statusLabel;
 
   @override
@@ -682,48 +724,110 @@ class _CollectionCard extends StatelessWidget {
         : entry.name?.isNotEmpty == true
         ? entry.name!
         : entry.subjectId;
-    final posterWidth = width - (WynimeSpacing.xs * 2);
+    final compact = width < 600;
+    final posterWidth = compact ? 96.0 : width - (WynimeSpacing.xs * 2);
     return SizedBox(
       width: width,
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => controller.openSubject(entry.subjectId),
+          onTap: () => onOpenSubject(entry.subjectId),
           child: Padding(
             padding: const EdgeInsets.all(WynimeSpacing.xs),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _BangumiArtwork(
-                  key: ValueKey(
-                    'bangumi-collection-artwork-${entry.subjectId}',
+            child: compact
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _BangumiArtwork(
+                        key: ValueKey(
+                          'bangumi-collection-artwork-${entry.subjectId}',
+                        ),
+                        imageUrl: entry.imageUrl,
+                        semanticLabel: title,
+                        width: posterWidth,
+                        height: 136,
+                      ),
+                      const SizedBox(width: WynimeSpacing.sm),
+                      Expanded(
+                        child: _CollectionCardInfo(
+                          title: title,
+                          statusLabel: statusLabel,
+                          entry: entry,
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _BangumiArtwork(
+                        key: ValueKey(
+                          'bangumi-collection-artwork-${entry.subjectId}',
+                        ),
+                        imageUrl: entry.imageUrl,
+                        semanticLabel: title,
+                        width: posterWidth,
+                        height: 300,
+                      ),
+                      const SizedBox(height: WynimeSpacing.xs),
+                      _CollectionCardInfo(
+                        title: title,
+                        statusLabel: statusLabel,
+                        entry: entry,
+                      ),
+                    ],
                   ),
-                  imageUrl: entry.imageUrl,
-                  semanticLabel: title,
-                  width: posterWidth,
-                  height: posterWidth / 0.68,
-                ),
-                const SizedBox(height: WynimeSpacing.xs),
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: WynimeSpacing.xxs),
-                Text(
-                  statusLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CollectionCardInfo extends StatelessWidget {
+  const _CollectionCardInfo({
+    required this.title,
+    required this.statusLabel,
+    required this.entry,
+  });
+
+  final String title;
+  final String statusLabel;
+  final BangumiCollectionEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final total = entry.totalEpisodes;
+    final watched = entry.epStatus;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: WynimeSpacing.xxs),
+        Text(
+          statusLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        if (watched != null && total != null && total > 0) ...[
+          const SizedBox(height: WynimeSpacing.xxs),
+          Text(l10n.subjectDetailEpisodesProgress(watched, total)),
+          const SizedBox(height: WynimeSpacing.xxs),
+          LinearProgressIndicator(
+            value: (watched / total).clamp(0, 1),
+            minHeight: 4,
+          ),
+        ],
+      ],
     );
   }
 }
@@ -769,109 +873,6 @@ class _BangumiArtwork extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(WynimeRadii.medium),
       child: SizedBox(width: width, height: height, child: image),
-    );
-  }
-}
-
-class BangumiSubjectDetailPage extends StatelessWidget {
-  const BangumiSubjectDetailPage({required this.controller, super.key});
-
-  final BangumiSessionController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final subject = controller.selectedSubject;
-    final episodes =
-        controller.selectedEpisodes?.episodes ?? const <BangumiEpisode>[];
-    final remote = controller.selectedRemoteState;
-    if (subject == null) return const SizedBox.shrink();
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(WynimeSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _BangumiArtwork(
-                  imageUrl: subject.imageUrl,
-                  semanticLabel: subject.nameCn.isEmpty
-                      ? subject.name
-                      : subject.nameCn,
-                  width: 96,
-                  height: 141,
-                ),
-                const SizedBox(width: WynimeSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        subject.nameCn.isEmpty ? subject.name : subject.nameCn,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      if (subject.summary.isNotEmpty) ...[
-                        const SizedBox(height: WynimeSpacing.xs),
-                        Text(subject.summary),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: WynimeSpacing.md),
-            DropdownButtonFormField<BangumiCollectionStatus>(
-              key: const ValueKey('bangumi-collection-status'),
-              initialValue: remote?.status,
-              decoration: InputDecoration(
-                labelText: l10n.subjectCollectionLabel,
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                for (final status in BangumiCollectionStatus.values)
-                  DropdownMenuItem(
-                    value: status,
-                    child: Text(_collectionStatusLabel(status, l10n)),
-                  ),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  controller.setCollectionStatus(subject.id, value);
-                }
-              },
-            ),
-            const SizedBox(height: WynimeSpacing.md),
-            Text(
-              l10n.subjectEpisodesLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            for (final episode in episodes)
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                value: remote?.watchedEpisodeIds.contains(episode.id) ?? false,
-                title: Text(
-                  episode.nameCn.isEmpty ? episode.name : episode.nameCn,
-                ),
-                subtitle: Text('EP ${episode.sort}'),
-                onChanged: (value) => controller.setEpisodeWatched(
-                  subject.id,
-                  episode.id,
-                  value ?? false,
-                ),
-              ),
-            if (controller.pendingCount > 0 || controller.conflictCount > 0)
-              Text(
-                l10n.bangumiQueueSummary(
-                  controller.pendingCount,
-                  controller.conflictCount,
-                ),
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

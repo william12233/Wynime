@@ -143,6 +143,16 @@ final class BangumiSubject {
     required this.summary,
     required this.eps,
     this.imageUrl,
+    this.totalEpisodes,
+    this.volumes,
+    this.airDate,
+    this.platform,
+    this.rank,
+    this.rating,
+    this.collectionStats,
+    this.infobox = const <BangumiInfoboxItem>[],
+    this.metaTags = const <String>[],
+    this.tags = const <BangumiTag>[],
   });
 
   final String id;
@@ -151,6 +161,152 @@ final class BangumiSubject {
   final String summary;
   final int? eps;
   final Uri? imageUrl;
+  final int? totalEpisodes;
+  final int? volumes;
+  final DateTime? airDate;
+  final String? platform;
+  final int? rank;
+  final BangumiRating? rating;
+  final BangumiPublicCollectionStats? collectionStats;
+  final List<BangumiInfoboxItem> infobox;
+  final List<String> metaTags;
+  final List<BangumiTag> tags;
+}
+
+final class BangumiRating {
+  const BangumiRating({
+    required this.total,
+    required this.score,
+    required this.count,
+  });
+
+  final int total;
+  final double score;
+  final Map<int, int> count;
+}
+
+final class BangumiPublicCollectionStats {
+  const BangumiPublicCollectionStats({
+    required this.wish,
+    required this.completed,
+    required this.watching,
+    required this.onHold,
+    required this.dropped,
+  });
+
+  final int wish;
+  final int completed;
+  final int watching;
+  final int onHold;
+  final int dropped;
+}
+
+final class BangumiInfoboxItem {
+  const BangumiInfoboxItem({required this.key, required this.values});
+
+  final String key;
+  final List<BangumiInfoboxValue> values;
+}
+
+final class BangumiInfoboxValue {
+  const BangumiInfoboxValue({required this.text, this.key});
+
+  final String text;
+  final String? key;
+}
+
+final class BangumiTag {
+  const BangumiTag({required this.name, required this.count, this.totalCount});
+
+  final String name;
+  final int count;
+  final int? totalCount;
+}
+
+final class BangumiActor {
+  const BangumiActor({required this.id, required this.name, this.imageUrl});
+
+  final String id;
+  final String name;
+  final Uri? imageUrl;
+}
+
+final class BangumiCharacter {
+  const BangumiCharacter({
+    required this.id,
+    required this.name,
+    this.summary = '',
+    this.relation,
+    this.imageUrl,
+    this.actors = const <BangumiActor>[],
+  });
+
+  final String id;
+  final String name;
+  final String summary;
+  final String? relation;
+  final Uri? imageUrl;
+  final List<BangumiActor> actors;
+}
+
+final class BangumiPersonCredit {
+  const BangumiPersonCredit({
+    required this.id,
+    required this.name,
+    this.relation,
+    this.career = const <String>[],
+    this.eps = const <String>[],
+    this.imageUrl,
+  });
+
+  final String id;
+  final String name;
+  final String? relation;
+  final List<String> career;
+  final List<String> eps;
+  final Uri? imageUrl;
+}
+
+final class BangumiSubjectRelation {
+  const BangumiSubjectRelation({
+    required this.id,
+    required this.type,
+    required this.name,
+    required this.nameCn,
+    this.relation,
+    this.imageUrl,
+  });
+
+  final String id;
+  final int? type;
+  final String name;
+  final String nameCn;
+  final String? relation;
+  final Uri? imageUrl;
+}
+
+final class BangumiSubjectDetailSnapshot {
+  const BangumiSubjectDetailSnapshot({
+    required this.subject,
+    required this.episodes,
+    this.characters = const <BangumiCharacter>[],
+    this.persons = const <BangumiPersonCredit>[],
+    this.relations = const <BangumiSubjectRelation>[],
+    this.collectionStatus,
+    this.epStatus,
+    this.watchedEpisodeIds = const <String>{},
+    this.cachedAt,
+  });
+
+  final BangumiSubject subject;
+  final BangumiEpisodePage episodes;
+  final List<BangumiCharacter> characters;
+  final List<BangumiPersonCredit> persons;
+  final List<BangumiSubjectRelation> relations;
+  final BangumiCollectionStatus? collectionStatus;
+  final int? epStatus;
+  final Set<String> watchedEpisodeIds;
+  final DateTime? cachedAt;
 }
 
 final class BangumiEpisode {
@@ -196,6 +352,8 @@ final class BangumiCollectionEntry {
     this.name,
     this.nameCn,
     this.imageUrl,
+    this.totalEpisodes,
+    this.epStatus,
   });
 
   final String subjectId;
@@ -203,6 +361,8 @@ final class BangumiCollectionEntry {
   final String? name;
   final String? nameCn;
   final Uri? imageUrl;
+  final int? totalEpisodes;
+  final int? epStatus;
 }
 
 final class BangumiCollectionPage {

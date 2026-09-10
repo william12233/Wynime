@@ -168,6 +168,8 @@ final class BangumiApiClient implements BangumiClient {
           status: BangumiCollectionStatus.fromApiType(status),
           name: _optionalString(subject['name']),
           nameCn: _optionalString(subject['name_cn']),
+          totalEpisodes: _intValue(subject['total_episodes'] ?? subject['eps']),
+          epStatus: _nonNegativeInt(raw['ep_status']),
           imageUrl: _optionalUri(
             subjectImages['common'] ??
                 subjectImages['medium'] ??
@@ -281,6 +283,54 @@ final class BangumiApiClient implements BangumiClient {
       limit: limit,
       total: total,
     );
+  }
+
+  @override
+  Future<List<BangumiCharacter>> characters(String subjectId) async {
+    final decoded = await _getJsonObjectOrArray(
+      '/v0/subjects/${_safeId(subjectId)}/characters',
+    );
+    final rawItems = decoded is List ? decoded : _list(decoded, 'data');
+    final characters = <BangumiCharacter>[];
+    for (final raw in rawItems) {
+      if (raw is! Map) {
+        throw const BangumiPayloadException('character_item_not_object');
+      }
+      characters.add(_characterFromJson(raw));
+    }
+    return List.unmodifiable(characters);
+  }
+
+  @override
+  Future<List<BangumiPersonCredit>> persons(String subjectId) async {
+    final decoded = await _getJsonObjectOrArray(
+      '/v0/subjects/${_safeId(subjectId)}/persons',
+    );
+    final rawItems = decoded is List ? decoded : _list(decoded, 'data');
+    final persons = <BangumiPersonCredit>[];
+    for (final raw in rawItems) {
+      if (raw is! Map) {
+        throw const BangumiPayloadException('person_item_not_object');
+      }
+      persons.add(_personFromJson(raw));
+    }
+    return List.unmodifiable(persons);
+  }
+
+  @override
+  Future<List<BangumiSubjectRelation>> relations(String subjectId) async {
+    final decoded = await _getJsonObjectOrArray(
+      '/v0/subjects/${_safeId(subjectId)}/subjects',
+    );
+    final rawItems = decoded is List ? decoded : _list(decoded, 'data');
+    final relations = <BangumiSubjectRelation>[];
+    for (final raw in rawItems) {
+      if (raw is! Map) {
+        throw const BangumiPayloadException('relation_item_not_object');
+      }
+      relations.add(_relationFromJson(raw));
+    }
+    return List.unmodifiable(relations);
   }
 
   @override
@@ -525,6 +575,8 @@ final class BangumiApiClient implements BangumiClient {
   }
 
   static BangumiSubject _subjectFromJson(Map<String, dynamic> raw) {
+    final rating = _ratingFromJson(raw['rating']);
+    final collectionStats = _collectionStatsFromJson(raw['collection']);
     return BangumiSubject(
       id: _requiredId(raw['id']),
       name: _requiredString(raw, 'name'),
@@ -534,7 +586,198 @@ final class BangumiApiClient implements BangumiClient {
       imageUrl: _optionalUri(
         raw['images'] is Map ? _map(raw['images'])['common'] : raw['image'],
       ),
+      totalEpisodes: _nonNegativeInt(raw['total_episodes']),
+      volumes: _nonNegativeInt(raw['volumes']),
+      airDate: _optionalDate(raw['date']),
+      platform: _optionalString(raw['platform']),
+      rank: _nonNegativeInt(
+        raw['rating'] is Map ? _map(raw['rating'])['rank'] : null,
+      ),
+      rating: rating,
+      collectionStats: collectionStats,
+      infobox: _infoboxFromJson(raw['infobox']),
+      metaTags: _stringList(raw['meta_tags']),
+      tags: _tagsFromJson(raw['tags']),
     );
+  }
+
+  static BangumiCharacter _characterFromJson(Map<dynamic, dynamic> raw) {
+    final actors = <BangumiActor>[];
+    final rawActors = raw['actors'];
+    if (rawActors is List) {
+      for (final actor in rawActors) {
+        if (actor is! Map) continue;
+        final id = _tryId(actor['id']);
+        if (id == null) continue;
+        actors.add(
+          BangumiActor(
+            id: id,
+            name: _optionalString(actor['name']) ?? id,
+            imageUrl: _personImageUrl(actor['images']),
+          ),
+        );
+      }
+    }
+    return BangumiCharacter(
+      id: _requiredId(raw['id']),
+      name: _optionalString(raw['name']) ?? _requiredId(raw['id']),
+      summary: _optionalString(raw['summary']) ?? '',
+      relation: _optionalString(raw['relation']),
+      imageUrl: _personImageUrl(raw['images']),
+      actors: List.unmodifiable(actors),
+    );
+  }
+
+  static BangumiPersonCredit _personFromJson(Map<dynamic, dynamic> raw) {
+    return BangumiPersonCredit(
+      id: _requiredId(raw['id']),
+      name: _optionalString(raw['name']) ?? _requiredId(raw['id']),
+      relation: _optionalString(raw['relation']),
+      career: _stringList(raw['career']),
+      eps: _idList(raw['eps']),
+      imageUrl: _personImageUrl(raw['images']),
+    );
+  }
+
+  static BangumiSubjectRelation _relationFromJson(Map<dynamic, dynamic> raw) {
+    return BangumiSubjectRelation(
+      id: _requiredId(raw['id']),
+      type: _intValue(raw['type']),
+      name: _optionalString(raw['name']) ?? _requiredId(raw['id']),
+      nameCn: _optionalString(raw['name_cn']) ?? '',
+      relation: _optionalString(raw['relation']),
+      imageUrl: _personImageUrl(raw['images']),
+    );
+  }
+
+  static BangumiRating? _ratingFromJson(Object? value) {
+    if (value is! Map) return null;
+    final total = _nonNegativeInt(value['total']);
+    final score = _doubleValue(value['score']);
+    if (total == null || score == null) return null;
+    final counts = <int, int>{};
+    final rawCount = value['count'];
+    if (rawCount is Map) {
+      rawCount.forEach((key, item) {
+        final rating = _intValue(key);
+        final count = _nonNegativeInt(item);
+        if (rating != null && rating >= 1 && rating <= 10 && count != null) {
+          counts[rating] = count;
+        }
+      });
+    }
+    return BangumiRating(
+      total: total,
+      score: score,
+      count: Map.unmodifiable(counts),
+    );
+  }
+
+  static BangumiPublicCollectionStats? _collectionStatsFromJson(Object? value) {
+    if (value is! Map) return null;
+    final values = <String, int?>{
+      'wish': _nonNegativeInt(value['wish']),
+      'completed': _nonNegativeInt(value['collect']),
+      'watching': _nonNegativeInt(value['doing']),
+      'onHold': _nonNegativeInt(value['on_hold']),
+      'dropped': _nonNegativeInt(value['dropped']),
+    };
+    if (values.values.any((item) => item == null)) return null;
+    return BangumiPublicCollectionStats(
+      wish: values['wish']!,
+      completed: values['completed']!,
+      watching: values['watching']!,
+      onHold: values['onHold']!,
+      dropped: values['dropped']!,
+    );
+  }
+
+  static List<BangumiInfoboxItem> _infoboxFromJson(Object? value) {
+    if (value is! List) return const <BangumiInfoboxItem>[];
+    final result = <BangumiInfoboxItem>[];
+    for (final item in value) {
+      if (item is! Map) continue;
+      final key = _optionalString(item['key']);
+      if (key == null || key.isEmpty) continue;
+      final values = <BangumiInfoboxValue>[];
+      final rawValue = item['value'];
+      final candidates = rawValue is List ? rawValue : <Object?>[rawValue];
+      for (final candidate in candidates) {
+        if (candidate is Map) {
+          final text = _optionalString(
+            candidate['v'] ?? candidate['value'] ?? candidate['text'],
+          );
+          if (text != null && text.isNotEmpty) {
+            values.add(
+              BangumiInfoboxValue(
+                text: text,
+                key: _optionalString(candidate['k'] ?? candidate['key']),
+              ),
+            );
+          }
+        } else {
+          final text = _optionalString(candidate);
+          if (text != null && text.isNotEmpty) {
+            values.add(BangumiInfoboxValue(text: text));
+          }
+        }
+      }
+      if (values.isNotEmpty) {
+        result.add(
+          BangumiInfoboxItem(key: key, values: List.unmodifiable(values)),
+        );
+      }
+    }
+    return List.unmodifiable(result);
+  }
+
+  static List<BangumiTag> _tagsFromJson(Object? value) {
+    if (value is! List) return const <BangumiTag>[];
+    final result = <BangumiTag>[];
+    for (final item in value) {
+      if (item is! Map) continue;
+      final name = _optionalString(item['name']);
+      final count = _nonNegativeInt(item['count']);
+      if (name == null || name.isEmpty || count == null) continue;
+      result.add(
+        BangumiTag(
+          name: name,
+          count: count,
+          totalCount: _nonNegativeInt(item['total_count']),
+        ),
+      );
+    }
+    return List.unmodifiable(result);
+  }
+
+  static List<String> _stringList(Object? value) {
+    if (value is! List) return const <String>[];
+    return List.unmodifiable(
+      value.whereType<String>().where((item) => item.length <= 256),
+    );
+  }
+
+  static List<String> _idList(Object? value) {
+    if (value is! List) return const <String>[];
+    final ids = <String>[];
+    for (final item in value) {
+      final id = _tryId(item);
+      if (id != null) ids.add(id);
+    }
+    return List.unmodifiable(ids);
+  }
+
+  static Uri? _personImageUrl(Object? value) {
+    if (value is Map) {
+      final images = _map(value);
+      return _optionalUri(
+        images['large'] ??
+            images['medium'] ??
+            images['small'] ??
+            images['common'],
+      );
+    }
+    return _optionalUri(value);
   }
 
   static BangumiEpisode _episodeFromJson(
@@ -590,6 +833,19 @@ final class BangumiApiClient implements BangumiClient {
     if (value is int) return value;
     if (value is num && value == value.roundToDouble()) return value.toInt();
     if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static int? _nonNegativeInt(Object? value) {
+    final parsed = _intValue(value);
+    return parsed != null && parsed >= 0 ? parsed : null;
+  }
+
+  static String? _tryId(Object? value) {
+    if (value is int && value > 0) return '$value';
+    if (value is String && RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(value)) {
+      return value;
+    }
     return null;
   }
 

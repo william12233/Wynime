@@ -3288,6 +3288,126 @@ class $BangumiSubjectsTable extends BangumiSubjects
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _totalEpisodesMeta = const VerificationMeta(
+    'totalEpisodes',
+  );
+  @override
+  late final GeneratedColumn<int> totalEpisodes = GeneratedColumn<int>(
+    'total_episodes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _volumesMeta = const VerificationMeta(
+    'volumes',
+  );
+  @override
+  late final GeneratedColumn<int> volumes = GeneratedColumn<int>(
+    'volumes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _airDateMeta = const VerificationMeta(
+    'airDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> airDate = GeneratedColumn<DateTime>(
+    'air_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _platformMeta = const VerificationMeta(
+    'platform',
+  );
+  @override
+  late final GeneratedColumn<String> platform = GeneratedColumn<String>(
+    'platform',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _rankMeta = const VerificationMeta('rank');
+  @override
+  late final GeneratedColumn<int> rank = GeneratedColumn<int>(
+    'rank',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ratingJsonMeta = const VerificationMeta(
+    'ratingJson',
+  );
+  @override
+  late final GeneratedColumn<String> ratingJson = GeneratedColumn<String>(
+    'rating_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _collectionStatsJsonMeta =
+      const VerificationMeta('collectionStatsJson');
+  @override
+  late final GeneratedColumn<String> collectionStatsJson =
+      GeneratedColumn<String>(
+        'collection_stats_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _infoboxJsonMeta = const VerificationMeta(
+    'infoboxJson',
+  );
+  @override
+  late final GeneratedColumn<String> infoboxJson = GeneratedColumn<String>(
+    'infobox_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metaTagsJsonMeta = const VerificationMeta(
+    'metaTagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> metaTagsJson = GeneratedColumn<String>(
+    'meta_tags_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tagsJsonMeta = const VerificationMeta(
+    'tagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> tagsJson = GeneratedColumn<String>(
+    'tags_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _detailUpdatedAtMeta = const VerificationMeta(
+    'detailUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> detailUpdatedAt =
+      GeneratedColumn<DateTime>(
+        'detail_updated_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -3307,6 +3427,17 @@ class $BangumiSubjectsTable extends BangumiSubjects
     summary,
     imageUrl,
     eps,
+    totalEpisodes,
+    volumes,
+    airDate,
+    platform,
+    rank,
+    ratingJson,
+    collectionStatsJson,
+    infoboxJson,
+    metaTagsJson,
+    tagsJson,
+    detailUpdatedAt,
     updatedAt,
   ];
   @override
@@ -3365,6 +3496,87 @@ class $BangumiSubjectsTable extends BangumiSubjects
         eps.isAcceptableOrUnknown(data['eps']!, _epsMeta),
       );
     }
+    if (data.containsKey('total_episodes')) {
+      context.handle(
+        _totalEpisodesMeta,
+        totalEpisodes.isAcceptableOrUnknown(
+          data['total_episodes']!,
+          _totalEpisodesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('volumes')) {
+      context.handle(
+        _volumesMeta,
+        volumes.isAcceptableOrUnknown(data['volumes']!, _volumesMeta),
+      );
+    }
+    if (data.containsKey('air_date')) {
+      context.handle(
+        _airDateMeta,
+        airDate.isAcceptableOrUnknown(data['air_date']!, _airDateMeta),
+      );
+    }
+    if (data.containsKey('platform')) {
+      context.handle(
+        _platformMeta,
+        platform.isAcceptableOrUnknown(data['platform']!, _platformMeta),
+      );
+    }
+    if (data.containsKey('rank')) {
+      context.handle(
+        _rankMeta,
+        rank.isAcceptableOrUnknown(data['rank']!, _rankMeta),
+      );
+    }
+    if (data.containsKey('rating_json')) {
+      context.handle(
+        _ratingJsonMeta,
+        ratingJson.isAcceptableOrUnknown(data['rating_json']!, _ratingJsonMeta),
+      );
+    }
+    if (data.containsKey('collection_stats_json')) {
+      context.handle(
+        _collectionStatsJsonMeta,
+        collectionStatsJson.isAcceptableOrUnknown(
+          data['collection_stats_json']!,
+          _collectionStatsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('infobox_json')) {
+      context.handle(
+        _infoboxJsonMeta,
+        infoboxJson.isAcceptableOrUnknown(
+          data['infobox_json']!,
+          _infoboxJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('meta_tags_json')) {
+      context.handle(
+        _metaTagsJsonMeta,
+        metaTagsJson.isAcceptableOrUnknown(
+          data['meta_tags_json']!,
+          _metaTagsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('tags_json')) {
+      context.handle(
+        _tagsJsonMeta,
+        tagsJson.isAcceptableOrUnknown(data['tags_json']!, _tagsJsonMeta),
+      );
+    }
+    if (data.containsKey('detail_updated_at')) {
+      context.handle(
+        _detailUpdatedAtMeta,
+        detailUpdatedAt.isAcceptableOrUnknown(
+          data['detail_updated_at']!,
+          _detailUpdatedAtMeta,
+        ),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -3406,6 +3618,50 @@ class $BangumiSubjectsTable extends BangumiSubjects
         DriftSqlType.int,
         data['${effectivePrefix}eps'],
       ),
+      totalEpisodes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_episodes'],
+      ),
+      volumes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}volumes'],
+      ),
+      airDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}air_date'],
+      ),
+      platform: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}platform'],
+      ),
+      rank: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rank'],
+      ),
+      ratingJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rating_json'],
+      ),
+      collectionStatsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}collection_stats_json'],
+      ),
+      infoboxJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}infobox_json'],
+      ),
+      metaTagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}meta_tags_json'],
+      ),
+      tagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags_json'],
+      ),
+      detailUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}detail_updated_at'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
@@ -3427,6 +3683,17 @@ class BangumiSubjectRecord extends DataClass
   final String summary;
   final String? imageUrl;
   final int? eps;
+  final int? totalEpisodes;
+  final int? volumes;
+  final DateTime? airDate;
+  final String? platform;
+  final int? rank;
+  final String? ratingJson;
+  final String? collectionStatsJson;
+  final String? infoboxJson;
+  final String? metaTagsJson;
+  final String? tagsJson;
+  final DateTime? detailUpdatedAt;
   final DateTime updatedAt;
   const BangumiSubjectRecord({
     required this.subjectId,
@@ -3435,6 +3702,17 @@ class BangumiSubjectRecord extends DataClass
     required this.summary,
     this.imageUrl,
     this.eps,
+    this.totalEpisodes,
+    this.volumes,
+    this.airDate,
+    this.platform,
+    this.rank,
+    this.ratingJson,
+    this.collectionStatsJson,
+    this.infoboxJson,
+    this.metaTagsJson,
+    this.tagsJson,
+    this.detailUpdatedAt,
     required this.updatedAt,
   });
   @override
@@ -3450,6 +3728,39 @@ class BangumiSubjectRecord extends DataClass
     if (!nullToAbsent || eps != null) {
       map['eps'] = Variable<int>(eps);
     }
+    if (!nullToAbsent || totalEpisodes != null) {
+      map['total_episodes'] = Variable<int>(totalEpisodes);
+    }
+    if (!nullToAbsent || volumes != null) {
+      map['volumes'] = Variable<int>(volumes);
+    }
+    if (!nullToAbsent || airDate != null) {
+      map['air_date'] = Variable<DateTime>(airDate);
+    }
+    if (!nullToAbsent || platform != null) {
+      map['platform'] = Variable<String>(platform);
+    }
+    if (!nullToAbsent || rank != null) {
+      map['rank'] = Variable<int>(rank);
+    }
+    if (!nullToAbsent || ratingJson != null) {
+      map['rating_json'] = Variable<String>(ratingJson);
+    }
+    if (!nullToAbsent || collectionStatsJson != null) {
+      map['collection_stats_json'] = Variable<String>(collectionStatsJson);
+    }
+    if (!nullToAbsent || infoboxJson != null) {
+      map['infobox_json'] = Variable<String>(infoboxJson);
+    }
+    if (!nullToAbsent || metaTagsJson != null) {
+      map['meta_tags_json'] = Variable<String>(metaTagsJson);
+    }
+    if (!nullToAbsent || tagsJson != null) {
+      map['tags_json'] = Variable<String>(tagsJson);
+    }
+    if (!nullToAbsent || detailUpdatedAt != null) {
+      map['detail_updated_at'] = Variable<DateTime>(detailUpdatedAt);
+    }
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
@@ -3464,6 +3775,37 @@ class BangumiSubjectRecord extends DataClass
           ? const Value.absent()
           : Value(imageUrl),
       eps: eps == null && nullToAbsent ? const Value.absent() : Value(eps),
+      totalEpisodes: totalEpisodes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalEpisodes),
+      volumes: volumes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(volumes),
+      airDate: airDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(airDate),
+      platform: platform == null && nullToAbsent
+          ? const Value.absent()
+          : Value(platform),
+      rank: rank == null && nullToAbsent ? const Value.absent() : Value(rank),
+      ratingJson: ratingJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ratingJson),
+      collectionStatsJson: collectionStatsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(collectionStatsJson),
+      infoboxJson: infoboxJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(infoboxJson),
+      metaTagsJson: metaTagsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metaTagsJson),
+      tagsJson: tagsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tagsJson),
+      detailUpdatedAt: detailUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(detailUpdatedAt),
       updatedAt: Value(updatedAt),
     );
   }
@@ -3480,6 +3822,19 @@ class BangumiSubjectRecord extends DataClass
       summary: serializer.fromJson<String>(json['summary']),
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
       eps: serializer.fromJson<int?>(json['eps']),
+      totalEpisodes: serializer.fromJson<int?>(json['totalEpisodes']),
+      volumes: serializer.fromJson<int?>(json['volumes']),
+      airDate: serializer.fromJson<DateTime?>(json['airDate']),
+      platform: serializer.fromJson<String?>(json['platform']),
+      rank: serializer.fromJson<int?>(json['rank']),
+      ratingJson: serializer.fromJson<String?>(json['ratingJson']),
+      collectionStatsJson: serializer.fromJson<String?>(
+        json['collectionStatsJson'],
+      ),
+      infoboxJson: serializer.fromJson<String?>(json['infoboxJson']),
+      metaTagsJson: serializer.fromJson<String?>(json['metaTagsJson']),
+      tagsJson: serializer.fromJson<String?>(json['tagsJson']),
+      detailUpdatedAt: serializer.fromJson<DateTime?>(json['detailUpdatedAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
@@ -3493,6 +3848,17 @@ class BangumiSubjectRecord extends DataClass
       'summary': serializer.toJson<String>(summary),
       'imageUrl': serializer.toJson<String?>(imageUrl),
       'eps': serializer.toJson<int?>(eps),
+      'totalEpisodes': serializer.toJson<int?>(totalEpisodes),
+      'volumes': serializer.toJson<int?>(volumes),
+      'airDate': serializer.toJson<DateTime?>(airDate),
+      'platform': serializer.toJson<String?>(platform),
+      'rank': serializer.toJson<int?>(rank),
+      'ratingJson': serializer.toJson<String?>(ratingJson),
+      'collectionStatsJson': serializer.toJson<String?>(collectionStatsJson),
+      'infoboxJson': serializer.toJson<String?>(infoboxJson),
+      'metaTagsJson': serializer.toJson<String?>(metaTagsJson),
+      'tagsJson': serializer.toJson<String?>(tagsJson),
+      'detailUpdatedAt': serializer.toJson<DateTime?>(detailUpdatedAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
@@ -3504,6 +3870,17 @@ class BangumiSubjectRecord extends DataClass
     String? summary,
     Value<String?> imageUrl = const Value.absent(),
     Value<int?> eps = const Value.absent(),
+    Value<int?> totalEpisodes = const Value.absent(),
+    Value<int?> volumes = const Value.absent(),
+    Value<DateTime?> airDate = const Value.absent(),
+    Value<String?> platform = const Value.absent(),
+    Value<int?> rank = const Value.absent(),
+    Value<String?> ratingJson = const Value.absent(),
+    Value<String?> collectionStatsJson = const Value.absent(),
+    Value<String?> infoboxJson = const Value.absent(),
+    Value<String?> metaTagsJson = const Value.absent(),
+    Value<String?> tagsJson = const Value.absent(),
+    Value<DateTime?> detailUpdatedAt = const Value.absent(),
     DateTime? updatedAt,
   }) => BangumiSubjectRecord(
     subjectId: subjectId ?? this.subjectId,
@@ -3512,6 +3889,23 @@ class BangumiSubjectRecord extends DataClass
     summary: summary ?? this.summary,
     imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
     eps: eps.present ? eps.value : this.eps,
+    totalEpisodes: totalEpisodes.present
+        ? totalEpisodes.value
+        : this.totalEpisodes,
+    volumes: volumes.present ? volumes.value : this.volumes,
+    airDate: airDate.present ? airDate.value : this.airDate,
+    platform: platform.present ? platform.value : this.platform,
+    rank: rank.present ? rank.value : this.rank,
+    ratingJson: ratingJson.present ? ratingJson.value : this.ratingJson,
+    collectionStatsJson: collectionStatsJson.present
+        ? collectionStatsJson.value
+        : this.collectionStatsJson,
+    infoboxJson: infoboxJson.present ? infoboxJson.value : this.infoboxJson,
+    metaTagsJson: metaTagsJson.present ? metaTagsJson.value : this.metaTagsJson,
+    tagsJson: tagsJson.present ? tagsJson.value : this.tagsJson,
+    detailUpdatedAt: detailUpdatedAt.present
+        ? detailUpdatedAt.value
+        : this.detailUpdatedAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
   BangumiSubjectRecord copyWithCompanion(BangumiSubjectsCompanion data) {
@@ -3522,6 +3916,29 @@ class BangumiSubjectRecord extends DataClass
       summary: data.summary.present ? data.summary.value : this.summary,
       imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
       eps: data.eps.present ? data.eps.value : this.eps,
+      totalEpisodes: data.totalEpisodes.present
+          ? data.totalEpisodes.value
+          : this.totalEpisodes,
+      volumes: data.volumes.present ? data.volumes.value : this.volumes,
+      airDate: data.airDate.present ? data.airDate.value : this.airDate,
+      platform: data.platform.present ? data.platform.value : this.platform,
+      rank: data.rank.present ? data.rank.value : this.rank,
+      ratingJson: data.ratingJson.present
+          ? data.ratingJson.value
+          : this.ratingJson,
+      collectionStatsJson: data.collectionStatsJson.present
+          ? data.collectionStatsJson.value
+          : this.collectionStatsJson,
+      infoboxJson: data.infoboxJson.present
+          ? data.infoboxJson.value
+          : this.infoboxJson,
+      metaTagsJson: data.metaTagsJson.present
+          ? data.metaTagsJson.value
+          : this.metaTagsJson,
+      tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
+      detailUpdatedAt: data.detailUpdatedAt.present
+          ? data.detailUpdatedAt.value
+          : this.detailUpdatedAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
@@ -3535,14 +3952,43 @@ class BangumiSubjectRecord extends DataClass
           ..write('summary: $summary, ')
           ..write('imageUrl: $imageUrl, ')
           ..write('eps: $eps, ')
+          ..write('totalEpisodes: $totalEpisodes, ')
+          ..write('volumes: $volumes, ')
+          ..write('airDate: $airDate, ')
+          ..write('platform: $platform, ')
+          ..write('rank: $rank, ')
+          ..write('ratingJson: $ratingJson, ')
+          ..write('collectionStatsJson: $collectionStatsJson, ')
+          ..write('infoboxJson: $infoboxJson, ')
+          ..write('metaTagsJson: $metaTagsJson, ')
+          ..write('tagsJson: $tagsJson, ')
+          ..write('detailUpdatedAt: $detailUpdatedAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(subjectId, name, nameCn, summary, imageUrl, eps, updatedAt);
+  int get hashCode => Object.hash(
+    subjectId,
+    name,
+    nameCn,
+    summary,
+    imageUrl,
+    eps,
+    totalEpisodes,
+    volumes,
+    airDate,
+    platform,
+    rank,
+    ratingJson,
+    collectionStatsJson,
+    infoboxJson,
+    metaTagsJson,
+    tagsJson,
+    detailUpdatedAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3553,6 +3999,17 @@ class BangumiSubjectRecord extends DataClass
           other.summary == this.summary &&
           other.imageUrl == this.imageUrl &&
           other.eps == this.eps &&
+          other.totalEpisodes == this.totalEpisodes &&
+          other.volumes == this.volumes &&
+          other.airDate == this.airDate &&
+          other.platform == this.platform &&
+          other.rank == this.rank &&
+          other.ratingJson == this.ratingJson &&
+          other.collectionStatsJson == this.collectionStatsJson &&
+          other.infoboxJson == this.infoboxJson &&
+          other.metaTagsJson == this.metaTagsJson &&
+          other.tagsJson == this.tagsJson &&
+          other.detailUpdatedAt == this.detailUpdatedAt &&
           other.updatedAt == this.updatedAt);
 }
 
@@ -3563,6 +4020,17 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
   final Value<String> summary;
   final Value<String?> imageUrl;
   final Value<int?> eps;
+  final Value<int?> totalEpisodes;
+  final Value<int?> volumes;
+  final Value<DateTime?> airDate;
+  final Value<String?> platform;
+  final Value<int?> rank;
+  final Value<String?> ratingJson;
+  final Value<String?> collectionStatsJson;
+  final Value<String?> infoboxJson;
+  final Value<String?> metaTagsJson;
+  final Value<String?> tagsJson;
+  final Value<DateTime?> detailUpdatedAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const BangumiSubjectsCompanion({
@@ -3572,6 +4040,17 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
     this.summary = const Value.absent(),
     this.imageUrl = const Value.absent(),
     this.eps = const Value.absent(),
+    this.totalEpisodes = const Value.absent(),
+    this.volumes = const Value.absent(),
+    this.airDate = const Value.absent(),
+    this.platform = const Value.absent(),
+    this.rank = const Value.absent(),
+    this.ratingJson = const Value.absent(),
+    this.collectionStatsJson = const Value.absent(),
+    this.infoboxJson = const Value.absent(),
+    this.metaTagsJson = const Value.absent(),
+    this.tagsJson = const Value.absent(),
+    this.detailUpdatedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -3582,6 +4061,17 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
     required String summary,
     this.imageUrl = const Value.absent(),
     this.eps = const Value.absent(),
+    this.totalEpisodes = const Value.absent(),
+    this.volumes = const Value.absent(),
+    this.airDate = const Value.absent(),
+    this.platform = const Value.absent(),
+    this.rank = const Value.absent(),
+    this.ratingJson = const Value.absent(),
+    this.collectionStatsJson = const Value.absent(),
+    this.infoboxJson = const Value.absent(),
+    this.metaTagsJson = const Value.absent(),
+    this.tagsJson = const Value.absent(),
+    this.detailUpdatedAt = const Value.absent(),
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : subjectId = Value(subjectId),
@@ -3596,6 +4086,17 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
     Expression<String>? summary,
     Expression<String>? imageUrl,
     Expression<int>? eps,
+    Expression<int>? totalEpisodes,
+    Expression<int>? volumes,
+    Expression<DateTime>? airDate,
+    Expression<String>? platform,
+    Expression<int>? rank,
+    Expression<String>? ratingJson,
+    Expression<String>? collectionStatsJson,
+    Expression<String>? infoboxJson,
+    Expression<String>? metaTagsJson,
+    Expression<String>? tagsJson,
+    Expression<DateTime>? detailUpdatedAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
   }) {
@@ -3606,6 +4107,18 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
       if (summary != null) 'summary': summary,
       if (imageUrl != null) 'image_url': imageUrl,
       if (eps != null) 'eps': eps,
+      if (totalEpisodes != null) 'total_episodes': totalEpisodes,
+      if (volumes != null) 'volumes': volumes,
+      if (airDate != null) 'air_date': airDate,
+      if (platform != null) 'platform': platform,
+      if (rank != null) 'rank': rank,
+      if (ratingJson != null) 'rating_json': ratingJson,
+      if (collectionStatsJson != null)
+        'collection_stats_json': collectionStatsJson,
+      if (infoboxJson != null) 'infobox_json': infoboxJson,
+      if (metaTagsJson != null) 'meta_tags_json': metaTagsJson,
+      if (tagsJson != null) 'tags_json': tagsJson,
+      if (detailUpdatedAt != null) 'detail_updated_at': detailUpdatedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -3618,6 +4131,17 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
     Value<String>? summary,
     Value<String?>? imageUrl,
     Value<int?>? eps,
+    Value<int?>? totalEpisodes,
+    Value<int?>? volumes,
+    Value<DateTime?>? airDate,
+    Value<String?>? platform,
+    Value<int?>? rank,
+    Value<String?>? ratingJson,
+    Value<String?>? collectionStatsJson,
+    Value<String?>? infoboxJson,
+    Value<String?>? metaTagsJson,
+    Value<String?>? tagsJson,
+    Value<DateTime?>? detailUpdatedAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
   }) {
@@ -3628,6 +4152,17 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
       summary: summary ?? this.summary,
       imageUrl: imageUrl ?? this.imageUrl,
       eps: eps ?? this.eps,
+      totalEpisodes: totalEpisodes ?? this.totalEpisodes,
+      volumes: volumes ?? this.volumes,
+      airDate: airDate ?? this.airDate,
+      platform: platform ?? this.platform,
+      rank: rank ?? this.rank,
+      ratingJson: ratingJson ?? this.ratingJson,
+      collectionStatsJson: collectionStatsJson ?? this.collectionStatsJson,
+      infoboxJson: infoboxJson ?? this.infoboxJson,
+      metaTagsJson: metaTagsJson ?? this.metaTagsJson,
+      tagsJson: tagsJson ?? this.tagsJson,
+      detailUpdatedAt: detailUpdatedAt ?? this.detailUpdatedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -3654,6 +4189,41 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
     if (eps.present) {
       map['eps'] = Variable<int>(eps.value);
     }
+    if (totalEpisodes.present) {
+      map['total_episodes'] = Variable<int>(totalEpisodes.value);
+    }
+    if (volumes.present) {
+      map['volumes'] = Variable<int>(volumes.value);
+    }
+    if (airDate.present) {
+      map['air_date'] = Variable<DateTime>(airDate.value);
+    }
+    if (platform.present) {
+      map['platform'] = Variable<String>(platform.value);
+    }
+    if (rank.present) {
+      map['rank'] = Variable<int>(rank.value);
+    }
+    if (ratingJson.present) {
+      map['rating_json'] = Variable<String>(ratingJson.value);
+    }
+    if (collectionStatsJson.present) {
+      map['collection_stats_json'] = Variable<String>(
+        collectionStatsJson.value,
+      );
+    }
+    if (infoboxJson.present) {
+      map['infobox_json'] = Variable<String>(infoboxJson.value);
+    }
+    if (metaTagsJson.present) {
+      map['meta_tags_json'] = Variable<String>(metaTagsJson.value);
+    }
+    if (tagsJson.present) {
+      map['tags_json'] = Variable<String>(tagsJson.value);
+    }
+    if (detailUpdatedAt.present) {
+      map['detail_updated_at'] = Variable<DateTime>(detailUpdatedAt.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
@@ -3672,6 +4242,17 @@ class BangumiSubjectsCompanion extends UpdateCompanion<BangumiSubjectRecord> {
           ..write('summary: $summary, ')
           ..write('imageUrl: $imageUrl, ')
           ..write('eps: $eps, ')
+          ..write('totalEpisodes: $totalEpisodes, ')
+          ..write('volumes: $volumes, ')
+          ..write('airDate: $airDate, ')
+          ..write('platform: $platform, ')
+          ..write('rank: $rank, ')
+          ..write('ratingJson: $ratingJson, ')
+          ..write('collectionStatsJson: $collectionStatsJson, ')
+          ..write('infoboxJson: $infoboxJson, ')
+          ..write('metaTagsJson: $metaTagsJson, ')
+          ..write('tagsJson: $tagsJson, ')
+          ..write('detailUpdatedAt: $detailUpdatedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -3722,6 +4303,17 @@ class $BangumiCollectionsTable extends BangumiCollections
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _epStatusMeta = const VerificationMeta(
+    'epStatus',
+  );
+  @override
+  late final GeneratedColumn<int> epStatus = GeneratedColumn<int>(
+    'ep_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _remoteRevisionMeta = const VerificationMeta(
     'remoteRevision',
   );
@@ -3762,6 +4354,7 @@ class $BangumiCollectionsTable extends BangumiCollections
     accountId,
     subjectId,
     status,
+    epStatus,
     remoteRevision,
     localUpdatedAt,
     remoteUpdatedAt,
@@ -3798,6 +4391,12 @@ class $BangumiCollectionsTable extends BangumiCollections
       context.handle(
         _statusMeta,
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('ep_status')) {
+      context.handle(
+        _epStatusMeta,
+        epStatus.isAcceptableOrUnknown(data['ep_status']!, _epStatusMeta),
       );
     }
     if (data.containsKey('remote_revision')) {
@@ -3853,6 +4452,10 @@ class $BangumiCollectionsTable extends BangumiCollections
         DriftSqlType.int,
         data['${effectivePrefix}status'],
       ),
+      epStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ep_status'],
+      ),
       remoteRevision: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}remote_revision'],
@@ -3879,6 +4482,7 @@ class BangumiCollectionRecord extends DataClass
   final String accountId;
   final String subjectId;
   final int? status;
+  final int? epStatus;
   final String? remoteRevision;
   final DateTime localUpdatedAt;
   final DateTime? remoteUpdatedAt;
@@ -3886,6 +4490,7 @@ class BangumiCollectionRecord extends DataClass
     required this.accountId,
     required this.subjectId,
     this.status,
+    this.epStatus,
     this.remoteRevision,
     required this.localUpdatedAt,
     this.remoteUpdatedAt,
@@ -3897,6 +4502,9 @@ class BangumiCollectionRecord extends DataClass
     map['subject_id'] = Variable<String>(subjectId);
     if (!nullToAbsent || status != null) {
       map['status'] = Variable<int>(status);
+    }
+    if (!nullToAbsent || epStatus != null) {
+      map['ep_status'] = Variable<int>(epStatus);
     }
     if (!nullToAbsent || remoteRevision != null) {
       map['remote_revision'] = Variable<String>(remoteRevision);
@@ -3915,6 +4523,9 @@ class BangumiCollectionRecord extends DataClass
       status: status == null && nullToAbsent
           ? const Value.absent()
           : Value(status),
+      epStatus: epStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(epStatus),
       remoteRevision: remoteRevision == null && nullToAbsent
           ? const Value.absent()
           : Value(remoteRevision),
@@ -3934,6 +4545,7 @@ class BangumiCollectionRecord extends DataClass
       accountId: serializer.fromJson<String>(json['accountId']),
       subjectId: serializer.fromJson<String>(json['subjectId']),
       status: serializer.fromJson<int?>(json['status']),
+      epStatus: serializer.fromJson<int?>(json['epStatus']),
       remoteRevision: serializer.fromJson<String?>(json['remoteRevision']),
       localUpdatedAt: serializer.fromJson<DateTime>(json['localUpdatedAt']),
       remoteUpdatedAt: serializer.fromJson<DateTime?>(json['remoteUpdatedAt']),
@@ -3946,6 +4558,7 @@ class BangumiCollectionRecord extends DataClass
       'accountId': serializer.toJson<String>(accountId),
       'subjectId': serializer.toJson<String>(subjectId),
       'status': serializer.toJson<int?>(status),
+      'epStatus': serializer.toJson<int?>(epStatus),
       'remoteRevision': serializer.toJson<String?>(remoteRevision),
       'localUpdatedAt': serializer.toJson<DateTime>(localUpdatedAt),
       'remoteUpdatedAt': serializer.toJson<DateTime?>(remoteUpdatedAt),
@@ -3956,6 +4569,7 @@ class BangumiCollectionRecord extends DataClass
     String? accountId,
     String? subjectId,
     Value<int?> status = const Value.absent(),
+    Value<int?> epStatus = const Value.absent(),
     Value<String?> remoteRevision = const Value.absent(),
     DateTime? localUpdatedAt,
     Value<DateTime?> remoteUpdatedAt = const Value.absent(),
@@ -3963,6 +4577,7 @@ class BangumiCollectionRecord extends DataClass
     accountId: accountId ?? this.accountId,
     subjectId: subjectId ?? this.subjectId,
     status: status.present ? status.value : this.status,
+    epStatus: epStatus.present ? epStatus.value : this.epStatus,
     remoteRevision: remoteRevision.present
         ? remoteRevision.value
         : this.remoteRevision,
@@ -3976,6 +4591,7 @@ class BangumiCollectionRecord extends DataClass
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
       status: data.status.present ? data.status.value : this.status,
+      epStatus: data.epStatus.present ? data.epStatus.value : this.epStatus,
       remoteRevision: data.remoteRevision.present
           ? data.remoteRevision.value
           : this.remoteRevision,
@@ -3994,6 +4610,7 @@ class BangumiCollectionRecord extends DataClass
           ..write('accountId: $accountId, ')
           ..write('subjectId: $subjectId, ')
           ..write('status: $status, ')
+          ..write('epStatus: $epStatus, ')
           ..write('remoteRevision: $remoteRevision, ')
           ..write('localUpdatedAt: $localUpdatedAt, ')
           ..write('remoteUpdatedAt: $remoteUpdatedAt')
@@ -4006,6 +4623,7 @@ class BangumiCollectionRecord extends DataClass
     accountId,
     subjectId,
     status,
+    epStatus,
     remoteRevision,
     localUpdatedAt,
     remoteUpdatedAt,
@@ -4017,6 +4635,7 @@ class BangumiCollectionRecord extends DataClass
           other.accountId == this.accountId &&
           other.subjectId == this.subjectId &&
           other.status == this.status &&
+          other.epStatus == this.epStatus &&
           other.remoteRevision == this.remoteRevision &&
           other.localUpdatedAt == this.localUpdatedAt &&
           other.remoteUpdatedAt == this.remoteUpdatedAt);
@@ -4027,6 +4646,7 @@ class BangumiCollectionsCompanion
   final Value<String> accountId;
   final Value<String> subjectId;
   final Value<int?> status;
+  final Value<int?> epStatus;
   final Value<String?> remoteRevision;
   final Value<DateTime> localUpdatedAt;
   final Value<DateTime?> remoteUpdatedAt;
@@ -4035,6 +4655,7 @@ class BangumiCollectionsCompanion
     this.accountId = const Value.absent(),
     this.subjectId = const Value.absent(),
     this.status = const Value.absent(),
+    this.epStatus = const Value.absent(),
     this.remoteRevision = const Value.absent(),
     this.localUpdatedAt = const Value.absent(),
     this.remoteUpdatedAt = const Value.absent(),
@@ -4044,6 +4665,7 @@ class BangumiCollectionsCompanion
     required String accountId,
     required String subjectId,
     this.status = const Value.absent(),
+    this.epStatus = const Value.absent(),
     this.remoteRevision = const Value.absent(),
     required DateTime localUpdatedAt,
     this.remoteUpdatedAt = const Value.absent(),
@@ -4055,6 +4677,7 @@ class BangumiCollectionsCompanion
     Expression<String>? accountId,
     Expression<String>? subjectId,
     Expression<int>? status,
+    Expression<int>? epStatus,
     Expression<String>? remoteRevision,
     Expression<DateTime>? localUpdatedAt,
     Expression<DateTime>? remoteUpdatedAt,
@@ -4064,6 +4687,7 @@ class BangumiCollectionsCompanion
       if (accountId != null) 'account_id': accountId,
       if (subjectId != null) 'subject_id': subjectId,
       if (status != null) 'status': status,
+      if (epStatus != null) 'ep_status': epStatus,
       if (remoteRevision != null) 'remote_revision': remoteRevision,
       if (localUpdatedAt != null) 'local_updated_at': localUpdatedAt,
       if (remoteUpdatedAt != null) 'remote_updated_at': remoteUpdatedAt,
@@ -4075,6 +4699,7 @@ class BangumiCollectionsCompanion
     Value<String>? accountId,
     Value<String>? subjectId,
     Value<int?>? status,
+    Value<int?>? epStatus,
     Value<String?>? remoteRevision,
     Value<DateTime>? localUpdatedAt,
     Value<DateTime?>? remoteUpdatedAt,
@@ -4084,6 +4709,7 @@ class BangumiCollectionsCompanion
       accountId: accountId ?? this.accountId,
       subjectId: subjectId ?? this.subjectId,
       status: status ?? this.status,
+      epStatus: epStatus ?? this.epStatus,
       remoteRevision: remoteRevision ?? this.remoteRevision,
       localUpdatedAt: localUpdatedAt ?? this.localUpdatedAt,
       remoteUpdatedAt: remoteUpdatedAt ?? this.remoteUpdatedAt,
@@ -4102,6 +4728,9 @@ class BangumiCollectionsCompanion
     }
     if (status.present) {
       map['status'] = Variable<int>(status.value);
+    }
+    if (epStatus.present) {
+      map['ep_status'] = Variable<int>(epStatus.value);
     }
     if (remoteRevision.present) {
       map['remote_revision'] = Variable<String>(remoteRevision.value);
@@ -4124,6 +4753,7 @@ class BangumiCollectionsCompanion
           ..write('accountId: $accountId, ')
           ..write('subjectId: $subjectId, ')
           ..write('status: $status, ')
+          ..write('epStatus: $epStatus, ')
           ..write('remoteRevision: $remoteRevision, ')
           ..write('localUpdatedAt: $localUpdatedAt, ')
           ..write('remoteUpdatedAt: $remoteUpdatedAt, ')
@@ -5103,6 +5733,1016 @@ class BangumiEpisodeCollectionsCompanion
           ..write('remoteRevision: $remoteRevision, ')
           ..write('localUpdatedAt: $localUpdatedAt, ')
           ..write('remoteUpdatedAt: $remoteUpdatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BangumiSubjectCharactersTable extends BangumiSubjectCharacters
+    with
+        TableInfo<
+          $BangumiSubjectCharactersTable,
+          BangumiSubjectCharacterRecord
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BangumiSubjectCharactersTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES bangumi_subjects (subject_id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _ordinalMeta = const VerificationMeta(
+    'ordinal',
+  );
+  @override
+  late final GeneratedColumn<int> ordinal = GeneratedColumn<int>(
+    'ordinal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    subjectId,
+    ordinal,
+    payloadJson,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bangumi_subject_characters';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BangumiSubjectCharacterRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('ordinal')) {
+      context.handle(
+        _ordinalMeta,
+        ordinal.isAcceptableOrUnknown(data['ordinal']!, _ordinalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordinalMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId, ordinal};
+  @override
+  BangumiSubjectCharacterRecord map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BangumiSubjectCharacterRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      ordinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ordinal'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BangumiSubjectCharactersTable createAlias(String alias) {
+    return $BangumiSubjectCharactersTable(attachedDatabase, alias);
+  }
+}
+
+class BangumiSubjectCharacterRecord extends DataClass
+    implements Insertable<BangumiSubjectCharacterRecord> {
+  final String subjectId;
+  final int ordinal;
+  final String payloadJson;
+  final DateTime updatedAt;
+  const BangumiSubjectCharacterRecord({
+    required this.subjectId,
+    required this.ordinal,
+    required this.payloadJson,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['ordinal'] = Variable<int>(ordinal);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BangumiSubjectCharactersCompanion toCompanion(bool nullToAbsent) {
+    return BangumiSubjectCharactersCompanion(
+      subjectId: Value(subjectId),
+      ordinal: Value(ordinal),
+      payloadJson: Value(payloadJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BangumiSubjectCharacterRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BangumiSubjectCharacterRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      ordinal: serializer.fromJson<int>(json['ordinal']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'ordinal': serializer.toJson<int>(ordinal),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BangumiSubjectCharacterRecord copyWith({
+    String? subjectId,
+    int? ordinal,
+    String? payloadJson,
+    DateTime? updatedAt,
+  }) => BangumiSubjectCharacterRecord(
+    subjectId: subjectId ?? this.subjectId,
+    ordinal: ordinal ?? this.ordinal,
+    payloadJson: payloadJson ?? this.payloadJson,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BangumiSubjectCharacterRecord copyWithCompanion(
+    BangumiSubjectCharactersCompanion data,
+  ) {
+    return BangumiSubjectCharacterRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BangumiSubjectCharacterRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, ordinal, payloadJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BangumiSubjectCharacterRecord &&
+          other.subjectId == this.subjectId &&
+          other.ordinal == this.ordinal &&
+          other.payloadJson == this.payloadJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BangumiSubjectCharactersCompanion
+    extends UpdateCompanion<BangumiSubjectCharacterRecord> {
+  final Value<String> subjectId;
+  final Value<int> ordinal;
+  final Value<String> payloadJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const BangumiSubjectCharactersCompanion({
+    this.subjectId = const Value.absent(),
+    this.ordinal = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BangumiSubjectCharactersCompanion.insert({
+    required String subjectId,
+    required int ordinal,
+    required String payloadJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       ordinal = Value(ordinal),
+       payloadJson = Value(payloadJson),
+       updatedAt = Value(updatedAt);
+  static Insertable<BangumiSubjectCharacterRecord> custom({
+    Expression<String>? subjectId,
+    Expression<int>? ordinal,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (ordinal != null) 'ordinal': ordinal,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BangumiSubjectCharactersCompanion copyWith({
+    Value<String>? subjectId,
+    Value<int>? ordinal,
+    Value<String>? payloadJson,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return BangumiSubjectCharactersCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      ordinal: ordinal ?? this.ordinal,
+      payloadJson: payloadJson ?? this.payloadJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (ordinal.present) {
+      map['ordinal'] = Variable<int>(ordinal.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BangumiSubjectCharactersCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BangumiSubjectPersonsTable extends BangumiSubjectPersons
+    with TableInfo<$BangumiSubjectPersonsTable, BangumiSubjectPersonRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BangumiSubjectPersonsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES bangumi_subjects (subject_id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _ordinalMeta = const VerificationMeta(
+    'ordinal',
+  );
+  @override
+  late final GeneratedColumn<int> ordinal = GeneratedColumn<int>(
+    'ordinal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    subjectId,
+    ordinal,
+    payloadJson,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bangumi_subject_persons';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BangumiSubjectPersonRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('ordinal')) {
+      context.handle(
+        _ordinalMeta,
+        ordinal.isAcceptableOrUnknown(data['ordinal']!, _ordinalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordinalMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId, ordinal};
+  @override
+  BangumiSubjectPersonRecord map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BangumiSubjectPersonRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      ordinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ordinal'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BangumiSubjectPersonsTable createAlias(String alias) {
+    return $BangumiSubjectPersonsTable(attachedDatabase, alias);
+  }
+}
+
+class BangumiSubjectPersonRecord extends DataClass
+    implements Insertable<BangumiSubjectPersonRecord> {
+  final String subjectId;
+  final int ordinal;
+  final String payloadJson;
+  final DateTime updatedAt;
+  const BangumiSubjectPersonRecord({
+    required this.subjectId,
+    required this.ordinal,
+    required this.payloadJson,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['ordinal'] = Variable<int>(ordinal);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BangumiSubjectPersonsCompanion toCompanion(bool nullToAbsent) {
+    return BangumiSubjectPersonsCompanion(
+      subjectId: Value(subjectId),
+      ordinal: Value(ordinal),
+      payloadJson: Value(payloadJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BangumiSubjectPersonRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BangumiSubjectPersonRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      ordinal: serializer.fromJson<int>(json['ordinal']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'ordinal': serializer.toJson<int>(ordinal),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BangumiSubjectPersonRecord copyWith({
+    String? subjectId,
+    int? ordinal,
+    String? payloadJson,
+    DateTime? updatedAt,
+  }) => BangumiSubjectPersonRecord(
+    subjectId: subjectId ?? this.subjectId,
+    ordinal: ordinal ?? this.ordinal,
+    payloadJson: payloadJson ?? this.payloadJson,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BangumiSubjectPersonRecord copyWithCompanion(
+    BangumiSubjectPersonsCompanion data,
+  ) {
+    return BangumiSubjectPersonRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BangumiSubjectPersonRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, ordinal, payloadJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BangumiSubjectPersonRecord &&
+          other.subjectId == this.subjectId &&
+          other.ordinal == this.ordinal &&
+          other.payloadJson == this.payloadJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BangumiSubjectPersonsCompanion
+    extends UpdateCompanion<BangumiSubjectPersonRecord> {
+  final Value<String> subjectId;
+  final Value<int> ordinal;
+  final Value<String> payloadJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const BangumiSubjectPersonsCompanion({
+    this.subjectId = const Value.absent(),
+    this.ordinal = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BangumiSubjectPersonsCompanion.insert({
+    required String subjectId,
+    required int ordinal,
+    required String payloadJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       ordinal = Value(ordinal),
+       payloadJson = Value(payloadJson),
+       updatedAt = Value(updatedAt);
+  static Insertable<BangumiSubjectPersonRecord> custom({
+    Expression<String>? subjectId,
+    Expression<int>? ordinal,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (ordinal != null) 'ordinal': ordinal,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BangumiSubjectPersonsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<int>? ordinal,
+    Value<String>? payloadJson,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return BangumiSubjectPersonsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      ordinal: ordinal ?? this.ordinal,
+      payloadJson: payloadJson ?? this.payloadJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (ordinal.present) {
+      map['ordinal'] = Variable<int>(ordinal.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BangumiSubjectPersonsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BangumiSubjectRelationsTable extends BangumiSubjectRelations
+    with
+        TableInfo<$BangumiSubjectRelationsTable, BangumiSubjectRelationRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BangumiSubjectRelationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES bangumi_subjects (subject_id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _ordinalMeta = const VerificationMeta(
+    'ordinal',
+  );
+  @override
+  late final GeneratedColumn<int> ordinal = GeneratedColumn<int>(
+    'ordinal',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
+    'payloadJson',
+  );
+  @override
+  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
+    'payload_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    subjectId,
+    ordinal,
+    payloadJson,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bangumi_subject_relations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BangumiSubjectRelationRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_subjectIdMeta);
+    }
+    if (data.containsKey('ordinal')) {
+      context.handle(
+        _ordinalMeta,
+        ordinal.isAcceptableOrUnknown(data['ordinal']!, _ordinalMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ordinalMeta);
+    }
+    if (data.containsKey('payload_json')) {
+      context.handle(
+        _payloadJsonMeta,
+        payloadJson.isAcceptableOrUnknown(
+          data['payload_json']!,
+          _payloadJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_payloadJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {subjectId, ordinal};
+  @override
+  BangumiSubjectRelationRecord map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BangumiSubjectRelationRecord(
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      )!,
+      ordinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ordinal'],
+      )!,
+      payloadJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}payload_json'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $BangumiSubjectRelationsTable createAlias(String alias) {
+    return $BangumiSubjectRelationsTable(attachedDatabase, alias);
+  }
+}
+
+class BangumiSubjectRelationRecord extends DataClass
+    implements Insertable<BangumiSubjectRelationRecord> {
+  final String subjectId;
+  final int ordinal;
+  final String payloadJson;
+  final DateTime updatedAt;
+  const BangumiSubjectRelationRecord({
+    required this.subjectId,
+    required this.ordinal,
+    required this.payloadJson,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['subject_id'] = Variable<String>(subjectId);
+    map['ordinal'] = Variable<int>(ordinal);
+    map['payload_json'] = Variable<String>(payloadJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  BangumiSubjectRelationsCompanion toCompanion(bool nullToAbsent) {
+    return BangumiSubjectRelationsCompanion(
+      subjectId: Value(subjectId),
+      ordinal: Value(ordinal),
+      payloadJson: Value(payloadJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory BangumiSubjectRelationRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BangumiSubjectRelationRecord(
+      subjectId: serializer.fromJson<String>(json['subjectId']),
+      ordinal: serializer.fromJson<int>(json['ordinal']),
+      payloadJson: serializer.fromJson<String>(json['payloadJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'subjectId': serializer.toJson<String>(subjectId),
+      'ordinal': serializer.toJson<int>(ordinal),
+      'payloadJson': serializer.toJson<String>(payloadJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  BangumiSubjectRelationRecord copyWith({
+    String? subjectId,
+    int? ordinal,
+    String? payloadJson,
+    DateTime? updatedAt,
+  }) => BangumiSubjectRelationRecord(
+    subjectId: subjectId ?? this.subjectId,
+    ordinal: ordinal ?? this.ordinal,
+    payloadJson: payloadJson ?? this.payloadJson,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  BangumiSubjectRelationRecord copyWithCompanion(
+    BangumiSubjectRelationsCompanion data,
+  ) {
+    return BangumiSubjectRelationRecord(
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      ordinal: data.ordinal.present ? data.ordinal.value : this.ordinal,
+      payloadJson: data.payloadJson.present
+          ? data.payloadJson.value
+          : this.payloadJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BangumiSubjectRelationRecord(')
+          ..write('subjectId: $subjectId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(subjectId, ordinal, payloadJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BangumiSubjectRelationRecord &&
+          other.subjectId == this.subjectId &&
+          other.ordinal == this.ordinal &&
+          other.payloadJson == this.payloadJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class BangumiSubjectRelationsCompanion
+    extends UpdateCompanion<BangumiSubjectRelationRecord> {
+  final Value<String> subjectId;
+  final Value<int> ordinal;
+  final Value<String> payloadJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const BangumiSubjectRelationsCompanion({
+    this.subjectId = const Value.absent(),
+    this.ordinal = const Value.absent(),
+    this.payloadJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BangumiSubjectRelationsCompanion.insert({
+    required String subjectId,
+    required int ordinal,
+    required String payloadJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : subjectId = Value(subjectId),
+       ordinal = Value(ordinal),
+       payloadJson = Value(payloadJson),
+       updatedAt = Value(updatedAt);
+  static Insertable<BangumiSubjectRelationRecord> custom({
+    Expression<String>? subjectId,
+    Expression<int>? ordinal,
+    Expression<String>? payloadJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (subjectId != null) 'subject_id': subjectId,
+      if (ordinal != null) 'ordinal': ordinal,
+      if (payloadJson != null) 'payload_json': payloadJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BangumiSubjectRelationsCompanion copyWith({
+    Value<String>? subjectId,
+    Value<int>? ordinal,
+    Value<String>? payloadJson,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return BangumiSubjectRelationsCompanion(
+      subjectId: subjectId ?? this.subjectId,
+      ordinal: ordinal ?? this.ordinal,
+      payloadJson: payloadJson ?? this.payloadJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (ordinal.present) {
+      map['ordinal'] = Variable<int>(ordinal.value);
+    }
+    if (payloadJson.present) {
+      map['payload_json'] = Variable<String>(payloadJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BangumiSubjectRelationsCompanion(')
+          ..write('subjectId: $subjectId, ')
+          ..write('ordinal: $ordinal, ')
+          ..write('payloadJson: $payloadJson, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6961,6 +8601,12 @@ abstract class _$WynimeDatabase extends GeneratedDatabase {
   );
   late final $BangumiEpisodeCollectionsTable bangumiEpisodeCollections =
       $BangumiEpisodeCollectionsTable(this);
+  late final $BangumiSubjectCharactersTable bangumiSubjectCharacters =
+      $BangumiSubjectCharactersTable(this);
+  late final $BangumiSubjectPersonsTable bangumiSubjectPersons =
+      $BangumiSubjectPersonsTable(this);
+  late final $BangumiSubjectRelationsTable bangumiSubjectRelations =
+      $BangumiSubjectRelationsTable(this);
   late final $BangumiMappingsTable bangumiMappings = $BangumiMappingsTable(
     this,
   );
@@ -6984,6 +8630,9 @@ abstract class _$WynimeDatabase extends GeneratedDatabase {
     bangumiCollections,
     bangumiEpisodes,
     bangumiEpisodeCollections,
+    bangumiSubjectCharacters,
+    bangumiSubjectPersons,
+    bangumiSubjectRelations,
     bangumiMappings,
     bangumiSyncOperations,
     bangumiConflictSnapshots,
@@ -7041,6 +8690,31 @@ abstract class _$WynimeDatabase extends GeneratedDatabase {
       ),
       result: [
         TableUpdate('bangumi_episode_collections', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'bangumi_subjects',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('bangumi_subject_characters', kind: UpdateKind.delete),
+      ],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'bangumi_subjects',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('bangumi_subject_persons', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'bangumi_subjects',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('bangumi_subject_relations', kind: UpdateKind.delete),
       ],
     ),
     WritePropagation(
@@ -9917,6 +11591,17 @@ typedef $$BangumiSubjectsTableCreateCompanionBuilder =
       required String summary,
       Value<String?> imageUrl,
       Value<int?> eps,
+      Value<int?> totalEpisodes,
+      Value<int?> volumes,
+      Value<DateTime?> airDate,
+      Value<String?> platform,
+      Value<int?> rank,
+      Value<String?> ratingJson,
+      Value<String?> collectionStatsJson,
+      Value<String?> infoboxJson,
+      Value<String?> metaTagsJson,
+      Value<String?> tagsJson,
+      Value<DateTime?> detailUpdatedAt,
       required DateTime updatedAt,
       Value<int> rowid,
     });
@@ -9928,6 +11613,17 @@ typedef $$BangumiSubjectsTableUpdateCompanionBuilder =
       Value<String> summary,
       Value<String?> imageUrl,
       Value<int?> eps,
+      Value<int?> totalEpisodes,
+      Value<int?> volumes,
+      Value<DateTime?> airDate,
+      Value<String?> platform,
+      Value<int?> rank,
+      Value<String?> ratingJson,
+      Value<String?> collectionStatsJson,
+      Value<String?> infoboxJson,
+      Value<String?> metaTagsJson,
+      Value<String?> tagsJson,
+      Value<DateTime?> detailUpdatedAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
     });
@@ -9992,6 +11688,101 @@ final class $$BangumiSubjectsTableReferences
 
     final cache = $_typedResult.readTableOrNull(
       _bangumiEpisodesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $BangumiSubjectCharactersTable,
+    List<BangumiSubjectCharacterRecord>
+  >
+  _bangumiSubjectCharactersRefsTable(
+    _$WynimeDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.bangumiSubjectCharacters,
+    aliasName:
+        'bangumi_subjects__subject_id__bangumi_subject_characters__subject_id',
+  );
+
+  $$BangumiSubjectCharactersTableProcessedTableManager
+  get bangumiSubjectCharactersRefs {
+    final manager =
+        $$BangumiSubjectCharactersTableTableManager(
+          $_db,
+          $_db.bangumiSubjectCharacters,
+        ).filter(
+          (f) => f.subjectId.subjectId.sqlEquals(
+            $_itemColumn<String>('subject_id')!,
+          ),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _bangumiSubjectCharactersRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $BangumiSubjectPersonsTable,
+    List<BangumiSubjectPersonRecord>
+  >
+  _bangumiSubjectPersonsRefsTable(_$WynimeDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.bangumiSubjectPersons,
+        aliasName:
+            'bangumi_subjects__subject_id__bangumi_subject_persons__subject_id',
+      );
+
+  $$BangumiSubjectPersonsTableProcessedTableManager
+  get bangumiSubjectPersonsRefs {
+    final manager =
+        $$BangumiSubjectPersonsTableTableManager(
+          $_db,
+          $_db.bangumiSubjectPersons,
+        ).filter(
+          (f) => f.subjectId.subjectId.sqlEquals(
+            $_itemColumn<String>('subject_id')!,
+          ),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _bangumiSubjectPersonsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $BangumiSubjectRelationsTable,
+    List<BangumiSubjectRelationRecord>
+  >
+  _bangumiSubjectRelationsRefsTable(
+    _$WynimeDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.bangumiSubjectRelations,
+    aliasName:
+        'bangumi_subjects__subject_id__bangumi_subject_relations__subject_id',
+  );
+
+  $$BangumiSubjectRelationsTableProcessedTableManager
+  get bangumiSubjectRelationsRefs {
+    final manager =
+        $$BangumiSubjectRelationsTableTableManager(
+          $_db,
+          $_db.bangumiSubjectRelations,
+        ).filter(
+          (f) => f.subjectId.subjectId.sqlEquals(
+            $_itemColumn<String>('subject_id')!,
+          ),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _bangumiSubjectRelationsRefsTable($_db),
     );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
@@ -10126,6 +11917,61 @@ class $$BangumiSubjectsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get totalEpisodes => $composableBuilder(
+    column: $table.totalEpisodes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get volumes => $composableBuilder(
+    column: $table.volumes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get airDate => $composableBuilder(
+    column: $table.airDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get platform => $composableBuilder(
+    column: $table.platform,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rank => $composableBuilder(
+    column: $table.rank,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ratingJson => $composableBuilder(
+    column: $table.ratingJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get collectionStatsJson => $composableBuilder(
+    column: $table.collectionStatsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get infoboxJson => $composableBuilder(
+    column: $table.infoboxJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metaTagsJson => $composableBuilder(
+    column: $table.metaTagsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get detailUpdatedAt => $composableBuilder(
+    column: $table.detailUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
@@ -10178,6 +12024,85 @@ class $$BangumiSubjectsTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> bangumiSubjectCharactersRefs(
+    Expression<bool> Function($$BangumiSubjectCharactersTableFilterComposer f)
+    f,
+  ) {
+    final $$BangumiSubjectCharactersTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.subjectId,
+          referencedTable: $db.bangumiSubjectCharacters,
+          getReferencedColumn: (t) => t.subjectId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BangumiSubjectCharactersTableFilterComposer(
+                $db: $db,
+                $table: $db.bangumiSubjectCharacters,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> bangumiSubjectPersonsRefs(
+    Expression<bool> Function($$BangumiSubjectPersonsTableFilterComposer f) f,
+  ) {
+    final $$BangumiSubjectPersonsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.subjectId,
+          referencedTable: $db.bangumiSubjectPersons,
+          getReferencedColumn: (t) => t.subjectId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BangumiSubjectPersonsTableFilterComposer(
+                $db: $db,
+                $table: $db.bangumiSubjectPersons,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> bangumiSubjectRelationsRefs(
+    Expression<bool> Function($$BangumiSubjectRelationsTableFilterComposer f) f,
+  ) {
+    final $$BangumiSubjectRelationsTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.subjectId,
+          referencedTable: $db.bangumiSubjectRelations,
+          getReferencedColumn: (t) => t.subjectId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BangumiSubjectRelationsTableFilterComposer(
+                $db: $db,
+                $table: $db.bangumiSubjectRelations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
@@ -10299,6 +12224,61 @@ class $$BangumiSubjectsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get totalEpisodes => $composableBuilder(
+    column: $table.totalEpisodes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get volumes => $composableBuilder(
+    column: $table.volumes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get airDate => $composableBuilder(
+    column: $table.airDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get platform => $composableBuilder(
+    column: $table.platform,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rank => $composableBuilder(
+    column: $table.rank,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ratingJson => $composableBuilder(
+    column: $table.ratingJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get collectionStatsJson => $composableBuilder(
+    column: $table.collectionStatsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get infoboxJson => $composableBuilder(
+    column: $table.infoboxJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metaTagsJson => $composableBuilder(
+    column: $table.metaTagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get detailUpdatedAt => $composableBuilder(
+    column: $table.detailUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
@@ -10331,6 +12311,51 @@ class $$BangumiSubjectsTableAnnotationComposer
 
   GeneratedColumn<int> get eps =>
       $composableBuilder(column: $table.eps, builder: (column) => column);
+
+  GeneratedColumn<int> get totalEpisodes => $composableBuilder(
+    column: $table.totalEpisodes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get volumes =>
+      $composableBuilder(column: $table.volumes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get airDate =>
+      $composableBuilder(column: $table.airDate, builder: (column) => column);
+
+  GeneratedColumn<String> get platform =>
+      $composableBuilder(column: $table.platform, builder: (column) => column);
+
+  GeneratedColumn<int> get rank =>
+      $composableBuilder(column: $table.rank, builder: (column) => column);
+
+  GeneratedColumn<String> get ratingJson => $composableBuilder(
+    column: $table.ratingJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get collectionStatsJson => $composableBuilder(
+    column: $table.collectionStatsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get infoboxJson => $composableBuilder(
+    column: $table.infoboxJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metaTagsJson => $composableBuilder(
+    column: $table.metaTagsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get tagsJson =>
+      $composableBuilder(column: $table.tagsJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get detailUpdatedAt => $composableBuilder(
+    column: $table.detailUpdatedAt,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
@@ -10383,6 +12408,86 @@ class $$BangumiSubjectsTableAnnotationComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<T> bangumiSubjectCharactersRefs<T extends Object>(
+    Expression<T> Function($$BangumiSubjectCharactersTableAnnotationComposer a)
+    f,
+  ) {
+    final $$BangumiSubjectCharactersTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.subjectId,
+          referencedTable: $db.bangumiSubjectCharacters,
+          getReferencedColumn: (t) => t.subjectId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BangumiSubjectCharactersTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bangumiSubjectCharacters,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> bangumiSubjectPersonsRefs<T extends Object>(
+    Expression<T> Function($$BangumiSubjectPersonsTableAnnotationComposer a) f,
+  ) {
+    final $$BangumiSubjectPersonsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.subjectId,
+          referencedTable: $db.bangumiSubjectPersons,
+          getReferencedColumn: (t) => t.subjectId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BangumiSubjectPersonsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bangumiSubjectPersons,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> bangumiSubjectRelationsRefs<T extends Object>(
+    Expression<T> Function($$BangumiSubjectRelationsTableAnnotationComposer a)
+    f,
+  ) {
+    final $$BangumiSubjectRelationsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.subjectId,
+          referencedTable: $db.bangumiSubjectRelations,
+          getReferencedColumn: (t) => t.subjectId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BangumiSubjectRelationsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.bangumiSubjectRelations,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 
@@ -10481,6 +12586,9 @@ class $$BangumiSubjectsTableTableManager
           PrefetchHooks Function({
             bool bangumiCollectionsRefs,
             bool bangumiEpisodesRefs,
+            bool bangumiSubjectCharactersRefs,
+            bool bangumiSubjectPersonsRefs,
+            bool bangumiSubjectRelationsRefs,
             bool bangumiMappingsRefs,
             bool bangumiSyncOperationsRefs,
             bool bangumiConflictSnapshotsRefs,
@@ -10507,6 +12615,17 @@ class $$BangumiSubjectsTableTableManager
                 Value<String> summary = const Value.absent(),
                 Value<String?> imageUrl = const Value.absent(),
                 Value<int?> eps = const Value.absent(),
+                Value<int?> totalEpisodes = const Value.absent(),
+                Value<int?> volumes = const Value.absent(),
+                Value<DateTime?> airDate = const Value.absent(),
+                Value<String?> platform = const Value.absent(),
+                Value<int?> rank = const Value.absent(),
+                Value<String?> ratingJson = const Value.absent(),
+                Value<String?> collectionStatsJson = const Value.absent(),
+                Value<String?> infoboxJson = const Value.absent(),
+                Value<String?> metaTagsJson = const Value.absent(),
+                Value<String?> tagsJson = const Value.absent(),
+                Value<DateTime?> detailUpdatedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BangumiSubjectsCompanion(
@@ -10516,6 +12635,17 @@ class $$BangumiSubjectsTableTableManager
                 summary: summary,
                 imageUrl: imageUrl,
                 eps: eps,
+                totalEpisodes: totalEpisodes,
+                volumes: volumes,
+                airDate: airDate,
+                platform: platform,
+                rank: rank,
+                ratingJson: ratingJson,
+                collectionStatsJson: collectionStatsJson,
+                infoboxJson: infoboxJson,
+                metaTagsJson: metaTagsJson,
+                tagsJson: tagsJson,
+                detailUpdatedAt: detailUpdatedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -10527,6 +12657,17 @@ class $$BangumiSubjectsTableTableManager
                 required String summary,
                 Value<String?> imageUrl = const Value.absent(),
                 Value<int?> eps = const Value.absent(),
+                Value<int?> totalEpisodes = const Value.absent(),
+                Value<int?> volumes = const Value.absent(),
+                Value<DateTime?> airDate = const Value.absent(),
+                Value<String?> platform = const Value.absent(),
+                Value<int?> rank = const Value.absent(),
+                Value<String?> ratingJson = const Value.absent(),
+                Value<String?> collectionStatsJson = const Value.absent(),
+                Value<String?> infoboxJson = const Value.absent(),
+                Value<String?> metaTagsJson = const Value.absent(),
+                Value<String?> tagsJson = const Value.absent(),
+                Value<DateTime?> detailUpdatedAt = const Value.absent(),
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => BangumiSubjectsCompanion.insert(
@@ -10536,6 +12677,17 @@ class $$BangumiSubjectsTableTableManager
                 summary: summary,
                 imageUrl: imageUrl,
                 eps: eps,
+                totalEpisodes: totalEpisodes,
+                volumes: volumes,
+                airDate: airDate,
+                platform: platform,
+                rank: rank,
+                ratingJson: ratingJson,
+                collectionStatsJson: collectionStatsJson,
+                infoboxJson: infoboxJson,
+                metaTagsJson: metaTagsJson,
+                tagsJson: tagsJson,
+                detailUpdatedAt: detailUpdatedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
               ),
@@ -10551,6 +12703,9 @@ class $$BangumiSubjectsTableTableManager
               ({
                 bangumiCollectionsRefs = false,
                 bangumiEpisodesRefs = false,
+                bangumiSubjectCharactersRefs = false,
+                bangumiSubjectPersonsRefs = false,
+                bangumiSubjectRelationsRefs = false,
                 bangumiMappingsRefs = false,
                 bangumiSyncOperationsRefs = false,
                 bangumiConflictSnapshotsRefs = false,
@@ -10560,6 +12715,10 @@ class $$BangumiSubjectsTableTableManager
                   explicitlyWatchedTables: [
                     if (bangumiCollectionsRefs) db.bangumiCollections,
                     if (bangumiEpisodesRefs) db.bangumiEpisodes,
+                    if (bangumiSubjectCharactersRefs)
+                      db.bangumiSubjectCharacters,
+                    if (bangumiSubjectPersonsRefs) db.bangumiSubjectPersons,
+                    if (bangumiSubjectRelationsRefs) db.bangumiSubjectRelations,
                     if (bangumiMappingsRefs) db.bangumiMappings,
                     if (bangumiSyncOperationsRefs) db.bangumiSyncOperations,
                     if (bangumiConflictSnapshotsRefs)
@@ -10604,6 +12763,69 @@ class $$BangumiSubjectsTableTableManager
                                 table,
                                 p0,
                               ).bangumiEpisodesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.subjectId == item.subjectId,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bangumiSubjectCharactersRefs)
+                        await $_getPrefetchedData<
+                          BangumiSubjectRecord,
+                          $BangumiSubjectsTable,
+                          BangumiSubjectCharacterRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BangumiSubjectsTableReferences
+                              ._bangumiSubjectCharactersRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BangumiSubjectsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bangumiSubjectCharactersRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.subjectId == item.subjectId,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bangumiSubjectPersonsRefs)
+                        await $_getPrefetchedData<
+                          BangumiSubjectRecord,
+                          $BangumiSubjectsTable,
+                          BangumiSubjectPersonRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BangumiSubjectsTableReferences
+                              ._bangumiSubjectPersonsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BangumiSubjectsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bangumiSubjectPersonsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.subjectId == item.subjectId,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (bangumiSubjectRelationsRefs)
+                        await $_getPrefetchedData<
+                          BangumiSubjectRecord,
+                          $BangumiSubjectsTable,
+                          BangumiSubjectRelationRecord
+                        >(
+                          currentTable: table,
+                          referencedTable: $$BangumiSubjectsTableReferences
+                              ._bangumiSubjectRelationsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$BangumiSubjectsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).bangumiSubjectRelationsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.subjectId == item.subjectId,
@@ -10696,6 +12918,9 @@ typedef $$BangumiSubjectsTableProcessedTableManager =
       PrefetchHooks Function({
         bool bangumiCollectionsRefs,
         bool bangumiEpisodesRefs,
+        bool bangumiSubjectCharactersRefs,
+        bool bangumiSubjectPersonsRefs,
+        bool bangumiSubjectRelationsRefs,
         bool bangumiMappingsRefs,
         bool bangumiSyncOperationsRefs,
         bool bangumiConflictSnapshotsRefs,
@@ -10706,6 +12931,7 @@ typedef $$BangumiCollectionsTableCreateCompanionBuilder =
       required String accountId,
       required String subjectId,
       Value<int?> status,
+      Value<int?> epStatus,
       Value<String?> remoteRevision,
       required DateTime localUpdatedAt,
       Value<DateTime?> remoteUpdatedAt,
@@ -10716,6 +12942,7 @@ typedef $$BangumiCollectionsTableUpdateCompanionBuilder =
       Value<String> accountId,
       Value<String> subjectId,
       Value<int?> status,
+      Value<int?> epStatus,
       Value<String?> remoteRevision,
       Value<DateTime> localUpdatedAt,
       Value<DateTime?> remoteUpdatedAt,
@@ -10785,6 +13012,11 @@ class $$BangumiCollectionsTableFilterComposer
   });
   ColumnFilters<int> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get epStatus => $composableBuilder(
+    column: $table.epStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10864,6 +13096,11 @@ class $$BangumiCollectionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get epStatus => $composableBuilder(
+    column: $table.epStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get remoteRevision => $composableBuilder(
     column: $table.remoteRevision,
     builder: (column) => ColumnOrderings(column),
@@ -10937,6 +13174,9 @@ class $$BangumiCollectionsTableAnnotationComposer
   });
   GeneratedColumn<int> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get epStatus =>
+      $composableBuilder(column: $table.epStatus, builder: (column) => column);
 
   GeneratedColumn<String> get remoteRevision => $composableBuilder(
     column: $table.remoteRevision,
@@ -11036,6 +13276,7 @@ class $$BangumiCollectionsTableTableManager
                 Value<String> accountId = const Value.absent(),
                 Value<String> subjectId = const Value.absent(),
                 Value<int?> status = const Value.absent(),
+                Value<int?> epStatus = const Value.absent(),
                 Value<String?> remoteRevision = const Value.absent(),
                 Value<DateTime> localUpdatedAt = const Value.absent(),
                 Value<DateTime?> remoteUpdatedAt = const Value.absent(),
@@ -11044,6 +13285,7 @@ class $$BangumiCollectionsTableTableManager
                 accountId: accountId,
                 subjectId: subjectId,
                 status: status,
+                epStatus: epStatus,
                 remoteRevision: remoteRevision,
                 localUpdatedAt: localUpdatedAt,
                 remoteUpdatedAt: remoteUpdatedAt,
@@ -11054,6 +13296,7 @@ class $$BangumiCollectionsTableTableManager
                 required String accountId,
                 required String subjectId,
                 Value<int?> status = const Value.absent(),
+                Value<int?> epStatus = const Value.absent(),
                 Value<String?> remoteRevision = const Value.absent(),
                 required DateTime localUpdatedAt,
                 Value<DateTime?> remoteUpdatedAt = const Value.absent(),
@@ -11062,6 +13305,7 @@ class $$BangumiCollectionsTableTableManager
                 accountId: accountId,
                 subjectId: subjectId,
                 status: status,
+                epStatus: epStatus,
                 remoteRevision: remoteRevision,
                 localUpdatedAt: localUpdatedAt,
                 remoteUpdatedAt: remoteUpdatedAt,
@@ -12230,6 +14474,987 @@ typedef $$BangumiEpisodeCollectionsTableProcessedTableManager =
       ),
       BangumiEpisodeCollectionRecord,
       PrefetchHooks Function({bool accountId, bool episodeId})
+    >;
+typedef $$BangumiSubjectCharactersTableCreateCompanionBuilder =
+    BangumiSubjectCharactersCompanion Function({
+      required String subjectId,
+      required int ordinal,
+      required String payloadJson,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$BangumiSubjectCharactersTableUpdateCompanionBuilder =
+    BangumiSubjectCharactersCompanion Function({
+      Value<String> subjectId,
+      Value<int> ordinal,
+      Value<String> payloadJson,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$BangumiSubjectCharactersTableReferences
+    extends
+        BaseReferences<
+          _$WynimeDatabase,
+          $BangumiSubjectCharactersTable,
+          BangumiSubjectCharacterRecord
+        > {
+  $$BangumiSubjectCharactersTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BangumiSubjectsTable _subjectIdTable(_$WynimeDatabase db) =>
+      db.bangumiSubjects.createAlias(
+        'bangumi_subject_characters__subject_id__bangumi_subjects__subject_id',
+      );
+
+  $$BangumiSubjectsTableProcessedTableManager get subjectId {
+    final $_column = $_itemColumn<String>('subject_id')!;
+
+    final manager = $$BangumiSubjectsTableTableManager(
+      $_db,
+      $_db.bangumiSubjects,
+    ).filter((f) => f.subjectId.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_subjectIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BangumiSubjectCharactersTableFilterComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectCharactersTable> {
+  $$BangumiSubjectCharactersTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BangumiSubjectsTableFilterComposer get subjectId {
+    final $$BangumiSubjectsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableFilterComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectCharactersTableOrderingComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectCharactersTable> {
+  $$BangumiSubjectCharactersTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BangumiSubjectsTableOrderingComposer get subjectId {
+    final $$BangumiSubjectsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableOrderingComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectCharactersTableAnnotationComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectCharactersTable> {
+  $$BangumiSubjectCharactersTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get ordinal =>
+      $composableBuilder(column: $table.ordinal, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BangumiSubjectsTableAnnotationComposer get subjectId {
+    final $$BangumiSubjectsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectCharactersTableTableManager
+    extends
+        RootTableManager<
+          _$WynimeDatabase,
+          $BangumiSubjectCharactersTable,
+          BangumiSubjectCharacterRecord,
+          $$BangumiSubjectCharactersTableFilterComposer,
+          $$BangumiSubjectCharactersTableOrderingComposer,
+          $$BangumiSubjectCharactersTableAnnotationComposer,
+          $$BangumiSubjectCharactersTableCreateCompanionBuilder,
+          $$BangumiSubjectCharactersTableUpdateCompanionBuilder,
+          (
+            BangumiSubjectCharacterRecord,
+            $$BangumiSubjectCharactersTableReferences,
+          ),
+          BangumiSubjectCharacterRecord,
+          PrefetchHooks Function({bool subjectId})
+        > {
+  $$BangumiSubjectCharactersTableTableManager(
+    _$WynimeDatabase db,
+    $BangumiSubjectCharactersTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BangumiSubjectCharactersTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$BangumiSubjectCharactersTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$BangumiSubjectCharactersTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<int> ordinal = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BangumiSubjectCharactersCompanion(
+                subjectId: subjectId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required int ordinal,
+                required String payloadJson,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => BangumiSubjectCharactersCompanion.insert(
+                subjectId: subjectId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BangumiSubjectCharactersTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({subjectId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (subjectId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.subjectId,
+                                referencedTable:
+                                    $$BangumiSubjectCharactersTableReferences
+                                        ._subjectIdTable(db),
+                                referencedColumn:
+                                    $$BangumiSubjectCharactersTableReferences
+                                        ._subjectIdTable(db)
+                                        .subjectId,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BangumiSubjectCharactersTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WynimeDatabase,
+      $BangumiSubjectCharactersTable,
+      BangumiSubjectCharacterRecord,
+      $$BangumiSubjectCharactersTableFilterComposer,
+      $$BangumiSubjectCharactersTableOrderingComposer,
+      $$BangumiSubjectCharactersTableAnnotationComposer,
+      $$BangumiSubjectCharactersTableCreateCompanionBuilder,
+      $$BangumiSubjectCharactersTableUpdateCompanionBuilder,
+      (
+        BangumiSubjectCharacterRecord,
+        $$BangumiSubjectCharactersTableReferences,
+      ),
+      BangumiSubjectCharacterRecord,
+      PrefetchHooks Function({bool subjectId})
+    >;
+typedef $$BangumiSubjectPersonsTableCreateCompanionBuilder =
+    BangumiSubjectPersonsCompanion Function({
+      required String subjectId,
+      required int ordinal,
+      required String payloadJson,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$BangumiSubjectPersonsTableUpdateCompanionBuilder =
+    BangumiSubjectPersonsCompanion Function({
+      Value<String> subjectId,
+      Value<int> ordinal,
+      Value<String> payloadJson,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$BangumiSubjectPersonsTableReferences
+    extends
+        BaseReferences<
+          _$WynimeDatabase,
+          $BangumiSubjectPersonsTable,
+          BangumiSubjectPersonRecord
+        > {
+  $$BangumiSubjectPersonsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BangumiSubjectsTable _subjectIdTable(_$WynimeDatabase db) =>
+      db.bangumiSubjects.createAlias(
+        'bangumi_subject_persons__subject_id__bangumi_subjects__subject_id',
+      );
+
+  $$BangumiSubjectsTableProcessedTableManager get subjectId {
+    final $_column = $_itemColumn<String>('subject_id')!;
+
+    final manager = $$BangumiSubjectsTableTableManager(
+      $_db,
+      $_db.bangumiSubjects,
+    ).filter((f) => f.subjectId.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_subjectIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BangumiSubjectPersonsTableFilterComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectPersonsTable> {
+  $$BangumiSubjectPersonsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BangumiSubjectsTableFilterComposer get subjectId {
+    final $$BangumiSubjectsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableFilterComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectPersonsTableOrderingComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectPersonsTable> {
+  $$BangumiSubjectPersonsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BangumiSubjectsTableOrderingComposer get subjectId {
+    final $$BangumiSubjectsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableOrderingComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectPersonsTableAnnotationComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectPersonsTable> {
+  $$BangumiSubjectPersonsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get ordinal =>
+      $composableBuilder(column: $table.ordinal, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BangumiSubjectsTableAnnotationComposer get subjectId {
+    final $$BangumiSubjectsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectPersonsTableTableManager
+    extends
+        RootTableManager<
+          _$WynimeDatabase,
+          $BangumiSubjectPersonsTable,
+          BangumiSubjectPersonRecord,
+          $$BangumiSubjectPersonsTableFilterComposer,
+          $$BangumiSubjectPersonsTableOrderingComposer,
+          $$BangumiSubjectPersonsTableAnnotationComposer,
+          $$BangumiSubjectPersonsTableCreateCompanionBuilder,
+          $$BangumiSubjectPersonsTableUpdateCompanionBuilder,
+          (BangumiSubjectPersonRecord, $$BangumiSubjectPersonsTableReferences),
+          BangumiSubjectPersonRecord,
+          PrefetchHooks Function({bool subjectId})
+        > {
+  $$BangumiSubjectPersonsTableTableManager(
+    _$WynimeDatabase db,
+    $BangumiSubjectPersonsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BangumiSubjectPersonsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$BangumiSubjectPersonsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$BangumiSubjectPersonsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<int> ordinal = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BangumiSubjectPersonsCompanion(
+                subjectId: subjectId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required int ordinal,
+                required String payloadJson,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => BangumiSubjectPersonsCompanion.insert(
+                subjectId: subjectId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BangumiSubjectPersonsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({subjectId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (subjectId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.subjectId,
+                                referencedTable:
+                                    $$BangumiSubjectPersonsTableReferences
+                                        ._subjectIdTable(db),
+                                referencedColumn:
+                                    $$BangumiSubjectPersonsTableReferences
+                                        ._subjectIdTable(db)
+                                        .subjectId,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BangumiSubjectPersonsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WynimeDatabase,
+      $BangumiSubjectPersonsTable,
+      BangumiSubjectPersonRecord,
+      $$BangumiSubjectPersonsTableFilterComposer,
+      $$BangumiSubjectPersonsTableOrderingComposer,
+      $$BangumiSubjectPersonsTableAnnotationComposer,
+      $$BangumiSubjectPersonsTableCreateCompanionBuilder,
+      $$BangumiSubjectPersonsTableUpdateCompanionBuilder,
+      (BangumiSubjectPersonRecord, $$BangumiSubjectPersonsTableReferences),
+      BangumiSubjectPersonRecord,
+      PrefetchHooks Function({bool subjectId})
+    >;
+typedef $$BangumiSubjectRelationsTableCreateCompanionBuilder =
+    BangumiSubjectRelationsCompanion Function({
+      required String subjectId,
+      required int ordinal,
+      required String payloadJson,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$BangumiSubjectRelationsTableUpdateCompanionBuilder =
+    BangumiSubjectRelationsCompanion Function({
+      Value<String> subjectId,
+      Value<int> ordinal,
+      Value<String> payloadJson,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$BangumiSubjectRelationsTableReferences
+    extends
+        BaseReferences<
+          _$WynimeDatabase,
+          $BangumiSubjectRelationsTable,
+          BangumiSubjectRelationRecord
+        > {
+  $$BangumiSubjectRelationsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $BangumiSubjectsTable _subjectIdTable(_$WynimeDatabase db) =>
+      db.bangumiSubjects.createAlias(
+        'bangumi_subject_relations__subject_id__bangumi_subjects__subject_id',
+      );
+
+  $$BangumiSubjectsTableProcessedTableManager get subjectId {
+    final $_column = $_itemColumn<String>('subject_id')!;
+
+    final manager = $$BangumiSubjectsTableTableManager(
+      $_db,
+      $_db.bangumiSubjects,
+    ).filter((f) => f.subjectId.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_subjectIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BangumiSubjectRelationsTableFilterComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectRelationsTable> {
+  $$BangumiSubjectRelationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$BangumiSubjectsTableFilterComposer get subjectId {
+    final $$BangumiSubjectsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableFilterComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectRelationsTableOrderingComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectRelationsTable> {
+  $$BangumiSubjectRelationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get ordinal => $composableBuilder(
+    column: $table.ordinal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$BangumiSubjectsTableOrderingComposer get subjectId {
+    final $$BangumiSubjectsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableOrderingComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectRelationsTableAnnotationComposer
+    extends Composer<_$WynimeDatabase, $BangumiSubjectRelationsTable> {
+  $$BangumiSubjectRelationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get ordinal =>
+      $composableBuilder(column: $table.ordinal, builder: (column) => column);
+
+  GeneratedColumn<String> get payloadJson => $composableBuilder(
+    column: $table.payloadJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$BangumiSubjectsTableAnnotationComposer get subjectId {
+    final $$BangumiSubjectsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.subjectId,
+      referencedTable: $db.bangumiSubjects,
+      getReferencedColumn: (t) => t.subjectId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$BangumiSubjectsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.bangumiSubjects,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BangumiSubjectRelationsTableTableManager
+    extends
+        RootTableManager<
+          _$WynimeDatabase,
+          $BangumiSubjectRelationsTable,
+          BangumiSubjectRelationRecord,
+          $$BangumiSubjectRelationsTableFilterComposer,
+          $$BangumiSubjectRelationsTableOrderingComposer,
+          $$BangumiSubjectRelationsTableAnnotationComposer,
+          $$BangumiSubjectRelationsTableCreateCompanionBuilder,
+          $$BangumiSubjectRelationsTableUpdateCompanionBuilder,
+          (
+            BangumiSubjectRelationRecord,
+            $$BangumiSubjectRelationsTableReferences,
+          ),
+          BangumiSubjectRelationRecord,
+          PrefetchHooks Function({bool subjectId})
+        > {
+  $$BangumiSubjectRelationsTableTableManager(
+    _$WynimeDatabase db,
+    $BangumiSubjectRelationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BangumiSubjectRelationsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$BangumiSubjectRelationsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$BangumiSubjectRelationsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> subjectId = const Value.absent(),
+                Value<int> ordinal = const Value.absent(),
+                Value<String> payloadJson = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BangumiSubjectRelationsCompanion(
+                subjectId: subjectId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String subjectId,
+                required int ordinal,
+                required String payloadJson,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => BangumiSubjectRelationsCompanion.insert(
+                subjectId: subjectId,
+                ordinal: ordinal,
+                payloadJson: payloadJson,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$BangumiSubjectRelationsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({subjectId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (subjectId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.subjectId,
+                                referencedTable:
+                                    $$BangumiSubjectRelationsTableReferences
+                                        ._subjectIdTable(db),
+                                referencedColumn:
+                                    $$BangumiSubjectRelationsTableReferences
+                                        ._subjectIdTable(db)
+                                        .subjectId,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BangumiSubjectRelationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WynimeDatabase,
+      $BangumiSubjectRelationsTable,
+      BangumiSubjectRelationRecord,
+      $$BangumiSubjectRelationsTableFilterComposer,
+      $$BangumiSubjectRelationsTableOrderingComposer,
+      $$BangumiSubjectRelationsTableAnnotationComposer,
+      $$BangumiSubjectRelationsTableCreateCompanionBuilder,
+      $$BangumiSubjectRelationsTableUpdateCompanionBuilder,
+      (BangumiSubjectRelationRecord, $$BangumiSubjectRelationsTableReferences),
+      BangumiSubjectRelationRecord,
+      PrefetchHooks Function({bool subjectId})
     >;
 typedef $$BangumiMappingsTableCreateCompanionBuilder =
     BangumiMappingsCompanion Function({
@@ -13810,6 +17035,18 @@ class $WynimeDatabaseManager {
       $$BangumiEpisodeCollectionsTableTableManager(
         _db,
         _db.bangumiEpisodeCollections,
+      );
+  $$BangumiSubjectCharactersTableTableManager get bangumiSubjectCharacters =>
+      $$BangumiSubjectCharactersTableTableManager(
+        _db,
+        _db.bangumiSubjectCharacters,
+      );
+  $$BangumiSubjectPersonsTableTableManager get bangumiSubjectPersons =>
+      $$BangumiSubjectPersonsTableTableManager(_db, _db.bangumiSubjectPersons);
+  $$BangumiSubjectRelationsTableTableManager get bangumiSubjectRelations =>
+      $$BangumiSubjectRelationsTableTableManager(
+        _db,
+        _db.bangumiSubjectRelations,
       );
   $$BangumiMappingsTableTableManager get bangumiMappings =>
       $$BangumiMappingsTableTableManager(_db, _db.bangumiMappings);

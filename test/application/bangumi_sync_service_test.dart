@@ -671,6 +671,18 @@ final class FakeBangumiClient implements BangumiClient {
       );
 
   @override
+  Future<List<BangumiCharacter>> characters(String subjectId) async =>
+      const <BangumiCharacter>[];
+
+  @override
+  Future<List<BangumiPersonCredit>> persons(String subjectId) async =>
+      const <BangumiPersonCredit>[];
+
+  @override
+  Future<List<BangumiSubjectRelation>> relations(String subjectId) async =>
+      const <BangumiSubjectRelation>[];
+
+  @override
   Future<BangumiRemoteState> remoteState(String subjectId) =>
       onRemoteStateOverride?.call(subjectId) ?? onRemoteState(subjectId);
 

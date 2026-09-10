@@ -192,6 +192,116 @@ void main() {
   );
 
   test(
+    'subject detail cache round-trips typed sections and watched state',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await store.saveAccount(
+        const BangumiUserIdentity(id: '7', username: 'alice'),
+      );
+      final snapshot = BangumiSubjectDetailSnapshot(
+        subject: const BangumiSubject(
+          id: '42',
+          name: 'Title',
+          nameCn: '作品',
+          summary: 'Summary',
+          eps: 2,
+          totalEpisodes: 2,
+          volumes: 1,
+          platform: 'TV',
+          rank: 5,
+          rating: BangumiRating(total: 12, score: 8.25, count: {8: 6}),
+          collectionStats: BangumiPublicCollectionStats(
+            wish: 1,
+            completed: 2,
+            watching: 3,
+            onHold: 4,
+            dropped: 5,
+          ),
+          infobox: [
+            BangumiInfoboxItem(
+              key: 'Alias',
+              values: [BangumiInfoboxValue(text: 'Alias')],
+            ),
+          ],
+          tags: [BangumiTag(name: 'Action', count: 4, totalCount: 9)],
+        ),
+        episodes: const BangumiEpisodePage(
+          episodes: [
+            BangumiEpisode(
+              id: '1001',
+              subjectId: '42',
+              name: 'Episode 1',
+              nameCn: '第一集',
+              sort: 1,
+              type: 0,
+            ),
+            BangumiEpisode(
+              id: '1002',
+              subjectId: '42',
+              name: 'Episode 2',
+              nameCn: '第二集',
+              sort: 2,
+              type: 0,
+            ),
+          ],
+          offset: 0,
+          limit: 100,
+          total: 2,
+        ),
+        characters: const [
+          BangumiCharacter(
+            id: 'c1',
+            name: 'Character',
+            actors: [BangumiActor(id: 'p1', name: 'Actor')],
+          ),
+        ],
+        persons: const [
+          BangumiPersonCredit(id: 'p2', name: 'Director', career: ['Director']),
+        ],
+        relations: const [
+          BangumiSubjectRelation(
+            id: '43',
+            type: 2,
+            name: 'Related',
+            nameCn: '相關作品',
+          ),
+        ],
+      );
+
+      await store.cacheSubjectDetail(snapshot);
+      await store.cacheCollection(
+        const BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+          totalEpisodes: 2,
+          epStatus: 1,
+        ),
+      );
+      await store.applyRemoteState(
+        _remote(
+          status: BangumiCollectionStatus.watching,
+          watched: const {'1001'},
+        ),
+      );
+
+      final restored = await store.cachedSubjectDetail('42');
+      expect(restored, isNotNull);
+      expect(restored!.subject.rating?.score, 8.25);
+      expect(restored.subject.collectionStats?.dropped, 5);
+      expect(restored.subject.infobox.single.values.single.text, 'Alias');
+      expect(restored.subject.tags.single.totalCount, 9);
+      expect(restored.characters.single.actors.single.name, 'Actor');
+      expect(restored.persons.single.career, ['Director']);
+      expect(restored.relations.single.nameCn, '相關作品');
+      expect(restored.collectionStatus, BangumiCollectionStatus.watching);
+      expect(restored.epStatus, 1);
+      expect(restored.watchedEpisodeIds, {'1001'});
+    },
+  );
+
+  test(
     'schedule cache survives restart and exposes freshness separately',
     () async {
       final database = openTestDatabase();

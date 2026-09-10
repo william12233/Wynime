@@ -12,7 +12,7 @@ import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store
 
 void main() {
   test(
-    'migrates a populated v1 database to v4 and preserves base rows',
+    'migrates a populated v1 database to v5 and preserves base rows',
     () async {
       final executor = NativeDatabase.memory(setup: _createVersionOneFixture);
       final database = WynimeDatabase(executor);
@@ -27,6 +27,19 @@ void main() {
       final schedules = await database.select(database.bangumiSchedules).get();
       final accountColumns = await database
           .customSelect('PRAGMA table_info(bangumi_accounts)')
+          .get();
+      final subjectColumns = await database
+          .customSelect('PRAGMA table_info(bangumi_subjects)')
+          .get();
+      final collectionColumns = await database
+          .customSelect('PRAGMA table_info(bangumi_collections)')
+          .get();
+      final detailTables = await database
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN "
+            "('bangumi_subject_characters', 'bangumi_subject_persons', "
+            "'bangumi_subject_relations')",
+          )
           .get();
       final indexes = await database
           .customSelect(
@@ -48,8 +61,17 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        subjectColumns.any((row) => row.read<String>('name') == 'rating_json'),
+        isTrue,
+      );
+      expect(
+        collectionColumns.any((row) => row.read<String>('name') == 'ep_status'),
+        isTrue,
+      );
+      expect(detailTables, hasLength(3));
       expect(indexes, hasLength(2));
-      expect(await _userVersion(database), 4);
+      expect(await _userVersion(database), 5);
 
       await database
           .into(database.bangumiAccounts)
@@ -211,7 +233,7 @@ void main() {
     },
   );
 
-  test('creates custom Bangumi indexes for a fresh v4 database', () async {
+  test('creates custom Bangumi indexes for a fresh v5 database', () async {
     final database = WynimeDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
@@ -223,7 +245,7 @@ void main() {
         .get();
 
     expect(indexes, hasLength(2));
-    expect(await _userVersion(database), 4);
+    expect(await _userVersion(database), 5);
   });
 }
 
@@ -479,6 +501,18 @@ final class _MigratedOperationClient implements BangumiClient {
 
   @override
   Future<BangumiEpisodePage> episodes(String subjectId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<BangumiCharacter>> characters(String subjectId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<BangumiPersonCredit>> persons(String subjectId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<BangumiSubjectRelation>> relations(String subjectId) =>
       throw UnimplementedError();
 }
 

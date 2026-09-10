@@ -86,6 +86,12 @@ abstract interface class BangumiClient {
 
   Future<BangumiEpisodePage> episodes(String subjectId);
 
+  Future<List<BangumiCharacter>> characters(String subjectId);
+
+  Future<List<BangumiPersonCredit>> persons(String subjectId);
+
+  Future<List<BangumiSubjectRelation>> relations(String subjectId);
+
   Future<BangumiRemoteState> remoteState(String subjectId);
 
   Future<void> setCollectionStatus(

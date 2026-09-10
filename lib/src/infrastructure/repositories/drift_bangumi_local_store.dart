@@ -188,20 +188,178 @@ final class DriftBangumiLocalStore
 
   @override
   Future<void> cacheSubject(BangumiSubject subject) async {
+    final now = _clock().toUtc();
     await _database.runWrite(
-      () => _database
-          .into(_database.bangumiSubjects)
-          .insertOnConflictUpdate(
-            BangumiSubjectsCompanion(
-              subjectId: Value(subject.id),
-              name: Value(subject.name),
-              nameCn: Value(subject.nameCn),
-              summary: Value(subject.summary),
-              imageUrl: Value(subject.imageUrl?.toString()),
-              eps: Value(subject.eps),
-              updatedAt: Value(_clock().toUtc()),
-            ),
-          ),
+      () => _cacheSubjectRow(subject, now: now, detailUpdatedAt: now),
+    );
+  }
+
+  @override
+  Future<void> cacheSubjectDetail(BangumiSubjectDetailSnapshot snapshot) async {
+    final now = _clock().toUtc();
+    await _database.runWrite(
+      () => _database.transaction(() async {
+        await _cacheSubjectRow(
+          snapshot.subject,
+          now: now,
+          detailUpdatedAt: snapshot.cachedAt ?? now,
+        );
+        await _cacheEpisodeRows(snapshot.episodes, now: now);
+
+        await (_database.delete(
+          _database.bangumiSubjectCharacters,
+        )..where((table) => table.subjectId.equals(snapshot.subject.id))).go();
+        for (var index = 0; index < snapshot.characters.length; index++) {
+          await _database
+              .into(_database.bangumiSubjectCharacters)
+              .insert(
+                BangumiSubjectCharactersCompanion.insert(
+                  subjectId: snapshot.subject.id,
+                  ordinal: index,
+                  payloadJson: jsonEncode(
+                    _characterToJson(snapshot.characters[index]),
+                  ),
+                  updatedAt: now,
+                ),
+              );
+        }
+
+        await (_database.delete(
+          _database.bangumiSubjectPersons,
+        )..where((table) => table.subjectId.equals(snapshot.subject.id))).go();
+        for (var index = 0; index < snapshot.persons.length; index++) {
+          await _database
+              .into(_database.bangumiSubjectPersons)
+              .insert(
+                BangumiSubjectPersonsCompanion.insert(
+                  subjectId: snapshot.subject.id,
+                  ordinal: index,
+                  payloadJson: jsonEncode(
+                    _personToJson(snapshot.persons[index]),
+                  ),
+                  updatedAt: now,
+                ),
+              );
+        }
+
+        await (_database.delete(
+          _database.bangumiSubjectRelations,
+        )..where((table) => table.subjectId.equals(snapshot.subject.id))).go();
+        for (var index = 0; index < snapshot.relations.length; index++) {
+          await _database
+              .into(_database.bangumiSubjectRelations)
+              .insert(
+                BangumiSubjectRelationsCompanion.insert(
+                  subjectId: snapshot.subject.id,
+                  ordinal: index,
+                  payloadJson: jsonEncode(
+                    _relationToJson(snapshot.relations[index]),
+                  ),
+                  updatedAt: now,
+                ),
+              );
+        }
+      }),
+    );
+  }
+
+  @override
+  Future<BangumiSubjectDetailSnapshot?> cachedSubjectDetail(
+    String subjectId,
+  ) async {
+    final subjectRow = await (_database.select(
+      _database.bangumiSubjects,
+    )..where((table) => table.subjectId.equals(subjectId))).getSingleOrNull();
+    if (subjectRow == null) return null;
+
+    final episodeRows =
+        await (_database.select(_database.bangumiEpisodes)
+              ..where((table) => table.subjectId.equals(subjectId))
+              ..orderBy([
+                (table) => OrderingTerm.asc(table.sort),
+                (table) => OrderingTerm.asc(table.episodeId),
+              ]))
+            .get();
+    final episodes = BangumiEpisodePage(
+      episodes: List.unmodifiable(
+        episodeRows
+            .map(
+              (row) => BangumiEpisode(
+                id: row.episodeId,
+                subjectId: row.subjectId,
+                name: row.name,
+                nameCn: row.nameCn,
+                sort: row.sort,
+                type: row.type,
+                duration: row.duration,
+              ),
+            )
+            .toList(growable: false),
+      ),
+      offset: 0,
+      limit: episodeRows.isEmpty ? 100 : episodeRows.length,
+      total: _maxEpisodeTotal(
+        subjectRow.totalEpisodes ?? subjectRow.eps ?? episodeRows.length,
+        episodeRows.length,
+      ),
+    );
+    final accountId = activeAccountId;
+    BangumiCollectionStatus? collectionStatus;
+    int? epStatus;
+    final watchedEpisodeIds = <String>{};
+    if (accountId != null) {
+      final collection =
+          await (_database.select(_database.bangumiCollections)..where(
+                (table) =>
+                    table.accountId.equals(accountId) &
+                    table.subjectId.equals(subjectId),
+              ))
+              .getSingleOrNull();
+      if (collection?.status != null) {
+        collectionStatus = BangumiCollectionStatus.fromApiType(
+          collection!.status!,
+        );
+      }
+      epStatus = collection?.epStatus;
+      final episodeIds = episodeRows.map((row) => row.episodeId).toSet();
+      final watchedRows =
+          await (_database.select(_database.bangumiEpisodeCollections)..where(
+                (table) =>
+                    table.accountId.equals(accountId) &
+                    table.watched.equals(true),
+              ))
+              .get();
+      watchedEpisodeIds.addAll(
+        watchedRows.map((row) => row.episodeId).where(episodeIds.contains),
+      );
+    }
+
+    return BangumiSubjectDetailSnapshot(
+      subject: _subjectFromRecord(subjectRow),
+      episodes: episodes,
+      characters: _decodeCharacters(
+        await (_database.select(_database.bangumiSubjectCharacters)
+              ..where((table) => table.subjectId.equals(subjectId))
+              ..orderBy([(table) => OrderingTerm.asc(table.ordinal)]))
+            .get(),
+      ),
+      persons: _decodePersons(
+        await (_database.select(_database.bangumiSubjectPersons)
+              ..where((table) => table.subjectId.equals(subjectId))
+              ..orderBy([(table) => OrderingTerm.asc(table.ordinal)]))
+            .get(),
+      ),
+      relations: _decodeRelations(
+        await (_database.select(_database.bangumiSubjectRelations)
+              ..where((table) => table.subjectId.equals(subjectId))
+              ..orderBy([(table) => OrderingTerm.asc(table.ordinal)]))
+            .get(),
+      ),
+      collectionStatus: collectionStatus,
+      epStatus: epStatus,
+      watchedEpisodeIds: Set.unmodifiable(watchedEpisodeIds),
+      cachedAt:
+          subjectRow.detailUpdatedAt?.toUtc() ?? subjectRow.updatedAt.toUtc(),
     );
   }
 
@@ -210,6 +368,7 @@ final class DriftBangumiLocalStore
     final accountId = _requireAccount();
     final now = _clock().toUtc();
     await _database.runWrite(() async {
+      await _ensureSubjectForCollection(collection, now);
       final existing =
           await (_database.select(_database.bangumiCollections)..where(
                 (table) =>
@@ -248,6 +407,7 @@ final class DriftBangumiLocalStore
               accountId: Value(accountId),
               subjectId: Value(collection.subjectId),
               status: Value(localStatus),
+              epStatus: Value(collection.epStatus ?? existing?.epStatus),
               remoteRevision: Value(existing?.remoteRevision),
               localUpdatedAt: Value(existing?.localUpdatedAt ?? now),
               remoteUpdatedAt: Value(now),
@@ -282,6 +442,8 @@ final class DriftBangumiLocalStore
           name: subject?.name,
           nameCn: subject?.nameCn,
           imageUrl: _safeCachedUri(subject?.imageUrl),
+          totalEpisodes: subject?.totalEpisodes ?? subject?.eps,
+          epStatus: row.epStatus,
         ),
       );
     }
@@ -333,6 +495,15 @@ final class DriftBangumiLocalStore
           name: subject?.name,
           nameCn: subject?.nameCn,
           imageUrl: _safeCachedUri(subject?.imageUrl),
+          totalEpisodes: subject?.totalEpisodes ?? subject?.eps,
+          epStatus:
+              (await (_database.select(_database.bangumiCollections)..where(
+                        (table) =>
+                            table.accountId.equals(accountId) &
+                            table.subjectId.equals(row.subjectId),
+                      ))
+                      .getSingleOrNull())
+                  ?.epStatus,
         ),
       );
     }
@@ -343,22 +514,7 @@ final class DriftBangumiLocalStore
   Future<void> cacheEpisodes(BangumiEpisodePage page) async {
     await _database.runWrite(
       () => _database.transaction(() async {
-        for (final episode in page.episodes) {
-          await _database
-              .into(_database.bangumiEpisodes)
-              .insertOnConflictUpdate(
-                BangumiEpisodesCompanion(
-                  episodeId: Value(episode.id),
-                  subjectId: Value(episode.subjectId),
-                  name: Value(episode.name),
-                  nameCn: Value(episode.nameCn),
-                  sort: Value(episode.sort),
-                  type: Value(episode.type),
-                  duration: Value(episode.duration),
-                  updatedAt: Value(_clock().toUtc()),
-                ),
-              );
-        }
+        await _cacheEpisodeRows(page, now: _clock().toUtc());
       }),
     );
   }
@@ -488,6 +644,450 @@ final class DriftBangumiLocalStore
         );
       }),
     );
+  }
+
+  Future<void> _cacheSubjectRow(
+    BangumiSubject subject, {
+    required DateTime now,
+    required DateTime detailUpdatedAt,
+  }) async {
+    await _database
+        .into(_database.bangumiSubjects)
+        .insertOnConflictUpdate(
+          BangumiSubjectsCompanion(
+            subjectId: Value(subject.id),
+            name: Value(subject.name),
+            nameCn: Value(subject.nameCn),
+            summary: Value(subject.summary),
+            imageUrl: Value(subject.imageUrl?.toString()),
+            eps: Value(subject.eps),
+            totalEpisodes: Value(subject.totalEpisodes),
+            volumes: Value(subject.volumes),
+            airDate: Value(subject.airDate),
+            platform: Value(subject.platform),
+            rank: Value(subject.rank),
+            ratingJson: Value(
+              subject.rating == null
+                  ? null
+                  : jsonEncode(_ratingToJson(subject.rating!)),
+            ),
+            collectionStatsJson: Value(
+              subject.collectionStats == null
+                  ? null
+                  : jsonEncode(
+                      _collectionStatsToJson(subject.collectionStats!),
+                    ),
+            ),
+            infoboxJson: Value(
+              jsonEncode(
+                subject.infobox.map(_infoboxToJson).toList(growable: false),
+              ),
+            ),
+            metaTagsJson: Value(jsonEncode(subject.metaTags)),
+            tagsJson: Value(
+              jsonEncode(subject.tags.map(_tagToJson).toList(growable: false)),
+            ),
+            detailUpdatedAt: Value(detailUpdatedAt),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  Future<void> _ensureSubjectForCollection(
+    BangumiCollectionEntry collection,
+    DateTime now,
+  ) async {
+    final existing =
+        await (_database.select(_database.bangumiSubjects)
+              ..where((table) => table.subjectId.equals(collection.subjectId)))
+            .getSingleOrNull();
+    if (existing == null) {
+      await _database
+          .into(_database.bangumiSubjects)
+          .insert(
+            BangumiSubjectsCompanion.insert(
+              subjectId: collection.subjectId,
+              name: collection.name ?? collection.subjectId,
+              nameCn: collection.nameCn ?? '',
+              summary: '',
+              imageUrl: Value(collection.imageUrl?.toString()),
+              eps: Value(null),
+              totalEpisodes: Value(collection.totalEpisodes),
+              volumes: const Value(null),
+              airDate: const Value(null),
+              platform: const Value(null),
+              rank: const Value(null),
+              ratingJson: const Value(null),
+              collectionStatsJson: const Value(null),
+              infoboxJson: const Value(null),
+              metaTagsJson: const Value(null),
+              tagsJson: const Value(null),
+              detailUpdatedAt: const Value(null),
+              updatedAt: now,
+            ),
+          );
+      return;
+    }
+    await (_database.update(
+      _database.bangumiSubjects,
+    )..where((table) => table.subjectId.equals(collection.subjectId))).write(
+      BangumiSubjectsCompanion(
+        name: Value(collection.name ?? existing.name),
+        nameCn: Value(collection.nameCn ?? existing.nameCn),
+        imageUrl: Value(collection.imageUrl?.toString() ?? existing.imageUrl),
+        totalEpisodes: Value(
+          collection.totalEpisodes ?? existing.totalEpisodes,
+        ),
+        updatedAt: Value(now),
+      ),
+    );
+  }
+
+  Future<void> _cacheEpisodeRows(
+    BangumiEpisodePage page, {
+    required DateTime now,
+  }) async {
+    for (final episode in page.episodes) {
+      await _database
+          .into(_database.bangumiEpisodes)
+          .insertOnConflictUpdate(
+            BangumiEpisodesCompanion(
+              episodeId: Value(episode.id),
+              subjectId: Value(episode.subjectId),
+              name: Value(episode.name),
+              nameCn: Value(episode.nameCn),
+              sort: Value(episode.sort),
+              type: Value(episode.type),
+              duration: Value(episode.duration),
+              updatedAt: Value(now),
+            ),
+          );
+    }
+  }
+
+  static BangumiSubject _subjectFromRecord(BangumiSubjectRecord row) {
+    return BangumiSubject(
+      id: row.subjectId,
+      name: row.name,
+      nameCn: row.nameCn,
+      summary: row.summary,
+      eps: row.eps,
+      imageUrl: _safeCachedUri(row.imageUrl),
+      totalEpisodes: row.totalEpisodes,
+      volumes: row.volumes,
+      airDate: row.airDate?.toUtc(),
+      platform: row.platform,
+      rank: row.rank,
+      rating: _ratingFromJson(row.ratingJson),
+      collectionStats: _collectionStatsFromJson(row.collectionStatsJson),
+      infobox: _infoboxFromJson(row.infoboxJson),
+      metaTags: _stringListFromJson(row.metaTagsJson),
+      tags: _tagsFromJson(row.tagsJson),
+    );
+  }
+
+  static int _maxEpisodeTotal(int declared, int cachedCount) =>
+      declared < cachedCount ? cachedCount : declared;
+
+  static List<BangumiCharacter> _decodeCharacters(
+    List<BangumiSubjectCharacterRecord> rows,
+  ) {
+    final result = <BangumiCharacter>[];
+    for (final row in rows) {
+      final object = _decodeObject(row.payloadJson);
+      if (object == null) continue;
+      final id = _idFromJson(object['id']);
+      if (id == null) continue;
+      final actors = <BangumiActor>[];
+      final rawActors = object['actors'];
+      if (rawActors is List) {
+        for (final rawActor in rawActors) {
+          if (rawActor is! Map) continue;
+          final actorId = _idFromJson(rawActor['id']);
+          if (actorId == null) continue;
+          actors.add(
+            BangumiActor(
+              id: actorId,
+              name: _stringFromJson(rawActor['name']) ?? actorId,
+              imageUrl: _uriFromJson(rawActor['imageUrl']),
+            ),
+          );
+        }
+      }
+      result.add(
+        BangumiCharacter(
+          id: id,
+          name: _stringFromJson(object['name']) ?? id,
+          summary: _stringFromJson(object['summary']) ?? '',
+          relation: _stringFromJson(object['relation']),
+          imageUrl: _uriFromJson(object['imageUrl']),
+          actors: List.unmodifiable(actors),
+        ),
+      );
+    }
+    return List.unmodifiable(result);
+  }
+
+  static List<BangumiPersonCredit> _decodePersons(
+    List<BangumiSubjectPersonRecord> rows,
+  ) {
+    final result = <BangumiPersonCredit>[];
+    for (final row in rows) {
+      final object = _decodeObject(row.payloadJson);
+      if (object == null) continue;
+      final id = _idFromJson(object['id']);
+      if (id == null) continue;
+      result.add(
+        BangumiPersonCredit(
+          id: id,
+          name: _stringFromJson(object['name']) ?? id,
+          relation: _stringFromJson(object['relation']),
+          career: _stringListFromValue(object['career']),
+          eps: _stringListFromValue(object['eps']),
+          imageUrl: _uriFromJson(object['imageUrl']),
+        ),
+      );
+    }
+    return List.unmodifiable(result);
+  }
+
+  static List<BangumiSubjectRelation> _decodeRelations(
+    List<BangumiSubjectRelationRecord> rows,
+  ) {
+    final result = <BangumiSubjectRelation>[];
+    for (final row in rows) {
+      final object = _decodeObject(row.payloadJson);
+      if (object == null) continue;
+      final id = _idFromJson(object['id']);
+      if (id == null) continue;
+      result.add(
+        BangumiSubjectRelation(
+          id: id,
+          type: _intFromJson(object['type']),
+          name: _stringFromJson(object['name']) ?? id,
+          nameCn: _stringFromJson(object['nameCn']) ?? '',
+          relation: _stringFromJson(object['relation']),
+          imageUrl: _uriFromJson(object['imageUrl']),
+        ),
+      );
+    }
+    return List.unmodifiable(result);
+  }
+
+  static Map<String, Object?> _characterToJson(BangumiCharacter value) => {
+    'id': value.id,
+    'name': value.name,
+    'summary': value.summary,
+    'relation': value.relation,
+    'imageUrl': value.imageUrl?.toString(),
+    'actors': value.actors.map(_actorToJson).toList(growable: false),
+  };
+
+  static Map<String, Object?> _actorToJson(BangumiActor value) => {
+    'id': value.id,
+    'name': value.name,
+    'imageUrl': value.imageUrl?.toString(),
+  };
+
+  static Map<String, Object?> _personToJson(BangumiPersonCredit value) => {
+    'id': value.id,
+    'name': value.name,
+    'relation': value.relation,
+    'career': value.career,
+    'eps': value.eps,
+    'imageUrl': value.imageUrl?.toString(),
+  };
+
+  static Map<String, Object?> _relationToJson(BangumiSubjectRelation value) => {
+    'id': value.id,
+    'type': value.type,
+    'name': value.name,
+    'nameCn': value.nameCn,
+    'relation': value.relation,
+    'imageUrl': value.imageUrl?.toString(),
+  };
+
+  static Map<String, Object?> _ratingToJson(BangumiRating value) => {
+    'total': value.total,
+    'score': value.score,
+    'count': {
+      for (final entry in value.count.entries) '${entry.key}': entry.value,
+    },
+  };
+
+  static Map<String, Object?> _collectionStatsToJson(
+    BangumiPublicCollectionStats value,
+  ) => {
+    'wish': value.wish,
+    'completed': value.completed,
+    'watching': value.watching,
+    'onHold': value.onHold,
+    'dropped': value.dropped,
+  };
+
+  static Map<String, Object?> _infoboxToJson(BangumiInfoboxItem value) => {
+    'key': value.key,
+    'values': value.values
+        .map((item) => {'key': item.key, 'text': item.text})
+        .toList(growable: false),
+  };
+
+  static Map<String, Object?> _tagToJson(BangumiTag value) => {
+    'name': value.name,
+    'count': value.count,
+    'totalCount': value.totalCount,
+  };
+
+  static Map<String, dynamic>? _decodeObject(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      return decoded is Map ? Map<String, dynamic>.from(decoded) : null;
+    } on Object {
+      return null;
+    }
+  }
+
+  static String? _stringFromJson(Object? value) =>
+      value is String && value.length <= 8192 ? value : null;
+
+  static int? _intFromJson(Object? value) => value is int
+      ? value
+      : value is num
+      ? value.toInt()
+      : value is String
+      ? int.tryParse(value)
+      : null;
+
+  static String? _idFromJson(Object? value) {
+    if (value is int && value > 0) return '$value';
+    if (value is String && RegExp(r'^[A-Za-z0-9_-]{1,64}$').hasMatch(value)) {
+      return value;
+    }
+    return null;
+  }
+
+  static Uri? _uriFromJson(Object? value) =>
+      value is String ? _safeCachedUri(value) : null;
+
+  static List<String> _stringListFromJson(String? value) {
+    if (value == null) return const <String>[];
+    try {
+      return _stringListFromValue(jsonDecode(value));
+    } on Object {
+      return const <String>[];
+    }
+  }
+
+  static List<String> _stringListFromValue(Object? value) {
+    if (value is! List) return const <String>[];
+    return List.unmodifiable(value.whereType<String>().take(512));
+  }
+
+  static BangumiRating? _ratingFromJson(String? value) {
+    final object = value == null ? null : _decodeObject(value);
+    if (object == null) return null;
+    final total = _intFromJson(object['total']);
+    final score = object['score'] is num
+        ? (object['score'] as num).toDouble()
+        : double.tryParse('${object['score']}');
+    if (total == null || score == null) return null;
+    final counts = <int, int>{};
+    final rawCount = object['count'];
+    if (rawCount is Map) {
+      rawCount.forEach((key, item) {
+        final rating = _intFromJson(key);
+        final count = _intFromJson(item);
+        if (rating != null && rating >= 1 && rating <= 10 && count != null) {
+          counts[rating] = count;
+        }
+      });
+    }
+    return BangumiRating(
+      total: total,
+      score: score,
+      count: Map.unmodifiable(counts),
+    );
+  }
+
+  static BangumiPublicCollectionStats? _collectionStatsFromJson(String? value) {
+    final object = value == null ? null : _decodeObject(value);
+    if (object == null) return null;
+    final values = [
+      _intFromJson(object['wish']),
+      _intFromJson(object['completed']),
+      _intFromJson(object['watching']),
+      _intFromJson(object['onHold']),
+      _intFromJson(object['dropped']),
+    ];
+    if (values.any((item) => item == null)) return null;
+    return BangumiPublicCollectionStats(
+      wish: values[0]!,
+      completed: values[1]!,
+      watching: values[2]!,
+      onHold: values[3]!,
+      dropped: values[4]!,
+    );
+  }
+
+  static List<BangumiInfoboxItem> _infoboxFromJson(String? value) {
+    if (value == null) return const <BangumiInfoboxItem>[];
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! List) return const <BangumiInfoboxItem>[];
+      final result = <BangumiInfoboxItem>[];
+      for (final item in decoded) {
+        if (item is! Map) continue;
+        final key = _stringFromJson(item['key']);
+        final rawValues = item['values'];
+        if (key == null || rawValues is! List) continue;
+        final values = <BangumiInfoboxValue>[];
+        for (final rawValue in rawValues) {
+          if (rawValue is! Map) continue;
+          final text = _stringFromJson(rawValue['text']);
+          if (text != null) {
+            values.add(
+              BangumiInfoboxValue(
+                text: text,
+                key: _stringFromJson(rawValue['key']),
+              ),
+            );
+          }
+        }
+        if (values.isNotEmpty) {
+          result.add(
+            BangumiInfoboxItem(key: key, values: List.unmodifiable(values)),
+          );
+        }
+      }
+      return List.unmodifiable(result);
+    } on Object {
+      return const <BangumiInfoboxItem>[];
+    }
+  }
+
+  static List<BangumiTag> _tagsFromJson(String? value) {
+    if (value == null) return const <BangumiTag>[];
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! List) return const <BangumiTag>[];
+      final result = <BangumiTag>[];
+      for (final item in decoded) {
+        if (item is! Map) continue;
+        final name = _stringFromJson(item['name']);
+        final count = _intFromJson(item['count']);
+        if (name == null || count == null) continue;
+        result.add(
+          BangumiTag(
+            name: name,
+            count: count,
+            totalCount: _intFromJson(item['totalCount']),
+          ),
+        );
+      }
+      return List.unmodifiable(result);
+    } on Object {
+      return const <BangumiTag>[];
+    }
   }
 
   @override

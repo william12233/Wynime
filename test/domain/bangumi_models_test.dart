@@ -69,6 +69,55 @@ void main() {
     expect(session.toString(), isNot(contains('refresh-secret')));
   });
 
+  test('detail snapshot carries typed metadata and related people', () {
+    final snapshot = BangumiSubjectDetailSnapshot(
+      subject: const BangumiSubject(
+        id: '42',
+        name: 'Title',
+        nameCn: '作品',
+        summary: 'Summary',
+        eps: 12,
+        totalEpisodes: 12,
+        rating: BangumiRating(total: 100, score: 8.5, count: {10: 20}),
+        tags: [BangumiTag(name: 'Action', count: 4)],
+      ),
+      episodes: const BangumiEpisodePage(
+        episodes: <BangumiEpisode>[],
+        offset: 0,
+        limit: 100,
+        total: 12,
+      ),
+      characters: const [
+        BangumiCharacter(
+          id: 'c1',
+          name: 'Character',
+          actors: [BangumiActor(id: 'p1', name: 'Actor')],
+        ),
+      ],
+      persons: const [
+        BangumiPersonCredit(id: 'p2', name: 'Director', career: ['Producer']),
+      ],
+      relations: const [
+        BangumiSubjectRelation(
+          id: '43',
+          type: 2,
+          name: 'Related',
+          nameCn: '相關作品',
+        ),
+      ],
+      collectionStatus: BangumiCollectionStatus.watching,
+      epStatus: 3,
+      watchedEpisodeIds: const {'ep-1', 'ep-2', 'ep-3'},
+    );
+
+    expect(snapshot.subject.rating?.score, 8.5);
+    expect(snapshot.subject.tags.single.name, 'Action');
+    expect(snapshot.characters.single.actors.single.name, 'Actor');
+    expect(snapshot.persons.single.career, ['Producer']);
+    expect(snapshot.relations.single.nameCn, '相關作品');
+    expect(snapshot.epStatus, 3);
+  });
+
   test('semantic versions compare numerically and accept release tags', () {
     expect(
       SemanticVersion.parse(

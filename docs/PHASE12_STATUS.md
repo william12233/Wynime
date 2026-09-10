@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.7 release boundary is ready for exact-SHA CI and protected
+The v1.0.8 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -50,18 +50,19 @@ The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
 
-## 1.0.7 candidate status
+## 1.0.8 candidate status
 
-- Version authority is `1.0.7+8`; the expected arm64 split APK versionCode is
-  `2008`.
+- Version authority is `1.0.8+9`; the expected arm64 split APK versionCode is
+  `2009`.
 - The production Worker deployment `a5cccb1c-890c-4e59-bd5d-91a71c94b45c`
   publishes the exact Android package and certificate fingerprint and passes
   direct `/healthz`, App Link association and callback checks.
 - The Android App Link repair validates only the published APK's exact single
   signer and makes the release workflow fail closed on association mismatch.
-- Flutter analyzer and the full deterministic test suite (238 tests) pass on
-  this candidate worktree; the Bangumi sync reliability tests cover retry,
-  blocked migration, reconciliation, remote pull and conflict behavior.
+- Flutter analyzer and the full deterministic test suite (245 tests) pass on
+  this candidate worktree; the Bangumi detail tests cover typed parsing,
+  migration, cached detail round-trips, local-first state, partial failure and
+  stale request protection.
 - Protected CI signing, final Android packaging and Windows ZIP packaging
   remain required for the immutable release candidate.
 

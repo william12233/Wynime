@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wynime/src/application/bangumi_session_controller.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
@@ -146,6 +148,13 @@ void main() {
       controller.collections.single.status,
       BangumiCollectionStatus.completed,
     );
+    expect(client.subjectCalls, 0);
+    expect(client.remoteStateCalls, 0);
+    // Collection refresh only imports membership and card metadata. Detailed
+    // remote watched state is fetched once the independent detail route opens.
+    await controller.openSubject('42');
+    expect(client.subjectCalls, 1);
+    expect(client.remoteStateCalls, 1);
     expect((await store.loadEpisodeProgress('42'))?.watchedEpisodeIds, {
       '1001',
     });
@@ -200,6 +209,78 @@ void main() {
     expect(authentication.restoreCalls, 1);
     expect(authentication.refreshCalls, 1);
   });
+
+  test('detail generation guard keeps the newest request result', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database);
+    final firstRelease = Completer<void>();
+    final client = _FakeBangumiClient();
+    var subjectCall = 0;
+    client.subjectOverride = (id) async {
+      subjectCall++;
+      if (subjectCall == 1) await firstRelease.future;
+      return BangumiSubject(
+        id: id,
+        name: subjectCall == 1 ? 'Old' : 'New',
+        nameCn: '',
+        summary: '',
+        eps: 0,
+      );
+    };
+    client.remote = null;
+    final controller = BangumiSessionController(
+      authentication: _FakeAuthentication(),
+      store: store,
+      clientFactory: (_) => client,
+    );
+    addTearDown(controller.dispose);
+    await controller.completeSignIn(
+      const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+    );
+
+    final first = controller.loadSubjectDetail('42');
+    for (var attempt = 0; attempt < 20 && subjectCall == 0; attempt++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+    await controller.loadSubjectDetail('42');
+    firstRelease.complete();
+    await first;
+
+    expect(controller.subjectDetailState('42')?.snapshot?.subject.name, 'New');
+  });
+
+  test(
+    'detail without cached base subject becomes fatal and can be retried',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database);
+      final client = _FakeBangumiClient();
+      client.subjectOverride = (id) async =>
+          throw const BangumiApiException(code: 'not_found');
+      final controller = BangumiSessionController(
+        authentication: _FakeAuthentication(),
+        store: store,
+        clientFactory: (_) => client,
+      );
+      addTearDown(controller.dispose);
+      await controller.completeSignIn(
+        const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+      );
+
+      await controller.loadSubjectDetail('42');
+
+      expect(
+        controller.subjectDetailState('42')?.phase,
+        BangumiDetailPhase.fatal,
+      );
+      expect(
+        controller.subjectDetailState('42')?.failedSections,
+        contains(BangumiDetailSection.subject),
+      );
+    },
+  );
 }
 
 final class _CountingAuthentication implements BangumiAuthenticationPort {
@@ -315,7 +396,10 @@ final class _FakeBangumiClient implements BangumiClient {
   });
 
   final List<BangumiCollectionEntry> remoteCollections;
-  final BangumiRemoteState? remote;
+  BangumiRemoteState? remote;
+  int subjectCalls = 0;
+  int remoteStateCalls = 0;
+  Future<BangumiSubject> Function(String id)? subjectOverride;
 
   @override
   Future<BangumiUserIdentity> currentUser() async =>
@@ -337,13 +421,18 @@ final class _FakeBangumiClient implements BangumiClient {
       const <BangumiScheduleEntry>[];
 
   @override
-  Future<BangumiSubject> subject(String id) async => const BangumiSubject(
-    id: '42',
-    name: 'Title',
-    nameCn: '作品',
-    summary: '',
-    eps: 1,
-  );
+  Future<BangumiSubject> subject(String id) async {
+    subjectCalls++;
+    final override = subjectOverride;
+    if (override != null) return override(id);
+    return const BangumiSubject(
+      id: '42',
+      name: 'Title',
+      nameCn: '作品',
+      summary: '',
+      eps: 1,
+    );
+  }
 
   @override
   Future<BangumiEpisodePage> episodes(String subjectId) async =>
@@ -355,7 +444,20 @@ final class _FakeBangumiClient implements BangumiClient {
       );
 
   @override
+  Future<List<BangumiCharacter>> characters(String subjectId) async =>
+      const <BangumiCharacter>[];
+
+  @override
+  Future<List<BangumiPersonCredit>> persons(String subjectId) async =>
+      const <BangumiPersonCredit>[];
+
+  @override
+  Future<List<BangumiSubjectRelation>> relations(String subjectId) async =>
+      const <BangumiSubjectRelation>[];
+
+  @override
   Future<BangumiRemoteState> remoteState(String subjectId) async {
+    remoteStateCalls++;
     final value = remote;
     if (value == null) throw UnimplementedError();
     return value;

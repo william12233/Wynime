@@ -4,6 +4,28 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.8 - Release-ready
+
+### Bangumi collection and subject details
+
+- Rebuilt the Bangumi collection view with five status filters and live counts.
+- Added an independent responsive subject detail route with typed rating, rank,
+  public collection statistics, metadata, tags, episodes, characters, staff
+  and related subjects.
+- Kept episode selection separate from explicit local watched-state updates.
+- Added cached-first detail loading, partial/fatal/retry states and stale
+  request protection.
+- Migrated the Drift cache additively from schema v4 to v5 without resetting
+  existing collection or watched-episode state.
+
+### Validation boundary
+
+- Full deterministic tests and analyzer pass on the release worktree.
+- Physical playback remains `HARDWARE_VALIDATION_PENDING`.
+- Native Windows Computer Use action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` when the audit surface exposes
+  `apps=[]`.
+
 ## 1.0.7 - Unreleased
 
 ### Bangumi synchronization reliability

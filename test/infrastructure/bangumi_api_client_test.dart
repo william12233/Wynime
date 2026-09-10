@@ -38,9 +38,12 @@ void main() {
               {
                 'subject_id': 42,
                 'type': 1,
+                'ep_status': 3,
                 'subject': {
                   'name': 'Title',
                   'name_cn': '作品',
+                  'eps': 12,
+                  'total_episodes': 12,
                   'images': {
                     'common': 'https://lain.bgm.tv/pic/cover/c/42.jpg',
                   },
@@ -94,6 +97,8 @@ void main() {
     );
     expect(collections.collections, hasLength(2));
     expect(collections.collections.first.status, BangumiCollectionStatus.wish);
+    expect(collections.collections.first.epStatus, 3);
+    expect(collections.collections.first.totalEpisodes, 12);
     expect(
       collections.collections.first.imageUrl,
       Uri.parse('https://lain.bgm.tv/pic/cover/c/42.jpg'),
@@ -101,6 +106,126 @@ void main() {
     expect(episodes.episodes, hasLength(2));
     expect(episodes.episodes.last.nameCn, '第二集');
   });
+
+  test(
+    'parses subject detail metadata, infobox, characters, people and relations',
+    () async {
+      final transport = RecordingBangumiTransport((method, uri, headers, body) {
+        switch (uri.path) {
+          case '/v0/subjects/42':
+            return _jsonResponse({
+              'id': 42,
+              'name': 'Title',
+              'name_cn': '作品',
+              'summary': 'Summary',
+              'eps': 12,
+              'total_episodes': 12,
+              'volumes': 2,
+              'date': '2026-09-01',
+              'platform': 'TV',
+              'images': {'common': 'https://lain.bgm.tv/pic/cover/c/42.jpg'},
+              'rating': {
+                'rank': 7,
+                'total': 100,
+                'score': 8.5,
+                'count': {'10': 20, '8': 30},
+              },
+              'collection': {
+                'wish': 1,
+                'collect': 2,
+                'doing': 3,
+                'on_hold': 4,
+                'dropped': 5,
+              },
+              'meta_tags': ['Original', 'TV'],
+              'tags': [
+                {'name': 'Action', 'count': 4, 'total_count': 9},
+              ],
+              'infobox': [
+                {'key': 'Alias', 'value': 'Alias text'},
+                {
+                  'key': 'Staff',
+                  'value': [
+                    {'k': 'Director', 'v': 'Someone'},
+                    'Another',
+                  ],
+                },
+              ],
+            });
+          case '/v0/subjects/42/characters':
+            return _jsonResponse([
+              {
+                'id': 100,
+                'name': 'Character',
+                'relation': 'Main',
+                'images': {
+                  'medium': 'https://lain.bgm.tv/pic/character/m/100.jpg',
+                },
+                'actors': [
+                  {
+                    'id': 200,
+                    'name': 'Actor',
+                    'images': {
+                      'small': 'https://lain.bgm.tv/pic/person/s/200.jpg',
+                    },
+                  },
+                ],
+              },
+            ]);
+          case '/v0/subjects/42/persons':
+            return _jsonResponse([
+              {
+                'id': 300,
+                'name': 'Director',
+                'relation': 'Director',
+                'career': ['Producer'],
+                'eps': [1, 2],
+              },
+            ]);
+          case '/v0/subjects/42/subjects':
+            return _jsonResponse([
+              {
+                'id': 43,
+                'type': 2,
+                'name': 'Related',
+                'name_cn': '相關作品',
+                'relation': 'Side story',
+              },
+            ]);
+          default:
+            return _jsonResponse({}, statusCode: 500);
+        }
+      });
+      final client = BangumiApiClient(
+        sessionProvider: () => session,
+        transport: transport,
+      );
+
+      final subject = await client.subject('42');
+      final characters = await client.characters('42');
+      final persons = await client.persons('42');
+      final relations = await client.relations('42');
+
+      expect(subject.totalEpisodes, 12);
+      expect(subject.rating?.score, 8.5);
+      expect(subject.rank, 7);
+      expect(subject.collectionStats?.watching, 3);
+      expect(subject.infobox, hasLength(2));
+      expect(subject.infobox.last.values, hasLength(2));
+      expect(subject.tags.single.totalCount, 9);
+      expect(subject.metaTags, ['Original', 'TV']);
+      expect(characters.single.actors.single.name, 'Actor');
+      expect(persons.single.eps, ['1', '2']);
+      expect(relations.single.relation, 'Side story');
+
+      expect(transport.calls.map((call) => call.uri.path), [
+        '/v0/subjects/42',
+        '/v0/subjects/42/characters',
+        '/v0/subjects/42/persons',
+        '/v0/subjects/42/subjects',
+      ]);
+    },
+  );
 
   test(
     'reads official calendar items whose subject fields are at item root',

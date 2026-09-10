@@ -20,6 +20,51 @@ enum BangumiConnectionStatus {
 
 enum BangumiAvailability { unavailable, available }
 
+enum BangumiDetailPhase { idle, loading, ready, partial, fatal }
+
+enum BangumiDetailSection { subject, episodes, characters, persons, relations }
+
+final class BangumiSubjectDetailState {
+  const BangumiSubjectDetailState({
+    required this.subjectId,
+    required this.phase,
+    this.snapshot,
+    this.loadingSections = const <BangumiDetailSection>{},
+    this.failedSections = const <BangumiDetailSection>{},
+    this.errors = const <BangumiDetailSection, String>{},
+    this.remoteStateErrorCode,
+  });
+
+  final String subjectId;
+  final BangumiDetailPhase phase;
+  final BangumiSubjectDetailSnapshot? snapshot;
+  final Set<BangumiDetailSection> loadingSections;
+  final Set<BangumiDetailSection> failedSections;
+  final Map<BangumiDetailSection, String> errors;
+  final String? remoteStateErrorCode;
+
+  bool get hasUsableSubject => snapshot?.subject != null;
+
+  BangumiSubjectDetailState copyWith({
+    BangumiDetailPhase? phase,
+    BangumiSubjectDetailSnapshot? snapshot,
+    Set<BangumiDetailSection>? loadingSections,
+    Set<BangumiDetailSection>? failedSections,
+    Map<BangumiDetailSection, String>? errors,
+    String? remoteStateErrorCode,
+  }) {
+    return BangumiSubjectDetailState(
+      subjectId: subjectId,
+      phase: phase ?? this.phase,
+      snapshot: snapshot ?? this.snapshot,
+      loadingSections: loadingSections ?? this.loadingSections,
+      failedSections: failedSections ?? this.failedSections,
+      errors: errors ?? this.errors,
+      remoteStateErrorCode: remoteStateErrorCode ?? this.remoteStateErrorCode,
+    );
+  }
+}
+
 typedef BangumiClientFactory =
     BangumiClient Function(BangumiAuthSession session);
 
@@ -56,6 +101,8 @@ final class BangumiSessionController extends ChangeNotifier {
   int conflictCount = 0;
   int blockedCount = 0;
   List<BangumiConflict> conflicts = const <BangumiConflict>[];
+  final Map<String, BangumiSubjectDetailState> detailStates =
+      <String, BangumiSubjectDetailState>{};
   String? errorCode;
   DateTime? scheduleUpdatedAt;
   int failedCount = 0;
@@ -65,6 +112,7 @@ final class BangumiSessionController extends ChangeNotifier {
   Future<void>? _loginFuture;
   Future<void>? _syncFuture;
   Future<bool>? _refreshFuture;
+  final Map<String, int> _detailGenerations = <String, int>{};
 
   bool get isAvailable => availability == BangumiAvailability.available;
 
@@ -78,6 +126,9 @@ final class BangumiSessionController extends ChangeNotifier {
     if (value == null) throw const BangumiApiException(code: 'reauth_required');
     return value;
   }
+
+  BangumiSubjectDetailState? subjectDetailState(String subjectId) =>
+      detailStates[subjectId];
 
   Future<void> initialize() async {
     account = await _store.loadActiveAccount();
@@ -296,13 +347,6 @@ final class BangumiSessionController extends ChangeNotifier {
 
   Future<void> refreshCollections() async {
     try {
-      // Capture subjects before replacing the remote membership page. This
-      // lets an explicit refresh observe remote removals and external edits
-      // for subjects that are no longer returned by Bangumi collections.
-      final cachedBefore = await _store.cachedCollections();
-      final localFirstBefore = await _store.localFirstCollections();
-      final pendingBefore = await _store.pendingOperations(forceRetry: true);
-      final conflictsBefore = await _store.conflictOperations();
       final remoteCollections =
           await _withAuthenticatedClient<List<BangumiCollectionEntry>>((
             api,
@@ -323,53 +367,9 @@ final class BangumiSessionController extends ChangeNotifier {
             return List<BangumiCollectionEntry>.unmodifiable(all);
           });
       collections = remoteCollections;
-      await _withAuthenticatedClient((api) async {
-        for (final entry in remoteCollections) {
-          try {
-            final subject = await api.subject(entry.subjectId);
-            await _store.cacheSubject(subject);
-            try {
-              final episodes = await api.episodes(entry.subjectId);
-              await _store.cacheEpisodes(episodes);
-            } on BangumiApiException catch (error) {
-              if (_isAuthenticationError(error.code)) rethrow;
-            } on Object {
-              // A single unavailable episode page must not discard the
-              // collection page or other subjects.
-            }
-          } on BangumiApiException catch (error) {
-            if (_isAuthenticationError(error.code)) rethrow;
-            // A single unavailable subject must not discard the collection
-            // page or other subjects.
-          } on Object {
-            // Keep refreshing the remaining subjects.
-          }
-        }
-
-        final subjectIds = <String>{
-          ...remoteCollections.map((entry) => entry.subjectId),
-          ...cachedBefore.map((entry) => entry.subjectId),
-          ...localFirstBefore.map((entry) => entry.subjectId),
-          ...pendingBefore.map((operation) => operation.subjectId),
-          ...conflictsBefore.map((operation) => operation.subjectId),
-        };
-        for (final subjectId in subjectIds) {
-          try {
-            final remote = await api.remoteState(subjectId);
-            if (remote.accountId != _session?.accountId ||
-                remote.subjectId != subjectId) {
-              throw const BangumiApiException(code: 'account_mismatch');
-            }
-            await _store.applyRemoteState(remote);
-          } on BangumiApiException catch (error) {
-            if (_isAuthenticationError(error.code)) rethrow;
-            // Keep the last known remote state when one subject is temporarily
-            // unavailable; a later explicit sync can retry it.
-          } on Object {
-            // A single remote-state failure must not hide other collections.
-          }
-        }
-      });
+      for (final entry in remoteCollections) {
+        await _store.cacheCollection(entry);
+      }
       final cached = await _store.cachedCollections();
       final localFirst = await _store.localFirstCollections();
       final cachedBySubject = <String, BangumiCollectionEntry>{
@@ -404,29 +404,255 @@ final class BangumiSessionController extends ChangeNotifier {
   }
 
   Future<void> openSubject(String subjectId) async {
+    await loadSubjectDetail(subjectId);
+  }
+
+  Future<void> loadSubjectDetail(
+    String subjectId, {
+    Set<BangumiDetailSection>? onlySections,
+  }) async {
+    final generation = (_detailGenerations[subjectId] ?? 0) + 1;
+    _detailGenerations[subjectId] = generation;
+    final existing = detailStates[subjectId];
+    BangumiSubjectDetailSnapshot? cached;
     try {
-      late BangumiSubject subject;
-      late BangumiEpisodePage episodes;
-      late BangumiRemoteState remote;
-      await _withAuthenticatedClient((api) async {
-        subject = await api.subject(subjectId);
-        episodes = await api.episodes(subjectId);
-        remote = await api.remoteState(subjectId);
-      });
-      await _store.cacheSubject(subject);
-      await _store.cacheEpisodes(episodes);
-      await _store.applyRemoteState(remote);
-      selectedSubject = subject;
-      selectedEpisodes = episodes;
-      selectedRemoteState = remote;
-      errorCode = null;
+      cached = await _store.cachedSubjectDetail(subjectId);
+    } on Object {
+      cached = existing?.snapshot;
+    }
+    if (!_isCurrentDetailGeneration(subjectId, generation)) return;
+
+    final requested = onlySections ?? BangumiDetailSection.values.toSet();
+    detailStates[subjectId] = BangumiSubjectDetailState(
+      subjectId: subjectId,
+      phase: BangumiDetailPhase.loading,
+      snapshot: cached ?? existing?.snapshot,
+      loadingSections: Set.unmodifiable(requested),
+      failedSections: const <BangumiDetailSection>{},
+      errors: const <BangumiDetailSection, String>{},
+      remoteStateErrorCode: null,
+    );
+    notifyListeners();
+
+    BangumiSubject? fetchedSubject;
+    BangumiEpisodePage? fetchedEpisodes;
+    List<BangumiCharacter>? fetchedCharacters;
+    List<BangumiPersonCredit>? fetchedPersons;
+    List<BangumiSubjectRelation>? fetchedRelations;
+    BangumiRemoteState? fetchedRemoteState;
+    final errors = <BangumiDetailSection, String>{
+      if (onlySections != null) ...?existing?.errors,
+    };
+    if (onlySections != null) {
+      for (final section in onlySections) {
+        errors.remove(section);
+      }
+    }
+    String? remoteStateErrorCode = onlySections == null
+        ? null
+        : existing?.remoteStateErrorCode;
+
+    Future<T?> capture<T>(
+      BangumiDetailSection section,
+      Future<T> Function(BangumiClient api) operation,
+    ) async {
+      try {
+        return await _withAuthenticatedClient(operation);
+      } on BangumiApiException catch (error) {
+        if (_isAuthenticationError(error.code)) rethrow;
+        errors[section] = error.code;
+      } on BangumiPayloadException catch (error) {
+        errors[section] = error.code;
+      } on Object {
+        errors[section] = 'detail_section_failed';
+      }
+      return null;
+    }
+
+    try {
+      if (requested.contains(BangumiDetailSection.subject)) {
+        fetchedSubject = await capture(
+          BangumiDetailSection.subject,
+          (api) => api.subject(subjectId),
+        );
+      }
+      if (requested.contains(BangumiDetailSection.episodes)) {
+        fetchedEpisodes = await capture(
+          BangumiDetailSection.episodes,
+          (api) => api.episodes(subjectId),
+        );
+      }
+      if (requested.contains(BangumiDetailSection.characters)) {
+        fetchedCharacters = await capture(
+          BangumiDetailSection.characters,
+          (api) => api.characters(subjectId),
+        );
+      }
+      if (requested.contains(BangumiDetailSection.persons)) {
+        fetchedPersons = await capture(
+          BangumiDetailSection.persons,
+          (api) => api.persons(subjectId),
+        );
+      }
+      if (requested.contains(BangumiDetailSection.relations)) {
+        fetchedRelations = await capture(
+          BangumiDetailSection.relations,
+          (api) => api.relations(subjectId),
+        );
+      }
+      if (onlySections == null) {
+        try {
+          fetchedRemoteState = await _withAuthenticatedClient(
+            (api) => api.remoteState(subjectId),
+          );
+        } on BangumiApiException catch (error) {
+          if (_isAuthenticationError(error.code)) rethrow;
+          remoteStateErrorCode = error.code;
+        } on BangumiPayloadException catch (error) {
+          remoteStateErrorCode = error.code;
+        } on Object {
+          remoteStateErrorCode = 'detail_remote_state_failed';
+        }
+      }
     } on BangumiApiException catch (error) {
       _handleApiError(error);
       errorCode = error.code;
+      for (final section in requested) {
+        errors.putIfAbsent(section, () => error.code);
+      }
     } on BangumiPayloadException catch (error) {
       errorCode = error.code;
+      for (final section in requested) {
+        errors.putIfAbsent(section, () => error.code);
+      }
     }
+
+    if (!_isCurrentDetailGeneration(subjectId, generation)) return;
+    final previous = existing?.snapshot ?? cached;
+    final subject = fetchedSubject ?? previous?.subject;
+    if (subject == null) {
+      final failed = errors.keys.toSet();
+      detailStates[subjectId] = BangumiSubjectDetailState(
+        subjectId: subjectId,
+        phase: BangumiDetailPhase.fatal,
+        snapshot: null,
+        loadingSections: const <BangumiDetailSection>{},
+        failedSections: Set.unmodifiable(failed),
+        errors: Map.unmodifiable(errors),
+        remoteStateErrorCode: remoteStateErrorCode,
+      );
+      notifyListeners();
+      return;
+    }
+
+    final previousEpisodes =
+        previous?.episodes ??
+        const BangumiEpisodePage(
+          episodes: <BangumiEpisode>[],
+          offset: 0,
+          limit: 100,
+          total: 0,
+        );
+    BangumiCollectionEntry? statusFromCollection;
+    for (final entry in collections) {
+      if (entry.subjectId == subjectId) {
+        statusFromCollection = entry;
+        break;
+      }
+    }
+    final remoteStatus =
+        fetchedRemoteState?.status ??
+        previous?.collectionStatus ??
+        statusFromCollection?.status;
+    final watched =
+        fetchedRemoteState?.watchedEpisodeIds ??
+        previous?.watchedEpisodeIds ??
+        const <String>{};
+    final snapshot = BangumiSubjectDetailSnapshot(
+      subject: subject,
+      episodes: fetchedEpisodes ?? previousEpisodes,
+      characters:
+          fetchedCharacters ??
+          previous?.characters ??
+          const <BangumiCharacter>[],
+      persons:
+          fetchedPersons ?? previous?.persons ?? const <BangumiPersonCredit>[],
+      relations:
+          fetchedRelations ??
+          previous?.relations ??
+          const <BangumiSubjectRelation>[],
+      collectionStatus: remoteStatus,
+      epStatus: statusFromCollection?.epStatus ?? previous?.epStatus,
+      watchedEpisodeIds: Set.unmodifiable(watched),
+      cachedAt: DateTime.now().toUtc(),
+    );
+    if (!_isCurrentDetailGeneration(subjectId, generation)) return;
+    try {
+      await _store.cacheSubjectDetail(snapshot);
+      if (fetchedRemoteState != null) {
+        if (fetchedRemoteState.accountId != _session?.accountId ||
+            fetchedRemoteState.subjectId != subjectId) {
+          throw const BangumiApiException(code: 'account_mismatch');
+        }
+        await _store.applyRemoteState(fetchedRemoteState);
+      }
+    } on BangumiApiException catch (error) {
+      if (_isAuthenticationError(error.code)) _handleApiError(error);
+      remoteStateErrorCode ??= error.code;
+    } on Object {
+      remoteStateErrorCode ??= 'detail_cache_failed';
+    }
+
+    final failedSections = errors.keys.toSet();
+    final hasFailure =
+        failedSections.isNotEmpty || remoteStateErrorCode != null;
+    detailStates[subjectId] = BangumiSubjectDetailState(
+      subjectId: subjectId,
+      phase: hasFailure ? BangumiDetailPhase.partial : BangumiDetailPhase.ready,
+      snapshot: snapshot,
+      loadingSections: const <BangumiDetailSection>{},
+      failedSections: Set.unmodifiable(failedSections),
+      errors: Map.unmodifiable(errors),
+      remoteStateErrorCode: remoteStateErrorCode,
+    );
+    _selectDetailSnapshot(subjectId, snapshot);
+    errorCode = null;
     notifyListeners();
+  }
+
+  Future<void> retryDetail(String subjectId) => loadSubjectDetail(subjectId);
+
+  Future<void> retryDetailSection(
+    String subjectId,
+    BangumiDetailSection section,
+  ) => loadSubjectDetail(subjectId, onlySections: {section});
+
+  bool _isCurrentDetailGeneration(String subjectId, int generation) =>
+      _detailGenerations[subjectId] == generation;
+
+  void _selectDetailSnapshot(
+    String subjectId,
+    BangumiSubjectDetailSnapshot snapshot,
+  ) {
+    selectedSubject = snapshot.subject;
+    selectedEpisodes = snapshot.episodes;
+    if (snapshot.collectionStatus != null ||
+        snapshot.watchedEpisodeIds.isNotEmpty) {
+      final accountId = _session?.accountId ?? account?.accountId;
+      if (accountId != null) {
+        selectedRemoteState = BangumiRemoteState(
+          accountId: accountId,
+          subjectId: subjectId,
+          status: snapshot.collectionStatus,
+          watchedEpisodeIds: Set.unmodifiable(snapshot.watchedEpisodeIds),
+          remoteRevision: BangumiRemoteState.fingerprint(
+            subjectId: subjectId,
+            status: snapshot.collectionStatus,
+            watchedEpisodeIds: snapshot.watchedEpisodeIds,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> setCollectionStatus(
@@ -453,10 +679,37 @@ final class BangumiSessionController extends ChangeNotifier {
                 name: entry.name,
                 nameCn: entry.nameCn,
                 imageUrl: entry.imageUrl,
+                totalEpisodes: entry.totalEpisodes,
+                epStatus: entry.epStatus,
               )
             : entry,
       ),
     );
+    final detail = detailStates[subjectId];
+    final detailSnapshot = detail?.snapshot;
+    if (detail != null && detailSnapshot != null) {
+      final updated = BangumiSubjectDetailSnapshot(
+        subject: detailSnapshot.subject,
+        episodes: detailSnapshot.episodes,
+        characters: detailSnapshot.characters,
+        persons: detailSnapshot.persons,
+        relations: detailSnapshot.relations,
+        collectionStatus: value,
+        epStatus: detailSnapshot.epStatus,
+        watchedEpisodeIds: detailSnapshot.watchedEpisodeIds,
+        cachedAt: detailSnapshot.cachedAt,
+      );
+      detailStates[subjectId] = BangumiSubjectDetailState(
+        subjectId: detail.subjectId,
+        phase: detail.phase,
+        snapshot: updated,
+        loadingSections: detail.loadingSections,
+        failedSections: detail.failedSections,
+        errors: detail.errors,
+        remoteStateErrorCode: detail.remoteStateErrorCode,
+      );
+      _selectDetailSnapshot(subjectId, updated);
+    }
     await _refreshQueueCounts();
     notifyListeners();
   }
@@ -482,6 +735,37 @@ final class BangumiSessionController extends ChangeNotifier {
         watchedEpisodeIds: Set.unmodifiable(watchedEpisodeIds),
         remoteRevision: selected.remoteRevision,
       );
+    }
+    final detail = detailStates[subjectId];
+    final detailSnapshot = detail?.snapshot;
+    if (detail != null && detailSnapshot != null) {
+      final watchedEpisodeIds = {...detailSnapshot.watchedEpisodeIds};
+      if (watched) {
+        watchedEpisodeIds.add(episodeId);
+      } else {
+        watchedEpisodeIds.remove(episodeId);
+      }
+      final updated = BangumiSubjectDetailSnapshot(
+        subject: detailSnapshot.subject,
+        episodes: detailSnapshot.episodes,
+        characters: detailSnapshot.characters,
+        persons: detailSnapshot.persons,
+        relations: detailSnapshot.relations,
+        collectionStatus: detailSnapshot.collectionStatus,
+        epStatus: detailSnapshot.epStatus,
+        watchedEpisodeIds: Set.unmodifiable(watchedEpisodeIds),
+        cachedAt: detailSnapshot.cachedAt,
+      );
+      detailStates[subjectId] = BangumiSubjectDetailState(
+        subjectId: detail.subjectId,
+        phase: detail.phase,
+        snapshot: updated,
+        loadingSections: detail.loadingSections,
+        failedSections: detail.failedSections,
+        errors: detail.errors,
+        remoteStateErrorCode: detail.remoteStateErrorCode,
+      );
+      _selectDetailSnapshot(subjectId, updated);
     }
     await _refreshQueueCounts();
     notifyListeners();
@@ -594,6 +878,8 @@ final class BangumiSessionController extends ChangeNotifier {
     selectedSubject = null;
     selectedEpisodes = null;
     selectedRemoteState = null;
+    detailStates.clear();
+    _detailGenerations.clear();
     schedule = const <BangumiScheduleEntry>[];
     scheduleUpdatedAt = null;
     scheduleIsFresh = false;

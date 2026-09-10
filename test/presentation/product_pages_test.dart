@@ -5,6 +5,7 @@ import 'package:wynime/src/application/bangumi_session_controller.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/infrastructure/bangumi/bangumi_authentication.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store.dart';
+import 'package:wynime/src/presentation/pages/subject_detail_page.dart';
 
 import '../helpers/test_database.dart';
 
@@ -59,7 +60,9 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text('Watching'));
+    final watchingTab = find.text('Watching (0)');
+    await tester.ensureVisible(watchingTab);
+    await tester.tap(watchingTab);
     await tester.pumpAndSettle();
     expect(find.text('Your library is empty'), findsOneWidget);
   });
@@ -115,9 +118,22 @@ void main() {
     );
     expect(
       find.byKey(const ValueKey('bangumi-collection-artwork-43')),
+      findsNothing,
+    );
+
+    final completedTab = find.text('Completed (1)');
+    await tester.ensureVisible(completedTab);
+    await tester.tap(completedTab);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('bangumi-collection-artwork-43')),
       findsOneWidget,
     );
-    expect(find.byIcon(Icons.movie_creation_outlined), findsNWidgets(2));
+    expect(find.byIcon(Icons.movie_creation_outlined), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('bangumi-collection-43')));
+    await tester.pumpAndSettle();
+    expect(find.byType(BangumiSubjectDetailPage), findsOneWidget);
   });
 
   testWidgets('privacy diagnostics remain off until explicitly enabled', (

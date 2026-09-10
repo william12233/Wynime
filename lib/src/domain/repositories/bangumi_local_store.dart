@@ -30,6 +30,10 @@ abstract interface class BangumiLocalStore {
 
   Future<void> cacheEpisodes(BangumiEpisodePage page);
 
+  Future<void> cacheSubjectDetail(BangumiSubjectDetailSnapshot snapshot);
+
+  Future<BangumiSubjectDetailSnapshot?> cachedSubjectDetail(String subjectId);
+
   Future<void> saveCollectionStatus(
     String subjectId,
     BangumiCollectionStatus status,

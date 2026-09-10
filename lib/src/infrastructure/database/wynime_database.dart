@@ -133,6 +133,17 @@ class BangumiSubjects extends Table {
   TextColumn get summary => text()();
   TextColumn get imageUrl => text().nullable()();
   IntColumn get eps => integer().nullable()();
+  IntColumn get totalEpisodes => integer().nullable()();
+  IntColumn get volumes => integer().nullable()();
+  DateTimeColumn get airDate => dateTime().nullable()();
+  TextColumn get platform => text().nullable()();
+  IntColumn get rank => integer().nullable()();
+  TextColumn get ratingJson => text().nullable()();
+  TextColumn get collectionStatsJson => text().nullable()();
+  TextColumn get infoboxJson => text().nullable()();
+  TextColumn get metaTagsJson => text().nullable()();
+  TextColumn get tagsJson => text().nullable()();
+  DateTimeColumn get detailUpdatedAt => dateTime().nullable()();
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
@@ -152,6 +163,7 @@ class BangumiCollections extends Table {
     onDelete: KeyAction.cascade,
   )();
   IntColumn get status => integer().nullable()();
+  IntColumn get epStatus => integer().nullable()();
   TextColumn get remoteRevision => text().nullable()();
   DateTimeColumn get localUpdatedAt => dateTime()();
   DateTimeColumn get remoteUpdatedAt => dateTime().nullable()();
@@ -198,6 +210,51 @@ class BangumiEpisodeCollections extends Table {
 
   @override
   Set<Column<Object>> get primaryKey => {accountId, episodeId};
+}
+
+@DataClassName('BangumiSubjectCharacterRecord')
+class BangumiSubjectCharacters extends Table {
+  TextColumn get subjectId => text().references(
+    BangumiSubjects,
+    #subjectId,
+    onDelete: KeyAction.cascade,
+  )();
+  IntColumn get ordinal => integer()();
+  TextColumn get payloadJson => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {subjectId, ordinal};
+}
+
+@DataClassName('BangumiSubjectPersonRecord')
+class BangumiSubjectPersons extends Table {
+  TextColumn get subjectId => text().references(
+    BangumiSubjects,
+    #subjectId,
+    onDelete: KeyAction.cascade,
+  )();
+  IntColumn get ordinal => integer()();
+  TextColumn get payloadJson => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {subjectId, ordinal};
+}
+
+@DataClassName('BangumiSubjectRelationRecord')
+class BangumiSubjectRelations extends Table {
+  TextColumn get subjectId => text().references(
+    BangumiSubjects,
+    #subjectId,
+    onDelete: KeyAction.cascade,
+  )();
+  IntColumn get ordinal => integer()();
+  TextColumn get payloadJson => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {subjectId, ordinal};
 }
 
 @DataClassName('BangumiMappingRecord')
@@ -285,6 +342,9 @@ class BangumiConflictSnapshots extends Table {
     BangumiCollections,
     BangumiEpisodes,
     BangumiEpisodeCollections,
+    BangumiSubjectCharacters,
+    BangumiSubjectPersons,
+    BangumiSubjectRelations,
     BangumiMappings,
     BangumiSyncOperations,
     BangumiConflictSnapshots,
@@ -305,7 +365,7 @@ final class WynimeDatabase extends _$WynimeDatabase {
       );
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   final DatabaseWriteGate writeGate = DatabaseWriteGate();
 
@@ -363,6 +423,43 @@ final class WynimeDatabase extends _$WynimeDatabase {
           );
         }
         await _migrateLegacyFailedOperations();
+      }
+      if (from < 5) {
+        if (from >= 2) {
+          await migrator.addColumn(
+            bangumiSubjects,
+            bangumiSubjects.totalEpisodes,
+          );
+          await migrator.addColumn(bangumiSubjects, bangumiSubjects.volumes);
+          await migrator.addColumn(bangumiSubjects, bangumiSubjects.airDate);
+          await migrator.addColumn(bangumiSubjects, bangumiSubjects.platform);
+          await migrator.addColumn(bangumiSubjects, bangumiSubjects.rank);
+          await migrator.addColumn(bangumiSubjects, bangumiSubjects.ratingJson);
+          await migrator.addColumn(
+            bangumiSubjects,
+            bangumiSubjects.collectionStatsJson,
+          );
+          await migrator.addColumn(
+            bangumiSubjects,
+            bangumiSubjects.infoboxJson,
+          );
+          await migrator.addColumn(
+            bangumiSubjects,
+            bangumiSubjects.metaTagsJson,
+          );
+          await migrator.addColumn(bangumiSubjects, bangumiSubjects.tagsJson);
+          await migrator.addColumn(
+            bangumiSubjects,
+            bangumiSubjects.detailUpdatedAt,
+          );
+          await migrator.addColumn(
+            bangumiCollections,
+            bangumiCollections.epStatus,
+          );
+        }
+        await migrator.createTable(bangumiSubjectCharacters);
+        await migrator.createTable(bangumiSubjectPersons);
+        await migrator.createTable(bangumiSubjectRelations);
       }
     },
     beforeOpen: (details) async {

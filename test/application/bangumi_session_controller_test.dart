@@ -160,6 +160,91 @@ void main() {
     });
   });
 
+  test('fresh epStatus survives a sparse local-first status overlay', () {
+    final merged = mergeBangumiCollectionEntry(
+      remote: const BangumiCollectionEntry(
+        subjectId: '42',
+        status: BangumiCollectionStatus.watching,
+        nameCn: '作品',
+        totalEpisodes: 12,
+        epStatus: 3,
+      ),
+      localFirst: const BangumiCollectionEntry(
+        subjectId: '42',
+        status: BangumiCollectionStatus.onHold,
+      ),
+    );
+
+    expect(merged.status, BangumiCollectionStatus.onHold);
+    expect(merged.epStatus, 3);
+    expect(merged.totalEpisodes, 12);
+    expect(merged.nameCn, '作品');
+  });
+
+  test('non-null cached epStatus replaces an unknown remote value', () {
+    final merged = mergeBangumiCollectionEntry(
+      remote: const BangumiCollectionEntry(
+        subjectId: '42',
+        status: BangumiCollectionStatus.watching,
+      ),
+      cached: const BangumiCollectionEntry(
+        subjectId: '42',
+        status: BangumiCollectionStatus.watching,
+        totalEpisodes: 12,
+        epStatus: 10,
+      ),
+      localFirst: const BangumiCollectionEntry(
+        subjectId: '42',
+        status: BangumiCollectionStatus.completed,
+      ),
+    );
+
+    expect(merged.status, BangumiCollectionStatus.completed);
+    expect(merged.epStatus, 10);
+    expect(merged.totalEpisodes, 12);
+  });
+
+  test(
+    'refresh replaces an unknown cached epStatus with fresh collection data',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database);
+      final client = _FakeBangumiClient(
+        remoteCollections: [
+          const BangumiCollectionEntry(
+            subjectId: '42',
+            status: BangumiCollectionStatus.watching,
+          ),
+        ],
+      );
+      final controller = BangumiSessionController(
+        authentication: _FakeAuthentication(),
+        store: store,
+        clientFactory: (_) => client,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.completeSignIn(
+        const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+      );
+      expect(controller.collections.single.epStatus, isNull);
+
+      client.remoteCollections = [
+        const BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+          totalEpisodes: 12,
+          epStatus: 10,
+        ),
+      ];
+      await controller.refreshCollections();
+
+      expect(controller.collections.single.epStatus, 10);
+      expect((await store.cachedCollections()).single.epStatus, 10);
+    },
+  );
+
   test(
     'initialize resumes a callback delivered during process restart',
     () async {
@@ -395,7 +480,7 @@ final class _FakeBangumiClient implements BangumiClient {
     this.remote,
   });
 
-  final List<BangumiCollectionEntry> remoteCollections;
+  List<BangumiCollectionEntry> remoteCollections;
   BangumiRemoteState? remote;
   int subjectCalls = 0;
   int remoteStateCalls = 0;

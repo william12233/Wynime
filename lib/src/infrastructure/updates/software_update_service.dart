@@ -416,7 +416,8 @@ final class SoftwareUpdateService implements SoftwareUpdateServicePort {
     String architecture,
   ) {
     final expectedName = switch (platform) {
-      SoftwareUpdatePlatform.android => 'wynime-${release.version}.apk',
+      SoftwareUpdatePlatform.android when architecture == 'arm64-v8a' =>
+        'wynime-${release.version}-arm64-v8a.apk',
       SoftwareUpdatePlatform.windows when architecture == 'x64' =>
         'wynime-${release.version}.zip',
       _ => null,

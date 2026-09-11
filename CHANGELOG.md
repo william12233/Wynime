@@ -4,6 +4,37 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.9 - Release-ready
+
+### Bangumi library and subject details
+
+- Reworked the collection status navigation into responsive tabs with counts,
+  poster cards, watch progress and explicit subject/episode actions.
+- Reworked the subject detail page into a responsive media-first layout with
+  progressive disclosure for summary, metadata, tags, characters, staff and
+  related subjects.
+- Preserved remote metadata while overlaying local-first collection status,
+  cached artwork and watch progress during reconciliation.
+
+### Update experience
+
+- Started the automatic update check after application services initialize.
+- Added real download progress for update installation, followed by explicit
+  verifying and handoff states.
+- Kept failed and manual-required installs truthful instead of showing a fake
+  installed result.
+
+### Validation boundary
+
+- Full deterministic Flutter tests (261 tests), analyzer and formatting checks
+  pass on the release worktree.
+- Fixed phone/tablet emulator Library interactions and Windows debug launch
+  evidence pass in the audit environment.
+- Physical Android/Windows playback remains `HARDWARE_VALIDATION_PENDING`.
+- Native Windows Computer Use action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` when the audit surface exposes
+  `apps=[]`.
+
 ## 1.0.8 - Release-ready
 
 ### Bangumi collection and subject details

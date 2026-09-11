@@ -22,7 +22,6 @@ final class SoftwareUpdateController extends ChangeNotifier {
   ReleaseAsset? latestAsset;
   SoftwareUpdateException? error;
   double? downloadProgress;
-  bool autoCheckUpdates = false;
 
   Future<SoftwareUpdateResult>? _checkFuture;
   Future<SoftwareInstallResult?>? _installFuture;
@@ -47,13 +46,6 @@ final class SoftwareUpdateController extends ChangeNotifier {
   }
 
   Future<SoftwareUpdateResult> check({bool automatic = false}) async {
-    if (automatic && !autoCheckUpdates) {
-      return _lastResult ??
-          SoftwareUpdateResult(
-            status: UpdateStatus.idle,
-            current: currentVersion ?? _fallbackVersion,
-          );
-    }
     final existing = _checkFuture;
     if (existing != null) return existing;
     if (status == UpdateStatus.downloading ||

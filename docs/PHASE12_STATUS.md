@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.8 release boundary is ready for exact-SHA CI and protected
+The v1.0.9 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -49,6 +49,21 @@ native binary, codec or system runtime.
 The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
+
+## 1.0.9 candidate status
+
+- Version authority is `1.0.9+10`; the expected arm64 split APK versionCode is
+  `2010`.
+- Current-head `dart format --output=none --set-exit-if-changed lib test`,
+  Flutter analyzer and the full deterministic test suite (261 tests) pass on
+  this candidate worktree.
+- Fixed phone and tablet emulator Library interactions pass, including the
+  Library status tabs and On hold flow. A populated Bangumi account detail
+  flow is not inferred from the unconfigured local debug build.
+- Windows debug packaging and `flutter run -d windows --debug` pass; the
+  runner bundle contains the required media-kit video plugin DLLs.
+- Protected exact-SHA signing, final Android packaging and Windows ZIP
+  packaging remain required for the immutable release candidate.
 
 ## 1.0.8 candidate status
 

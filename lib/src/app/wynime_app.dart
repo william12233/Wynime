@@ -41,7 +41,15 @@ class _WynimeAppState extends State<WynimeApp> {
   Future<void> _initializeServices() async {
     await widget.bangumi?.initialize();
     await widget.softwareUpdates?.initialize();
+    final softwareUpdates = widget.softwareUpdates;
+    if (softwareUpdates != null) {
+      unawaited(_checkForUpdates(softwareUpdates));
+    }
     await widget.onReady?.call();
+  }
+
+  Future<void> _checkForUpdates(SoftwareUpdateController controller) async {
+    await controller.check(automatic: true);
   }
 
   @override

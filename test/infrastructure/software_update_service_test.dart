@@ -11,6 +11,82 @@ import 'package:wynime/src/domain/models/software_update_models.dart';
 import 'package:wynime/src/infrastructure/updates/software_update_service.dart';
 
 void main() {
+  test('selects the published Android arm64-v8a APK and sidecar', () async {
+    final service = _androidService(assets: _androidAssets('1.0.2'));
+    addTearDown(service.dispose);
+
+    final result = await service.checkForUpdates();
+
+    expect(result.status, UpdateStatus.updateAvailable);
+    expect(result.asset?.name, 'wynime-1.0.2-arm64-v8a.apk');
+    expect(
+      result.asset?.checksumAsset?.name,
+      'wynime-1.0.2-arm64-v8a.apk.sha256',
+    );
+  });
+
+  test('rejects the obsolete generic Android APK name', () async {
+    final service = _androidService(
+      assets: _androidAssets('1.0.2', apkName: 'wynime-1.0.2.apk'),
+    );
+    addTearDown(service.dispose);
+
+    final result = await service.checkForUpdates();
+
+    expect(result.status, UpdateStatus.unavailable);
+    expect(result.asset, isNull);
+    expect(result.error?.code, 'compatible_asset_missing');
+  });
+
+  test('rejects an Android APK without its sidecar', () async {
+    final service = _androidService(
+      assets: _androidAssets('1.0.2', includeSidecar: false),
+    );
+    addTearDown(service.dispose);
+
+    final result = await service.checkForUpdates();
+
+    expect(result.status, UpdateStatus.unavailable);
+    expect(result.asset, isNull);
+  });
+
+  test('rejects duplicate Android APK assets', () async {
+    final service = _androidService(
+      assets: _androidAssets('1.0.2', apkCount: 2),
+    );
+    addTearDown(service.dispose);
+
+    final result = await service.checkForUpdates();
+
+    expect(result.status, UpdateStatus.unavailable);
+    expect(result.asset, isNull);
+  });
+
+  test('rejects duplicate Android checksum sidecars', () async {
+    final service = _androidService(
+      assets: _androidAssets('1.0.2', sidecarCount: 2),
+    );
+    addTearDown(service.dispose);
+
+    final result = await service.checkForUpdates();
+
+    expect(result.status, UpdateStatus.unavailable);
+    expect(result.asset, isNull);
+  });
+
+  test('does not fall back to arm64 assets for Android x86_64', () async {
+    final service = _androidService(
+      assets: _androidAssets('1.0.2'),
+      architecture: 'x86_64',
+    );
+    addTearDown(service.dispose);
+
+    final result = await service.checkForUpdates();
+
+    expect(result.status, UpdateStatus.unavailable);
+    expect(result.asset, isNull);
+  });
+
   test(
     'selects only the ZIP asset and verifies/extracts its contents',
     () async {
@@ -176,6 +252,72 @@ void main() {
     );
   });
 }
+
+SoftwareUpdateService _androidService({
+  required List<Map<String, Object>> assets,
+  String architecture = 'arm64-v8a',
+}) {
+  final client = MockClient(
+    (request) async =>
+        _androidReleaseResponse(version: '1.0.2', assets: assets),
+  );
+  return SoftwareUpdateService(
+    client: client,
+    versionProvider: const TestVersionProvider(
+      AppVersionInfo(
+        version: '1.0.1',
+        buildNumber: '',
+        platform: SoftwareUpdatePlatform.android,
+        architecture: 'arm64-v8a',
+      ),
+    ),
+    platformOverride: SoftwareUpdatePlatform.android,
+    architectureOverride: architecture,
+  );
+}
+
+List<Map<String, Object>> _androidAssets(
+  String version, {
+  String? apkName,
+  int apkCount = 1,
+  int sidecarCount = 1,
+  bool includeApk = true,
+  bool includeSidecar = true,
+}) {
+  final name = apkName ?? 'wynime-$version-arm64-v8a.apk';
+  final assets = <Map<String, Object>>[];
+  if (includeApk) {
+    for (var index = 0; index < apkCount; index++) {
+      assets.add(_androidAsset(name, size: 1));
+    }
+  }
+  if (includeSidecar) {
+    for (var index = 0; index < sidecarCount; index++) {
+      assets.add(_androidAsset('$name.sha256', size: 100));
+    }
+  }
+  return assets;
+}
+
+Map<String, Object> _androidAsset(String name, {required int size}) => {
+  'name': name,
+  'browser_download_url':
+      'https://github.com/william12233/Wynime/releases/download/v1.0.2/$name',
+  'size': size,
+};
+
+http.Response _androidReleaseResponse({
+  required String version,
+  required List<Map<String, Object>> assets,
+}) => http.Response(
+  jsonEncode({
+    'tag_name': 'v$version',
+    'draft': false,
+    'prerelease': false,
+    'assets': assets,
+  }),
+  200,
+);
 
 SoftwareUpdateService _serviceFor(Uint8List bytes, {String? checksum}) {
   final digest = sha256.convert(bytes).toString();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:wynime/l10n/app_localizations.dart';
 import 'package:wynime/src/app/app_destination.dart';
@@ -316,27 +318,10 @@ class _LibraryPageState extends State<LibraryPage> {
       description: localizations.libraryPageDescription,
       showPageHeader: widget.showPageHeader,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SegmentedButton<_LibraryFilter>(
-            segments: [
-              for (final filter in _libraryFilterOrder)
-                ButtonSegment(
-                  value: filter,
-                  label: Text(
-                    localizations.libraryStatusCount(
-                      _libraryFilterLabel(filter, localizations),
-                      _collectionCount(filter, widget.bangumi),
-                    ),
-                  ),
-                  icon: Icon(_libraryFilterIcon(filter)),
-                ),
-            ],
-            selected: {_filter},
-            onSelectionChanged: (selection) {
-              setState(() => _filter = selection.first);
-            },
-          ),
+        _LibraryStatusTabs(
+          selected: _filter,
+          countFor: (filter) => _collectionCount(filter, widget.bangumi),
+          onSelected: (filter) => setState(() => _filter = filter),
         ),
         const SizedBox(height: WynimeSpacing.lg),
         if (widget.bangumi != null && widget.bangumi!.collections.isNotEmpty)
@@ -390,6 +375,118 @@ class _LibraryPageState extends State<LibraryPage> {
             Navigator.of(context).pop();
             widget.onNavigate(AppDestination.home);
           },
+        ),
+      ),
+    );
+  }
+}
+
+final class _LibraryStatusTabs extends StatelessWidget {
+  const _LibraryStatusTabs({
+    required this.selected,
+    required this.countFor,
+    required this.onSelected,
+  });
+
+  final _LibraryFilter selected;
+  final int Function(_LibraryFilter filter) countFor;
+  final ValueChanged<_LibraryFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: WynimeSpacing.xs),
+      child: Row(
+        children: [
+          for (final filter in _libraryFilterOrder)
+            Padding(
+              padding: const EdgeInsets.only(right: WynimeSpacing.lg),
+              child: _LibraryStatusTab(
+                key: ValueKey('library-status-tab-${filter.name}'),
+                label: _libraryFilterLabel(filter, l10n),
+                count: countFor(filter),
+                selected: selected == filter,
+                onTap: () => onSelected(filter),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _LibraryStatusTab extends StatelessWidget {
+  const _LibraryStatusTab({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$label $count',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(WynimeRadii.small),
+        child: Padding(
+          padding: const EdgeInsets.only(
+            top: WynimeSpacing.xs,
+            left: WynimeSpacing.xs,
+            right: WynimeSpacing.xs,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: color,
+                      fontWeight: selected ? FontWeight.w700 : null,
+                    ),
+                  ),
+                  const SizedBox(width: WynimeSpacing.xxs),
+                  Text(
+                    '$count',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: selected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: WynimeSpacing.xs),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                curve: Curves.easeOut,
+                height: 3,
+                width: selected ? 28 : 0,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(WynimeRadii.small),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -483,20 +580,6 @@ IconData _libraryFilterIcon(_LibraryFilter filter) {
     _LibraryFilter.completed => Icons.check_circle_outline_rounded,
     _LibraryFilter.onHold => Icons.pause_circle_outline_rounded,
     _LibraryFilter.dropped => Icons.remove_circle_outline_rounded,
-  };
-}
-
-String _collectionStatusLabel(
-  BangumiCollectionStatus? status,
-  AppLocalizations l10n,
-) {
-  return switch (status) {
-    BangumiCollectionStatus.wish => l10n.libraryFilterWish,
-    BangumiCollectionStatus.watching => l10n.libraryFilterWatching,
-    BangumiCollectionStatus.completed => l10n.libraryFilterCompleted,
-    BangumiCollectionStatus.onHold => l10n.libraryFilterOnHold,
-    BangumiCollectionStatus.dropped => l10n.libraryFilterDropped,
-    null => l10n.bangumiNotCollectedLabel,
   };
 }
 
@@ -692,7 +775,6 @@ class _CollectionList extends StatelessWidget {
                       entry: entry,
                       width: cardWidth,
                       onOpenSubject: onOpenSubject,
-                      statusLabel: _collectionStatusLabel(entry.status, l10n),
                     ),
                 ],
               );
@@ -708,75 +790,58 @@ class _CollectionCard extends StatelessWidget {
     required this.entry,
     required this.width,
     required this.onOpenSubject,
-    required this.statusLabel,
     super.key,
   });
 
   final BangumiCollectionEntry entry;
   final double width;
   final ValueChanged<String> onOpenSubject;
-  final String statusLabel;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final title = entry.nameCn?.isNotEmpty == true
         ? entry.nameCn!
         : entry.name?.isNotEmpty == true
         ? entry.name!
         : entry.subjectId;
-    final compact = width < 600;
-    final posterWidth = compact ? 96.0 : width - (WynimeSpacing.xs * 2);
+    final posterWidth = width < 600
+        ? 92.0
+        : (width * 0.24).clamp(104.0, 132.0).toDouble();
+    final posterHeight = posterWidth * 1.5;
     return SizedBox(
       width: width,
       child: Card(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => onOpenSubject(entry.subjectId),
           child: Padding(
-            padding: const EdgeInsets.all(WynimeSpacing.xs),
-            child: compact
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _BangumiArtwork(
-                        key: ValueKey(
-                          'bangumi-collection-artwork-${entry.subjectId}',
-                        ),
-                        imageUrl: entry.imageUrl,
-                        semanticLabel: title,
-                        width: posterWidth,
-                        height: 136,
-                      ),
-                      const SizedBox(width: WynimeSpacing.sm),
-                      Expanded(
-                        child: _CollectionCardInfo(
-                          title: title,
-                          statusLabel: statusLabel,
-                          entry: entry,
-                        ),
-                      ),
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _BangumiArtwork(
-                        key: ValueKey(
-                          'bangumi-collection-artwork-${entry.subjectId}',
-                        ),
-                        imageUrl: entry.imageUrl,
-                        semanticLabel: title,
-                        width: posterWidth,
-                        height: 300,
-                      ),
-                      const SizedBox(height: WynimeSpacing.xs),
-                      _CollectionCardInfo(
-                        title: title,
-                        statusLabel: statusLabel,
-                        entry: entry,
-                      ),
-                    ],
+            padding: const EdgeInsets.all(WynimeSpacing.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _BangumiArtwork(
+                  key: ValueKey(
+                    'bangumi-collection-artwork-${entry.subjectId}',
                   ),
+                  imageUrl: entry.imageUrl,
+                  semanticLabel: title,
+                  width: posterWidth,
+                  height: posterHeight,
+                ),
+                const SizedBox(width: WynimeSpacing.sm),
+                Expanded(
+                  child: _CollectionCardInfo(
+                    title: title,
+                    entry: entry,
+                    onOpenSubject: () => onOpenSubject(entry.subjectId),
+                    moreTooltip: l10n.libraryCardMoreAction,
+                    openLabel: l10n.libraryOpenSubjectAction,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -787,13 +852,17 @@ class _CollectionCard extends StatelessWidget {
 class _CollectionCardInfo extends StatelessWidget {
   const _CollectionCardInfo({
     required this.title,
-    required this.statusLabel,
     required this.entry,
+    required this.onOpenSubject,
+    required this.moreTooltip,
+    required this.openLabel,
   });
 
   final String title;
-  final String statusLabel;
   final BangumiCollectionEntry entry;
+  final VoidCallback onOpenSubject;
+  final String moreTooltip;
+  final String openLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -802,32 +871,91 @@ class _CollectionCardInfo extends StatelessWidget {
     final watched = entry.epStatus;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleSmall,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            PopupMenuButton<String>(
+              key: ValueKey('bangumi-collection-menu-${entry.subjectId}'),
+              tooltip: moreTooltip,
+              padding: EdgeInsets.zero,
+              iconSize: 20,
+              onSelected: (_) => onOpenSubject(),
+              itemBuilder: (context) => [
+                PopupMenuItem<String>(value: 'open', child: Text(openLabel)),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: WynimeSpacing.xxs),
-        Text(
-          statusLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-          ),
+        const SizedBox(height: WynimeSpacing.xs),
+        _CollectionProgressText(watched: watched, total: total),
+        const SizedBox(height: WynimeSpacing.sm),
+        Row(
+          children: [
+            Icon(
+              Icons.list_alt_outlined,
+              size: 17,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: WynimeSpacing.xxs),
+            Expanded(
+              child: Text(
+                l10n.libraryEpisodesAction,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            if (watched != null && total != null && total > 0)
+              SizedBox(
+                width: 64,
+                child: LinearProgressIndicator(
+                  value: (watched / total).clamp(0, 1),
+                  minHeight: 3,
+                ),
+              ),
+          ],
         ),
-        if (watched != null && total != null && total > 0) ...[
-          const SizedBox(height: WynimeSpacing.xxs),
-          Text(l10n.subjectDetailEpisodesProgress(watched, total)),
-          const SizedBox(height: WynimeSpacing.xxs),
-          LinearProgressIndicator(
-            value: (watched / total).clamp(0, 1),
-            minHeight: 4,
-          ),
-        ],
       ],
+    );
+  }
+}
+
+final class _CollectionProgressText extends StatelessWidget {
+  const _CollectionProgressText({required this.watched, required this.total});
+
+  final int? watched;
+  final int? total;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final watchedValue = watched;
+    final totalValue = total;
+    final text = totalValue != null && totalValue > 0
+        ? watchedValue == null
+              ? l10n.libraryProgressTotal(totalValue)
+              : l10n.libraryProgressKnown(watchedValue, totalValue)
+        : watchedValue == null
+        ? l10n.libraryProgressUnknown
+        : l10n.libraryProgressWatchedOnly(watchedValue);
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        color: Theme.of(context).colorScheme.onSurface,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 }
@@ -1029,6 +1157,18 @@ class _SoftwareUpdateSettingsContent extends StatelessWidget {
 
   final SoftwareUpdateController controller;
 
+  Future<void> _installWithProgressDialog(BuildContext context) async {
+    if (controller.isBusy ||
+        controller.status != UpdateStatus.updateAvailable) {
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _SoftwareUpdateProgressDialog(controller: controller),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1038,6 +1178,7 @@ class _SoftwareUpdateSettingsContent extends StatelessWidget {
       UpdateStatus.checking => l10n.softwareUpdateChecking,
       UpdateStatus.downloading => l10n.softwareUpdateDownloading,
       UpdateStatus.verifying => l10n.softwareUpdateVerifying,
+      UpdateStatus.handingOff => l10n.softwareUpdatePreparingInstall,
       UpdateStatus.updateAvailable => l10n.softwareUpdateAvailable,
       UpdateStatus.upToDate => l10n.softwareUpdateUpToDate,
       UpdateStatus.manualUpdateRequired => l10n.softwareUpdateManualRequired,
@@ -1059,10 +1200,6 @@ class _SoftwareUpdateSettingsContent extends StatelessWidget {
             subtitle: Text(latest.version.toString()),
           ),
         Text(status),
-        if (controller.downloadProgress != null) ...[
-          const SizedBox(height: WynimeSpacing.sm),
-          LinearProgressIndicator(value: controller.downloadProgress),
-        ],
         const SizedBox(height: WynimeSpacing.sm),
         Wrap(
           spacing: WynimeSpacing.sm,
@@ -1077,7 +1214,9 @@ class _SoftwareUpdateSettingsContent extends StatelessWidget {
             if (controller.status == UpdateStatus.updateAvailable)
               FilledButton.icon(
                 key: const ValueKey('software-update-now'),
-                onPressed: controller.isBusy ? null : controller.install,
+                onPressed: controller.isBusy
+                    ? null
+                    : () => _installWithProgressDialog(context),
                 icon: const Icon(Icons.download_rounded),
                 label: Text(l10n.softwareUpdateInstallAction),
               ),
@@ -1091,6 +1230,83 @@ class _SoftwareUpdateSettingsContent extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+final class _SoftwareUpdateProgressDialog extends StatefulWidget {
+  const _SoftwareUpdateProgressDialog({required this.controller});
+
+  final SoftwareUpdateController controller;
+
+  @override
+  State<_SoftwareUpdateProgressDialog> createState() =>
+      _SoftwareUpdateProgressDialogState();
+}
+
+final class _SoftwareUpdateProgressDialogState
+    extends State<_SoftwareUpdateProgressDialog> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_install());
+    });
+  }
+
+  Future<void> _install() async {
+    await widget.controller.install();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return PopScope(
+      canPop: false,
+      child: ListenableBuilder(
+        listenable: widget.controller,
+        builder: (context, child) {
+          final progress = widget.controller.status == UpdateStatus.downloading
+              ? widget.controller.downloadProgress
+              : null;
+          final normalizedProgress = progress?.clamp(0.0, 1.0).toDouble();
+          final message = switch (widget.controller.status) {
+            UpdateStatus.verifying => l10n.softwareUpdateVerifying,
+            UpdateStatus.handingOff => l10n.softwareUpdatePreparingInstall,
+            _ => l10n.softwareUpdateDownloading,
+          };
+          return AlertDialog(
+            key: const ValueKey('software-update-progress-dialog'),
+            title: Text(l10n.softwareUpdateTitle),
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(message),
+                  const SizedBox(height: WynimeSpacing.md),
+                  LinearProgressIndicator(
+                    key: const ValueKey('software-update-progress'),
+                    value: normalizedProgress,
+                  ),
+                  if (normalizedProgress != null) ...[
+                    const SizedBox(height: WynimeSpacing.xs),
+                    Text(
+                      l10n.softwareUpdateDownloadProgress(
+                        (normalizedProgress * 100).round(),
+                      ),
+                      textAlign: TextAlign.end,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

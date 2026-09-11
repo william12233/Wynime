@@ -375,23 +375,33 @@ final class BangumiSessionController extends ChangeNotifier {
       final cachedBySubject = <String, BangumiCollectionEntry>{
         for (final entry in cached) entry.subjectId: entry,
       };
-      for (final entry in localFirst) {
-        cachedBySubject[entry.subjectId] = entry;
-      }
+      final localFirstBySubject = <String, BangumiCollectionEntry>{
+        for (final entry in localFirst) entry.subjectId: entry,
+      };
       // The server list remains authoritative for membership, while the
-      // cached row is authoritative for an in-flight local-first status. A
-      // local-only queued subject is appended so it remains visible until its
-      // first successful remote mutation.
+      // cached row/local-first operation is authoritative only for the
+      // in-flight local status. Remote metadata such as epStatus must not be
+      // discarded just because the local-first projection is sparse.
       final remoteSubjectIds = remoteCollections
           .map((entry) => entry.subjectId)
           .toSet();
       collections = List.unmodifiable(<BangumiCollectionEntry>[
         ...remoteCollections.map(
-          (entry) => cachedBySubject[entry.subjectId] ?? entry,
+          (entry) => mergeBangumiCollectionEntry(
+            remote: entry,
+            cached: cachedBySubject[entry.subjectId],
+            localFirst: localFirstBySubject[entry.subjectId],
+          ),
         ),
-        ...localFirst.where(
-          (entry) => !remoteSubjectIds.contains(entry.subjectId),
-        ),
+        ...localFirst
+            .where((entry) => !remoteSubjectIds.contains(entry.subjectId))
+            .map(
+              (entry) => mergeBangumiCollectionEntry(
+                remote: entry,
+                cached: cachedBySubject[entry.subjectId],
+                localFirst: entry,
+              ),
+            ),
       ]);
       errorCode = null;
     } on BangumiApiException catch (error) {
@@ -1036,4 +1046,24 @@ final class BangumiSessionController extends ChangeNotifier {
       // sign-out can retry clearing the platform store.
     }
   }
+}
+
+@visibleForTesting
+BangumiCollectionEntry mergeBangumiCollectionEntry({
+  required BangumiCollectionEntry remote,
+  BangumiCollectionEntry? cached,
+  BangumiCollectionEntry? localFirst,
+}) {
+  return BangumiCollectionEntry(
+    subjectId: remote.subjectId,
+    status: localFirst?.status ?? cached?.status ?? remote.status,
+    name: remote.name ?? cached?.name ?? localFirst?.name,
+    nameCn: remote.nameCn ?? cached?.nameCn ?? localFirst?.nameCn,
+    imageUrl: remote.imageUrl ?? cached?.imageUrl ?? localFirst?.imageUrl,
+    totalEpisodes:
+        remote.totalEpisodes ??
+        cached?.totalEpisodes ??
+        localFirst?.totalEpisodes,
+    epStatus: remote.epStatus ?? cached?.epStatus ?? localFirst?.epStatus,
+  );
 }

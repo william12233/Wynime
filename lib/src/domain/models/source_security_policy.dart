@@ -206,6 +206,31 @@ final class SourceSecurityPolicy {
         allowedDomains.any((rule) => rule.allows(uri, permissions));
   }
 
+  /// Returns whether two policies have the same effective authority.
+  ///
+  /// Domain-rule order and duplicate declarations are not meaningful, but
+  /// host, subdomain coverage, schemes, permissions and every resource limit
+  /// are. This is used when a value crosses an application boundary so a
+  /// caller cannot replace a package policy with a broader equivalent-looking
+  /// object.
+  bool semanticallyEquals(SourceSecurityPolicy other) {
+    if (permissions.length != other.permissions.length ||
+        !permissions.containsAll(other.permissions) ||
+        budget.maxDocumentBytes != other.budget.maxDocumentBytes ||
+        budget.maxRecords != other.budget.maxRecords ||
+        budget.maxSelectorMatches != other.budget.maxSelectorMatches ||
+        budget.maxEvaluationSteps != other.budget.maxEvaluationSteps ||
+        budget.maxRegexPatternChars != other.budget.maxRegexPatternChars ||
+        budget.maxRegexInputChars != other.budget.maxRegexInputChars ||
+        budget.maxRedirects != other.budget.maxRedirects) {
+      return false;
+    }
+    final leftDomains = allowedDomains.map(_domainRuleKey).toSet();
+    final rightDomains = other.allowedDomains.map(_domainRuleKey).toSet();
+    return leftDomains.length == rightDomains.length &&
+        leftDomains.containsAll(rightDomains);
+  }
+
   bool requiresReconsentComparedTo(SourceSecurityPolicy previous) {
     if (!previous.permissions.containsAll(permissions)) {
       return true;
@@ -220,4 +245,9 @@ final class SourceSecurityPolicy {
     }
     return false;
   }
+}
+
+String _domainRuleKey(SourceDomainRule rule) {
+  final schemes = rule.schemes.toList()..sort();
+  return '${rule.host}|${rule.includeSubdomains}|${schemes.join(',')}';
 }

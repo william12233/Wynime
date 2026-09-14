@@ -160,6 +160,310 @@ void main() {
     });
   });
 
+  test(
+    'full paginated collection refresh removes stale membership and accepts changes',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database);
+      final client = _FakeBangumiClient(
+        collectionPageSize: 1,
+        remoteCollections: [
+          const BangumiCollectionEntry(
+            subjectId: '42',
+            status: BangumiCollectionStatus.watching,
+          ),
+          const BangumiCollectionEntry(
+            subjectId: '43',
+            status: BangumiCollectionStatus.wish,
+          ),
+          const BangumiCollectionEntry(
+            subjectId: '44',
+            status: BangumiCollectionStatus.completed,
+          ),
+        ],
+      );
+      final controller = BangumiSessionController(
+        authentication: _FakeAuthentication(),
+        store: store,
+        clientFactory: (_) => client,
+      );
+      addTearDown(controller.dispose);
+
+      await controller.completeSignIn(
+        const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+      );
+      expect(controller.collections.map((entry) => entry.subjectId), [
+        '42',
+        '43',
+        '44',
+      ]);
+
+      client.remoteCollections = [
+        const BangumiCollectionEntry(
+          subjectId: '43',
+          status: BangumiCollectionStatus.dropped,
+          epStatus: 5,
+        ),
+        const BangumiCollectionEntry(
+          subjectId: '44',
+          status: BangumiCollectionStatus.completed,
+        ),
+        const BangumiCollectionEntry(
+          subjectId: '45',
+          status: BangumiCollectionStatus.watching,
+        ),
+      ];
+      await controller.refreshCollections();
+
+      expect(controller.collections.map((entry) => entry.subjectId), [
+        '43',
+        '44',
+        '45',
+      ]);
+      expect(
+        controller.collections.first.status,
+        BangumiCollectionStatus.dropped,
+      );
+      expect(controller.collections.first.epStatus, 5);
+      expect(
+        (await store.cachedCollections())
+            .map((entry) => entry.subjectId)
+            .toSet(),
+        {'43', '44', '45'},
+      );
+    },
+  );
+
+  test(
+    'refresh in flight cannot overwrite a newer local collection intent',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database);
+      final client = _FakeBangumiClient(
+        remoteCollections: const [
+          BangumiCollectionEntry(
+            subjectId: '42',
+            status: BangumiCollectionStatus.watching,
+          ),
+        ],
+      );
+      final controller = BangumiSessionController(
+        authentication: _FakeAuthentication(),
+        store: store,
+        clientFactory: (_) => client,
+      );
+      addTearDown(controller.dispose);
+      await controller.completeSignIn(
+        const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+      );
+
+      final requestStarted = Completer<void>();
+      final releaseRequest = Completer<void>();
+      client.collectionOverride = (offset, limit) async {
+        if (!requestStarted.isCompleted) requestStarted.complete();
+        await releaseRequest.future;
+        return const BangumiCollectionPage(
+          collections: [
+            BangumiCollectionEntry(
+              subjectId: '42',
+              status: BangumiCollectionStatus.watching,
+            ),
+          ],
+          offset: 0,
+          limit: 30,
+          total: 1,
+        );
+      };
+
+      final refresh = controller.refreshCollections();
+      await requestStarted.future;
+      await controller.setCollectionStatus(
+        '42',
+        BangumiCollectionStatus.onHold,
+      );
+      releaseRequest.complete();
+      await refresh;
+
+      expect(
+        controller.collections.single.status,
+        BangumiCollectionStatus.onHold,
+      );
+      expect(
+        (await store.cachedCollections()).single.status,
+        BangumiCollectionStatus.onHold,
+      );
+      expect(await store.pendingCount(), 1);
+    },
+  );
+
+  test('refresh updates an already-open detail from another client', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database);
+    await store.cacheSubject(
+      const BangumiSubject(
+        id: '42',
+        name: 'Title',
+        nameCn: '作品',
+        summary: '',
+        eps: 1,
+      ),
+    );
+    await store.cacheEpisodes(
+      const BangumiEpisodePage(
+        episodes: [
+          BangumiEpisode(
+            id: '1001',
+            subjectId: '42',
+            name: 'Episode 1',
+            nameCn: '第一集',
+            sort: 1,
+            type: 0,
+          ),
+        ],
+        offset: 0,
+        limit: 1,
+        total: 1,
+      ),
+    );
+    final client = _FakeBangumiClient(
+      remoteCollections: const [
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+          epStatus: 0,
+        ),
+      ],
+      remote: _remoteState(
+        status: BangumiCollectionStatus.watching,
+        watchedEpisodeIds: const <String>{},
+      ),
+    );
+    final controller = BangumiSessionController(
+      authentication: _FakeAuthentication(),
+      store: store,
+      clientFactory: (_) => client,
+    );
+    addTearDown(controller.dispose);
+    await controller.completeSignIn(
+      const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+    );
+    await controller.openSubject('42');
+    expect(
+      controller.subjectDetailState('42')?.snapshot?.watchedEpisodeIds,
+      isEmpty,
+    );
+
+    client.remote = _remoteState(
+      status: BangumiCollectionStatus.watching,
+      watchedEpisodeIds: const {'1001'},
+    );
+    client.remoteCollections = const [
+      BangumiCollectionEntry(
+        subjectId: '42',
+        status: BangumiCollectionStatus.watching,
+        epStatus: 1,
+      ),
+    ];
+    await controller.refreshCollections();
+
+    expect(controller.subjectDetailState('42')?.snapshot?.watchedEpisodeIds, {
+      '1001',
+    });
+    expect((await store.loadEpisodeProgress('42'))?.watchedEpisodeIds, {
+      '1001',
+    });
+    expect(controller.collections.single.epStatus, 1);
+  });
+
+  test('failed remote refresh does not report queue sync success', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database);
+    final client = _FakeBangumiClient(
+      remoteCollections: const [
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+        ),
+      ],
+    );
+    final controller = BangumiSessionController(
+      authentication: _FakeAuthentication(),
+      store: store,
+      clientFactory: (_) => client,
+    );
+    addTearDown(controller.dispose);
+    await controller.completeSignIn(
+      const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+    );
+    await controller.setCollectionStatus(
+      '42',
+      BangumiCollectionStatus.completed,
+    );
+    client.collectionOverride = (offset, limit) async {
+      throw const BangumiApiException(
+        code: 'network_unavailable',
+        retryable: true,
+      );
+    };
+
+    await controller.syncNow();
+
+    expect(controller.status, BangumiConnectionStatus.failed);
+    expect(controller.errorCode, 'network_unavailable');
+    expect(controller.pendingCount, 1);
+  });
+
+  test(
+    'payload refresh failure does not process the existing sync queue',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database);
+      final client = _FakeBangumiClient(
+        remoteCollections: const [
+          BangumiCollectionEntry(
+            subjectId: '42',
+            status: BangumiCollectionStatus.watching,
+          ),
+        ],
+      );
+      final controller = BangumiSessionController(
+        authentication: _FakeAuthentication(),
+        store: store,
+        clientFactory: (_) => client,
+      );
+      addTearDown(controller.dispose);
+      await controller.completeSignIn(
+        const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+      );
+      await controller.setCollectionStatus(
+        '42',
+        BangumiCollectionStatus.completed,
+      );
+      client.remoteCollections = const [
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+        ),
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.completed,
+        ),
+      ];
+
+      await controller.syncNow();
+
+      expect(controller.status, BangumiConnectionStatus.failed);
+      expect(controller.errorCode, 'duplicate_collection_subject');
+      expect(controller.pendingCount, 1);
+      expect(client.collectionMutationCalls, 0);
+    },
+  );
+
   test('fresh epStatus survives a sparse local-first status overlay', () {
     final merged = mergeBangumiCollectionEntry(
       remote: const BangumiCollectionEntry(
@@ -478,12 +782,17 @@ final class _FakeBangumiClient implements BangumiClient {
   _FakeBangumiClient({
     this.remoteCollections = const <BangumiCollectionEntry>[],
     this.remote,
+    this.collectionPageSize,
   });
 
   List<BangumiCollectionEntry> remoteCollections;
   BangumiRemoteState? remote;
+  final int? collectionPageSize;
+  Future<BangumiCollectionPage> Function(int offset, int limit)?
+  collectionOverride;
   int subjectCalls = 0;
   int remoteStateCalls = 0;
+  int collectionMutationCalls = 0;
   Future<BangumiSubject> Function(String id)? subjectOverride;
 
   @override
@@ -494,12 +803,19 @@ final class _FakeBangumiClient implements BangumiClient {
   Future<BangumiCollectionPage> collections({
     int offset = 0,
     int limit = 30,
-  }) async => BangumiCollectionPage(
-    collections: remoteCollections,
-    offset: offset,
-    limit: limit,
-    total: remoteCollections.length,
-  );
+  }) async {
+    final override = collectionOverride;
+    if (override != null) return override(offset, limit);
+    final pageLimit = collectionPageSize ?? limit;
+    final start = offset.clamp(0, remoteCollections.length);
+    final end = (start + pageLimit).clamp(start, remoteCollections.length);
+    return BangumiCollectionPage(
+      collections: remoteCollections.sublist(start, end),
+      offset: offset,
+      limit: pageLimit,
+      total: remoteCollections.length,
+    );
+  }
 
   @override
   Future<List<BangumiScheduleEntry>> calendar() async =>
@@ -552,7 +868,9 @@ final class _FakeBangumiClient implements BangumiClient {
   Future<void> setCollectionStatus(
     String subjectId,
     BangumiCollectionStatus status,
-  ) => throw UnimplementedError();
+  ) async {
+    collectionMutationCalls++;
+  }
 
   @override
   Future<void> setEpisodeWatched(
@@ -560,4 +878,21 @@ final class _FakeBangumiClient implements BangumiClient {
     String episodeId,
     bool watched,
   ) => throw UnimplementedError();
+}
+
+BangumiRemoteState _remoteState({
+  required BangumiCollectionStatus? status,
+  required Set<String> watchedEpisodeIds,
+}) {
+  return BangumiRemoteState(
+    accountId: '7',
+    subjectId: '42',
+    status: status,
+    watchedEpisodeIds: watchedEpisodeIds,
+    remoteRevision: BangumiRemoteState.fingerprint(
+      subjectId: '42',
+      status: status,
+      watchedEpisodeIds: watchedEpisodeIds,
+    ),
+  );
 }

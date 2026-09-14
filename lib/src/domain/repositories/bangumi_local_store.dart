@@ -1,5 +1,6 @@
 import '../models/bangumi_models.dart';
 import '../models/bangumi_sync_models.dart';
+import 'bangumi_repository.dart' show BangumiEpisodeProgress;
 
 abstract interface class BangumiLocalStore {
   String? get activeAccountId;
@@ -21,6 +22,16 @@ abstract interface class BangumiLocalStore {
   Future<void> cacheSubject(BangumiSubject subject);
 
   Future<void> cacheCollection(BangumiCollectionEntry collection);
+
+  /// Reconciles one complete remote collection snapshot atomically.
+  ///
+  /// Rows absent from [collections] are removed from the cached collection
+  /// view unless an unfinished local collection operation still owns that
+  /// subject's local-first projection. Subject and episode metadata remain
+  /// cached for detail and playback use.
+  Future<void> reconcileRemoteCollections(
+    List<BangumiCollectionEntry> collections,
+  );
 
   Future<List<BangumiCollectionEntry>> cachedCollections();
 
@@ -45,6 +56,8 @@ abstract interface class BangumiLocalStore {
     bool watched,
   );
 
+  Future<BangumiEpisodeProgress?> loadEpisodeProgress(String subjectId);
+
   Future<List<BangumiPendingOperation>> pendingOperations({
     DateTime? now,
     bool forceRetry = false,
@@ -67,7 +80,7 @@ abstract interface class BangumiLocalStore {
   /// local-first changes for one subject from conflicting with themselves.
   Future<void> reconcileAfterMutation(
     BangumiRemoteState state, {
-    required String completedOperationId,
+    required BangumiPendingOperation completedOperation,
   });
 
   Future<void> markConflict(
@@ -95,7 +108,18 @@ abstract interface class BangumiLocalStore {
     int? statusCode,
   });
 
-  Future<void> complete(BangumiPendingOperation operation);
+  /// Returns whether the operation still represented the same local intent
+  /// when it was completed. A false result means a newer coalesced intent won
+  /// the race and must remain queued.
+  Future<bool> complete(BangumiPendingOperation operation);
+
+  /// Returns valid, active-account operations blocked specifically by HTTP
+  /// 415. Other blocked reasons are intentionally excluded.
+  Future<List<BangumiPendingOperation>> recoverableHttp415Operations();
+
+  /// Requeues one structurally valid HTTP-415 operation. Returns false when
+  /// the persisted row is no longer eligible or belongs to another account.
+  Future<bool> requeueHttp415(BangumiPendingOperation operation);
 
   Future<List<BangumiConflict>> conflicts();
 }

@@ -329,6 +329,19 @@ class BangumiConflictSnapshots extends Table {
   Set<Column<Object>> get primaryKey => {operationId};
 }
 
+@DataClassName('SourcePackageRecord')
+class SourcePackages extends Table {
+  TextColumn get packageId => text()();
+  TextColumn get packageJson => text()();
+  TextColumn get status => text()();
+  BoolColumn get requiresConsent => boolean()();
+  BoolColumn get requiresReconsent => boolean()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {packageId};
+}
+
 @DriftDatabase(
   tables: [
     AppSettingsRows,
@@ -348,6 +361,7 @@ class BangumiConflictSnapshots extends Table {
     BangumiMappings,
     BangumiSyncOperations,
     BangumiConflictSnapshots,
+    SourcePackages,
   ],
 )
 final class WynimeDatabase extends _$WynimeDatabase {
@@ -365,7 +379,7 @@ final class WynimeDatabase extends _$WynimeDatabase {
       );
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   final DatabaseWriteGate writeGate = DatabaseWriteGate();
 
@@ -460,6 +474,9 @@ final class WynimeDatabase extends _$WynimeDatabase {
         await migrator.createTable(bangumiSubjectCharacters);
         await migrator.createTable(bangumiSubjectPersons);
         await migrator.createTable(bangumiSubjectRelations);
+      }
+      if (from < 6) {
+        await migrator.createTable(sourcePackages);
       }
     },
     beforeOpen: (details) async {

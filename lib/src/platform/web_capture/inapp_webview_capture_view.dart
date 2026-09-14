@@ -48,6 +48,7 @@ final class InAppWebViewCaptureView extends StatefulWidget {
     required this.onSnapshot,
     this.onRuntimeStatus,
     this.onSecurityFailure,
+    this.onCaptureFailure,
     this.loadingBuilder,
     this.unavailableBuilder,
     super.key,
@@ -58,6 +59,12 @@ final class InAppWebViewCaptureView extends StatefulWidget {
   final ValueChanged<WebCaptureSnapshot> onSnapshot;
   final ValueChanged<WebCaptureRuntimeStatus>? onRuntimeStatus;
   final ValueChanged<WebCaptureSecurityException>? onSecurityFailure;
+
+  /// Reports a failure that prevents this view from producing a snapshot.
+  ///
+  /// Policy-blocked individual requests continue to use [onSecurityFailure]
+  /// and remain blocked without terminating the capture.
+  final ValueChanged<WebCaptureSecurityException>? onCaptureFailure;
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, WebCaptureRuntimeStatus status)?
   unavailableBuilder;
@@ -124,17 +131,18 @@ final class _InAppWebViewCaptureViewState
       return status;
     } on WebCaptureSecurityException catch (error) {
       widget.onSecurityFailure?.call(error);
+      widget.onCaptureFailure?.call(error);
       return WebCaptureRuntimeStatus(
         state: WebCaptureRuntimeState.unavailable,
         reasonCode: 'webview_bootstrap_security_failed',
       );
     } on Object {
-      widget.onSecurityFailure?.call(
-        WebCaptureSecurityException(
-          'webview_bootstrap_failed',
-          'The platform WebView could not be prepared.',
-        ),
+      final error = WebCaptureSecurityException(
+        'webview_bootstrap_failed',
+        'The platform WebView could not be prepared.',
       );
+      widget.onSecurityFailure?.call(error);
+      widget.onCaptureFailure?.call(error);
       return WebCaptureRuntimeStatus(
         state: WebCaptureRuntimeState.unavailable,
         reasonCode: 'webview_bootstrap_failed',
@@ -225,12 +233,12 @@ final class _InAppWebViewCaptureViewState
         final finalUri = Uri.tryParse(url.toString());
         if (finalUri == null ||
             !widget.request.securityPolicy.allowsUri(finalUri)) {
-          widget.onSecurityFailure?.call(
-            WebCaptureSecurityException(
-              'final_uri_not_allowed',
-              'Final WebView URI is outside the declared source allowlist.',
-            ),
+          final error = WebCaptureSecurityException(
+            'final_uri_not_allowed',
+            'Final WebView URI is outside the declared source allowlist.',
           );
+          widget.onSecurityFailure?.call(error);
+          widget.onCaptureFailure?.call(error);
           return;
         }
         try {
@@ -245,6 +253,14 @@ final class _InAppWebViewCaptureViewState
           );
         } on WebCaptureSecurityException catch (error) {
           widget.onSecurityFailure?.call(error);
+          widget.onCaptureFailure?.call(error);
+        } on Object {
+          final error = WebCaptureSecurityException(
+            'webview_capture_finalize_failed',
+            'The platform WebView could not finalize capture.',
+          );
+          widget.onSecurityFailure?.call(error);
+          widget.onCaptureFailure?.call(error);
         }
       },
       onDownloadStarting: (controller, request) {

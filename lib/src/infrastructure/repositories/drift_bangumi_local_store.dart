@@ -417,6 +417,106 @@ final class DriftBangumiLocalStore
   }
 
   @override
+  Future<void> reconcileRemoteCollections(
+    List<BangumiCollectionEntry> collections,
+  ) async {
+    final accountId = _requireAccount();
+    final now = _clock().toUtc();
+    await _database.runWrite(
+      () => _database.transaction(() async {
+        // The account can change while this operation waits in the write
+        // gate. Revalidate both the in-memory selector and the persisted
+        // active-account row before mutating the captured account's cache.
+        if (activeAccountId != accountId) return;
+        final activeAccount =
+            await (_database.select(_database.bangumiAccounts)..where(
+                  (table) =>
+                      table.accountId.equals(accountId) &
+                      table.isActive.equals(true),
+                ))
+                .getSingleOrNull();
+        if (activeAccount == null) return;
+        final existingRows = await (_database.select(
+          _database.bangumiCollections,
+        )..where((table) => table.accountId.equals(accountId))).get();
+        final existingBySubject = <String, BangumiCollectionRecord>{
+          for (final row in existingRows) row.subjectId: row,
+        };
+        final queuedRows =
+            await (_database.select(_database.bangumiSyncOperations)
+                  ..where(
+                    (table) =>
+                        table.accountId.equals(accountId) &
+                        table.kind.equals(
+                          BangumiSyncOperationKind.collectionStatus.name,
+                        ) &
+                        table.collectionStatus.isNotNull() &
+                        table.state.isIn(<String>[
+                          BangumiSyncOperationState.pending.name,
+                          BangumiSyncOperationState.retryWaiting.name,
+                          BangumiSyncOperationState.conflict.name,
+                        ]),
+                  )
+                  ..orderBy([
+                    (table) => OrderingTerm.desc(table.updatedAt),
+                    (table) => OrderingTerm.desc(table.createdAt),
+                  ]))
+                .get();
+        final localStatusBySubject = <String, int>{};
+        for (final row in queuedRows) {
+          if (_isStructurallyValidSyncOperation(row)) {
+            localStatusBySubject.putIfAbsent(
+              row.subjectId,
+              () => row.collectionStatus!,
+            );
+          }
+        }
+
+        final remoteSubjectIds = <String>{};
+        for (final collection in collections) {
+          if (!remoteSubjectIds.add(collection.subjectId)) {
+            throw const BangumiPayloadException('duplicate_collection_subject');
+          }
+          await _ensureSubjectForCollection(collection, now);
+          final existing = existingBySubject[collection.subjectId];
+          await _database
+              .into(_database.bangumiCollections)
+              .insertOnConflictUpdate(
+                BangumiCollectionsCompanion(
+                  accountId: Value(accountId),
+                  subjectId: Value(collection.subjectId),
+                  status: Value(
+                    localStatusBySubject[collection.subjectId] ??
+                        collection.status.apiType,
+                  ),
+                  // A missing ep_status is an unknown value, not proof that
+                  // the remote count is zero. Retain the last known count in
+                  // that case while accepting every non-null refresh value.
+                  epStatus: Value(collection.epStatus ?? existing?.epStatus),
+                  remoteRevision: Value(existing?.remoteRevision),
+                  localUpdatedAt: Value(existing?.localUpdatedAt ?? now),
+                  remoteUpdatedAt: Value(now),
+                ),
+              );
+        }
+
+        for (final row in existingRows) {
+          if (remoteSubjectIds.contains(row.subjectId) ||
+              localStatusBySubject.containsKey(row.subjectId)) {
+            continue;
+          }
+          await (_database.delete(_database.bangumiCollections)..where(
+                (table) =>
+                    table.accountId.equals(accountId) &
+                    table.subjectId.equals(row.subjectId),
+              ))
+              .go();
+        }
+      }),
+    );
+  }
+
+  @override
   Future<List<BangumiCollectionEntry>> cachedCollections() async {
     final accountId = activeAccountId;
     if (accountId == null) return const <BangumiCollectionEntry>[];
@@ -1270,28 +1370,49 @@ final class DriftBangumiLocalStore
   @override
   Future<void> reconcileAfterMutation(
     BangumiRemoteState state, {
-    required String completedOperationId,
+    required BangumiPendingOperation completedOperation,
   }) async {
     final now = _clock().toUtc();
     await _database.runWrite(
       () => _database.transaction(() async {
         await _applyRemoteState(state, now);
-        await (_database.update(_database.bangumiSyncOperations)..where(
-              (table) =>
-                  table.accountId.equals(state.accountId) &
-                  table.subjectId.equals(state.subjectId) &
-                  table.operationId.isNotIn(<String>[completedOperationId]) &
-                  table.state.isIn(<String>[
-                    BangumiSyncOperationState.pending.name,
-                    BangumiSyncOperationState.retryWaiting.name,
-                  ]),
-            ))
-            .write(
-              BangumiSyncOperationsCompanion(
-                baseRemoteRevision: Value(state.remoteRevision),
-                updatedAt: Value(now),
-              ),
-            );
+        final rows =
+            await (_database.select(_database.bangumiSyncOperations)..where(
+                  (table) =>
+                      table.accountId.equals(state.accountId) &
+                      table.subjectId.equals(state.subjectId) &
+                      table.state.isIn(<String>[
+                        BangumiSyncOperationState.pending.name,
+                        BangumiSyncOperationState.retryWaiting.name,
+                      ]),
+                ))
+                .get();
+        for (final row in rows) {
+          // The same operation id can be reused by _enqueue when the user
+          // changes the desired state while an older sync request is in
+          // flight. Do not rebase away or complete that newer intent as if it
+          // were the snapshot that just finished.
+          if (_matchesOperationSnapshot(row, completedOperation)) continue;
+
+          final isCollection =
+              row.kind == BangumiSyncOperationKind.collectionStatus.name;
+          final isEpisode =
+              row.kind == BangumiSyncOperationKind.episodeWatched.name;
+          await (_database.update(
+            _database.bangumiSyncOperations,
+          )..where((table) => table.operationId.equals(row.operationId))).write(
+            BangumiSyncOperationsCompanion(
+              baseRemoteRevision: Value(state.remoteRevision),
+              baseCollectionStatus: isCollection
+                  ? Value(state.status?.apiType)
+                  : const Value.absent(),
+              baseWatched: isEpisode && row.episodeId != null
+                  ? Value(state.watchedEpisodeIds.contains(row.episodeId))
+                  : const Value.absent(),
+              updatedAt: Value(now),
+            ),
+          );
+        }
       }),
     );
   }
@@ -1396,9 +1517,20 @@ final class DriftBangumiLocalStore
   }
 
   @override
-  Future<void> complete(BangumiPendingOperation operation) async {
+  Future<bool> complete(BangumiPendingOperation operation) async {
+    var completed = false;
     await _database.runWrite(
       () => _database.transaction(() async {
+        final current =
+            await (_database.select(_database.bangumiSyncOperations)..where(
+                  (table) =>
+                      table.operationId.equals(operation.operationId) &
+                      table.accountId.equals(operation.accountId),
+                ))
+                .getSingleOrNull();
+        if (current == null || !_matchesOperationSnapshot(current, operation)) {
+          return;
+        }
         await (_database.delete(_database.bangumiConflictSnapshots)..where(
               (table) => table.operationId.equals(operation.operationId),
             ))
@@ -1407,8 +1539,78 @@ final class DriftBangumiLocalStore
               (table) => table.operationId.equals(operation.operationId),
             ))
             .go();
+        completed = true;
       }),
     );
+    return completed;
+  }
+
+  @override
+  Future<List<BangumiPendingOperation>> recoverableHttp415Operations() async {
+    final accountId = activeAccountId;
+    if (accountId == null) return const <BangumiPendingOperation>[];
+    final rows =
+        await (_database.select(_database.bangumiSyncOperations)
+              ..where(
+                (table) =>
+                    table.accountId.equals(accountId) &
+                    table.state.equals(BangumiSyncOperationState.blocked.name) &
+                    (table.lastErrorCode.equals('http_415') |
+                        table.statusCode.equals(415)),
+              )
+              ..orderBy([(table) => OrderingTerm.asc(table.createdAt)]))
+            .get();
+    final operations = <BangumiPendingOperation>[];
+    for (final row in rows) {
+      if (!_isRecoverableHttp415Row(row) ||
+          !_isStructurallyValidSyncOperation(row)) {
+        continue;
+      }
+      try {
+        operations.add(_mapOperation(row));
+      } on Object {
+        // A damaged row remains blocked and is never sent to Bangumi.
+      }
+    }
+    return List.unmodifiable(operations);
+  }
+
+  @override
+  Future<bool> requeueHttp415(BangumiPendingOperation operation) async {
+    final accountId = activeAccountId;
+    if (accountId == null || accountId != operation.accountId) return false;
+    var requeued = false;
+    await _database.runWrite(
+      () => _database.transaction(() async {
+        final row =
+            await (_database.select(_database.bangumiSyncOperations)..where(
+                  (table) =>
+                      table.operationId.equals(operation.operationId) &
+                      table.accountId.equals(accountId),
+                ))
+                .getSingleOrNull();
+        if (row == null ||
+            !_isRecoverableHttp415Row(row) ||
+            !_isStructurallyValidSyncOperation(row)) {
+          return;
+        }
+        await (_database.update(_database.bangumiSyncOperations)..where(
+              (table) => table.operationId.equals(operation.operationId),
+            ))
+            .write(
+              BangumiSyncOperationsCompanion(
+                state: Value(BangumiSyncOperationState.pending.name),
+                attempts: const Value(0),
+                nextAttemptAt: const Value(null),
+                lastErrorCode: const Value(null),
+                statusCode: const Value(null),
+                updatedAt: Value(_clock().toUtc()),
+              ),
+            );
+        requeued = true;
+      }),
+    );
+    return requeued;
   }
 
   @override
@@ -1642,6 +1844,33 @@ final class DriftBangumiLocalStore
 
   String _newOperationId() =>
       '${_clock().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
+
+  static bool _isRecoverableHttp415Row(BangumiSyncOperationRecord row) {
+    if (row.state != BangumiSyncOperationState.blocked.name) return false;
+    final has415Code = row.lastErrorCode == 'http_415';
+    final has415Status = row.statusCode == 415;
+    if (!has415Code && !has415Status) return false;
+    if (row.lastErrorCode != null && !has415Code) return false;
+    if (row.statusCode != null && !has415Status) return false;
+    return true;
+  }
+
+  static bool _matchesOperationSnapshot(
+    BangumiSyncOperationRecord row,
+    BangumiPendingOperation operation,
+  ) {
+    if (row.state != BangumiSyncOperationState.pending.name &&
+        row.state != BangumiSyncOperationState.retryWaiting.name) {
+      return false;
+    }
+    return row.operationId == operation.operationId &&
+        row.accountId == operation.accountId &&
+        row.subjectId == operation.subjectId &&
+        row.episodeId == operation.episodeId &&
+        row.kind == operation.kind.name &&
+        row.collectionStatus == operation.collectionStatus?.apiType &&
+        row.watched == operation.watched;
+  }
 
   static bool _isStructurallyValidSyncOperation(
     BangumiSyncOperationRecord row,

@@ -1,11 +1,13 @@
 import '../../domain/models/source_security_policy.dart';
 import '../../domain/models/web_capture_models.dart';
+import '../../domain/services/web_capture_candidate_classifier.dart';
 
 final class WebCaptureAccumulator {
   WebCaptureAccumulator(this.request)
     : _headerBytes = webCaptureHeaderBytes(request.initialHeaders);
 
   final WebCaptureRequest request;
+  static const _candidateClassifier = WebCaptureCandidateClassifier();
   final List<WebCaptureEvent> _events = [];
   final Map<String, WebMediaCandidate> _candidates = {};
   var _headerBytes = 0;
@@ -53,9 +55,11 @@ final class WebCaptureAccumulator {
     _events.add(event);
 
     if (request.captureMediaRequests) {
-      final kind = _classifyCandidate(event);
+      final kind = _candidateClassifier.classify(event);
       if (kind != null) {
-        final normalized = event.uri.replace(fragment: '');
+        final normalized = _candidateClassifier.normalizeCandidateUri(
+          event.uri,
+        );
         final key = '${kind.name}:${normalized.toString()}';
         if (!_candidates.containsKey(key)) {
           if (_candidates.length >= request.budget.maxCandidates) {
@@ -120,55 +124,4 @@ final class WebCaptureAccumulator {
       finalUri: finalUri,
     );
   }
-
-  WebCandidateKind? _classifyCandidate(WebCaptureEvent event) {
-    final contentType = _headerValue(
-      event.headers,
-      'content-type',
-    )?.split(';').first.trim().toLowerCase();
-    if (contentType == 'application/vnd.apple.mpegurl' ||
-        contentType == 'application/x-mpegurl' ||
-        contentType == 'audio/mpegurl') {
-      return WebCandidateKind.hls;
-    }
-    if (contentType == 'application/dash+xml') {
-      return WebCandidateKind.dash;
-    }
-    if (contentType?.startsWith('video/') ?? false) {
-      return WebCandidateKind.video;
-    }
-    if (contentType?.startsWith('audio/') ?? false) {
-      return WebCandidateKind.audio;
-    }
-
-    final path = event.uri.path.toLowerCase();
-    if (path.endsWith('.m3u8')) {
-      return WebCandidateKind.hls;
-    }
-    if (path.endsWith('.mpd')) {
-      return WebCandidateKind.dash;
-    }
-    if (_endsWithAny(path, const ['.mp4', '.mkv', '.webm', '.mov'])) {
-      return WebCandidateKind.video;
-    }
-    if (_endsWithAny(path, const ['.m4a', '.aac', '.mp3', '.flac', '.opus'])) {
-      return WebCandidateKind.audio;
-    }
-    if (_endsWithAny(path, const ['.ts', '.m4s', '.cmfv', '.cmfa'])) {
-      return WebCandidateKind.mediaSegment;
-    }
-    return null;
-  }
-
-  static String? _headerValue(Map<String, String> headers, String name) {
-    for (final entry in headers.entries) {
-      if (entry.key.toLowerCase() == name) {
-        return entry.value;
-      }
-    }
-    return null;
-  }
-
-  static bool _endsWithAny(String value, Iterable<String> suffixes) =>
-      suffixes.any(value.endsWith);
 }

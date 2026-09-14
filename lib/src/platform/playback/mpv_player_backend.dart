@@ -167,6 +167,7 @@ final class MpvPlayerBackend implements PlayerBackend {
 
   @override
   Future<void> close() async {
+    final sessionId = _session?.sessionId;
     final identity = _session?.timelineMapIdentity;
     final hadPlayer = _player != null || _session != null;
     await _releasePlayer();
@@ -181,6 +182,7 @@ final class MpvPlayerBackend implements PlayerBackend {
           bufferedPosition: _bufferedPosition,
           volume: _volume,
           rate: _rate,
+          sessionId: sessionId,
           audioTrackId: _audioTrackId,
           subtitleTrackId: _subtitleTrackId,
           timelineMapIdentity: identity,
@@ -264,6 +266,7 @@ final class MpvPlayerBackend implements PlayerBackend {
         bufferedPosition: _bufferedPosition,
         volume: _volume,
         rate: _rate,
+        sessionId: session.sessionId,
         audioTrackId: _audioTrackId,
         subtitleTrackId: _subtitleTrackId,
         timelineMapIdentity: session.timelineMapIdentity,
@@ -285,6 +288,7 @@ final class MpvPlayerBackend implements PlayerBackend {
         failure: failure,
         volume: _volume,
         rate: _rate,
+        sessionId: session.sessionId,
         audioTrackId: _audioTrackId,
         subtitleTrackId: _subtitleTrackId,
         timelineMapIdentity: session.timelineMapIdentity,

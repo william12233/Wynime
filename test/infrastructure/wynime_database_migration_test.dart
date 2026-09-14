@@ -12,7 +12,7 @@ import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store
 
 void main() {
   test(
-    'migrates a populated v1 database to v5 and preserves base rows',
+    'migrates a populated v1 database to v6 and preserves base rows',
     () async {
       final executor = NativeDatabase.memory(setup: _createVersionOneFixture);
       final database = WynimeDatabase(executor);
@@ -23,6 +23,9 @@ void main() {
       final manifests = await database.select(database.artifactManifests).get();
       final artifacts = await database.select(database.artifactRows).get();
       final jobs = await database.select(database.deleteJobRows).get();
+      final sourcePackages = await database
+          .select(database.sourcePackages)
+          .get();
       final accounts = await database.select(database.bangumiAccounts).get();
       final schedules = await database.select(database.bangumiSchedules).get();
       final accountColumns = await database
@@ -53,6 +56,7 @@ void main() {
       expect(manifests.single.manifestId, 'manifest-1');
       expect(artifacts.single.fileUri, 'file:///episode.mkv');
       expect(jobs.single.status, 'pending');
+      expect(sourcePackages, isEmpty);
       expect(accounts, isEmpty);
       expect(schedules, isEmpty);
       expect(
@@ -71,7 +75,7 @@ void main() {
       );
       expect(detailTables, hasLength(3));
       expect(indexes, hasLength(2));
-      expect(await _userVersion(database), 5);
+      expect(await _userVersion(database), 6);
 
       await database
           .into(database.bangumiAccounts)
@@ -233,7 +237,7 @@ void main() {
     },
   );
 
-  test('creates custom Bangumi indexes for a fresh v5 database', () async {
+  test('creates custom Bangumi indexes for a fresh v6 database', () async {
     final database = WynimeDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
@@ -245,7 +249,7 @@ void main() {
         .get();
 
     expect(indexes, hasLength(2));
-    expect(await _userVersion(database), 5);
+    expect(await _userVersion(database), 6);
   });
 }
 

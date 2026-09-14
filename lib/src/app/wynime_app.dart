@@ -2,9 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:wynime/src/application/bangumi_session_controller.dart';
+import 'package:wynime/src/application/source_installed_live_search_pipeline.dart';
+import 'package:wynime/src/application/source_package_startup_controller.dart';
+import 'package:wynime/src/application/source_registry_controller.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/l10n/app_localizations.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
+import 'package:wynime/src/domain/repositories/watch_history_repository.dart';
 import 'package:wynime/src/design_system/theme/wynime_theme.dart';
 import 'package:wynime/src/presentation/shell/responsive_app_shell.dart';
 
@@ -13,6 +17,10 @@ class WynimeApp extends StatefulWidget {
     super.key,
     this.locale,
     this.bangumi,
+    this.sourcePackages,
+    this.sourceSearchPipeline,
+    this.sourceRegistry,
+    this.watchHistory,
     this.softwareUpdates,
     this.onReady,
     this.onDispose,
@@ -20,6 +28,10 @@ class WynimeApp extends StatefulWidget {
 
   final Locale? locale;
   final BangumiSessionController? bangumi;
+  final SourcePackageStartupController? sourcePackages;
+  final SourceInstalledLiveSearchPipeline? sourceSearchPipeline;
+  final SourceRegistryController? sourceRegistry;
+  final WatchHistoryRepository? watchHistory;
   final SoftwareUpdateController? softwareUpdates;
   final Future<void> Function()? onReady;
   final VoidCallback? onDispose;
@@ -40,6 +52,8 @@ class _WynimeAppState extends State<WynimeApp> {
 
   Future<void> _initializeServices() async {
     await widget.bangumi?.initialize();
+    await widget.sourcePackages?.initialize();
+    unawaited(widget.sourceRegistry?.initialize());
     await widget.softwareUpdates?.initialize();
     final softwareUpdates = widget.softwareUpdates;
     if (softwareUpdates != null) {
@@ -54,11 +68,28 @@ class _WynimeAppState extends State<WynimeApp> {
 
   @override
   void dispose() {
-    unawaited(widget.bangumi?.close());
-    widget.bangumi?.dispose();
-    widget.softwareUpdates?.dispose();
-    widget.onDispose?.call();
+    // Mark the package controller closed synchronously, then let any already
+    // queued durable mutation finish before the database is closed. This
+    // avoids a lifecycle write racing the app-owned database teardown.
+    final sourcePackagesClose = widget.sourcePackages?.close();
+    unawaited(_disposeServices(sourcePackagesClose));
     super.dispose();
+  }
+
+  Future<void> _disposeServices(Future<void>? sourcePackagesClose) async {
+    try {
+      await widget.bangumi?.close();
+    } finally {
+      try {
+        await sourcePackagesClose;
+      } finally {
+        widget.bangumi?.dispose();
+        widget.sourcePackages?.dispose();
+        widget.sourceRegistry?.dispose();
+        widget.softwareUpdates?.dispose();
+        widget.onDispose?.call();
+      }
+    }
   }
 
   void _updateSettings(AppSettings settings) {
@@ -80,6 +111,10 @@ class _WynimeAppState extends State<WynimeApp> {
         settings: _settings,
         onSettingsChanged: _updateSettings,
         bangumi: widget.bangumi,
+        sourcePackages: widget.sourcePackages,
+        sourceSearchPipeline: widget.sourceSearchPipeline,
+        sourceRegistry: widget.sourceRegistry,
+        watchHistory: widget.watchHistory,
         softwareUpdates: widget.softwareUpdates,
       ),
     );

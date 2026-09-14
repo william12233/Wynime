@@ -32,6 +32,45 @@ final class WatchProgress {
     }
   }
 
+  /// Creates a valid progress value from a persisted or external snapshot.
+  ///
+  /// Database rows are expected to be valid, but this boundary is deliberately
+  /// tolerant of old/corrupt position values so opening Continue Watching can
+  /// never crash because a position was negative or beyond a known duration.
+  factory WatchProgress.sanitized({
+    required String progressId,
+    required String sourceId,
+    required String lineId,
+    required String subjectId,
+    required String episodeId,
+    required Duration position,
+    required Duration duration,
+    required bool isCompleted,
+    required DateTime updatedAt,
+    String? playerBackendId,
+    String? timelineMapId,
+  }) {
+    final safeDuration = duration.isNegative ? Duration.zero : duration;
+    final safePosition = position.isNegative
+        ? Duration.zero
+        : safeDuration == Duration.zero || position <= safeDuration
+        ? position
+        : safeDuration;
+    return WatchProgress(
+      progressId: progressId,
+      sourceId: sourceId,
+      lineId: lineId,
+      subjectId: subjectId,
+      episodeId: episodeId,
+      position: safePosition,
+      duration: safeDuration,
+      isCompleted: isCompleted,
+      updatedAt: updatedAt,
+      playerBackendId: playerBackendId,
+      timelineMapId: timelineMapId,
+    );
+  }
+
   final String progressId;
   final String sourceId;
   final String lineId;

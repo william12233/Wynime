@@ -93,10 +93,10 @@ final class BangumiSyncService {
       throw const BangumiApiException(code: 'account_mismatch');
     }
     final blockedBefore = await _store.blockedCount();
-    final operations = await _store.pendingOperations(
-      now: _clock(),
-      forceRetry: forceRetry,
-    );
+    final operations = <BangumiPendingOperation>[
+      ...await _store.pendingOperations(now: _clock(), forceRetry: forceRetry),
+      if (forceRetry) ...await _store.recoverableHttp415Operations(),
+    ];
     var processed = 0;
     var conflicts = 0;
     var retryWaiting = 0;
@@ -105,6 +105,10 @@ final class BangumiSyncService {
     final rebasedRevisions = <String, String>{};
 
     for (final operation in operations) {
+      if (operation.state == BangumiSyncOperationState.blocked &&
+          !await _store.requeueHttp415(operation)) {
+        continue;
+      }
       BangumiRemoteState? latestRemote;
       try {
         latestRemote = await _readRemote(
@@ -119,9 +123,10 @@ final class BangumiSyncService {
         // including after an earlier mutation response was lost. Complete it
         // without issuing a duplicate mutation.
         if (_matchesDesired(latestRemote, operation)) {
-          await _completeConfirmed(operation, latestRemote);
-          rebasedRevisions[operation.subjectId] = latestRemote.remoteRevision;
-          processed++;
+          if (await _completeConfirmed(operation, latestRemote)) {
+            rebasedRevisions[operation.subjectId] = latestRemote.remoteRevision;
+            processed++;
+          }
           continue;
         }
 
@@ -150,9 +155,10 @@ final class BangumiSyncService {
           continue;
         }
 
-        await _completeConfirmed(operation, verified);
-        rebasedRevisions[operation.subjectId] = verified.remoteRevision;
-        processed++;
+        if (await _completeConfirmed(operation, verified)) {
+          rebasedRevisions[operation.subjectId] = verified.remoteRevision;
+          processed++;
+        }
       } on BangumiApiException catch (error) {
         if (_isAuthenticationError(error.code)) {
           // Keep an auth failure retryable and visible. Once the user
@@ -338,15 +344,12 @@ final class BangumiSyncService {
     );
   }
 
-  Future<void> _completeConfirmed(
+  Future<bool> _completeConfirmed(
     BangumiPendingOperation operation,
     BangumiRemoteState remote,
   ) async {
-    await _store.reconcileAfterMutation(
-      remote,
-      completedOperationId: operation.operationId,
-    );
-    await _store.complete(operation);
+    await _store.reconcileAfterMutation(remote, completedOperation: operation);
+    return _store.complete(operation);
   }
 
   Future<void> _recordConflict(

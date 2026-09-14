@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:wynime/src/domain/models/bangumi_episode_target.dart';
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
 import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/domain/services/playback_proxy.dart';
 import 'package:wynime/src/domain/services/playback_session_resolver.dart';
 import 'package:wynime/src/domain/services/player_backend.dart';
+import 'playback_progress_service.dart';
 
 final class PlaybackOpenRequest {
   PlaybackOpenRequest({
@@ -14,6 +16,8 @@ final class PlaybackOpenRequest {
     this.addressFamily = LoopbackAddressFamily.ipv4,
     this.refreshLeeway = const Duration(seconds: 30),
     this.maxAutomaticRefreshes = 1,
+    this.episodeDuration,
+    this.bangumiEpisode,
   }) {
     if (refreshLeeway.isNegative) {
       throw ArgumentError.value(
@@ -29,6 +33,13 @@ final class PlaybackOpenRequest {
         'Must be between 0 and 3.',
       );
     }
+    if (episodeDuration?.isNegative == true) {
+      throw ArgumentError.value(
+        episodeDuration,
+        'episodeDuration',
+        'Must not be negative.',
+      );
+    }
   }
 
   final PlaybackSessionResolutionRequest resolution;
@@ -36,6 +47,8 @@ final class PlaybackOpenRequest {
   final LoopbackAddressFamily addressFamily;
   final Duration refreshLeeway;
   final int maxAutomaticRefreshes;
+  final Duration? episodeDuration;
+  final BangumiEpisodeTarget? bangumiEpisode;
 }
 
 final class PlaybackCoordinator {
@@ -43,9 +56,15 @@ final class PlaybackCoordinator {
     required PlaybackSessionResolver resolver,
     required PlaybackProxyService proxy,
     required PlayerBackend player,
-  }) => PlaybackCoordinator._(resolver, proxy, player);
+    PlaybackProgressService? progressService,
+  }) => PlaybackCoordinator._(resolver, proxy, player, progressService);
 
-  PlaybackCoordinator._(this._resolver, this._proxy, this._player) {
+  PlaybackCoordinator._(
+    this._resolver,
+    this._proxy,
+    this._player,
+    this._progressService,
+  ) {
     _playerSubscription = _player.events.listen(
       _handlePlayerEvent,
       onError: (Object error, StackTrace _) {
@@ -59,12 +78,14 @@ final class PlaybackCoordinator {
   final PlaybackSessionResolver _resolver;
   final PlaybackProxyService _proxy;
   final PlayerBackend _player;
+  final PlaybackProgressService? _progressService;
   final PlaybackErrorBoundary _errorBoundary = const PlaybackErrorBoundary();
   final StreamController<PlaybackEvent> _events =
       StreamController<PlaybackEvent>.broadcast();
   late final StreamSubscription<PlaybackEvent> _playerSubscription;
 
   _ActivePlayback? _active;
+  PlaybackProgressBinding? _progressBinding;
   int _operation = 0;
   bool _closed = false;
   int? _refreshingOperation;
@@ -125,12 +146,32 @@ final class PlaybackCoordinator {
       operation: operation,
     );
     _active = active;
+    PlaybackProgressBinding? progressBinding;
     try {
+      final progressService = _progressService;
+      if (progressService != null) {
+        progressBinding = await progressService.bind(
+          session: playable,
+          events: _events.stream,
+          duration: request.episodeDuration,
+          playerBackendId: _player.backendId,
+          bangumiEpisode: request.bangumiEpisode,
+        );
+        _progressBinding = progressBinding;
+      }
       await _player.open(playable);
+      final resumePosition = progressBinding?.initialResumePosition;
+      if (resumePosition != null && resumePosition > Duration.zero) {
+        await _runPlayerOperation(() => _player.seek(resumePosition));
+      }
     } on Object {
       if (identical(_active, active)) {
         _active = null;
       }
+      if (identical(_progressBinding, progressBinding)) {
+        _progressBinding = null;
+      }
+      await progressBinding?.close();
       await lease.close();
       rethrow;
     }
@@ -191,11 +232,15 @@ final class PlaybackCoordinator {
   }
 
   void _handlePlayerEvent(PlaybackEvent event) {
+    final active = _active;
+    if (event.sessionId != null &&
+        (active == null || event.sessionId != active.session.sessionId)) {
+      return;
+    }
     if (!_events.isClosed) {
       _events.add(event);
     }
     final failure = event.failure;
-    final active = _active;
     if (failure?.shouldRefreshSession == true &&
         active != null &&
         _refreshingOperation != active.operation &&
@@ -269,13 +314,18 @@ final class PlaybackCoordinator {
 
   Future<void> _stopActive() async {
     final active = _active;
-    _active = null;
+    final progressBinding = _progressBinding;
     if (active == null) {
+      _progressBinding = null;
+      await progressBinding?.close();
       return;
     }
     try {
       await _runPlayerOperation(_player.close);
     } finally {
+      _active = null;
+      _progressBinding = null;
+      await progressBinding?.close();
       await active.lease.close();
     }
   }

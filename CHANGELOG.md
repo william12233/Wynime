@@ -4,6 +4,31 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.10 - Release-ready
+
+### Animeko → Wynime 57-task convergence
+
+- Completed TASK-001 through TASK-057 across Bangumi synchronization,
+  watch-progress/resume behavior, bounded declarative source packages,
+  deterministic fixture and live-source pipelines, package registry/lifecycle,
+  source capture, playback handoff and Search presentation.
+- Added detailed per-task scope, architecture guardrails, validation evidence
+  and next-chat continuation rules in
+  `docs/release-notes-1.0.10.md`.
+- Preserved the one-website/one-package model, shared source executor,
+  authoritative playback/session boundaries and secret-safe diagnostics.
+
+### Distribution and validation boundary
+
+- Android arm64-v8a APK and Windows x64 portable ZIP are the only public
+  platform artifacts; each has a SHA-256 sidecar and Windows has no standalone
+  `setup.exe`.
+- Full deterministic Flutter tests pass 744/744; analyzer, formatting and
+  diff checks are clean.
+- Physical Android/Windows playback remains
+  `HARDWARE_VALIDATION_PENDING`; native Windows action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`.
+
 ## 1.0.9 - Release-ready
 
 ### Bangumi library and subject details

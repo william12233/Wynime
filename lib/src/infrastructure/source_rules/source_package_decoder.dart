@@ -3,7 +3,11 @@ import 'dart:convert';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../../domain/models/source_package_manifest.dart';
+import '../../domain/models/source_package_live_operations.dart';
+import '../../domain/models/source_episode_normalization_models.dart';
+import '../../domain/models/source_playable_normalization_models.dart';
 import '../../domain/models/source_rule_program.dart';
+import '../../domain/models/source_search_normalization_models.dart';
 import '../../domain/models/source_security_policy.dart';
 
 final class SourcePackageDecoder {
@@ -31,7 +35,8 @@ final class SourcePackageDecoder {
     }
 
     final root = _asMap(decoded, r'$');
-    _expectKeys(root, r'$', {
+    final schemaVersion = _requiredInt(root, 'schemaVersion', r'$');
+    final rootKeys = <String>{
       'schemaVersion',
       'packageId',
       'displayName',
@@ -40,7 +45,9 @@ final class SourcePackageDecoder {
       'security',
       'programs',
       'signature',
-    });
+    };
+    if (schemaVersion == 2) rootKeys.add('liveOperations');
+    _expectKeys(root, r'$', rootKeys);
 
     final version = _parseVersion(
       _requiredString(root, 'version', r'$'),
@@ -56,6 +63,10 @@ final class SourcePackageDecoder {
         .map((entry) => _decodeProgram(entry.$2, r'$.programs[${entry.$1}]'))
         .toList(growable: false);
 
+    final liveOperations = schemaVersion == 2
+        ? _decodeLiveOperations(_required(root, 'liveOperations', r'$'))
+        : const <SourcePackageLiveOperation>[];
+
     final signatureValue = root['signature'];
     final signature = signatureValue == null
         ? null
@@ -63,13 +74,14 @@ final class SourcePackageDecoder {
 
     try {
       return SourcePackageManifest(
-        schemaVersion: _requiredInt(root, 'schemaVersion', r'$'),
+        schemaVersion: schemaVersion,
         packageId: _requiredString(root, 'packageId', r'$'),
         displayName: _requiredString(root, 'displayName', r'$'),
         version: version,
         wynimeVersionConstraint: constraint,
         securityPolicy: security,
         programs: programs,
+        liveOperations: liveOperations,
         signatureMetadata: signature,
       );
     } on ArgumentError catch (error) {
@@ -240,6 +252,121 @@ final class SourcePackageDecoder {
     }
   }
 
+  List<SourcePackageLiveOperation> _decodeLiveOperations(Object? value) {
+    const path = r'$.liveOperations';
+    final entries = _asList(value, path);
+    if (entries.length > 3) {
+      throw SourcePackageFormatException(
+        path,
+        'Schema version 2 permits at most 3 live operations.',
+      );
+    }
+    return entries.indexed
+        .map((entry) => _decodeLiveOperation(entry.$2, '$path[${entry.$1}]'))
+        .toList(growable: false);
+  }
+
+  SourcePackageLiveOperation _decodeLiveOperation(Object? value, String path) {
+    final map = _asMap(value, path);
+    _expectKeys(map, path, {'kind', 'programId', 'uriTemplate', 'mapping'});
+    final kindName = _requiredString(map, 'kind', path);
+    final SourcePackageLiveOperationKind kind;
+    try {
+      kind = SourcePackageLiveOperationKind.values.byName(kindName);
+    } on ArgumentError {
+      throw SourcePackageFormatException(
+        '$path.kind',
+        'Unsupported live operation kind: $kindName',
+      );
+    }
+    final mappingPath = '$path.mapping';
+    final mappingMap = _asMap(_required(map, 'mapping', path), mappingPath);
+    final Object mapping;
+    try {
+      mapping = switch (kind) {
+        SourcePackageLiveOperationKind.search => _decodeSearchMapping(
+          mappingMap,
+          mappingPath,
+        ),
+        SourcePackageLiveOperationKind.episode => _decodeEpisodeMapping(
+          mappingMap,
+          mappingPath,
+        ),
+        SourcePackageLiveOperationKind.playableSource => _decodePlayableMapping(
+          mappingMap,
+          mappingPath,
+        ),
+      };
+    } on ArgumentError catch (error) {
+      throw SourcePackageFormatException(
+        mappingPath,
+        error.message?.toString() ?? '$error',
+      );
+    }
+    try {
+      return SourcePackageLiveOperation(
+        kind: kind,
+        programId: _requiredString(map, 'programId', path),
+        uriTemplate: _requiredString(map, 'uriTemplate', path),
+        mapping: mapping,
+      );
+    } on ArgumentError catch (error) {
+      throw SourcePackageFormatException(
+        path,
+        error.message?.toString() ?? '$error',
+      );
+    }
+  }
+
+  SourceSearchFieldMapping _decodeSearchMapping(
+    Map<String, Object?> map,
+    String path,
+  ) {
+    _expectKeys(map, path, {'subjectIdField', 'titleField'});
+    return SourceSearchFieldMapping(
+      subjectIdField: _requiredString(map, 'subjectIdField', path),
+      titleField: _requiredString(map, 'titleField', path),
+    );
+  }
+
+  SourceEpisodeFieldMapping _decodeEpisodeMapping(
+    Map<String, Object?> map,
+    String path,
+  ) {
+    _expectKeys(map, path, {
+      'lineIdField',
+      'subjectIdField',
+      'episodeIdField',
+      'titleField',
+    });
+    return SourceEpisodeFieldMapping(
+      lineIdField: _requiredString(map, 'lineIdField', path),
+      subjectIdField: _requiredString(map, 'subjectIdField', path),
+      episodeIdField: _requiredString(map, 'episodeIdField', path),
+      titleField: _requiredString(map, 'titleField', path),
+    );
+  }
+
+  SourcePlayableSourceFieldMapping _decodePlayableMapping(
+    Map<String, Object?> map,
+    String path,
+  ) {
+    _expectKeys(map, path, {
+      'sourceKeyField',
+      'labelField',
+      'kindField',
+      'mediaUriField',
+      'pageUriField',
+    });
+    return SourcePlayableSourceFieldMapping(
+      sourceKeyField: _requiredString(map, 'sourceKeyField', path),
+      labelField: _requiredString(map, 'labelField', path),
+      kindField: _requiredString(map, 'kindField', path),
+      mediaUriField: _requiredString(map, 'mediaUriField', path),
+      pageUriField: _requiredString(map, 'pageUriField', path),
+    );
+  }
+
   SourceFieldRule _decodeField(Object? value, String path) {
     final map = _asMap(value, path);
     _expectKeys(map, path, {
@@ -292,7 +419,7 @@ final class SourcePackageDecoder {
     if (type == 'xpath') {
       throw SourcePackageFormatException(
         '$path.type',
-        'XPath is intentionally unsupported in source schema version 1.',
+        'XPath is intentionally unsupported in source package schemas.',
       );
     }
     final SourceSelectorKind kind;
@@ -346,7 +473,7 @@ final class SourcePackageDecoder {
     if (algorithm != 'ed25519') {
       throw SourcePackageFormatException(
         '$path.algorithm',
-        'Only ed25519 signature metadata is accepted in schema version 1.',
+        'Only ed25519 signature metadata is accepted in source package schemas.',
       );
     }
     final signature = _requiredString(map, 'signatureBase64', path);

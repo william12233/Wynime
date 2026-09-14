@@ -296,6 +296,29 @@ void main() {
   });
 
   test(
+    'serializes every legal collection status with its official value',
+    () async {
+      final values = <int>[];
+      final transport = RecordingBangumiTransport((method, uri, headers, body) {
+        expect(method, 'POST');
+        expect(uri.path, '/v0/users/-/collections/42');
+        values.add((jsonDecode(body!) as Map<String, dynamic>)['type'] as int);
+        return _emptyResponse();
+      });
+      final client = BangumiApiClient(
+        sessionProvider: () => session,
+        transport: transport,
+      );
+
+      for (final status in BangumiCollectionStatus.values) {
+        await client.setCollectionStatus('42', status);
+      }
+
+      expect(values, [1, 2, 3, 4, 5]);
+    },
+  );
+
+  test(
     'builds remote state from collection and watched episode pages',
     () async {
       final transport = RecordingBangumiTransport((method, uri, headers, body) {
@@ -342,10 +365,15 @@ void main() {
   test('maps auth, not-found, rate-limit and server failures stably', () async {
     for (final value in <({int status, String code, bool retryable})>[
       (status: 401, code: 'auth_required', retryable: false),
+      (status: 403, code: 'http_403', retryable: false),
       (status: 404, code: 'not_found', retryable: false),
       (status: 429, code: 'rate_limited', retryable: true),
+      (status: 500, code: 'remote_server_error', retryable: true),
+      (status: 502, code: 'remote_server_error', retryable: true),
       (status: 503, code: 'remote_server_error', retryable: true),
       (status: 400, code: 'http_400', retryable: false),
+      (status: 415, code: 'http_415', retryable: false),
+      (status: 422, code: 'http_422', retryable: false),
       (status: 408, code: 'http_408', retryable: true),
       (status: 409, code: 'http_409', retryable: true),
       (status: 425, code: 'http_425', retryable: true),

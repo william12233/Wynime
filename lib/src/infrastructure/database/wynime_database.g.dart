@@ -8572,6 +8572,447 @@ class BangumiConflictSnapshotsCompanion
   }
 }
 
+class $SourcePackagesTable extends SourcePackages
+    with TableInfo<$SourcePackagesTable, SourcePackageRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SourcePackagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _packageIdMeta = const VerificationMeta(
+    'packageId',
+  );
+  @override
+  late final GeneratedColumn<String> packageId = GeneratedColumn<String>(
+    'package_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packageJsonMeta = const VerificationMeta(
+    'packageJson',
+  );
+  @override
+  late final GeneratedColumn<String> packageJson = GeneratedColumn<String>(
+    'package_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requiresConsentMeta = const VerificationMeta(
+    'requiresConsent',
+  );
+  @override
+  late final GeneratedColumn<bool> requiresConsent = GeneratedColumn<bool>(
+    'requires_consent',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("requires_consent" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _requiresReconsentMeta = const VerificationMeta(
+    'requiresReconsent',
+  );
+  @override
+  late final GeneratedColumn<bool> requiresReconsent = GeneratedColumn<bool>(
+    'requires_reconsent',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("requires_reconsent" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    packageId,
+    packageJson,
+    status,
+    requiresConsent,
+    requiresReconsent,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'source_packages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SourcePackageRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('package_id')) {
+      context.handle(
+        _packageIdMeta,
+        packageId.isAcceptableOrUnknown(data['package_id']!, _packageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packageIdMeta);
+    }
+    if (data.containsKey('package_json')) {
+      context.handle(
+        _packageJsonMeta,
+        packageJson.isAcceptableOrUnknown(
+          data['package_json']!,
+          _packageJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_packageJsonMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('requires_consent')) {
+      context.handle(
+        _requiresConsentMeta,
+        requiresConsent.isAcceptableOrUnknown(
+          data['requires_consent']!,
+          _requiresConsentMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requiresConsentMeta);
+    }
+    if (data.containsKey('requires_reconsent')) {
+      context.handle(
+        _requiresReconsentMeta,
+        requiresReconsent.isAcceptableOrUnknown(
+          data['requires_reconsent']!,
+          _requiresReconsentMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_requiresReconsentMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {packageId};
+  @override
+  SourcePackageRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SourcePackageRecord(
+      packageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_id'],
+      )!,
+      packageJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_json'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      requiresConsent: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}requires_consent'],
+      )!,
+      requiresReconsent: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}requires_reconsent'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SourcePackagesTable createAlias(String alias) {
+    return $SourcePackagesTable(attachedDatabase, alias);
+  }
+}
+
+class SourcePackageRecord extends DataClass
+    implements Insertable<SourcePackageRecord> {
+  final String packageId;
+  final String packageJson;
+  final String status;
+  final bool requiresConsent;
+  final bool requiresReconsent;
+  final DateTime updatedAt;
+  const SourcePackageRecord({
+    required this.packageId,
+    required this.packageJson,
+    required this.status,
+    required this.requiresConsent,
+    required this.requiresReconsent,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['package_id'] = Variable<String>(packageId);
+    map['package_json'] = Variable<String>(packageJson);
+    map['status'] = Variable<String>(status);
+    map['requires_consent'] = Variable<bool>(requiresConsent);
+    map['requires_reconsent'] = Variable<bool>(requiresReconsent);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SourcePackagesCompanion toCompanion(bool nullToAbsent) {
+    return SourcePackagesCompanion(
+      packageId: Value(packageId),
+      packageJson: Value(packageJson),
+      status: Value(status),
+      requiresConsent: Value(requiresConsent),
+      requiresReconsent: Value(requiresReconsent),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SourcePackageRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SourcePackageRecord(
+      packageId: serializer.fromJson<String>(json['packageId']),
+      packageJson: serializer.fromJson<String>(json['packageJson']),
+      status: serializer.fromJson<String>(json['status']),
+      requiresConsent: serializer.fromJson<bool>(json['requiresConsent']),
+      requiresReconsent: serializer.fromJson<bool>(json['requiresReconsent']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'packageId': serializer.toJson<String>(packageId),
+      'packageJson': serializer.toJson<String>(packageJson),
+      'status': serializer.toJson<String>(status),
+      'requiresConsent': serializer.toJson<bool>(requiresConsent),
+      'requiresReconsent': serializer.toJson<bool>(requiresReconsent),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SourcePackageRecord copyWith({
+    String? packageId,
+    String? packageJson,
+    String? status,
+    bool? requiresConsent,
+    bool? requiresReconsent,
+    DateTime? updatedAt,
+  }) => SourcePackageRecord(
+    packageId: packageId ?? this.packageId,
+    packageJson: packageJson ?? this.packageJson,
+    status: status ?? this.status,
+    requiresConsent: requiresConsent ?? this.requiresConsent,
+    requiresReconsent: requiresReconsent ?? this.requiresReconsent,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SourcePackageRecord copyWithCompanion(SourcePackagesCompanion data) {
+    return SourcePackageRecord(
+      packageId: data.packageId.present ? data.packageId.value : this.packageId,
+      packageJson: data.packageJson.present
+          ? data.packageJson.value
+          : this.packageJson,
+      status: data.status.present ? data.status.value : this.status,
+      requiresConsent: data.requiresConsent.present
+          ? data.requiresConsent.value
+          : this.requiresConsent,
+      requiresReconsent: data.requiresReconsent.present
+          ? data.requiresReconsent.value
+          : this.requiresReconsent,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SourcePackageRecord(')
+          ..write('packageId: $packageId, ')
+          ..write('packageJson: $packageJson, ')
+          ..write('status: $status, ')
+          ..write('requiresConsent: $requiresConsent, ')
+          ..write('requiresReconsent: $requiresReconsent, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    packageId,
+    packageJson,
+    status,
+    requiresConsent,
+    requiresReconsent,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SourcePackageRecord &&
+          other.packageId == this.packageId &&
+          other.packageJson == this.packageJson &&
+          other.status == this.status &&
+          other.requiresConsent == this.requiresConsent &&
+          other.requiresReconsent == this.requiresReconsent &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SourcePackagesCompanion extends UpdateCompanion<SourcePackageRecord> {
+  final Value<String> packageId;
+  final Value<String> packageJson;
+  final Value<String> status;
+  final Value<bool> requiresConsent;
+  final Value<bool> requiresReconsent;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SourcePackagesCompanion({
+    this.packageId = const Value.absent(),
+    this.packageJson = const Value.absent(),
+    this.status = const Value.absent(),
+    this.requiresConsent = const Value.absent(),
+    this.requiresReconsent = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SourcePackagesCompanion.insert({
+    required String packageId,
+    required String packageJson,
+    required String status,
+    required bool requiresConsent,
+    required bool requiresReconsent,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : packageId = Value(packageId),
+       packageJson = Value(packageJson),
+       status = Value(status),
+       requiresConsent = Value(requiresConsent),
+       requiresReconsent = Value(requiresReconsent),
+       updatedAt = Value(updatedAt);
+  static Insertable<SourcePackageRecord> custom({
+    Expression<String>? packageId,
+    Expression<String>? packageJson,
+    Expression<String>? status,
+    Expression<bool>? requiresConsent,
+    Expression<bool>? requiresReconsent,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (packageId != null) 'package_id': packageId,
+      if (packageJson != null) 'package_json': packageJson,
+      if (status != null) 'status': status,
+      if (requiresConsent != null) 'requires_consent': requiresConsent,
+      if (requiresReconsent != null) 'requires_reconsent': requiresReconsent,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SourcePackagesCompanion copyWith({
+    Value<String>? packageId,
+    Value<String>? packageJson,
+    Value<String>? status,
+    Value<bool>? requiresConsent,
+    Value<bool>? requiresReconsent,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SourcePackagesCompanion(
+      packageId: packageId ?? this.packageId,
+      packageJson: packageJson ?? this.packageJson,
+      status: status ?? this.status,
+      requiresConsent: requiresConsent ?? this.requiresConsent,
+      requiresReconsent: requiresReconsent ?? this.requiresReconsent,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (packageId.present) {
+      map['package_id'] = Variable<String>(packageId.value);
+    }
+    if (packageJson.present) {
+      map['package_json'] = Variable<String>(packageJson.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (requiresConsent.present) {
+      map['requires_consent'] = Variable<bool>(requiresConsent.value);
+    }
+    if (requiresReconsent.present) {
+      map['requires_reconsent'] = Variable<bool>(requiresReconsent.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SourcePackagesCompanion(')
+          ..write('packageId: $packageId, ')
+          ..write('packageJson: $packageJson, ')
+          ..write('status: $status, ')
+          ..write('requiresConsent: $requiresConsent, ')
+          ..write('requiresReconsent: $requiresReconsent, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WynimeDatabase extends GeneratedDatabase {
   _$WynimeDatabase(QueryExecutor e) : super(e);
   $WynimeDatabaseManager get managers => $WynimeDatabaseManager(this);
@@ -8614,6 +9055,7 @@ abstract class _$WynimeDatabase extends GeneratedDatabase {
       $BangumiSyncOperationsTable(this);
   late final $BangumiConflictSnapshotsTable bangumiConflictSnapshots =
       $BangumiConflictSnapshotsTable(this);
+  late final $SourcePackagesTable sourcePackages = $SourcePackagesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8636,6 +9078,7 @@ abstract class _$WynimeDatabase extends GeneratedDatabase {
     bangumiMappings,
     bangumiSyncOperations,
     bangumiConflictSnapshots,
+    sourcePackages,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -17007,6 +17450,241 @@ typedef $$BangumiConflictSnapshotsTableProcessedTableManager =
       BangumiConflictSnapshotRecord,
       PrefetchHooks Function({bool accountId, bool subjectId})
     >;
+typedef $$SourcePackagesTableCreateCompanionBuilder =
+    SourcePackagesCompanion Function({
+      required String packageId,
+      required String packageJson,
+      required String status,
+      required bool requiresConsent,
+      required bool requiresReconsent,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$SourcePackagesTableUpdateCompanionBuilder =
+    SourcePackagesCompanion Function({
+      Value<String> packageId,
+      Value<String> packageJson,
+      Value<String> status,
+      Value<bool> requiresConsent,
+      Value<bool> requiresReconsent,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$SourcePackagesTableFilterComposer
+    extends Composer<_$WynimeDatabase, $SourcePackagesTable> {
+  $$SourcePackagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get packageId => $composableBuilder(
+    column: $table.packageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packageJson => $composableBuilder(
+    column: $table.packageJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get requiresConsent => $composableBuilder(
+    column: $table.requiresConsent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get requiresReconsent => $composableBuilder(
+    column: $table.requiresReconsent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SourcePackagesTableOrderingComposer
+    extends Composer<_$WynimeDatabase, $SourcePackagesTable> {
+  $$SourcePackagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get packageId => $composableBuilder(
+    column: $table.packageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packageJson => $composableBuilder(
+    column: $table.packageJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get requiresConsent => $composableBuilder(
+    column: $table.requiresConsent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get requiresReconsent => $composableBuilder(
+    column: $table.requiresReconsent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SourcePackagesTableAnnotationComposer
+    extends Composer<_$WynimeDatabase, $SourcePackagesTable> {
+  $$SourcePackagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get packageId =>
+      $composableBuilder(column: $table.packageId, builder: (column) => column);
+
+  GeneratedColumn<String> get packageJson => $composableBuilder(
+    column: $table.packageJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<bool> get requiresConsent => $composableBuilder(
+    column: $table.requiresConsent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get requiresReconsent => $composableBuilder(
+    column: $table.requiresReconsent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SourcePackagesTableTableManager
+    extends
+        RootTableManager<
+          _$WynimeDatabase,
+          $SourcePackagesTable,
+          SourcePackageRecord,
+          $$SourcePackagesTableFilterComposer,
+          $$SourcePackagesTableOrderingComposer,
+          $$SourcePackagesTableAnnotationComposer,
+          $$SourcePackagesTableCreateCompanionBuilder,
+          $$SourcePackagesTableUpdateCompanionBuilder,
+          (
+            SourcePackageRecord,
+            BaseReferences<
+              _$WynimeDatabase,
+              $SourcePackagesTable,
+              SourcePackageRecord
+            >,
+          ),
+          SourcePackageRecord,
+          PrefetchHooks Function()
+        > {
+  $$SourcePackagesTableTableManager(
+    _$WynimeDatabase db,
+    $SourcePackagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SourcePackagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SourcePackagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SourcePackagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> packageId = const Value.absent(),
+                Value<String> packageJson = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<bool> requiresConsent = const Value.absent(),
+                Value<bool> requiresReconsent = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SourcePackagesCompanion(
+                packageId: packageId,
+                packageJson: packageJson,
+                status: status,
+                requiresConsent: requiresConsent,
+                requiresReconsent: requiresReconsent,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String packageId,
+                required String packageJson,
+                required String status,
+                required bool requiresConsent,
+                required bool requiresReconsent,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SourcePackagesCompanion.insert(
+                packageId: packageId,
+                packageJson: packageJson,
+                status: status,
+                requiresConsent: requiresConsent,
+                requiresReconsent: requiresReconsent,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SourcePackagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WynimeDatabase,
+      $SourcePackagesTable,
+      SourcePackageRecord,
+      $$SourcePackagesTableFilterComposer,
+      $$SourcePackagesTableOrderingComposer,
+      $$SourcePackagesTableAnnotationComposer,
+      $$SourcePackagesTableCreateCompanionBuilder,
+      $$SourcePackagesTableUpdateCompanionBuilder,
+      (
+        SourcePackageRecord,
+        BaseReferences<
+          _$WynimeDatabase,
+          $SourcePackagesTable,
+          SourcePackageRecord
+        >,
+      ),
+      SourcePackageRecord,
+      PrefetchHooks Function()
+    >;
 
 class $WynimeDatabaseManager {
   final _$WynimeDatabase _db;
@@ -17057,4 +17735,6 @@ class $WynimeDatabaseManager {
         _db,
         _db.bangumiConflictSnapshots,
       );
+  $$SourcePackagesTableTableManager get sourcePackages =>
+      $$SourcePackagesTableTableManager(_db, _db.sourcePackages);
 }

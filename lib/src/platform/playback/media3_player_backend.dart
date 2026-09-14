@@ -275,9 +275,11 @@ final class Media3PlayerBackend implements PlayerBackend {
       state: state,
       position: position,
       bufferedPosition: buffered,
+      duration: _optionalNonNegativeDuration(raw, 'durationMs'),
       failure: failure,
       volume: _optionalDouble(raw, 'volume'),
       rate: _optionalDouble(raw, 'rate'),
+      sessionId: eventSessionId,
       audioTrackId: _validatedEventTrackId(
         _optionalString(raw, 'audioTrackId'),
         _activeSession?.audioTracks,
@@ -291,6 +293,15 @@ final class Media3PlayerBackend implements PlayerBackend {
       timelineMapIdentity: eventTimelineIdentity,
     );
   }
+
+  Duration? _optionalNonNegativeDuration(Map<String, Object?> raw, String key) {
+    final value = _optionalInt(raw, key);
+    if (value == null) return null;
+    if (value < 0) {
+      throw FormatException('$key must not be negative.');
+    }
+    return Duration(milliseconds: value);
+  }
 }
 
 final class UnsupportedPlayerBackend implements PlayerBackend {
@@ -302,6 +313,7 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
   final StreamController<PlaybackEvent> _controller =
       StreamController<PlaybackEvent>.broadcast();
   int _sequence = 0;
+  String? _activeSessionId;
 
   @override
   PlayerBackendKind get kind => PlayerBackendKind.unsupported;
@@ -318,6 +330,7 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
 
   @override
   Future<void> open(PlaybackSession session) async {
+    _activeSessionId = session.sessionId;
     final failure = PlaybackFailure(
       code: 'backend_unsupported',
       kind: PlaybackFailureKind.unsupported,
@@ -330,6 +343,7 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
         sequence: _sequence++,
         state: PlaybackState.failed,
         failure: failure,
+        sessionId: session.sessionId,
         timelineMapIdentity: session.timelineMapIdentity,
       ),
     );
@@ -373,8 +387,13 @@ final class UnsupportedPlayerBackend implements PlayerBackend {
   Future<void> close() async {
     if (!_controller.isClosed) {
       _controller.add(
-        PlaybackEvent(sequence: _sequence++, state: PlaybackState.closed),
+        PlaybackEvent(
+          sequence: _sequence++,
+          state: PlaybackState.closed,
+          sessionId: _activeSessionId,
+        ),
       );
+      _activeSessionId = null;
     }
   }
 }

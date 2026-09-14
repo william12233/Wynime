@@ -2,18 +2,61 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wynime/src/application/playback/playback_coordinator.dart';
+import 'package:wynime/src/application/playback/playback_progress_service.dart';
 import 'package:wynime/src/domain/models/playback_events.dart';
 import 'package:wynime/src/domain/models/playback_session.dart';
 import 'package:wynime/src/domain/models/player_backend.dart';
+import 'package:wynime/src/domain/models/watch_progress.dart';
 import 'package:wynime/src/domain/models/web_capture_models.dart';
 import 'package:wynime/src/domain/services/playback_error_classifier.dart';
 import 'package:wynime/src/domain/services/playback_proxy.dart';
 import 'package:wynime/src/domain/services/playback_session_resolver.dart';
 import 'package:wynime/src/domain/services/player_backend.dart';
+import 'package:wynime/src/infrastructure/repositories/drift_watch_history_repository.dart';
 
 import '../helpers/playback_test_support.dart';
+import '../helpers/test_database.dart';
 
 void main() {
+  test(
+    'EPROG-R10 and matrix 2 resumes the same incomplete episode on open',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final session = testPlaybackSession(sessionId: 'resume-session');
+      final history = DriftWatchHistoryRepository(database);
+      await history.save(
+        WatchProgress(
+          progressId: 'saved-resume',
+          sourceId: session.episode.sourceId,
+          lineId: session.episode.lineId,
+          subjectId: session.episode.subjectId,
+          episodeId: session.episode.episodeId,
+          position: const Duration(minutes: 8),
+          duration: const Duration(minutes: 24),
+          isCompleted: false,
+          updatedAt: DateTime.utc(2026, 9, 12),
+        ),
+      );
+      final player = _FakePlayer();
+      final coordinator = PlaybackCoordinator(
+        resolver: _FakeResolver(session),
+        proxy: _FakeProxy(),
+        player: player,
+        progressService: PlaybackProgressService(
+          history: history,
+          clock: () => DateTime.utc(2026, 9, 12),
+        ),
+      );
+
+      await coordinator.open(
+        _request(episodeDuration: const Duration(minutes: 24)),
+      );
+      expect(player.seekPositions, [const Duration(minutes: 8)]);
+      await coordinator.close();
+    },
+  );
+
   test(
     'open hands one loopback session to the player and stop releases it',
     () async {
@@ -221,6 +264,7 @@ void main() {
 PlaybackOpenRequest _request({
   Duration refreshLeeway = Duration.zero,
   int maxAutomaticRefreshes = 1,
+  Duration? episodeDuration,
 }) {
   final episode = testEpisode();
   return PlaybackOpenRequest(
@@ -239,6 +283,7 @@ PlaybackOpenRequest _request({
     proxyBudget: testProxyBudget(),
     refreshLeeway: refreshLeeway,
     maxAutomaticRefreshes: maxAutomaticRefreshes,
+    episodeDuration: episodeDuration,
   );
 }
 

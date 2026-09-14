@@ -12,8 +12,9 @@ The six live destinations now use product presentation pages rather than the Pha
 
 - `WynimeApp` owns in-memory theme, locale and telemetry preferences and passes typed settings to the shell.
 - `ResponsiveAppShell` selects compact, medium or expanded layout from the shared breakpoint tokens and routes all six destinations.
-- `product_pages.dart` provides Home, Search, Library, Downloads, Sources and Settings pages with bounded local state only; it does not invent source results, Bangumi data, downloads or provider success.
+- `product_pages.dart` provides Home, Search, Library, Downloads, Sources and Settings pages with bounded local state plus explicit source-package lifecycle actions; it does not invent source results, Bangumi data, downloads or provider success.
 - Search keeps submitted text local and explicitly reports that no request is sent without an enabled source package.
+- Sources stages verified registry manifests only after an explicit Install/Update tap, shows the declared security boundary before Enable, and persists exact-version Enable/Disable decisions through the application controller.
 - Settings exposes theme/language controls, playback engine order, authoritative artifact safety and telemetry default-off state.
 - ARB/generated localization coverage remains Traditional Chinese, Simplified Chinese, Japanese and English. No font files were bundled; the approved multilingual font review remains open.
 
@@ -26,6 +27,22 @@ The six live destinations now use product presentation pages rather than the Pha
 - Golden viewports: 360x800, 412x915, 1024x768 and 1440x900. The baseline update was intentional after replacing the Phase 0 live placeholder with the product shell; an independent rerun passed.
 - `flutter build apk --debug --no-pub`: passed, `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter build windows --debug --no-pub`: passed, `build/windows/x64/runner/Debug/wynime.exe`. The existing third-party `flutter_inappwebview_windows` CMake CMP0175 developer warning is non-fatal.
+- Current TASK-022 deterministic lifecycle and Sources widget evidence is
+  recorded in the Phase 10 operation packet; this UI delta has no new schema or
+  platform-native code.
+
+Current TASK-022 completion record:
+
+- The Sources UI lifecycle delta has deterministic widget coverage for explicit
+  Install/Update staging, complete seven-field resource-budget disclosure,
+  security-review-gated Enable, exact Disable, unavailable local state, and
+  registry loading/error boundaries; targeted evidence is 16/16 and the full
+  suite is 443/443.
+- Current-head Windows and Android debug builds were attempted for this delta
+  but remain environment-blocked (`FileTracker` `E_ACCESSDENIED` on Windows;
+  Gradle `The settings are not yet available for build` on Android). Both fixed
+  AVDs booted, but ADB could not create `\\.android`; no app runtime action or
+  screenshot is claimed for TASK-022.
 
 ## Android runtime evidence
 

@@ -4,13 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:wynime/l10n/app_localizations.dart';
 import 'package:wynime/src/app/app_destination.dart';
 import 'package:wynime/src/application/bangumi_session_controller.dart';
+import 'package:wynime/src/application/source_installed_live_search_pipeline.dart';
+import 'package:wynime/src/application/source_package_startup_controller.dart';
+import 'package:wynime/src/application/source_registry_controller.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
 import 'package:wynime/src/design_system/tokens/radii.dart';
 import 'package:wynime/src/design_system/tokens/spacing.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
+import 'package:wynime/src/domain/models/watch_progress.dart';
+import 'package:wynime/src/domain/repositories/watch_history_repository.dart';
+import 'package:wynime/src/domain/services/watch_progress_policy.dart';
 import 'package:wynime/src/domain/models/software_update_models.dart';
+import 'package:wynime/src/domain/models/source_package_manager_models.dart';
+import 'package:wynime/src/infrastructure/source_rules/source_registry_artifact_catalog.dart';
+import '../source_search_presentation_controller.dart';
 import 'subject_detail_page.dart';
 
 Widget buildWynimePage(
@@ -21,22 +30,36 @@ Widget buildWynimePage(
   required ValueChanged<AppDestination> onNavigate,
   required bool showPageHeader,
   BangumiSessionController? bangumi,
+  SourcePackageStartupController? sourcePackages,
+  SourceInstalledLiveSearchPipeline? sourceSearchPipeline,
+  SourceRegistryController? sourceRegistry,
   SoftwareUpdateController? softwareUpdates,
+  WatchHistoryRepository? watchHistory,
 }) {
   return switch (destination) {
     AppDestination.home => HomePage(
       showPageHeader: showPageHeader,
       onNavigate: onNavigate,
       bangumi: bangumi,
+      watchHistory: watchHistory,
     ),
-    AppDestination.search => SearchPage(showPageHeader: showPageHeader),
+    AppDestination.search => SearchPage(
+      showPageHeader: showPageHeader,
+      sourceSearchPipeline: sourceSearchPipeline,
+      installedPackagesProvider: () =>
+          sourcePackages?.installedPackages ?? const [],
+    ),
     AppDestination.library => LibraryPage(
       showPageHeader: showPageHeader,
       bangumi: bangumi,
       onNavigate: onNavigate,
     ),
     AppDestination.downloads => DownloadsPage(showPageHeader: showPageHeader),
-    AppDestination.sources => SourcesPage(showPageHeader: showPageHeader),
+    AppDestination.sources => SourcesPage(
+      showPageHeader: showPageHeader,
+      sourcePackages: sourcePackages,
+      sourceRegistry: sourceRegistry,
+    ),
     AppDestination.settings => SettingsPage(
       showPageHeader: showPageHeader,
       settings: settings,
@@ -105,12 +128,14 @@ class HomePage extends StatelessWidget {
     required this.showPageHeader,
     required this.onNavigate,
     this.bangumi,
+    this.watchHistory,
     super.key,
   });
 
   final bool showPageHeader;
   final ValueChanged<AppDestination> onNavigate;
   final BangumiSessionController? bangumi;
+  final WatchHistoryRepository? watchHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -132,11 +157,7 @@ class HomePage extends StatelessWidget {
         const SizedBox(height: WynimeSpacing.xl),
         _SectionTitle(label: localizations.continueWatchingTitle),
         const SizedBox(height: WynimeSpacing.sm),
-        _EmptyStateCard(
-          icon: Icons.play_circle_outline_rounded,
-          title: localizations.emptyContinueWatchingTitle,
-          description: localizations.emptyContinueWatchingDescription,
-        ),
+        _ContinueWatchingSection(repository: watchHistory),
         const SizedBox(height: WynimeSpacing.xl),
         _SectionTitle(label: localizations.scheduleTitle),
         const SizedBox(height: WynimeSpacing.sm),
@@ -191,9 +212,18 @@ class HomePage extends StatelessWidget {
 }
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({required this.showPageHeader, super.key});
+  const SearchPage({
+    required this.showPageHeader,
+    this.sourceSearchPipeline,
+    this.installedPackagesProvider,
+    this.searchOperation,
+    super.key,
+  });
 
   final bool showPageHeader;
+  final SourceInstalledLiveSearchPipeline? sourceSearchPipeline;
+  final InstalledSourcePackagesProvider? installedPackagesProvider;
+  final SourceInstalledLiveSearchOperation? searchOperation;
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -201,35 +231,46 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   late final TextEditingController _controller;
-  String _submittedQuery = '';
+  late final SourceSearchPresentationController _search;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
+    final pipeline = widget.sourceSearchPipeline;
+    _search = SourceSearchPresentationController(
+      installedPackages: widget.installedPackagesProvider ?? () => const [],
+      searchOperation: widget.searchOperation ?? pipeline?.search,
+    )..addListener(_onSearchStateChanged);
   }
 
   @override
   void dispose() {
+    _search
+      ..removeListener(_onSearchStateChanged)
+      ..dispose();
     _controller.dispose();
     super.dispose();
   }
 
+  void _onSearchStateChanged() {
+    if (mounted) setState(() {});
+  }
+
   void _submit(String value) {
-    final query = value.trim();
-    setState(() => _submittedQuery = query);
+    unawaited(_search.search(value));
   }
 
   void _clear() {
     _controller.clear();
-    setState(() => _submittedQuery = '');
+    _search.reset();
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     final hasText = _controller.text.trim().isNotEmpty;
-    final hasSubmittedQuery = _submittedQuery.isNotEmpty;
+    final state = _search.state;
 
     return WynimePageFrame(
       icon: Icons.search_rounded,
@@ -238,12 +279,14 @@ class _SearchPageState extends State<SearchPage> {
       showPageHeader: widget.showPageHeader,
       children: [
         SearchBar(
+          key: const ValueKey('source-search-field'),
           controller: _controller,
           hintText: localizations.searchHint,
           leading: const Icon(Icons.search),
           onChanged: (value) {
-            if (value.trim() != _submittedQuery) {
-              setState(() => _submittedQuery = '');
+            if (state.status != SourceSearchPresentationStatus.idle &&
+                value.trim() != state.query) {
+              _search.reset();
             }
           },
           onSubmitted: _submit,
@@ -257,27 +300,189 @@ class _SearchPageState extends State<SearchPage> {
           ],
         ),
         const SizedBox(height: WynimeSpacing.lg),
-        if (!hasSubmittedQuery)
-          _InfoCard(
-            icon: Icons.manage_search_rounded,
-            title: localizations.searchReadyTitle,
-            description: localizations.searchReadyDescription,
-          )
-        else
-          _InfoCard(
-            icon: Icons.hub_outlined,
-            title: localizations.searchNoSourcesTitle,
-            description: localizations.searchNoSourcesDescription,
+        _SearchStateCard(
+          state: state,
+          localizations: localizations,
+          onRetry:
+              state.status == SourceSearchPresentationStatus.idle ||
+                  state.status == SourceSearchPresentationStatus.loading ||
+                  state.status == SourceSearchPresentationStatus.available ||
+                  state.status == SourceSearchPresentationStatus.invalidQuery
+              ? null
+              : _search.retry,
+        ),
+        if (state.results.isNotEmpty) ...[
+          const SizedBox(height: WynimeSpacing.lg),
+          _SearchResultsList(results: state.results),
+        ],
+      ],
+    );
+  }
+}
+
+final class _SearchStateCard extends StatelessWidget {
+  const _SearchStateCard({
+    required this.state,
+    required this.localizations,
+    required this.onRetry,
+  });
+
+  final SourceSearchPresentationState state;
+  final AppLocalizations localizations;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final copy = _searchStateCopy(localizations, state.status);
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      key: ValueKey('source-search-state-${state.status.name}'),
+      child: Padding(
+        padding: const EdgeInsets.all(WynimeSpacing.lg),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (state.status == SourceSearchPresentationStatus.loading)
+              SizedBox(
+                key: const ValueKey('source-search-loading-indicator'),
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: colors.primary,
+                ),
+              )
+            else
+              Icon(copy.icon, color: colors.primary),
+            const SizedBox(width: WynimeSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    copy.title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: WynimeSpacing.xs),
+                  Text(
+                    copy.description,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                  if (onRetry != null) ...[
+                    const SizedBox(height: WynimeSpacing.sm),
+                    OutlinedButton.icon(
+                      key: const ValueKey('source-search-retry'),
+                      onPressed: onRetry,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(localizations.searchRetryAction),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _SearchResultsList extends StatelessWidget {
+  const _SearchResultsList({required this.results});
+
+  final Iterable<SourceSearchPresentationItem> results;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final values = results.toList(growable: false);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SectionTitle(label: localizations.searchResultsTitle),
+        const SizedBox(height: WynimeSpacing.sm),
+        Card(
+          key: const ValueKey('source-search-results'),
+          child: Column(
+            children: [
+              for (var index = 0; index < values.length; index++)
+                ListTile(
+                  key: ValueKey(
+                    'source-search-result-$index-${values[index].result.sourceId}-${values[index].result.subjectId}',
+                  ),
+                  title: Text(
+                    values[index].result.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    localizations.searchResultSource(
+                      values[index].sourceDisplayName,
+                      values[index].result.sourceId,
+                    ),
+                  ),
+                ),
+            ],
           ),
-        const SizedBox(height: WynimeSpacing.lg),
-        _ConnectionCard(
-          title: localizations.noActiveSourcesTitle,
-          description: localizations.noActiveSourcesDescription,
-          label: localizations.statusUnavailableLabel,
         ),
       ],
     );
   }
+}
+
+({IconData icon, String title, String description}) _searchStateCopy(
+  AppLocalizations localizations,
+  SourceSearchPresentationStatus status,
+) {
+  return switch (status) {
+    SourceSearchPresentationStatus.idle => (
+      icon: Icons.manage_search_rounded,
+      title: localizations.searchReadyTitle,
+      description: localizations.searchReadyDescription,
+    ),
+    SourceSearchPresentationStatus.loading => (
+      icon: Icons.sync_rounded,
+      title: localizations.searchLoadingTitle,
+      description: localizations.searchLoadingDescription,
+    ),
+    SourceSearchPresentationStatus.available => (
+      icon: Icons.check_circle_outline_rounded,
+      title: localizations.searchAvailableTitle,
+      description: localizations.searchAvailableDescription,
+    ),
+    SourceSearchPresentationStatus.partial => (
+      icon: Icons.warning_amber_rounded,
+      title: localizations.searchPartialTitle,
+      description: localizations.searchPartialDescription,
+    ),
+    SourceSearchPresentationStatus.notFound => (
+      icon: Icons.search_off_rounded,
+      title: localizations.searchNotFoundTitle,
+      description: localizations.searchNotFoundDescription,
+    ),
+    SourceSearchPresentationStatus.noSources => (
+      icon: Icons.hub_outlined,
+      title: localizations.searchNoSourcesTitle,
+      description: localizations.searchNoSourcesDescription,
+    ),
+    SourceSearchPresentationStatus.noUsableSources => (
+      icon: Icons.extension_off_outlined,
+      title: localizations.searchNoUsableSourcesTitle,
+      description: localizations.searchNoUsableSourcesDescription,
+    ),
+    SourceSearchPresentationStatus.invalidQuery => (
+      icon: Icons.edit_note_rounded,
+      title: localizations.searchInvalidQueryTitle,
+      description: localizations.searchInvalidQueryDescription,
+    ),
+    SourceSearchPresentationStatus.failed => (
+      icon: Icons.error_outline_rounded,
+      title: localizations.searchFailedTitle,
+      description: localizations.searchFailedDescription,
+    ),
+  };
 }
 
 enum _LibraryFilter { wish, watching, onHold, completed, dropped }
@@ -526,9 +731,16 @@ class DownloadsPage extends StatelessWidget {
 }
 
 class SourcesPage extends StatelessWidget {
-  const SourcesPage({required this.showPageHeader, super.key});
+  const SourcesPage({
+    required this.showPageHeader,
+    this.sourcePackages,
+    this.sourceRegistry,
+    super.key,
+  });
 
   final bool showPageHeader;
+  final SourcePackageStartupController? sourcePackages;
+  final SourceRegistryController? sourceRegistry;
 
   @override
   Widget build(BuildContext context) {
@@ -541,26 +753,587 @@ class SourcesPage extends StatelessWidget {
       children: [
         _SectionTitle(label: localizations.sourcesInstalledTitle),
         const SizedBox(height: WynimeSpacing.sm),
-        _EmptyStateCard(
-          icon: Icons.extension_off_outlined,
-          title: localizations.sourcesEmptyTitle,
-          description: localizations.sourcesEmptyDescription,
-        ),
+        ..._sourcePackageContent(localizations),
+        if (sourceRegistry != null) ...[
+          const SizedBox(height: WynimeSpacing.lg),
+          ..._sourceRegistryContent(localizations),
+        ],
         const SizedBox(height: WynimeSpacing.lg),
         _InfoCard(
           icon: Icons.shield_outlined,
           title: localizations.sourcesSecurityTitle,
           description: localizations.sourcesSecurityDescription,
         ),
-        const SizedBox(height: WynimeSpacing.lg),
-        OutlinedButton.icon(
-          onPressed: null,
-          icon: const Icon(Icons.rate_review_outlined),
-          label: Text(localizations.reviewProposalLabel),
+        if (sourcePackages == null) ...[
+          const SizedBox(height: WynimeSpacing.lg),
+          OutlinedButton.icon(
+            onPressed: null,
+            icon: const Icon(Icons.rate_review_outlined),
+            label: Text(localizations.reviewProposalLabel),
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _sourcePackageContent(AppLocalizations localizations) {
+    final controller = sourcePackages;
+    if (controller == null) {
+      return [
+        _EmptyStateCard(
+          icon: Icons.extension_off_outlined,
+          title: localizations.sourcesEmptyTitle,
+          description: localizations.sourcesEmptyDescription,
+        ),
+      ];
+    }
+    if (controller.status == SourcePackageStartupStatus.idle ||
+        controller.status == SourcePackageStartupStatus.loading) {
+      return [
+        _InfoCard(
+          icon: Icons.sync_outlined,
+          title: localizations.sourcesLoadingTitle,
+          description: localizations.sourcesLoadingDescription,
+        ),
+      ];
+    }
+    if (controller.status == SourcePackageStartupStatus.failed) {
+      return [
+        _InfoCard(
+          icon: Icons.error_outline_rounded,
+          title: localizations.sourcesLoadFailedTitle,
+          description: localizations.sourcesLoadFailedDescription,
+        ),
+      ];
+    }
+    final installed = controller.installedPackages;
+    if (installed.isEmpty) {
+      return [
+        _EmptyStateCard(
+          icon: Icons.extension_off_outlined,
+          title: localizations.sourcesEmptyTitle,
+          description: localizations.sourcesEmptyDescription,
+        ),
+      ];
+    }
+    return [
+      for (final installedPackage in installed)
+        _InstalledSourcePackageCard(
+          package: installedPackage,
+          controller: controller,
+        ),
+    ];
+  }
+
+  List<Widget> _sourceRegistryContent(AppLocalizations localizations) {
+    final registry = sourceRegistry!;
+    final status = registry.status;
+    if (status == SourceRegistryStatus.idle ||
+        status == SourceRegistryStatus.loading) {
+      return [
+        _SourceRegistryHeader(
+          localizations: localizations,
+          loading: true,
+          onRefresh: null,
+        ),
+        _InfoCard(
+          icon: Icons.cloud_download_outlined,
+          title: localizations.sourcesRegistryLoadingTitle,
+          description: localizations.sourcesRegistryLoadingDescription,
+        ),
+      ];
+    }
+    if (status == SourceRegistryStatus.failed) {
+      return [
+        _SourceRegistryHeader(
+          localizations: localizations,
+          loading: false,
+          onRefresh: registry.refresh,
+        ),
+        _InfoCard(
+          icon: Icons.cloud_off_outlined,
+          title: localizations.sourcesRegistryFailedTitle,
+          description: localizations.sourcesRegistryFailedDescription,
+        ),
+      ];
+    }
+    final catalog = registry.catalog;
+    if (catalog == null || catalog.packages.isEmpty) {
+      return [
+        _SourceRegistryHeader(
+          localizations: localizations,
+          loading: false,
+          onRefresh: registry.refresh,
+        ),
+        _EmptyStateCard(
+          icon: Icons.inventory_2_outlined,
+          title: localizations.sourcesRegistryEmptyTitle,
+          description: localizations.sourcesRegistryEmptyDescription,
+        ),
+      ];
+    }
+    return [
+      _SourceRegistryHeader(
+        localizations: localizations,
+        loading: false,
+        revision: catalog.index.revision,
+        onRefresh: registry.refresh,
+      ),
+      ..._registryPackageCards(catalog),
+    ];
+  }
+
+  List<Widget> _registryPackageCards(SourceRegistryCatalog catalog) {
+    final localState = sourcePackages;
+    final installedPackages =
+        localState?.status == SourcePackageStartupStatus.ready
+        ? localState!.installedPackages
+        : null;
+    return [
+      for (final item in catalog.packages)
+        _RegistrySourcePackageCard(
+          item: item,
+          sourcePackages: localState,
+          installedPackages: installedPackages,
+        ),
+    ];
+  }
+}
+
+class _SourceRegistryHeader extends StatelessWidget {
+  const _SourceRegistryHeader({
+    required this.localizations,
+    required this.loading,
+    required this.onRefresh,
+    this.revision,
+  });
+
+  final AppLocalizations localizations;
+  final bool loading;
+  final String? revision;
+  final Future<void> Function()? onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: _SectionTitle(label: localizations.sourcesRegistryTitle),
+            ),
+            OutlinedButton.icon(
+              onPressed: loading || onRefresh == null
+                  ? null
+                  : () => unawaited(onRefresh!()),
+              icon: loading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh_rounded),
+              label: Text(localizations.sourcesRegistryRefreshAction),
+            ),
+          ],
+        ),
+        const SizedBox(height: WynimeSpacing.xs),
+        Text(localizations.sourcesRegistryDescription),
+        if (revision != null) ...[
+          const SizedBox(height: WynimeSpacing.xs),
+          Text(
+            localizations.sourcesRegistryRevisionLabel(revision!),
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+        ],
+        const SizedBox(height: WynimeSpacing.sm),
+      ],
+    );
+  }
+}
+
+class _RegistrySourcePackageCard extends StatelessWidget {
+  const _RegistrySourcePackageCard({
+    required this.item,
+    required this.sourcePackages,
+    required this.installedPackages,
+  });
+
+  final SourceRegistryCatalogPackage item;
+  final SourcePackageStartupController? sourcePackages;
+  final List<InstalledSourcePackage>? installedPackages;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final localPackages = installedPackages;
+    if (localPackages == null) {
+      return _buildCard(
+        context,
+        localizations,
+        localizations.sourcesRegistryInstalledStateUnavailableLabel,
+        action: null,
+      );
+    }
+    InstalledSourcePackage? installed;
+    for (final candidate in localPackages) {
+      if (candidate.package.packageId == item.package.packageId) {
+        installed = candidate;
+        break;
+      }
+    }
+    final label = installed == null
+        ? localizations.sourcesRegistryNotInstalledLabel
+        : installed.package.version < item.package.version
+        ? localizations.sourcesRegistryUpdateAvailableLabel
+        : localizations.sourcesRegistryInstalledLabel;
+    final isNewPackage = installed == null;
+    final hasUpdate =
+        installed != null && installed.package.version < item.package.version;
+    final actionLabel = isNewPackage
+        ? localizations.sourcesPackageInstallAction
+        : hasUpdate
+        ? localizations.sourcesPackageUpdateAction
+        : null;
+    return _buildCard(
+      context,
+      localizations,
+      label,
+      action: actionLabel == null
+          ? null
+          : _SourcePackageAction(
+              label: actionLabel,
+              icon: isNewPackage
+                  ? Icons.download_outlined
+                  : Icons.system_update_alt_outlined,
+              onPressed: sourcePackages!.isMutating
+                  ? null
+                  : () => _runSourcePackageOperation(
+                      context,
+                      localizations,
+                      operation: () =>
+                          sourcePackages!.installOrUpdate(item.package),
+                      successMessage: isNewPackage
+                          ? localizations.sourcesPackageInstalledMessage(
+                              item.package.displayName,
+                            )
+                          : localizations.sourcesPackageUpdatedMessage(
+                              item.package.displayName,
+                            ),
+                    ),
+            ),
+    );
+  }
+
+  Widget _buildCard(
+    BuildContext context,
+    AppLocalizations localizations,
+    String label, {
+    required _SourcePackageAction? action,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.inventory_2_outlined),
+              title: Text(
+                item.package.displayName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                '${item.package.packageId} · v${item.package.version} · ${localizations.sourcesRegistryIntegrityLabel}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: SizedBox(
+                width: 128,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Chip(label: Text(label, maxLines: 1)),
+                  ),
+                ),
+              ),
+            ),
+            if (action != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: action.onPressed,
+                  icon: Icon(action.icon),
+                  label: Text(action.label),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InstalledSourcePackageCard extends StatelessWidget {
+  const _InstalledSourcePackageCard({
+    required this.package,
+    required this.controller,
+  });
+
+  final InstalledSourcePackage package;
+  final SourcePackageStartupController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final status = _statusLabel(localizations, package);
+    final isEnabled = package.status == SourcePackageStatus.enabled;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.extension_outlined),
+              title: Text(
+                package.package.displayName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: Text(
+                '${package.package.packageId} · v${package.package.version}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: SizedBox(
+                width: 112,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Chip(label: Text(status, maxLines: 1)),
+                  ),
+                ),
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: controller.isMutating
+                    ? null
+                    : isEnabled
+                    ? () => _runSourcePackageOperation(
+                        context,
+                        localizations,
+                        operation: () => controller.disable(
+                          packageId: package.package.packageId,
+                          version: package.package.version,
+                        ),
+                        successMessage: localizations
+                            .sourcesPackageDisabledMessage(
+                              package.package.displayName,
+                            ),
+                      )
+                    : () => _reviewAndEnableSourcePackage(
+                        context,
+                        localizations,
+                        controller,
+                        package,
+                      ),
+                icon: Icon(
+                  isEnabled
+                      ? Icons.pause_circle_outline
+                      : Icons.check_circle_outline,
+                ),
+                label: Text(
+                  isEnabled
+                      ? localizations.sourcesPackageDisableAction
+                      : localizations.sourcesPackageEnableAction,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _SourcePackageAction {
+  const _SourcePackageAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+}
+
+Future<void> _runSourcePackageOperation(
+  BuildContext context,
+  AppLocalizations localizations, {
+  required Future<InstalledSourcePackage> Function() operation,
+  required String successMessage,
+}) async {
+  try {
+    await operation();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(successMessage)));
+  } on SourcePackageLifecycleException {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(localizations.sourcesPackageOperationFailed)),
+      );
+  }
+}
+
+Future<void> _reviewAndEnableSourcePackage(
+  BuildContext context,
+  AppLocalizations localizations,
+  SourcePackageStartupController controller,
+  InstalledSourcePackage package,
+) async {
+  final approved = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => _SourcePackageReviewDialog(
+      localizations: localizations,
+      package: package,
+    ),
+  );
+  if (approved != true || !context.mounted) return;
+  await _runSourcePackageOperation(
+    context,
+    localizations,
+    operation: () => controller.enable(
+      packageId: package.package.packageId,
+      version: package.package.version,
+      userApproved: true,
+      reconsentGranted: true,
+    ),
+    successMessage: localizations.sourcesPackageEnabledMessage(
+      package.package.displayName,
+    ),
+  );
+}
+
+final class _SourcePackageReviewDialog extends StatelessWidget {
+  const _SourcePackageReviewDialog({
+    required this.localizations,
+    required this.package,
+  });
+
+  final AppLocalizations localizations;
+  final InstalledSourcePackage package;
+
+  @override
+  Widget build(BuildContext context) {
+    final manifest = package.package;
+    final policy = manifest.securityPolicy;
+    final domains = policy.allowedDomains
+        .map(
+          (rule) =>
+              '${rule.host} (${rule.schemes.toList(growable: false).join(', ')})',
+        )
+        .join('\n');
+    final permissions = policy.permissions
+        .map((permission) => permission.name)
+        .join(', ');
+    final budget = policy.budget;
+    return AlertDialog(
+      title: Text(localizations.sourcesPackageReviewTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              package.requiresReconsent
+                  ? localizations.sourcesPackageReconsentDescription(
+                      manifest.displayName,
+                    )
+                  : localizations.sourcesPackageReviewDescription(
+                      manifest.displayName,
+                    ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${manifest.packageId} · v${manifest.version}',
+              style: Theme.of(context).textTheme.labelMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              localizations.sourcesPackageDomainsLabel,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            Text(domains),
+            const SizedBox(height: 8),
+            Text(
+              localizations.sourcesPackagePermissionsLabel,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            Text(permissions),
+            const SizedBox(height: 8),
+            Text(
+              localizations.sourcesPackageBudgetLabel,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            Text(
+              localizations.sourcesPackageBudgetSummary(
+                budget.maxDocumentBytes,
+                budget.maxRecords,
+                budget.maxSelectorMatches,
+                budget.maxEvaluationSteps,
+                budget.maxRegexPatternChars,
+                budget.maxRegexInputChars,
+                budget.maxRedirects,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text(localizations.sourcesPackageCancelAction),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text(localizations.sourcesPackageConfirmEnableAction),
         ),
       ],
     );
   }
+}
+
+String _statusLabel(
+  AppLocalizations localizations,
+  InstalledSourcePackage package,
+) {
+  if (package.status == SourcePackageStatus.enabled) {
+    return localizations.sourcesStatusEnabled;
+  }
+  if (package.requiresReconsent) {
+    return localizations.sourcesStatusReconsentRequired;
+  }
+  if (package.requiresConsent) {
+    return localizations.sourcesStatusReviewRequired;
+  }
+  return localizations.sourcesStatusDisabled;
 }
 
 String _libraryFilterLabel(_LibraryFilter filter, AppLocalizations l10n) {
@@ -1538,6 +2311,92 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(label, style: Theme.of(context).textTheme.titleLarge);
   }
+}
+
+class _ContinueWatchingSection extends StatelessWidget {
+  const _ContinueWatchingSection({required this.repository});
+
+  final WatchHistoryRepository? repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final source = repository;
+    if (source == null) {
+      return _EmptyStateCard(
+        icon: Icons.play_circle_outline_rounded,
+        title: localizations.emptyContinueWatchingTitle,
+        description: localizations.emptyContinueWatchingDescription,
+      );
+    }
+    return StreamBuilder<List<WatchProgress>>(
+      stream: source.watchRecent(),
+      builder: (context, snapshot) {
+        const policy = WatchProgressPolicy();
+        final items = policy.selectContinueWatching(
+          snapshot.data ?? const <WatchProgress>[],
+        );
+        if (items.isEmpty) {
+          return _EmptyStateCard(
+            icon: Icons.play_circle_outline_rounded,
+            title: localizations.emptyContinueWatchingTitle,
+            description: localizations.emptyContinueWatchingDescription,
+          );
+        }
+        return Column(
+          children: [
+            for (final item in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: WynimeSpacing.sm),
+                child: _ContinueWatchingCard(progress: item),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ContinueWatchingCard extends StatelessWidget {
+  const _ContinueWatchingCard({required this.progress});
+
+  final WatchProgress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    const policy = WatchProgressPolicy();
+    final percent = policy.progressPercent(progress);
+    final position = _formatProgressDuration(progress.position);
+    final progressLabel = percent == null
+        ? localizations.continueWatchingProgressUnknownDuration(position)
+        : localizations.continueWatchingProgress(percent, position);
+    return Card(
+      key: ValueKey('continue-watching-${progress.progressId}'),
+      child: ListTile(
+        leading: SizedBox(
+          width: 44,
+          height: 44,
+          child: percent == null
+              ? const Icon(Icons.play_circle_outline_rounded)
+              : CircularProgressIndicator(value: percent / 100, strokeWidth: 4),
+        ),
+        title: Text(
+          localizations.subjectDetailEpisodeNumber(progress.episodeId),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(progressLabel),
+      ),
+    );
+  }
+}
+
+String _formatProgressDuration(Duration value) {
+  final seconds = value.inSeconds.clamp(0, 1 << 31);
+  final minutes = seconds ~/ 60;
+  final remainder = seconds % 60;
+  return '$minutes:${remainder.toString().padLeft(2, '0')}';
 }
 
 class _ConnectionCard extends StatelessWidget {

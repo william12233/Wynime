@@ -7,6 +7,9 @@ import 'package:wynime/src/application/bangumi_session_controller.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/domain/models/software_update_models.dart';
+import 'package:wynime/src/domain/models/source_identity.dart';
+import 'package:wynime/src/domain/models/watch_progress.dart';
+import 'package:wynime/src/domain/repositories/watch_history_repository.dart';
 import 'package:wynime/src/infrastructure/bangumi/bangumi_authentication.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store.dart';
 import 'package:wynime/src/presentation/pages/subject_detail_page.dart';
@@ -19,6 +22,7 @@ void main() {
     Size size = const Size(360, 800),
     BangumiSessionController? bangumi,
     SoftwareUpdateController? softwareUpdates,
+    WatchHistoryRepository? watchHistory,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -27,6 +31,7 @@ void main() {
         locale: const Locale('en'),
         bangumi: bangumi,
         softwareUpdates: softwareUpdates,
+        watchHistory: watchHistory,
       ),
     );
     await tester.pumpAndSettle();
@@ -51,6 +56,48 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'EPROG-R11/R12 and matrix 29/30/31 show only meaningful local progress',
+    (tester) async {
+      final repository = _MemoryWatchHistoryRepository([
+        WatchProgress(
+          progressId: 'continue-1',
+          sourceId: 'source',
+          lineId: 'line',
+          subjectId: 'subject',
+          episodeId: 'episode-5',
+          position: const Duration(minutes: 8),
+          duration: const Duration(minutes: 24),
+          isCompleted: false,
+          updatedAt: DateTime.utc(2026, 9, 12),
+        ),
+        WatchProgress(
+          progressId: 'completed-1',
+          sourceId: 'source',
+          lineId: 'line',
+          subjectId: 'subject',
+          episodeId: 'episode-6',
+          position: const Duration(minutes: 24),
+          duration: const Duration(minutes: 24),
+          isCompleted: true,
+          updatedAt: DateTime.utc(2026, 9, 12, 1),
+        ),
+      ]);
+      await pumpApp(tester, watchHistory: repository);
+
+      expect(
+        find.byKey(const ValueKey('continue-watching-continue-1')),
+        findsOneWidget,
+      );
+      expect(find.text('Episode episode-5'), findsOneWidget);
+      expect(find.text('33% watched · Resume at 8:00'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('continue-watching-completed-1')),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('library filter controls are available on compact layout', (
     tester,
@@ -384,6 +431,49 @@ void main() {
     expect(find.text('Manual update required'), findsOneWidget);
     expect(find.text('Installed'), findsNothing);
   });
+}
+
+final class _MemoryWatchHistoryRepository implements WatchHistoryRepository {
+  _MemoryWatchHistoryRepository(Iterable<WatchProgress> initial)
+    : _rows = [...initial];
+
+  final List<WatchProgress> _rows;
+
+  @override
+  Future<void> save(WatchProgress progress) async {
+    _rows.removeWhere((row) => row.progressId == progress.progressId);
+    _rows.add(progress);
+  }
+
+  @override
+  Future<WatchProgress?> findById(String progressId) async {
+    for (final row in _rows) {
+      if (row.progressId == progressId) return row;
+    }
+    return null;
+  }
+
+  @override
+  Future<WatchProgress?> findByIdentity(SourceEpisodeIdentity identity) async {
+    for (final row in _rows) {
+      if (row.sourceId == identity.sourceId &&
+          row.lineId == identity.lineId &&
+          row.subjectId == identity.subjectId &&
+          row.episodeId == identity.episodeId) {
+        return row;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Stream<List<WatchProgress>> watchRecent({int limit = 50}) =>
+      Stream.value(_rows.take(limit).toList(growable: false));
+
+  @override
+  Future<void> remove(String progressId) async {
+    _rows.removeWhere((row) => row.progressId == progressId);
+  }
 }
 
 SoftwareUpdateResult _widgetUpdateResult() => SoftwareUpdateResult(

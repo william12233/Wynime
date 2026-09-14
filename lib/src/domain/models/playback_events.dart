@@ -77,9 +77,11 @@ final class PlaybackEvent {
     required this.state,
     this.position = Duration.zero,
     this.bufferedPosition = Duration.zero,
+    this.duration,
     this.failure,
     this.volume,
     this.rate,
+    this.sessionId,
     this.audioTrackId,
     this.subtitleTrackId,
     this.timelineMapIdentity,
@@ -89,6 +91,9 @@ final class PlaybackEvent {
     }
     if (position.isNegative || bufferedPosition.isNegative) {
       throw ArgumentError('Playback positions must not be negative.');
+    }
+    if (duration != null && duration!.isNegative) {
+      throw ArgumentError.value(duration, 'duration', 'Must not be negative.');
     }
     if (state == PlaybackState.failed && failure == null) {
       throw ArgumentError('A failed playback event requires a failure.');
@@ -116,6 +121,7 @@ final class PlaybackEvent {
     }
     _optionalEventText(audioTrackId, 'audioTrackId', 256);
     _optionalEventText(subtitleTrackId, 'subtitleTrackId', 256);
+    _optionalEventText(sessionId, 'sessionId', 128);
     _optionalEventText(timelineMapIdentity, 'timelineMapIdentity', 1024);
   }
 
@@ -123,9 +129,17 @@ final class PlaybackEvent {
   final PlaybackState state;
   final Duration position;
   final Duration bufferedPosition;
+
+  /// The media duration when the backend can expose it. A caller may provide
+  /// an authoritative episode duration separately when this is unavailable.
+  final Duration? duration;
   final PlaybackFailure? failure;
   final double? volume;
   final double? rate;
+
+  /// Bound by the active PlaybackSession. Legacy test doubles may omit it;
+  /// progress consumers fail closed when it is absent.
+  final String? sessionId;
   final String? audioTrackId;
   final String? subtitleTrackId;
   final String? timelineMapIdentity;

@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.9 release boundary is ready for exact-SHA CI and protected
+The v1.0.10 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -50,10 +50,10 @@ The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
 
-## 1.0.9 candidate status
+## 1.0.10 candidate status
 
-- Version authority is `1.0.9+10`; the expected arm64 split APK versionCode is
-  `2010`.
+- Version authority is `1.0.10+11`; the expected arm64 split APK versionCode is
+  `2011`.
 - Current-head `dart format --output=none --set-exit-if-changed lib test`,
   Flutter analyzer and the full deterministic test suite (261 tests) pass on
   this candidate worktree.

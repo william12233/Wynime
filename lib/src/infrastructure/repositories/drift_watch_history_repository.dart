@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../domain/models/watch_progress.dart';
+import '../../domain/models/source_identity.dart';
 import '../../domain/repositories/watch_history_repository.dart';
 import '../database/wynime_database.dart';
 
@@ -52,6 +53,20 @@ final class DriftWatchHistoryRepository implements WatchHistoryRepository {
   }
 
   @override
+  Future<WatchProgress?> findByIdentity(SourceEpisodeIdentity identity) async {
+    final query = _database.select(_database.watchHistoryRows)
+      ..where(
+        (table) =>
+            table.sourceId.equals(identity.sourceId) &
+            table.lineId.equals(identity.lineId) &
+            table.subjectId.equals(identity.subjectId) &
+            table.episodeId.equals(identity.episodeId),
+      );
+    final row = await query.getSingleOrNull();
+    return row == null ? null : _map(row);
+  }
+
+  @override
   Stream<List<WatchProgress>> watchRecent({int limit = 50}) {
     if (limit <= 0) {
       throw ArgumentError.value(limit, 'limit', 'Must be positive.');
@@ -88,7 +103,7 @@ final class DriftWatchHistoryRepository implements WatchHistoryRepository {
   }
 
   WatchProgress _map(WatchHistoryRecord row) {
-    return WatchProgress(
+    return WatchProgress.sanitized(
       progressId: row.progressId,
       sourceId: row.sourceId,
       lineId: row.lineId,

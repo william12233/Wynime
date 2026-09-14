@@ -120,19 +120,32 @@ Phase 1 stores settings, source/line/episode identities, resume positions, regis
 
 ## Phase 2 source-rule architecture
 
-### Source Package schema version 1
+### Source Package schema versions 1 and 2
 
-A package declares identity, semantic version, compatible Wynime version range, security policy, bounded declarative programs and optional Ed25519-shaped signature metadata. Unknown JSON keys and unsupported selector types fail closed.
+A package declares identity, semantic version, compatible Wynime version range, security policy, bounded declarative programs and optional Ed25519-shaped signature metadata. Unknown JSON keys and unsupported selector types fail closed. Schema version 1 retains its existing fixture-only meaning and does not accept live-operation metadata.
 
-Signature metadata is not cryptographic verification and never raises runtime authority. Signed and unsigned packages use identical allowlist, permission, consent and budget checks.
+Schema version 2 adds a bounded `liveOperations` list. Each operation is one
+closed `search`, `episode` or `playableSource` binding to an existing package
+program, an explicit field mapping used by the existing normalizer and a fixed
+HTTP(S) URI template. It adds no executable package code, selector dialect or
+second normalization model. The typed
+`SourceLiveOperationPlanFactory` expands only operation-specific input
+placeholders into existing live plan types; it performs no I/O and does not
+choose a source or start playback.
+
+Signature metadata is not cryptographic verification and never raises runtime authority. Signed and unsigned packages use identical allowlist, permission, consent and budget checks. `SourcePackageSignatureVerifier` optionally verifies the canonical UTF-8 JSON representation with the signature field omitted using Ed25519 and a package/key/signer-scoped trusted-key resolver. Its result is bounded identity/integrity evidence only; unsigned, untrusted, mismatched, invalid or resolver-failed results cannot install, enable, activate or execute a package.
 
 ### URI and consent policy
 
 - URI schemes are limited to HTTPS and explicitly consented HTTP.
-- Schema version 1 permits only standard ports 443 and 80.
+- Source-package live-operation templates permit only standard ports 443 and
+  80.
 - User-info URIs, localhost, `.localhost`, `.local`, IPv4 literals and deceptive suffix hosts are rejected.
 - Host matching uses exact equality or a dot-boundary subdomain rule.
 - Adding a permission or domain, enabling subdomains or broadening any resource budget requires fresh consent.
+- Adding, removing or changing a schema-v2 live-operation binding requires
+  fresh consent; operation metadata is part of the signed canonical package
+  representation.
 - A package contains at most 32 domain rules and 32 programs; each program contains at most 64 fields.
 
 ### Declarative dialects
@@ -149,6 +162,28 @@ Before and during evaluation, the engine enforces document bytes, redirect count
 ### Fixture-only boundary
 
 Phase 2 accepts a supplied `SourceFixture` containing the intended URI, redirect chain and HTML or JSON body. The source-rule implementation imports no HTTP client, WebView, `dart:io`, `dart:ffi` or executable-code API. Real network and browser capture begin only in Phase 3 behind typed interfaces.
+
+### Live source HTTP request boundary
+
+`SourceHttpRequest` is the first live source transport contract. The current
+boundary intentionally accepts only an explicit, allowlisted HTTPS GET with
+no request body, bounded headers, a bounded timeout and no credential or
+hop-by-hop headers. `SourceLiveHttpRequestCoordinator` checks consent,
+re-consent, enabled state, Wynime compatibility, program identity and exact
+semantic policy equality before exposing the request. It never infers a URI
+from a package ID or executes package content.
+
+`DartIoSourceHttpTransport` reuses the existing direct,
+public-address-pinned upstream connection path, disables implicit redirect
+trust through manual redirect handling, rechecks the same package allowlist
+for every target, enforces the package redirect and response-byte budgets, and
+decodes only bounded UTF-8 text. Successful response bodies remain in memory
+for a future declarative evaluator; response headers are not retained, and
+failed results retain only a safe typed status/reason. `SourceLiveHttpRequestExecutor`
+joins admission to exactly one transport call and short-circuits every
+non-ready admission. This task does not add POST, source-rule execution,
+normalization, Search UI, WebView, persistence, retry or provider-specific
+source behavior.
 
 ## Phase 3 WebView capture architecture
 
@@ -188,6 +223,106 @@ Source packages cannot inject Dart, JavaScript, WASM or native executable adapte
 `WebCaptureAccumulator` stores bounded events and deduplicated media candidates in memory only. Candidate classification recognizes HLS, DASH, common direct audio/video files and media segments using response content type or URL path.
 
 Diagnostic output contains scheme, host, path-segment count, method and header names only. Cookie values, Authorization values, query strings, fragments and complete media URLs are not logged or persisted. Phase 3 does not create a `PlaybackSession`; Phase 4 must validate and transform a chosen candidate through its own Gate.
+
+### Live capture admission and generation
+
+`SourceLiveCapturePort` is the typed boundary for a future platform/WebView
+capture implementation. `SourceLiveCaptureRequest` binds one bounded
+`WebCaptureRequest` to the exact source package version and program. The
+Application-layer `SourceLiveCaptureCoordinator` revalidates every returned
+`WebCaptureSnapshot` against that request's URI policy, permissions, event
+ordering, candidate provenance and resource budgets before exposing it to the
+next boundary. Incomplete or malformed snapshots, platform failures and
+budget exhaustion become stable redacted result codes; raw URLs, headers,
+cookies and exceptions do not cross the result diagnostic boundary.
+
+Each capture owns a monotonically increasing generation. A newer capture
+supersedes an older one, and closing the coordinator invalidates all pending
+generations; late platform completions are therefore ignored and cannot
+replace the current accepted result. The port and coordinator perform no
+network transport, package execution, persistence, playback/session
+resolution or UI work. The platform implementation is connected only through
+`InAppWebViewSourceLiveCapturePort` and the reusable
+`InAppWebViewSourceLiveCapture` surface described below; actual source
+eligibility, package execution and live availability remain separate
+evidence-bound work.
+
+### InAppWebView live capture bridge
+
+`InAppWebViewSourceLiveCapturePort` is the only platform-owned bridge from the
+existing `InAppWebViewCaptureView` to `SourceLiveCapturePort`. One port capture
+owns one keyed generation and one completion. A new capture completes the old
+one as superseded; closing the port completes pending work as closed. Runtime
+unavailability, fatal bootstrap/final-URI/cookie failures and capture-surface
+construction failures complete the port with stable redacted errors. Ordinary
+policy-blocked resource, XHR, fetch or download events remain blocked and are
+reported as security notices without turning the whole capture into false
+success or an indefinite pending operation.
+
+`InAppWebViewSourceLiveCapture` mounts that port's keyed view, starts one
+`SourceLiveCaptureCoordinator` operation, delivers at most one typed result,
+and closes both authorities before an updated request or widget disposal can
+publish a late result. The injectable view builder is test-only composition;
+the production builder is `InAppWebViewCaptureView`. This bridge does not
+connect Search, source-package execution, live HTTP outside WebView, cookie
+persistence, `PlaybackSession` resolution or player lifecycle.
+
+### Installed-package live-capture admission
+
+`SourceLiveCapturePackageCoordinator` is the application handoff from an
+`InstalledSourcePackage` to the existing live-capture coordinator. It checks
+consent/re-consent before disabled state, exact Wynime compatibility and
+package-owned program identity, then requires the supplied
+`WebCaptureRequest` to carry the exact installed package security policy and an
+allowlisted initial URI. Non-ready package states never contact the platform
+port. A ready request preserves the package ID, version and program ID in the
+existing `SourceLiveCaptureRequest`, after which generation, snapshot
+validation, stale-result handling and close remain owned by
+`SourceLiveCaptureCoordinator`.
+
+This admission boundary does not execute declarative source rules, fetch live
+HTTP outside WebView, activate packages, persist capture data, connect Search
+or resolve playback. It makes package eligibility explicit without treating a
+mounted WebView or a captured snapshot as proof of live source availability.
+
+`InAppWebViewInstalledSourceLiveCapture` is the package-aware platform surface
+for that handoff. It accepts an explicit `SourceLiveCapturePackagePlan`, emits
+the typed package-admission result, and mounts the lower-level WebView capture
+surface only when the admission result is ready. Replacing the plan or
+disposing the widget closes the package coordinator and platform port before
+the next generation can publish a result. A non-ready admission therefore
+cannot construct the capture view or contact the platform capture operation.
+
+`SourceLiveCaptureSnapshotValidator` is the shared pure revalidation authority
+for downstream consumers of a capture result. It binds a snapshot to the
+exact capture request and repeats URI, permission, ordering,
+candidate-provenance, candidate-kind and resource-budget checks, using the
+same pure `WebCaptureCandidateClassifier` as the platform accumulator, so an
+in-memory captured value cannot be treated as an unverified capability at a
+downstream boundary. It reconstructs the accumulator's first-observation
+candidate list from the classifier's kind plus exact normalized URI key,
+rechecks the reconstructed unique-candidate budget, and requires the supplied
+candidate list to match it in cardinality, insertion order, kind, normalized
+URI, headers and source-event sequence. A later duplicate, omission,
+duplication, reordering or impossible over-budget completed snapshot is
+therefore rejected. Rejected validation retains only a bounded reason code.
+
+`SourceLiveCapturePlayableSourceCoordinator` is the next pure Application
+boundary after that surface. It consumes the exact admitted
+`SourceLiveCaptureRequest` and `SourceLiveCaptureResult` pair, rechecks package
+and episode identity plus the shared snapshot validator, and requires an
+explicit source-key and label mapping for every captured candidate. Supported
+HLS and direct audio/video candidates become
+`SourceLiveCapturePlayableSource` values that retain the original
+`WebMediaCandidate` (including its event sequence and ephemeral headers),
+while the accepted capture snapshot retains cookies once for the later session
+handoff. DASH and media-segment candidates are diagnosed and never become
+playable outputs. Candidate provenance must point to the accumulator's first
+classified observation for its kind and normalized URI; later duplicate
+observations fail closed. Failed results retain neither candidate nor snapshot
+data.
+This boundary does not select a route, resolve a session, persist capture
+state, perform source HTTP or start a player.
 
 ## Phase 4 playback architecture
 
@@ -313,7 +448,7 @@ Phase 9 keeps Bangumi metadata and collection state behind pure Domain models an
 
 Drift schema version 4 stores local collection status and remote revision, watched episode rows, an account-scoped calendar cache with its last-refresh timestamp, manual local-to-Bangumi subject mappings and `BangumiSyncOperation` rows. Operations use `pending`, `retryWaiting`, `conflict` and `blocked`; the v1.0.6 `failed` state is migration-only. Each operation retains its target-field base value and the latest safe HTTP status diagnostic. The sync service updates local state immediately for offline use, then persists a coalesced queued operation. Automatic selection respects `nextAttemptAt`, while manual synchronization can force unfinished retry rows. Retryable network, timeout, provider, payload and 429／5xx failures remain retryable after any foreground attempt limit, with capped exponential backoff and jitter.
 
-Every unfinished operation reads the applicable Bangumi state before mutation. If the target already matches, the operation completes without a write; an independent change to another target field is merged, while an incompatible target change becomes a visible conflict. Successful mutations are followed by a bounded read-after-write verification sequence before completion. Explicit collection refreshes also pull remote state for remote, cached and queued subjects, importing external Bangumi changes when no active local intent conflicts. Blocked and legacy failed rows never participate in local-first overlays. A reauthentication-required session may still render the cached calendar, but the presentation labels it as cached rather than current.
+Every unfinished operation reads the applicable Bangumi state before mutation. If the target already matches, the operation completes without a write; an independent change to another target field is merged, while an incompatible target change becomes a visible conflict. Successful mutations are followed by a bounded read-after-write verification sequence before completion. An explicit collection refresh fetches the complete paged membership snapshot and atomically removes absent cached rows, except for subjects with an active local-first collection intent. It also refreshes remote state for already-open detail subjects; unopened subjects fetch exact watched IDs when their detail route opens, avoiding an unbounded per-collection request fan-out. Blocked and legacy failed rows never participate in local-first overlays. A reauthentication-required session may still render the cached calendar, but the presentation labels it as cached rather than current.
 
 ## Phase 10 automatic source builder
 
@@ -325,13 +460,588 @@ Security policy is copied from the previous package when present. An observed do
 
 Every successful result remains in `reviewRequired` state and `canActivate` is always false until `SourcePackageActivationService` receives the exact proposal ID, explicit user approval and any required re-consent. Signatures remain metadata and do not increase runtime authority.
 
+`SourcePackageLiveOperation` is the only schema-v2 live authority. Its URI
+template has a fixed public DNS authority and HTTP(S) scheme, rejects user-info,
+fragments, non-standard ports and local/IP hosts, and allows placeholders only
+in path/query text. Expansion percent-encodes each bounded input component and
+the resulting URI is passed through the installed package's exact security
+policy and `SourceLiveHttpRequestCoordinator` before any transport call.
+Operation-specific mappings must reference fields in the selected program;
+missing/duplicate operations, unknown programs, unsupported placeholders and
+all malformed declarations fail at decode/manifest validation. Rejected
+factory results retain only safe status/reason tokens, while the exact ready
+package, policy, program and request provenance are carried by the existing
+plan types.
+
+`DeclarativeSourcePackageManager` is the deterministic lifecycle boundary for
+ decoded schema-v1/v2 packages. It owns one in-memory record per `packageId`,
+returns sorted immutable snapshots, and accepts only packages compatible with
+the current Wynime version. A first install and every ordinary update remain
+disabled and consent-pending; an update must be strictly newer and replaces
+ the previous record atomically. A broader security policy or changed live
+ operation authority is marked for re-consent, and a package-version guard
+ rejects stale enable／disable actions
+so an old UI snapshot cannot mutate a replacement package. Enabling clears
+only the consent flags that were explicitly satisfied; disabling never deletes
+the installed manifest. Builder proposals use a separate manager entry point
+that maps the activation service's exact proposal-ID, approval and re-consent
+checks into the same stable manager error boundary before enabling atomically.
+
+This manager remains an in-memory, no-I/O lifecycle authority. It does not
+discover GitHub folders, download packages, verify publisher signatures or
+execute live source requests. `SourcePackageRepository` is the separate typed
+durable-state boundary. `DriftSourcePackageRepository` stores the complete
+ schema-v1/v2 manifest and consent/status flags in the v6 SQLite schema through one
+transactional snapshot replacement. `PersistentSourcePackageManager` restores
+the full snapshot only after decoding and revalidating every record, serializes
+mutations, and restores the prior in-memory snapshot if a commit fails. The
+repository does not grant registry trust or signature authority. At app
+bootstrap, `SourcePackageStartupController` creates the persistent facade once,
+awaits its durable snapshot load, and publishes idle／loading／ready／failed
+state with a bounded diagnostic code. `ResponsiveAppShell` observes that
+controller and passes its immutable installed snapshot to the Sources page.
+Explicit Install／Update actions stage a validated manifest as disabled and
+consent-pending; they never enable or execute it. Enable and Disable actions
+use the exact package ID and version, serialize through the persistent manager,
+and notify the shell only after durable replacement succeeds. Enabling is
+preceded by a user-visible review of the manifest's allowlisted domains,
+explicit permissions and resource budget; stale versions, repository failures
+and close races remain typed and fail closed. The page never fetches artifacts
+itself, verifies publisher signatures or treats a catalog response as
+execution authority.
+
+`SourceRegistryIndex` is the strict, offline schema-v1 contract for a future
+source-package repository. It contains one bounded entry per package with an
+opaque snapshot revision, a relative package path below a dedicated source
+root, the package version and a normalized SHA-256 digest. The decoder rejects
+unknown keys, duplicate IDs or paths, traversal/absolute paths, unsupported
+versions and over-budget indexes. Its byte-oriented decoder rejects malformed
+UTF-8 before parsing. `SourceRegistryPackageVerifier` hashes the supplied raw
+package bytes, then strictly decodes and binds the manifest package ID and
+exact version text to the entry before returning it; the String overload is
+only a UTF-8 convenience wrapper. This is an integrity boundary only: it does
+not select a GitHub repository or branch, access the filesystem or network,
+verify Ed25519 publisher signatures, or activate a package; the ordinary
+manager consent and security-policy checks remain authoritative.
+
+`SourceRegistryArtifactCatalogLoader` is the bounded offline composition point
+between that index and a future transport adapter. It accepts the raw index
+bytes plus an exact full-relative-path-to-package-bytes map, rejects missing or
+unindexed artifacts, verifies every package before returning an immutable
+all-or-nothing catalog, and retains no raw artifact bytes. It does not install,
+enable, persist, access the filesystem or network, or grant repository trust.
+
+`GitHubSourceRegistryRepository` is the read-only transport adapter for one
+configured owner, repository, ref and index path. It constructs only HTTPS
+URLs on `raw.githubusercontent.com`, rejects traversal and unsafe repository
+configuration, disables redirects and credentials, applies per-response and
+total-package byte budgets, and fetches the decoded index's exact artifacts in
+order. Concurrent loads share one in-flight snapshot and closing the adapter
+prevents new work or late catalog composition. The adapter passes the raw bytes
+through `SourceRegistryArtifactCatalogLoader` and never installs, persists,
+enables or activates a package. It is not wired into startup or the Sources
+page, and it does not verify publisher signatures or grant a verified digest
+repository trust.
+
+`SourcePackageSignatureVerifier` is the optional cryptographic boundary for
+publisher identity evidence. It signs and verifies the canonical package JSON
+without the recursive `signature` member, requires an Ed25519 public key from
+an external resolver with exact package ID, key ID and signer ID matching, and
+maps lookup, timeout, malformed-signature, payload and cryptographic failures
+to bounded diagnostic codes. The resolver and verifier retain no package or
+credential state, and a verified result does not alter registry integrity,
+package allowlists, permissions, consent, lifecycle state or runtime
+authority. The current startup, Sources UI and GitHub repository paths do not
+implicitly invoke this optional verifier.
+
+`SourceRegistryController` is the Application presentation boundary for an
+optional compile-time configured `GitHubSourceRegistryRepository`. It owns one
+immutable read-only catalog snapshot, exposes idle/loading/ready/failed states,
+shares concurrent initialization or refresh calls, replaces snapshots only
+after the complete catalog has passed index, artifact, identity and SHA-256
+validation, and ignores late completion after disposal. `WynimeApp` starts the
+optional read in the background and closes the controller with the app; the
+Sources page observes it and shows the registry revision, verified artifact
+identity and installed/update/not-installed comparison. Refresh is the only
+remote UI action and only re-reads the configured snapshot. No catalog item
+has an install, enable, activate or execute action, and the controller never
+becomes package lifecycle or publisher-signature authority. Invalid or absent
+compile-time configuration leaves the optional registry disconnected.
+
+`SourcePackageRuntime` is the next typed boundary below the manager. Its
+current `DeclarativeSourcePackageRuntime.executeFixture` operation accepts
+only an enabled, consent-complete, Wynime-compatible installed package and an
+exact program ID. It delegates to the canonical fixture rule engine, returns
+immutable generic records and bounded redacted diagnostics, and classifies
+disabled, consent-required, incompatible, available, not-found and failed
+states without exposing parser or security exception text. This proves the
+shared executor contract without claiming HTTP, GitHub registry, WebView,
+source-specific hard-coding or normalized application UI integration.
+
+`SourceLiveHttpPackageRuntime` is the narrow asynchronous composition above
+the bounded live HTTP executor and the existing `SourcePackageRuntime`. It
+passes only a completed, package-admitted `SourceHttpResponse` into one
+in-memory `SourceFixture`, using the explicit request URI as the fixture's
+initial URI and preserving the bounded redirect chain. It returns only the
+existing immutable `SourceRuntimeResult`; response body, response metadata and
+headers do not escape this composition. Admission and transport failures are
+mapped to safe typed runtime statuses with no records, evaluator exceptions
+are collapsed, and a result whose package/version/program identity does not
+match the request plan fails closed. This establishes the first live-to-rule
+composition without request inference, provider behavior, Search UI, WebView,
+normalization, persistence, retry or playback authority.
+
+`SourceLiveSearchCoordinator` is the next asynchronous application boundary.
+It accepts a bounded list of explicit `SourceLiveSearchPlan` values, each
+pairing one TASK-044 live request plan with one search field mapping. It runs
+the plans in caller order, passes each typed runtime result through the
+existing `SourceSearchNormalizer`, preserves per-source status and aggregates
+only normalized results using the existing search result contract. Query text
+is an aggregate input only; this boundary never edits or infers a request.
+Plan-count and duplicate-identity limits are checked before I/O. A newer
+search generation supersedes an older pending result, and `close` invalidates
+pending/future results without becoming the lower transport's cancellation or
+close authority. Invalid normalizer identity/shape, runtime exceptions and
+non-available source states remain typed failures with no fabricated records.
+This does not connect Search UI, provider behavior, registry, WebView,
+persistence, retry or playback.
+
+`SourceInstalledLiveSearchPipeline` is the installed-package composition above
+that coordinator. It snapshots the caller's installed-package authority once,
+in caller order, before any live search transport and bounds the snapshot to 32
+unique `(packageId, version)` identities. It passes every package through the
+TASK-053 `SourceLiveOperationPlanFactory` with the exact query; only factory
+ready plans enter one invocation of `SourceLiveSearchCoordinator`. Each factory
+result remains visible as a typed per-package outcome, so disabled,
+consent-pending, incompatible, undeclared or otherwise rejected packages cannot
+be mistaken for successful sources while admitted packages continue searching.
+The wrapper preserves the coordinator's exact normalized results and downstream
+status, marks package-preflight coexistence as partial without changing the
+downstream result, and returns a typed no-usable-sources result with zero
+transport when no plan is admitted. It delegates generation, stale-response,
+close and transport lifecycle to the existing coordinator and adds no retry,
+timeout, persistence, UI, provider or cross-source ranking authority.
+
+`SourceSearchPresentationController` is the sole Presentation adapter above
+`SourceInstalledLiveSearchPipeline`. It receives one application search
+operation and the existing installed-package snapshot provider, submits one
+trimmed query per user action, and projects only the pipeline's typed status,
+normalized result order and package display provenance into immutable UI state.
+It owns only a presentation request identity, so a newer query or disposed
+Search surface cannot be overwritten by a late completion; it never closes the
+shared pipeline. `SearchPage` renders deterministic idle, loading, available,
+partial, not-found, no-source, no-usable-source, invalid-query and safe-failure
+states with retry, while keeping request URIs, headers, cookies, tokens,
+response bodies, diagnostics and raw exceptions out of the widget tree. The
+application bootstrap constructs one live-search pipeline from the accepted
+transport/runtime/factory/coordinator/normalizer chain and closes that shared
+I/O owner with the app lifecycle. Presentation adds no package registry,
+source fan-out, matching, ranking, network or playback authority.
+
+`SourceInstalledLiveEpisodePipeline` is the corresponding composition from a
+bounded caller-ordered iterable of exact `SourceInstalledLiveEpisodeTarget`
+values. Each target retains one exact `InstalledSourcePackage` and complete
+`SourceEpisodeIdentity`; the pipeline snapshots at most 32 collision-resistant
+package/version/source/line/subject/episode identities before invoking the
+TASK-053 `SourceLiveOperationPlanFactory`. Every snapped target retains its
+typed factory outcome, while only exact ready `SourceLiveEpisodePlan` references
+enter one existing `SourceLiveEpisodeCoordinator` invocation. Package-level
+preflight rejection remains visible and may make an otherwise available or
+not-found aggregate partial, but never turns a downstream failed or not-found
+operation into success. The pipeline owns no identity synthesis, matching,
+merge, ranking, retry, timeout, persistence, UI, provider or HTTP lifecycle;
+generation, stale suppression, close invalidation, runtime and normalization
+remain authoritative in `SourceLiveEpisodeCoordinator` and its lower layers.
+
+`SourceInstalledLivePlaybackPipeline` is the corresponding composition from
+the same bounded caller-ordered exact installed-package/episode targets into
+the accepted `SourceLivePlaybackPipeline`. It snapshots at most 32
+collision-resistant package/version/source/line/subject/episode identities
+before invoking the TASK-053 `SourceLiveOperationPlanFactory` for
+`playableSource`; every target retains its typed factory result, while only
+exact ready `SourceLivePlayableSourcePlan` references enter one TASK-052
+`openLive` invocation. The wrapper forwards all existing playback options
+unchanged and retains the exact downstream playback result, including the
+exact `PlaybackSession` on success or the typed stage failure on rejection.
+Rejected package preflight remains visible and can make an opened aggregate
+partial without invalidating the valid session. A caller-provided close
+delegate invokes only the existing TASK-052/lower lifecycle owners; this
+composition adds no generation, stale token, cancellation, timeout, retry,
+fallback, session, proxy, player, transport, persistence, UI, provider or
+identity-matching authority. Diagnostics expose only bounded package/version,
+operation/program, status/count/stage and safe reason tokens.
+
+`SourceLiveEpisodeCoordinator` is the corresponding asynchronous application
+boundary for episode listings. It accepts a bounded list of explicit
+`SourceLiveEpisodePlan` values, each pairing one live request plan with one
+episode field mapping, executes them in caller order through
+`SourceLiveHttpPackageRuntime`, and passes each result once through the
+existing `SourceEpisodeNormalizer`. It preserves source-local typed states and
+aggregates only normalized episodes through the existing episode result
+contract. Plan-count and duplicate-identity limits are checked before I/O; a
+newer listing supersedes an older pending result and `close` invalidates
+pending/future results without taking ownership of lower transport lifecycle.
+Invalid normalizer identity/shape and exceptions fail closed with no fabricated
+episodes. This does not connect episode UI, Search UI, provider behavior,
+registry, WebView, persistence, retry or playback.
+
+`SourceSearchNormalizer` is the next typed boundary above the runtime. Its
+fixture-only declarative implementation accepts an explicit subject-ID/title
+field mapping and converts only available generic records into immutable
+`SourceSearchResult` values. The package identity is authoritative, duplicate
+subject IDs are removed deterministically, invalid or over-limit fields are
+discarded with bounded generic diagnostics, and runtime states other than
+available never expose records. This establishes the shared normalized search
+contract without connecting Search UI, live HTTP, GitHub registry,
+WebView, playback resolution or provider-specific code.
+
+`SourceSearchCoordinator` composes explicit installed-package plans through
+the fixture-only runtime and normalizer in caller order. It preflights
+disabled, consent-pending and Wynime-incompatible packages without invoking
+the runtime, preserves one typed normalization result per source, aggregates
+only normalized rows and returns bounded available, partial, not-found,
+no-sources or failed states with safe reason codes. It has no mutable async
+state, so it cannot claim stale-response protection for a future live
+transport; that generation/race boundary must be added with the asynchronous
+source transport rather than inferred here. The coordinator performs no I/O,
+does not mutate package lifecycle, and remains disconnected from Search UI,
+HTTP, GitHub registry transport, WebView, playback or provider-specific code.
+
+`SourceEpisodeNormalizer` follows the same boundary for episode listings. It
+requires an explicit four-field mapping for line, subject, episode and title,
+builds the existing `SourceEpisodeIdentity` with the package-owned source ID,
+keeps valid rows in source order and removes duplicate full identities. Missing,
+over-limit or control-character values are discarded with bounded generic
+diagnostics; malformed package or program identities fail closed; and
+non-available runtime states never expose episode records. This remains a pure
+fixture transformation and does not resolve playback URLs or connect a source
+adapter, coordinator, UI, network, registry or WebView.
+
+`SourceEpisodeCoordinator` composes explicit episode-listing plans through the
+fixture-only runtime and `SourceEpisodeNormalizer` in caller order. It
+preflights consent/re-consent before disabled status, then rejects
+Wynime-incompatible packages without invoking the runtime; eligible plans
+produce one typed source result each, and only normalized `SourceEpisode`
+identities are aggregated. Its bounded available, partial, not-found,
+no-sources and failed states carry stable safe reason codes. The coordinator
+has no mutable async state, so stale-response generation protection remains a
+future asynchronous live-source boundary; it performs no I/O, persistence,
+package mutation, WebView, playback or session work.
+
+`SourcePlayableSourceNormalizer` is the next fixture-only boundary from a
+playback-extraction runtime program to a normalized playable-source list. It
+requires the exact package manifest, runtime package/version identity, the
+typed episode identity and an explicit five-field mapping for source key,
+label, candidate kind, media URI and page URI; every mapped field must also be
+declared by the exact playback program. The package security policy validates
+both HTTP(S) URIs; only HLS and direct audio/video candidates are
+emitted, while DASH and media-segment records fail closed. Valid rows retain
+source order and duplicate source keys keep the first row. The output carries
+only ephemeral media/page URI values and no headers, cookies or playback
+session; its diagnostics redact query strings and complete URLs. It performs
+no I/O, persistence, WebView interaction, source-specific branching or
+`PlaybackSession` creation. The existing playback-session resolver remains the
+single authority that turns a later selected candidate into one
+`PlaybackSession`.
+
+`SourcePlayableSourceCoordinator` composes explicit playable-source plans
+through the fixture-only runtime and normalizer in caller order. Each plan
+binds one installed package, declared program, already-resolved
+`SourceEpisodeIdentity`, fixture and five-field mapping; staged consent,
+disabled status and Wynime incompatibility are rejected before runtime
+execution. Only normalized candidates whose package/version, episode identity,
+supported kind and package URI policy still match the plan are aggregated.
+The coordinator returns bounded available, partial, not-found, no-sources or
+failed states with safe reason codes. It has no mutable asynchronous state and
+therefore does not claim stale-response protection; it performs no I/O,
+persistence, WebView, route selection, playback or session work.
+
+`SourceLivePlayableSourceCoordinator` is the asynchronous live counterpart for
+playable-source listing. It accepts at most 32 explicit plans, each pairing a
+package-admitted `SourceLiveHttpRequestPlan` with an already-resolved
+`SourceEpisodeIdentity` and five-field playable mapping, then evaluates plans
+sequentially through `SourceLiveHttpPackageRuntime` and the existing
+`SourcePlayableSourceNormalizer`. It preserves per-source states and caller
+order, validates package/version/program and candidate episode/kind/URI policy
+identity again before aggregation, and returns the existing bounded
+`SourcePlayableSourceCoordinatorResult` contract. Invalid explicit episode
+identity, duplicate plan identity, normalizer identity/shape, candidate policy
+or normalizer exceptions fail closed without candidates. A newer listing
+supersedes an older pending result and `close` invalidates pending/future
+results; the coordinator does not close or cancel the lower transport and
+performs no route, session, player, persistence, WebView or provider work.
+
+`SourceLivePlaybackRouteCoordinator` is the live HTTP route handoff from that
+aggregate. It accepts the same bounded, caller-ordered
+`SourceLivePlayableSourcePlan` list that produced the
+`SourcePlayableSourceCoordinatorResult`, requires one matching normalized
+result per plan, and rechecks package lifecycle, Wynime compatibility, declared
+program, exact request policy, episode identity, supported HLS/direct
+audio-video kind, package URI policy and the aggregate's flattened candidate
+shape. It delegates the actual source choice to the existing
+`SourcePlaybackRouteCoordinator`, so exact package/version/program/source-key
+preference and no-fallback semantics remain single-sourced. A selected live
+route retains the exact installed package and bounded GET request for the next
+handoff, but no live response body, mapping, cookie or token. This coordinator
+is pure and synchronous; it performs no source I/O, persistence, session
+resolution, player work or asynchronous generation management.
+
+`SourceLivePlaybackSessionRequestCoordinator` is the live HTTP handoff from a
+selected `SourceLivePlaybackRoute` to the existing
+`PlaybackSessionResolutionRequest`. It rechecks the installed package's
+consent/re-consent, enabled lifecycle and Wynime compatibility gates, declared
+program, exact package/version/episode identity and the package-admitted GET
+request policy before delegating route conversion to the existing
+`SourcePlaybackSessionRequestBuilder`. The explicit non-negative source-event
+sequence is forwarded to that builder; because this path has no WebView event
+or cookie authority, the resulting request must retain the exact live route
+episode/page/media/kind fields with empty candidate headers, cookies and
+user-agent. A ready builder result is rechecked for those exact fields and the
+same `AdRemovalPlan`; non-selected routes, builder rejection, forged ready
+requests and exceptions return bounded typed results. This coordinator is
+pure and creates no session, invokes no resolver, performs no source I/O,
+persistence, proxy, player or async lifecycle work.
+
+`SourceLivePlaybackOpenRequestCoordinator` is the live HTTP handoff from a
+ready `SourceLivePlaybackSessionRequestResult` to the existing
+`PlaybackOpenRequest` contract. It preserves the exact resolver request and
+caller-provided proxy budget, loopback family, refresh leeway, bounded
+automatic-refresh count, optional episode duration and optional Bangumi target.
+Non-ready live session results retain their live session, route and builder
+statuses without creating an open request; invalid open options remain typed
+failures. This coordinator is pure and synchronous, and performs no resolver,
+session, proxy lease, player, source I/O, persistence, UI or asynchronous
+lifecycle work.
+
+`SourceLivePlaybackPreparedRequestOpener` is the final live HTTP handoff from
+that typed open-request result to the existing `PlaybackCoordinator`. Its
+concrete `PlaybackCoordinatorLivePlaybackPreparedRequestOpener` short-circuits
+every non-ready result, retaining live session, route and builder statuses, and
+passes only the exact ready `PlaybackOpenRequest` to `PlaybackCoordinator.open`.
+The existing coordinator remains the sole authority for session resolution,
+proxy exposure, player/progress lifecycle, operation serialization and stale
+events; this opener adds no second lifecycle, retry, persistence, I/O or
+platform bridge.
+
+`SourceLivePlaybackPipeline` composes the explicit live HTTP path from a
+bounded, caller-ordered snapshot of `SourceLivePlayableSourcePlan` values
+through playable-source listing, live route selection, live session-request
+building, open-request building and the prepared-request opener. It accepts
+both complete and partial playable aggregates so a later valid source can be
+selected after an earlier source failure, while exact package/version/program/
+source-key preference remains the existing route authority's decision. The
+caller supplies the non-negative source-event sequence required by the shared
+request-builder contract; the pipeline does not invent WebView capture data.
+Each non-ready boundary short-circuits with one bounded typed failure and no
+resolver, proxy or player work. The pipeline owns no response persistence,
+retry, session, proxy, player, progress or stale-operation state: live listing
+supersession remains in `SourceLivePlayableSourceCoordinator` and playback
+operation authority remains in `PlaybackCoordinator`.
+
+`SourcePlaybackRouteCoordinator` composes the resulting source-local
+normalization groups through the existing deterministic route selector. An
+available group supplies its own exact package-owned episode identity to the
+selector, so different package `sourceId` values are never synthesized into a
+single cross-provider identity. With no preference it keeps the first
+selected route in source order while preserving per-source selection results;
+an explicit preference binds package, version, program and source key and
+never falls back to another package. It returns only a typed route-selection
+outcome and does not resolve a session, start a player, perform I/O or own
+async generation state.
+
+`DeterministicSourcePlaybackRouteSelector` is the Application-layer selection
+boundary above that normalized list. It accepts only an available result whose
+candidate identities all match the requested episode and package, selects an
+exact preferred source key when one is provided, or otherwise selects the
+first source in normalized order. A missing preference never silently falls
+back, and a direct DASH/segment candidate or mixed identity fails closed. The
+selector returns a typed `SourcePlaybackRoute` containing package/version and
+program provenance, but does not create a `PlaybackSession`; the existing
+resolver remains the only session authority.
+
+`SourceLiveCapturePlaybackRouteCoordinator` is the separate live-only route
+handoff from an accepted `SourceLiveCapturePlayableSourceResult`. It preflights
+the installed package again, requires exact package/version/program and
+completed-capture identity, and revalidates the complete snapshot candidate list
+against the ordered capture events using the shared candidate classifier. Each
+candidate's source-event sequence must resolve to an event whose classified kind,
+exact classifier-normalized URI text, headers and sequence match; the
+first-observation candidate list must also match the expected candidate at the
+same index, in cardinality, order and fields. A candidate carrying its own
+fragment or otherwise non-normalized URI fails closed. It then verifies each
+selected candidate against its snapshot index, episode/page identity, supported
+kind and package URI policy. With no preference it selects the first live source; an
+explicit preference must match package, version, program and source key exactly
+and never falls back. The returned route retains the exact
+`SourceLiveCapturePlayableSource` and the same accepted capture result reference
+so candidate headers, event sequence and the one cookie snapshot remain
+available to the next handoff without duplicating secrets. This coordinator is
+pure and performs no source I/O, persistence, session resolution or player
+work; the live session-request gate below is the next explicit boundary.
+
+`SourceLiveCapturePlaybackSessionRequestCoordinator` is the live-only handoff
+from that selected route to the existing `PlaybackSessionResolutionRequest`.
+The available playable result and live route retain the exact
+`SourceLiveCaptureRequest`/capture-result pair. This coordinator rechecks the
+installed package lifecycle, compatibility, program identity, request policy,
+initial URI, accepted completed snapshot and candidate provenance through the
+shared snapshot validator. It then passes the exact captured candidate, its
+headers and source-event sequence, the one captured cookie snapshot (the
+existing resolver filters it for the media URI) and any explicit capture
+user-agent to the resolver request. An ad-removal plan must
+describe the same episode. Non-selected routes and every mismatch return a
+bounded typed failure without a resolver request. It creates no
+`PlaybackSession`, proxy lease, player, persistence, source I/O or second
+lifecycle; `PlaybackSessionResolver` and the existing `PlaybackCoordinator`
+remain the only downstream authorities.
+
+`SourceLiveCapturePlaybackOpenRequestCoordinator` is the separate live-only
+handoff from a ready `SourceLiveCapturePlaybackSessionRequestResult` to the
+existing `PlaybackOpenRequest`. It preserves the exact live resolver request
+and applies the same bounded loopback family, refresh leeway, automatic
+refresh limit, optional episode duration, Bangumi episode mapping and proxy
+budget options as the fixture path. Non-ready live session results and invalid
+options remain typed failures. This coordinator creates no
+`PlaybackSession`, resolver invocation, proxy lease, player, persistence,
+source I/O or asynchronous generation state; a later live prepared-request
+handoff remains responsible for passing only a ready request to
+`PlaybackCoordinator`.
+
+`SourceLiveCapturePlaybackPreparedRequestOpener` is the live-only prepared
+request port after that open-request boundary. Its concrete
+`PlaybackCoordinatorLiveCapturePreparedRequestOpener` short-circuits every
+non-ready live result and passes only the exact ready `PlaybackOpenRequest` to
+the existing `PlaybackCoordinator.open`. It creates no second resolver,
+session, proxy, player, progress, persistence, retry or generation authority;
+downstream stable playback errors and stale-operation checks remain owned by
+`PlaybackCoordinator`.
+
+`SourceLiveCapturePlayableSourcePlanCoordinator` is the pure handoff from one
+package-aware `SourceLiveCapturePackagePlan`/admission and its completed
+`SourceLiveCaptureResult` to the existing
+`SourceLiveCapturePlayableSourcePlan`. It requires the ready admission request
+to retain the exact package-plan `WebCaptureRequest`, checks package/program
+identity and lifecycle again, requires an exact capture identity and an
+episode whose source belongs to the package, and requires one explicit mapping
+for every captured candidate. A non-ready admission or capture is returned as
+a bounded typed result without retaining capture data; identity, policy,
+episode and mapping mismatches fail closed. The coordinator performs no
+capture, WebView, source I/O, package execution, normalization, routing,
+session, player or persistence work, and upstream capture-generation/stale
+result authority remains with the package/WebView surface.
+
+`SourceLiveCapturePlaybackPipeline` is the explicit live-only composition from
+an accepted capture request/result plan through playable-source normalization,
+route selection, session-request construction, open-request construction and
+the prepared-request opener above. It stops at the first non-ready typed stage
+before playback work and returns only that stage's bounded status and reason.
+The pipeline retains no capture snapshot or request in its result and owns no
+source capture, network, persistence, resolver, proxy, player, lifecycle,
+progress or generation state. An accepted capture plan remains the input
+boundary; package admission and WebView capture continue to be supplied by
+their existing authorities.
+
+`DeterministicSourcePlaybackSessionRequestBuilder` remains the fixture-path
+Application boundary from a selected route to that resolver. It requires the exact package
+manifest, package version and declared program, rechecks the package allowlist
+for both media and page URIs, and requires the supplied `AdRemovalPlan` to
+describe the same episode. It creates one `PlaybackSessionResolutionRequest`
+with the selected candidate and an explicitly supplied non-negative source
+event sequence; normalized source packages do not contribute headers or
+cookies, so the request carries neither. A typed result reports every rejected
+identity, policy or input case without raw exceptions. The builder does not
+call the resolver, create a session, persist state, perform I/O or connect a
+player; the existing resolver remains the sole session-construction authority.
+
+`SourcePlaybackSessionRequestCoordinator` composes a selected
+`SourcePlaybackRouteCoordinatorResult` through that existing builder. It
+short-circuits every non-selected route, forwards the exact package manifest,
+`AdRemovalPlan` and source event sequence unchanged, and exposes typed route,
+builder-rejection or safe-failure outcomes. The builder remains authoritative
+for package, episode, policy and sequence validation; this coordinator does not
+revalidate by inventing a second contract, call the resolver, create a
+`PlaybackSession`, persist state, perform I/O or start a player.
+
+`SourcePlaybackOpenRequestCoordinator` is the next pure Application boundary.
+It accepts only the ready result from `SourcePlaybackSessionRequestCoordinator`
+and composes its existing typed resolution request with the bounded
+`PlaybackOpenRequest` options: loopback family, refresh leeway, automatic
+refresh limit, optional episode duration, Bangumi episode mapping and proxy
+budget. Non-ready session results and invalid options remain typed, while the
+`PlaybackOpenRequest` constructor remains the final option invariant. This
+coordinator creates only an open request; it does not resolve a session, expose
+a proxy lease, start a player, persist state, perform I/O or own async state.
+
+`SourcePlaybackPreparedRequestOpener` is the typed downstream handoff port for
+that prepared value; `PlaybackCoordinatorPreparedRequestOpener` is its concrete
+execution implementation. It short-circuits every non-ready
+`SourcePlaybackOpenRequestCoordinatorResult`; only a ready
+`PlaybackOpenRequest` reaches the existing `PlaybackCoordinator.open`. The
+existing coordinator therefore remains the sole authority for session
+resolution, proxy lease exposure, player/progress lifecycle, operation
+serialization and stale-event handling. This opener adds no second lifecycle,
+retry policy, persistence, I/O or platform bridge.
+
+`DeterministicSourcePlaybackOpenRequestBuilder` composes that validated
+resolver request with the existing `PlaybackOpenRequest` coordinator options.
+It passes the authoritative proxy budget, loopback family, refresh limit,
+episode duration and optional explicit Bangumi episode mapping through without
+creating a second progress, sync or session policy. Invalid coordinator
+options or a rejected session request produce a typed result with no open
+request. This is a pure Application composition boundary; only
+`PlaybackCoordinator.open` may resolve the request, expose a proxy lease and
+start a player operation.
+
+`PlaybackCoordinatorSourceOpener` invokes that coordinator only after the
+source open-request builder returns a ready request. A rejected build returns
+a typed result without invoking resolver, proxy or player work; coordinator
+failures remain under the coordinator's existing stable error boundary. The
+opener owns no generation, proxy lease, session, progress, retry or
+persistence state, so concurrent opens and stale events remain governed by the
+existing `PlaybackCoordinator` lifecycle.
+
+`SourcePlaybackFixturePipeline` is the fixture-only Application composition
+from an installed package and explicit `SourceFixture` through the staged
+playable-source coordinator, route coordinator, session-request coordinator,
+open-request coordinator and prepared-request opener. It creates one explicit
+playable-source plan, short-circuits on the first non-ready typed stage and
+exposes only that stage's bounded status and reason code. A ready request is
+passed to the existing `PlaybackCoordinator` through the prepared opener, so
+session resolution, proxy exposure, player/progress lifecycle, operation
+serialization and stale-event handling remain authoritative there. The
+pipeline owns no source network, WebView, live capture, persistence or second
+playback lifecycle.
+
+The reusable platform capture surface is intentionally adjacent to this
+fixture pipeline rather than inside it. An explicitly enabled package plan may
+be provided to `InAppWebViewInstalledSourceLiveCapture`, which performs package
+admission before mounting `InAppWebViewSourceLiveCapture`; its accepted result
+can then pass through playable normalization and the separate live route
+handoff, then the live session-request, live open-request and live
+prepared-request handoffs above. The prepared handoff is the only point where
+the existing `PlaybackCoordinator.open` may be called; no source package can
+provide executable WebView adapters.
+
+`SourceLiveCapturePlaybackEntryPoint` is the live-only Application entry from
+one package plan, package admission, completed capture result, explicit
+episode and candidate mappings to the existing playback lifecycle. It first
+delegates exact request/result pairing to
+`SourceLiveCapturePlayableSourcePlanCoordinator`, then passes only its ready
+plan to `SourceLiveCapturePlaybackPipeline`; a plan rejection never reaches
+normalization, routing, session resolution, proxy exposure or player work.
+The entry result retains only one `PlaybackSession` on success or one typed
+plan/pipeline rejection on failure, with no ready plan, open request, capture
+snapshot, cookie, header, URL or raw exception in a rejection. It owns no
+WebView, source I/O, package execution, persistence, retry, lifecycle,
+progress or generation state.
+
 ## Phase 11 presentation architecture
 
 `WynimeApp` owns the current in-memory `AppSettings` used by the presentation shell. Theme and interface-language changes are typed updates passed through `onSettingsChanged`; telemetry starts disabled and is not connected to a hidden reporting path. Persistence and backend wiring remain outside this presentation-only stage until their own approved boundaries are connected.
 
 `ResponsiveAppShell` classifies the available logical width with the shared compact／medium／expanded breakpoints. Compact uses Material bottom navigation; medium and expanded use a NavigationRail with the same ordered `AppDestination` values. `buildWynimePage` maps each destination to a real product page and passes navigation callbacks only where a page has an explicit local action.
 
-`WynimePageFrame` is the shared responsive page frame. It applies SafeArea, bounded scrolling, content max width, common spacing and page headers only where the window class has room. Home, Search, Library, Downloads, Sources and Settings render truthful empty, unavailable or review-required states. Search does not call a source service; it keeps a submitted query local until a future source package and application contract are explicitly connected. Source review remains disabled without a proposal, and no UI state represents a successful remote response merely because a page was opened.
+`WynimePageFrame` is the shared responsive page frame. It applies SafeArea, bounded scrolling, content max width, common spacing and page headers only where the window class has room. Home, Search, Library, Downloads, Sources and Settings render truthful empty, unavailable or review-required states. Search does not call a source service; it keeps a submitted query local until a future source package and application contract are explicitly connected. Sources restores the persisted package snapshot at startup and, when an optional registry is configured, shows its verified catalog; explicit Install／Update stages only a consent-pending manifest, while the security review dialog gates Enable and Disable remains reversible. No UI state represents a successful remote source response or execution merely because a page was opened.
 
 Presentation tests cover compact navigation, local Search submission, Library filters, telemetry default-off and all four locale delegates. Fixed-size Goldens cover the four acceptance viewports. Real Android phone/tablet action evidence is required in addition to these tests; Windows launch/build evidence cannot substitute for observable mouse and keyboard interaction.
 

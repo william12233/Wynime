@@ -39,6 +39,6 @@ void main() {
     await tester.tap(find.byIcon(Icons.search_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Source access is unavailable'), findsOneWidget);
+    expect(find.text('Search is ready'), findsOneWidget);
   });
 }

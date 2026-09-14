@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:wynime/src/domain/models/watch_progress.dart';
+import 'package:wynime/src/domain/models/source_identity.dart';
+import 'package:wynime/src/infrastructure/database/wynime_database.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_watch_history_repository.dart';
 
 import '../helpers/test_database.dart';
@@ -73,6 +76,66 @@ void main() {
       expect(loaded, isNotNull);
       expect(loaded!.position, replacement.position);
       expect(await repository.watchRecent().first, hasLength(1));
+    },
+  );
+
+  test(
+    'EPROG-R10 and matrix 4/5 sanitize corrupt persisted positions',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final repository = DriftWatchHistoryRepository(database);
+      final updatedAt = DateTime.utc(2026, 9, 12);
+      await database
+          .into(database.watchHistoryRows)
+          .insert(
+            WatchHistoryRowsCompanion(
+              progressId: const Value('corrupt-negative'),
+              sourceId: const Value('source'),
+              lineId: const Value('line'),
+              subjectId: const Value('subject'),
+              episodeId: const Value('negative'),
+              positionMs: const Value(-1),
+              durationMs: const Value(1000),
+              isCompleted: const Value(false),
+              updatedAt: Value(updatedAt),
+            ),
+          );
+      await database
+          .into(database.watchHistoryRows)
+          .insert(
+            WatchHistoryRowsCompanion(
+              progressId: const Value('corrupt-overflow'),
+              sourceId: const Value('source'),
+              lineId: const Value('line'),
+              subjectId: const Value('subject'),
+              episodeId: const Value('overflow'),
+              positionMs: const Value(2000),
+              durationMs: const Value(1000),
+              isCompleted: const Value(false),
+              updatedAt: Value(updatedAt),
+            ),
+          );
+
+      final negative = await repository.findByIdentity(
+        SourceEpisodeIdentity(
+          sourceId: 'source',
+          lineId: 'line',
+          subjectId: 'subject',
+          episodeId: 'negative',
+        ),
+      );
+      final overflow = await repository.findByIdentity(
+        SourceEpisodeIdentity(
+          sourceId: 'source',
+          lineId: 'line',
+          subjectId: 'subject',
+          episodeId: 'overflow',
+        ),
+      );
+      expect(negative!.position, Duration.zero);
+      expect(overflow!.position, const Duration(seconds: 1));
+      expect(negative.duration, const Duration(seconds: 1));
     },
   );
 }

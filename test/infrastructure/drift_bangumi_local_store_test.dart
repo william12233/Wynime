@@ -20,6 +20,7 @@ void main() {
 
       await store.saveCollectionStatus('42', BangumiCollectionStatus.wish);
       await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.completed);
       await store.setEpisodeWatched('42', '1001', true);
       await store.setEpisodeWatched('42', '1001', false);
 
@@ -35,7 +36,7 @@ void main() {
       );
       expect(
         collectionOperation.collectionStatus,
-        BangumiCollectionStatus.watching,
+        BangumiCollectionStatus.completed,
       );
       expect(episodeOperation.watched, isFalse);
       expect(await store.pendingCount(), 2);
@@ -362,6 +363,99 @@ void main() {
   });
 
   test(
+    'complete remote collection snapshot removes stale rows but preserves local-first intent',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      await store.cacheSubject(
+        const BangumiSubject(
+          id: '43',
+          name: 'Title 43',
+          nameCn: '作品 43',
+          summary: '',
+          eps: 1,
+        ),
+      );
+      await store.cacheSubject(
+        const BangumiSubject(
+          id: '44',
+          name: 'Title 44',
+          nameCn: '作品 44',
+          summary: '',
+          eps: 1,
+        ),
+      );
+      await store.reconcileRemoteCollections(const [
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+        ),
+        BangumiCollectionEntry(
+          subjectId: '43',
+          status: BangumiCollectionStatus.watching,
+        ),
+        BangumiCollectionEntry(
+          subjectId: '44',
+          status: BangumiCollectionStatus.completed,
+        ),
+      ]);
+      await store.saveCollectionStatus('43', BangumiCollectionStatus.onHold);
+
+      await store.reconcileRemoteCollections(const [
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+        ),
+      ]);
+
+      expect(
+        (await store.cachedCollections()).map((entry) => entry.subjectId),
+        ['42', '43'],
+      );
+      expect(
+        (await store.cachedCollections())
+            .singleWhere((entry) => entry.subjectId == '43')
+            .status,
+        BangumiCollectionStatus.onHold,
+      );
+      expect((await store.localFirstCollections()).single.subjectId, '43');
+
+      final restarted = DriftBangumiLocalStore(database, clock: () => now);
+      await restarted.loadActiveAccount();
+      expect(
+        (await restarted.cachedCollections()).map((entry) => entry.subjectId),
+        ['42', '43'],
+      );
+    },
+  );
+
+  test(
+    'queued account deactivation prevents a waiting refresh from writing',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await store.saveAccount(
+        const BangumiUserIdentity(id: 'account-a', username: 'a'),
+      );
+
+      final deactivation = store.deactivateActiveAccount();
+      final refresh = store.reconcileRemoteCollections(const [
+        BangumiCollectionEntry(
+          subjectId: '42',
+          status: BangumiCollectionStatus.watching,
+        ),
+      ]);
+      await Future.wait([deactivation, refresh]);
+
+      final rows = await database.select(database.bangumiCollections).get();
+      expect(rows, isEmpty);
+    },
+  );
+
+  test(
     'blocked and legacy failed rows do not override refreshed remote state',
     () async {
       final database = openTestDatabase();
@@ -400,6 +494,36 @@ void main() {
       expect(await store.blockedCount(), 1);
     },
   );
+
+  test('only valid HTTP 415 blocked rows can be requeued', () async {
+    final database = openTestDatabase();
+    addTearDown(database.close);
+    final store = DriftBangumiLocalStore(database, clock: () => now);
+    await _seed(store);
+
+    await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+    final collection = (await store.pendingOperations()).single;
+    await store.markBlocked(collection, 'http_415', statusCode: 415);
+
+    await store.setEpisodeWatched('42', '1001', true);
+    final episode = (await store.pendingOperations()).single;
+    await store.markBlocked(episode, 'http_403', statusCode: 403);
+
+    final recoverable = await store.recoverableHttp415Operations();
+    expect(recoverable, hasLength(1));
+    expect(recoverable.single.operationId, collection.operationId);
+    expect(recoverable.single.collectionStatus, isNotNull);
+
+    expect(await store.requeueHttp415(recoverable.single), isTrue);
+    expect(await store.requeueHttp415(recoverable.single), isFalse);
+    expect(await store.blockedCount(), 1);
+    final pending = await store.pendingOperations(forceRetry: true);
+    expect(pending, hasLength(1));
+    expect(pending.single.operationId, collection.operationId);
+    expect(pending.single.attempts, 0);
+    expect(pending.single.lastErrorCode, isNull);
+    expect(pending.single.statusCode, isNull);
+  });
 }
 
 Future<void> _seed(DriftBangumiLocalStore store) async {

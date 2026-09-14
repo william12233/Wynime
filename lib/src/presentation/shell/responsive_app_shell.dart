@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:wynime/l10n/app_localizations.dart';
 import 'package:wynime/src/application/bangumi_session_controller.dart';
+import 'package:wynime/src/application/source_installed_live_search_pipeline.dart';
+import 'package:wynime/src/application/source_package_startup_controller.dart';
+import 'package:wynime/src/application/source_registry_controller.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/app/app_destination.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
+import 'package:wynime/src/domain/repositories/watch_history_repository.dart';
 import 'package:wynime/src/design_system/tokens/breakpoints.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
 import 'package:wynime/src/presentation/pages/product_pages.dart';
@@ -13,6 +17,10 @@ class ResponsiveAppShell extends StatefulWidget {
     required this.settings,
     required this.onSettingsChanged,
     this.bangumi,
+    this.sourcePackages,
+    this.sourceSearchPipeline,
+    this.sourceRegistry,
+    this.watchHistory,
     this.softwareUpdates,
     super.key,
   });
@@ -20,6 +28,10 @@ class ResponsiveAppShell extends StatefulWidget {
   final AppSettings settings;
   final ValueChanged<AppSettings> onSettingsChanged;
   final BangumiSessionController? bangumi;
+  final SourcePackageStartupController? sourcePackages;
+  final SourceInstalledLiveSearchPipeline? sourceSearchPipeline;
+  final SourceRegistryController? sourceRegistry;
+  final WatchHistoryRepository? watchHistory;
   final SoftwareUpdateController? softwareUpdates;
 
   @override
@@ -40,6 +52,8 @@ class _ResponsiveAppShellState extends State<ResponsiveAppShell> {
   Widget build(BuildContext context) {
     final listenables = <Listenable>[
       if (widget.bangumi != null) widget.bangumi!,
+      if (widget.sourcePackages != null) widget.sourcePackages!,
+      if (widget.sourceRegistry != null) widget.sourceRegistry!,
       if (widget.softwareUpdates != null) widget.softwareUpdates!,
     ];
     return AnimatedBuilder(
@@ -62,6 +76,10 @@ class _ResponsiveAppShellState extends State<ResponsiveAppShell> {
                   _selectDestination(destination.index),
               showPageHeader: windowClass != WynimeWindowClass.compact,
               bangumi: widget.bangumi,
+              sourcePackages: widget.sourcePackages,
+              sourceSearchPipeline: widget.sourceSearchPipeline,
+              sourceRegistry: widget.sourceRegistry,
+              watchHistory: widget.watchHistory,
               softwareUpdates: widget.softwareUpdates,
             );
 

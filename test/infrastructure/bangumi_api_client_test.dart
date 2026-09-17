@@ -265,6 +265,9 @@ void main() {
 
   test('uses official mutation paths and official watched values', () async {
     final transport = RecordingBangumiTransport((method, uri, headers, body) {
+      if (body != null) {
+        expect(headers['Content-Type'], 'application/json');
+      }
       if (uri.path == '/v0/me') {
         return _jsonResponse({'id': 7, 'username': 'alice'});
       }
@@ -294,6 +297,53 @@ void main() {
       '/v0/users/-/collections/-/episodes/1001',
     ]);
   });
+
+  test(
+    'emits a redacted diagnostic that explains an HTTP 415 response',
+    () async {
+      final diagnostics = <BangumiTransportDiagnostic>[];
+      final transport = RecordingBangumiTransport(
+        (method, uri, headers, body) async => const BangumiHttpResponse(
+          statusCode: 415,
+          body:
+              '{"title":"Unsupported Media Type","description":"body must set content-type application/json"}',
+          headers: <String, String>{
+            'content-type': 'application/json; charset=utf-8',
+          },
+        ),
+      );
+      final client = BangumiApiClient(
+        sessionProvider: () => session,
+        transport: transport,
+        diagnosticSink: diagnostics.add,
+      );
+
+      await expectLater(
+        client.setCollectionStatus('42', BangumiCollectionStatus.watching),
+        throwsA(
+          isA<BangumiApiException>()
+              .having((error) => error.code, 'code', 'http_415')
+              .having((error) => error.statusCode, 'status', 415),
+        ),
+      );
+
+      expect(diagnostics, hasLength(1));
+      final diagnostic = diagnostics.single;
+      expect(diagnostic.mutationKind.name, 'collectionStatus');
+      expect(diagnostic.method, 'POST');
+      expect(diagnostic.path, '/v0/users/-/collections/:id');
+      expect(diagnostic.statusCode, 415);
+      expect(diagnostic.safeResponseReason, 'http_415_content_type');
+      expect(diagnostic.route, 'direct');
+      expect(diagnostic.requestContentType, 'application/json');
+      expect(diagnostic.responseContentType, 'application/json;charset=utf-8');
+      final serialized = diagnostic.toString();
+      expect(serialized, isNot(contains('42')));
+      expect(serialized, isNot(contains('access-token')));
+      expect(serialized, isNot(contains('Unsupported Media Type')));
+      expect(serialized, isNot(contains('body must')));
+    },
+  );
 
   test(
     'serializes every legal collection status with its official value',

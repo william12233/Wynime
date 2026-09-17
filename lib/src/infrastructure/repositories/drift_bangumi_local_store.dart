@@ -1549,23 +1549,126 @@ final class DriftBangumiLocalStore
   Future<List<BangumiPendingOperation>> recoverableHttp415Operations() async {
     final accountId = activeAccountId;
     if (accountId == null) return const <BangumiPendingOperation>[];
-    final rows =
-        await (_database.select(_database.bangumiSyncOperations)
-              ..where(
+    List<BangumiSyncOperationRecord> survivorRows =
+        const <BangumiSyncOperationRecord>[];
+    var cleanupAuthorized = false;
+    await _database.runWrite(
+      () => _database.transaction(() async {
+        // Selection, freshness comparison, and deletion must share one write
+        // gate. Otherwise _enqueue could requeue a blocked row between the
+        // read and delete, turning the snapshot into an active duplicate.
+        if (activeAccountId != accountId) return;
+        final activeAccount =
+            await (_database.select(_database.bangumiAccounts)..where(
+                  (table) =>
+                      table.accountId.equals(accountId) &
+                      table.isActive.equals(true),
+                ))
+                .getSingleOrNull();
+        if (activeAccount == null || activeAccountId != accountId) return;
+
+        final candidateRows =
+            await (_database.select(_database.bangumiSyncOperations)..where(
+                  (table) =>
+                      table.accountId.equals(accountId) &
+                      table.state.isIn(<String>[
+                        BangumiSyncOperationState.pending.name,
+                        BangumiSyncOperationState.retryWaiting.name,
+                        BangumiSyncOperationState.blocked.name,
+                      ]),
+                ))
+                .get();
+        final byTarget = <String, List<BangumiSyncOperationRecord>>{};
+        for (final row in candidateRows) {
+          final isActive =
+              row.state == BangumiSyncOperationState.pending.name ||
+              row.state == BangumiSyncOperationState.retryWaiting.name;
+          final eligible = isActive
+              ? _isStructurallyValidSyncOperation(row)
+              : _isRecoverableHttp415Row(row) &&
+                    _isStructurallyValidSyncOperation(row);
+          if (eligible) {
+            byTarget
+                .putIfAbsent(
+                  _syncTargetKey(row),
+                  () => <BangumiSyncOperationRecord>[],
+                )
+                .add(row);
+          }
+        }
+
+        // Keep exactly the newest valid intent for every target, including
+        // active-only duplicates created when an old blocked row was requeued
+        // concurrently with another pending sibling. Blocked survivors are
+        // returned for manual retry; active winners stay in pendingOperations.
+        final supersededIds = <String>{};
+        final survivors = <BangumiSyncOperationRecord>[];
+        for (final entry in byTarget.entries) {
+          final eligible = [...entry.value]..sort(_compareSyncIntentFreshness);
+          if (eligible.length == 1) {
+            if (_isRecoverableHttp415Row(eligible.single)) {
+              survivors.add(eligible.single);
+            }
+            continue;
+          }
+          final winner = eligible.last;
+          supersededIds.addAll(
+            eligible
+                .where((row) => row.operationId != winner.operationId)
+                .map((row) => row.operationId),
+          );
+          if (_isRecoverableHttp415Row(winner)) survivors.add(winner);
+        }
+
+        if (activeAccountId != accountId) return;
+        final currentActiveAccount =
+            await (_database.select(_database.bangumiAccounts)..where(
+                  (table) =>
+                      table.accountId.equals(accountId) &
+                      table.isActive.equals(true),
+                ))
+                .getSingleOrNull();
+        if (currentActiveAccount == null || activeAccountId != accountId) {
+          return;
+        }
+
+        if (supersededIds.isNotEmpty) {
+          final expectedById = <String, BangumiSyncOperationRecord>{
+            for (final row in candidateRows)
+              if (supersededIds.contains(row.operationId)) row.operationId: row,
+          };
+          final currentRows =
+              await (_database.select(_database.bangumiSyncOperations)..where(
+                    (table) =>
+                        table.accountId.equals(accountId) &
+                        table.operationId.isIn(supersededIds),
+                  ))
+                  .get();
+          final currentById = <String, BangumiSyncOperationRecord>{
+            for (final row in currentRows) row.operationId: row,
+          };
+          final snapshotStillCurrent = supersededIds.every(
+            (operationId) =>
+                currentById[operationId] == expectedById[operationId],
+          );
+          if (!snapshotStillCurrent) return;
+          await (_database.delete(_database.bangumiSyncOperations)..where(
                 (table) =>
                     table.accountId.equals(accountId) &
-                    table.state.equals(BangumiSyncOperationState.blocked.name) &
-                    (table.lastErrorCode.equals('http_415') |
-                        table.statusCode.equals(415)),
-              )
-              ..orderBy([(table) => OrderingTerm.asc(table.createdAt)]))
-            .get();
+                    table.operationId.isIn(supersededIds),
+              ))
+              .go();
+        }
+        survivorRows = survivors;
+        cleanupAuthorized = true;
+      }),
+    );
+    if (!cleanupAuthorized || activeAccountId != accountId) {
+      return const <BangumiPendingOperation>[];
+    }
+
     final operations = <BangumiPendingOperation>[];
-    for (final row in rows) {
-      if (!_isRecoverableHttp415Row(row) ||
-          !_isStructurallyValidSyncOperation(row)) {
-        continue;
-      }
+    for (final row in survivorRows) {
       try {
         operations.add(_mapOperation(row));
       } on Object {
@@ -1661,22 +1764,62 @@ final class DriftBangumiLocalStore
     bool? baseWatched,
     required DateTime now,
   }) async {
-    final existing =
-        await (_database.select(_database.bangumiSyncOperations)..where(
-              (table) =>
-                  table.accountId.equals(accountId) &
-                  table.subjectId.equals(subjectId) &
-                  table.kind.equals(kind.name) &
-                  (episodeId == null
-                      ? table.episodeId.isNull()
-                      : table.episodeId.equals(episodeId)) &
-                  table.state.isIn(<String>[
-                    BangumiSyncOperationState.pending.name,
-                    BangumiSyncOperationState.retryWaiting.name,
-                  ]),
-            ))
-            .getSingleOrNull();
+    // A new local intent may recover a blocked HTTP 415 row, but must never
+    // revive an arbitrary blocked or conflict row. Read a list because old
+    // databases can contain duplicate rows for one logical target; the most
+    // recently updated eligible row is the only one that can be coalesced.
+    final candidates =
+        await (_database.select(_database.bangumiSyncOperations)
+              ..where(
+                (table) =>
+                    table.accountId.equals(accountId) &
+                    table.subjectId.equals(subjectId) &
+                    table.kind.equals(kind.name) &
+                    (episodeId == null
+                        ? table.episodeId.isNull()
+                        : table.episodeId.equals(episodeId)) &
+                    (table.state.isIn(<String>[
+                          BangumiSyncOperationState.pending.name,
+                          BangumiSyncOperationState.retryWaiting.name,
+                        ]) |
+                        (table.state.equals(
+                              BangumiSyncOperationState.blocked.name,
+                            ) &
+                            (table.lastErrorCode.equals('http_415') |
+                                table.statusCode.equals(415)))),
+              )
+              ..orderBy([
+                (table) => OrderingTerm.desc(table.updatedAt),
+                (table) => OrderingTerm.desc(table.createdAt),
+              ]))
+            .get();
+    BangumiSyncOperationRecord? existing;
+    for (final candidate in candidates) {
+      final active =
+          candidate.state == BangumiSyncOperationState.pending.name ||
+          candidate.state == BangumiSyncOperationState.retryWaiting.name;
+      if (active ||
+          (_isRecoverableHttp415Row(candidate) &&
+              _isStructurallyValidSyncOperation(candidate))) {
+        existing = candidate;
+        break;
+      }
+    }
+    final recoveringBlocked415 =
+        existing != null && _isRecoverableHttp415Row(existing);
+    final preservedBaseRemoteRevision = recoveringBlocked415
+        ? baseRemoteRevision
+        : existing?.baseRemoteRevision ?? baseRemoteRevision;
+    final preservedBaseCollectionStatus = recoveringBlocked415
+        ? baseCollectionStatus?.apiType
+        : existing?.baseCollectionStatus ?? baseCollectionStatus?.apiType;
+    final preservedBaseWatched = recoveringBlocked415
+        ? baseWatched
+        : existing?.baseWatched ?? baseWatched;
     final operationId = existing?.operationId ?? _newOperationId();
+    final preservedCreatedAt = recoveringBlocked415
+        ? now
+        : existing?.createdAt ?? now;
     await _database
         .into(_database.bangumiSyncOperations)
         .insertOnConflictUpdate(
@@ -1688,19 +1831,19 @@ final class DriftBangumiLocalStore
             kind: Value(kind.name),
             collectionStatus: Value(collectionStatus?.apiType),
             watched: Value(watched),
-            baseRemoteRevision: Value(
-              existing?.baseRemoteRevision ?? baseRemoteRevision,
-            ),
-            baseCollectionStatus: Value(
-              existing?.baseCollectionStatus ?? baseCollectionStatus?.apiType,
-            ),
-            baseWatched: Value(existing?.baseWatched ?? baseWatched),
+            baseRemoteRevision: Value(preservedBaseRemoteRevision),
+            baseCollectionStatus: Value(preservedBaseCollectionStatus),
+            baseWatched: Value(preservedBaseWatched),
             state: Value(BangumiSyncOperationState.pending.name),
             attempts: const Value(0),
             nextAttemptAt: const Value(null),
             lastErrorCode: const Value(null),
             statusCode: const Value(null),
-            createdAt: Value(existing?.createdAt ?? now),
+            // Reusing a blocked row for a genuinely new local action keeps the
+            // operation identity but refreshes its intent timestamp. Without
+            // this, freshness-based sibling cleanup could discard the new
+            // action in favor of an older active duplicate.
+            createdAt: Value(preservedCreatedAt),
             updatedAt: Value(now),
           ),
         );
@@ -1853,6 +1996,20 @@ final class DriftBangumiLocalStore
     if (row.lastErrorCode != null && !has415Code) return false;
     if (row.statusCode != null && !has415Status) return false;
     return true;
+  }
+
+  static String _syncTargetKey(BangumiSyncOperationRecord row) =>
+      '${row.kind}|${row.subjectId}|${row.episodeId ?? ''}';
+
+  static int _compareSyncIntentFreshness(
+    BangumiSyncOperationRecord left,
+    BangumiSyncOperationRecord right,
+  ) {
+    final created = left.createdAt.compareTo(right.createdAt);
+    if (created != 0) return created;
+    final updated = left.updatedAt.compareTo(right.updatedAt);
+    if (updated != 0) return updated;
+    return left.operationId.compareTo(right.operationId);
   }
 
   static bool _matchesOperationSnapshot(

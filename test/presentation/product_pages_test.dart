@@ -10,6 +10,7 @@ import 'package:wynime/src/domain/models/software_update_models.dart';
 import 'package:wynime/src/domain/models/source_identity.dart';
 import 'package:wynime/src/domain/models/watch_progress.dart';
 import 'package:wynime/src/domain/repositories/watch_history_repository.dart';
+import 'package:wynime/src/domain/services/bangumi_ports.dart';
 import 'package:wynime/src/infrastructure/bangumi/bangumi_authentication.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store.dart';
 import 'package:wynime/src/presentation/pages/subject_detail_page.dart';
@@ -245,6 +246,51 @@ void main() {
     expect(find.byKey(const ValueKey('bangumi-settings-login')), findsNothing);
   });
 
+  testWidgets(
+    'Bangumi HTTP 415 shows a safe Traditional Chinese recovery message',
+    (tester) async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final controller = BangumiSessionController(
+        authentication: _PresentationBangumiAuthentication(),
+        store: DriftBangumiLocalStore(database),
+        clientFactory: (_) => _PresentationBangumiClient(),
+      );
+
+      await tester.binding.setSurfaceSize(const Size(1024, 768));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        WynimeApp(
+          locale: const Locale('zh', 'Hant'),
+          bangumi: controller,
+          onReady: () async {
+            await controller.completeSignIn(
+              const BangumiAuthCallback(state: 'state', ticket: 'ticket'),
+            );
+            controller.errorCode = 'http_415';
+            controller.blockedCount = 22;
+            controller.notifyListeners();
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Bangumi 拒絕了同步請求的資料格式（HTTP 415）。本機變更仍已保留，請更新至已修正版本後再試。'),
+        findsOneWidget,
+      );
+      expect(find.text('Bangumi 錯誤：http_415'), findsNothing);
+      expect(find.text('暫時無法同步：22'), findsOneWidget);
+      expect(
+        find.text('這些變更已保留在本機，暫停送出，且不會用舊的本機資料覆蓋遠端。修正請求後可再次同步。'),
+        findsOneWidget,
+      );
+    },
+  );
+
   testWidgets('software update install shows real modal download progress', (
     tester,
   ) async {
@@ -431,6 +477,109 @@ void main() {
     expect(find.text('Manual update required'), findsOneWidget);
     expect(find.text('Installed'), findsNothing);
   });
+}
+
+final class _PresentationBangumiAuthentication
+    implements BangumiAuthenticationPort {
+  static final _session = BangumiAuthSession(
+    accountId: '7',
+    accessToken: 'access-token',
+    refreshToken: 'refresh-token',
+    expiresAt: DateTime.utc(2030),
+  );
+
+  @override
+  Future<BangumiAuthorizationRequest> begin() => throw UnimplementedError();
+
+  @override
+  Future<BangumiAuthSession> redeem(BangumiAuthCallback callback) async =>
+      _session;
+
+  @override
+  Future<BangumiAuthSession> refresh(BangumiAuthSession session) async =>
+      _session;
+
+  @override
+  Future<void> signOut() async {}
+}
+
+final class _PresentationBangumiClient implements BangumiClient {
+  @override
+  Future<BangumiUserIdentity> currentUser() async =>
+      const BangumiUserIdentity(id: '7', username: 'alice');
+
+  @override
+  Future<BangumiCollectionPage> collections({
+    int offset = 0,
+    int limit = 30,
+  }) async => BangumiCollectionPage(
+    collections: const <BangumiCollectionEntry>[],
+    offset: offset,
+    limit: limit,
+    total: 0,
+  );
+
+  @override
+  Future<List<BangumiScheduleEntry>> calendar() async =>
+      const <BangumiScheduleEntry>[];
+
+  @override
+  Future<BangumiSubject> subject(String id) async => const BangumiSubject(
+    id: '42',
+    name: 'Title',
+    nameCn: '作品',
+    summary: '',
+    eps: 0,
+  );
+
+  @override
+  Future<BangumiEpisodePage> episodes(String subjectId) async =>
+      const BangumiEpisodePage(
+        episodes: <BangumiEpisode>[],
+        offset: 0,
+        limit: 100,
+        total: 0,
+      );
+
+  @override
+  Future<List<BangumiCharacter>> characters(String subjectId) async =>
+      const <BangumiCharacter>[];
+
+  @override
+  Future<List<BangumiPersonCredit>> persons(String subjectId) async =>
+      const <BangumiPersonCredit>[];
+
+  @override
+  Future<List<BangumiSubjectRelation>> relations(String subjectId) async =>
+      const <BangumiSubjectRelation>[];
+
+  @override
+  Future<BangumiRemoteState> remoteState(String subjectId) async {
+    return BangumiRemoteState(
+      accountId: '7',
+      subjectId: subjectId,
+      status: null,
+      watchedEpisodeIds: const <String>{},
+      remoteRevision: BangumiRemoteState.fingerprint(
+        subjectId: subjectId,
+        status: null,
+        watchedEpisodeIds: const <String>{},
+      ),
+    );
+  }
+
+  @override
+  Future<void> setCollectionStatus(
+    String subjectId,
+    BangumiCollectionStatus status,
+  ) async {}
+
+  @override
+  Future<void> setEpisodeWatched(
+    String subjectId,
+    String episodeId,
+    bool watched,
+  ) async {}
 }
 
 final class _MemoryWatchHistoryRepository implements WatchHistoryRepository {

@@ -114,7 +114,9 @@ abstract interface class BangumiLocalStore {
   Future<bool> complete(BangumiPendingOperation operation);
 
   /// Returns valid, active-account operations blocked specifically by HTTP
-  /// 415. Other blocked reasons are intentionally excluded.
+  /// 415. Other blocked reasons are intentionally excluded. Legacy duplicate
+  /// 415 rows are coalesced with the newest valid intent before they are
+  /// returned, so an older blocked row cannot run after a newer pending row.
   Future<List<BangumiPendingOperation>> recoverableHttp415Operations();
 
   /// Requeues one structurally valid HTTP-415 operation. Returns false when

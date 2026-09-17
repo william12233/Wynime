@@ -4,6 +4,31 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.11 - Release-ready
+
+### Bangumi synchronization reliability
+
+- Fixed Bangumi collection and watched-episode mutations to send an explicit
+  JSON content type, with stable secret-safe diagnostics for HTTP 415 and
+  related transport failures.
+- Made recoverable HTTP 415 queue entries retryable and coalesced stale
+  blocked or active duplicates so a newer local intent cannot be overwritten
+  by an older retry.
+- Reconciled every mutation against the latest remote state before writing,
+  preserving unrelated remote fields and surfacing same-target conflicts
+  instead of silently overwriting them.
+- Added localized Traditional-Chinese and translated sync error explanations
+  while retaining the local intent until reconciliation completes.
+
+### Validation boundary
+
+- Full deterministic Flutter tests, focused Bangumi tests, analyzer and
+  formatting checks pass on the release candidate worktree.
+- Android phone/tablet emulator launch evidence passed; physical Android and
+  Windows playback remain `HARDWARE_VALIDATION_PENDING`.
+- Native Windows action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` in the current audit environment.
+
 ## 1.0.10 - Release-ready
 
 ### Animeko → Wynime 57-task convergence

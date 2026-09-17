@@ -4,15 +4,66 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 
 import '../../domain/models/bangumi_models.dart';
+import '../../domain/models/bangumi_sync_models.dart';
 import '../../domain/services/bangumi_ports.dart';
 
 const _productionApiHost = 'api.bgm.tv';
 const _debugApiHost = 'api.bgm38.tv';
+
+typedef BangumiTransportDiagnosticSink =
+    void Function(BangumiTransportDiagnostic diagnostic);
+
+/// A local, secret-safe observation of a Bangumi mutation request.
+///
+/// This deliberately contains no account/subject/episode identifiers, host,
+/// query string, authorization value, request body or raw provider response.
+final class BangumiTransportDiagnostic {
+  const BangumiTransportDiagnostic({
+    required this.mutationKind,
+    required this.method,
+    required this.path,
+    required this.statusCode,
+    required this.safeResponseReason,
+    required this.route,
+    required this.requestContentType,
+    required this.responseContentType,
+  });
+
+  final BangumiSyncOperationKind mutationKind;
+  final String method;
+  final String path;
+  final int? statusCode;
+  final String safeResponseReason;
+  final String route;
+  final String requestContentType;
+  final String responseContentType;
+
+  Map<String, Object?> toRedactedDiagnostic() => <String, Object?>{
+    'mutationKind': mutationKind.name,
+    'method': method,
+    'path': path,
+    'statusCode': statusCode,
+    'safeResponseReason': safeResponseReason,
+    'route': route,
+    'requestContentType': requestContentType,
+    'responseContentType': responseContentType,
+  };
+
+  @override
+  String toString() => jsonEncode(toRedactedDiagnostic());
+}
+
+void _defaultBangumiTransportDiagnosticSink(
+  BangumiTransportDiagnostic diagnostic,
+) {
+  developer.log(diagnostic.toString(), name: 'Wynime.Bangumi');
+}
 
 final class BangumiHttpResponse {
   const BangumiHttpResponse({
@@ -58,7 +109,7 @@ final class IoBangumiHttpTransport implements BangumiHttpTransport {
       request.followRedirects = false;
       headers.forEach(request.headers.set);
       if (body != null) {
-        request.headers.contentType = ContentType.json;
+        request.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
         request.write(body);
       }
       final response = await request.close().timeout(timeout);
@@ -106,8 +157,11 @@ final class BangumiApiClient implements BangumiClient {
     bool allowDebugHost = false,
     this.userAgent = 'Wynime/1.0 (+https://github.com/william12233/Wynime)',
     this.maxResponseBytes = 1024 * 1024,
+    BangumiTransportDiagnosticSink? diagnosticSink,
   }) : _sessionProvider = sessionProvider,
        _transport = transport ?? IoBangumiHttpTransport(),
+       _diagnosticSink =
+           diagnosticSink ?? _defaultBangumiTransportDiagnosticSink,
        _apiOrigin = _validateOrigin(
          apiOrigin ?? Uri.https(_productionApiHost, ''),
          allowDebugHost: allowDebugHost,
@@ -115,6 +169,7 @@ final class BangumiApiClient implements BangumiClient {
 
   final BangumiAuthSession Function() _sessionProvider;
   final BangumiHttpTransport _transport;
+  final BangumiTransportDiagnosticSink _diagnosticSink;
   final Uri _apiOrigin;
   final String userAgent;
   final int maxResponseBytes;
@@ -408,6 +463,7 @@ final class BangumiApiClient implements BangumiClient {
       'POST',
       '/v0/users/-/collections/${_safeId(subjectId)}',
       <String, Object?>{'type': status.apiType},
+      mutationKind: BangumiSyncOperationKind.collectionStatus,
     );
   }
 
@@ -422,6 +478,7 @@ final class BangumiApiClient implements BangumiClient {
       'PUT',
       '/v0/users/-/collections/-/episodes/${_safeId(episodeId)}',
       <String, Object?>{'type': watched ? 2 : 1},
+      mutationKind: BangumiSyncOperationKind.episodeWatched,
     );
   }
 
@@ -460,9 +517,15 @@ final class BangumiApiClient implements BangumiClient {
   Future<void> _sendJson(
     String method,
     String path,
-    Map<String, Object?> body,
-  ) async {
-    await _send(method, path, body: jsonEncode(body));
+    Map<String, Object?> body, {
+    BangumiSyncOperationKind? mutationKind,
+  }) async {
+    await _send(
+      method,
+      path,
+      body: jsonEncode(body),
+      mutationKind: mutationKind,
+    );
   }
 
   Future<BangumiHttpResponse> _send(
@@ -470,6 +533,7 @@ final class BangumiApiClient implements BangumiClient {
     String path, {
     Map<String, String> query = const <String, String>{},
     String? body,
+    BangumiSyncOperationKind? mutationKind,
   }) async {
     final session = _sessionProvider();
     if (session.isExpired) {
@@ -479,16 +543,50 @@ final class BangumiApiClient implements BangumiClient {
       path: '${_apiOrigin.path}$path',
       queryParameters: query.isEmpty ? null : query,
     );
-    final response = await _transport.send(
+    final requestHeaders = <String, String>{
+      'Accept': 'application/json',
+      'Authorization': 'Bearer ${session.accessToken}',
+      'User-Agent': userAgent,
+      if (body != null) 'Content-Type': 'application/json',
+    };
+    late final BangumiHttpResponse response;
+    try {
+      response = await _transport.send(
+        method: method,
+        uri: uri,
+        headers: requestHeaders,
+        body: body,
+        maxResponseBytes: maxResponseBytes,
+      );
+    } on BangumiApiException catch (error) {
+      _emitMutationDiagnostic(
+        mutationKind,
+        method: method,
+        statusCode: error.statusCode,
+        safeResponseReason: _safeTransportReason(error.code),
+        requestHeaders: requestHeaders,
+      );
+      rethrow;
+    } on Object {
+      _emitMutationDiagnostic(
+        mutationKind,
+        method: method,
+        statusCode: null,
+        safeResponseReason: 'transport_error',
+        requestHeaders: requestHeaders,
+      );
+      rethrow;
+    }
+    _emitMutationDiagnostic(
+      mutationKind,
       method: method,
-      uri: uri,
-      headers: <String, String>{
-        'Accept': 'application/json',
-        'Authorization': 'Bearer ${session.accessToken}',
-        'User-Agent': userAgent,
-      },
-      body: body,
-      maxResponseBytes: maxResponseBytes,
+      statusCode: response.statusCode,
+      safeResponseReason: _safeResponseReason(
+        response.statusCode,
+        response.body,
+      ),
+      requestHeaders: requestHeaders,
+      responseHeaders: response.headers,
     );
     if (response.statusCode == 401) {
       throw const BangumiApiException(code: 'auth_required', statusCode: 401);
@@ -518,6 +616,89 @@ final class BangumiApiClient implements BangumiClient {
       );
     }
     return response;
+  }
+
+  void _emitMutationDiagnostic(
+    BangumiSyncOperationKind? mutationKind, {
+    required String method,
+    required int? statusCode,
+    required String safeResponseReason,
+    required Map<String, String> requestHeaders,
+    Map<String, String> responseHeaders = const <String, String>{},
+  }) {
+    if (mutationKind == null) return;
+    try {
+      _diagnosticSink(
+        BangumiTransportDiagnostic(
+          mutationKind: mutationKind,
+          method: method,
+          path: _redactedMutationPath(mutationKind),
+          statusCode: statusCode,
+          safeResponseReason: safeResponseReason,
+          route: _apiOrigin.host == _productionApiHost ? 'direct' : 'debug',
+          requestContentType: _safeContentType(requestHeaders),
+          responseContentType: _safeContentType(responseHeaders),
+        ),
+      );
+    } on Object {
+      // Diagnostics must never change the synchronization result.
+    }
+  }
+
+  static String _redactedMutationPath(BangumiSyncOperationKind kind) {
+    switch (kind) {
+      case BangumiSyncOperationKind.collectionStatus:
+        return '/v0/users/-/collections/:id';
+      case BangumiSyncOperationKind.episodeWatched:
+        return '/v0/users/-/collections/-/episodes/:id';
+    }
+  }
+
+  static String _safeContentType(Map<String, String> headers) {
+    String? value;
+    for (final entry in headers.entries) {
+      if (entry.key.toLowerCase() == 'content-type') {
+        value = entry.value;
+        break;
+      }
+    }
+    if (value == null || value.trim().isEmpty) return 'missing';
+    final normalized = value.trim().toLowerCase().replaceAll(' ', '');
+    if (normalized == 'application/json') return 'application/json';
+    if (normalized == 'application/json;charset=utf-8') {
+      return 'application/json;charset=utf-8';
+    }
+    return 'other';
+  }
+
+  static String _safeResponseReason(int statusCode, String body) {
+    if (statusCode >= 200 && statusCode < 300) return 'accepted';
+    final normalized = body.toLowerCase();
+    if (statusCode == 415 && normalized.contains('content-type')) {
+      return 'http_415_content_type';
+    }
+    if (statusCode == 415 && normalized.contains('unsupported media type')) {
+      return 'http_415_unsupported_media_type';
+    }
+    if (statusCode == 401) return 'auth_required';
+    if (statusCode == 404) return 'not_found';
+    if (statusCode == 429) return 'rate_limited';
+    if (statusCode >= 500) return 'remote_server_error';
+    return _httpErrorCode(statusCode);
+  }
+
+  static String _safeTransportReason(String code) {
+    const allowed = <String>{
+      'auth_required',
+      'not_found',
+      'rate_limited',
+      'remote_server_error',
+      'network_timeout',
+      'network_error',
+      'response_too_large',
+      'invalid_response_encoding',
+    };
+    return allowed.contains(code) ? code : 'transport_error';
   }
 
   static String _httpErrorCode(int statusCode) {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wynime/src/application/bangumi_sync_service.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
@@ -342,6 +343,126 @@ void main() {
       expect(await store.pendingCount(), 0);
       expect(await store.blockedCount(), 0);
       expect(remote.status, BangumiCollectionStatus.watching);
+    },
+  );
+
+  test(
+    'a legacy blocked 415 sibling cannot overwrite a newer pending intent',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      final initial = _remote(BangumiCollectionStatus.wish);
+      var remote = initial;
+      await store.applyRemoteState(initial);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      final oldBlocked = (await store.pendingOperations()).single;
+      await store.markBlocked(oldBlocked, 'http_415', statusCode: 415);
+
+      // This directly reproduces the baseline database shape: the old
+      // implementation could not coalesce a new pending row with a blocked
+      // 415 row, leaving both logical intents persisted.
+      await database
+          .into(database.bangumiSyncOperations)
+          .insert(
+            BangumiSyncOperationsCompanion.insert(
+              operationId: 'newer-pending-operation',
+              accountId: '7',
+              subjectId: '42',
+              kind: BangumiSyncOperationKind.collectionStatus.name,
+              collectionStatus: Value(
+                BangumiCollectionStatus.completed.apiType,
+              ),
+              baseRemoteRevision: Value(initial.remoteRevision),
+              baseCollectionStatus: Value(initial.status!.apiType),
+              state: BangumiSyncOperationState.pending.name,
+              createdAt: now.add(const Duration(seconds: 1)),
+              updatedAt: now.add(const Duration(seconds: 1)),
+            ),
+          );
+
+      final client = FakeBangumiClient(
+        onRemoteState: (subjectId) async => remote,
+        onCollectionMutation: (subjectId, status) {
+          remote = _remote(status);
+        },
+      );
+      final result = await BangumiSyncService(
+        client: client,
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+        delay: (_) async {},
+      ).syncNow();
+
+      expect(result.processed, 1);
+      expect(result.conflicts, 0);
+      expect(client.collectionMutations, [
+        ('42', BangumiCollectionStatus.completed),
+      ]);
+      expect(remote.status, BangumiCollectionStatus.completed);
+      expect(await store.pendingCount(), 0);
+      expect(await store.blockedCount(), 0);
+      expect(await store.recoverableHttp415Operations(), isEmpty);
+    },
+  );
+
+  test(
+    'a requeued blocked 415 row cannot leave an active duplicate target',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+      final initial = _remote(BangumiCollectionStatus.wish);
+      var remote = initial;
+      await store.applyRemoteState(initial);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      final oldBlocked = (await store.pendingOperations()).single;
+      await store.markBlocked(oldBlocked, 'http_415', statusCode: 415);
+      await database
+          .into(database.bangumiSyncOperations)
+          .insert(
+            BangumiSyncOperationsCompanion.insert(
+              operationId: 'newer-pending-operation-2',
+              accountId: '7',
+              subjectId: '42',
+              kind: BangumiSyncOperationKind.collectionStatus.name,
+              collectionStatus: Value(
+                BangumiCollectionStatus.completed.apiType,
+              ),
+              baseRemoteRevision: Value(initial.remoteRevision),
+              baseCollectionStatus: Value(initial.status!.apiType),
+              state: BangumiSyncOperationState.pending.name,
+              createdAt: now.add(const Duration(seconds: 1)),
+              updatedAt: now.add(const Duration(seconds: 1)),
+            ),
+          );
+
+      expect(await store.requeueHttp415(oldBlocked), isTrue);
+
+      final client = FakeBangumiClient(
+        onRemoteState: (subjectId) async => remote,
+        onCollectionMutation: (subjectId, status) {
+          remote = _remote(status);
+        },
+      );
+      final result = await BangumiSyncService(
+        client: client,
+        store: store,
+        sessionProvider: () => _session,
+        clock: () => now,
+        delay: (_) async {},
+      ).syncNow();
+
+      expect(result.processed, 1);
+      expect(client.collectionMutations, [
+        ('42', BangumiCollectionStatus.completed),
+      ]);
+      expect(remote.status, BangumiCollectionStatus.completed);
+      expect(await store.pendingCount(), 0);
+      expect(await store.blockedCount(), 0);
     },
   );
 

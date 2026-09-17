@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.10 release boundary is ready for exact-SHA CI and protected
+The v1.0.11 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -49,6 +49,27 @@ native binary, codec or system runtime.
 The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
+
+## 1.0.11 candidate status
+
+- Version authority is `1.0.11+12`; the expected arm64 split APK versionCode is
+  `2012`.
+- The Bangumi mutation transport now explicitly sends JSON, emits only stable
+  redacted HTTP 415 diagnostics, and makes recoverable blocked rows retryable.
+  Queue coalescing and account/write gates prevent stale blocked or active
+  duplicates from overwriting a newer local intent.
+- Current-head full deterministic Flutter tests (750 tests), focused Bangumi
+  tests (49 tests), analyzer, formatting and `git diff --check` pass on this
+  candidate worktree.
+- The fresh Android debug APK installed and launched on the fixed Android 16 /
+  API 36 phone and tablet emulators. Protected Android signing, App Link
+  verification, Windows x64 Release packaging and exact-SHA CI remain required
+  for the immutable candidate.
+- Independent browser-based GPT-5.6 Sol review returned `SOL_REVIEW_PASS` for
+  operation `wynime-bangumi-sync-20260917-01a0`.
+- Physical Android and Windows playback remain
+  `HARDWARE_VALIDATION_PENDING`; native Windows action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`.
 
 ## 1.0.10 candidate status
 

@@ -897,10 +897,14 @@ final class BangumiSessionController extends ChangeNotifier {
     if (existing != null) return existing;
     final future = _performSyncNow(forceRetry: forceRetry);
     _syncFuture = future;
+    notifyListeners();
     try {
       await future;
     } finally {
-      if (identical(_syncFuture, future)) _syncFuture = null;
+      if (identical(_syncFuture, future)) {
+        _syncFuture = null;
+        notifyListeners();
+      }
     }
   }
 
@@ -908,7 +912,13 @@ final class BangumiSessionController extends ChangeNotifier {
     try {
       await _ensureFreshSession();
       final refreshed = await refreshCollections();
-      if (!refreshed || !isAuthenticated) return;
+      if (!refreshed || !isAuthenticated) {
+        // A failed preflight must still expose the durable queue state. The
+        // old early return left the UI showing stale counts, which made a
+        // blocked 415 row look as if manual sync had done nothing.
+        await _refreshQueueCounts();
+        return;
+      }
       final result = await _syncWithRefresh(forceRetry: forceRetry);
       final selectedId = selectedSubject?.id;
       if (result.processed > 0 && selectedId != null) {

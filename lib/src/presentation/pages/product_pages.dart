@@ -1356,6 +1356,30 @@ IconData _libraryFilterIcon(_LibraryFilter filter) {
   };
 }
 
+String _bangumiSyncErrorText(AppLocalizations l10n, String code) {
+  if (code == 'http_415') return l10n.bangumiSyncErrorUnsupportedMedia;
+  if (code == 'auth_required' ||
+      code == 'reauth_required' ||
+      code == 'account_mismatch') {
+    return l10n.bangumiSyncErrorReauth;
+  }
+  if (code == 'remote_revision_conflict') {
+    return l10n.bangumiSyncErrorConflict;
+  }
+  if (code == 'rate_limited' ||
+      code == 'network_error' ||
+      code == 'network_timeout' ||
+      code == 'network_unavailable' ||
+      code == 'remote_server_error' ||
+      code == 'collection_refresh_failed' ||
+      code == 'http_408' ||
+      code == 'http_429' ||
+      code == 'http_500') {
+    return l10n.bangumiSyncErrorRetry;
+  }
+  return l10n.bangumiSyncErrorGeneric;
+}
+
 class _BangumiConnectionCard extends StatelessWidget {
   const _BangumiConnectionCard({required this.controller});
 
@@ -1423,7 +1447,9 @@ class _BangumiConnectionCard extends StatelessWidget {
                         else ...[
                           OutlinedButton.icon(
                             key: const ValueKey('bangumi-sync'),
-                            onPressed: controller.syncNow,
+                            onPressed: controller.isSyncing
+                                ? null
+                                : controller.syncNow,
                             icon: const Icon(Icons.sync_rounded),
                             label: Text(l10n.bangumiSyncAction),
                           ),
@@ -1440,7 +1466,7 @@ class _BangumiConnectionCard extends StatelessWidget {
                   if (!unavailable && controller.errorCode != null) ...[
                     const SizedBox(height: WynimeSpacing.xs),
                     Text(
-                      l10n.bangumiErrorLabel(controller.errorCode!),
+                      _bangumiSyncErrorText(l10n, controller.errorCode!),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -1825,7 +1851,7 @@ class _BangumiSettingsContent extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               OutlinedButton.icon(
-                onPressed: controller.syncNow,
+                onPressed: controller.isSyncing ? null : controller.syncNow,
                 icon: const Icon(Icons.sync_rounded),
                 label: Text(l10n.bangumiSyncAction),
               ),
@@ -1836,9 +1862,17 @@ class _BangumiSettingsContent extends StatelessWidget {
                 ),
               ),
               if (controller.blockedCount > 0)
-                Text(
-                  l10n.bangumiBlockedQueueSummary(controller.blockedCount),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.bangumiBlockedQueueSummary(controller.blockedCount),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    Text(l10n.bangumiBlockedQueueDescription),
+                  ],
                 ),
               OutlinedButton.icon(
                 key: const ValueKey('bangumi-settings-logout'),
@@ -1915,7 +1949,7 @@ class _BangumiSettingsContent extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.only(top: WynimeSpacing.xs),
               child: Text(
-                l10n.bangumiErrorLabel(controller.errorCode!),
+                _bangumiSyncErrorText(l10n, controller.errorCode!),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),

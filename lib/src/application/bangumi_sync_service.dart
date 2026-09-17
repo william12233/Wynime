@@ -93,9 +93,14 @@ final class BangumiSyncService {
       throw const BangumiApiException(code: 'account_mismatch');
     }
     final blockedBefore = await _store.blockedCount();
+    // Coalesce legacy blocked-415 siblings before selecting active work. Old
+    // databases can contain both a blocked row and a newer pending row for the
+    // same target; selecting pending work first would otherwise let the stale
+    // blocked row run after the newer mutation succeeds.
+    final recoverable415 = await _store.recoverableHttp415Operations();
     final operations = <BangumiPendingOperation>[
       ...await _store.pendingOperations(now: _clock(), forceRetry: forceRetry),
-      if (forceRetry) ...await _store.recoverableHttp415Operations(),
+      if (forceRetry) ...recoverable415,
     ];
     var processed = 0;
     var conflicts = 0;

@@ -524,6 +524,76 @@ void main() {
     expect(pending.single.lastErrorCode, isNull);
     expect(pending.single.statusCode, isNull);
   });
+
+  test(
+    'a new local intent rebases and reuses a blocked HTTP 415 operation',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+
+      final initial = _remote(
+        status: BangumiCollectionStatus.wish,
+        watched: const <String>{},
+      );
+      await store.applyRemoteState(initial);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.watching);
+      final original = (await store.pendingOperations()).single;
+      await store.markBlocked(original, 'http_415', statusCode: 415);
+
+      final refreshedRemote = _remote(
+        status: BangumiCollectionStatus.completed,
+        watched: const <String>{},
+      );
+      await store.applyRemoteState(refreshedRemote);
+      await store.saveCollectionStatus('42', BangumiCollectionStatus.dropped);
+
+      final rebased = (await store.pendingOperations()).single;
+      expect(rebased.operationId, original.operationId);
+      expect(rebased.collectionStatus, BangumiCollectionStatus.dropped);
+      expect(rebased.baseRemoteRevision, refreshedRemote.remoteRevision);
+      expect(rebased.baseCollectionStatus, BangumiCollectionStatus.completed);
+      expect(rebased.state, BangumiSyncOperationState.pending);
+      expect(await store.blockedCount(), 0);
+      expect(await store.pendingCount(), 1);
+    },
+  );
+
+  test(
+    'a new episode intent also rebases a blocked HTTP 415 operation',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final store = DriftBangumiLocalStore(database, clock: () => now);
+      await _seed(store);
+
+      final initial = _remote(
+        status: BangumiCollectionStatus.watching,
+        watched: const <String>{},
+      );
+      await store.applyRemoteState(initial);
+      await store.setEpisodeWatched('42', '1001', true);
+      final original = (await store.pendingOperations()).single;
+      await store.markBlocked(original, 'http_415', statusCode: 415);
+
+      final refreshedRemote = _remote(
+        status: BangumiCollectionStatus.watching,
+        watched: const {'1001'},
+      );
+      await store.applyRemoteState(refreshedRemote);
+      await store.setEpisodeWatched('42', '1001', false);
+
+      final rebased = (await store.pendingOperations()).single;
+      expect(rebased.operationId, original.operationId);
+      expect(rebased.watched, isFalse);
+      expect(rebased.baseRemoteRevision, refreshedRemote.remoteRevision);
+      expect(rebased.baseWatched, isTrue);
+      expect(rebased.state, BangumiSyncOperationState.pending);
+      expect(await store.blockedCount(), 0);
+      expect(await store.pendingCount(), 1);
+    },
+  );
 }
 
 Future<void> _seed(DriftBangumiLocalStore store) async {

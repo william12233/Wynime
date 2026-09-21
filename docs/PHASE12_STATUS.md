@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.11 release boundary is ready for exact-SHA CI and protected
+The v1.0.12 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -49,6 +49,30 @@ native binary, codec or system runtime.
 The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
+
+## 1.0.12 candidate status
+
+- Version authority is `1.0.12+13`; the expected arm64 split APK versionCode is
+  `2013`.
+- Schema-v3 source packages now declare bounded cache policy, public
+  capabilities and typed live bindings. The installed subject pipeline uses
+  one admitted response for metadata and exact episode links, while playback
+  remains connected to the existing shared session pipeline.
+- The unsigned xifan package is allowlisted to its declared HTTPS hosts and
+  network permission. Its live detail, episode and playback capabilities are
+  supported; provider search is declared `challengeRequired`.
+- Current-head full deterministic Flutter tests (763 tests), analyzer,
+  formatting and `git diff --check` pass on this candidate worktree.
+- Live browser verification reached the xifan detail and episode pages,
+  observed 13 episode links and three source lines, loaded the player iframe
+  with a 23:40 duration, and observed the search verification challenge
+  without attempting to solve it. This is provider/browser evidence, not
+  Android or Windows hardware playback evidence.
+- Protected Android signing, App Link verification, Windows x64 Release
+  packaging and exact-SHA CI remain required for the immutable candidate.
+- Physical Android and Windows playback remain
+  `HARDWARE_VALIDATION_PENDING`; native Windows action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`.
 
 ## 1.0.11 candidate status
 

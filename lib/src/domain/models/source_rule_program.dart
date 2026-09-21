@@ -4,7 +4,7 @@ enum SourceDocumentKind { html, json }
 
 enum SourceSelectorKind { css, jsonPath }
 
-enum SourceValueKind { text, attribute, raw }
+enum SourceValueKind { text, attribute, raw, literal }
 
 final class SourceSelector {
   SourceSelector({required this.kind, required String expression})
@@ -47,6 +47,7 @@ final class SourceFieldRule {
     this.selector,
     required this.valueKind,
     this.attributeName,
+    this.literalValue,
     this.required = false,
     this.regexCapture,
   }) : name = name.trim() {
@@ -73,12 +74,27 @@ final class SourceFieldRule {
         'attributeName is valid only for attribute value rules.',
       );
     }
+    if (valueKind == SourceValueKind.literal) {
+      final literal = literalValue?.trim() ?? '';
+      if (literal.isEmpty || literal.length > 256 || literal != literalValue) {
+        throw ArgumentError.value(
+          literalValue,
+          'literalValue',
+          'A bounded literal value is required for literal fields.',
+        );
+      }
+    } else if (literalValue != null) {
+      throw ArgumentError(
+        'literalValue is valid only for literal value rules.',
+      );
+    }
   }
 
   final String name;
   final SourceSelector? selector;
   final SourceValueKind valueKind;
   final String? attributeName;
+  final String? literalValue;
   final bool required;
   final SourceRegexCapture? regexCapture;
 }

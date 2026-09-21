@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'source_rule_program.dart';
+import 'source_cache_models.dart';
+import 'source_package_capabilities.dart';
 import 'source_package_live_operations.dart';
 import 'source_security_policy.dart';
 
@@ -80,6 +82,8 @@ final class SourcePackageManifest {
     required this.securityPolicy,
     required Iterable<SourceRuleProgram> programs,
     Iterable<SourcePackageLiveOperation> liveOperations = const [],
+    SourceCachePolicy? cachePolicy,
+    SourcePackageCapabilities? capabilities,
     this.signatureMetadata,
   }) : packageId = packageId,
        displayName = displayName.trim(),
@@ -88,12 +92,14 @@ final class SourcePackageManifest {
        ),
        liveOperations = UnmodifiableListView(
          List<SourcePackageLiveOperation>.unmodifiable(liveOperations),
-       ) {
-    if (schemaVersion != 1 && schemaVersion != 2) {
+       ),
+       cachePolicy = cachePolicy ?? SourceCachePolicy.zero(),
+       capabilities = capabilities ?? unsupportedSourcePackageCapabilities() {
+    if (schemaVersion != 1 && schemaVersion != 2 && schemaVersion != 3) {
       throw ArgumentError.value(
         schemaVersion,
         'schemaVersion',
-        'Only source package schema versions 1 and 2 are supported.',
+        'Only source package schema versions 1, 2 and 3 are supported.',
       );
     }
     if (!RegExp(r'^[a-z0-9]+(?:[._-][a-z0-9]+)*$').hasMatch(this.packageId) ||
@@ -148,8 +154,10 @@ final class SourcePackageManifest {
       }
     }
 
-    if (this.liveOperations.length > 3 ||
-        (schemaVersion == 2 && this.liveOperations.isEmpty)) {
+    final maxLiveOperations = schemaVersion == 3 ? 4 : 3;
+    if (this.liveOperations.length > maxLiveOperations ||
+        ((schemaVersion == 2 || schemaVersion == 3) &&
+            this.liveOperations.isEmpty)) {
       throw ArgumentError.value(
         liveOperations,
         'liveOperations',
@@ -159,6 +167,37 @@ final class SourcePackageManifest {
     if (schemaVersion == 1 && this.liveOperations.isNotEmpty) {
       throw ArgumentError(
         'Schema version 1 packages must not declare live operations.',
+      );
+    }
+
+    if (schemaVersion != 3 &&
+        (this.cachePolicy != SourceCachePolicy.zero() ||
+            this.capabilities != unsupportedSourcePackageCapabilities())) {
+      throw ArgumentError(
+        'Cache policy and public capabilities are available only in schema v3.',
+      );
+    }
+    if (schemaVersion == 3 && (cachePolicy == null || capabilities == null)) {
+      throw ArgumentError(
+        'Schema v3 requires an explicit cache policy and capability map.',
+      );
+    }
+    if (schemaVersion != 3 &&
+        this.programs.any(
+          (program) => program.fields.any(
+            (field) => field.valueKind == SourceValueKind.literal,
+          ),
+        )) {
+      throw ArgumentError('Literal fields are available only in schema v3.');
+    }
+
+    if (schemaVersion == 3 &&
+        this.liveOperations.any(
+          (operation) =>
+              operation.kind == SourcePackageLiveOperationKind.episode,
+        )) {
+      throw ArgumentError(
+        'Schema v3 uses subjectDetails instead of a standalone episode operation.',
       );
     }
 
@@ -182,11 +221,24 @@ final class SourcePackageManifest {
         );
       }
       final fieldNames = program.fields.map((field) => field.name).toSet();
-      if (!fieldNames.containsAll(operation.mappingFieldNames)) {
+      final requiredOperationFields =
+          operation.mapping is SourceSubjectDetailsFieldMapping
+          ? {
+              (operation.mapping as SourceSubjectDetailsFieldMapping)
+                  .metadataTitleField,
+            }
+          : operation.mappingFieldNames.toSet();
+      if (!fieldNames.containsAll(requiredOperationFields)) {
         throw ArgumentError.value(
           operation.mappingFieldNames,
           'liveOperations',
           'Every operation mapping field must exist in its program.',
+        );
+      }
+      if (schemaVersion == 2 &&
+          operation.kind == SourcePackageLiveOperationKind.subjectDetails) {
+        throw ArgumentError(
+          'Schema v2 cannot declare subjectDetails operations.',
         );
       }
       final allowedPlaceholders = switch (operation.kind) {
@@ -203,6 +255,10 @@ final class SourcePackageManifest {
           'subjectId',
           'episodeId',
         },
+        SourcePackageLiveOperationKind.subjectDetails => const {
+          'sourceId',
+          'subjectId',
+        },
       };
       if (!allowedPlaceholders.containsAll(
         operation.requestTemplate.placeholders,
@@ -212,6 +268,26 @@ final class SourcePackageManifest {
           'liveOperations',
           'The operation contains an unsupported input placeholder.',
         );
+      }
+
+      if (operation.kind == SourcePackageLiveOperationKind.subjectDetails) {
+        final mapping = operation.mapping as SourceSubjectDetailsFieldMapping;
+        final episodeProgram = programById(mapping.episodeProgramId);
+        final episodeFields = episodeProgram.fields
+            .map((field) => field.name)
+            .toSet();
+        if (!episodeFields.containsAll([
+          mapping.lineIdField,
+          mapping.subjectIdField,
+          mapping.episodeIdField,
+          mapping.episodeTitleField,
+        ])) {
+          throw ArgumentError.value(
+            mapping.episodeProgramId,
+            'liveOperations',
+            'Subject detail episode mapping must reference fields from its episode program.',
+          );
+        }
       }
     }
   }
@@ -224,6 +300,8 @@ final class SourcePackageManifest {
   final SourceSecurityPolicy securityPolicy;
   final UnmodifiableListView<SourceRuleProgram> programs;
   final UnmodifiableListView<SourcePackageLiveOperation> liveOperations;
+  final SourceCachePolicy cachePolicy;
+  final SourcePackageCapabilities capabilities;
   final SourcePackageSignatureMetadata? signatureMetadata;
 
   bool isCompatibleWith(Version wynimeVersion) {
@@ -250,11 +328,17 @@ final class SourcePackageManifest {
   /// Any change therefore requires the same explicit re-consent boundary as a
   /// security-policy change, including a schema-v1 to schema-v2 transition.
   bool requiresReconsentComparedTo(SourcePackageManifest previous) {
+    if (schemaVersion != previous.schemaVersion) return true;
     final current = liveOperations.map(_liveOperationKey).toSet();
     final prior = previous.liveOperations.map(_liveOperationKey).toSet();
-    return schemaVersion != previous.schemaVersion ||
-        current.length != prior.length ||
-        !current.containsAll(prior);
+    if (current.length != prior.length || !current.containsAll(prior)) {
+      return true;
+    }
+    if (schemaVersion == 3) {
+      return cachePolicy != previous.cachePolicy ||
+          capabilities != previous.capabilities;
+    }
+    return false;
   }
 
   static String _liveOperationKey(SourcePackageLiveOperation operation) {
@@ -262,6 +346,9 @@ final class SourcePackageManifest {
       operation.kind.name,
       operation.programId,
       operation.requestTemplate.template,
+      if (operation.mapping is SourceSubjectDetailsFieldMapping)
+        (operation.mapping as SourceSubjectDetailsFieldMapping)
+            .episodeProgramId,
       operation.mappingFieldNames,
     ]);
   }

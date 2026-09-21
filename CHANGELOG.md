@@ -4,6 +4,33 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.12 - Release-ready
+
+### Source Package System
+
+- Added schema-v3 source packages with strict declarative live-operation
+  bindings for subject details, episode links and playable sources.
+- Added bounded memory-only cache policy, source health aggregation and
+  secret-safe diagnostics without persisting cookies, tokens or full media
+  URLs.
+- Added the unsigned, allowlisted 稀飯動漫 (`xifan`) package with live detail,
+  episode and iframe-playback declarations. Search remains explicitly
+  `challengeRequired` when the provider presents an interactive challenge.
+- Connected installed source packages through the subject-details pipeline so
+  one bounded response produces normalized subject metadata and exact episode
+  identities without introducing a provider-specific adapter.
+
+### Validation boundary
+
+- Full deterministic Flutter suite: 763 tests passed; analyzer, formatting
+  and `git diff --check` pass on the release candidate.
+- Live browser verification reached the xifan detail and episode pages,
+  observed 13 episode links and three source lines, and observed the player
+  iframe loading with a 23:40 duration.
+- Physical Android and Windows playback remain `HARDWARE_VALIDATION_PENDING`;
+  native Windows action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`.
+
 ## 1.0.11 - Release-ready
 
 ### Bangumi synchronization reliability

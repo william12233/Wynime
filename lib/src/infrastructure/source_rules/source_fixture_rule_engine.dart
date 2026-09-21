@@ -151,6 +151,7 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
       SourceValueKind.attribute =>
         target.attributes[field.attributeName!]?.trim(),
       SourceValueKind.raw => target.outerHtml.trim(),
+      SourceValueKind.literal => field.literalValue,
     };
     return _applyRegex(extracted, field.regexCapture, meter);
   }
@@ -208,7 +209,9 @@ final class SourceFixtureRuleEngine implements SourceRuleEvaluator {
       var rejected = false;
       for (final field in program.fields) {
         meter.consumeStep();
-        final selected = field.selector == null
+        final selected = field.valueKind == SourceValueKind.literal
+            ? <Object?>[field.literalValue]
+            : field.selector == null
             ? <Object?>[roots[index]]
             : JsonPathSubset.evaluate(
                 roots[index],

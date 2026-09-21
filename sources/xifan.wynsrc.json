@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 3,
+  "packageId": "xifan",
+  "displayName": "稀飯動漫",
+  "version": "1.0.0",
+  "wynimeVersion": "^1.0.0",
+  "cache": {
+    "searchTtlSeconds": 0,
+    "subjectMetadataTtlSeconds": 0,
+    "episodeListTtlSeconds": 0,
+    "playbackResolutionTtlSeconds": 0
+  },
+  "capabilities": {
+    "search": "challengeRequired",
+    "detail": "supported",
+    "episodes": "supported",
+    "playback": "supported"
+  },
+  "security": {
+    "domains": [
+      {
+        "host": "anime.xifanacg.com",
+        "includeSubdomains": false,
+        "schemes": ["https"]
+      },
+      {
+        "host": "player.moedot.net",
+        "includeSubdomains": false,
+        "schemes": ["https"]
+      },
+      {
+        "host": "apn.moedot.net",
+        "includeSubdomains": false,
+        "schemes": ["https"]
+      }
+    ],
+    "permissions": ["network"],
+    "budget": {
+      "maxDocumentBytes": 262144,
+      "maxRecords": 128,
+      "maxSelectorMatches": 512,
+      "maxEvaluationSteps": 10000,
+      "maxRegexPatternChars": 128,
+      "maxRegexInputChars": 2048,
+      "maxRedirects": 3
+    }
+  },
+  "programs": [
+    {
+      "id": "subject_metadata",
+      "documentKind": "html",
+      "root": {
+        "type": "css",
+        "expression": "h3.title-h"
+      },
+      "resultLimit": 1,
+      "fields": [
+        {
+          "name": "title",
+          "selector": null,
+          "value": "text",
+          "attribute": null,
+          "required": true,
+          "regex": null
+        }
+      ]
+    },
+    {
+      "id": "episode_links",
+      "documentKind": "html",
+      "root": {
+        "type": "css",
+        "expression": "a.hide.this-link"
+      },
+      "resultLimit": 128,
+      "fields": [
+        {
+          "name": "lineId",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "href",
+          "required": true,
+          "regex": {
+            "pattern": "/watch/[0-9]+/([0-9]+)/[0-9]+\\.html",
+            "group": 1,
+            "caseSensitive": true
+          }
+        },
+        {
+          "name": "subjectId",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "href",
+          "required": true,
+          "regex": {
+            "pattern": "/watch/([0-9]+)/[0-9]+/[0-9]+\\.html",
+            "group": 1,
+            "caseSensitive": true
+          }
+        },
+        {
+          "name": "episodeId",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "href",
+          "required": true,
+          "regex": {
+            "pattern": "/watch/[0-9]+/[0-9]+/([0-9]+)\\.html",
+            "group": 1,
+            "caseSensitive": true
+          }
+        },
+        {
+          "name": "episodeTitle",
+          "selector": null,
+          "value": "text",
+          "attribute": null,
+          "required": true,
+          "regex": null
+        }
+      ]
+    },
+    {
+      "id": "playable_source",
+      "documentKind": "html",
+      "root": {
+        "type": "css",
+        "expression": "iframe"
+      },
+      "resultLimit": 1,
+      "fields": [
+        {
+          "name": "sourceKey",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "src",
+          "required": true,
+          "regex": {
+            "pattern": "code=([^&]+)",
+            "group": 1,
+            "caseSensitive": true
+          }
+        },
+        {
+          "name": "label",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "src",
+          "required": true,
+          "regex": {
+            "pattern": "code=([^&]+)",
+            "group": 1,
+            "caseSensitive": true
+          }
+        },
+        {
+          "name": "kind",
+          "selector": null,
+          "value": "literal",
+          "literal": "video",
+          "attribute": null,
+          "required": true,
+          "regex": null
+        },
+        {
+          "name": "mediaUri",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "src",
+          "required": true,
+          "regex": {
+            "pattern": "url=(https://[^&]+)",
+            "group": 1,
+            "caseSensitive": true
+          }
+        },
+        {
+          "name": "pageUri",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "src",
+          "required": true,
+          "regex": null
+        }
+      ]
+    }
+  ],
+  "liveOperations": [
+    {
+      "kind": "subjectDetails",
+      "programId": "subject_metadata",
+      "uriTemplate": "https://anime.xifanacg.com/bangumi/{subjectId}.html",
+      "mapping": {
+        "episodeProgramId": "episode_links",
+        "metadataTitleField": "title",
+        "lineIdField": "lineId",
+        "subjectIdField": "subjectId",
+        "episodeIdField": "episodeId",
+        "episodeTitleField": "episodeTitle"
+      }
+    },
+    {
+      "kind": "playableSource",
+      "programId": "playable_source",
+      "uriTemplate": "https://anime.xifanacg.com/watch/{subjectId}/{lineId}/{episodeId}.html",
+      "mapping": {
+        "sourceKeyField": "sourceKey",
+        "labelField": "label",
+        "kindField": "kind",
+        "mediaUriField": "mediaUri",
+        "pageUriField": "pageUri"
+      }
+    }
+  ]
+}

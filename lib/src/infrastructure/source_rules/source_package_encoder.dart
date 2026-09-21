@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import '../../domain/models/source_package_manifest.dart';
+import '../../domain/models/source_cache_models.dart';
+import '../../domain/models/source_package_capabilities.dart';
 import '../../domain/models/source_package_live_operations.dart';
 import '../../domain/models/source_episode_normalization_models.dart';
 import '../../domain/models/source_playable_normalization_models.dart';
@@ -83,7 +85,15 @@ final class SourcePackageEncoder {
       },
       'programs': package.programs.map(_encodeProgram).toList(growable: false),
     };
-    if (package.schemaVersion == 2) {
+    if (package.schemaVersion == 3) {
+      final cache = sourceCachePolicyWireValues(package.cachePolicy);
+      result['cache'] = cache;
+      result['capabilities'] = {
+        for (final capability in SourcePackageCapability.values)
+          capability.name: package.capabilities[capability].name,
+      };
+    }
+    if (package.schemaVersion == 2 || package.schemaVersion == 3) {
       final operations = package.liveOperations.toList()
         ..sort((left, right) => left.kind.index.compareTo(right.kind.index));
       result['liveOperations'] = operations
@@ -117,7 +127,7 @@ final class SourcePackageEncoder {
   }
 
   Map<String, Object?> _encodeField(SourceFieldRule field) {
-    return {
+    final result = <String, Object?>{
       'name': field.name,
       'selector': field.selector == null
           ? null
@@ -136,6 +146,10 @@ final class SourcePackageEncoder {
               'caseSensitive': field.regexCapture!.caseSensitive,
             },
     };
+    if (field.valueKind == SourceValueKind.literal) {
+      result['literal'] = field.literalValue;
+    }
+    return result;
   }
 
   Map<String, Object?> _encodeLiveOperation(
@@ -151,6 +165,10 @@ final class SourcePackageEncoder {
       SourcePackageLiveOperationKind.playableSource => _encodePlayableMapping(
         operation.mapping as SourcePlayableSourceFieldMapping,
       ),
+      SourcePackageLiveOperationKind.subjectDetails =>
+        _encodeSubjectDetailsMapping(
+          operation.mapping as SourceSubjectDetailsFieldMapping,
+        ),
     };
     return {
       'kind': operation.kind.name,
@@ -187,6 +205,19 @@ final class SourcePackageEncoder {
       'kindField': mapping.kindField,
       'mediaUriField': mapping.mediaUriField,
       'pageUriField': mapping.pageUriField,
+    };
+  }
+
+  Map<String, Object?> _encodeSubjectDetailsMapping(
+    SourceSubjectDetailsFieldMapping mapping,
+  ) {
+    return {
+      'episodeProgramId': mapping.episodeProgramId,
+      'metadataTitleField': mapping.metadataTitleField,
+      'lineIdField': mapping.lineIdField,
+      'subjectIdField': mapping.subjectIdField,
+      'episodeIdField': mapping.episodeIdField,
+      'episodeTitleField': mapping.episodeTitleField,
     };
   }
 }

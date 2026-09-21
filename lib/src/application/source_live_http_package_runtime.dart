@@ -21,49 +21,137 @@ final class SourceLiveHttpPackageRuntime {
   final SourcePackageRuntime fixtureRuntime;
 
   Future<SourceRuntimeResult> execute(SourceLiveHttpRequestPlan plan) async {
+    final results = await executePrograms(
+      requestPlan: plan,
+      programIds: [plan.programId],
+    );
+    return results[plan.programId] ??
+        _failure(plan, 'source_live_execution_invalid');
+  }
+
+  /// Executes one admitted GET and evaluates the bounded response against
+  /// several already-declared programs. This is the only multi-result hook;
+  /// all programs receive the same in-memory response and no raw response is
+  /// returned to the caller.
+  Future<Map<String, SourceRuntimeResult>> executePrograms({
+    required SourceLiveHttpRequestPlan requestPlan,
+    required Iterable<String> programIds,
+  }) async {
+    final ids = <String>[];
+    final seen = <String>{};
+    for (final value in programIds) {
+      final id = value.trim();
+      if (!RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(id) || !seen.add(id)) {
+        return {
+          requestPlan.programId: _failure(
+            requestPlan,
+            'source_live_programs_invalid',
+          ),
+        };
+      }
+      if (ids.length == 4) {
+        return {
+          requestPlan.programId: _failure(
+            requestPlan,
+            'source_live_programs_invalid',
+          ),
+        };
+      }
+      ids.add(id);
+    }
+    if (ids.isEmpty) {
+      return {
+        requestPlan.programId: _failure(
+          requestPlan,
+          'source_live_programs_invalid',
+        ),
+      };
+    }
+
     SourceLiveHttpExecutionResult execution;
     try {
-      execution = await httpExecutor.execute(plan);
+      execution = await httpExecutor.execute(requestPlan);
     } on Object {
-      return _failure(plan, 'source_live_runtime_failed');
+      return {
+        for (final id in ids)
+          id: _failureForProgram(requestPlan, id, 'source_live_runtime_failed'),
+      };
     }
 
     if (execution.status == SourceLiveHttpExecutionStatus.completed) {
       final response = execution.response;
       if (response == null) {
-        return _failure(plan, 'source_live_response_missing');
+        return {
+          for (final id in ids)
+            id: _failureForProgram(
+              requestPlan,
+              id,
+              'source_live_response_missing',
+            ),
+        };
       }
 
-      try {
-        final evaluated = fixtureRuntime.executeFixture(
-          installedPackage: plan.installedPackage,
-          programId: plan.programId,
-          fixture: SourceFixture(
-            initialUri: plan.request.uri,
-            redirectChain: response.redirectChain,
-            body: response.body,
-          ),
-        );
-        if (!_matchesPlanIdentity(evaluated, plan)) {
-          return _failure(plan, 'runtime_identity_mismatch');
+      final fixture = SourceFixture(
+        initialUri: requestPlan.request.uri,
+        redirectChain: response.redirectChain,
+        body: response.body,
+      );
+      final results = <String, SourceRuntimeResult>{};
+      for (final id in ids) {
+        try {
+          final evaluated = fixtureRuntime.executeFixture(
+            installedPackage: requestPlan.installedPackage,
+            programId: id,
+            fixture: fixture,
+          );
+          final plan = SourceLiveHttpRequestPlan(
+            installedPackage: requestPlan.installedPackage,
+            programId: id,
+            request: requestPlan.request,
+          );
+          results[id] = _matchesPlanIdentity(evaluated, plan)
+              ? evaluated
+              : _failureForProgram(
+                  requestPlan,
+                  id,
+                  'runtime_identity_mismatch',
+                );
+        } on Object {
+          results[id] = _failureForProgram(
+            requestPlan,
+            id,
+            'source_live_runtime_failed',
+          );
         }
-        return evaluated;
-      } on Object {
-        return _failure(plan, 'source_live_runtime_failed');
       }
+      return Map<String, SourceRuntimeResult>.unmodifiable(results);
     }
 
     final admission = execution.admissionResult;
     if (admission != null) {
-      return _admissionFailure(plan, admission.status);
+      return {
+        for (final id in ids)
+          id: _admissionFailureForProgram(requestPlan, id, admission.status),
+      };
     }
 
     final transport = execution.transportResult;
     if (transport != null) {
-      return _failure(plan, _transportFailureCode(transport));
+      final code = _transportFailureCode(transport);
+      return {
+        for (final id in ids)
+          _failureKey(id): _failureForProgram(requestPlan, id, code),
+      };
     }
 
-    return _failure(plan, 'source_live_execution_invalid');
+    return {
+      for (final id in ids)
+        id: _failureForProgram(
+          requestPlan,
+          id,
+          'source_live_execution_invalid',
+        ),
+    };
   }
 
   bool _matchesPlanIdentity(
@@ -117,6 +205,37 @@ final class SourceLiveHttpPackageRuntime {
 
   SourceRuntimeResult _failure(SourceLiveHttpRequestPlan plan, String code) =>
       _result(plan, status: SourceRuntimeStatus.failed, code: code);
+
+  SourceRuntimeResult _failureForProgram(
+    SourceLiveHttpRequestPlan plan,
+    String programId,
+    String code,
+  ) {
+    return _result(
+      SourceLiveHttpRequestPlan(
+        installedPackage: plan.installedPackage,
+        programId: programId,
+        request: plan.request,
+      ),
+      status: SourceRuntimeStatus.failed,
+      code: code,
+    );
+  }
+
+  SourceRuntimeResult _admissionFailureForProgram(
+    SourceLiveHttpRequestPlan plan,
+    String programId,
+    SourceLiveHttpRequestStatus status,
+  ) {
+    final candidate = SourceLiveHttpRequestPlan(
+      installedPackage: plan.installedPackage,
+      programId: programId,
+      request: plan.request,
+    );
+    return _admissionFailure(candidate, status);
+  }
+
+  String _failureKey(String value) => value;
 
   SourceRuntimeResult _result(
     SourceLiveHttpRequestPlan plan, {

@@ -1083,6 +1083,7 @@ final class DeclarativeSourcePackageBuilder implements SourcePackageBuilder {
       SourceValueKind.attribute =>
         element.attributes[hint.attributeName!]?.trim(),
       SourceValueKind.raw => element.outerHtml.trim(),
+      SourceValueKind.literal => null,
     };
     if (value == null || value.isEmpty) {
       return null;

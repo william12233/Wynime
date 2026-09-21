@@ -10,7 +10,73 @@ import 'source_search_normalization_models.dart';
 /// The enum is deliberately closed. Adding another operation is a capability
 /// change and therefore requires a new schema decision instead of being
 /// silently accepted by an older package runtime.
-enum SourcePackageLiveOperationKind { search, episode, playableSource }
+/// The final enum member is intentionally appended so schema-v2 canonical
+/// ordering remains byte-for-byte stable for existing packages.
+enum SourcePackageLiveOperationKind {
+  search,
+  episode,
+  playableSource,
+  subjectDetails,
+}
+
+final class SourceSubjectDetailsFieldMapping {
+  SourceSubjectDetailsFieldMapping({
+    required String episodeProgramId,
+    required String metadataTitleField,
+    required String lineIdField,
+    required String subjectIdField,
+    required String episodeIdField,
+    required String episodeTitleField,
+  }) : episodeProgramId = _programId(episodeProgramId),
+       metadataTitleField = _fieldName(
+         metadataTitleField,
+         'metadataTitleField',
+       ),
+       lineIdField = _fieldName(lineIdField, 'lineIdField'),
+       subjectIdField = _fieldName(subjectIdField, 'subjectIdField'),
+       episodeIdField = _fieldName(episodeIdField, 'episodeIdField'),
+       episodeTitleField = _fieldName(episodeTitleField, 'episodeTitleField') {
+    if ({
+          this.metadataTitleField,
+          this.lineIdField,
+          this.subjectIdField,
+          this.episodeIdField,
+          this.episodeTitleField,
+        }.length !=
+        5) {
+      throw ArgumentError(
+        'Subject detail mapping fields must all be different.',
+      );
+    }
+  }
+
+  final String episodeProgramId;
+  final String metadataTitleField;
+  final String lineIdField;
+  final String subjectIdField;
+  final String episodeIdField;
+  final String episodeTitleField;
+
+  static String _programId(String value) {
+    final normalized = value.trim();
+    if (!RegExp(r'^[a-z][a-z0-9_-]{0,63}$').hasMatch(normalized)) {
+      throw ArgumentError.value(
+        value,
+        'episodeProgramId',
+        'Invalid program ID.',
+      );
+    }
+    return normalized;
+  }
+
+  static String _fieldName(String value, String name) {
+    final normalized = value.trim();
+    if (!RegExp(r'^[A-Za-z][A-Za-z0-9_]{0,63}$').hasMatch(normalized)) {
+      throw ArgumentError.value(value, name, 'Invalid field name.');
+    }
+    return normalized;
+  }
+}
 
 /// A bounded URI template used by a package-declared live GET operation.
 ///
@@ -232,6 +298,16 @@ final class SourcePackageLiveOperation {
         value.titleField,
       ];
     }
+    if (mapping is SourceSubjectDetailsFieldMapping) {
+      final value = mapping as SourceSubjectDetailsFieldMapping;
+      return [
+        value.metadataTitleField,
+        value.lineIdField,
+        value.subjectIdField,
+        value.episodeIdField,
+        value.episodeTitleField,
+      ];
+    }
     final value = mapping as SourcePlayableSourceFieldMapping;
     return [
       value.sourceKeyField,
@@ -260,6 +336,8 @@ final class SourcePackageLiveOperation {
         mapping is SourceEpisodeFieldMapping,
       SourcePackageLiveOperationKind.playableSource =>
         mapping is SourcePlayableSourceFieldMapping,
+      SourcePackageLiveOperationKind.subjectDetails =>
+        mapping is SourceSubjectDetailsFieldMapping,
     };
   }
 

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../../domain/models/source_package_manifest.dart';
+import '../../domain/models/source_cache_models.dart';
+import '../../domain/models/source_package_capabilities.dart';
 import '../../domain/models/source_package_live_operations.dart';
 import '../../domain/models/source_episode_normalization_models.dart';
 import '../../domain/models/source_playable_normalization_models.dart';
@@ -46,7 +48,12 @@ final class SourcePackageDecoder {
       'programs',
       'signature',
     };
-    if (schemaVersion == 2) rootKeys.add('liveOperations');
+    if (schemaVersion == 2 || schemaVersion == 3) {
+      rootKeys.add('liveOperations');
+    }
+    if (schemaVersion == 3) {
+      rootKeys.addAll({'cache', 'capabilities'});
+    }
     _expectKeys(root, r'$', rootKeys);
 
     final version = _parseVersion(
@@ -60,12 +67,28 @@ final class SourcePackageDecoder {
     final security = _decodeSecurity(_required(root, 'security', r'$'));
     final programs = _asList(_required(root, 'programs', r'$'), r'$.programs')
         .indexed
-        .map((entry) => _decodeProgram(entry.$2, r'$.programs[${entry.$1}]'))
+        .map(
+          (entry) => _decodeProgram(
+            entry.$2,
+            r'$.programs[${entry.$1}]',
+            schemaVersion: schemaVersion,
+          ),
+        )
         .toList(growable: false);
 
-    final liveOperations = schemaVersion == 2
-        ? _decodeLiveOperations(_required(root, 'liveOperations', r'$'))
+    final liveOperations = schemaVersion == 2 || schemaVersion == 3
+        ? _decodeLiveOperations(
+            _required(root, 'liveOperations', r'$'),
+            schemaVersion: schemaVersion,
+          )
         : const <SourcePackageLiveOperation>[];
+
+    final cachePolicy = schemaVersion == 3
+        ? _decodeCachePolicy(_required(root, 'cache', r'$'))
+        : SourceCachePolicy.zero();
+    final capabilities = schemaVersion == 3
+        ? _decodeCapabilities(_required(root, 'capabilities', r'$'))
+        : unsupportedSourcePackageCapabilities();
 
     final signatureValue = root['signature'];
     final signature = signatureValue == null
@@ -82,11 +105,74 @@ final class SourcePackageDecoder {
         securityPolicy: security,
         programs: programs,
         liveOperations: liveOperations,
+        cachePolicy: cachePolicy,
+        capabilities: capabilities,
         signatureMetadata: signature,
       );
     } on ArgumentError catch (error) {
       throw SourcePackageFormatException(
         r'$',
+        error.message?.toString() ?? '$error',
+      );
+    }
+  }
+
+  SourceCachePolicy _decodeCachePolicy(Object? value) {
+    const path = r'$.cache';
+    final map = _asMap(value, path);
+    _expectKeys(map, path, {
+      'searchTtlSeconds',
+      'subjectMetadataTtlSeconds',
+      'episodeListTtlSeconds',
+      'playbackResolutionTtlSeconds',
+    });
+    try {
+      return SourceCachePolicy(
+        searchTtl: Duration(
+          seconds: _requiredInt(map, 'searchTtlSeconds', path),
+        ),
+        subjectMetadataTtl: Duration(
+          seconds: _requiredInt(map, 'subjectMetadataTtlSeconds', path),
+        ),
+        episodeListTtl: Duration(
+          seconds: _requiredInt(map, 'episodeListTtlSeconds', path),
+        ),
+        playbackResolutionTtl: Duration(
+          seconds: _requiredInt(map, 'playbackResolutionTtlSeconds', path),
+        ),
+      );
+    } on ArgumentError catch (error) {
+      throw SourcePackageFormatException(
+        path,
+        error.message?.toString() ?? '$error',
+      );
+    }
+  }
+
+  SourcePackageCapabilities _decodeCapabilities(Object? value) {
+    const path = r'$.capabilities';
+    final map = _asMap(value, path);
+    _expectKeys(map, path, {'search', 'detail', 'episodes', 'playback'});
+    final values = <SourcePackageCapability, SourcePackageCapabilityState>{};
+    for (final capability in SourcePackageCapability.values) {
+      final name = capability.name;
+      final stateName = _requiredString(map, name, path);
+      try {
+        values[capability] = SourcePackageCapabilityState.values.byName(
+          stateName,
+        );
+      } on ArgumentError {
+        throw SourcePackageFormatException(
+          '$path.$name',
+          'Unsupported capability state: $stateName',
+        );
+      }
+    }
+    try {
+      return SourcePackageCapabilities(values: values);
+    } on ArgumentError catch (error) {
+      throw SourcePackageFormatException(
+        path,
         error.message?.toString() ?? '$error',
       );
     }
@@ -211,7 +297,11 @@ final class SourcePackageDecoder {
     }
   }
 
-  SourceRuleProgram _decodeProgram(Object? value, String path) {
+  SourceRuleProgram _decodeProgram(
+    Object? value,
+    String path, {
+    required int schemaVersion,
+  }) {
     final map = _asMap(value, path);
     _expectKeys(map, path, {
       'id',
@@ -232,7 +322,13 @@ final class SourcePackageDecoder {
     }
     final fields = _asList(_required(map, 'fields', path), '$path.fields')
         .indexed
-        .map((entry) => _decodeField(entry.$2, '$path.fields[${entry.$1}]'));
+        .map(
+          (entry) => _decodeField(
+            entry.$2,
+            '$path.fields[${entry.$1}]',
+            schemaVersion: schemaVersion,
+          ),
+        );
     try {
       return SourceRuleProgram(
         programId: _requiredString(map, 'id', path),
@@ -252,21 +348,35 @@ final class SourcePackageDecoder {
     }
   }
 
-  List<SourcePackageLiveOperation> _decodeLiveOperations(Object? value) {
+  List<SourcePackageLiveOperation> _decodeLiveOperations(
+    Object? value, {
+    required int schemaVersion,
+  }) {
     const path = r'$.liveOperations';
     final entries = _asList(value, path);
-    if (entries.length > 3) {
+    final maxOperations = schemaVersion == 3 ? 4 : 3;
+    if (entries.length > maxOperations) {
       throw SourcePackageFormatException(
         path,
-        'Schema version 2 permits at most 3 live operations.',
+        'Schema version $schemaVersion permits at most $maxOperations live operations.',
       );
     }
     return entries.indexed
-        .map((entry) => _decodeLiveOperation(entry.$2, '$path[${entry.$1}]'))
+        .map(
+          (entry) => _decodeLiveOperation(
+            entry.$2,
+            '$path[${entry.$1}]',
+            schemaVersion: schemaVersion,
+          ),
+        )
         .toList(growable: false);
   }
 
-  SourcePackageLiveOperation _decodeLiveOperation(Object? value, String path) {
+  SourcePackageLiveOperation _decodeLiveOperation(
+    Object? value,
+    String path, {
+    required int schemaVersion,
+  }) {
     final map = _asMap(value, path);
     _expectKeys(map, path, {'kind', 'programId', 'uriTemplate', 'mapping'});
     final kindName = _requiredString(map, 'kind', path);
@@ -296,6 +406,8 @@ final class SourcePackageDecoder {
           mappingMap,
           mappingPath,
         ),
+        SourcePackageLiveOperationKind.subjectDetails =>
+          _decodeSubjectDetailsMapping(mappingMap, mappingPath),
       };
     } on ArgumentError catch (error) {
       throw SourcePackageFormatException(
@@ -304,6 +416,13 @@ final class SourcePackageDecoder {
       );
     }
     try {
+      if (schemaVersion == 2 &&
+          kind == SourcePackageLiveOperationKind.subjectDetails) {
+        throw SourcePackageFormatException(
+          '$path.kind',
+          'Schema version 2 does not support subjectDetails.',
+        );
+      }
       return SourcePackageLiveOperation(
         kind: kind,
         programId: _requiredString(map, 'programId', path),
@@ -316,6 +435,28 @@ final class SourcePackageDecoder {
         error.message?.toString() ?? '$error',
       );
     }
+  }
+
+  SourceSubjectDetailsFieldMapping _decodeSubjectDetailsMapping(
+    Map<String, Object?> map,
+    String path,
+  ) {
+    _expectKeys(map, path, {
+      'episodeProgramId',
+      'metadataTitleField',
+      'lineIdField',
+      'subjectIdField',
+      'episodeIdField',
+      'episodeTitleField',
+    });
+    return SourceSubjectDetailsFieldMapping(
+      episodeProgramId: _requiredString(map, 'episodeProgramId', path),
+      metadataTitleField: _requiredString(map, 'metadataTitleField', path),
+      lineIdField: _requiredString(map, 'lineIdField', path),
+      subjectIdField: _requiredString(map, 'subjectIdField', path),
+      episodeIdField: _requiredString(map, 'episodeIdField', path),
+      episodeTitleField: _requiredString(map, 'episodeTitleField', path),
+    );
   }
 
   SourceSearchFieldMapping _decodeSearchMapping(
@@ -367,16 +508,22 @@ final class SourcePackageDecoder {
     );
   }
 
-  SourceFieldRule _decodeField(Object? value, String path) {
+  SourceFieldRule _decodeField(
+    Object? value,
+    String path, {
+    required int schemaVersion,
+  }) {
     final map = _asMap(value, path);
-    _expectKeys(map, path, {
+    final fieldKeys = <String>{
       'name',
       'selector',
       'value',
       'attribute',
       'required',
       'regex',
-    });
+    };
+    if (schemaVersion == 3) fieldKeys.add('literal');
+    _expectKeys(map, path, fieldKeys);
     final valueName = _requiredString(map, 'value', path);
     final SourceValueKind valueKind;
     try {
@@ -385,6 +532,12 @@ final class SourcePackageDecoder {
       throw SourcePackageFormatException(
         '$path.value',
         'Unsupported value extraction: $valueName',
+      );
+    }
+    if (schemaVersion != 3 && valueKind == SourceValueKind.literal) {
+      throw SourcePackageFormatException(
+        '$path.value',
+        'Literal fields are available only in schema v3.',
       );
     }
     final selectorValue = map['selector'];
@@ -399,6 +552,9 @@ final class SourcePackageDecoder {
         attributeName: map['attribute'] == null
             ? null
             : _asString(map['attribute'], '$path.attribute'),
+        literalValue: map['literal'] == null
+            ? null
+            : _asString(map['literal'], '$path.literal'),
         required: _requiredBool(map, 'required', path),
         regexCapture: regexValue == null
             ? null

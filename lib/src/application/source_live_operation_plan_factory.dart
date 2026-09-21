@@ -5,6 +5,7 @@ import '../domain/models/source_http_models.dart';
 import '../domain/models/source_identity.dart';
 import '../domain/models/source_package_live_operations.dart';
 import '../domain/models/source_package_manager_models.dart';
+import '../domain/models/source_package_manifest.dart';
 import '../domain/models/source_playable_normalization_models.dart';
 import '../domain/models/source_rule_program.dart';
 import '../domain/models/source_search_normalization_models.dart';
@@ -12,6 +13,7 @@ import 'source_live_episode_coordinator.dart';
 import 'source_live_http_request_coordinator.dart';
 import 'source_live_playable_source_coordinator.dart';
 import 'source_live_search_coordinator.dart';
+import 'source_live_subject_coordinator.dart';
 
 /// The bounded outcomes of turning package metadata into an existing live
 /// operation plan.
@@ -231,6 +233,52 @@ final class SourceLiveOperationPlanFactory {
     }
   }
 
+  SourceLiveOperationPlanResult<SourceLiveSubjectPlan> buildSubjectDetailsPlan({
+    required InstalledSourcePackage installedPackage,
+    required SourceSubjectIdentity subject,
+  }) {
+    if (!_validSubject(subject) ||
+        subject.sourceId != installedPackage.package.packageId) {
+      return _failure(
+        installedPackage,
+        SourcePackageLiveOperationKind.subjectDetails,
+        status: SourceLiveOperationPlanFactoryStatus.invalidInput,
+        reasonCode: 'subject_identity_mismatch',
+      );
+    }
+
+    final admission = _admit(
+      installedPackage,
+      SourcePackageLiveOperationKind.subjectDetails,
+      {'sourceId': subject.sourceId, 'subjectId': subject.subjectId},
+    );
+    if (!admission.isReady) {
+      return _failureFromAdmission(installedPackage, admission);
+    }
+
+    try {
+      final mapping =
+          admission.operation!.mapping as SourceSubjectDetailsFieldMapping;
+      return _ready(
+        installedPackage,
+        admission.operation!,
+        SourceLiveSubjectPlan(
+          requestPlan: admission.requestPlan!,
+          subject: subject,
+          mapping: mapping,
+        ),
+      );
+    } on Object {
+      return _failure(
+        installedPackage,
+        SourcePackageLiveOperationKind.subjectDetails,
+        programId: admission.programId,
+        status: SourceLiveOperationPlanFactoryStatus.failed,
+        reasonCode: 'operation_mapping_invalid',
+      );
+    }
+  }
+
   _OperationAdmission _admit(
     InstalledSourcePackage installedPackage,
     SourcePackageLiveOperationKind kind,
@@ -303,7 +351,7 @@ final class SourceLiveOperationPlanFactory {
         reasonCode: 'package_preflight_failed',
       );
     }
-    if (!_operationMetadataMatchesProgram(operation, program)) {
+    if (!_operationMetadataMatchesProgram(package, operation, program)) {
       return _OperationAdmission.rejected(
         kind: kind,
         programId: operation.programId,
@@ -430,10 +478,25 @@ final class SourceLiveOperationPlanFactory {
   };
 
   static bool _operationMetadataMatchesProgram(
+    SourcePackageManifest package,
     SourcePackageLiveOperation operation,
     SourceRuleProgram program,
   ) {
     final fieldNames = program.fields.map((field) => field.name).toSet();
+    if (operation.kind == SourcePackageLiveOperationKind.subjectDetails) {
+      final mapping = operation.mapping as SourceSubjectDetailsFieldMapping;
+      final episodeProgram = package.programById(mapping.episodeProgramId);
+      final episodeFields = episodeProgram.fields
+          .map((field) => field.name)
+          .toSet();
+      return fieldNames.contains(mapping.metadataTitleField) &&
+          episodeFields.containsAll([
+            mapping.lineIdField,
+            mapping.subjectIdField,
+            mapping.episodeIdField,
+            mapping.episodeTitleField,
+          ]);
+    }
     if (!fieldNames.containsAll(operation.mappingFieldNames)) return false;
     final allowedPlaceholders = switch (operation.kind) {
       SourcePackageLiveOperationKind.search => const {'query'},
@@ -449,6 +512,10 @@ final class SourceLiveOperationPlanFactory {
         'subjectId',
         'episodeId',
       },
+      SourcePackageLiveOperationKind.subjectDetails => const {
+        'sourceId',
+        'subjectId',
+      },
     };
     return allowedPlaceholders.containsAll(
       operation.requestTemplate.placeholders,
@@ -461,6 +528,13 @@ final class SourceLiveOperationPlanFactory {
       episode.lineId,
       episode.subjectId,
       episode.episodeId,
+    ].every((value) => _validText(value, maxLength: 128, allowEmpty: false));
+  }
+
+  static bool _validSubject(SourceSubjectIdentity subject) {
+    return [
+      subject.sourceId,
+      subject.subjectId,
     ].every((value) => _validText(value, maxLength: 128, allowEmpty: false));
   }
 

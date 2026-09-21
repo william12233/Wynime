@@ -1,3 +1,24 @@
+final class SourceSubjectIdentity {
+  SourceSubjectIdentity({required this.sourceId, required this.subjectId})
+    : assert(sourceId.trim().isNotEmpty, 'sourceId must not be empty.'),
+      assert(subjectId.trim().isNotEmpty, 'subjectId must not be empty.');
+
+  final String sourceId;
+  final String subjectId;
+
+  String get identityKey => '$sourceId/$subjectId';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SourceSubjectIdentity &&
+          sourceId == other.sourceId &&
+          subjectId == other.subjectId;
+
+  @override
+  int get hashCode => Object.hash(sourceId, subjectId);
+}
+
 final class SourceEpisodeIdentity {
   SourceEpisodeIdentity({
     required this.sourceId,

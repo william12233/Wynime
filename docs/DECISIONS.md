@@ -1778,3 +1778,41 @@ widget tree. Search-surface disposal never closes the shared application
 pipeline; app bootstrap owns its lifecycle. Provider-specific adapters,
 matching, ranking, episode navigation, playback, WebView, authentication,
 persistence, downloads and release work remain outside this decision.
+
+## ADR-080 — Schema-v3 source packages use one subject-details response path
+
+**Status:** Accepted
+
+**Decision:** Schema-v3 source packages require exact cache-policy and public-
+capability objects, allow at most four live bindings, and replace the v2
+standalone `episode` binding with a typed `subjectDetails` binding. The binding
+references one metadata program, one episode-link program and a fixed HTTPS
+URI template. `SourceLiveSubjectCoordinator` performs one admitted GET and
+evaluates both declared programs against that same bounded in-memory response;
+`SourceInstalledLiveSubjectPipeline` composes exact installed subject targets
+without selecting sources or adding another network authority. The v3 runtime
+supports only declarative literal fields in addition to the existing bounded
+selector, attribute, text and regex dialects. The first package is the
+unsigned, allowlisted `xifan` package; its search capability is declared as
+`challengeRequired`, while detail, episodes and playback are declared
+`supported`.
+
+**Reason:** A subject-first provider needs metadata and episode links from one
+detail document, while package-declared capabilities and cache policy must be
+explicit, versioned and consent-bound. Keeping the response fan-out inside the
+existing live HTTP package runtime proves the xifan flow without introducing a
+provider-specific adapter, iframe fetch, arbitrary script execution or a
+second playback/session path.
+
+**Safety:** The decoder is strict for schema v3 and preserves schema-v1/v2
+wire and dialect behavior. Cache TTLs are whole seconds bounded to seven days;
+the cache is memory-only with global/per-source limits and stores only
+successful cacheable values. Playback refresh invalidates only its own cache
+stage. Health tracking stores only bounded per-source aggregate counts and safe
+diagnostic codes; disabled, consent-required and incompatible outcomes do not
+mutate health. Subject details, challenge, unavailable and normalization
+failures return typed redacted results. xifan permits only its declared HTTPS
+hosts and package network permission; no raw upstream URL, cookie, token,
+header, response body or source-provided executable code crosses the package
+boundary. Real browser challenge handling, expiring media semantics, device
+playback and UI source selection remain outside this implementation gate.

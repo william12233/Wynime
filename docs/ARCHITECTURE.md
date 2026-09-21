@@ -133,6 +133,37 @@ second normalization model. The typed
 placeholders into existing live plan types; it performs no I/O and does not
 choose a source or start playback.
 
+### Source Package schema version 3: subject details and public capability authority
+
+Schema version 3 is a strict package format for source packages that expose a
+subject-first live flow. It requires the exact `cache` TTL object and public
+`capabilities` object, accepts at most four live operations, and replaces the
+standalone v2 `episode` binding with one `subjectDetails` binding plus an
+optional `playableSource` binding. A `subjectDetails` binding points to one
+metadata program and one episode-link program. `SourceLiveSubjectCoordinator`
+performs one admitted GET, evaluates both already-declared programs against the
+same bounded in-memory response, and passes them to the existing typed
+normalizer. It does not fetch an iframe, execute package JavaScript, infer
+headers or create a playback session.
+
+The v3 cache keys are exactly `searchTtlSeconds`,
+`subjectMetadataTtlSeconds`, `episodeListTtlSeconds` and
+`playbackResolutionTtlSeconds`. TTLs are whole seconds bounded to seven days;
+the runtime cache is in-memory only, bounded to 256 entries globally and 64
+entries per source, and stores only successful cacheable results. Playback
+refresh invalidates only the playback-resolution key. The public capability
+object has exactly `search`, `detail`, `episodes` and `playback` states; it is
+declarative authority for availability presentation and does not grant network
+or playback permissions.
+
+The first v3 package is `xifan` (`sources/xifan.wynsrc.json`). Its search
+capability is `challengeRequired`; subject details and episode links are
+resolved from the anime detail page, while playable-source normalization reads
+the declared iframe `src` and its `url` query parameter into the existing
+source normalizer. The package allowlist contains only its declared HTTPS
+hosts, and all challenge, unavailable, disabled, consent and incompatible
+outcomes remain typed and secret-safe.
+
 Signature metadata is not cryptographic verification and never raises runtime authority. Signed and unsigned packages use identical allowlist, permission, consent and budget checks. `SourcePackageSignatureVerifier` optionally verifies the canonical UTF-8 JSON representation with the signature field omitted using Ed25519 and a package/key/signer-scoped trusted-key resolver. Its result is bounded identity/integrity evidence only; unsigned, untrusted, mismatched, invalid or resolver-failed results cannot install, enable, activate or execute a package.
 
 ### URI and consent policy
@@ -143,9 +174,9 @@ Signature metadata is not cryptographic verification and never raises runtime au
 - User-info URIs, localhost, `.localhost`, `.local`, IPv4 literals and deceptive suffix hosts are rejected.
 - Host matching uses exact equality or a dot-boundary subdomain rule.
 - Adding a permission or domain, enabling subdomains or broadening any resource budget requires fresh consent.
-- Adding, removing or changing a schema-v2 live-operation binding requires
-  fresh consent; operation metadata is part of the signed canonical package
-  representation.
+- Adding, removing or changing a schema-v2 or schema-v3 live-operation binding,
+  cache policy or public capability requires fresh consent; this metadata is
+  part of the signed canonical package representation.
 - A package contains at most 32 domain rules and 32 programs; each program contains at most 64 fields.
 
 ### Declarative dialects

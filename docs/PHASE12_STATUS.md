@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.13 release boundary is ready for exact-SHA CI and protected
+The v1.0.14 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -49,6 +49,20 @@ native binary, codec or system runtime.
 The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
+
+## 1.0.14 candidate status
+
+- Version authority is `1.0.14+15`; the expected arm64 split APK versionCode is
+  `2015`.
+- This candidate preserves the v1.0.13 source-to-playback implementation and
+  includes the generated detailed-plan snapshot committed on `main` before
+  the release tag is frozen.
+- Current-head full deterministic Flutter tests (772 tests), analyzer,
+  formatting, targeted source tests and `git diff --check` must remain green;
+  protected CI remains authoritative for signing and final release packaging.
+- Physical Android and Windows playback remain
+  `HARDWARE_VALIDATION_PENDING`; native Windows action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`.
 
 ## 1.0.13 candidate status
 

@@ -9,7 +9,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.12 release boundary is ready for exact-SHA CI and protected
+The v1.0.13 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows; no unexecuted hardware or Computer
 Use result is represented as a pass.
@@ -49,6 +49,25 @@ native binary, codec or system runtime.
 The protected candidate-signing workflow remains useful as exact-SHA signing
 evidence before tagging. The final release workflow independently rebuilds and
 verifies the signed APK and all public assets.
+
+## 1.0.13 candidate status
+
+- Version authority is `1.0.13+14`; the expected arm64 split APK versionCode is
+  `2014`.
+- The source-to-playback path now has a fixed production registry index,
+  persisted package provenance and Bangumi-to-source mappings, exact normalized
+  subject matching, conservative episode correlation and detail-page playback
+  through the existing shared session pipeline.
+- The unsigned xifan 1.1.0 package declares supported public search, detail,
+  episode and playback operations against its allowlisted Next and media
+  hosts. No CAPTCHA handler or access-control bypass is included.
+- Current-head full deterministic Flutter tests (772 tests), analyzer,
+  formatting, targeted source tests and `git diff --check` pass on this
+  candidate worktree. Android debug and Windows debug builds pass; protected
+  CI remains authoritative for signing and final release packaging.
+- Physical Android and Windows playback remain
+  `HARDWARE_VALIDATION_PENDING`; native Windows action-level validation remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`.
 
 ## 1.0.12 candidate status
 

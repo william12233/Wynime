@@ -30,9 +30,13 @@ void main() {
       expect(package.cachePolicy.playbackResolutionTtl, Duration.zero);
       expect(
         package.capabilities[SourcePackageCapability.search],
-        SourcePackageCapabilityState.challengeRequired,
+        SourcePackageCapabilityState.supported,
       );
-      expect(package.liveOperations, hasLength(2));
+      expect(package.liveOperations, hasLength(3));
+      expect(
+        package.liveOperationByKind(SourcePackageLiveOperationKind.search),
+        isNotNull,
+      );
       expect(
         package.liveOperationByKind(
           SourcePackageLiveOperationKind.subjectDetails,

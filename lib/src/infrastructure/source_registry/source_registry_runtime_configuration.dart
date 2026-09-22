@@ -3,6 +3,13 @@
 /// No remote registry is selected when these values are absent. The app can
 /// therefore run without a network-backed source catalog by default.
 final class SourceRegistryRuntimeConfiguration {
+  static const production = SourceRegistryRuntimeConfiguration(
+    owner: 'william12233',
+    repository: 'Wynime',
+    ref: 'main',
+    indexPath: 'sources/index.json',
+  );
+
   const SourceRegistryRuntimeConfiguration({
     required this.owner,
     required this.repository,
@@ -31,6 +38,21 @@ final class SourceRegistryRuntimeConfiguration {
       ref: ref,
       indexPath: indexPath,
     );
+  }
+
+  /// Selects the app's fixed production discovery endpoint.
+  ///
+  /// Build-time overrides are accepted only for an explicitly opted-in debug
+  /// build. Release builds therefore cannot be redirected by environment
+  /// values or user-controlled settings.
+  static SourceRegistryRuntimeConfiguration forApplication({
+    required bool isDebugMode,
+    bool allowDevOverride = false,
+  }) {
+    if (isDebugMode && allowDevOverride) {
+      return fromEnvironment() ?? production;
+    }
+    return production;
   }
 
   static SourceRegistryRuntimeConfiguration? fromValues({

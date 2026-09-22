@@ -72,11 +72,29 @@ final class DriftSourcePackageRepository implements SourcePackageRepository {
     try {
       await _database.runWrite(
         () => _database.transaction(() async {
+          final existingRows = await _database
+              .select(_database.sourcePackages)
+              .get();
+          final retainedIds = snapshot
+              .map((installed) => installed.package.packageId)
+              .toSet();
+          final removedIds = existingRows
+              .map((row) => row.packageId)
+              .where((packageId) => !retainedIds.contains(packageId))
+              .toSet();
           await _database.delete(_database.sourcePackages).go();
           if (rows.isNotEmpty) {
             await _database.batch((batch) {
               batch.insertAll(_database.sourcePackages, rows);
             });
+          }
+          for (final packageId in removedIds) {
+            await (_database.delete(
+              _database.sourceSubjectMappings,
+            )..where((table) => table.packageId.equals(packageId))).go();
+            await (_database.delete(
+              _database.sourceEpisodeMappings,
+            )..where((table) => table.packageId.equals(packageId))).go();
           }
         }),
       );

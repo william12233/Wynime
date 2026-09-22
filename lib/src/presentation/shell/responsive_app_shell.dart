@@ -4,9 +4,11 @@ import 'package:wynime/src/application/bangumi_session_controller.dart';
 import 'package:wynime/src/application/source_installed_live_search_pipeline.dart';
 import 'package:wynime/src/application/source_package_startup_controller.dart';
 import 'package:wynime/src/application/source_registry_controller.dart';
+import 'package:wynime/src/application/subject_source_playback_controller.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/app/app_destination.dart';
 import 'package:wynime/src/domain/models/app_settings.dart';
+import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/domain/repositories/watch_history_repository.dart';
 import 'package:wynime/src/design_system/tokens/breakpoints.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
@@ -19,6 +21,7 @@ class ResponsiveAppShell extends StatefulWidget {
     this.bangumi,
     this.sourcePackages,
     this.sourceSearchPipeline,
+    this.sourcePlaybackControllerFactory,
     this.sourceRegistry,
     this.watchHistory,
     this.softwareUpdates,
@@ -30,6 +33,8 @@ class ResponsiveAppShell extends StatefulWidget {
   final BangumiSessionController? bangumi;
   final SourcePackageStartupController? sourcePackages;
   final SourceInstalledLiveSearchPipeline? sourceSearchPipeline;
+  final SubjectSourcePlaybackController Function(BangumiSubject subject)?
+  sourcePlaybackControllerFactory;
   final SourceRegistryController? sourceRegistry;
   final WatchHistoryRepository? watchHistory;
   final SoftwareUpdateController? softwareUpdates;
@@ -78,6 +83,8 @@ class _ResponsiveAppShellState extends State<ResponsiveAppShell> {
               bangumi: widget.bangumi,
               sourcePackages: widget.sourcePackages,
               sourceSearchPipeline: widget.sourceSearchPipeline,
+              sourcePlaybackControllerFactory:
+                  widget.sourcePlaybackControllerFactory,
               sourceRegistry: widget.sourceRegistry,
               watchHistory: widget.watchHistory,
               softwareUpdates: widget.softwareUpdates,

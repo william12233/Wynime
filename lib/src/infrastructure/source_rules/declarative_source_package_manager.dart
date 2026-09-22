@@ -231,6 +231,18 @@ final class DeclarativeSourcePackageManager implements SourcePackageManager {
     return disabled;
   }
 
+  @override
+  InstalledSourcePackage remove({required String packageId}) {
+    final current = _packages.remove(packageId);
+    if (current == null) {
+      throw const SourcePackageManagerException(
+        'package_not_installed',
+        'The source package is not installed.',
+      );
+    }
+    return current;
+  }
+
   InstalledSourcePackage _newPendingPackage({
     required SourcePackageManifest package,
     required bool requiresReconsent,

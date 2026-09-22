@@ -38,6 +38,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         const val EVENT_CHANNEL = "io.github.william12233.wynime/media3/events"
         const val UPDATE_CHANNEL = "io.github.william12233.wynime/software_update"
         const val AUTH_CHANNEL = "io.github.william12233.wynime/bangumi_auth"
+        const val MEDIA3_VIEW_TYPE = "wynime/media3-player"
         const val AUTH_STATE_PREFS = "bangumi_oauth_state"
         const val AUTH_STATE_KEY = "state"
         const val AUTH_STATE_CREATED_AT_KEY = "created_at_epoch_ms"
@@ -70,6 +71,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     )
 
     private var player: ExoPlayer? = null
+    private val media3Views = mutableSetOf<Media3PlayerPlatformView>()
     private var eventSink: EventChannel.EventSink? = null
     private var eventSequence = 0L
     private var activeSessionId: String? = null
@@ -131,6 +133,10 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        flutterEngine.platformViewsController.registry.registerViewFactory(
+            MEDIA3_VIEW_TYPE,
+            Media3PlayerPlatformViewFactory(this),
+        )
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
             .setMethodCallHandler(::handleMethodCall)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UPDATE_CHANNEL)
@@ -497,6 +503,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                     exoPlayer.prepare()
                     exoPlayer.playWhenReady = true
                 }
+            rebindMedia3Views()
         } catch (error: RuntimeException) {
             activeSessionId = null
             activeTimelineMapIdentity = null
@@ -608,6 +615,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
             existing.release()
         }
         player = null
+        rebindMedia3Views()
         activeSessionId = null
         activeTimelineMapIdentity = null
         boundTracks.clear()
@@ -756,5 +764,19 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         closePlayer(emitClosed = false)
         eventSink = null
         super.onDestroy()
+    }
+
+    internal fun attachedMedia3Player(): ExoPlayer? = player
+
+    internal fun registerMedia3View(view: Media3PlayerPlatformView) {
+        media3Views += view
+    }
+
+    internal fun unregisterMedia3View(view: Media3PlayerPlatformView) {
+        media3Views -= view
+    }
+
+    private fun rebindMedia3Views() {
+        media3Views.forEach { it.rebind(player) }
     }
 }

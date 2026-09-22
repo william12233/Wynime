@@ -9013,6 +9013,1389 @@ class SourcePackagesCompanion extends UpdateCompanion<SourcePackageRecord> {
   }
 }
 
+class $SourceSubjectMappingsTable extends SourceSubjectMappings
+    with TableInfo<$SourceSubjectMappingsTable, SourceSubjectMappingRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SourceSubjectMappingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _bangumiSubjectIdMeta = const VerificationMeta(
+    'bangumiSubjectId',
+  );
+  @override
+  late final GeneratedColumn<String> bangumiSubjectId = GeneratedColumn<String>(
+    'bangumi_subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packageIdMeta = const VerificationMeta(
+    'packageId',
+  );
+  @override
+  late final GeneratedColumn<String> packageId = GeneratedColumn<String>(
+    'package_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceSubjectIdMeta = const VerificationMeta(
+    'sourceSubjectId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceSubjectId = GeneratedColumn<String>(
+    'source_subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packageVersionMeta = const VerificationMeta(
+    'packageVersion',
+  );
+  @override
+  late final GeneratedColumn<String> packageVersion = GeneratedColumn<String>(
+    'package_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packageRevisionSha256Meta =
+      const VerificationMeta('packageRevisionSha256');
+  @override
+  late final GeneratedColumn<String> packageRevisionSha256 =
+      GeneratedColumn<String>(
+        'package_revision_sha256',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _mappingKindMeta = const VerificationMeta(
+    'mappingKind',
+  );
+  @override
+  late final GeneratedColumn<String> mappingKind = GeneratedColumn<String>(
+    'mapping_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confirmedAtMeta = const VerificationMeta(
+    'confirmedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> confirmedAt = GeneratedColumn<DateTime>(
+    'confirmed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    bangumiSubjectId,
+    packageId,
+    sourceId,
+    sourceSubjectId,
+    packageVersion,
+    packageRevisionSha256,
+    mappingKind,
+    confirmedAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'source_subject_mappings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SourceSubjectMappingRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('bangumi_subject_id')) {
+      context.handle(
+        _bangumiSubjectIdMeta,
+        bangumiSubjectId.isAcceptableOrUnknown(
+          data['bangumi_subject_id']!,
+          _bangumiSubjectIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_bangumiSubjectIdMeta);
+    }
+    if (data.containsKey('package_id')) {
+      context.handle(
+        _packageIdMeta,
+        packageId.isAcceptableOrUnknown(data['package_id']!, _packageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packageIdMeta);
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceIdMeta);
+    }
+    if (data.containsKey('source_subject_id')) {
+      context.handle(
+        _sourceSubjectIdMeta,
+        sourceSubjectId.isAcceptableOrUnknown(
+          data['source_subject_id']!,
+          _sourceSubjectIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceSubjectIdMeta);
+    }
+    if (data.containsKey('package_version')) {
+      context.handle(
+        _packageVersionMeta,
+        packageVersion.isAcceptableOrUnknown(
+          data['package_version']!,
+          _packageVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_packageVersionMeta);
+    }
+    if (data.containsKey('package_revision_sha256')) {
+      context.handle(
+        _packageRevisionSha256Meta,
+        packageRevisionSha256.isAcceptableOrUnknown(
+          data['package_revision_sha256']!,
+          _packageRevisionSha256Meta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_packageRevisionSha256Meta);
+    }
+    if (data.containsKey('mapping_kind')) {
+      context.handle(
+        _mappingKindMeta,
+        mappingKind.isAcceptableOrUnknown(
+          data['mapping_kind']!,
+          _mappingKindMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_mappingKindMeta);
+    }
+    if (data.containsKey('confirmed_at')) {
+      context.handle(
+        _confirmedAtMeta,
+        confirmedAt.isAcceptableOrUnknown(
+          data['confirmed_at']!,
+          _confirmedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_confirmedAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {
+    bangumiSubjectId,
+    packageId,
+    sourceId,
+  };
+  @override
+  SourceSubjectMappingRecord map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SourceSubjectMappingRecord(
+      bangumiSubjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bangumi_subject_id'],
+      )!,
+      packageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_id'],
+      )!,
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      )!,
+      sourceSubjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_subject_id'],
+      )!,
+      packageVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_version'],
+      )!,
+      packageRevisionSha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_revision_sha256'],
+      )!,
+      mappingKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mapping_kind'],
+      )!,
+      confirmedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}confirmed_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SourceSubjectMappingsTable createAlias(String alias) {
+    return $SourceSubjectMappingsTable(attachedDatabase, alias);
+  }
+}
+
+class SourceSubjectMappingRecord extends DataClass
+    implements Insertable<SourceSubjectMappingRecord> {
+  final String bangumiSubjectId;
+  final String packageId;
+  final String sourceId;
+  final String sourceSubjectId;
+  final String packageVersion;
+  final String packageRevisionSha256;
+  final String mappingKind;
+  final DateTime confirmedAt;
+  final DateTime updatedAt;
+  const SourceSubjectMappingRecord({
+    required this.bangumiSubjectId,
+    required this.packageId,
+    required this.sourceId,
+    required this.sourceSubjectId,
+    required this.packageVersion,
+    required this.packageRevisionSha256,
+    required this.mappingKind,
+    required this.confirmedAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['bangumi_subject_id'] = Variable<String>(bangumiSubjectId);
+    map['package_id'] = Variable<String>(packageId);
+    map['source_id'] = Variable<String>(sourceId);
+    map['source_subject_id'] = Variable<String>(sourceSubjectId);
+    map['package_version'] = Variable<String>(packageVersion);
+    map['package_revision_sha256'] = Variable<String>(packageRevisionSha256);
+    map['mapping_kind'] = Variable<String>(mappingKind);
+    map['confirmed_at'] = Variable<DateTime>(confirmedAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SourceSubjectMappingsCompanion toCompanion(bool nullToAbsent) {
+    return SourceSubjectMappingsCompanion(
+      bangumiSubjectId: Value(bangumiSubjectId),
+      packageId: Value(packageId),
+      sourceId: Value(sourceId),
+      sourceSubjectId: Value(sourceSubjectId),
+      packageVersion: Value(packageVersion),
+      packageRevisionSha256: Value(packageRevisionSha256),
+      mappingKind: Value(mappingKind),
+      confirmedAt: Value(confirmedAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SourceSubjectMappingRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SourceSubjectMappingRecord(
+      bangumiSubjectId: serializer.fromJson<String>(json['bangumiSubjectId']),
+      packageId: serializer.fromJson<String>(json['packageId']),
+      sourceId: serializer.fromJson<String>(json['sourceId']),
+      sourceSubjectId: serializer.fromJson<String>(json['sourceSubjectId']),
+      packageVersion: serializer.fromJson<String>(json['packageVersion']),
+      packageRevisionSha256: serializer.fromJson<String>(
+        json['packageRevisionSha256'],
+      ),
+      mappingKind: serializer.fromJson<String>(json['mappingKind']),
+      confirmedAt: serializer.fromJson<DateTime>(json['confirmedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'bangumiSubjectId': serializer.toJson<String>(bangumiSubjectId),
+      'packageId': serializer.toJson<String>(packageId),
+      'sourceId': serializer.toJson<String>(sourceId),
+      'sourceSubjectId': serializer.toJson<String>(sourceSubjectId),
+      'packageVersion': serializer.toJson<String>(packageVersion),
+      'packageRevisionSha256': serializer.toJson<String>(packageRevisionSha256),
+      'mappingKind': serializer.toJson<String>(mappingKind),
+      'confirmedAt': serializer.toJson<DateTime>(confirmedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SourceSubjectMappingRecord copyWith({
+    String? bangumiSubjectId,
+    String? packageId,
+    String? sourceId,
+    String? sourceSubjectId,
+    String? packageVersion,
+    String? packageRevisionSha256,
+    String? mappingKind,
+    DateTime? confirmedAt,
+    DateTime? updatedAt,
+  }) => SourceSubjectMappingRecord(
+    bangumiSubjectId: bangumiSubjectId ?? this.bangumiSubjectId,
+    packageId: packageId ?? this.packageId,
+    sourceId: sourceId ?? this.sourceId,
+    sourceSubjectId: sourceSubjectId ?? this.sourceSubjectId,
+    packageVersion: packageVersion ?? this.packageVersion,
+    packageRevisionSha256: packageRevisionSha256 ?? this.packageRevisionSha256,
+    mappingKind: mappingKind ?? this.mappingKind,
+    confirmedAt: confirmedAt ?? this.confirmedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SourceSubjectMappingRecord copyWithCompanion(
+    SourceSubjectMappingsCompanion data,
+  ) {
+    return SourceSubjectMappingRecord(
+      bangumiSubjectId: data.bangumiSubjectId.present
+          ? data.bangumiSubjectId.value
+          : this.bangumiSubjectId,
+      packageId: data.packageId.present ? data.packageId.value : this.packageId,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+      sourceSubjectId: data.sourceSubjectId.present
+          ? data.sourceSubjectId.value
+          : this.sourceSubjectId,
+      packageVersion: data.packageVersion.present
+          ? data.packageVersion.value
+          : this.packageVersion,
+      packageRevisionSha256: data.packageRevisionSha256.present
+          ? data.packageRevisionSha256.value
+          : this.packageRevisionSha256,
+      mappingKind: data.mappingKind.present
+          ? data.mappingKind.value
+          : this.mappingKind,
+      confirmedAt: data.confirmedAt.present
+          ? data.confirmedAt.value
+          : this.confirmedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SourceSubjectMappingRecord(')
+          ..write('bangumiSubjectId: $bangumiSubjectId, ')
+          ..write('packageId: $packageId, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceSubjectId: $sourceSubjectId, ')
+          ..write('packageVersion: $packageVersion, ')
+          ..write('packageRevisionSha256: $packageRevisionSha256, ')
+          ..write('mappingKind: $mappingKind, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    bangumiSubjectId,
+    packageId,
+    sourceId,
+    sourceSubjectId,
+    packageVersion,
+    packageRevisionSha256,
+    mappingKind,
+    confirmedAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SourceSubjectMappingRecord &&
+          other.bangumiSubjectId == this.bangumiSubjectId &&
+          other.packageId == this.packageId &&
+          other.sourceId == this.sourceId &&
+          other.sourceSubjectId == this.sourceSubjectId &&
+          other.packageVersion == this.packageVersion &&
+          other.packageRevisionSha256 == this.packageRevisionSha256 &&
+          other.mappingKind == this.mappingKind &&
+          other.confirmedAt == this.confirmedAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SourceSubjectMappingsCompanion
+    extends UpdateCompanion<SourceSubjectMappingRecord> {
+  final Value<String> bangumiSubjectId;
+  final Value<String> packageId;
+  final Value<String> sourceId;
+  final Value<String> sourceSubjectId;
+  final Value<String> packageVersion;
+  final Value<String> packageRevisionSha256;
+  final Value<String> mappingKind;
+  final Value<DateTime> confirmedAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SourceSubjectMappingsCompanion({
+    this.bangumiSubjectId = const Value.absent(),
+    this.packageId = const Value.absent(),
+    this.sourceId = const Value.absent(),
+    this.sourceSubjectId = const Value.absent(),
+    this.packageVersion = const Value.absent(),
+    this.packageRevisionSha256 = const Value.absent(),
+    this.mappingKind = const Value.absent(),
+    this.confirmedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SourceSubjectMappingsCompanion.insert({
+    required String bangumiSubjectId,
+    required String packageId,
+    required String sourceId,
+    required String sourceSubjectId,
+    required String packageVersion,
+    required String packageRevisionSha256,
+    required String mappingKind,
+    required DateTime confirmedAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : bangumiSubjectId = Value(bangumiSubjectId),
+       packageId = Value(packageId),
+       sourceId = Value(sourceId),
+       sourceSubjectId = Value(sourceSubjectId),
+       packageVersion = Value(packageVersion),
+       packageRevisionSha256 = Value(packageRevisionSha256),
+       mappingKind = Value(mappingKind),
+       confirmedAt = Value(confirmedAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<SourceSubjectMappingRecord> custom({
+    Expression<String>? bangumiSubjectId,
+    Expression<String>? packageId,
+    Expression<String>? sourceId,
+    Expression<String>? sourceSubjectId,
+    Expression<String>? packageVersion,
+    Expression<String>? packageRevisionSha256,
+    Expression<String>? mappingKind,
+    Expression<DateTime>? confirmedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (bangumiSubjectId != null) 'bangumi_subject_id': bangumiSubjectId,
+      if (packageId != null) 'package_id': packageId,
+      if (sourceId != null) 'source_id': sourceId,
+      if (sourceSubjectId != null) 'source_subject_id': sourceSubjectId,
+      if (packageVersion != null) 'package_version': packageVersion,
+      if (packageRevisionSha256 != null)
+        'package_revision_sha256': packageRevisionSha256,
+      if (mappingKind != null) 'mapping_kind': mappingKind,
+      if (confirmedAt != null) 'confirmed_at': confirmedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SourceSubjectMappingsCompanion copyWith({
+    Value<String>? bangumiSubjectId,
+    Value<String>? packageId,
+    Value<String>? sourceId,
+    Value<String>? sourceSubjectId,
+    Value<String>? packageVersion,
+    Value<String>? packageRevisionSha256,
+    Value<String>? mappingKind,
+    Value<DateTime>? confirmedAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SourceSubjectMappingsCompanion(
+      bangumiSubjectId: bangumiSubjectId ?? this.bangumiSubjectId,
+      packageId: packageId ?? this.packageId,
+      sourceId: sourceId ?? this.sourceId,
+      sourceSubjectId: sourceSubjectId ?? this.sourceSubjectId,
+      packageVersion: packageVersion ?? this.packageVersion,
+      packageRevisionSha256:
+          packageRevisionSha256 ?? this.packageRevisionSha256,
+      mappingKind: mappingKind ?? this.mappingKind,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (bangumiSubjectId.present) {
+      map['bangumi_subject_id'] = Variable<String>(bangumiSubjectId.value);
+    }
+    if (packageId.present) {
+      map['package_id'] = Variable<String>(packageId.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
+    if (sourceSubjectId.present) {
+      map['source_subject_id'] = Variable<String>(sourceSubjectId.value);
+    }
+    if (packageVersion.present) {
+      map['package_version'] = Variable<String>(packageVersion.value);
+    }
+    if (packageRevisionSha256.present) {
+      map['package_revision_sha256'] = Variable<String>(
+        packageRevisionSha256.value,
+      );
+    }
+    if (mappingKind.present) {
+      map['mapping_kind'] = Variable<String>(mappingKind.value);
+    }
+    if (confirmedAt.present) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SourceSubjectMappingsCompanion(')
+          ..write('bangumiSubjectId: $bangumiSubjectId, ')
+          ..write('packageId: $packageId, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceSubjectId: $sourceSubjectId, ')
+          ..write('packageVersion: $packageVersion, ')
+          ..write('packageRevisionSha256: $packageRevisionSha256, ')
+          ..write('mappingKind: $mappingKind, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SourceEpisodeMappingsTable extends SourceEpisodeMappings
+    with TableInfo<$SourceEpisodeMappingsTable, SourceEpisodeMappingRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SourceEpisodeMappingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _bangumiSubjectIdMeta = const VerificationMeta(
+    'bangumiSubjectId',
+  );
+  @override
+  late final GeneratedColumn<String> bangumiSubjectId = GeneratedColumn<String>(
+    'bangumi_subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bangumiEpisodeIdMeta = const VerificationMeta(
+    'bangumiEpisodeId',
+  );
+  @override
+  late final GeneratedColumn<String> bangumiEpisodeId = GeneratedColumn<String>(
+    'bangumi_episode_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packageIdMeta = const VerificationMeta(
+    'packageId',
+  );
+  @override
+  late final GeneratedColumn<String> packageId = GeneratedColumn<String>(
+    'package_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceSubjectIdMeta = const VerificationMeta(
+    'sourceSubjectId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceSubjectId = GeneratedColumn<String>(
+    'source_subject_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceLineIdMeta = const VerificationMeta(
+    'sourceLineId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceLineId = GeneratedColumn<String>(
+    'source_line_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceEpisodeIdMeta = const VerificationMeta(
+    'sourceEpisodeId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceEpisodeId = GeneratedColumn<String>(
+    'source_episode_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packageVersionMeta = const VerificationMeta(
+    'packageVersion',
+  );
+  @override
+  late final GeneratedColumn<String> packageVersion = GeneratedColumn<String>(
+    'package_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _packageRevisionSha256Meta =
+      const VerificationMeta('packageRevisionSha256');
+  @override
+  late final GeneratedColumn<String> packageRevisionSha256 =
+      GeneratedColumn<String>(
+        'package_revision_sha256',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _mappingKindMeta = const VerificationMeta(
+    'mappingKind',
+  );
+  @override
+  late final GeneratedColumn<String> mappingKind = GeneratedColumn<String>(
+    'mapping_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _confirmedAtMeta = const VerificationMeta(
+    'confirmedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> confirmedAt = GeneratedColumn<DateTime>(
+    'confirmed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    bangumiSubjectId,
+    bangumiEpisodeId,
+    packageId,
+    sourceId,
+    sourceSubjectId,
+    sourceLineId,
+    sourceEpisodeId,
+    packageVersion,
+    packageRevisionSha256,
+    mappingKind,
+    confirmedAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'source_episode_mappings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SourceEpisodeMappingRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('bangumi_subject_id')) {
+      context.handle(
+        _bangumiSubjectIdMeta,
+        bangumiSubjectId.isAcceptableOrUnknown(
+          data['bangumi_subject_id']!,
+          _bangumiSubjectIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_bangumiSubjectIdMeta);
+    }
+    if (data.containsKey('bangumi_episode_id')) {
+      context.handle(
+        _bangumiEpisodeIdMeta,
+        bangumiEpisodeId.isAcceptableOrUnknown(
+          data['bangumi_episode_id']!,
+          _bangumiEpisodeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_bangumiEpisodeIdMeta);
+    }
+    if (data.containsKey('package_id')) {
+      context.handle(
+        _packageIdMeta,
+        packageId.isAcceptableOrUnknown(data['package_id']!, _packageIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_packageIdMeta);
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceIdMeta);
+    }
+    if (data.containsKey('source_subject_id')) {
+      context.handle(
+        _sourceSubjectIdMeta,
+        sourceSubjectId.isAcceptableOrUnknown(
+          data['source_subject_id']!,
+          _sourceSubjectIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceSubjectIdMeta);
+    }
+    if (data.containsKey('source_line_id')) {
+      context.handle(
+        _sourceLineIdMeta,
+        sourceLineId.isAcceptableOrUnknown(
+          data['source_line_id']!,
+          _sourceLineIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceLineIdMeta);
+    }
+    if (data.containsKey('source_episode_id')) {
+      context.handle(
+        _sourceEpisodeIdMeta,
+        sourceEpisodeId.isAcceptableOrUnknown(
+          data['source_episode_id']!,
+          _sourceEpisodeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceEpisodeIdMeta);
+    }
+    if (data.containsKey('package_version')) {
+      context.handle(
+        _packageVersionMeta,
+        packageVersion.isAcceptableOrUnknown(
+          data['package_version']!,
+          _packageVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_packageVersionMeta);
+    }
+    if (data.containsKey('package_revision_sha256')) {
+      context.handle(
+        _packageRevisionSha256Meta,
+        packageRevisionSha256.isAcceptableOrUnknown(
+          data['package_revision_sha256']!,
+          _packageRevisionSha256Meta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_packageRevisionSha256Meta);
+    }
+    if (data.containsKey('mapping_kind')) {
+      context.handle(
+        _mappingKindMeta,
+        mappingKind.isAcceptableOrUnknown(
+          data['mapping_kind']!,
+          _mappingKindMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_mappingKindMeta);
+    }
+    if (data.containsKey('confirmed_at')) {
+      context.handle(
+        _confirmedAtMeta,
+        confirmedAt.isAcceptableOrUnknown(
+          data['confirmed_at']!,
+          _confirmedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_confirmedAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {
+    bangumiEpisodeId,
+    packageId,
+    sourceId,
+  };
+  @override
+  SourceEpisodeMappingRecord map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SourceEpisodeMappingRecord(
+      bangumiSubjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bangumi_subject_id'],
+      )!,
+      bangumiEpisodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}bangumi_episode_id'],
+      )!,
+      packageId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_id'],
+      )!,
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      )!,
+      sourceSubjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_subject_id'],
+      )!,
+      sourceLineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_line_id'],
+      )!,
+      sourceEpisodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_episode_id'],
+      )!,
+      packageVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_version'],
+      )!,
+      packageRevisionSha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}package_revision_sha256'],
+      )!,
+      mappingKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mapping_kind'],
+      )!,
+      confirmedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}confirmed_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SourceEpisodeMappingsTable createAlias(String alias) {
+    return $SourceEpisodeMappingsTable(attachedDatabase, alias);
+  }
+}
+
+class SourceEpisodeMappingRecord extends DataClass
+    implements Insertable<SourceEpisodeMappingRecord> {
+  final String bangumiSubjectId;
+  final String bangumiEpisodeId;
+  final String packageId;
+  final String sourceId;
+  final String sourceSubjectId;
+  final String sourceLineId;
+  final String sourceEpisodeId;
+  final String packageVersion;
+  final String packageRevisionSha256;
+  final String mappingKind;
+  final DateTime confirmedAt;
+  final DateTime updatedAt;
+  const SourceEpisodeMappingRecord({
+    required this.bangumiSubjectId,
+    required this.bangumiEpisodeId,
+    required this.packageId,
+    required this.sourceId,
+    required this.sourceSubjectId,
+    required this.sourceLineId,
+    required this.sourceEpisodeId,
+    required this.packageVersion,
+    required this.packageRevisionSha256,
+    required this.mappingKind,
+    required this.confirmedAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['bangumi_subject_id'] = Variable<String>(bangumiSubjectId);
+    map['bangumi_episode_id'] = Variable<String>(bangumiEpisodeId);
+    map['package_id'] = Variable<String>(packageId);
+    map['source_id'] = Variable<String>(sourceId);
+    map['source_subject_id'] = Variable<String>(sourceSubjectId);
+    map['source_line_id'] = Variable<String>(sourceLineId);
+    map['source_episode_id'] = Variable<String>(sourceEpisodeId);
+    map['package_version'] = Variable<String>(packageVersion);
+    map['package_revision_sha256'] = Variable<String>(packageRevisionSha256);
+    map['mapping_kind'] = Variable<String>(mappingKind);
+    map['confirmed_at'] = Variable<DateTime>(confirmedAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SourceEpisodeMappingsCompanion toCompanion(bool nullToAbsent) {
+    return SourceEpisodeMappingsCompanion(
+      bangumiSubjectId: Value(bangumiSubjectId),
+      bangumiEpisodeId: Value(bangumiEpisodeId),
+      packageId: Value(packageId),
+      sourceId: Value(sourceId),
+      sourceSubjectId: Value(sourceSubjectId),
+      sourceLineId: Value(sourceLineId),
+      sourceEpisodeId: Value(sourceEpisodeId),
+      packageVersion: Value(packageVersion),
+      packageRevisionSha256: Value(packageRevisionSha256),
+      mappingKind: Value(mappingKind),
+      confirmedAt: Value(confirmedAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SourceEpisodeMappingRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SourceEpisodeMappingRecord(
+      bangumiSubjectId: serializer.fromJson<String>(json['bangumiSubjectId']),
+      bangumiEpisodeId: serializer.fromJson<String>(json['bangumiEpisodeId']),
+      packageId: serializer.fromJson<String>(json['packageId']),
+      sourceId: serializer.fromJson<String>(json['sourceId']),
+      sourceSubjectId: serializer.fromJson<String>(json['sourceSubjectId']),
+      sourceLineId: serializer.fromJson<String>(json['sourceLineId']),
+      sourceEpisodeId: serializer.fromJson<String>(json['sourceEpisodeId']),
+      packageVersion: serializer.fromJson<String>(json['packageVersion']),
+      packageRevisionSha256: serializer.fromJson<String>(
+        json['packageRevisionSha256'],
+      ),
+      mappingKind: serializer.fromJson<String>(json['mappingKind']),
+      confirmedAt: serializer.fromJson<DateTime>(json['confirmedAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'bangumiSubjectId': serializer.toJson<String>(bangumiSubjectId),
+      'bangumiEpisodeId': serializer.toJson<String>(bangumiEpisodeId),
+      'packageId': serializer.toJson<String>(packageId),
+      'sourceId': serializer.toJson<String>(sourceId),
+      'sourceSubjectId': serializer.toJson<String>(sourceSubjectId),
+      'sourceLineId': serializer.toJson<String>(sourceLineId),
+      'sourceEpisodeId': serializer.toJson<String>(sourceEpisodeId),
+      'packageVersion': serializer.toJson<String>(packageVersion),
+      'packageRevisionSha256': serializer.toJson<String>(packageRevisionSha256),
+      'mappingKind': serializer.toJson<String>(mappingKind),
+      'confirmedAt': serializer.toJson<DateTime>(confirmedAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SourceEpisodeMappingRecord copyWith({
+    String? bangumiSubjectId,
+    String? bangumiEpisodeId,
+    String? packageId,
+    String? sourceId,
+    String? sourceSubjectId,
+    String? sourceLineId,
+    String? sourceEpisodeId,
+    String? packageVersion,
+    String? packageRevisionSha256,
+    String? mappingKind,
+    DateTime? confirmedAt,
+    DateTime? updatedAt,
+  }) => SourceEpisodeMappingRecord(
+    bangumiSubjectId: bangumiSubjectId ?? this.bangumiSubjectId,
+    bangumiEpisodeId: bangumiEpisodeId ?? this.bangumiEpisodeId,
+    packageId: packageId ?? this.packageId,
+    sourceId: sourceId ?? this.sourceId,
+    sourceSubjectId: sourceSubjectId ?? this.sourceSubjectId,
+    sourceLineId: sourceLineId ?? this.sourceLineId,
+    sourceEpisodeId: sourceEpisodeId ?? this.sourceEpisodeId,
+    packageVersion: packageVersion ?? this.packageVersion,
+    packageRevisionSha256: packageRevisionSha256 ?? this.packageRevisionSha256,
+    mappingKind: mappingKind ?? this.mappingKind,
+    confirmedAt: confirmedAt ?? this.confirmedAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SourceEpisodeMappingRecord copyWithCompanion(
+    SourceEpisodeMappingsCompanion data,
+  ) {
+    return SourceEpisodeMappingRecord(
+      bangumiSubjectId: data.bangumiSubjectId.present
+          ? data.bangumiSubjectId.value
+          : this.bangumiSubjectId,
+      bangumiEpisodeId: data.bangumiEpisodeId.present
+          ? data.bangumiEpisodeId.value
+          : this.bangumiEpisodeId,
+      packageId: data.packageId.present ? data.packageId.value : this.packageId,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+      sourceSubjectId: data.sourceSubjectId.present
+          ? data.sourceSubjectId.value
+          : this.sourceSubjectId,
+      sourceLineId: data.sourceLineId.present
+          ? data.sourceLineId.value
+          : this.sourceLineId,
+      sourceEpisodeId: data.sourceEpisodeId.present
+          ? data.sourceEpisodeId.value
+          : this.sourceEpisodeId,
+      packageVersion: data.packageVersion.present
+          ? data.packageVersion.value
+          : this.packageVersion,
+      packageRevisionSha256: data.packageRevisionSha256.present
+          ? data.packageRevisionSha256.value
+          : this.packageRevisionSha256,
+      mappingKind: data.mappingKind.present
+          ? data.mappingKind.value
+          : this.mappingKind,
+      confirmedAt: data.confirmedAt.present
+          ? data.confirmedAt.value
+          : this.confirmedAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SourceEpisodeMappingRecord(')
+          ..write('bangumiSubjectId: $bangumiSubjectId, ')
+          ..write('bangumiEpisodeId: $bangumiEpisodeId, ')
+          ..write('packageId: $packageId, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceSubjectId: $sourceSubjectId, ')
+          ..write('sourceLineId: $sourceLineId, ')
+          ..write('sourceEpisodeId: $sourceEpisodeId, ')
+          ..write('packageVersion: $packageVersion, ')
+          ..write('packageRevisionSha256: $packageRevisionSha256, ')
+          ..write('mappingKind: $mappingKind, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    bangumiSubjectId,
+    bangumiEpisodeId,
+    packageId,
+    sourceId,
+    sourceSubjectId,
+    sourceLineId,
+    sourceEpisodeId,
+    packageVersion,
+    packageRevisionSha256,
+    mappingKind,
+    confirmedAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SourceEpisodeMappingRecord &&
+          other.bangumiSubjectId == this.bangumiSubjectId &&
+          other.bangumiEpisodeId == this.bangumiEpisodeId &&
+          other.packageId == this.packageId &&
+          other.sourceId == this.sourceId &&
+          other.sourceSubjectId == this.sourceSubjectId &&
+          other.sourceLineId == this.sourceLineId &&
+          other.sourceEpisodeId == this.sourceEpisodeId &&
+          other.packageVersion == this.packageVersion &&
+          other.packageRevisionSha256 == this.packageRevisionSha256 &&
+          other.mappingKind == this.mappingKind &&
+          other.confirmedAt == this.confirmedAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SourceEpisodeMappingsCompanion
+    extends UpdateCompanion<SourceEpisodeMappingRecord> {
+  final Value<String> bangumiSubjectId;
+  final Value<String> bangumiEpisodeId;
+  final Value<String> packageId;
+  final Value<String> sourceId;
+  final Value<String> sourceSubjectId;
+  final Value<String> sourceLineId;
+  final Value<String> sourceEpisodeId;
+  final Value<String> packageVersion;
+  final Value<String> packageRevisionSha256;
+  final Value<String> mappingKind;
+  final Value<DateTime> confirmedAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const SourceEpisodeMappingsCompanion({
+    this.bangumiSubjectId = const Value.absent(),
+    this.bangumiEpisodeId = const Value.absent(),
+    this.packageId = const Value.absent(),
+    this.sourceId = const Value.absent(),
+    this.sourceSubjectId = const Value.absent(),
+    this.sourceLineId = const Value.absent(),
+    this.sourceEpisodeId = const Value.absent(),
+    this.packageVersion = const Value.absent(),
+    this.packageRevisionSha256 = const Value.absent(),
+    this.mappingKind = const Value.absent(),
+    this.confirmedAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SourceEpisodeMappingsCompanion.insert({
+    required String bangumiSubjectId,
+    required String bangumiEpisodeId,
+    required String packageId,
+    required String sourceId,
+    required String sourceSubjectId,
+    required String sourceLineId,
+    required String sourceEpisodeId,
+    required String packageVersion,
+    required String packageRevisionSha256,
+    required String mappingKind,
+    required DateTime confirmedAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : bangumiSubjectId = Value(bangumiSubjectId),
+       bangumiEpisodeId = Value(bangumiEpisodeId),
+       packageId = Value(packageId),
+       sourceId = Value(sourceId),
+       sourceSubjectId = Value(sourceSubjectId),
+       sourceLineId = Value(sourceLineId),
+       sourceEpisodeId = Value(sourceEpisodeId),
+       packageVersion = Value(packageVersion),
+       packageRevisionSha256 = Value(packageRevisionSha256),
+       mappingKind = Value(mappingKind),
+       confirmedAt = Value(confirmedAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<SourceEpisodeMappingRecord> custom({
+    Expression<String>? bangumiSubjectId,
+    Expression<String>? bangumiEpisodeId,
+    Expression<String>? packageId,
+    Expression<String>? sourceId,
+    Expression<String>? sourceSubjectId,
+    Expression<String>? sourceLineId,
+    Expression<String>? sourceEpisodeId,
+    Expression<String>? packageVersion,
+    Expression<String>? packageRevisionSha256,
+    Expression<String>? mappingKind,
+    Expression<DateTime>? confirmedAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (bangumiSubjectId != null) 'bangumi_subject_id': bangumiSubjectId,
+      if (bangumiEpisodeId != null) 'bangumi_episode_id': bangumiEpisodeId,
+      if (packageId != null) 'package_id': packageId,
+      if (sourceId != null) 'source_id': sourceId,
+      if (sourceSubjectId != null) 'source_subject_id': sourceSubjectId,
+      if (sourceLineId != null) 'source_line_id': sourceLineId,
+      if (sourceEpisodeId != null) 'source_episode_id': sourceEpisodeId,
+      if (packageVersion != null) 'package_version': packageVersion,
+      if (packageRevisionSha256 != null)
+        'package_revision_sha256': packageRevisionSha256,
+      if (mappingKind != null) 'mapping_kind': mappingKind,
+      if (confirmedAt != null) 'confirmed_at': confirmedAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SourceEpisodeMappingsCompanion copyWith({
+    Value<String>? bangumiSubjectId,
+    Value<String>? bangumiEpisodeId,
+    Value<String>? packageId,
+    Value<String>? sourceId,
+    Value<String>? sourceSubjectId,
+    Value<String>? sourceLineId,
+    Value<String>? sourceEpisodeId,
+    Value<String>? packageVersion,
+    Value<String>? packageRevisionSha256,
+    Value<String>? mappingKind,
+    Value<DateTime>? confirmedAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SourceEpisodeMappingsCompanion(
+      bangumiSubjectId: bangumiSubjectId ?? this.bangumiSubjectId,
+      bangumiEpisodeId: bangumiEpisodeId ?? this.bangumiEpisodeId,
+      packageId: packageId ?? this.packageId,
+      sourceId: sourceId ?? this.sourceId,
+      sourceSubjectId: sourceSubjectId ?? this.sourceSubjectId,
+      sourceLineId: sourceLineId ?? this.sourceLineId,
+      sourceEpisodeId: sourceEpisodeId ?? this.sourceEpisodeId,
+      packageVersion: packageVersion ?? this.packageVersion,
+      packageRevisionSha256:
+          packageRevisionSha256 ?? this.packageRevisionSha256,
+      mappingKind: mappingKind ?? this.mappingKind,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (bangumiSubjectId.present) {
+      map['bangumi_subject_id'] = Variable<String>(bangumiSubjectId.value);
+    }
+    if (bangumiEpisodeId.present) {
+      map['bangumi_episode_id'] = Variable<String>(bangumiEpisodeId.value);
+    }
+    if (packageId.present) {
+      map['package_id'] = Variable<String>(packageId.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
+    if (sourceSubjectId.present) {
+      map['source_subject_id'] = Variable<String>(sourceSubjectId.value);
+    }
+    if (sourceLineId.present) {
+      map['source_line_id'] = Variable<String>(sourceLineId.value);
+    }
+    if (sourceEpisodeId.present) {
+      map['source_episode_id'] = Variable<String>(sourceEpisodeId.value);
+    }
+    if (packageVersion.present) {
+      map['package_version'] = Variable<String>(packageVersion.value);
+    }
+    if (packageRevisionSha256.present) {
+      map['package_revision_sha256'] = Variable<String>(
+        packageRevisionSha256.value,
+      );
+    }
+    if (mappingKind.present) {
+      map['mapping_kind'] = Variable<String>(mappingKind.value);
+    }
+    if (confirmedAt.present) {
+      map['confirmed_at'] = Variable<DateTime>(confirmedAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SourceEpisodeMappingsCompanion(')
+          ..write('bangumiSubjectId: $bangumiSubjectId, ')
+          ..write('bangumiEpisodeId: $bangumiEpisodeId, ')
+          ..write('packageId: $packageId, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceSubjectId: $sourceSubjectId, ')
+          ..write('sourceLineId: $sourceLineId, ')
+          ..write('sourceEpisodeId: $sourceEpisodeId, ')
+          ..write('packageVersion: $packageVersion, ')
+          ..write('packageRevisionSha256: $packageRevisionSha256, ')
+          ..write('mappingKind: $mappingKind, ')
+          ..write('confirmedAt: $confirmedAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$WynimeDatabase extends GeneratedDatabase {
   _$WynimeDatabase(QueryExecutor e) : super(e);
   $WynimeDatabaseManager get managers => $WynimeDatabaseManager(this);
@@ -9056,6 +10439,10 @@ abstract class _$WynimeDatabase extends GeneratedDatabase {
   late final $BangumiConflictSnapshotsTable bangumiConflictSnapshots =
       $BangumiConflictSnapshotsTable(this);
   late final $SourcePackagesTable sourcePackages = $SourcePackagesTable(this);
+  late final $SourceSubjectMappingsTable sourceSubjectMappings =
+      $SourceSubjectMappingsTable(this);
+  late final $SourceEpisodeMappingsTable sourceEpisodeMappings =
+      $SourceEpisodeMappingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9079,6 +10466,8 @@ abstract class _$WynimeDatabase extends GeneratedDatabase {
     bangumiSyncOperations,
     bangumiConflictSnapshots,
     sourcePackages,
+    sourceSubjectMappings,
+    sourceEpisodeMappings,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -17685,6 +19074,683 @@ typedef $$SourcePackagesTableProcessedTableManager =
       SourcePackageRecord,
       PrefetchHooks Function()
     >;
+typedef $$SourceSubjectMappingsTableCreateCompanionBuilder =
+    SourceSubjectMappingsCompanion Function({
+      required String bangumiSubjectId,
+      required String packageId,
+      required String sourceId,
+      required String sourceSubjectId,
+      required String packageVersion,
+      required String packageRevisionSha256,
+      required String mappingKind,
+      required DateTime confirmedAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$SourceSubjectMappingsTableUpdateCompanionBuilder =
+    SourceSubjectMappingsCompanion Function({
+      Value<String> bangumiSubjectId,
+      Value<String> packageId,
+      Value<String> sourceId,
+      Value<String> sourceSubjectId,
+      Value<String> packageVersion,
+      Value<String> packageRevisionSha256,
+      Value<String> mappingKind,
+      Value<DateTime> confirmedAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$SourceSubjectMappingsTableFilterComposer
+    extends Composer<_$WynimeDatabase, $SourceSubjectMappingsTable> {
+  $$SourceSubjectMappingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get bangumiSubjectId => $composableBuilder(
+    column: $table.bangumiSubjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packageId => $composableBuilder(
+    column: $table.packageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceSubjectId => $composableBuilder(
+    column: $table.sourceSubjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packageVersion => $composableBuilder(
+    column: $table.packageVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packageRevisionSha256 => $composableBuilder(
+    column: $table.packageRevisionSha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mappingKind => $composableBuilder(
+    column: $table.mappingKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SourceSubjectMappingsTableOrderingComposer
+    extends Composer<_$WynimeDatabase, $SourceSubjectMappingsTable> {
+  $$SourceSubjectMappingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get bangumiSubjectId => $composableBuilder(
+    column: $table.bangumiSubjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packageId => $composableBuilder(
+    column: $table.packageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceSubjectId => $composableBuilder(
+    column: $table.sourceSubjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packageVersion => $composableBuilder(
+    column: $table.packageVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packageRevisionSha256 => $composableBuilder(
+    column: $table.packageRevisionSha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mappingKind => $composableBuilder(
+    column: $table.mappingKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SourceSubjectMappingsTableAnnotationComposer
+    extends Composer<_$WynimeDatabase, $SourceSubjectMappingsTable> {
+  $$SourceSubjectMappingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get bangumiSubjectId => $composableBuilder(
+    column: $table.bangumiSubjectId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get packageId =>
+      $composableBuilder(column: $table.packageId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceId =>
+      $composableBuilder(column: $table.sourceId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceSubjectId => $composableBuilder(
+    column: $table.sourceSubjectId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get packageVersion => $composableBuilder(
+    column: $table.packageVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get packageRevisionSha256 => $composableBuilder(
+    column: $table.packageRevisionSha256,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mappingKind => $composableBuilder(
+    column: $table.mappingKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SourceSubjectMappingsTableTableManager
+    extends
+        RootTableManager<
+          _$WynimeDatabase,
+          $SourceSubjectMappingsTable,
+          SourceSubjectMappingRecord,
+          $$SourceSubjectMappingsTableFilterComposer,
+          $$SourceSubjectMappingsTableOrderingComposer,
+          $$SourceSubjectMappingsTableAnnotationComposer,
+          $$SourceSubjectMappingsTableCreateCompanionBuilder,
+          $$SourceSubjectMappingsTableUpdateCompanionBuilder,
+          (
+            SourceSubjectMappingRecord,
+            BaseReferences<
+              _$WynimeDatabase,
+              $SourceSubjectMappingsTable,
+              SourceSubjectMappingRecord
+            >,
+          ),
+          SourceSubjectMappingRecord,
+          PrefetchHooks Function()
+        > {
+  $$SourceSubjectMappingsTableTableManager(
+    _$WynimeDatabase db,
+    $SourceSubjectMappingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SourceSubjectMappingsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SourceSubjectMappingsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SourceSubjectMappingsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> bangumiSubjectId = const Value.absent(),
+                Value<String> packageId = const Value.absent(),
+                Value<String> sourceId = const Value.absent(),
+                Value<String> sourceSubjectId = const Value.absent(),
+                Value<String> packageVersion = const Value.absent(),
+                Value<String> packageRevisionSha256 = const Value.absent(),
+                Value<String> mappingKind = const Value.absent(),
+                Value<DateTime> confirmedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SourceSubjectMappingsCompanion(
+                bangumiSubjectId: bangumiSubjectId,
+                packageId: packageId,
+                sourceId: sourceId,
+                sourceSubjectId: sourceSubjectId,
+                packageVersion: packageVersion,
+                packageRevisionSha256: packageRevisionSha256,
+                mappingKind: mappingKind,
+                confirmedAt: confirmedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String bangumiSubjectId,
+                required String packageId,
+                required String sourceId,
+                required String sourceSubjectId,
+                required String packageVersion,
+                required String packageRevisionSha256,
+                required String mappingKind,
+                required DateTime confirmedAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SourceSubjectMappingsCompanion.insert(
+                bangumiSubjectId: bangumiSubjectId,
+                packageId: packageId,
+                sourceId: sourceId,
+                sourceSubjectId: sourceSubjectId,
+                packageVersion: packageVersion,
+                packageRevisionSha256: packageRevisionSha256,
+                mappingKind: mappingKind,
+                confirmedAt: confirmedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SourceSubjectMappingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WynimeDatabase,
+      $SourceSubjectMappingsTable,
+      SourceSubjectMappingRecord,
+      $$SourceSubjectMappingsTableFilterComposer,
+      $$SourceSubjectMappingsTableOrderingComposer,
+      $$SourceSubjectMappingsTableAnnotationComposer,
+      $$SourceSubjectMappingsTableCreateCompanionBuilder,
+      $$SourceSubjectMappingsTableUpdateCompanionBuilder,
+      (
+        SourceSubjectMappingRecord,
+        BaseReferences<
+          _$WynimeDatabase,
+          $SourceSubjectMappingsTable,
+          SourceSubjectMappingRecord
+        >,
+      ),
+      SourceSubjectMappingRecord,
+      PrefetchHooks Function()
+    >;
+typedef $$SourceEpisodeMappingsTableCreateCompanionBuilder =
+    SourceEpisodeMappingsCompanion Function({
+      required String bangumiSubjectId,
+      required String bangumiEpisodeId,
+      required String packageId,
+      required String sourceId,
+      required String sourceSubjectId,
+      required String sourceLineId,
+      required String sourceEpisodeId,
+      required String packageVersion,
+      required String packageRevisionSha256,
+      required String mappingKind,
+      required DateTime confirmedAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$SourceEpisodeMappingsTableUpdateCompanionBuilder =
+    SourceEpisodeMappingsCompanion Function({
+      Value<String> bangumiSubjectId,
+      Value<String> bangumiEpisodeId,
+      Value<String> packageId,
+      Value<String> sourceId,
+      Value<String> sourceSubjectId,
+      Value<String> sourceLineId,
+      Value<String> sourceEpisodeId,
+      Value<String> packageVersion,
+      Value<String> packageRevisionSha256,
+      Value<String> mappingKind,
+      Value<DateTime> confirmedAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$SourceEpisodeMappingsTableFilterComposer
+    extends Composer<_$WynimeDatabase, $SourceEpisodeMappingsTable> {
+  $$SourceEpisodeMappingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get bangumiSubjectId => $composableBuilder(
+    column: $table.bangumiSubjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get bangumiEpisodeId => $composableBuilder(
+    column: $table.bangumiEpisodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packageId => $composableBuilder(
+    column: $table.packageId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceSubjectId => $composableBuilder(
+    column: $table.sourceSubjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceLineId => $composableBuilder(
+    column: $table.sourceLineId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceEpisodeId => $composableBuilder(
+    column: $table.sourceEpisodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packageVersion => $composableBuilder(
+    column: $table.packageVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get packageRevisionSha256 => $composableBuilder(
+    column: $table.packageRevisionSha256,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mappingKind => $composableBuilder(
+    column: $table.mappingKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SourceEpisodeMappingsTableOrderingComposer
+    extends Composer<_$WynimeDatabase, $SourceEpisodeMappingsTable> {
+  $$SourceEpisodeMappingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get bangumiSubjectId => $composableBuilder(
+    column: $table.bangumiSubjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get bangumiEpisodeId => $composableBuilder(
+    column: $table.bangumiEpisodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packageId => $composableBuilder(
+    column: $table.packageId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceSubjectId => $composableBuilder(
+    column: $table.sourceSubjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceLineId => $composableBuilder(
+    column: $table.sourceLineId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceEpisodeId => $composableBuilder(
+    column: $table.sourceEpisodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packageVersion => $composableBuilder(
+    column: $table.packageVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get packageRevisionSha256 => $composableBuilder(
+    column: $table.packageRevisionSha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mappingKind => $composableBuilder(
+    column: $table.mappingKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SourceEpisodeMappingsTableAnnotationComposer
+    extends Composer<_$WynimeDatabase, $SourceEpisodeMappingsTable> {
+  $$SourceEpisodeMappingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get bangumiSubjectId => $composableBuilder(
+    column: $table.bangumiSubjectId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get bangumiEpisodeId => $composableBuilder(
+    column: $table.bangumiEpisodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get packageId =>
+      $composableBuilder(column: $table.packageId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceId =>
+      $composableBuilder(column: $table.sourceId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceSubjectId => $composableBuilder(
+    column: $table.sourceSubjectId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceLineId => $composableBuilder(
+    column: $table.sourceLineId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceEpisodeId => $composableBuilder(
+    column: $table.sourceEpisodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get packageVersion => $composableBuilder(
+    column: $table.packageVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get packageRevisionSha256 => $composableBuilder(
+    column: $table.packageRevisionSha256,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mappingKind => $composableBuilder(
+    column: $table.mappingKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get confirmedAt => $composableBuilder(
+    column: $table.confirmedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SourceEpisodeMappingsTableTableManager
+    extends
+        RootTableManager<
+          _$WynimeDatabase,
+          $SourceEpisodeMappingsTable,
+          SourceEpisodeMappingRecord,
+          $$SourceEpisodeMappingsTableFilterComposer,
+          $$SourceEpisodeMappingsTableOrderingComposer,
+          $$SourceEpisodeMappingsTableAnnotationComposer,
+          $$SourceEpisodeMappingsTableCreateCompanionBuilder,
+          $$SourceEpisodeMappingsTableUpdateCompanionBuilder,
+          (
+            SourceEpisodeMappingRecord,
+            BaseReferences<
+              _$WynimeDatabase,
+              $SourceEpisodeMappingsTable,
+              SourceEpisodeMappingRecord
+            >,
+          ),
+          SourceEpisodeMappingRecord,
+          PrefetchHooks Function()
+        > {
+  $$SourceEpisodeMappingsTableTableManager(
+    _$WynimeDatabase db,
+    $SourceEpisodeMappingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SourceEpisodeMappingsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$SourceEpisodeMappingsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$SourceEpisodeMappingsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> bangumiSubjectId = const Value.absent(),
+                Value<String> bangumiEpisodeId = const Value.absent(),
+                Value<String> packageId = const Value.absent(),
+                Value<String> sourceId = const Value.absent(),
+                Value<String> sourceSubjectId = const Value.absent(),
+                Value<String> sourceLineId = const Value.absent(),
+                Value<String> sourceEpisodeId = const Value.absent(),
+                Value<String> packageVersion = const Value.absent(),
+                Value<String> packageRevisionSha256 = const Value.absent(),
+                Value<String> mappingKind = const Value.absent(),
+                Value<DateTime> confirmedAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SourceEpisodeMappingsCompanion(
+                bangumiSubjectId: bangumiSubjectId,
+                bangumiEpisodeId: bangumiEpisodeId,
+                packageId: packageId,
+                sourceId: sourceId,
+                sourceSubjectId: sourceSubjectId,
+                sourceLineId: sourceLineId,
+                sourceEpisodeId: sourceEpisodeId,
+                packageVersion: packageVersion,
+                packageRevisionSha256: packageRevisionSha256,
+                mappingKind: mappingKind,
+                confirmedAt: confirmedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String bangumiSubjectId,
+                required String bangumiEpisodeId,
+                required String packageId,
+                required String sourceId,
+                required String sourceSubjectId,
+                required String sourceLineId,
+                required String sourceEpisodeId,
+                required String packageVersion,
+                required String packageRevisionSha256,
+                required String mappingKind,
+                required DateTime confirmedAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SourceEpisodeMappingsCompanion.insert(
+                bangumiSubjectId: bangumiSubjectId,
+                bangumiEpisodeId: bangumiEpisodeId,
+                packageId: packageId,
+                sourceId: sourceId,
+                sourceSubjectId: sourceSubjectId,
+                sourceLineId: sourceLineId,
+                sourceEpisodeId: sourceEpisodeId,
+                packageVersion: packageVersion,
+                packageRevisionSha256: packageRevisionSha256,
+                mappingKind: mappingKind,
+                confirmedAt: confirmedAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SourceEpisodeMappingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$WynimeDatabase,
+      $SourceEpisodeMappingsTable,
+      SourceEpisodeMappingRecord,
+      $$SourceEpisodeMappingsTableFilterComposer,
+      $$SourceEpisodeMappingsTableOrderingComposer,
+      $$SourceEpisodeMappingsTableAnnotationComposer,
+      $$SourceEpisodeMappingsTableCreateCompanionBuilder,
+      $$SourceEpisodeMappingsTableUpdateCompanionBuilder,
+      (
+        SourceEpisodeMappingRecord,
+        BaseReferences<
+          _$WynimeDatabase,
+          $SourceEpisodeMappingsTable,
+          SourceEpisodeMappingRecord
+        >,
+      ),
+      SourceEpisodeMappingRecord,
+      PrefetchHooks Function()
+    >;
 
 class $WynimeDatabaseManager {
   final _$WynimeDatabase _db;
@@ -17737,4 +19803,8 @@ class $WynimeDatabaseManager {
       );
   $$SourcePackagesTableTableManager get sourcePackages =>
       $$SourcePackagesTableTableManager(_db, _db.sourcePackages);
+  $$SourceSubjectMappingsTableTableManager get sourceSubjectMappings =>
+      $$SourceSubjectMappingsTableTableManager(_db, _db.sourceSubjectMappings);
+  $$SourceEpisodeMappingsTableTableManager get sourceEpisodeMappings =>
+      $$SourceEpisodeMappingsTableTableManager(_db, _db.sourceEpisodeMappings);
 }

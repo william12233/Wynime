@@ -142,6 +142,12 @@ final class SourcePackageStartupController extends ChangeNotifier {
     );
   }
 
+  /// Removes an installed package and invalidates its durable source mappings
+  /// through the repository's atomic package snapshot replacement.
+  Future<InstalledSourcePackage> remove({required String packageId}) {
+    return _runOperation((manager) => manager.remove(packageId: packageId));
+  }
+
   Future<T> _runOperation<T>(
     FutureOr<T> Function(PersistentSourcePackageManager manager) operation,
   ) {

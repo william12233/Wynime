@@ -4,22 +4,31 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:wynime/l10n/app_localizations.dart';
 import 'package:wynime/src/application/bangumi_session_controller.dart';
+import 'package:wynime/src/application/subject_source_playback_controller.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
 import 'package:wynime/src/design_system/tokens/radii.dart';
 import 'package:wynime/src/design_system/tokens/spacing.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
+import 'package:wynime/src/domain/models/source_models.dart';
+import 'package:wynime/src/domain/models/source_identity.dart';
+import 'package:wynime/src/presentation/playback/player_page.dart';
 
 final class BangumiSubjectDetailPage extends StatefulWidget {
   const BangumiSubjectDetailPage({
     required this.controller,
     required this.subjectId,
     this.onHome,
+    this.onOpenSources,
+    this.sourcePlaybackControllerFactory,
     super.key,
   });
 
   final BangumiSessionController controller;
   final String subjectId;
   final VoidCallback? onHome;
+  final VoidCallback? onOpenSources;
+  final SubjectSourcePlaybackController Function(BangumiSubject subject)?
+  sourcePlaybackControllerFactory;
 
   @override
   State<BangumiSubjectDetailPage> createState() =>
@@ -29,6 +38,8 @@ final class BangumiSubjectDetailPage extends StatefulWidget {
 final class _BangumiSubjectDetailPageState
     extends State<BangumiSubjectDetailPage> {
   String? _selectedEpisodeId;
+  SubjectSourcePlaybackController? _sourcePlayback;
+  String? _sourceSubjectId;
 
   @override
   void initState() {
@@ -41,14 +52,40 @@ final class _BangumiSubjectDetailPageState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.subjectId != widget.subjectId) {
       _selectedEpisodeId = null;
+      _sourcePlayback?.dispose();
+      _sourcePlayback = null;
+      _sourceSubjectId = null;
       unawaited(widget.controller.loadSubjectDetail(widget.subjectId));
     }
   }
 
   @override
+  void dispose() {
+    _sourcePlayback?.dispose();
+    super.dispose();
+  }
+
+  void _syncSourcePlayback(BangumiSubject? subject) {
+    final factory = widget.sourcePlaybackControllerFactory;
+    if (factory == null || subject == null) return;
+    if (_sourcePlayback != null && _sourceSubjectId == subject.id) return;
+    _sourcePlayback?.dispose();
+    final next = factory(subject);
+    _sourcePlayback = next;
+    _sourceSubjectId = subject.id;
+    unawaited(next.initialize());
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final current = widget.controller.subjectDetailState(widget.subjectId);
+    _syncSourcePlayback(current?.snapshot?.subject);
+    final sourcePlayback = _sourcePlayback;
+    final animation = sourcePlayback == null
+        ? widget.controller
+        : Listenable.merge([widget.controller, sourcePlayback]);
     return AnimatedBuilder(
-      animation: widget.controller,
+      animation: animation,
       builder: (context, _) {
         final l10n = AppLocalizations.of(context);
         final state = widget.controller.subjectDetailState(widget.subjectId);
@@ -74,6 +111,8 @@ final class _BangumiSubjectDetailPageState
               subjectId: widget.subjectId,
               state: state,
               selectedEpisodeId: _selectedEpisodeId,
+              sourcePlayback: sourcePlayback,
+              onOpenSources: widget.onOpenSources,
               onEpisodeSelected: (episodeId) {
                 setState(() => _selectedEpisodeId = episodeId);
               },
@@ -91,6 +130,8 @@ final class _DetailBody extends StatelessWidget {
     required this.subjectId,
     required this.state,
     required this.selectedEpisodeId,
+    required this.sourcePlayback,
+    required this.onOpenSources,
     required this.onEpisodeSelected,
   });
 
@@ -98,6 +139,8 @@ final class _DetailBody extends StatelessWidget {
   final String subjectId;
   final BangumiSubjectDetailState? state;
   final String? selectedEpisodeId;
+  final SubjectSourcePlaybackController? sourcePlayback;
+  final VoidCallback? onOpenSources;
   final ValueChanged<String> onEpisodeSelected;
 
   @override
@@ -142,6 +185,8 @@ final class _DetailBody extends StatelessWidget {
             state: state!,
             snapshot: snapshot,
             selectedEpisodeId: selectedEpisodeId,
+            sourcePlayback: sourcePlayback,
+            onOpenSources: onOpenSources,
             onEpisodeSelected: onEpisodeSelected,
           ),
         ),
@@ -157,6 +202,8 @@ final class _SubjectDetailContent extends StatelessWidget {
     required this.state,
     required this.snapshot,
     required this.selectedEpisodeId,
+    required this.sourcePlayback,
+    required this.onOpenSources,
     required this.onEpisodeSelected,
   });
 
@@ -165,6 +212,8 @@ final class _SubjectDetailContent extends StatelessWidget {
   final BangumiSubjectDetailState state;
   final BangumiSubjectDetailSnapshot snapshot;
   final String? selectedEpisodeId;
+  final SubjectSourcePlaybackController? sourcePlayback;
+  final VoidCallback? onOpenSources;
   final ValueChanged<String> onEpisodeSelected;
 
   @override
@@ -181,6 +230,8 @@ final class _SubjectDetailContent extends StatelessWidget {
         state: state,
         snapshot: snapshot,
         selectedEpisodeId: selectedEpisodeId,
+        sourcePlayback: sourcePlayback,
+        onOpenSources: onOpenSources,
         onEpisodeSelected: onEpisodeSelected,
       ),
       _SummarySection(summary: snapshot.subject.summary),
@@ -577,6 +628,8 @@ final class _EpisodeSection extends StatelessWidget {
     required this.state,
     required this.snapshot,
     required this.selectedEpisodeId,
+    required this.sourcePlayback,
+    required this.onOpenSources,
     required this.onEpisodeSelected,
   });
 
@@ -585,6 +638,8 @@ final class _EpisodeSection extends StatelessWidget {
   final BangumiSubjectDetailState state;
   final BangumiSubjectDetailSnapshot snapshot;
   final String? selectedEpisodeId;
+  final SubjectSourcePlaybackController? sourcePlayback;
+  final VoidCallback? onOpenSources;
   final ValueChanged<String> onEpisodeSelected;
 
   @override
@@ -598,6 +653,13 @@ final class _EpisodeSection extends StatelessWidget {
         : Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (sourcePlayback != null)
+                _SourcePlaybackStatus(
+                  controller: sourcePlayback!,
+                  onOpenSources: onOpenSources,
+                ),
+              if (sourcePlayback != null)
+                const SizedBox(height: WynimeSpacing.sm),
               SizedBox(
                 height: 152,
                 child: ListView.separated(
@@ -627,6 +689,7 @@ final class _EpisodeSection extends StatelessWidget {
                   selectedEpisodeId: selectedEpisodeId!,
                   watchedEpisodeIds: snapshot.watchedEpisodeIds,
                   controller: controller,
+                  sourcePlayback: sourcePlayback,
                 ),
             ],
           );
@@ -737,6 +800,126 @@ final class _EpisodeCard extends StatelessWidget {
   }
 }
 
+final class _SourcePlaybackStatus extends StatelessWidget {
+  const _SourcePlaybackStatus({
+    required this.controller,
+    required this.onOpenSources,
+  });
+
+  final SubjectSourcePlaybackController controller;
+  final VoidCallback? onOpenSources;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = controller.state;
+    if (state.phase == SubjectSourcePlaybackPhase.ready) {
+      return const SizedBox.shrink();
+    }
+    final (
+      String title,
+      String description,
+      IconData icon,
+    ) = switch (state.phase) {
+      SubjectSourcePlaybackPhase.loading => (
+        '正在尋找播放來源',
+        '正在以目前啟用的來源比對作品與集數。',
+        Icons.sync,
+      ),
+      SubjectSourcePlaybackPhase.sourceUnavailable ||
+      SubjectSourcePlaybackPhase.sourceActionRequired => (
+        '尚未安裝或啟用播放來源',
+        '請先安裝並啟用至少一個播放來源。',
+        Icons.extension_off_outlined,
+      ),
+      SubjectSourcePlaybackPhase.selectionRequired => (
+        '請選擇播放來源',
+        '找到多個精確匹配，請明確選擇要使用的來源。',
+        Icons.hub_outlined,
+      ),
+      SubjectSourcePlaybackPhase.notFound => (
+        '找不到對應播放來源',
+        '可重試來源搜尋，或稍後更新來源套件。',
+        Icons.search_off_outlined,
+      ),
+      SubjectSourcePlaybackPhase.episodeSelectionRequired => (
+        '需要選擇來源集數',
+        '此集無法安全自動對應，播放時會要求明確選擇。',
+        Icons.format_list_numbered,
+      ),
+      SubjectSourcePlaybackPhase.failed => (
+        '播放來源載入失敗',
+        '來源回應未通過安全驗證，請稍後重試。',
+        Icons.error_outline,
+      ),
+      SubjectSourcePlaybackPhase.idle => (
+        '播放來源尚未準備',
+        '請稍候。',
+        Icons.hourglass_empty,
+      ),
+      SubjectSourcePlaybackPhase.ready => ('', '', Icons.check),
+    };
+    return Card(
+      key: const ValueKey('subject-source-playback-status'),
+      child: Padding(
+        padding: const EdgeInsets.all(WynimeSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon),
+                const SizedBox(width: WynimeSpacing.sm),
+                Expanded(child: Text(title)),
+              ],
+            ),
+            const SizedBox(height: WynimeSpacing.xs),
+            Text(description),
+            if (state.phase == SubjectSourcePlaybackPhase.selectionRequired)
+              Padding(
+                padding: const EdgeInsets.only(top: WynimeSpacing.sm),
+                child: Wrap(
+                  spacing: WynimeSpacing.sm,
+                  runSpacing: WynimeSpacing.xs,
+                  children: [
+                    for (final candidate in state.subjectCandidates)
+                      OutlinedButton(
+                        onPressed: () =>
+                            unawaited(controller.selectSubject(candidate)),
+                        child: Text(
+                          '${candidate.sourceId} · ${candidate.title}',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (state.phase == SubjectSourcePlaybackPhase.sourceUnavailable ||
+                state.phase == SubjectSourcePlaybackPhase.sourceActionRequired)
+              Padding(
+                padding: const EdgeInsets.only(top: WynimeSpacing.sm),
+                child: OutlinedButton.icon(
+                  key: const ValueKey('subject-source-open-sources'),
+                  onPressed: onOpenSources,
+                  icon: const Icon(Icons.extension_outlined),
+                  label: const Text('前往來源'),
+                ),
+              ),
+            if (state.phase == SubjectSourcePlaybackPhase.notFound ||
+                state.phase == SubjectSourcePlaybackPhase.failed)
+              Padding(
+                padding: const EdgeInsets.only(top: WynimeSpacing.sm),
+                child: OutlinedButton.icon(
+                  onPressed: () => unawaited(controller.initialize()),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('重試'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 final class _SelectedEpisodeActions extends StatelessWidget {
   const _SelectedEpisodeActions({
     required this.subjectId,
@@ -744,6 +927,7 @@ final class _SelectedEpisodeActions extends StatelessWidget {
     required this.selectedEpisodeId,
     required this.watchedEpisodeIds,
     required this.controller,
+    required this.sourcePlayback,
   });
 
   final String subjectId;
@@ -751,6 +935,7 @@ final class _SelectedEpisodeActions extends StatelessWidget {
   final String selectedEpisodeId;
   final Set<String> watchedEpisodeIds;
   final BangumiSessionController controller;
+  final SubjectSourcePlaybackController? sourcePlayback;
 
   @override
   Widget build(BuildContext context) {
@@ -761,18 +946,84 @@ final class _SelectedEpisodeActions extends StatelessWidget {
     final watched = watchedEpisodeIds.contains(episode.id);
     return Padding(
       padding: const EdgeInsets.only(top: WynimeSpacing.sm),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: OutlinedButton.icon(
-          key: ValueKey('subject-episode-watched-${episode.id}'),
-          onPressed: () =>
-              controller.setEpisodeWatched(subjectId, episode.id, !watched),
-          icon: Icon(watched ? Icons.remove_done : Icons.done),
-          label: Text(
-            watched
-                ? l10n.subjectDetailMarkUnwatchedAction
-                : l10n.subjectDetailMarkWatchedAction,
+      child: Wrap(
+        spacing: WynimeSpacing.sm,
+        runSpacing: WynimeSpacing.xs,
+        children: [
+          OutlinedButton.icon(
+            key: ValueKey('subject-episode-watched-${episode.id}'),
+            onPressed: () =>
+                controller.setEpisodeWatched(subjectId, episode.id, !watched),
+            icon: Icon(watched ? Icons.remove_done : Icons.done),
+            label: Text(
+              watched
+                  ? l10n.subjectDetailMarkUnwatchedAction
+                  : l10n.subjectDetailMarkWatchedAction,
+            ),
           ),
+          if (sourcePlayback != null)
+            FilledButton.icon(
+              key: ValueKey('subject-episode-play-${episode.id}'),
+              onPressed: () =>
+                  unawaited(_openPlayback(context, sourcePlayback!, episode)),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('播放'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openPlayback(
+    BuildContext context,
+    SubjectSourcePlaybackController source,
+    BangumiEpisode episode,
+  ) async {
+    final resolution = await source.resolveEpisode(episode);
+    if (!context.mounted) return;
+    SourceEpisodeIdentity? identity = resolution.identity;
+    if (resolution.status == SourceEpisodeResolutionStatus.selectionRequired) {
+      final selected = await showDialog<SourceEpisode>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('選擇來源集數'),
+          content: SizedBox(
+            width: 420,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final candidate in resolution.candidates)
+                  ListTile(
+                    title: Text(candidate.title),
+                    subtitle: Text(
+                      '${candidate.identity.sourceId} · ${candidate.identity.lineId}',
+                    ),
+                    onTap: () => Navigator.of(dialogContext).pop(candidate),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      );
+      if (selected == null) return;
+      if (!context.mounted) return;
+      final confirmed = await source.selectEpisode(episode, selected);
+      if (!context.mounted) return;
+      identity = confirmed.identity;
+    }
+    if (identity == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('找不到可播放的來源集數')));
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: '/player/${episode.id}'),
+        builder: (_) => PlayerPage(
+          sourceController: source,
+          episode: episode,
+          sourceEpisode: identity,
         ),
       ),
     );

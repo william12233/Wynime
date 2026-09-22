@@ -342,6 +342,41 @@ class SourcePackages extends Table {
   Set<Column<Object>> get primaryKey => {packageId};
 }
 
+@DataClassName('SourceSubjectMappingRecord')
+class SourceSubjectMappings extends Table {
+  TextColumn get bangumiSubjectId => text()();
+  TextColumn get packageId => text()();
+  TextColumn get sourceId => text()();
+  TextColumn get sourceSubjectId => text()();
+  TextColumn get packageVersion => text()();
+  TextColumn get packageRevisionSha256 => text()();
+  TextColumn get mappingKind => text()();
+  DateTimeColumn get confirmedAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {bangumiSubjectId, packageId, sourceId};
+}
+
+@DataClassName('SourceEpisodeMappingRecord')
+class SourceEpisodeMappings extends Table {
+  TextColumn get bangumiSubjectId => text()();
+  TextColumn get bangumiEpisodeId => text()();
+  TextColumn get packageId => text()();
+  TextColumn get sourceId => text()();
+  TextColumn get sourceSubjectId => text()();
+  TextColumn get sourceLineId => text()();
+  TextColumn get sourceEpisodeId => text()();
+  TextColumn get packageVersion => text()();
+  TextColumn get packageRevisionSha256 => text()();
+  TextColumn get mappingKind => text()();
+  DateTimeColumn get confirmedAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {bangumiEpisodeId, packageId, sourceId};
+}
+
 @DriftDatabase(
   tables: [
     AppSettingsRows,
@@ -362,6 +397,8 @@ class SourcePackages extends Table {
     BangumiSyncOperations,
     BangumiConflictSnapshots,
     SourcePackages,
+    SourceSubjectMappings,
+    SourceEpisodeMappings,
   ],
 )
 final class WynimeDatabase extends _$WynimeDatabase {
@@ -379,7 +416,7 @@ final class WynimeDatabase extends _$WynimeDatabase {
       );
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   final DatabaseWriteGate writeGate = DatabaseWriteGate();
 
@@ -395,6 +432,7 @@ final class WynimeDatabase extends _$WynimeDatabase {
     onCreate: (migrator) async {
       await migrator.createAll();
       await _createBangumiIndexes();
+      await _createSourceMappingIndexes();
     },
     onUpgrade: (migrator, from, to) async {
       if (from < 2) {
@@ -478,6 +516,18 @@ final class WynimeDatabase extends _$WynimeDatabase {
       if (from < 6) {
         await migrator.createTable(sourcePackages);
       }
+      if (from < 7) {
+        await migrator.createTable(sourceSubjectMappings);
+        await migrator.createTable(sourceEpisodeMappings);
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS source_subject_mapping_package_idx '
+          'ON source_subject_mappings (package_id, bangumi_subject_id)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS source_episode_mapping_package_idx '
+          'ON source_episode_mappings (package_id, bangumi_subject_id)',
+        );
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -544,6 +594,17 @@ final class WynimeDatabase extends _$WynimeDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS bangumi_schedule_account_day_idx '
       'ON bangumi_schedules (account_id, air_weekday, air_date)',
+    );
+  }
+
+  Future<void> _createSourceMappingIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS source_subject_mapping_package_idx '
+      'ON source_subject_mappings (package_id, bangumi_subject_id)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS source_episode_mapping_package_idx '
+      'ON source_episode_mappings (package_id, bangumi_subject_id)',
     );
   }
 }

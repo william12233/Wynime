@@ -28,4 +28,6 @@ abstract interface class SourcePackageManager {
     required String packageId,
     required Version version,
   });
+
+  InstalledSourcePackage remove({required String packageId});
 }

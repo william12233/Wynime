@@ -156,13 +156,13 @@ object has exactly `search`, `detail`, `episodes` and `playback` states; it is
 declarative authority for availability presentation and does not grant network
 or playback permissions.
 
-The first v3 package is `xifan` (`sources/xifan.wynsrc.json`). Its search
-capability is `challengeRequired`; subject details and episode links are
-resolved from the anime detail page, while playable-source normalization reads
-the declared iframe `src` and its `url` query parameter into the existing
-source normalizer. The package allowlist contains only its declared HTTPS
-hosts, and all challenge, unavailable, disabled, consent and incompatible
-outcomes remain typed and secret-safe.
+The first v3 package is `xifan` (`sources/xifan.wynsrc.json`). The post-1.0.12
+package revision uses the public Next site search route, subject detail and
+episode links, and reads the declared video `src` through the existing source
+normalizer. The package allowlist contains only its declared HTTPS hosts,
+including the public Next page host and the declared media hosts. Challenge,
+unavailable, disabled, consent and incompatible outcomes remain typed and
+secret-safe; no source JavaScript is executed.
 
 Signature metadata is not cryptographic verification and never raises runtime authority. Signed and unsigned packages use identical allowlist, permission, consent and budget checks. `SourcePackageSignatureVerifier` optionally verifies the canonical UTF-8 JSON representation with the signature field omitted using Ed25519 and a package/key/signer-scoped trusted-key resolver. Its result is bounded identity/integrity evidence only; unsigned, untrusted, mismatched, invalid or resolver-failed results cannot install, enable, activate or execute a package.
 

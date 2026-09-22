@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,6 +13,11 @@ import 'package:wynime/src/application/source_live_http_package_runtime.dart';
 import 'package:wynime/src/application/source_live_http_request_coordinator.dart';
 import 'package:wynime/src/application/source_live_http_request_executor.dart';
 import 'package:wynime/src/application/source_live_operation_plan_factory.dart';
+import 'package:wynime/src/application/source_live_episode_coordinator.dart';
+import 'package:wynime/src/application/source_live_subject_coordinator.dart';
+import 'package:wynime/src/application/source_installed_live_episode_pipeline.dart';
+import 'package:wynime/src/application/source_installed_live_subject_pipeline.dart';
+import 'package:wynime/src/application/source_playback_controller_factory.dart';
 import 'package:wynime/src/application/source_live_search_coordinator.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/app/wynime_app.dart';
@@ -30,6 +36,9 @@ import 'package:wynime/src/infrastructure/updates/app_version_provider.dart';
 import 'package:wynime/src/infrastructure/source_rules/declarative_source_package_manager.dart';
 import 'package:wynime/src/infrastructure/source_rules/declarative_source_package_runtime.dart';
 import 'package:wynime/src/infrastructure/source_rules/declarative_source_search_normalizer.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_episode_normalizer.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_subject_normalizer.dart';
+import 'package:wynime/src/infrastructure/repositories/drift_source_playback_mapping_repository.dart';
 import 'package:wynime/src/infrastructure/source_rules/persistent_source_package_manager.dart';
 import 'package:wynime/src/infrastructure/source_http/dart_io_source_http_transport.dart';
 import 'package:wynime/src/infrastructure/source_registry/github_source_registry_repository.dart';
@@ -92,50 +101,84 @@ Future<void> main() async {
     },
   );
   final sourceHttpTransport = DartIoSourceHttpTransport();
-  final sourceSearchPipeline = SourceInstalledLiveSearchPipeline(
-    planFactory: SourceLiveOperationPlanFactory(wynimeVersion: wynimeVersion),
-    searchCoordinator: SourceLiveSearchCoordinator(
-      runtime: SourceLiveHttpPackageRuntime(
-        httpExecutor: SourceLiveHttpRequestExecutor(
-          requestCoordinator: SourceLiveHttpRequestCoordinator(
-            wynimeVersion: wynimeVersion,
-          ),
-          transport: sourceHttpTransport,
-        ),
-        fixtureRuntime: DeclarativeSourcePackageRuntime(
-          wynimeVersion: wynimeVersion,
-        ),
+  final sourcePlanFactory = SourceLiveOperationPlanFactory(
+    wynimeVersion: wynimeVersion,
+  );
+  final sourceRuntime = SourceLiveHttpPackageRuntime(
+    httpExecutor: SourceLiveHttpRequestExecutor(
+      requestCoordinator: SourceLiveHttpRequestCoordinator(
+        wynimeVersion: wynimeVersion,
       ),
+      transport: sourceHttpTransport,
+    ),
+    fixtureRuntime: DeclarativeSourcePackageRuntime(
+      wynimeVersion: wynimeVersion,
+    ),
+  );
+  final sourceSearchPipeline = SourceInstalledLiveSearchPipeline(
+    planFactory: sourcePlanFactory,
+    searchCoordinator: SourceLiveSearchCoordinator(
+      runtime: sourceRuntime,
       normalizer: const DeclarativeSourceSearchNormalizer(),
     ),
   );
+  final sourceSubjectPipeline = SourceInstalledLiveSubjectPipeline(
+    planFactory: sourcePlanFactory,
+    subjectCoordinator: SourceLiveSubjectCoordinator(
+      runtime: sourceRuntime,
+      normalizer: const DeclarativeSourceSubjectNormalizer(),
+    ),
+  );
+  final sourceEpisodePipeline = SourceInstalledLiveEpisodePipeline(
+    planFactory: sourcePlanFactory,
+    episodeCoordinator: SourceLiveEpisodeCoordinator(
+      runtime: sourceRuntime,
+      normalizer: const DeclarativeSourceEpisodeNormalizer(),
+    ),
+  );
+  final sourcePlaybackFactory = SourcePlaybackControllerFactory(
+    sourcePackages: sourcePackages,
+    searchPipeline: sourceSearchPipeline,
+    subjectPipeline: sourceSubjectPipeline,
+    episodePipeline: sourceEpisodePipeline,
+    runtime: sourceRuntime,
+    planFactory: sourcePlanFactory,
+    mappingRepository: DriftSourcePlaybackMappingRepository(database),
+    watchHistory: watchHistory,
+    bangumiStore: store,
+    wynimeVersion: wynimeVersion,
+  );
   final sourceRegistryConfiguration =
-      SourceRegistryRuntimeConfiguration.fromEnvironment();
-  final sourceRegistryRepository = sourceRegistryConfiguration == null
-      ? null
-      : GitHubSourceRegistryRepository(
-          owner: sourceRegistryConfiguration.owner,
-          repository: sourceRegistryConfiguration.repository,
-          ref: sourceRegistryConfiguration.ref,
-          indexPath: sourceRegistryConfiguration.indexPath,
-        );
-  final sourceRegistry = sourceRegistryRepository == null
-      ? null
-      : SourceRegistryController(
-          loadCatalog: sourceRegistryRepository.loadCatalog,
-          closeRepository: sourceRegistryRepository.close,
-        );
+      SourceRegistryRuntimeConfiguration.forApplication(
+        isDebugMode: kDebugMode,
+        allowDevOverride: const bool.fromEnvironment(
+          'WYNIME_SOURCE_REGISTRY_ALLOW_DEV_OVERRIDE',
+        ),
+      );
+  final sourceRegistryRepository = GitHubSourceRegistryRepository(
+    owner: sourceRegistryConfiguration.owner,
+    repository: sourceRegistryConfiguration.repository,
+    ref: sourceRegistryConfiguration.ref,
+    indexPath: sourceRegistryConfiguration.indexPath,
+  );
+  final sourceRegistry = SourceRegistryController(
+    loadCatalog: sourceRegistryRepository.loadCatalog,
+    closeRepository: sourceRegistryRepository.close,
+  );
   runApp(
     WynimeApp(
       bangumi: bangumi,
       sourcePackages: sourcePackages,
       sourceSearchPipeline: sourceSearchPipeline,
+      sourcePlaybackControllerFactory: sourcePlaybackFactory.create,
       sourceRegistry: sourceRegistry,
       watchHistory: watchHistory,
       softwareUpdates: softwareUpdates,
       onReady: markWindowsStartupSuccess,
       onDispose: () {
         sourceSearchPipeline.close();
+        sourceSubjectPipeline.close();
+        sourceEpisodePipeline.close();
         unawaited(sourceHttpTransport.close());
         unawaited(database.close());
       },

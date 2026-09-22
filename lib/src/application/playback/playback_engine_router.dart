@@ -62,6 +62,11 @@ final class PlaybackEngineRouter implements PlayerBackend {
 
   PlayerBackendKind? get activeKind => _activeBackend?.kind;
 
+  /// Exposes the active typed backend to platform presentation surfaces.
+  /// The router remains the playback authority; this is read-only surface
+  /// inspection and does not permit direct backend control.
+  PlayerBackend? get activeBackend => _activeBackend;
+
   PlayerPlaybackState get state => _state;
 
   @override

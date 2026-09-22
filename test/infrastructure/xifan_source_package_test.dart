@@ -40,6 +40,28 @@ void main() {
     );
   });
 
+  test('xifan search fixture produces an exact source subject result', () {
+    final runtimeResult = runtime.executeFixture(
+      installedPackage: installed,
+      programId: 'search',
+      fixture: _fixture(
+        'test/fixtures/source_packages/xifan/search_633.html',
+        'https://next.xifanacg.com/search?q=%E7%84%A1%E8%81%B7%E8%BD%89%E7%94%9F',
+      ),
+    );
+    final operation = package.liveOperationByKind(
+      SourcePackageLiveOperationKind.search,
+    )!;
+
+    expect(runtimeResult.records, hasLength(1));
+    expect(runtimeResult.records.single.values['subjectId'], '633');
+    expect(runtimeResult.records.single.values['title'], contains('無職轉生'));
+    final expanded = operation.requestTemplate.expand({'query': '無職轉生'});
+    expect(expanded.host, 'next.xifanacg.com');
+    expect(expanded.path, '/search');
+    expect(expanded.queryParameters['q'], '無職轉生');
+  });
+
   test(
     'xifan subject detail fixture produces subject and 13 episode links',
     () {
@@ -48,7 +70,7 @@ void main() {
         programId: 'subject_metadata',
         fixture: _fixture(
           'test/fixtures/source_packages/xifan/detail_3541.html',
-          'https://anime.xifanacg.com/bangumi/3541.html',
+          'https://next.xifanacg.com/anime/633',
         ),
       );
       final episodes = runtime.executeFixture(
@@ -56,7 +78,7 @@ void main() {
         programId: 'episode_links',
         fixture: _fixture(
           'test/fixtures/source_packages/xifan/detail_3541.html',
-          'https://anime.xifanacg.com/bangumi/3541.html',
+          'https://next.xifanacg.com/anime/633',
         ),
       );
       final operation = package.liveOperationByKind(
@@ -68,34 +90,31 @@ void main() {
             package: package,
             metadataRuntimeResult: metadata,
             episodeRuntimeResult: episodes,
-            subject: SourceSubjectIdentity(
-              sourceId: 'xifan',
-              subjectId: '3541',
-            ),
+            subject: SourceSubjectIdentity(sourceId: 'xifan', subjectId: '633'),
             mapping: operation.mapping as SourceSubjectDetailsFieldMapping,
           );
 
       expect(result.status, SourceSubjectDetailsStatus.available);
       expect(result.details!.title, contains('無職轉生'));
       expect(result.details!.lines, hasLength(1));
-      expect(result.details!.lines.single.lineId, '1');
+      expect(result.details!.lines.single.lineId, 'xfy2');
       expect(result.details!.lines.single.episodes, hasLength(13));
       expect(
         result.details!.lines.single.episodes.last.identity.episodeId,
-        '13',
+        '9453',
       );
     },
   );
 
   test(
-    'xifan playable fixture extracts direct media URL from iframe query',
+    'xifan playable fixture extracts direct media URL from video element',
     () {
       final runtimeResult = runtime.executeFixture(
         installedPackage: installed,
         programId: 'playable_source',
         fixture: _fixture(
           'test/fixtures/source_packages/xifan/episode_3541_1_1.html',
-          'https://anime.xifanacg.com/watch/3541/1/1.html',
+          'https://next.xifanacg.com/anime/633/play/9441?source=xfy2',
         ),
       );
       final operation = package.liveOperationByKind(
@@ -103,9 +122,9 @@ void main() {
       )!;
       final episode = SourceEpisodeIdentity(
         sourceId: 'xifan',
-        lineId: '1',
-        subjectId: '3541',
-        episodeId: '1',
+        lineId: 'xfy2',
+        subjectId: '633',
+        episodeId: '9441',
       );
 
       final result = const DeclarativeSourcePlayableSourceNormalizer()
@@ -119,7 +138,7 @@ void main() {
       expect(result.status.name, 'available');
       expect(result.results, hasLength(1));
       expect(result.results.single.mediaUri.host, 'apn.moedot.net');
-      expect(result.results.single.pageUri.host, 'player.moedot.net');
+      expect(result.results.single.pageUri.host, 'next.xifanacg.com');
       expect(result.results.single.kind.name, 'video');
     },
   );

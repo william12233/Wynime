@@ -7,6 +7,7 @@ import 'package:wynime/src/application/bangumi_session_controller.dart';
 import 'package:wynime/src/application/source_installed_live_search_pipeline.dart';
 import 'package:wynime/src/application/source_package_startup_controller.dart';
 import 'package:wynime/src/application/source_registry_controller.dart';
+import 'package:wynime/src/application/subject_source_playback_controller.dart';
 import 'package:wynime/src/application/updates/software_update_controller.dart';
 import 'package:wynime/src/design_system/tokens/dimensions.dart';
 import 'package:wynime/src/design_system/tokens/radii.dart';
@@ -32,6 +33,8 @@ Widget buildWynimePage(
   BangumiSessionController? bangumi,
   SourcePackageStartupController? sourcePackages,
   SourceInstalledLiveSearchPipeline? sourceSearchPipeline,
+  SubjectSourcePlaybackController Function(BangumiSubject subject)?
+  sourcePlaybackControllerFactory,
   SourceRegistryController? sourceRegistry,
   SoftwareUpdateController? softwareUpdates,
   WatchHistoryRepository? watchHistory,
@@ -53,6 +56,7 @@ Widget buildWynimePage(
       showPageHeader: showPageHeader,
       bangumi: bangumi,
       onNavigate: onNavigate,
+      sourcePlaybackControllerFactory: sourcePlaybackControllerFactory,
     ),
     AppDestination.downloads => DownloadsPage(showPageHeader: showPageHeader),
     AppDestination.sources => SourcesPage(
@@ -499,12 +503,15 @@ class LibraryPage extends StatefulWidget {
   const LibraryPage({
     required this.showPageHeader,
     required this.onNavigate,
+    this.sourcePlaybackControllerFactory,
     this.bangumi,
     super.key,
   });
 
   final bool showPageHeader;
   final ValueChanged<AppDestination> onNavigate;
+  final SubjectSourcePlaybackController Function(BangumiSubject subject)?
+  sourcePlaybackControllerFactory;
   final BangumiSessionController? bangumi;
 
   @override
@@ -576,6 +583,12 @@ class _LibraryPageState extends State<LibraryPage> {
         builder: (_) => BangumiSubjectDetailPage(
           controller: controller,
           subjectId: subjectId,
+          sourcePlaybackControllerFactory:
+              widget.sourcePlaybackControllerFactory,
+          onOpenSources: () {
+            Navigator.of(context).pop();
+            widget.onNavigate(AppDestination.sources);
+          },
           onHome: () {
             Navigator.of(context).pop();
             widget.onNavigate(AppDestination.home);
@@ -1125,47 +1138,100 @@ class _InstalledSourcePackageCard extends StatelessWidget {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: controller.isMutating
-                    ? null
-                    : isEnabled
-                    ? () => _runSourcePackageOperation(
-                        context,
-                        localizations,
-                        operation: () => controller.disable(
-                          packageId: package.package.packageId,
-                          version: package.package.version,
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: WynimeSpacing.sm,
+              runSpacing: WynimeSpacing.xs,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: controller.isMutating
+                      ? null
+                      : isEnabled
+                      ? () => _runSourcePackageOperation(
+                          context,
+                          localizations,
+                          operation: () => controller.disable(
+                            packageId: package.package.packageId,
+                            version: package.package.version,
+                          ),
+                          successMessage: localizations
+                              .sourcesPackageDisabledMessage(
+                                package.package.displayName,
+                              ),
+                        )
+                      : () => _reviewAndEnableSourcePackage(
+                          context,
+                          localizations,
+                          controller,
+                          package,
                         ),
-                        successMessage: localizations
-                            .sourcesPackageDisabledMessage(
-                              package.package.displayName,
-                            ),
-                      )
-                    : () => _reviewAndEnableSourcePackage(
-                        context,
-                        localizations,
-                        controller,
-                        package,
-                      ),
-                icon: Icon(
-                  isEnabled
-                      ? Icons.pause_circle_outline
-                      : Icons.check_circle_outline,
+                  icon: Icon(
+                    isEnabled
+                        ? Icons.pause_circle_outline
+                        : Icons.check_circle_outline,
+                  ),
+                  label: Text(
+                    isEnabled
+                        ? localizations.sourcesPackageDisableAction
+                        : localizations.sourcesPackageEnableAction,
+                  ),
                 ),
-                label: Text(
-                  isEnabled
-                      ? localizations.sourcesPackageDisableAction
-                      : localizations.sourcesPackageEnableAction,
+                IconButton(
+                  key: ValueKey(
+                    'source-package-remove-${package.package.packageId}',
+                  ),
+                  onPressed: controller.isMutating
+                      ? null
+                      : () => _confirmRemoveSourcePackage(
+                          context,
+                          localizations,
+                          controller,
+                          package,
+                        ),
+                  tooltip: '移除',
+                  icon: const Icon(Icons.delete_outline),
                 ),
-              ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
+}
+
+Future<void> _confirmRemoveSourcePackage(
+  BuildContext context,
+  AppLocalizations localizations,
+  SourcePackageStartupController controller,
+  InstalledSourcePackage package,
+) async {
+  final approved = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('移除播放來源？'),
+      content: Text(
+        '將移除「${package.package.displayName}」及其已儲存的來源對應。此操作不會刪除 Bangumi 觀看紀錄。',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('確認移除'),
+        ),
+      ],
+    ),
+  );
+  if (approved != true || !context.mounted) return;
+  await _runSourcePackageOperation(
+    context,
+    localizations,
+    operation: () => controller.remove(packageId: package.package.packageId),
+    successMessage: '已移除播放來源：${package.package.displayName}',
+  );
 }
 
 final class _SourcePackageAction {

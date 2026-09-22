@@ -1797,6 +1797,13 @@ unsigned, allowlisted `xifan` package; its search capability is declared as
 `challengeRequired`, while detail, episodes and playback are declared
 `supported`.
 
+The post-1.0.12 `xifan` package revision updates only the provider-declared
+public routes: its search capability is now `supported` through the public
+Next search route, and its subject, episode-link and playback bindings target
+the corresponding Next pages and declared video element. The package remains
+unsigned, allowlisted and declarative; this revision does not add a browser
+challenge handler or a provider-specific adapter.
+
 **Reason:** A subject-first provider needs metadata and episode links from one
 detail document, while package-declared capabilities and cache policy must be
 explicit, versioned and consent-bound. Keeping the response fan-out inside the

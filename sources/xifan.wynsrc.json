@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "wynimeVersion": "^1.0.0",
   "cache": {
     "searchTtlSeconds": 0,
@@ -11,7 +11,7 @@
     "playbackResolutionTtlSeconds": 0
   },
   "capabilities": {
-    "search": "challengeRequired",
+    "search": "supported",
     "detail": "supported",
     "episodes": "supported",
     "playback": "supported"
@@ -19,7 +19,7 @@
   "security": {
     "domains": [
       {
-        "host": "anime.xifanacg.com",
+        "host": "next.xifanacg.com",
         "includeSubdomains": false,
         "schemes": ["https"]
       },
@@ -47,17 +47,51 @@
   },
   "programs": [
     {
+      "id": "search",
+      "documentKind": "html",
+      "root": {
+        "type": "css",
+        "expression": "main a"
+      },
+      "resultLimit": 128,
+      "fields": [
+        {
+          "name": "subjectId",
+          "selector": null,
+          "value": "attribute",
+          "attribute": "href",
+          "required": true,
+          "regex": {
+            "pattern": "/anime/([0-9]+)$",
+            "group": 1,
+            "caseSensitive": true
+          }
+        },
+        {
+          "name": "title",
+          "selector": null,
+          "value": "text",
+          "attribute": null,
+          "required": true,
+          "regex": null
+        }
+      ]
+    },
+    {
       "id": "subject_metadata",
       "documentKind": "html",
       "root": {
         "type": "css",
-        "expression": "h3.title-h"
+        "expression": "main"
       },
       "resultLimit": 1,
       "fields": [
         {
           "name": "title",
-          "selector": null,
+          "selector": {
+            "type": "css",
+            "expression": "h1"
+          },
           "value": "text",
           "attribute": null,
           "required": true,
@@ -70,7 +104,7 @@
       "documentKind": "html",
       "root": {
         "type": "css",
-        "expression": "a.hide.this-link"
+        "expression": "main a"
       },
       "resultLimit": 128,
       "fields": [
@@ -81,7 +115,7 @@
           "attribute": "href",
           "required": true,
           "regex": {
-            "pattern": "/watch/[0-9]+/([0-9]+)/[0-9]+\\.html",
+            "pattern": "source=([A-Za-z0-9_-]+)",
             "group": 1,
             "caseSensitive": true
           }
@@ -93,7 +127,7 @@
           "attribute": "href",
           "required": true,
           "regex": {
-            "pattern": "/watch/([0-9]+)/[0-9]+/[0-9]+\\.html",
+            "pattern": "/anime/([0-9]+)/play/",
             "group": 1,
             "caseSensitive": true
           }
@@ -105,7 +139,7 @@
           "attribute": "href",
           "required": true,
           "regex": {
-            "pattern": "/watch/[0-9]+/[0-9]+/([0-9]+)\\.html",
+            "pattern": "/play/([0-9]+)",
             "group": 1,
             "caseSensitive": true
           }
@@ -116,7 +150,11 @@
           "value": "text",
           "attribute": null,
           "required": true,
-          "regex": null
+          "regex": {
+            "pattern": "([0-9][0-9.]*)",
+            "group": 1,
+            "caseSensitive": true
+          }
         }
       ]
     },
@@ -125,33 +163,27 @@
       "documentKind": "html",
       "root": {
         "type": "css",
-        "expression": "iframe"
+        "expression": "video"
       },
       "resultLimit": 1,
       "fields": [
         {
           "name": "sourceKey",
           "selector": null,
-          "value": "attribute",
-          "attribute": "src",
+          "value": "literal",
+          "literal": "xifan-next",
+          "attribute": null,
           "required": true,
-          "regex": {
-            "pattern": "code=([^&]+)",
-            "group": 1,
-            "caseSensitive": true
-          }
+          "regex": null
         },
         {
           "name": "label",
           "selector": null,
-          "value": "attribute",
-          "attribute": "src",
+          "value": "literal",
+          "literal": "稀飯動漫 Next",
+          "attribute": null,
           "required": true,
-          "regex": {
-            "pattern": "code=([^&]+)",
-            "group": 1,
-            "caseSensitive": true
-          }
+          "regex": null
         },
         {
           "name": "kind",
@@ -168,17 +200,14 @@
           "value": "attribute",
           "attribute": "src",
           "required": true,
-          "regex": {
-            "pattern": "url=(https://[^&]+)",
-            "group": 1,
-            "caseSensitive": true
-          }
+          "regex": null
         },
         {
           "name": "pageUri",
           "selector": null,
-          "value": "attribute",
-          "attribute": "src",
+          "value": "literal",
+          "literal": "https://next.xifanacg.com",
+          "attribute": null,
           "required": true,
           "regex": null
         }
@@ -187,9 +216,18 @@
   ],
   "liveOperations": [
     {
+      "kind": "search",
+      "programId": "search",
+      "uriTemplate": "https://next.xifanacg.com/search?q={query}",
+      "mapping": {
+        "subjectIdField": "subjectId",
+        "titleField": "title"
+      }
+    },
+    {
       "kind": "subjectDetails",
       "programId": "subject_metadata",
-      "uriTemplate": "https://anime.xifanacg.com/bangumi/{subjectId}.html",
+      "uriTemplate": "https://next.xifanacg.com/anime/{subjectId}",
       "mapping": {
         "episodeProgramId": "episode_links",
         "metadataTitleField": "title",
@@ -202,7 +240,7 @@
     {
       "kind": "playableSource",
       "programId": "playable_source",
-      "uriTemplate": "https://anime.xifanacg.com/watch/{subjectId}/{lineId}/{episodeId}.html",
+      "uriTemplate": "https://next.xifanacg.com/anime/{subjectId}/play/{episodeId}?source={lineId}",
       "mapping": {
         "sourceKeyField": "sourceKey",
         "labelField": "label",

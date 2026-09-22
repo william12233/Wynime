@@ -6,9 +6,8 @@ import 'package:pub_semver/pub_semver.dart';
 /// snapshot.
 ///
 /// [packagePath] is relative to the index's [SourceRegistryIndex.sourceRoot].
-/// The first path segment must equal [packageId], which keeps the
-/// one-website/one-package-file layout explicit without giving the index any
-/// filesystem or network authority.
+/// The normal layout starts with [packageId]. A bounded flat `packageId.*.json`
+/// artifact is also accepted for the repository's existing package layout.
 final class SourceRegistryEntry {
   factory SourceRegistryEntry({
     required String packageId,
@@ -61,6 +60,10 @@ final class SourceRegistryEntry {
     final normalized = value;
     final segments = normalized.split('/');
     final validSegment = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$');
+    final isFlatPackageArtifact =
+        segments.length == 1 &&
+        segments.first.startsWith('$packageId.') &&
+        segments.first.endsWith('.json');
     if (normalized.isEmpty ||
         normalized.length > 256 ||
         normalized.contains('\\') ||
@@ -68,9 +71,9 @@ final class SourceRegistryEntry {
         normalized.contains('?') ||
         normalized.contains('#') ||
         _containsControl(normalized) ||
-        segments.length < 2 ||
+        (!isFlatPackageArtifact && segments.length < 2) ||
         segments.length > 8 ||
-        segments.first != packageId ||
+        (!isFlatPackageArtifact && segments.first != packageId) ||
         !segments.every(validSegment.hasMatch) ||
         !segments.last.endsWith('.json')) {
       throw ArgumentError.value(

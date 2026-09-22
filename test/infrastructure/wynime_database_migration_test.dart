@@ -12,7 +12,7 @@ import 'package:wynime/src/infrastructure/repositories/drift_bangumi_local_store
 
 void main() {
   test(
-    'migrates a populated v1 database to v6 and preserves base rows',
+    'migrates a populated v1 database to v7 and preserves base rows',
     () async {
       final executor = NativeDatabase.memory(setup: _createVersionOneFixture);
       final database = WynimeDatabase(executor);
@@ -75,7 +75,7 @@ void main() {
       );
       expect(detailTables, hasLength(3));
       expect(indexes, hasLength(2));
-      expect(await _userVersion(database), 6);
+      expect(await _userVersion(database), 7);
 
       await database
           .into(database.bangumiAccounts)
@@ -237,7 +237,7 @@ void main() {
     },
   );
 
-  test('creates custom Bangumi indexes for a fresh v6 database', () async {
+  test('creates custom Bangumi indexes for a fresh v7 database', () async {
     final database = WynimeDatabase(NativeDatabase.memory());
     addTearDown(database.close);
 
@@ -249,7 +249,7 @@ void main() {
         .get();
 
     expect(indexes, hasLength(2));
-    expect(await _userVersion(database), 6);
+    expect(await _userVersion(database), 7);
   });
 }
 

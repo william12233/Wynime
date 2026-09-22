@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "sourceRoot": "sources",
+  "revision": "main",
+  "packages": [
+    {
+      "packageId": "xifan",
+      "version": "1.1.0",
+      "path": "xifan.wynsrc.json",
+      "sha256": "95C9C095BBAB563C47E3A7A45A27DB52ED3EC1D37F9873B79A9997E804DEB569"
+    }
+  ]
+}

@@ -79,6 +79,10 @@ final class PersistentSourcePackageManager {
     );
   }
 
+  Future<InstalledSourcePackage> remove({required String packageId}) {
+    return _mutate(() => _manager.remove(packageId: packageId));
+  }
+
   Future<InstalledSourcePackage> installApprovedProposal({
     required SourceBuilderProposal proposal,
     required String proposalId,

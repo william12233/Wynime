@@ -64,10 +64,7 @@ void main() {
         targets: [
           SourceInstalledLiveSubjectTarget(
             installedPackage: installed,
-            subject: SourceSubjectIdentity(
-              sourceId: 'xifan',
-              subjectId: '3541',
-            ),
+            subject: SourceSubjectIdentity(sourceId: 'xifan', subjectId: '633'),
           ),
         ],
       );
@@ -80,7 +77,7 @@ void main() {
       expect(transport.requests, hasLength(1));
       expect(
         transport.requests.single.uri,
-        Uri.parse('https://anime.xifanacg.com/bangumi/3541.html'),
+        Uri.parse('https://next.xifanacg.com/anime/633'),
       );
     },
   );
@@ -121,7 +118,7 @@ void main() {
       targets: [
         SourceInstalledLiveSubjectTarget(
           installedPackage: installed,
-          subject: SourceSubjectIdentity(sourceId: 'xifan', subjectId: '3541'),
+          subject: SourceSubjectIdentity(sourceId: 'xifan', subjectId: '633'),
         ),
       ],
     );

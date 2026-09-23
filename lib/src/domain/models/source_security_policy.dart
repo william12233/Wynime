@@ -62,12 +62,15 @@ final class SourceDomainRule {
     required String host,
     this.includeSubdomains = false,
     Set<String> schemes = const {'https'},
+    Set<int> ports = const {},
   }) : host = _normalizeHost(host),
-       schemes = UnmodifiableSetView(_validateSchemes(schemes));
+       schemes = UnmodifiableSetView(_validateSchemes(schemes)),
+       ports = UnmodifiableSetView(_validatePorts(ports));
 
   final String host;
   final bool includeSubdomains;
   final UnmodifiableSetView<String> schemes;
+  final UnmodifiableSetView<int> ports;
 
   bool allows(Uri uri, Set<SourcePermission> permissions) {
     if (!uri.hasScheme || uri.host.isEmpty || uri.userInfo.isNotEmpty) {
@@ -81,7 +84,7 @@ final class SourceDomainRule {
         !permissions.contains(SourcePermission.insecureHttp)) {
       return false;
     }
-    if (!_usesStandardPort(uri, normalizedScheme)) {
+    if (!_usesAllowedPort(uri, normalizedScheme, ports)) {
       return false;
     }
 
@@ -95,12 +98,28 @@ final class SourceDomainRule {
       return false;
     }
     if (candidate.host == host) {
-      return includeSubdomains || !candidate.includeSubdomains;
+      return _coversPorts(candidate) &&
+          (includeSubdomains || !candidate.includeSubdomains);
     }
-    return includeSubdomains && candidate.host.endsWith('.$host');
+    return includeSubdomains &&
+        candidate.host.endsWith('.$host') &&
+        _coversPorts(candidate);
   }
 
-  static bool _usesStandardPort(Uri uri, String scheme) {
+  bool _coversPorts(SourceDomainRule candidate) {
+    if (candidate.ports.isEmpty) {
+      return ports.isEmpty;
+    }
+    return ports.isNotEmpty && ports.containsAll(candidate.ports);
+  }
+
+  static bool _usesAllowedPort(Uri uri, String scheme, Set<int> allowedPorts) {
+    if (allowedPorts.isNotEmpty) {
+      final effectivePort = uri.hasPort
+          ? uri.port
+          : (scheme == 'https' ? 443 : 80);
+      return allowedPorts.contains(effectivePort);
+    }
     if (!uri.hasPort) {
       return true;
     }
@@ -165,6 +184,17 @@ final class SourceDomainRule {
       );
     }
     return Set<String>.unmodifiable(normalized);
+  }
+
+  static Set<int> _validatePorts(Set<int> values) {
+    if (values.any((value) => value < 1 || value > 65535)) {
+      throw ArgumentError.value(
+        values,
+        'ports',
+        'Ports must be between 1 and 65535.',
+      );
+    }
+    return Set<int>.unmodifiable(values);
   }
 }
 
@@ -249,5 +279,7 @@ final class SourceSecurityPolicy {
 
 String _domainRuleKey(SourceDomainRule rule) {
   final schemes = rule.schemes.toList()..sort();
-  return '${rule.host}|${rule.includeSubdomains}|${schemes.join(',')}';
+  final ports = rule.ports.toList()..sort();
+  return '${rule.host}|${rule.includeSubdomains}|${schemes.join(',')}|'
+      '${ports.join(',')}';
 }

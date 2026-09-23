@@ -27,6 +27,16 @@ final class SourceLivePlayableSourcePlan {
   static String _identityPart(String value) => '${value.length}:$value';
 }
 
+/// Optional browser-backed fallback for a playable page whose static HTTP
+/// response does not contain the hydrated media element.
+///
+/// The fallback receives the same admitted plan and returns only the typed
+/// declarative runtime result. It cannot change request construction or
+/// package policy.
+abstract interface class SourceLivePlayableDocumentFallback {
+  Future<SourceRuntimeResult> capture(SourceLivePlayableSourcePlan plan);
+}
+
 /// Composes bounded live source execution with the existing playable-source
 /// normalizer.
 ///
@@ -38,12 +48,14 @@ final class SourceLivePlayableSourceCoordinator {
   SourceLivePlayableSourceCoordinator({
     required this.runtime,
     required this.normalizer,
+    this.documentFallback,
   });
 
   static const maxPlans = 32;
 
   final SourceLiveHttpPackageRuntime runtime;
   final SourcePlayableSourceNormalizer normalizer;
+  final SourceLivePlayableDocumentFallback? documentFallback;
 
   var _generation = 0;
   var _closed = false;
@@ -146,7 +158,12 @@ final class SourceLivePlayableSourceCoordinator {
     SourceLivePlayableSourcePlan plan,
   ) async {
     try {
-      return await runtime.execute(plan.requestPlan);
+      final staticResult = await runtime.execute(plan.requestPlan);
+      if (staticResult.status == SourceRuntimeStatus.notFound &&
+          documentFallback != null) {
+        return await documentFallback!.capture(plan);
+      }
+      return staticResult;
     } on Object {
       final package = plan.requestPlan.installedPackage.package;
       return SourceRuntimeResult(

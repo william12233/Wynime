@@ -7,28 +7,29 @@ import 'package:wynime/src/platform/web_capture/inapp_webview_capture_view.dart'
 import '../helpers/source_rule_test_support.dart';
 
 void main() {
-  WebCaptureRequest request() => WebCaptureRequest(
-    initialUri: Uri.parse('https://example.com/watch'),
-    securityPolicy: testSourcePolicy(
-      permissions: {
-        SourcePermission.network,
-        SourcePermission.webView,
-        SourcePermission.desktopUserAgent,
-        SourcePermission.mediaRequestInspection,
-      },
-    ),
-    budget: WebCaptureBudget(
-      maxEvents: 100,
-      maxCandidates: 20,
-      maxHeaderBytes: 16 * 1024,
-      maxCookieBytes: 0,
-    ),
-    userAgentPolicy: WebUserAgentPolicy(
-      mode: WebUserAgentMode.desktop,
-      value: 'Mozilla/5.0 Wynime Desktop Capture',
-    ),
-    captureMediaRequests: true,
-  );
+  WebCaptureRequest request({bool captureMediaRequests = true}) =>
+      WebCaptureRequest(
+        initialUri: Uri.parse('https://example.com/watch'),
+        securityPolicy: testSourcePolicy(
+          permissions: {
+            SourcePermission.network,
+            SourcePermission.webView,
+            SourcePermission.desktopUserAgent,
+            SourcePermission.mediaRequestInspection,
+          },
+        ),
+        budget: WebCaptureBudget(
+          maxEvents: 100,
+          maxCandidates: 20,
+          maxHeaderBytes: 16 * 1024,
+          maxCookieBytes: 0,
+        ),
+        userAgentPolicy: WebUserAgentPolicy(
+          mode: WebUserAgentMode.desktop,
+          value: 'Mozilla/5.0 Wynime Desktop Capture',
+        ),
+        captureMediaRequests: captureMediaRequests,
+      );
 
   test('WebView settings fail closed on privileged browser features', () {
     final settings = InAppWebViewCaptureSettings.build(request());
@@ -51,5 +52,14 @@ void main() {
     expect(settings.cacheEnabled, isFalse);
     expect(settings.supportMultipleWindows, isFalse);
     expect(settings.preferredContentMode, UserPreferredContentMode.DESKTOP);
+  });
+
+  test('document capture still intercepts non-media page fetches', () {
+    final settings = InAppWebViewCaptureSettings.build(
+      request(captureMediaRequests: false),
+    );
+
+    expect(settings.useShouldInterceptAjaxRequest, isTrue);
+    expect(settings.useShouldInterceptFetchRequest, isTrue);
   });
 }

@@ -11,6 +11,7 @@ import '../infrastructure/source_rules/declarative_source_playable_source_normal
 import '../infrastructure/source_rules/source_package_revision_calculator.dart';
 import '../platform/playback/player_backend_factory.dart';
 import '../platform/playback/playback_surface_host.dart';
+import '../platform/web_capture/inapp_webview_source_live_playable_fallback.dart';
 import 'playback/playback_coordinator.dart';
 import 'playback/playback_progress_service.dart';
 import 'source_installed_live_episode_pipeline.dart';
@@ -19,6 +20,14 @@ import 'source_installed_live_search_pipeline.dart';
 import 'source_installed_live_subject_pipeline.dart';
 import 'source_live_http_package_runtime.dart';
 import 'source_live_operation_plan_factory.dart';
+import 'source_live_capture_playable_source_coordinator.dart';
+import 'source_live_capture_playable_source_plan_coordinator.dart';
+import 'source_live_capture_playback_entry_point.dart';
+import 'source_live_capture_playback_open_request_coordinator.dart';
+import 'source_live_capture_playback_pipeline.dart';
+import 'source_live_capture_playback_prepared_request_opener.dart';
+import 'source_live_capture_playback_route_coordinator.dart';
+import 'source_live_capture_playback_session_request_coordinator.dart';
 import 'source_live_playable_source_coordinator.dart';
 import 'source_live_playback_open_request_coordinator.dart';
 import 'source_live_playback_pipeline.dart';
@@ -30,6 +39,7 @@ import 'source_playback_route_selector.dart';
 import 'source_playback_session_request_builder.dart';
 import 'source_live_playback_prepared_request_opener.dart';
 import 'subject_source_playback_controller.dart';
+import '../platform/web_capture/inapp_webview_browser_port.dart';
 
 /// Creates one page-scoped playback coordinator while reusing the bounded
 /// package/search/subject infrastructure shared by the app.
@@ -45,6 +55,7 @@ final class SourcePlaybackControllerFactory {
     required this.watchHistory,
     required this.bangumiStore,
     required this.wynimeVersion,
+    this.playableDocumentFallback,
     this.revisionCalculator = const SourcePackageRevisionCalculator(),
   });
 
@@ -58,6 +69,8 @@ final class SourcePlaybackControllerFactory {
   final WatchHistoryRepository watchHistory;
   final BangumiLocalStore bangumiStore;
   final Version wynimeVersion;
+  final InAppWebViewSourceLivePlayableDocumentFallback?
+  playableDocumentFallback;
   final SourcePackageRevisionCalculator revisionCalculator;
 
   SubjectSourcePlaybackController create(BangumiSubject subject) {
@@ -74,6 +87,7 @@ final class SourcePlaybackControllerFactory {
     final playableCoordinator = SourceLivePlayableSourceCoordinator(
       runtime: runtime,
       normalizer: const DeclarativeSourcePlayableSourceNormalizer(),
+      documentFallback: playableDocumentFallback,
     );
     final livePlayback = SourceLivePlaybackPipeline(
       playableSourceCoordinator: playableCoordinator,
@@ -100,6 +114,23 @@ final class SourcePlaybackControllerFactory {
         await playbackCoordinator.close();
       },
     );
+    final capturePlayback = SourceLiveCapturePlaybackPipeline(
+      playableSourceCoordinator: SourceLiveCapturePlayableSourceCoordinator(
+        wynimeVersion: wynimeVersion,
+      ),
+      routeCoordinator: SourceLiveCapturePlaybackRouteCoordinator(
+        wynimeVersion: wynimeVersion,
+      ),
+      sessionRequestCoordinator:
+          SourceLiveCapturePlaybackSessionRequestCoordinator(
+            wynimeVersion: wynimeVersion,
+          ),
+      openRequestCoordinator:
+          const SourceLiveCapturePlaybackOpenRequestCoordinator(),
+      preparedOpener: PlaybackCoordinatorLiveCapturePreparedRequestOpener(
+        coordinator: playbackCoordinator,
+      ),
+    );
 
     return SubjectSourcePlaybackController(
       subject: subject,
@@ -113,6 +144,12 @@ final class SourcePlaybackControllerFactory {
       playbackCoordinator: playbackCoordinator,
       surfaceHost: PlatformPlaybackSurfaceHost(engineRouter),
       closePlayback: installedPlayback.close,
+      capturePlaybackEntryPoint: SourceLiveCapturePlaybackEntryPoint(
+        planCoordinator: const SourceLiveCapturePlayableSourcePlanCoordinator(),
+        playbackPipeline: capturePlayback,
+      ),
+      captureBrowserPort: InAppWebViewBrowserPort(),
+      wynimeVersion: wynimeVersion,
     );
   }
 

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +27,7 @@ void main() {
       File('sources/xifan.wynsrc.json').readAsStringSync(),
     );
     final manager = DeclarativeSourcePackageManager(
-      wynimeVersion: Version.parse('1.0.12'),
+      wynimeVersion: Version.parse('1.0.15'),
     );
     final pending = manager.install(package);
     installed = manager.enable(
@@ -36,7 +37,7 @@ void main() {
       reconsentGranted: false,
     );
     runtime = DeclarativeSourcePackageRuntime(
-      wynimeVersion: Version.parse('1.0.12'),
+      wynimeVersion: Version.parse('1.0.15'),
     );
   });
 
@@ -60,6 +61,89 @@ void main() {
     expect(expanded.host, 'next.xifanacg.com');
     expect(expanded.path, '/search');
     expect(expanded.queryParameters['q'], '無職轉生');
+  });
+
+  test('xifan live document bridge requires the unreleased next runtime', () {
+    final publicValidation = DeclarativeSourcePackageManager(
+      wynimeVersion: Version.parse('1.0.14'),
+    ).validate(package);
+    final nextValidation = DeclarativeSourcePackageManager(
+      wynimeVersion: Version.parse('1.0.15'),
+    ).validate(package);
+
+    expect(publicValidation.isValid, isFalse);
+    expect(publicValidation.code, 'incompatible_wynime_version');
+    expect(nextValidation.isValid, isTrue);
+    expect(nextValidation.code, 'valid');
+  });
+
+  test('xifan 1.1.0 to 1.2.1 update requires fresh re-consent', () {
+    final currentJson =
+        jsonDecode(File('sources/xifan.wynsrc.json').readAsStringSync())
+            as Map<String, dynamic>;
+    final legacyJson =
+        jsonDecode(jsonEncode(currentJson)) as Map<String, dynamic>
+          ..['version'] = '1.1.0';
+    final security = Map<String, dynamic>.from(
+      legacyJson['security'] as Map<dynamic, dynamic>,
+    );
+    security['domains'] = (security['domains'] as List<dynamic>)
+        .map((raw) {
+          final domain = Map<String, dynamic>.from(
+            raw as Map<dynamic, dynamic>,
+          );
+          if (domain['host'] == 'bjdownload.pan.wo.cn') {
+            domain.remove('ports');
+          }
+          return domain;
+        })
+        .toList(growable: false);
+    legacyJson['security'] = security;
+
+    final decoder = const SourcePackageDecoder();
+    final legacyPackage = decoder.decode(jsonEncode(legacyJson));
+    final manager = DeclarativeSourcePackageManager(
+      wynimeVersion: Version.parse('1.0.15'),
+    );
+    final pending = manager.install(legacyPackage);
+    final enabled = manager.enable(
+      packageId: pending.package.packageId,
+      version: pending.package.version,
+      userApproved: true,
+      reconsentGranted: false,
+    );
+    expect(enabled.status, SourcePackageStatus.enabled);
+
+    final updated = manager.update(package);
+    expect(updated.package.version, Version.parse('1.2.1'));
+    expect(updated.status, SourcePackageStatus.disabled);
+    expect(updated.requiresConsent, isTrue);
+    expect(updated.requiresReconsent, isTrue);
+    expect(
+      () => manager.enable(
+        packageId: updated.package.packageId,
+        version: updated.package.version,
+        userApproved: true,
+        reconsentGranted: false,
+      ),
+      throwsA(
+        isA<SourcePackageManagerException>().having(
+          (error) => error.code,
+          'code',
+          'reconsent_required',
+        ),
+      ),
+    );
+
+    final reconsented = manager.enable(
+      packageId: updated.package.packageId,
+      version: updated.package.version,
+      userApproved: true,
+      reconsentGranted: true,
+    );
+    expect(reconsented.status, SourcePackageStatus.enabled);
+    expect(reconsented.requiresConsent, isFalse);
+    expect(reconsented.requiresReconsent, isFalse);
   });
 
   test(

@@ -21,6 +21,9 @@ import 'package:wynime/src/domain/models/software_update_models.dart';
 import 'package:wynime/src/domain/models/source_package_manager_models.dart';
 import 'package:wynime/src/infrastructure/source_rules/source_registry_artifact_catalog.dart';
 import '../source_search_presentation_controller.dart';
+import '../../platform/web_capture/inapp_webview_source_live_search_fallback.dart';
+import '../../platform/web_capture/inapp_webview_source_live_playable_fallback.dart';
+import '../../platform/web_capture/inapp_webview_source_live_subject_fallback.dart';
 import 'subject_detail_page.dart';
 
 Widget buildWynimePage(
@@ -33,6 +36,9 @@ Widget buildWynimePage(
   BangumiSessionController? bangumi,
   SourcePackageStartupController? sourcePackages,
   SourceInstalledLiveSearchPipeline? sourceSearchPipeline,
+  InAppWebViewSourceLiveSearchFallback? sourceSearchFallback,
+  InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback,
+  InAppWebViewSourceLiveSubjectFallback? sourceSubjectFallback,
   SubjectSourcePlaybackController Function(BangumiSubject subject)?
   sourcePlaybackControllerFactory,
   SourceRegistryController? sourceRegistry,
@@ -49,6 +55,7 @@ Widget buildWynimePage(
     AppDestination.search => SearchPage(
       showPageHeader: showPageHeader,
       sourceSearchPipeline: sourceSearchPipeline,
+      sourceSearchFallback: sourceSearchFallback,
       installedPackagesProvider: () =>
           sourcePackages?.installedPackages ?? const [],
     ),
@@ -57,6 +64,8 @@ Widget buildWynimePage(
       bangumi: bangumi,
       onNavigate: onNavigate,
       sourcePlaybackControllerFactory: sourcePlaybackControllerFactory,
+      sourcePlayableFallback: sourcePlayableFallback,
+      sourceSubjectFallback: sourceSubjectFallback,
     ),
     AppDestination.downloads => DownloadsPage(showPageHeader: showPageHeader),
     AppDestination.sources => SourcesPage(
@@ -219,6 +228,7 @@ class SearchPage extends StatefulWidget {
   const SearchPage({
     required this.showPageHeader,
     this.sourceSearchPipeline,
+    this.sourceSearchFallback,
     this.installedPackagesProvider,
     this.searchOperation,
     super.key,
@@ -226,6 +236,7 @@ class SearchPage extends StatefulWidget {
 
   final bool showPageHeader;
   final SourceInstalledLiveSearchPipeline? sourceSearchPipeline;
+  final InAppWebViewSourceLiveSearchFallback? sourceSearchFallback;
   final InstalledSourcePackagesProvider? installedPackagesProvider;
   final SourceInstalledLiveSearchOperation? searchOperation;
 
@@ -246,6 +257,7 @@ class _SearchPageState extends State<SearchPage> {
       installedPackages: widget.installedPackagesProvider ?? () => const [],
       searchOperation: widget.searchOperation ?? pipeline?.search,
     )..addListener(_onSearchStateChanged);
+    widget.sourceSearchFallback?.addListener(_onSearchStateChanged);
   }
 
   @override
@@ -253,6 +265,7 @@ class _SearchPageState extends State<SearchPage> {
     _search
       ..removeListener(_onSearchStateChanged)
       ..dispose();
+    widget.sourceSearchFallback?.removeListener(_onSearchStateChanged);
     _controller.dispose();
     super.dispose();
   }
@@ -319,6 +332,13 @@ class _SearchPageState extends State<SearchPage> {
           const SizedBox(height: WynimeSpacing.lg),
           _SearchResultsList(results: state.results),
         ],
+        if (widget.sourceSearchFallback != null)
+          SizedBox(
+            key: const ValueKey('source-search-document-capture'),
+            width: 1,
+            height: 1,
+            child: widget.sourceSearchFallback!.buildView(context),
+          ),
       ],
     );
   }
@@ -504,6 +524,8 @@ class LibraryPage extends StatefulWidget {
     required this.showPageHeader,
     required this.onNavigate,
     this.sourcePlaybackControllerFactory,
+    this.sourcePlayableFallback,
+    this.sourceSubjectFallback,
     this.bangumi,
     super.key,
   });
@@ -512,6 +534,8 @@ class LibraryPage extends StatefulWidget {
   final ValueChanged<AppDestination> onNavigate;
   final SubjectSourcePlaybackController Function(BangumiSubject subject)?
   sourcePlaybackControllerFactory;
+  final InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback;
+  final InAppWebViewSourceLiveSubjectFallback? sourceSubjectFallback;
   final BangumiSessionController? bangumi;
 
   @override
@@ -585,6 +609,8 @@ class _LibraryPageState extends State<LibraryPage> {
           subjectId: subjectId,
           sourcePlaybackControllerFactory:
               widget.sourcePlaybackControllerFactory,
+          sourcePlayableFallback: widget.sourcePlayableFallback,
+          sourceSubjectFallback: widget.sourceSubjectFallback,
           onOpenSources: () {
             Navigator.of(context).pop();
             widget.onNavigate(AppDestination.sources);
@@ -997,7 +1023,11 @@ class _RegistrySourcePackageCard extends StatelessWidget {
         break;
       }
     }
-    final label = installed == null
+    final validation = sourcePackages!.validateCandidate(item.package);
+    final isCompatible = validation?.isValid ?? false;
+    final label = !isCompatible
+        ? localizations.sourcesRegistryIncompatibleLabel
+        : installed == null
         ? localizations.sourcesRegistryNotInstalledLabel
         : installed.package.version < item.package.version
         ? localizations.sourcesRegistryUpdateAvailableLabel
@@ -1005,7 +1035,9 @@ class _RegistrySourcePackageCard extends StatelessWidget {
     final isNewPackage = installed == null;
     final hasUpdate =
         installed != null && installed.package.version < item.package.version;
-    final actionLabel = isNewPackage
+    final actionLabel = !isCompatible
+        ? null
+        : isNewPackage
         ? localizations.sourcesPackageInstallAction
         : hasUpdate
         ? localizations.sourcesPackageUpdateAction
@@ -1313,7 +1345,8 @@ final class _SourcePackageReviewDialog extends StatelessWidget {
     final domains = policy.allowedDomains
         .map(
           (rule) =>
-              '${rule.host} (${rule.schemes.toList(growable: false).join(', ')})',
+              '${rule.host} (${rule.schemes.toList(growable: false).join(', ')}'
+              '${rule.ports.isEmpty ? '' : '; ports: ${rule.ports.toList()..sort()}'}',
         )
         .join('\n');
     final permissions = policy.permissions

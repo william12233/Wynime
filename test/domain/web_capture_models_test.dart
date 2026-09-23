@@ -151,4 +151,91 @@ void main() {
     expect(status.isAvailable, isFalse);
     expect(status.reasonCode, 'webview2_runtime_missing');
   });
+
+  test('interactive completion is bounded and requires media inspection', () {
+    expect(
+      () => WebCaptureRequest(
+        initialUri: Uri.parse('https://example.com/watch'),
+        securityPolicy: capturePolicy(
+          permissions: {SourcePermission.network, SourcePermission.webView},
+        ),
+        budget: budget(),
+        userAgentPolicy: WebUserAgentPolicy(
+          mode: WebUserAgentMode.platformDefault,
+        ),
+        captureMediaRequests: false,
+        completionPolicy:
+            WebCaptureCompletionPolicy.firstPlayableCandidateAfterLoad,
+      ),
+      throwsArgumentError,
+    );
+
+    final request = WebCaptureRequest(
+      initialUri: Uri.parse('https://example.com/watch'),
+      securityPolicy: capturePolicy(),
+      budget: budget(),
+      userAgentPolicy: WebUserAgentPolicy(
+        mode: WebUserAgentMode.platformDefault,
+      ),
+      captureMediaRequests: true,
+      completionPolicy:
+          WebCaptureCompletionPolicy.firstPlayableCandidateAfterLoad,
+      postLoadTimeout: const Duration(seconds: 20),
+    );
+    expect(
+      request.completionPolicy,
+      WebCaptureCompletionPolicy.firstPlayableCandidateAfterLoad,
+    );
+    expect(request.postLoadTimeout, const Duration(seconds: 20));
+  });
+
+  test('document completion is bounded and explicitly requested', () {
+    expect(
+      () => WebCaptureRequest(
+        initialUri: Uri.parse('https://example.com/search'),
+        securityPolicy: capturePolicy(
+          permissions: {SourcePermission.network, SourcePermission.webView},
+        ),
+        budget: budget(),
+        userAgentPolicy: WebUserAgentPolicy(
+          mode: WebUserAgentMode.platformDefault,
+        ),
+        captureMediaRequests: false,
+        completionPolicy: WebCaptureCompletionPolicy.documentAfterLoad,
+      ),
+      throwsArgumentError,
+    );
+
+    final request = WebCaptureRequest(
+      initialUri: Uri.parse('https://example.com/search'),
+      securityPolicy: capturePolicy(
+        permissions: {SourcePermission.network, SourcePermission.webView},
+      ),
+      budget: budget(),
+      userAgentPolicy: WebUserAgentPolicy(
+        mode: WebUserAgentMode.platformDefault,
+      ),
+      captureMediaRequests: false,
+      captureDocument: true,
+      completionPolicy: WebCaptureCompletionPolicy.documentAfterLoad,
+      postLoadTimeout: const Duration(seconds: 2),
+    );
+    expect(request.captureDocument, isTrue);
+    expect(
+      request.completionPolicy,
+      WebCaptureCompletionPolicy.documentAfterLoad,
+    );
+
+    final snapshot = WebCaptureSnapshot(
+      events: const [],
+      candidates: const [],
+      cookies: const [],
+      stopReason: WebCaptureStopReason.completed,
+      finalUri: request.initialUri,
+      documentBody: '<main><a href="/anime/1">title</a></main>',
+    );
+    expect(snapshot.documentBody, contains('/anime/1'));
+    expect(snapshot.toString(), contains('hasDocument: true'));
+    expect(snapshot.toString(), isNot(contains('title')));
+  });
 }

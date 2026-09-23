@@ -4,6 +4,38 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.15 - Release-ready
+
+### Source playback UX and compatibility continuation
+
+- Kept rendered-document and WebView acquisition transient and offstage; normal
+  playback now shows Wynime resolving/error states or the native player
+  surface instead of source-site chrome.
+- Added typed source-line selection with exact `SourceEpisodeIdentity`
+  switching, old-session shutdown and bounded best-effort position restore.
+- Preserved the xifan 1.2.1 declarative compatibility path, exact
+  `bjdownload.pan.wo.cn:30443` admission, bounded `GET`/`Range` capture and
+  the single `PlaybackSession` lifecycle.
+- Added a localized HTTP 502 playback state with an explicit Wynime message,
+  retry action and exact multi-line switch action; source-site chrome remains
+  absent from the failure surface.
+
+### Validation boundary
+
+- Full deterministic Flutter suite: 815 tests passed; analyzer and
+  `git diff --check` pass.
+- Debug-only staged registry injection uses the same exact index/artifact
+  loader and verifier as the fixed release registry. Android API-36 phone and
+  tablet normal Sources UI both completed v1.1.0 → v1.2.1 update, fresh
+  re-consent and restart persistence; live source search returned three
+  xifan results on each device.
+- The public Bangumi OAuth page was reached, but no account-holder consent was
+  supplied. Authenticated Library/subject/episode/player evidence therefore
+  remains pending. Standard non-elevated Windows builds reproduce the
+  VS/FileTracker `E_ACCESSDENIED` environment failure; controlled elevated
+  debug builds pass, while Windows UI remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`. No release action was performed.
+
 ## 1.0.12 - Release-ready
 
 ### Source Package System

@@ -145,6 +145,66 @@ void main() {
     expect(result.sourceResults.single.results, isEmpty);
   });
 
+  test('document fallback runs only after a static notFound result', () async {
+    final package = _package('example.anime');
+    final transport = _QueueTransport([_success(_request(), '<main></main>')]);
+    final fallback = _RecordingDocumentFallback(
+      package: package,
+      subjectId: '303',
+      title: 'Hydrated',
+    );
+    final runtime = _subject(transport).runtime;
+    final subject = SourceLiveSearchCoordinator(
+      runtime: runtime,
+      normalizer: const DeclarativeSourceSearchNormalizer(),
+      documentFallback: fallback,
+    );
+
+    final result = await subject.search(
+      query: 'anime',
+      plans: [_plan(package)],
+    );
+
+    expect(result.status, SourceSearchCoordinatorStatus.available);
+    expect(result.results.single.subjectId, '303');
+    expect(result.results.single.title, 'Hydrated');
+    expect(fallback.plans, hasLength(1));
+    expect(transport.requests, hasLength(1));
+  });
+
+  test(
+    'document fallback does not run after static transport failure',
+    () async {
+      final package = _package('example.anime');
+      final transport = _QueueTransport([
+        SourceHttpTransportResult(
+          status: SourceHttpTransportStatus.networkError,
+          reasonCode: 'network_error',
+        ),
+      ]);
+      final fallback = _RecordingDocumentFallback(
+        package: package,
+        subjectId: '303',
+        title: 'Must not be used',
+      );
+      final runtime = _subject(transport).runtime;
+      final subject = SourceLiveSearchCoordinator(
+        runtime: runtime,
+        normalizer: const DeclarativeSourceSearchNormalizer(),
+        documentFallback: fallback,
+      );
+
+      final result = await subject.search(
+        query: 'anime',
+        plans: [_plan(package)],
+      );
+
+      expect(result.status, SourceSearchCoordinatorStatus.failed);
+      expect(result.results, isEmpty);
+      expect(fallback.plans, isEmpty);
+    },
+  );
+
   test('invalid normalized result shape fails closed', () async {
     final package = _package('example.anime');
     final runtime = _subject(_QueueTransport([_success(_request(), 'unused')]));
@@ -433,4 +493,35 @@ final class _InvalidShapeNormalizer implements SourceSearchNormalizer {
     results: const [],
     diagnostics: const [],
   );
+}
+
+final class _RecordingDocumentFallback
+    implements SourceLiveSearchDocumentFallback {
+  _RecordingDocumentFallback({
+    required this.package,
+    required this.subjectId,
+    required this.title,
+  });
+
+  final SourcePackageManifest package;
+  final String subjectId;
+  final String title;
+  final plans = <SourceLiveSearchPlan>[];
+
+  @override
+  Future<SourceRuntimeResult> capture(SourceLiveSearchPlan plan) async {
+    plans.add(plan);
+    return SourceRuntimeResult(
+      packageId: package.packageId,
+      packageVersion: package.version,
+      programId: plan.requestPlan.programId,
+      status: SourceRuntimeStatus.available,
+      records: [
+        SourceRuntimeRecord({'subjectId': subjectId, 'title': title}),
+      ],
+      diagnostics: const [],
+      consumedSteps: 2,
+      selectorMatches: 1,
+    );
+  }
 }

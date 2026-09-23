@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:wynime/src/domain/models/source_package_manifest.dart';
 import 'package:wynime/src/infrastructure/source_rules/source_package_decoder.dart';
+import 'package:wynime/src/infrastructure/source_rules/source_package_encoder.dart';
 
 void main() {
   const decoder = SourcePackageDecoder();
@@ -83,6 +84,42 @@ void main() {
       signed.securityPolicy.permissions,
       unorderedEquals(unsigned.securityPolicy.permissions),
     );
+  });
+
+  test('decodes an exact non-standard domain port', () {
+    final map = validPackage();
+    final security = map['security']! as Map<String, Object?>;
+    final domains = security['domains']! as List<Object?>;
+    (domains.single as Map<String, Object?>)['ports'] = [30443];
+
+    final package = decoder.decode(jsonEncode(map));
+    final rule = package.securityPolicy.allowedDomains.single;
+
+    expect(rule.ports, {30443});
+    expect(
+      package.securityPolicy.allowsUri(
+        Uri.parse('https://example.com:30443/video'),
+      ),
+      isTrue,
+    );
+    expect(
+      package.securityPolicy.allowsUri(Uri.parse('https://example.com/video')),
+      isFalse,
+    );
+  });
+
+  test('encoder preserves an exact non-standard domain port', () {
+    final map = validPackage();
+    final security = map['security']! as Map<String, Object?>;
+    final domains = security['domains']! as List<Object?>;
+    (domains.single as Map<String, Object?>)['ports'] = [30443];
+    final package = decoder.decode(jsonEncode(map));
+
+    final encoded = jsonDecode(const SourcePackageEncoder().encode(package));
+    final encodedSecurity = encoded['security'] as Map<String, Object?>;
+    final encodedDomains = encodedSecurity['domains'] as List<Object?>;
+
+    expect((encodedDomains.single as Map<String, Object?>)['ports'], [30443]);
   });
 
   test('unknown keys fail instead of being silently ignored', () {

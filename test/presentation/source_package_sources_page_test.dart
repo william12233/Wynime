@@ -190,6 +190,31 @@ void main() {
     expect(find.text('Registry revision: registry-one'), findsNothing);
   });
 
+  testWidgets('marks a registry candidate incompatible with an older Wynime', (
+    tester,
+  ) async {
+    final registry = SourceRegistryController(
+      loadCatalog: () async => testSourceRegistryCatalog(
+        packageIds: const ['xifan'],
+        packageVersion: Version.parse('1.2.1'),
+        wynimeVersion: '^1.0.15',
+      ),
+    );
+    addTearDown(registry.dispose);
+
+    await _pumpApp(
+      tester,
+      _controller(const [], wynimeVersion: '1.0.14'),
+      sourceRegistry: registry,
+    );
+    await tester.tap(find.byIcon(Icons.hub_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Incompatible with this Wynime version'), findsOneWidget);
+    expect(find.text('Install'), findsNothing);
+    expect(find.text('Update'), findsNothing);
+  });
+
   testWidgets('stages a registry package without enabling it', (tester) async {
     final registry = SourceRegistryController(
       loadCatalog: () async =>
@@ -368,11 +393,14 @@ Future<void> _pumpApp(
 }
 
 SourcePackageStartupController _controller(
-  Iterable<InstalledSourcePackage> values,
-) {
+  Iterable<InstalledSourcePackage> values, {
+  String wynimeVersion = '1.0.0',
+}) {
   return SourcePackageStartupController(
-    managerFactory: () async =>
-        _manager(_MemorySourcePackageRepository(values)),
+    managerFactory: () async => _manager(
+      _MemorySourcePackageRepository(values),
+      wynimeVersion: wynimeVersion,
+    ),
   );
 }
 
@@ -381,10 +409,13 @@ SourcePackageStartupController _pendingController() {
   return SourcePackageStartupController(managerFactory: () => pending.future);
 }
 
-PersistentSourcePackageManager _manager(SourcePackageRepository repository) {
+PersistentSourcePackageManager _manager(
+  SourcePackageRepository repository, {
+  String wynimeVersion = '1.0.0',
+}) {
   return PersistentSourcePackageManager(
     manager: DeclarativeSourcePackageManager(
-      wynimeVersion: Version.parse('1.0.0'),
+      wynimeVersion: Version.parse(wynimeVersion),
     ),
     repository: repository,
   );
@@ -410,13 +441,14 @@ SourcePackageManifest _package(
   String packageId,
   String displayName, {
   Version? version,
+  String wynimeVersion = '^1.0.0',
 }) {
   return SourcePackageManifest(
     schemaVersion: 1,
     packageId: packageId,
     displayName: displayName,
     version: version ?? Version.parse('1.0.0'),
-    wynimeVersionConstraint: VersionConstraint.parse('^1.0.0'),
+    wynimeVersionConstraint: VersionConstraint.parse(wynimeVersion),
     securityPolicy: testSourcePolicy(),
     programs: [
       SourceRuleProgram(

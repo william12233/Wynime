@@ -61,6 +61,8 @@ final class SourcePackageEncoder {
                 'host': domain.host,
                 'includeSubdomains': domain.includeSubdomains,
                 'schemes': domain.schemes.toList()..sort(),
+                if (domain.ports.isNotEmpty)
+                  'ports': domain.ports.toList()..sort(),
               },
             )
             .toList(growable: false),

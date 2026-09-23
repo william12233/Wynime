@@ -182,6 +182,18 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
       eventsBySequence[event.sequence] = event;
     }
 
+    final redirectChainBySequence = <int, List<Uri>>{};
+    final redirectChain = <Uri>[];
+    for (final event in snapshot.events) {
+      if (event.isRedirect &&
+          redirectChain.length < package.securityPolicy.budget.maxRedirects) {
+        redirectChain.add(event.uri);
+      }
+      redirectChainBySequence[event.sequence] = List<Uri>.unmodifiable(
+        redirectChain,
+      );
+    }
+
     final expectedCandidatesByKey = <String, WebMediaCandidate>{};
     for (final event in snapshot.events) {
       final kind = _candidateClassifier.classify(event);
@@ -198,6 +210,14 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
           uri: normalizedUri,
           headers: event.headers,
           sourceEventSequence: event.sequence,
+          pageUri: snapshot.hasCompleteRequestMetadata
+              ? snapshot.finalUri
+              : null,
+          requestMethod: event.method,
+          isRedirect: event.isRedirect,
+          redirectChain: snapshot.hasCompleteRequestMetadata
+              ? (redirectChainBySequence[event.sequence] ?? const [])
+              : const [],
         ),
       );
     }
@@ -223,6 +243,15 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
         return 'live_route_provenance_invalid';
       }
       if (!_sameCandidate(candidate, expectedCandidates[candidateIndex])) {
+        return 'live_route_provenance_invalid';
+      }
+      if (snapshot.hasCompleteRequestMetadata &&
+          !_sameCandidateRequestMetadata(
+            candidate,
+            sourceEvent,
+            snapshot.finalUri,
+            redirectChainBySequence[sourceEvent.sequence] ?? const [],
+          )) {
         return 'live_route_provenance_invalid';
       }
     }
@@ -274,6 +303,27 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
       left.uri.toString() == right.uri.toString() &&
       left.sourceEventSequence == right.sourceEventSequence &&
       _sameHeaders(left.headers, right.headers);
+
+  static bool _sameCandidateRequestMetadata(
+    WebMediaCandidate candidate,
+    WebCaptureEvent event,
+    Uri pageUri,
+    List<Uri> redirectChain,
+  ) =>
+      candidate.pageUri == pageUri &&
+      candidate.requestMethod == event.method &&
+      candidate.isRedirect == event.isRedirect &&
+      _sameUris(candidate.redirectChain, redirectChain);
+
+  static bool _sameUris(Iterable<Uri> left, Iterable<Uri> right) {
+    final leftList = left.toList(growable: false);
+    final rightList = right.toList(growable: false);
+    if (leftList.length != rightList.length) return false;
+    for (var index = 0; index < leftList.length; index++) {
+      if (leftList[index] != rightList[index]) return false;
+    }
+    return true;
+  }
 
   static bool _sameHeaders(
     Map<String, String> left,

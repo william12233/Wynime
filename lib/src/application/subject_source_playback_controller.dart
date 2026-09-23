@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:pub_semver/pub_semver.dart';
 
 import '../domain/models/bangumi_models.dart';
 import '../domain/models/source_identity.dart';
@@ -17,8 +18,10 @@ import 'source_installed_live_episode_pipeline.dart';
 import 'source_installed_live_playback_pipeline.dart';
 import 'source_installed_live_search_pipeline.dart';
 import 'source_installed_live_subject_pipeline.dart';
+import 'source_live_capture_playback_entry_point.dart';
 import 'source_package_startup_controller.dart';
 import 'source_subject_matcher.dart';
+import '../domain/services/web_source_browser.dart';
 
 enum SubjectSourcePlaybackPhase {
   idle,
@@ -40,6 +43,7 @@ final class SubjectSourcePlaybackState {
     this.sourceSubject,
     this.subjectDetails,
     this.subjectCandidates = const [],
+    this.sourceCandidates = const [],
     this.episodeCandidates = const [],
     this.selectedEpisode,
     this.errorCode,
@@ -51,6 +55,7 @@ final class SubjectSourcePlaybackState {
   final SourceSubjectIdentity? sourceSubject;
   final SourceSubjectDetails? subjectDetails;
   final List<SourceSearchResult> subjectCandidates;
+  final List<SourceSearchResult> sourceCandidates;
   final List<SourceEpisode> episodeCandidates;
   final SourceEpisodeIdentity? selectedEpisode;
   final String? errorCode;
@@ -89,6 +94,9 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
     this.playbackCoordinator,
     this.surfaceHost,
     this.closePlayback,
+    this.capturePlaybackEntryPoint,
+    this.captureBrowserPort,
+    this.wynimeVersion,
   }) : _state = const SubjectSourcePlaybackState(
          phase: SubjectSourcePlaybackPhase.idle,
        ) {
@@ -108,6 +116,9 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
   final PlaybackCoordinator? playbackCoordinator;
   final PlaybackSurfaceHost? surfaceHost;
   final Future<void> Function()? closePlayback;
+  final SourceLiveCapturePlaybackEntryPoint? capturePlaybackEntryPoint;
+  final WebSourceBrowserPort? captureBrowserPort;
+  final Version? wynimeVersion;
 
   SubjectSourcePlaybackState _state;
   String _packageSnapshot = '';
@@ -139,7 +150,11 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
       final persistedCandidates = await _persistedSubjectCandidates(packages);
       if (!_isCurrent(generation)) return;
       if (persistedCandidates.length == 1) {
-        await selectSubject(persistedCandidates.single, _generation);
+        await selectSubject(
+          persistedCandidates.single,
+          expectedGeneration: _generation,
+          availableCandidates: persistedCandidates,
+        );
         return;
       }
       if (persistedCandidates.length > 1) {
@@ -147,6 +162,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           SubjectSourcePlaybackState(
             phase: SubjectSourcePlaybackPhase.selectionRequired,
             subjectCandidates: persistedCandidates,
+            sourceCandidates: persistedCandidates,
           ),
         );
         return;
@@ -188,11 +204,16 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           SubjectSourcePlaybackState(
             phase: SubjectSourcePlaybackPhase.selectionRequired,
             subjectCandidates: match.candidates,
+            sourceCandidates: match.candidates,
           ),
         );
         return;
       }
-      await selectSubject(match.candidates.single, _generation);
+      await selectSubject(
+        match.candidates.single,
+        expectedGeneration: _generation,
+        availableCandidates: match.candidates,
+      );
     } on Object {
       if (_isCurrent(generation)) {
         _setState(
@@ -229,10 +250,17 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
   }
 
   Future<void> selectSubject(
-    SourceSearchResult selected, [
+    SourceSearchResult selected, {
     int? expectedGeneration,
-  ]) async {
+    Iterable<SourceSearchResult>? availableCandidates,
+  }) async {
     final generation = expectedGeneration ?? ++_generation;
+    final sourceCandidates = List<SourceSearchResult>.unmodifiable(
+      availableCandidates ??
+          (_state.sourceCandidates.isNotEmpty
+              ? _state.sourceCandidates
+              : [selected]),
+    );
     final package = _packageFor(selected.sourceId);
     if (package == null) {
       _setState(
@@ -254,6 +282,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         package: package,
         provenance: provenance,
         sourceSubject: sourceSubject,
+        sourceCandidates: sourceCandidates,
       ),
     );
     try {
@@ -304,6 +333,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
             package: package,
             provenance: provenance,
             sourceSubject: sourceSubject,
+            sourceCandidates: sourceCandidates,
             errorCode: detailsResult.reasonCode,
           ),
         );
@@ -316,6 +346,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           provenance: provenance,
           sourceSubject: sourceSubject,
           subjectDetails: details,
+          sourceCandidates: sourceCandidates,
         ),
       );
     } on Object {
@@ -326,6 +357,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
             package: package,
             provenance: provenance,
             sourceSubject: sourceSubject,
+            sourceCandidates: sourceCandidates,
             errorCode: 'source_subject_failed',
           ),
         );
@@ -333,7 +365,10 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
     }
   }
 
-  Future<SourceEpisodeResolution> resolveEpisode(BangumiEpisode episode) async {
+  Future<SourceEpisodeResolution> resolveEpisode(
+    BangumiEpisode episode, {
+    String? preferredLineId,
+  }) async {
     final current = _state;
     final package = current.package;
     final provenance = current.provenance;
@@ -348,6 +383,28 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         reason: 'source_subject_not_ready',
       );
     }
+    SourceSubjectLine? preferredLine;
+    if (preferredLineId != null) {
+      if (preferredLineId.trim().isEmpty ||
+          preferredLineId != preferredLineId.trim()) {
+        return const SourceEpisodeResolution(
+          status: SourceEpisodeResolutionStatus.notFound,
+          reason: 'line_selection_invalid',
+        );
+      }
+      for (final line in details.lines) {
+        if (line.lineId == preferredLineId) {
+          preferredLine = line;
+          break;
+        }
+      }
+      if (preferredLine == null) {
+        return const SourceEpisodeResolution(
+          status: SourceEpisodeResolutionStatus.notFound,
+          reason: 'line_not_found',
+        );
+      }
+    }
     final persisted = await mappingRepository.findValidEpisodeMapping(
       bangumiSubjectId: subject.id,
       bangumiEpisodeId: episode.id,
@@ -355,7 +412,9 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
       expectedSourceSubject: sourceSubject,
       expectedProvenance: provenance,
     );
-    if (persisted != null) {
+    if (persisted != null &&
+        (preferredLineId == null ||
+            persisted.sourceEpisode.lineId == preferredLineId)) {
       _setState(
         SubjectSourcePlaybackState(
           phase: SubjectSourcePlaybackPhase.ready,
@@ -363,6 +422,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           provenance: provenance,
           sourceSubject: sourceSubject,
           subjectDetails: details,
+          sourceCandidates: current.sourceCandidates,
           selectedEpisode: persisted.sourceEpisode,
         ),
       );
@@ -376,8 +436,18 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
       episode: episode,
       details: details,
     );
-    if (correlation.status == SourceEpisodeCorrelationStatus.automatic) {
-      final identity = correlation.selected!;
+    final correlatedCandidates = correlation.candidates
+        .where(
+          (candidate) =>
+              preferredLineId == null ||
+              candidate.identity.lineId == preferredLineId,
+        )
+        .toList(growable: false);
+    final candidates = correlatedCandidates.isNotEmpty || preferredLine == null
+        ? correlatedCandidates
+        : preferredLine.episodes;
+    if (candidates.length == 1) {
+      final identity = candidates.single.identity;
       await mappingRepository.upsertEpisodeMapping(
         SourceEpisodeMapping(
           bangumiSubjectId: subject.id,
@@ -396,6 +466,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           provenance: provenance,
           sourceSubject: sourceSubject,
           subjectDetails: details,
+          sourceCandidates: current.sourceCandidates,
           selectedEpisode: identity,
         ),
       );
@@ -405,25 +476,27 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
       );
     }
 
+    final notFound = candidates.isEmpty;
     _setState(
       SubjectSourcePlaybackState(
-        phase: correlation.status == SourceEpisodeCorrelationStatus.notFound
+        phase: notFound
             ? SubjectSourcePlaybackPhase.notFound
             : SubjectSourcePlaybackPhase.episodeSelectionRequired,
         package: package,
         provenance: provenance,
         sourceSubject: sourceSubject,
         subjectDetails: details,
-        episodeCandidates: correlation.candidates,
-        errorCode: correlation.reason,
+        sourceCandidates: current.sourceCandidates,
+        episodeCandidates: candidates,
+        errorCode: notFound ? 'episode_not_found' : correlation.reason,
       ),
     );
     return SourceEpisodeResolution(
-      status: correlation.status == SourceEpisodeCorrelationStatus.notFound
+      status: notFound
           ? SourceEpisodeResolutionStatus.notFound
           : SourceEpisodeResolutionStatus.selectionRequired,
-      candidates: correlation.candidates,
-      reason: correlation.reason,
+      candidates: candidates,
+      reason: notFound ? 'episode_not_found' : correlation.reason,
     );
   }
 
@@ -468,6 +541,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         provenance: provenance,
         sourceSubject: sourceSubject,
         subjectDetails: details,
+        sourceCandidates: current.sourceCandidates,
         selectedEpisode: selected.identity,
       ),
     );

@@ -2,6 +2,59 @@
 cmake_minimum_required(VERSION 3.14)
 project(wynime LANGUAGES CXX)
 
+# The managed Windows development environment denies the Win32 short/long path
+# calls used by MSBuild's optional FileTracker, even though the workspace and
+# TEMP directories are writable. That makes CMake's generated projects fail
+# before or during source compilation. Generate a Directory.Build.props file
+# at the build root so every generated project imports TrackFileAccess=false
+# after the Visual C++ defaults; compilation and linking remain enabled.
+if(MSVC)
+  file(WRITE "${CMAKE_BINARY_DIR}/Directory.Build.props"
+    "<Project>\n"
+    "  <PropertyGroup>\n"
+    "    <TrackFileAccess>false</TrackFileAccess>\n"
+    "  </PropertyGroup>\n"
+    "  <ItemDefinitionGroup>\n"
+    "    <ClCompile>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </ClCompile>\n"
+    "    <Link>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </Link>\n"
+    "    <Lib>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </Lib>\n"
+    "    <ImpLib>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </ImpLib>\n"
+    "    <FxCompile>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </FxCompile>\n"
+    "    <Midl>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </Midl>\n"
+    "    <ResourceCompile>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </ResourceCompile>\n"
+    "    <Manifest>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </Manifest>\n"
+    "    <ManifestResourceCompile>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </ManifestResourceCompile>\n"
+    "    <XdcMake>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </XdcMake>\n"
+    "    <BscMake>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </BscMake>\n"
+    "    <Xsd>\n"
+    "      <MinimalRebuildFromTracking>false</MinimalRebuildFromTracking>\n"
+    "    </Xsd>\n"
+    "  </ItemDefinitionGroup>\n"
+    "</Project>\n")
+endif()
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "wynime")

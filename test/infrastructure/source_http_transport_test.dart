@@ -88,9 +88,45 @@ void main() {
       expect(result.status, SourceHttpTransportStatus.redirectUriNotAllowed);
       expect(result.reasonCode, 'redirect_uri_not_allowed');
       expect(result.response, isNull);
+      expect(
+        result.responseEvidence?.toRedactedDiagnostic()['finalHost'],
+        'other.example',
+      );
+      expect(
+        result.responseEvidence?.toRedactedDiagnostic()['finalPath'],
+        '/episode',
+      );
       expect(upstream.requests, hasLength(1));
     },
   );
+
+  test('redirect evidence redacts a non-standard rejected port', () async {
+    final upstream = _RecordingUpstream(
+      responses: [
+        _response(
+          statusCode: 302,
+          headers: const {
+            'location': ['https://other.example:8443/episode?token=secret'],
+          },
+        ),
+      ],
+    );
+    final result = await DartIoSourceHttpTransport(
+      upstreamClient: upstream,
+    ).send(_request());
+
+    expect(result.status, SourceHttpTransportStatus.redirectUriNotAllowed);
+    expect(
+      result.responseEvidence?.toRedactedDiagnostic()['finalHost'],
+      'other.example',
+    );
+    expect(
+      result.responseEvidence?.toRedactedDiagnostic()['finalPath'],
+      '/episode',
+    );
+    expect(result.responseEvidence?.toRedactedDiagnostic()['finalPort'], 8443);
+    expect(result.toString(), isNot(contains('secret')));
+  });
 
   test('redirect budget and missing location are truthful failures', () async {
     final oneRedirectPolicy = testSourcePolicy(
@@ -153,6 +189,10 @@ void main() {
       expect(httpError.status, SourceHttpTransportStatus.httpError);
       expect(httpError.httpStatus, 503);
       expect(httpError.response, isNull);
+      expect(
+        httpError.responseEvidence?.toRedactedDiagnostic()['finalHost'],
+        'example.com',
+      );
       expect(httpError.toString(), isNot(contains('upstream secret')));
 
       final malformedUpstream = _RecordingUpstream(

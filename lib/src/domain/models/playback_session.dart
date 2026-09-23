@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:wynime/src/domain/models/ad_removal_plan.dart';
 import 'package:wynime/src/domain/models/source_identity.dart';
+import 'package:wynime/src/domain/models/web_capture_models.dart';
 
 typedef PlaybackSessionRefresher = Future<PlaybackSession> Function();
 
@@ -41,6 +42,7 @@ final class PlaybackSession {
     Uri? playbackUri,
     Map<String, String> headers = const {},
     Map<String, String> cookies = const {},
+    Iterable<WebCaptureCookie> cookieMetadata = const [],
     Uri? referer,
     Uri? origin,
     String? userAgent,
@@ -56,6 +58,9 @@ final class PlaybackSession {
            : _safePlaybackUri(playbackUri, 'playbackUri'),
        headers = _freezeHeaders(headers),
        cookies = _freezeCookies(cookies),
+       cookieMetadata = UnmodifiableListView(
+         List<WebCaptureCookie>.unmodifiable(cookieMetadata),
+       ),
        referer = referer == null ? null : _safeRemoteUri(referer, 'referer'),
        origin = origin == null ? null : _safeOrigin(origin),
        userAgent = _optionalHeaderValue(userAgent, 'userAgent', 1024),
@@ -89,6 +94,10 @@ final class PlaybackSession {
 
   final UnmodifiableMapView<String, String> headers;
   final UnmodifiableMapView<String, String> cookies;
+
+  /// Captured cookie scope retained for redirect-hop filtering. The legacy
+  /// [cookies] map is the already-filtered view for [mediaUri].
+  final UnmodifiableListView<WebCaptureCookie> cookieMetadata;
   final Uri? referer;
   final Uri? origin;
   final String? userAgent;
@@ -129,6 +138,7 @@ final class PlaybackSession {
     playbackUri: value,
     headers: headers,
     cookies: cookies,
+    cookieMetadata: cookieMetadata,
     referer: referer,
     origin: origin,
     userAgent: userAgent,
@@ -167,6 +177,7 @@ final class PlaybackSession {
     'pageHost': pageUri.host,
     'headerNames': headers.keys.toList(growable: false),
     'cookieNames': cookies.keys.toList(growable: false),
+    'cookieMetadataCount': cookieMetadata.length,
     'hasPlaybackUri': playbackUri != null,
     'expiresAt': expiresAt?.toIso8601String(),
     'subtitleCount': subtitles.length,

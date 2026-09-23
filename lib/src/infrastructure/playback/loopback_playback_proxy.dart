@@ -189,20 +189,23 @@ final class LoopbackPlaybackProxyService implements PlaybackProxyService {
       return;
     }
 
-    final outboundHeaders = _outboundHeaders(proxySession.session, range);
-    if (_encodedHeaderBytes(outboundHeaders) >
-        proxySession.budget.maxRequestHeaderBytes) {
-      throw PlaybackProxyException(
-        'request_header_budget_exceeded',
-        'Forwarded request headers exceed the configured byte budget.',
-      );
-    }
-
     var currentUri = initialUri;
     var redirectCount = 0;
     final visited = <String>{currentUri.toString()};
     late ProxyUpstreamResponse upstream;
     while (true) {
+      final outboundHeaders = playbackUpstreamHeaders(
+        proxySession.session,
+        requestUri: currentUri,
+        range: range,
+      );
+      if (_encodedHeaderBytes(outboundHeaders) >
+          proxySession.budget.maxRequestHeaderBytes) {
+        throw PlaybackProxyException(
+          'request_header_budget_exceeded',
+          'Forwarded request headers exceed the configured byte budget.',
+        );
+      }
       upstream = await proxySession.race(
         _upstreamClient.send(
           ProxyUpstreamRequest(
@@ -495,31 +498,6 @@ final class PlaybackProxyException implements Exception {
 
 Uri _baseUri(HttpServer server) =>
     Uri(scheme: 'http', host: server.address.address, port: server.port);
-
-Map<String, String> _outboundHeaders(PlaybackSession session, String? range) {
-  final headers = <String, String>{...session.headers};
-  headers.remove(HttpHeaders.cookieHeader);
-  headers.remove(HttpHeaders.rangeHeader);
-  headers[HttpHeaders.acceptEncodingHeader] = 'identity';
-  if (session.referer != null) {
-    headers[HttpHeaders.refererHeader] = session.referer.toString();
-  }
-  if (session.origin != null) {
-    headers['origin'] = session.origin.toString();
-  }
-  if (session.userAgent != null) {
-    headers[HttpHeaders.userAgentHeader] = session.userAgent!;
-  }
-  if (session.cookies.isNotEmpty) {
-    headers[HttpHeaders.cookieHeader] = session.cookies.entries
-        .map((entry) => '${entry.key}=${entry.value}')
-        .join('; ');
-  }
-  if (range != null) {
-    headers[HttpHeaders.rangeHeader] = range;
-  }
-  return headers;
-}
 
 void _copyResponseHeaders(
   Map<String, List<String>> source,

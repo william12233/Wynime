@@ -14,9 +14,16 @@ import 'source_rule_test_support.dart';
 SourceRegistryCatalog testSourceRegistryCatalog({
   Iterable<String> packageIds = const ['example.registry'],
   String revision = 'test-revision',
+  Version? packageVersion,
+  String wynimeVersion = '^1.0.0',
 }) {
   final artifacts = [
-    for (final packageId in packageIds) _testRegistryArtifact(packageId),
+    for (final packageId in packageIds)
+      _testRegistryArtifact(
+        packageId,
+        packageVersion: packageVersion,
+        wynimeVersion: wynimeVersion,
+      ),
   ];
   final index = SourceRegistryIndex(
     schemaVersion: 1,
@@ -33,13 +40,17 @@ SourceRegistryCatalog testSourceRegistryCatalog({
   );
 }
 
-_TestRegistryArtifact _testRegistryArtifact(String packageId) {
+_TestRegistryArtifact _testRegistryArtifact(
+  String packageId, {
+  Version? packageVersion,
+  required String wynimeVersion,
+}) {
   final package = SourcePackageManifest(
     schemaVersion: 1,
     packageId: packageId,
     displayName: packageId,
-    version: Version.parse('1.0.0'),
-    wynimeVersionConstraint: VersionConstraint.parse('^1.0.0'),
+    version: packageVersion ?? Version.parse('1.0.0'),
+    wynimeVersionConstraint: VersionConstraint.parse(wynimeVersion),
     securityPolicy: testSourcePolicy(),
     programs: [
       SourceRuleProgram(

@@ -6,6 +6,7 @@ import 'package:wynime/src/application/source_package_startup_controller.dart';
 import 'package:wynime/src/domain/models/source_package_manager_models.dart';
 import 'package:wynime/src/domain/models/source_package_manifest.dart';
 import 'package:wynime/src/domain/models/source_rule_program.dart';
+import 'package:wynime/src/domain/models/source_security_policy.dart';
 import 'package:wynime/src/domain/repositories/source_package_repository.dart';
 import 'package:wynime/src/infrastructure/source_rules/declarative_source_package_manager.dart';
 import 'package:wynime/src/infrastructure/source_rules/persistent_source_package_manager.dart';
@@ -125,6 +126,103 @@ void main() {
   );
 
   test(
+    'updates xifan-shaped 1.1.0 to 1.2.1 and requires fresh permission consent',
+    () async {
+      final repository = _MemorySourcePackageRepository(const []);
+      final controller = SourcePackageStartupController(
+        managerFactory: () async =>
+            _manager(repository, wynimeVersion: '1.0.15'),
+      );
+      addTearDown(controller.dispose);
+      await controller.initialize();
+
+      final original = await controller.installOrUpdate(
+        _package(
+          version: '1.1.0',
+          wynimeVersion: '^1.0.0',
+          permissions: const {
+            SourcePermission.network,
+            SourcePermission.webView,
+          },
+        ),
+      );
+      await controller.enable(
+        packageId: original.package.packageId,
+        version: original.package.version,
+        userApproved: true,
+        reconsentGranted: false,
+      );
+
+      final updated = await controller.installOrUpdate(
+        _package(
+          version: '1.2.1',
+          wynimeVersion: '^1.0.15',
+          permissions: const {
+            SourcePermission.network,
+            SourcePermission.webView,
+            SourcePermission.cookies,
+            SourcePermission.mediaRequestInspection,
+          },
+        ),
+      );
+      expect(updated.status, SourcePackageStatus.disabled);
+      expect(updated.requiresConsent, isTrue);
+      expect(updated.requiresReconsent, isTrue);
+      expect(repository.values.single.package.version, Version.parse('1.2.1'));
+
+      await expectLater(
+        controller.enable(
+          packageId: 'example.anime',
+          version: Version.parse('1.2.1'),
+          userApproved: true,
+          reconsentGranted: false,
+        ),
+        throwsA(
+          isA<SourcePackageLifecycleException>().having(
+            (error) => error.code,
+            'code',
+            'reconsent_required',
+          ),
+        ),
+      );
+
+      final enabled = await controller.enable(
+        packageId: 'example.anime',
+        version: Version.parse('1.2.1'),
+        userApproved: true,
+        reconsentGranted: true,
+      );
+      expect(enabled.status, SourcePackageStatus.enabled);
+      expect(enabled.requiresConsent, isFalse);
+      expect(enabled.requiresReconsent, isFalse);
+      expect(repository.values.single.status, SourcePackageStatus.enabled);
+    },
+  );
+
+  test('1.0.14 runtime rejects a package requiring 1.0.15', () async {
+    final repository = _MemorySourcePackageRepository(const []);
+    final controller = SourcePackageStartupController(
+      managerFactory: () async => _manager(repository, wynimeVersion: '1.0.14'),
+    );
+    addTearDown(controller.dispose);
+    await controller.initialize();
+
+    await expectLater(
+      controller.installOrUpdate(
+        _package(version: '1.2.1', wynimeVersion: '^1.0.15'),
+      ),
+      throwsA(
+        isA<SourcePackageLifecycleException>().having(
+          (error) => error.code,
+          'code',
+          'incompatible_wynime_version',
+        ),
+      ),
+    );
+    expect(repository.values, isEmpty);
+  });
+
+  test(
     'stale lifecycle requests fail safely and do not poison the queue',
     () async {
       final repository = _MemorySourcePackageRepository(const []);
@@ -213,10 +311,13 @@ void main() {
   );
 }
 
-PersistentSourcePackageManager _manager(SourcePackageRepository repository) {
+PersistentSourcePackageManager _manager(
+  SourcePackageRepository repository, {
+  String wynimeVersion = '1.0.0',
+}) {
   return PersistentSourcePackageManager(
     manager: DeclarativeSourcePackageManager(
-      wynimeVersion: Version.parse('1.0.0'),
+      wynimeVersion: Version.parse(wynimeVersion),
     ),
     repository: repository,
   );
@@ -235,14 +336,20 @@ InstalledSourcePackage _installedPackage({
   );
 }
 
-SourcePackageManifest _package() {
+SourcePackageManifest _package({
+  String version = '1.0.0',
+  String wynimeVersion = '^1.0.0',
+  Set<SourcePermission>? permissions,
+}) {
   return SourcePackageManifest(
     schemaVersion: 1,
     packageId: 'example.anime',
     displayName: 'Example Anime',
-    version: Version.parse('1.0.0'),
-    wynimeVersionConstraint: VersionConstraint.parse('^1.0.0'),
-    securityPolicy: testSourcePolicy(),
+    version: Version.parse(version),
+    wynimeVersionConstraint: VersionConstraint.parse(wynimeVersion),
+    securityPolicy: testSourcePolicy(
+      permissions: permissions ?? const {SourcePermission.network},
+    ),
     programs: [
       SourceRuleProgram(
         programId: 'search',

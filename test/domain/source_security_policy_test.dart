@@ -48,6 +48,29 @@ void main() {
     );
   });
 
+  test('exact non-standard ports require an explicit domain declaration', () {
+    final policy = testSourcePolicy(
+      domains: [
+        SourceDomainRule(host: 'example.com', ports: {8443}),
+      ],
+    );
+
+    expect(
+      policy.allowsUri(Uri.parse('https://example.com:8443/path')),
+      isTrue,
+    );
+    expect(policy.allowsUri(Uri.parse('https://example.com/path')), isFalse);
+    expect(
+      policy.allowsUri(Uri.parse('https://example.com:443/path')),
+      isFalse,
+    );
+    expect(
+      policy.allowsUri(Uri.parse('https://example.com:9443/path')),
+      isFalse,
+    );
+    expect(policy.requiresReconsentComparedTo(testSourcePolicy()), isTrue);
+  });
+
   test('network permission is mandatory even for an allowed domain', () {
     final policy = testSourcePolicy(permissions: const {});
 

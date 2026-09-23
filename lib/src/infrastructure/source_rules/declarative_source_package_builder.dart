@@ -383,7 +383,11 @@ final class DeclarativeSourcePackageBuilder implements SourcePackageBuilder {
         continue;
       }
       try {
-        final rule = SourceDomainRule(host: uri.host, schemes: {scheme});
+        final rule = SourceDomainRule(
+          host: uri.host,
+          schemes: {scheme},
+          ports: uri.hasPort ? {uri.port} : const {},
+        );
         if (domainKeys.add(_domainKey(rule))) {
           domains.add(rule);
         }
@@ -1113,9 +1117,7 @@ final class DeclarativeSourcePackageBuilder implements SourcePackageBuilder {
     if (scheme != 'https' && scheme != 'http') {
       return false;
     }
-    if (uri.hasPort &&
-        ((scheme == 'https' && uri.port != 443) ||
-            (scheme == 'http' && uri.port != 80))) {
+    if (uri.hasPort && (uri.port < 1 || uri.port > 65535)) {
       return false;
     }
     try {
@@ -1128,7 +1130,9 @@ final class DeclarativeSourcePackageBuilder implements SourcePackageBuilder {
 
   static String _domainKey(SourceDomainRule rule) {
     final schemes = rule.schemes.toList()..sort();
-    return '${rule.host}|${rule.includeSubdomains}|${schemes.join(',')}';
+    final ports = rule.ports.toList()..sort();
+    return '${rule.host}|${rule.includeSubdomains}|${schemes.join(',')}|'
+        '${ports.join(',')}';
   }
 
   static bool _isSafeTag(String value) {
@@ -1248,6 +1252,8 @@ final class DeclarativeSourcePackageBuilder implements SourcePackageBuilder {
                 'host': domain.host,
                 'includeSubdomains': domain.includeSubdomains,
                 'schemes': domain.schemes.toList()..sort(),
+                if (domain.ports.isNotEmpty)
+                  'ports': domain.ports.toList()..sort(),
               },
             )
             .toList(),

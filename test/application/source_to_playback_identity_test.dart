@@ -2,21 +2,55 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:wynime/src/application/source_installed_live_episode_pipeline.dart';
+import 'package:wynime/src/application/source_installed_live_playback_pipeline.dart';
+import 'package:wynime/src/application/source_installed_live_search_pipeline.dart';
+import 'package:wynime/src/application/source_installed_live_subject_pipeline.dart';
 import 'package:wynime/src/application/source_episode_correlator.dart';
 import 'package:wynime/src/application/source_episode_ordinal.dart';
+import 'package:wynime/src/application/source_live_episode_coordinator.dart';
+import 'package:wynime/src/application/source_live_http_package_runtime.dart';
+import 'package:wynime/src/application/source_live_http_request_coordinator.dart';
+import 'package:wynime/src/application/source_live_http_request_executor.dart';
+import 'package:wynime/src/application/source_live_operation_plan_factory.dart';
+import 'package:wynime/src/application/source_live_playable_source_coordinator.dart';
+import 'package:wynime/src/application/source_live_playback_open_request_coordinator.dart';
+import 'package:wynime/src/application/source_live_playback_pipeline.dart';
+import 'package:wynime/src/application/source_live_playback_prepared_request_opener.dart';
+import 'package:wynime/src/application/source_live_playback_route_coordinator.dart';
+import 'package:wynime/src/application/source_live_playback_session_request_coordinator.dart';
+import 'package:wynime/src/application/source_live_search_coordinator.dart';
+import 'package:wynime/src/application/source_live_subject_coordinator.dart';
+import 'package:wynime/src/application/source_playback_route_coordinator.dart';
+import 'package:wynime/src/application/source_playback_route_selector.dart';
+import 'package:wynime/src/application/source_playback_session_request_builder.dart';
+import 'package:wynime/src/application/subject_source_playback_controller.dart';
 import 'package:wynime/src/application/source_subject_matcher.dart';
 import 'package:wynime/src/domain/models/bangumi_episode_type.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
+import 'package:wynime/src/domain/models/source_http_models.dart';
 import 'package:wynime/src/domain/models/source_identity.dart';
 import 'package:wynime/src/domain/models/source_models.dart';
 import 'package:wynime/src/domain/models/source_package_manager_models.dart';
 import 'package:wynime/src/domain/models/source_package_provenance.dart';
 import 'package:wynime/src/domain/models/source_playback_mapping.dart';
+import 'package:wynime/src/domain/models/source_live_playback_route_models.dart';
+import 'package:wynime/src/domain/models/source_live_playback_session_request_models.dart';
+import 'package:wynime/src/domain/models/source_playback_session_request_models.dart';
+import 'package:wynime/src/domain/services/source_http_transport.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_source_package_repository.dart';
 import 'package:wynime/src/infrastructure/repositories/drift_source_playback_mapping_repository.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_episode_normalizer.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_package_manager.dart';
 import 'package:wynime/src/infrastructure/source_rules/source_package_decoder.dart';
 import 'package:wynime/src/infrastructure/source_rules/source_package_revision_calculator.dart';
 import 'package:wynime/src/infrastructure/source_rules/source_title_normalizer.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_package_runtime.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_playable_source_normalizer.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_search_normalizer.dart';
+import 'package:wynime/src/infrastructure/source_rules/declarative_source_subject_normalizer.dart';
+import 'package:wynime/src/application/source_package_startup_controller.dart';
+import 'package:wynime/src/infrastructure/source_rules/persistent_source_package_manager.dart';
 
 import '../helpers/test_database.dart';
 
@@ -140,6 +174,236 @@ void main() {
     expect(result.selected, details.lines.single.episodes.single.identity);
   });
 
+  test(
+    'main-story correlation requires explicit selection when source ordinals do not align',
+    () {
+      final sourceSubject = SourceSubjectIdentity(
+        sourceId: 'xifan',
+        subjectId: 'source-100',
+      );
+      final sourceEpisode = SourceEpisode(
+        identity: SourceEpisodeIdentity(
+          sourceId: 'xifan',
+          lineId: 'line-a',
+          subjectId: 'source-100',
+          episodeId: 'ep-12',
+        ),
+        title: '12',
+      );
+      final details = SourceSubjectDetails(
+        identity: sourceSubject,
+        title: 'Example',
+        lines: [
+          SourceSubjectLine(
+            identity: sourceSubject,
+            lineId: 'line-a',
+            title: 'A',
+            episodes: [sourceEpisode],
+          ),
+        ],
+      );
+
+      final result = const SourceEpisodeCorrelator().correlate(
+        episode: const BangumiEpisode(
+          id: 'bgm-24',
+          subjectId: '100',
+          name: 'Episode 24',
+          nameCn: '第二十四集',
+          sort: 24,
+          type: 0,
+        ),
+        details: details,
+      );
+
+      expect(result.status, SourceEpisodeCorrelationStatus.selectionRequired);
+      expect(result.reason, 'episode_manual_selection_required');
+      expect(result.selected, isNull);
+      expect(result.candidates, [sourceEpisode]);
+    },
+  );
+
+  test(
+    'manual Bangumi episode mapping survives controller reconstruction',
+    () async {
+      final database = openTestDatabase();
+      addTearDown(database.close);
+      final version = Version.parse('1.0.15');
+      final package = const SourcePackageDecoder().decode(
+        File('sources/xifan.wynsrc.json').readAsStringSync(),
+      );
+      final sourcePackages = SourcePackageStartupController(
+        managerFactory: () async => PersistentSourcePackageManager(
+          manager: DeclarativeSourcePackageManager(wynimeVersion: version),
+          repository: DriftSourcePackageRepository(database),
+        ),
+      );
+      await sourcePackages.initialize();
+      final pending = await sourcePackages.installOrUpdate(package);
+      final installed = await sourcePackages.enable(
+        packageId: pending.package.packageId,
+        version: pending.package.version,
+        userApproved: true,
+        reconsentGranted: false,
+      );
+      expect(installed.status, SourcePackageStatus.enabled);
+
+      final mappingRepository = DriftSourcePlaybackMappingRepository(database);
+      final body = File('test/fixtures/source_packages/xifan/detail_3541.html')
+          .readAsStringSync()
+          .replaceAll(
+            '<li><a href="/anime/633/play/9453?source=xfy2">第 13 集</a></li>',
+            '',
+          );
+      final transport = _StaticSourceHttpTransport(body);
+      final runtime = SourceLiveHttpPackageRuntime(
+        httpExecutor: SourceLiveHttpRequestExecutor(
+          requestCoordinator: SourceLiveHttpRequestCoordinator(
+            wynimeVersion: version,
+          ),
+          transport: transport,
+        ),
+        fixtureRuntime: DeclarativeSourcePackageRuntime(wynimeVersion: version),
+      );
+      final planFactory = SourceLiveOperationPlanFactory(
+        wynimeVersion: version,
+      );
+      final searchPipeline = SourceInstalledLiveSearchPipeline(
+        planFactory: planFactory,
+        searchCoordinator: SourceLiveSearchCoordinator(
+          runtime: runtime,
+          normalizer: const DeclarativeSourceSearchNormalizer(),
+        ),
+      );
+      final subjectPipeline = SourceInstalledLiveSubjectPipeline(
+        planFactory: planFactory,
+        subjectCoordinator: SourceLiveSubjectCoordinator(
+          runtime: runtime,
+          normalizer: const DeclarativeSourceSubjectNormalizer(),
+        ),
+      );
+      final episodePipeline = SourceInstalledLiveEpisodePipeline(
+        planFactory: planFactory,
+        episodeCoordinator: SourceLiveEpisodeCoordinator(
+          runtime: runtime,
+          normalizer: const DeclarativeSourceEpisodeNormalizer(),
+        ),
+      );
+      final playbackPipeline = SourceInstalledLivePlaybackPipeline(
+        planFactory: planFactory,
+        playbackPipeline: SourceLivePlaybackPipeline(
+          playableSourceCoordinator: SourceLivePlayableSourceCoordinator(
+            runtime: runtime,
+            normalizer: const DeclarativeSourcePlayableSourceNormalizer(),
+          ),
+          routeCoordinator: SourceLivePlaybackRouteCoordinator(
+            wynimeVersion: version,
+            routeCoordinator: const SourcePlaybackRouteCoordinator(
+              selector: DeterministicSourcePlaybackRouteSelector(),
+            ),
+          ),
+          sessionRequestCoordinator:
+              SourceLivePlaybackSessionRequestCoordinator(
+                wynimeVersion: version,
+                builder:
+                    const DeterministicSourcePlaybackSessionRequestBuilder(),
+              ),
+          openRequestCoordinator:
+              const SourceLivePlaybackOpenRequestCoordinator(),
+          preparedOpener: const _NoOpenPreparedRequestOpener(),
+        ),
+        closeDelegate: () async {},
+      );
+      addTearDown(() {
+        searchPipeline.close();
+        subjectPipeline.close();
+        episodePipeline.close();
+        sourcePackages.dispose();
+      });
+      addTearDown(sourcePackages.close);
+
+      final subject = const BangumiSubject(
+        id: '638151',
+        name: 'Example season',
+        nameCn: 'Example season',
+        summary: '',
+        eps: 24,
+      );
+      const episode = BangumiEpisode(
+        id: '1705031',
+        subjectId: '638151',
+        name: 'Episode 24',
+        nameCn: '第 24 集',
+        sort: 24,
+        type: 0,
+      );
+      final first = SubjectSourcePlaybackController(
+        subject: subject,
+        sourcePackages: sourcePackages,
+        searchPipeline: searchPipeline,
+        subjectPipeline: subjectPipeline,
+        episodePipeline: episodePipeline,
+        playbackPipeline: playbackPipeline,
+        mappingRepository: mappingRepository,
+      );
+
+      await first.selectSubject(
+        SourceSearchResult(
+          sourceId: 'xifan',
+          subjectId: '633',
+          title: 'Example season',
+        ),
+      );
+      expect(first.state.phase, SubjectSourcePlaybackPhase.ready);
+      final pendingResolution = await first.resolveEpisode(episode);
+      expect(
+        pendingResolution.status,
+        SourceEpisodeResolutionStatus.selectionRequired,
+      );
+      expect(pendingResolution.reason, 'episode_manual_selection_required');
+      expect(pendingResolution.candidates, hasLength(12));
+      final selected = pendingResolution.candidates.singleWhere(
+        (candidate) => candidate.identity.episodeId == '9452',
+      );
+      final selectedResolution = await first.selectEpisode(episode, selected);
+      expect(selectedResolution.status, SourceEpisodeResolutionStatus.ready);
+      expect(selectedResolution.identity, selected.identity);
+      expect(first.state.selectedEpisode, selected.identity);
+      first.dispose();
+
+      final reopened = SubjectSourcePlaybackController(
+        subject: subject,
+        sourcePackages: sourcePackages,
+        searchPipeline: searchPipeline,
+        subjectPipeline: subjectPipeline,
+        episodePipeline: episodePipeline,
+        playbackPipeline: playbackPipeline,
+        mappingRepository: mappingRepository,
+      );
+      addTearDown(reopened.dispose);
+      await reopened.initialize();
+      expect(reopened.state.phase, SubjectSourcePlaybackPhase.ready);
+      final reopenedResolution = await reopened.resolveEpisode(episode);
+      expect(reopenedResolution.status, SourceEpisodeResolutionStatus.ready);
+      expect(reopenedResolution.identity, selected.identity);
+      expect(reopened.state.selectedEpisode, selected.identity);
+
+      final persisted = await mappingRepository.findValidEpisodeMapping(
+        bangumiSubjectId: subject.id,
+        bangumiEpisodeId: episode.id,
+        packageId: 'xifan',
+        expectedSourceSubject: SourceSubjectIdentity(
+          sourceId: 'xifan',
+          subjectId: '633',
+        ),
+        expectedProvenance: SourcePackageRevisionCalculator().calculate(
+          package,
+        ),
+      );
+      expect(persisted?.sourceEpisode, selected.identity);
+      expect(persisted?.mappingKind, EpisodeMappingKind.userConfirmed);
+    },
+  );
+
   test('mapping provenance mismatch prunes stale identity rows', () async {
     final database = openTestDatabase();
     addTearDown(database.close);
@@ -250,3 +514,56 @@ BangumiSubject _subject({required String name, required String nameCn}) =>
       summary: '',
       eps: 1,
     );
+
+final class _StaticSourceHttpTransport implements SourceHttpTransport {
+  _StaticSourceHttpTransport(this.body);
+
+  final String body;
+
+  @override
+  Future<SourceHttpTransportResult> send(SourceHttpRequest request) async {
+    return SourceHttpTransportResult(
+      status: SourceHttpTransportStatus.success,
+      response: SourceHttpResponse(
+        statusCode: 200,
+        finalUri: request.uri,
+        redirectChain: const [],
+        body: body,
+      ),
+    );
+  }
+
+  @override
+  Future<void> close() async {}
+}
+
+final class _NoOpenPreparedRequestOpener
+    implements SourceLivePlaybackPreparedRequestOpener {
+  const _NoOpenPreparedRequestOpener();
+
+  @override
+  Future<SourceLivePlaybackPreparedOpenResult> openPreparedRequest({
+    required SourceLivePlaybackOpenRequestCoordinatorResult openResult,
+  }) async {
+    if (openResult.status ==
+        SourceLivePlaybackOpenRequestCoordinatorStatus.ready) {
+      return SourceLivePlaybackPreparedOpenResult(
+        status: SourceLivePlaybackPreparedOpenStatus.requestNotReady,
+        openRequestStatus:
+            SourceLivePlaybackOpenRequestCoordinatorStatus.failed,
+        sessionStatus: SourceLivePlaybackSessionRequestStatus.ready,
+        routeStatus: SourceLivePlaybackRouteStatus.selected,
+        requestStatus: SourcePlaybackSessionRequestBuildStatus.ready,
+        reasonCode: 'test_open_disabled',
+      );
+    }
+    return SourceLivePlaybackPreparedOpenResult(
+      status: SourceLivePlaybackPreparedOpenStatus.requestNotReady,
+      openRequestStatus: openResult.status,
+      sessionStatus: openResult.sessionStatus,
+      routeStatus: openResult.routeStatus,
+      requestStatus: openResult.requestStatus,
+      reasonCode: openResult.reasonCode ?? 'test_open_disabled',
+    );
+  }
+}

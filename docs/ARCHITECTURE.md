@@ -160,7 +160,8 @@ The first v3 package is `xifan` (`sources/xifan.wynsrc.json`). The post-1.0.12
 package revision uses the public Next site search route, subject detail and
 episode links, and reads the declared video `src` through the existing source
 normalizer. The package allowlist contains only its declared HTTPS hosts,
-including the public Next page host and the declared media hosts. Challenge,
+including the public Next page host, declared media hosts and the exact
+provider redirect port required by the current public route. Challenge,
 unavailable, disabled, consent and incompatible outcomes remain typed and
 secret-safe; no source JavaScript is executed.
 
@@ -170,7 +171,9 @@ Signature metadata is not cryptographic verification and never raises runtime au
 
 - URI schemes are limited to HTTPS and explicitly consented HTTP.
 - Source-package live-operation templates permit only standard ports 443 and
-  80.
+  80. A domain rule defaults to those standard ports, but may explicitly
+  declare a bounded exact `ports` set for a provider HTTPS redirect. Port
+  ranges, wildcards and implicit non-standard ports remain unsupported.
 - User-info URIs, localhost, `.localhost`, `.local`, IPv4 literals and deceptive suffix hosts are rejected.
 - Host matching uses exact equality or a dot-boundary subdomain rule.
 - Adding a permission or domain, enabling subdomains or broadening any resource budget requires fresh consent.
@@ -208,13 +211,16 @@ from a package ID or executes package content.
 public-address-pinned upstream connection path, disables implicit redirect
 trust through manual redirect handling, rechecks the same package allowlist
 for every target, enforces the package redirect and response-byte budgets, and
-decodes only bounded UTF-8 text. Successful response bodies remain in memory
-for a future declarative evaluator; response headers are not retained, and
-failed results retain only a safe typed status/reason. `SourceLiveHttpRequestExecutor`
+decodes only bounded UTF-8 text. It requests identity content encoding at the
+transport boundary so a compressed wire body is not mistaken for invalid
+source text. Successful response bodies remain in memory for a future
+declarative evaluator; response headers are not retained. Failed results retain
+only safe status/reason metadata and, when available, redacted response
+evidence consisting of status, final scheme/host/path, redirect count, content
+type, byte count, body classification and encoding. `SourceLiveHttpRequestExecutor`
 joins admission to exactly one transport call and short-circuits every
-non-ready admission. This task does not add POST, source-rule execution,
-normalization, Search UI, WebView, persistence, retry or provider-specific
-source behavior.
+non-ready admission. Static HTTP remains a GET-only path; browser-rendered
+fallback is a separate typed WebView boundary below.
 
 ## Phase 3 WebView capture architecture
 
@@ -230,7 +236,8 @@ A Windows machine without the WebView2 Runtime returns an explicit `webview2_run
 
 - platform-default or explicitly permitted desktop user agent;
 - bounded initial headers and cookies;
-- event, candidate, header and cookie budgets;
+- event, candidate, header, cookie and optional document budgets;
+- load-stop, first-playable-candidate or bounded document-after-load completion;
 - explicit media-request inspection permission.
 
 Every initial URI, navigation, iframe, resource, XHR and fetch target is checked against the same allowlist. Disallowed navigations are cancelled, disallowed resource requests receive an empty 403 response, and disallowed XHR/fetch requests are aborted.
@@ -251,14 +258,19 @@ Source packages cannot inject Dart, JavaScript, WASM or native executable adapte
 
 ### Capture output and privacy
 
-`WebCaptureAccumulator` stores bounded events and deduplicated media candidates in memory only. Candidate classification recognizes HLS, DASH, common direct audio/video files and media segments using response content type or URL path.
+`WebCaptureAccumulator` stores bounded events, an explicitly requested bounded
+document and deduplicated media candidates in memory only. Candidate
+classification recognizes HLS, DASH, common direct audio/video files and media
+segments using response content type or URL path. A document is captured only
+after the fixed platform `getHtml()` call for a request whose completion policy
+is `documentAfterLoad`; source packages cannot supply script to obtain it.
 
 Diagnostic output contains scheme, host, path-segment count, method and header names only. Cookie values, Authorization values, query strings, fragments and complete media URLs are not logged or persisted. Phase 3 does not create a `PlaybackSession`; Phase 4 must validate and transform a chosen candidate through its own Gate.
 
 ### Live capture admission and generation
 
-`SourceLiveCapturePort` is the typed boundary for a future platform/WebView
-capture implementation. `SourceLiveCaptureRequest` binds one bounded
+`SourceLiveCapturePort` is the typed boundary for a platform/WebView capture
+implementation. `SourceLiveCaptureRequest` binds one bounded
 `WebCaptureRequest` to the exact source package version and program. The
 Application-layer `SourceLiveCaptureCoordinator` revalidates every returned
 `WebCaptureSnapshot` against that request's URI policy, permissions, event
@@ -493,7 +505,7 @@ Every successful result remains in `reviewRequired` state and `canActivate` is a
 
 `SourcePackageLiveOperation` is the only schema-v2 live authority. Its URI
 template has a fixed public DNS authority and HTTP(S) scheme, rejects user-info,
-fragments, non-standard ports and local/IP hosts, and allows placeholders only
+fragments, undeclared non-standard ports and local/IP hosts, and allows placeholders only
 in path/query text. Expansion percent-encodes each bounded input component and
 the resulting URI is passed through the installed package's exact security
 policy and `SourceLiveHttpRequestCoordinator` before any transport call.
@@ -571,8 +583,20 @@ order. Concurrent loads share one in-flight snapshot and closing the adapter
 prevents new work or late catalog composition. The adapter passes the raw bytes
 through `SourceRegistryArtifactCatalogLoader` and never installs, persists,
 enables or activates a package. It is not wired into startup or the Sources
-page, and it does not verify publisher signatures or grant a verified digest
-repository trust.
+page directly; the application composition root supplies it to
+`SourceRegistryController`. It does not verify publisher signatures or grant a
+verified digest repository trust.
+
+`StagedSourceRegistryRepository` is the pre-release companion adapter for one
+OS-assigned app-support directory. It reads only the configured relative index
+and the exact artifact paths declared by that index, rejects symbolic-link or
+canonical-root escapes, applies the same per-artifact and total-byte bounds,
+and passes the exact bytes through `SourceRegistryArtifactCatalogLoader`.
+It never creates or modifies staged files and never installs, persists,
+enables or executes a package. The application composition root may select it
+only when `kDebugMode` and the explicit compile-time staged flag are both true;
+release composition always selects the fixed GitHub registry configuration and
+cannot select the local staged root or any debug harness.
 
 `SourcePackageSignatureVerifier` is the optional cryptographic boundary for
 publisher identity evidence. It signs and verifies the canonical package JSON
@@ -586,7 +610,8 @@ authority. The current startup, Sources UI and GitHub repository paths do not
 implicitly invoke this optional verifier.
 
 `SourceRegistryController` is the Application presentation boundary for an
-optional compile-time configured `GitHubSourceRegistryRepository`. It owns one
+optional compile-time configured registry repository (the fixed GitHub adapter
+in release composition or the explicitly debug-only staged adapter). It owns one
 immutable read-only catalog snapshot, exposes idle/loading/ready/failed states,
 shares concurrent initialization or refresh calls, replaces snapshots only
 after the complete catalog has passed index, artifact, identity and SHA-256
@@ -634,8 +659,14 @@ search generation supersedes an older pending result, and `close` invalidates
 pending/future results without becoming the lower transport's cancellation or
 close authority. Invalid normalizer identity/shape, runtime exceptions and
 non-available source states remain typed failures with no fabricated records.
-This does not connect Search UI, provider behavior, registry, WebView,
-persistence, retry or playback.
+When static execution returns `notFound`, an optional
+`SourceLiveSearchDocumentFallback` may receive the same plan and return only a
+typed `SourceRuntimeResult`. The production fallback builds an exact package
+policy/request capture, uses the fixed native document bridge, and evaluates
+the in-memory body through `SourceLiveDocumentPackageRuntime`; it is not
+invoked for transport, parser or runtime failures. The coordinator still does
+not own Search UI, provider behavior, registry, WebView, persistence, retry or
+playback lifecycle.
 
 `SourceInstalledLiveSearchPipeline` is the installed-package composition above
 that coordinator. It snapshots the caller's installed-package authority once,
@@ -651,7 +682,20 @@ status, marks package-preflight coexistence as partial without changing the
 downstream result, and returns a typed no-usable-sources result with zero
 transport when no plan is admitted. It delegates generation, stale-response,
 close and transport lifecycle to the existing coordinator and adds no retry,
-timeout, persistence, UI, provider or cross-source ranking authority.
+timeout, persistence, provider or cross-source ranking authority. App bootstrap
+owns the optional WebView fallback and SearchPage mounts its bounded capture
+surface only while a fallback generation is pending.
+
+`SourceLiveSubjectCoordinator` applies the same boundary to schema-v3 subject
+details. It performs the static one-GET/two-program evaluation first; when a
+typed metadata or episode result is `notFound`, an optional
+`SourceLiveSubjectDocumentFallback` may capture one bounded rendered document
+and return typed runtime results for both declared programs. The fallback
+shares the exact package admission, policy, generation and document-runtime
+rules, and the subject detail route mounts its platform capture surface only
+while that generation is pending. Transport, challenge, parser and other
+runtime failures do not trigger browser fallback, and neither coordinator
+creates a second playback/session lifecycle.
 
 `SourceSearchPresentationController` is the sole Presentation adapter above
 `SourceInstalledLiveSearchPipeline`. It receives one application search
@@ -1075,6 +1119,26 @@ progress or generation state.
 `WynimePageFrame` is the shared responsive page frame. It applies SafeArea, bounded scrolling, content max width, common spacing and page headers only where the window class has room. Home, Search, Library, Downloads, Sources and Settings render truthful empty, unavailable or review-required states. Search does not call a source service; it keeps a submitted query local until a future source package and application contract are explicitly connected. Sources restores the persisted package snapshot at startup and, when an optional registry is configured, shows its verified catalog; explicit Install／Update stages only a consent-pending manifest, while the security review dialog gates Enable and Disable remains reversible. No UI state represents a successful remote source response or execution merely because a page was opened.
 
 Presentation tests cover compact navigation, local Search submission, Library filters, telemetry default-off and all four locale delegates. Fixed-size Goldens cover the four acceptance viewports. Real Android phone/tablet action evidence is required in addition to these tests; Windows launch/build evidence cannot substitute for observable mouse and keyboard interaction.
+
+### Installed-source playback presentation boundary
+
+The production route is `Bangumi detail -> episode -> typed source-line
+selector -> transient background acquisition -> PlaybackSession -> native
+Media3/libmpv surface`. `PlayerPage` must not render an installed source's
+website as the playback page. A source WebView or rendered-document fallback
+may be mounted only as a bounded, non-interactive, semantics-excluded
+acquisition host and must be torn down after its typed capture result is
+delivered. The visible resolving, failure and playing states belong to Wynime;
+the native `surfaceHost` remains the only visible playback surface.
+
+The line selector consumes only `SourceSubjectLine` values. Every selection is
+carried through the exact `SourceEpisodeIdentity` (`sourceId`, `lineId`,
+`subjectId`, `episodeId`); switching lines stops the current coordinator
+session before opening the selected identity and may restore only a bounded
+non-negative position. No line switch may infer a path, reuse a different
+source identity or create a second playback lifecycle. The debug live harness
+uses the same hidden acquisition-host rule but remains debug-only evidence and
+does not substitute for production detail-page interaction.
 
 ## Phase 12 release and security audit boundary
 

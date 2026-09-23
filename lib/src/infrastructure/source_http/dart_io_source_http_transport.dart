@@ -126,6 +126,11 @@ final class DartIoSourceHttpTransport implements SourceHttpTransport {
           return _failure(
             SourceHttpTransportStatus.redirectUriNotAllowed,
             'redirect_uri_not_allowed',
+            responseEvidence: _redirectEvidence(
+              response: response,
+              finalUri: nextUri!,
+              redirectCount: redirects.length + 1,
+            ),
           );
         }
         final discardResult = await _discardBounded(
@@ -157,6 +162,12 @@ final class DartIoSourceHttpTransport implements SourceHttpTransport {
           status: SourceHttpTransportStatus.httpError,
           reasonCode: 'http_status_${response.statusCode}',
           httpStatus: response.statusCode,
+          responseEvidence: _responseMetadataEvidence(
+            response: response,
+            finalUri: currentUri,
+            redirects: redirects,
+            bodyClassification: 'http_error',
+          ),
         );
       }
 
@@ -191,6 +202,12 @@ final class DartIoSourceHttpTransport implements SourceHttpTransport {
         return _failure(
           SourceHttpTransportStatus.invalidResponse,
           'response_not_utf8',
+          responseEvidence: _responseEvidence(
+            response: response,
+            finalUri: currentUri,
+            redirects: redirects,
+            bodyBytes: bodyBytes,
+          ),
         );
       }
       try {
@@ -215,12 +232,14 @@ final class DartIoSourceHttpTransport implements SourceHttpTransport {
 
   Future<Object> _sendUpstream(SourceHttpRequest request, Uri uri) async {
     try {
+      final headers = <String, String>{...request.headers};
+      headers.putIfAbsent('accept-encoding', () => 'identity');
       return await _upstreamClient
           .send(
             ProxyUpstreamRequest(
               uri: uri,
               method: 'GET',
-              headers: request.headers,
+              headers: headers,
               timeout: request.timeout,
             ),
           )
@@ -259,8 +278,94 @@ final class DartIoSourceHttpTransport implements SourceHttpTransport {
 
   static SourceHttpTransportResult _failure(
     SourceHttpTransportStatus status,
-    String reasonCode,
-  ) => SourceHttpTransportResult(status: status, reasonCode: reasonCode);
+    String reasonCode, {
+    SourceHttpResponseEvidence? responseEvidence,
+  }) => SourceHttpTransportResult(
+    status: status,
+    reasonCode: reasonCode,
+    responseEvidence: responseEvidence,
+  );
+
+  static SourceHttpResponseEvidence _responseEvidence({
+    required ProxyUpstreamResponse response,
+    required Uri finalUri,
+    required List<Uri> redirects,
+    required List<int> bodyBytes,
+  }) => SourceHttpResponseEvidence(
+    statusCode: response.statusCode,
+    finalUri: finalUri,
+    redirectCount: redirects.length,
+    contentType: response.contentType,
+    bodyBytes: bodyBytes.length,
+    bodyClassification: _classifyBody(bodyBytes, response.statusCode),
+    bodyEncoding: _classifyEncoding(bodyBytes),
+  );
+
+  static SourceHttpResponseEvidence _responseMetadataEvidence({
+    required ProxyUpstreamResponse response,
+    required Uri finalUri,
+    required List<Uri> redirects,
+    required String bodyClassification,
+  }) {
+    final contentLength = response.contentLength;
+    final bodyBytes =
+        contentLength != null &&
+            contentLength >= 0 &&
+            contentLength <= 8 * 1024 * 1024
+        ? contentLength
+        : 0;
+    return SourceHttpResponseEvidence(
+      statusCode: response.statusCode,
+      finalUri: finalUri,
+      redirectCount: redirects.length,
+      contentType: response.contentType,
+      bodyBytes: bodyBytes,
+      bodyClassification: bodyClassification,
+      bodyEncoding: 'not_read',
+    );
+  }
+
+  static SourceHttpResponseEvidence? _redirectEvidence({
+    required ProxyUpstreamResponse response,
+    required Uri finalUri,
+    required int redirectCount,
+  }) {
+    final evidenceUri = _redactedEvidenceUri(finalUri);
+    if (evidenceUri == null) {
+      return null;
+    }
+    final contentLength = response.contentLength;
+    final bodyBytes =
+        contentLength != null &&
+            contentLength >= 0 &&
+            contentLength <= 8 * 1024 * 1024
+        ? contentLength
+        : 0;
+    return SourceHttpResponseEvidence(
+      statusCode: response.statusCode,
+      finalUri: evidenceUri,
+      redirectCount: redirectCount,
+      bodyBytes: bodyBytes,
+      bodyClassification: 'redirect',
+      bodyEncoding: 'not_read',
+      contentType: response.contentType,
+    );
+  }
+
+  static Uri? _redactedEvidenceUri(Uri uri) {
+    if (uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.fragment.isNotEmpty ||
+        !const {'http', 'https'}.contains(uri.scheme.toLowerCase())) {
+      return null;
+    }
+    return Uri(
+      scheme: uri.scheme.toLowerCase(),
+      host: uri.host,
+      port: uri.hasPort ? uri.port : null,
+      path: uri.path.isEmpty ? '/' : uri.path,
+    );
+  }
 
   static bool _isRedirect(int statusCode) =>
       statusCode == 300 ||
@@ -352,5 +457,43 @@ final class DartIoSourceHttpTransport implements SourceHttpTransport {
     } on FormatException {
       return null;
     }
+  }
+
+  static String _classifyEncoding(List<int> bytes) {
+    if (bytes.length >= 2 && bytes[0] == 0x1f && bytes[1] == 0x8b) {
+      return 'gzip';
+    }
+    if (bytes.length >= 2 && bytes[0] == 0x78) {
+      final second = bytes[1];
+      if (second == 0x01 ||
+          second == 0x5e ||
+          second == 0x9c ||
+          second == 0xda) {
+        return 'deflate';
+      }
+    }
+    return _decodeUtf8(bytes) == null ? 'non_utf8' : 'utf8';
+  }
+
+  static String _classifyBody(List<int> bytes, int statusCode) {
+    if (bytes.isEmpty) return 'empty';
+    final ascii = String.fromCharCodes(
+      bytes
+          .take(4096)
+          .map((value) => value >= 0x20 && value <= 0x7e ? value : 0x20),
+    ).trimLeft().toLowerCase();
+    if (ascii.startsWith('{') || ascii.startsWith('[')) return 'json';
+    if (ascii.contains('captcha') ||
+        ascii.contains('challenge') ||
+        ascii.contains('cf-chl')) {
+      return 'challenge';
+    }
+    if (statusCode >= 400) return 'error_page';
+    if (ascii.startsWith('<!doctype html') ||
+        ascii.startsWith('<html') ||
+        ascii.contains('<html')) {
+      return 'html';
+    }
+    return 'unexpected';
   }
 }

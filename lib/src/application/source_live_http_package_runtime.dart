@@ -276,7 +276,9 @@ final class SourceLiveHttpPackageRuntime {
             ? 'response_timeout'
             : 'request_timeout',
       SourceHttpTransportStatus.networkError => 'network_error',
-      SourceHttpTransportStatus.invalidResponse => 'invalid_response',
+      SourceHttpTransportStatus.invalidResponse => _safeCode(
+        transport.reasonCode ?? 'invalid_response',
+      ),
       SourceHttpTransportStatus.failed => 'source_http_failed',
       SourceHttpTransportStatus.success => 'source_live_execution_invalid',
     };
@@ -308,6 +310,8 @@ final class SourceLiveHttpPackageRuntime {
         'The live source response was rejected by package policy.',
       'redirect_uri_not_allowed' =>
         'The live source redirect is outside package policy.',
+      'response_not_utf8' =>
+        'The live source response was not valid UTF-8 text.',
       'redirect_budget_exceeded' =>
         'The live source redirect budget was exceeded.',
       'response_too_large' => 'The live source response exceeds its budget.',

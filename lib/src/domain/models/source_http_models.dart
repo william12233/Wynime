@@ -254,6 +254,112 @@ final class SourceHttpResponse {
   }
 }
 
+/// Secret-safe metadata retained when a response cannot become a text
+/// response. It deliberately stores no response bytes or header values.
+final class SourceHttpResponseEvidence {
+  SourceHttpResponseEvidence({
+    required this.statusCode,
+    required this.finalUri,
+    required this.redirectCount,
+    required this.bodyBytes,
+    required this.bodyClassification,
+    required this.bodyEncoding,
+    this.contentType,
+  }) {
+    if (statusCode < 100 || statusCode > 599) {
+      throw ArgumentError.value(
+        statusCode,
+        'statusCode',
+        'HTTP status must be between 100 and 599.',
+      );
+    }
+    if (!_isSafeHttpUri(finalUri)) {
+      throw ArgumentError.value(
+        finalUri,
+        'finalUri',
+        'An evidence URI must be a safe HTTP(S) URI.',
+      );
+    }
+    if (redirectCount < 0 || redirectCount > 10) {
+      throw ArgumentError.value(
+        redirectCount,
+        'redirectCount',
+        'Redirect count is outside the bounded evidence range.',
+      );
+    }
+    if (bodyBytes < 0 || bodyBytes > 8 * 1024 * 1024) {
+      throw ArgumentError.value(
+        bodyBytes,
+        'bodyBytes',
+        'Body byte count is outside the bounded evidence range.',
+      );
+    }
+    _validateToken(bodyClassification, 'bodyClassification');
+    _validateToken(bodyEncoding, 'bodyEncoding');
+    _validateContentType(contentType);
+  }
+
+  final int statusCode;
+  final Uri finalUri;
+  final int redirectCount;
+  final String? contentType;
+  final int bodyBytes;
+  final String bodyClassification;
+  final String bodyEncoding;
+
+  Map<String, Object?> toRedactedDiagnostic() => {
+    'statusCode': statusCode,
+    'finalScheme': finalUri.scheme,
+    'finalHost': finalUri.host,
+    'finalPort': finalUri.hasPort ? finalUri.port : null,
+    'finalPath': _safePath(finalUri),
+    'redirectCount': redirectCount,
+    'contentType': contentType,
+    'bodyBytes': bodyBytes,
+    'bodyClassification': bodyClassification,
+    'bodyEncoding': bodyEncoding,
+  };
+
+  @override
+  String toString() => toRedactedDiagnostic().toString();
+
+  static void _validateToken(String value, String name) {
+    if (!RegExp(r'^[a-z][a-z0-9_]{0,63}$').hasMatch(value)) {
+      throw ArgumentError.value(value, name, 'Must be a safe evidence token.');
+    }
+  }
+
+  static void _validateContentType(String? value) {
+    if (value == null) return;
+    if (value.isEmpty || value.length > 256 || _hasControlCharacters(value)) {
+      throw ArgumentError.value(
+        value,
+        'contentType',
+        'Content type must be bounded and free of control characters.',
+      );
+    }
+  }
+
+  static bool _hasControlCharacters(String value) => value.codeUnits.any(
+    (unit) => unit < 0x20 || (unit >= 0x7f && unit <= 0x9f),
+  );
+
+  static bool _isSafeHttpUri(Uri uri) {
+    if (uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.fragment.isNotEmpty ||
+        !const {'http', 'https'}.contains(uri.scheme.toLowerCase())) {
+      return false;
+    }
+    return !uri.hasPort || (uri.port >= 1 && uri.port <= 65535);
+  }
+
+  static String _safePath(Uri uri) {
+    final path = uri.path.isEmpty ? '/' : uri.path;
+    return path.length <= 2048 ? path : '${path.substring(0, 2048)}...';
+  }
+}
+
 enum SourceHttpTransportStatus {
   success,
   closed,
@@ -274,10 +380,14 @@ final class SourceHttpTransportResult {
     this.response,
     this.reasonCode,
     this.httpStatus,
+    this.responseEvidence,
   }) {
     final isSuccess = status == SourceHttpTransportStatus.success;
     if (isSuccess) {
-      if (response == null || reasonCode != null || httpStatus != null) {
+      if (response == null ||
+          reasonCode != null ||
+          httpStatus != null ||
+          responseEvidence != null) {
         throw ArgumentError(
           'A successful HTTP result must contain only one response.',
         );
@@ -307,6 +417,7 @@ final class SourceHttpTransportResult {
   final SourceHttpResponse? response;
   final String? reasonCode;
   final int? httpStatus;
+  final SourceHttpResponseEvidence? responseEvidence;
 
   Map<String, Object?> toRedactedDiagnostic() => {
     'status': status.name,
@@ -317,6 +428,7 @@ final class SourceHttpTransportResult {
         : utf8.encode(response!.body).length,
     'redirectCount': response?.redirectChain.length,
     'reasonCode': reasonCode,
+    'responseEvidence': responseEvidence?.toRedactedDiagnostic(),
   };
 
   @override

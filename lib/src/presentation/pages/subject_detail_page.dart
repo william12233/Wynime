@@ -12,6 +12,9 @@ import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/domain/models/source_models.dart';
 import 'package:wynime/src/domain/models/source_identity.dart';
 import 'package:wynime/src/presentation/playback/player_page.dart';
+import 'package:wynime/src/presentation/playback/source_line_selector.dart';
+import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_subject_fallback.dart';
+import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_playable_fallback.dart';
 
 final class BangumiSubjectDetailPage extends StatefulWidget {
   const BangumiSubjectDetailPage({
@@ -20,6 +23,8 @@ final class BangumiSubjectDetailPage extends StatefulWidget {
     this.onHome,
     this.onOpenSources,
     this.sourcePlaybackControllerFactory,
+    this.sourcePlayableFallback,
+    this.sourceSubjectFallback,
     super.key,
   });
 
@@ -29,6 +34,8 @@ final class BangumiSubjectDetailPage extends StatefulWidget {
   final VoidCallback? onOpenSources;
   final SubjectSourcePlaybackController Function(BangumiSubject subject)?
   sourcePlaybackControllerFactory;
+  final InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback;
+  final InAppWebViewSourceLiveSubjectFallback? sourceSubjectFallback;
 
   @override
   State<BangumiSubjectDetailPage> createState() =>
@@ -81,9 +88,11 @@ final class _BangumiSubjectDetailPageState
     final current = widget.controller.subjectDetailState(widget.subjectId);
     _syncSourcePlayback(current?.snapshot?.subject);
     final sourcePlayback = _sourcePlayback;
-    final animation = sourcePlayback == null
-        ? widget.controller
-        : Listenable.merge([widget.controller, sourcePlayback]);
+    final animation = Listenable.merge([
+      widget.controller,
+      ?sourcePlayback,
+      if (widget.sourceSubjectFallback != null) widget.sourceSubjectFallback!,
+    ]);
     return AnimatedBuilder(
       animation: animation,
       builder: (context, _) {
@@ -105,18 +114,32 @@ final class _BangumiSubjectDetailPageState
                 ),
             ],
           ),
-          body: SafeArea(
-            child: _DetailBody(
-              controller: widget.controller,
-              subjectId: widget.subjectId,
-              state: state,
-              selectedEpisodeId: _selectedEpisodeId,
-              sourcePlayback: sourcePlayback,
-              onOpenSources: widget.onOpenSources,
-              onEpisodeSelected: (episodeId) {
-                setState(() => _selectedEpisodeId = episodeId);
-              },
-            ),
+          body: Stack(
+            children: [
+              SafeArea(
+                child: _DetailBody(
+                  controller: widget.controller,
+                  subjectId: widget.subjectId,
+                  state: state,
+                  selectedEpisodeId: _selectedEpisodeId,
+                  sourcePlayback: sourcePlayback,
+                  sourcePlayableFallback: widget.sourcePlayableFallback,
+                  onOpenSources: widget.onOpenSources,
+                  onEpisodeSelected: (episodeId) {
+                    setState(() => _selectedEpisodeId = episodeId);
+                  },
+                ),
+              ),
+              if (widget.sourceSubjectFallback != null)
+                Positioned(
+                  key: const ValueKey('source-subject-document-capture'),
+                  left: 0,
+                  top: 0,
+                  width: 1,
+                  height: 1,
+                  child: widget.sourceSubjectFallback!.buildView(context),
+                ),
+            ],
           ),
         );
       },
@@ -131,6 +154,7 @@ final class _DetailBody extends StatelessWidget {
     required this.state,
     required this.selectedEpisodeId,
     required this.sourcePlayback,
+    required this.sourcePlayableFallback,
     required this.onOpenSources,
     required this.onEpisodeSelected,
   });
@@ -140,6 +164,7 @@ final class _DetailBody extends StatelessWidget {
   final BangumiSubjectDetailState? state;
   final String? selectedEpisodeId;
   final SubjectSourcePlaybackController? sourcePlayback;
+  final InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback;
   final VoidCallback? onOpenSources;
   final ValueChanged<String> onEpisodeSelected;
 
@@ -186,6 +211,7 @@ final class _DetailBody extends StatelessWidget {
             snapshot: snapshot,
             selectedEpisodeId: selectedEpisodeId,
             sourcePlayback: sourcePlayback,
+            sourcePlayableFallback: sourcePlayableFallback,
             onOpenSources: onOpenSources,
             onEpisodeSelected: onEpisodeSelected,
           ),
@@ -203,6 +229,7 @@ final class _SubjectDetailContent extends StatelessWidget {
     required this.snapshot,
     required this.selectedEpisodeId,
     required this.sourcePlayback,
+    required this.sourcePlayableFallback,
     required this.onOpenSources,
     required this.onEpisodeSelected,
   });
@@ -213,6 +240,7 @@ final class _SubjectDetailContent extends StatelessWidget {
   final BangumiSubjectDetailSnapshot snapshot;
   final String? selectedEpisodeId;
   final SubjectSourcePlaybackController? sourcePlayback;
+  final InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback;
   final VoidCallback? onOpenSources;
   final ValueChanged<String> onEpisodeSelected;
 
@@ -231,6 +259,7 @@ final class _SubjectDetailContent extends StatelessWidget {
         snapshot: snapshot,
         selectedEpisodeId: selectedEpisodeId,
         sourcePlayback: sourcePlayback,
+        sourcePlayableFallback: sourcePlayableFallback,
         onOpenSources: onOpenSources,
         onEpisodeSelected: onEpisodeSelected,
       ),
@@ -629,6 +658,7 @@ final class _EpisodeSection extends StatelessWidget {
     required this.snapshot,
     required this.selectedEpisodeId,
     required this.sourcePlayback,
+    required this.sourcePlayableFallback,
     required this.onOpenSources,
     required this.onEpisodeSelected,
   });
@@ -639,6 +669,7 @@ final class _EpisodeSection extends StatelessWidget {
   final BangumiSubjectDetailSnapshot snapshot;
   final String? selectedEpisodeId;
   final SubjectSourcePlaybackController? sourcePlayback;
+  final InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback;
   final VoidCallback? onOpenSources;
   final ValueChanged<String> onEpisodeSelected;
 
@@ -690,6 +721,7 @@ final class _EpisodeSection extends StatelessWidget {
                   watchedEpisodeIds: snapshot.watchedEpisodeIds,
                   controller: controller,
                   sourcePlayback: sourcePlayback,
+                  sourcePlayableFallback: sourcePlayableFallback,
                 ),
             ],
           );
@@ -813,7 +845,54 @@ final class _SourcePlaybackStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = controller.state;
     if (state.phase == SubjectSourcePlaybackPhase.ready) {
-      return const SizedBox.shrink();
+      final package = state.package;
+      if (package == null) return const SizedBox.shrink();
+      final alternatives = state.sourceCandidates;
+      return Card(
+        key: const ValueKey('subject-source-playback-status'),
+        child: Padding(
+          padding: const EdgeInsets.all(WynimeSpacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.play_circle_outline),
+                  const SizedBox(width: WynimeSpacing.sm),
+                  Expanded(child: Text('播放來源：${package.package.displayName}')),
+                ],
+              ),
+              if (alternatives.length > 1) ...[
+                const SizedBox(height: WynimeSpacing.xs),
+                const Text('目前來源失效時，可明確切換其他來源：'),
+                const SizedBox(height: WynimeSpacing.xs),
+                Wrap(
+                  spacing: WynimeSpacing.sm,
+                  runSpacing: WynimeSpacing.xs,
+                  children: [
+                    for (final candidate in alternatives)
+                      OutlinedButton(
+                        key: ValueKey(
+                          'subject-source-switch-${candidate.sourceId}-${candidate.subjectId}',
+                        ),
+                        onPressed:
+                            candidate.sourceId ==
+                                    state.sourceSubject?.sourceId &&
+                                candidate.subjectId ==
+                                    state.sourceSubject?.subjectId
+                            ? null
+                            : () => unawaited(
+                                controller.selectSubject(candidate),
+                              ),
+                        child: Text(candidate.sourceId),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
     }
     final (
       String title,
@@ -928,6 +1007,7 @@ final class _SelectedEpisodeActions extends StatelessWidget {
     required this.watchedEpisodeIds,
     required this.controller,
     required this.sourcePlayback,
+    required this.sourcePlayableFallback,
   });
 
   final String subjectId;
@@ -936,6 +1016,7 @@ final class _SelectedEpisodeActions extends StatelessWidget {
   final Set<String> watchedEpisodeIds;
   final BangumiSessionController controller;
   final SubjectSourcePlaybackController? sourcePlayback;
+  final InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback;
 
   @override
   Widget build(BuildContext context) {
@@ -944,6 +1025,7 @@ final class _SelectedEpisodeActions extends StatelessWidget {
         .where((item) => item.id == selectedEpisodeId)
         .first;
     final watched = watchedEpisodeIds.contains(episode.id);
+    final playback = sourcePlayback;
     return Padding(
       padding: const EdgeInsets.only(top: WynimeSpacing.sm),
       child: Wrap(
@@ -961,13 +1043,17 @@ final class _SelectedEpisodeActions extends StatelessWidget {
                   : l10n.subjectDetailMarkWatchedAction,
             ),
           ),
-          if (sourcePlayback != null)
+          if (playback != null)
             FilledButton.icon(
               key: ValueKey('subject-episode-play-${episode.id}'),
               onPressed: () =>
-                  unawaited(_openPlayback(context, sourcePlayback!, episode)),
+                  unawaited(_openPlayback(context, playback, episode)),
               icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('播放'),
+              label: Text(
+                (playback.state.subjectDetails?.lines.length ?? 0) > 1
+                    ? '播放線路'
+                    : '播放',
+              ),
             ),
         ],
       ),
@@ -979,7 +1065,18 @@ final class _SelectedEpisodeActions extends StatelessWidget {
     SubjectSourcePlaybackController source,
     BangumiEpisode episode,
   ) async {
-    final resolution = await source.resolveEpisode(episode);
+    final lines =
+        source.state.subjectDetails?.lines ?? const <SourceSubjectLine>[];
+    String? preferredLineId;
+    if (SourceLineSelector.shouldShow(lines)) {
+      final selectedLine = await _selectLine(context, lines);
+      if (!context.mounted || selectedLine == null) return;
+      preferredLineId = selectedLine.lineId;
+    }
+    final resolution = await source.resolveEpisode(
+      episode,
+      preferredLineId: preferredLineId,
+    );
     if (!context.mounted) return;
     SourceEpisodeIdentity? identity = resolution.identity;
     if (resolution.status == SourceEpisodeResolutionStatus.selectionRequired) {
@@ -1024,10 +1121,25 @@ final class _SelectedEpisodeActions extends StatelessWidget {
           sourceController: source,
           episode: episode,
           sourceEpisode: identity,
+          sourcePlayableFallback: sourcePlayableFallback,
         ),
       ),
     );
   }
+
+  Future<SourceSubjectLine?> _selectLine(
+    BuildContext context,
+    List<SourceSubjectLine> lines,
+  ) => showModalBottomSheet<SourceSubjectLine>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => SafeArea(
+      child: SourceLineSelector(
+        lines: lines,
+        onSelected: (line) => Navigator.of(sheetContext).pop(line),
+      ),
+    ),
+  );
 }
 
 final class _SummarySection extends StatefulWidget {

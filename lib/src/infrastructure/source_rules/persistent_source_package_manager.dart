@@ -29,6 +29,13 @@ final class PersistentSourcePackageManager {
 
   List<InstalledSourcePackage> get enabledPackages => _manager.enabledPackages;
 
+  SourcePackageValidationResult validate(
+    SourcePackageManifest package, {
+    SourcePackageManifest? previous,
+  }) {
+    return _manager.validate(package, previous: previous);
+  }
+
   Future<List<InstalledSourcePackage>> load() {
     return _enqueue(() async {
       final restored = await _repository.load();

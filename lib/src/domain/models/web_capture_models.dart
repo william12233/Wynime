@@ -9,6 +9,22 @@ enum WebCaptureRuntimeState { available, unavailable, unsupported }
 
 enum WebUserAgentMode { platformDefault, desktop }
 
+/// Controls when an interactive capture is considered complete.
+///
+/// [loadStop] preserves the original one-shot navigation behavior. The
+/// candidate policy is for public players whose media request is created only
+/// after the page has loaded and the user has interacted with the player.
+enum WebCaptureCompletionPolicy {
+  loadStop,
+  firstPlayableCandidateAfterLoad,
+
+  /// Waits for the bounded capture window and returns every validated
+  /// playable candidate observed after load. Consumers can then rank and
+  /// probe candidates without stopping at a wrapper or redirector.
+  firstValidatedPlayableCandidateAfterLoad,
+  documentAfterLoad,
+}
+
 enum WebRequestKind { navigation, iframe, resource, xmlHttpRequest, fetch }
 
 enum WebCandidateKind { hls, dash, video, audio, mediaSegment }
@@ -133,6 +149,9 @@ final class WebCaptureRequest {
     required this.budget,
     required this.userAgentPolicy,
     required this.captureMediaRequests,
+    this.captureDocument = false,
+    this.completionPolicy = WebCaptureCompletionPolicy.loadStop,
+    this.postLoadTimeout = const Duration(seconds: 15),
     Map<String, String> initialHeaders = const {},
     Iterable<WebCaptureCookie> initialCookies = const [],
   }) : initialHeaders = _freezeHeaders(initialHeaders),
@@ -161,6 +180,28 @@ final class WebCaptureRequest {
         )) {
       throw ArgumentError('The mediaRequestInspection permission is required.');
     }
+    if ((completionPolicy ==
+                WebCaptureCompletionPolicy.firstPlayableCandidateAfterLoad ||
+            completionPolicy ==
+                WebCaptureCompletionPolicy
+                    .firstValidatedPlayableCandidateAfterLoad) &&
+        !captureMediaRequests) {
+      throw ArgumentError(
+        'Candidate completion requires media-request capture.',
+      );
+    }
+    if (completionPolicy == WebCaptureCompletionPolicy.documentAfterLoad &&
+        !captureDocument) {
+      throw ArgumentError('Document completion requires document capture.');
+    }
+    if (postLoadTimeout < const Duration(seconds: 1) ||
+        postLoadTimeout > const Duration(seconds: 60)) {
+      throw ArgumentError.value(
+        postLoadTimeout,
+        'postLoadTimeout',
+        'Must be between one and sixty seconds.',
+      );
+    }
     if (this.initialCookies.isNotEmpty &&
         !securityPolicy.permissions.contains(SourcePermission.cookies)) {
       throw ArgumentError('The cookies permission is required.');
@@ -187,6 +228,9 @@ final class WebCaptureRequest {
   final WebCaptureBudget budget;
   final WebUserAgentPolicy userAgentPolicy;
   final bool captureMediaRequests;
+  final bool captureDocument;
+  final WebCaptureCompletionPolicy completionPolicy;
+  final Duration postLoadTimeout;
   final UnmodifiableMapView<String, String> initialHeaders;
   final UnmodifiableListView<WebCaptureCookie> initialCookies;
 
@@ -195,7 +239,9 @@ final class WebCaptureRequest {
       'WebCaptureRequest(initialHost: ${initialUri.host}, '
       'headerNames: ${initialHeaders.keys.toList()}, '
       'cookieCount: ${initialCookies.length}, captureMediaRequests: '
-      '$captureMediaRequests)';
+      '$captureMediaRequests, captureDocument: $captureDocument, '
+      'completionPolicy: ${completionPolicy.name}, '
+      'postLoadTimeoutMs: ${postLoadTimeout.inMilliseconds})';
 }
 
 final class WebCaptureEvent {
@@ -246,8 +292,19 @@ final class WebMediaCandidate {
     required Uri uri,
     required Map<String, String> headers,
     required this.sourceEventSequence,
+    Uri? pageUri,
+    String requestMethod = 'GET',
+    this.isRedirect = false,
+    Iterable<Uri> redirectChain = const [],
   }) : uri = _safeHttpUri(uri),
-       headers = _freezeHeaders(headers) {
+       pageUri = pageUri == null ? null : _safeHttpUri(pageUri, 'pageUri'),
+       requestMethod = _httpMethod(requestMethod),
+       headers = _freezeHeaders(headers),
+       redirectChain = UnmodifiableListView(
+         List<Uri>.unmodifiable(
+           redirectChain.map((value) => _safeHttpUri(value, 'redirectUri')),
+         ),
+       ) {
     if (sourceEventSequence < 0) {
       throw ArgumentError.value(
         sourceEventSequence,
@@ -255,20 +312,50 @@ final class WebMediaCandidate {
         'Must not be negative.',
       );
     }
+    if (this.redirectChain.length > 10) {
+      throw ArgumentError.value(
+        this.redirectChain,
+        'redirectChain',
+        'Must contain at most ten bounded redirect hops.',
+      );
+    }
   }
 
   final WebCandidateKind kind;
   final Uri uri;
+  final Uri? pageUri;
+  final String requestMethod;
   final UnmodifiableMapView<String, String> headers;
   final int sourceEventSequence;
+  final bool isRedirect;
+  final UnmodifiableListView<Uri> redirectChain;
+
+  WebMediaCandidate withPageUri(Uri value) => WebMediaCandidate(
+    kind: kind,
+    uri: uri,
+    pageUri: value,
+    requestMethod: requestMethod,
+    headers: headers,
+    sourceEventSequence: sourceEventSequence,
+    isRedirect: isRedirect,
+    redirectChain: redirectChain,
+  );
 
   Map<String, Object?> toRedactedDiagnostic() => {
     'kind': kind.name,
     'scheme': uri.scheme,
     'host': uri.host,
     'pathSegmentCount': uri.pathSegments.length,
+    'pageScheme': pageUri?.scheme,
+    'pageHost': pageUri?.host,
+    'pagePort': pageUri?.hasPort == true ? pageUri!.port : null,
+    'requestMethod': requestMethod,
     'headerNames': headers.keys.toList(growable: false),
     'sourceEventSequence': sourceEventSequence,
+    'isRedirect': isRedirect,
+    'redirectChain': [
+      for (final redirect in redirectChain) _redactedWebUri(redirect),
+    ],
   };
 
   @override
@@ -282,6 +369,8 @@ final class WebCaptureSnapshot {
     required Iterable<WebCaptureCookie> cookies,
     required this.stopReason,
     required this.finalUri,
+    this.hasCompleteRequestMetadata = false,
+    String? documentBody,
   }) : events = UnmodifiableListView(
          List<WebCaptureEvent>.unmodifiable(events),
        ),
@@ -290,19 +379,44 @@ final class WebCaptureSnapshot {
        ),
        cookies = UnmodifiableListView(
          List<WebCaptureCookie>.unmodifiable(cookies),
-       );
+       ),
+       documentBody = _boundedDocumentBody(documentBody);
 
   final UnmodifiableListView<WebCaptureEvent> events;
   final UnmodifiableListView<WebMediaCandidate> candidates;
   final UnmodifiableListView<WebCaptureCookie> cookies;
   final WebCaptureStopReason stopReason;
   final Uri finalUri;
+  final bool hasCompleteRequestMetadata;
+  final String? documentBody;
 
   @override
   String toString() =>
       'WebCaptureSnapshot(finalHost: ${finalUri.host}, '
       'events: ${events.length}, candidates: ${candidates.length}, '
-      'cookies: ${cookies.length}, stopReason: $stopReason)';
+      'cookies: ${cookies.length}, hasDocument: ${documentBody != null}, '
+      'hasCompleteRequestMetadata: $hasCompleteRequestMetadata, '
+      'documentBytes: ${documentBody == null ? null : _utf8Bytes(documentBody!)}, '
+      'stopReason: $stopReason)';
+}
+
+Map<String, Object?> _redactedWebUri(Uri uri) => {
+  'scheme': uri.scheme,
+  'host': uri.host,
+  'port': uri.hasPort ? uri.port : null,
+  'pathSegmentCount': uri.pathSegments.length,
+};
+
+String? _boundedDocumentBody(String? value) {
+  if (value == null) return null;
+  if (_utf8Bytes(value) > 8 * 1024 * 1024) {
+    throw ArgumentError.value(
+      value,
+      'documentBody',
+      'Captured document exceeds the bounded in-memory limit.',
+    );
+  }
+  return value;
 }
 
 final class WebCaptureSecurityException implements Exception {
@@ -393,12 +507,12 @@ String _cookiePath(String value) {
   return path;
 }
 
-Uri _safeHttpUri(Uri value) {
+Uri _safeHttpUri(Uri value, [String name = 'uri']) {
   if (!value.hasScheme ||
       (value.scheme != 'https' && value.scheme != 'http') ||
       value.host.isEmpty ||
       value.userInfo.isNotEmpty) {
-    throw ArgumentError.value(value, 'uri', 'Must be a safe HTTP(S) URI.');
+    throw ArgumentError.value(value, name, 'Must be a safe HTTP(S) URI.');
   }
   return value;
 }

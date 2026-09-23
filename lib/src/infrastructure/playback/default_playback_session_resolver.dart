@@ -66,8 +66,8 @@ final class DefaultPlaybackSessionResolver implements PlaybackSessionResolver {
     final headers = <String, String>{...candidate.headers};
     final candidateUserAgent = _nonEmpty(headers.remove('user-agent'));
     headers.remove('cookie');
-    final referer = _safeReferer(headers.remove('referer'), request.pageUri);
-    final origin = _safeOrigin(headers.remove('origin'), request.pageUri);
+    final referer = _safeReferer(headers.remove('referer'));
+    final origin = _safeOrigin(headers.remove('origin'));
     final requestedUserAgent = _nonEmpty(request.userAgent);
     final userAgent = requestedUserAgent ?? candidateUserAgent;
 
@@ -84,6 +84,7 @@ final class DefaultPlaybackSessionResolver implements PlaybackSessionResolver {
       pageUri: request.pageUri,
       headers: headers,
       cookies: cookies,
+      cookieMetadata: request.cookies,
       referer: referer,
       origin: origin,
       userAgent: userAgent,
@@ -150,9 +151,9 @@ bool _pathMatches(String requestPath, String cookiePath) {
           request.codeUnitAt(cookiePath.length) == 0x2f);
 }
 
-Uri _safeReferer(String? raw, Uri fallback) {
+Uri? _safeReferer(String? raw) {
   if (raw == null || raw.trim().isEmpty) {
-    return fallback;
+    return null;
   }
   final parsed = Uri.tryParse(raw.trim());
   if (parsed == null ||
@@ -167,10 +168,11 @@ Uri _safeReferer(String? raw, Uri fallback) {
   return parsed;
 }
 
-Uri _safeOrigin(String? raw, Uri fallback) {
-  final parsed = raw == null || raw.trim().isEmpty
-      ? _originOf(fallback)
-      : Uri.tryParse(raw.trim());
+Uri? _safeOrigin(String? raw) {
+  if (raw == null || raw.trim().isEmpty) {
+    return null;
+  }
+  final parsed = Uri.tryParse(raw.trim());
   if (parsed == null ||
       (parsed.scheme != 'https' && parsed.scheme != 'http') ||
       parsed.host.isEmpty ||

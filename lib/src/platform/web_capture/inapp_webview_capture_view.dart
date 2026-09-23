@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -17,8 +18,12 @@ final class InAppWebViewCaptureSettings {
     return InAppWebViewSettings(
       useShouldOverrideUrlLoading: true,
       useShouldInterceptRequest: true,
-      useShouldInterceptAjaxRequest: request.captureMediaRequests,
-      useShouldInterceptFetchRequest: request.captureMediaRequests,
+      // These interceptors enforce the package allowlist even when the
+      // capture is collecting a rendered document rather than media events.
+      // The callbacks only retain media candidates when
+      // [captureMediaRequests] is enabled.
+      useShouldInterceptAjaxRequest: true,
+      useShouldInterceptFetchRequest: true,
       useOnDownloadStart: true,
       userAgent: request.userAgentPolicy.value ?? '',
       preferredContentMode: desktop
@@ -89,6 +94,10 @@ final class _InAppWebViewCaptureViewState
   late WebCaptureAccumulator _accumulator;
   late Future<WebCaptureRuntimeStatus> _runtime;
   var _sequence = 0;
+  var _loadStopped = false;
+  var _completionStarted = false;
+  Uri? _lastLoadedUri;
+  Timer? _postLoadTimer;
 
   @override
   void initState() {
@@ -106,7 +115,12 @@ final class _InAppWebViewCaptureViewState
   }
 
   void _reset() {
+    _postLoadTimer?.cancel();
+    _postLoadTimer = null;
     _sequence = 0;
+    _loadStopped = false;
+    _completionStarted = false;
+    _lastLoadedUri = null;
     _accumulator = WebCaptureAccumulator(widget.request);
     _runtime = _prepare();
   }
@@ -154,11 +168,80 @@ final class _InAppWebViewCaptureViewState
 
   bool _record(WebCaptureEvent event) {
     try {
-      return _accumulator.add(event);
+      final accepted = _accumulator.add(event);
+      if (accepted &&
+          _loadStopped &&
+          widget.request.completionPolicy ==
+              WebCaptureCompletionPolicy.firstPlayableCandidateAfterLoad &&
+          _accumulator.hasMediaCandidate) {
+        final finalUri = _lastLoadedUri;
+        if (finalUri != null) {
+          unawaited(_complete(finalUri));
+        }
+      }
+      return accepted;
     } on WebCaptureSecurityException catch (error) {
       widget.onSecurityFailure?.call(error);
       return false;
     }
+  }
+
+  Future<void> _complete(
+    Uri finalUri, {
+    InAppWebViewController? controller,
+  }) async {
+    if (_completionStarted) return;
+    _completionStarted = true;
+    _postLoadTimer?.cancel();
+    _postLoadTimer = null;
+    try {
+      String? documentBody;
+      if (widget.request.captureDocument) {
+        documentBody = await controller?.getHtml();
+        if (documentBody == null) {
+          throw WebCaptureSecurityException(
+            'document_missing',
+            'The WebView did not provide a document snapshot.',
+          );
+        }
+      }
+      final cookies =
+          widget.request.securityPolicy.permissions.contains(
+            SourcePermission.cookies,
+          )
+          ? await widget.browserPort.exportCookies(widget.request, finalUri)
+          : const <WebCaptureCookie>[];
+      if (!mounted) {
+        // The completion flag is deliberately retained: a late platform
+        // callback must not restart a superseded capture.
+        return;
+      }
+      widget.onSnapshot(
+        _accumulator.finish(
+          finalUri: finalUri,
+          cookies: cookies,
+          documentBody: documentBody,
+        ),
+      );
+    } on WebCaptureSecurityException catch (error) {
+      widget.onSecurityFailure?.call(error);
+      widget.onCaptureFailure?.call(error);
+    } on Object {
+      final error = WebCaptureSecurityException(
+        'webview_capture_finalize_failed',
+        'The platform WebView could not finalize capture.',
+      );
+      widget.onSecurityFailure?.call(error);
+      widget.onCaptureFailure?.call(error);
+    }
+  }
+
+  void _failCapture(String code, String message) {
+    if (_completionStarted) return;
+    _completionStarted = true;
+    _postLoadTimer?.cancel();
+    _postLoadTimer = null;
+    widget.onCaptureFailure?.call(WebCaptureSecurityException(code, message));
   }
 
   @override
@@ -241,27 +324,41 @@ final class _InAppWebViewCaptureViewState
           widget.onCaptureFailure?.call(error);
           return;
         }
-        try {
-          final cookies =
-              widget.request.securityPolicy.permissions.contains(
-                SourcePermission.cookies,
-              )
-              ? await widget.browserPort.exportCookies(widget.request, finalUri)
-              : const <WebCaptureCookie>[];
-          widget.onSnapshot(
-            _accumulator.finish(finalUri: finalUri, cookies: cookies),
-          );
-        } on WebCaptureSecurityException catch (error) {
-          widget.onSecurityFailure?.call(error);
-          widget.onCaptureFailure?.call(error);
-        } on Object {
-          final error = WebCaptureSecurityException(
-            'webview_capture_finalize_failed',
-            'The platform WebView could not finalize capture.',
-          );
-          widget.onSecurityFailure?.call(error);
-          widget.onCaptureFailure?.call(error);
+        _loadStopped = true;
+        _lastLoadedUri = finalUri;
+        if (widget.request.completionPolicy ==
+            WebCaptureCompletionPolicy.loadStop) {
+          await _complete(finalUri, controller: controller);
+          return;
         }
+        if (widget.request.completionPolicy ==
+            WebCaptureCompletionPolicy.documentAfterLoad) {
+          _postLoadTimer?.cancel();
+          _postLoadTimer = Timer(widget.request.postLoadTimeout, () {
+            unawaited(_complete(finalUri, controller: controller));
+          });
+          return;
+        }
+        if (widget.request.completionPolicy ==
+                WebCaptureCompletionPolicy.firstPlayableCandidateAfterLoad &&
+            _accumulator.hasMediaCandidate) {
+          await _complete(finalUri, controller: controller);
+          return;
+        }
+        _postLoadTimer?.cancel();
+        _postLoadTimer = Timer(widget.request.postLoadTimeout, () {
+          if (widget.request.completionPolicy ==
+                  WebCaptureCompletionPolicy
+                      .firstValidatedPlayableCandidateAfterLoad &&
+              _accumulator.hasValidatedPlayableCandidate) {
+            unawaited(_complete(finalUri, controller: controller));
+          } else {
+            _failCapture(
+              'playable_capture_timeout',
+              'The public player did not expose a validated playable media candidate within the bounded capture window.',
+            );
+          }
+        });
       },
       onDownloadStarting: (controller, request) {
         widget.onSecurityFailure?.call(
@@ -291,5 +388,12 @@ final class _InAppWebViewCaptureViewState
           ),
       onCreateWindow: (controller, action) async => false,
     );
+  }
+
+  @override
+  void dispose() {
+    _postLoadTimer?.cancel();
+    _postLoadTimer = null;
+    super.dispose();
   }
 }

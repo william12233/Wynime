@@ -1823,3 +1823,132 @@ hosts and package network permission; no raw upstream URL, cookie, token,
 header, response body or source-provided executable code crosses the package
 boundary. Real browser challenge handling, expiring media semantics, device
 playback and UI source selection remain outside this implementation gate.
+
+## ADR-081 — Use a bounded rendered-document fallback for hydrated source pages
+
+**Status:** Accepted
+
+**Decision:** Static source search and subject details remain the first path
+and continue to use the GET-only `SourceLiveHttpRequestExecutor`. When search
+returns typed `notFound`, `SourceLiveSearchCoordinator` may invoke one typed
+`SourceLiveSearchDocumentFallback`. When schema-v3 subject metadata or
+episode-link evaluation returns typed `notFound`,
+`SourceLiveSubjectCoordinator` may invoke one typed
+`SourceLiveSubjectDocumentFallback` with the same admitted plan. The
+production fallbacks construct a `WebCaptureRequest` with the exact installed
+package policy, platform-default user agent, bounded event/header/cookie/
+document budgets and `documentAfterLoad` completion. The subject fallback
+evaluates both declared programs against that one captured document.
+`InAppWebViewCaptureView` obtains the rendered document only through the fixed
+native `getHtml()` call after load; `SourceLiveDocumentPackageRuntime` then
+evaluates it through the existing declarative `SourcePackageRuntime` and
+returns only typed runtime results.
+
+**Reason:** The live xifan search and subject routes return valid HTML
+application shells whose result anchors, title and episode links appear after
+browser hydration. Treating those static shells as parser failures cannot
+produce the user's real search/detail flow, while adding a source-specific
+POST/RPC client would violate the GET boundary and create a provider adapter.
+A bounded rendered-document handoff closes the smallest compatibility gap
+while preserving the existing rule, normalizer, subject/search aggregation and
+single-session authorities.
+
+**Safety:** Both fallbacks run only for typed `notFound`, never for transport,
+parser, challenge or other runtime failures, and are generation-scoped so a
+newer operation supersedes older WebView work. AJAX/fetch interception remains
+enabled for document captures; every navigation, resource, XHR and fetch target
+is checked against the package allowlist. The xifan next-runtime package
+declares the observed `api.xifandm.net` HTTPS host explicitly. Source packages
+cannot inject JavaScript or read arbitrary browser state. Captured document
+text, headers, cookies and response data remain in memory only; diagnostics
+retain only bounded status, counts and safe reason codes. The fallback creates
+no second HTTP transport, evaluator, playback session, player lifecycle or
+persistence path.
+
+## ADR-082 — Declare exact non-standard HTTPS ports explicitly
+
+**Status:** Accepted
+
+**Decision:** `SourceDomainRule` keeps standard HTTPS/HTTP ports as its default
+authority. A rule may optionally declare a bounded set of exact ports. The
+source-package decoder and encoder carry the optional `ports` array, policy
+semantic equality and re-consent checks include it, and the declarative source
+builder may add an exact observed port only through its existing explicit
+domain-admission path. Port ranges, wildcard ports and implicit non-standard
+ports remain rejected.
+
+**Reason:** The current public xifan playback route redirects from its declared
+media host to `https://bjdownload.pan.wo.cn:30443`. Treating that redirect as a
+generic standard-port request made the typed live path reject a real provider
+route before the provider could return its response. An exact port declaration
+closes that compatibility gap without broadening the source package into an
+open proxy.
+
+**Safety:** An exact port is part of the package authority and therefore the
+canonical package identity, semantic policy comparison and re-consent boundary.
+Host equality, dot-boundary subdomain matching, HTTPS requirements, public DNS
+preflight, redirect budgets and bounded response handling remain unchanged.
+The xifan continuation package is therefore versioned as unreleased `1.2.1`
+with an updated registry hash. An earlier Android replay reached that declared
+endpoint but received a typed HTTP 403 with zero captured cookies. The later
+bounded harness observed HTTP 206 `video/mp4` and an initial Media3 handoff;
+sustained duration playback remains unclaimed and no access-control bypass is
+attempted.
+
+## ADR-083 — Keep source acquisition offstage and line identity exact in playback UX
+
+**Status:** Accepted for the unreleased `1.0.15+16` continuation
+
+**Decision:** The visible installed-source playback route is owned by Wynime:
+detail page, exact episode and source-line selection, transient background
+acquisition, the existing `PlaybackSession`／`PlaybackCoordinator` lifecycle,
+and the native Media3 or libmpv surface. A rendered-document or WebView
+fallback may be mounted only in a bounded 1x1, non-interactive,
+semantics-excluded host while acquisition is pending. Once a typed capture
+result is delivered, the host and its capture port are closed; the result is
+passed to the existing playback route and never rendered as a source website.
+The line selector accepts only typed `SourceSubjectLine` records. A line
+change stops the old session, resolves the exact `SourceEpisodeIdentity` for
+the selected `lineId`, and restores only a bounded position when safe.
+
+**Reason:** The previous fallback view occupied the player surface and made a
+source's website chrome visible, which violated the product's Animeko-style
+playback contract and obscured the distinction between acquisition and
+playback. Keeping the source surface offstage fixes that presentation defect
+without adding a provider adapter, second player lifecycle, or URL inference.
+
+**Safety:** The hidden host cannot receive pointer or semantics interaction;
+generation checks, typed identity validation and the existing package policy,
+request budgets, redirect rules and secret-safe diagnostics remain in force.
+The player surface still receives only the capability URI through the existing
+session/proxy boundary. The debug harness follows the same hidden-host rule but
+is not production evidence. `source_line_selector_test.dart` and
+`source_playback_ux_dependency_test.dart` guard the selector contract and the
+absence of a visible source-page dependency.
+
+## ADR-084 — Use the same verified registry boundary for debug admission
+
+**Status:** Accepted for the unreleased `1.0.15+16` continuation
+
+**Decision:** A debug build may opt into a read-only staged registry rooted at
+the app-support `source-registry` directory only when both `kDebugMode` and
+the compile-time `WYNIME_SOURCE_REGISTRY_USE_STAGED` define are true. The
+staged repository reads the exact index and package bytes, applies canonical
+root/path and regular-file checks, and delegates decoding, byte budgets,
+artifact inventory, SHA-256 verification and package identity checks to the
+same registry components used by the fixed GitHub repository. It exposes no
+write or lifecycle mutation operation. Release composition always selects the
+fixed GitHub registry and cannot select the staged path.
+
+**Reason:** Production-path admission needs real Sources UI, install/update,
+fresh permission consent and persistence evidence for a dirty unreleased
+package without making local files or a test harness part of the production
+registry. Reusing the exact catalog/verifier boundary keeps that evidence
+representative while preventing a debug convenience from becoming a release
+override.
+
+**Safety:** The staged root is canonicalized and all relative paths are
+bounded; symlinked or non-regular artifacts are rejected. The staging helper
+verifies the index-declared digest before placing bytes in the app's private
+support directory. The runtime remains declarative, and registry reads do not
+install, enable, bypass consent or create a second playback lifecycle.

@@ -17,6 +17,15 @@ final class SourceLiveSearchPlan {
   String get identityKey => requestPlan.identityKey;
 }
 
+/// Optional browser-backed fallback for a source whose public search page
+/// hydrates results after the bounded static HTTP response completes.
+///
+/// The fallback receives the same admitted plan and returns only the typed
+/// runtime result. It cannot change request construction or package policy.
+abstract interface class SourceLiveSearchDocumentFallback {
+  Future<SourceRuntimeResult> capture(SourceLiveSearchPlan plan);
+}
+
 /// Composes bounded live source execution with the existing search normalizer.
 ///
 /// Each call owns one immutable input snapshot and evaluates plans in caller
@@ -28,12 +37,14 @@ final class SourceLiveSearchCoordinator {
   SourceLiveSearchCoordinator({
     required this.runtime,
     required this.normalizer,
+    this.documentFallback,
   });
 
   static const maxPlans = 32;
 
   final SourceLiveHttpPackageRuntime runtime;
   final SourceSearchNormalizer normalizer;
+  final SourceLiveSearchDocumentFallback? documentFallback;
 
   var _generation = 0;
   var _closed = false;
@@ -138,7 +149,12 @@ final class SourceLiveSearchCoordinator {
 
   Future<SourceRuntimeResult> _executePlan(SourceLiveSearchPlan plan) async {
     try {
-      return await runtime.execute(plan.requestPlan);
+      final staticResult = await runtime.execute(plan.requestPlan);
+      if (staticResult.status == SourceRuntimeStatus.notFound &&
+          documentFallback != null) {
+        return await documentFallback!.capture(plan);
+      }
+      return staticResult;
     } on Object {
       final package = plan.requestPlan.installedPackage.package;
       return SourceRuntimeResult(

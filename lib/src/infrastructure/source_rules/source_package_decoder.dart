@@ -211,6 +211,7 @@ final class SourcePackageDecoder {
             'host',
             'includeSubdomains',
             'schemes',
+            'ports',
           });
           final schemes =
               _asList(
@@ -224,6 +225,15 @@ final class SourcePackageDecoder {
                     ),
                   )
                   .toSet();
+          final portsValue = domain['ports'];
+          final Set<int> ports = portsValue == null
+              ? <int>{}
+              : _asList(portsValue, '$domainPath.ports').indexed
+                    .map(
+                      (port) =>
+                          _asInt(port.$2, '$domainPath.ports[${port.$1}]'),
+                    )
+                    .toSet();
           try {
             return SourceDomainRule(
               host: _requiredString(domain, 'host', domainPath),
@@ -233,6 +243,7 @@ final class SourcePackageDecoder {
                 domainPath,
               ),
               schemes: schemes,
+              ports: ports,
             );
           } on ArgumentError catch (error) {
             throw SourcePackageFormatException(
@@ -711,6 +722,13 @@ final class SourcePackageDecoder {
   static String _asString(Object? value, String path) {
     if (value is! String) {
       throw SourcePackageFormatException(path, 'Expected a string.');
+    }
+    return value;
+  }
+
+  static int _asInt(Object? value, String path) {
+    if (value is! int) {
+      throw SourcePackageFormatException(path, 'Expected an integer.');
     }
     return value;
   }

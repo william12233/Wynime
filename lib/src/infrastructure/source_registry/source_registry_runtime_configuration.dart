@@ -55,6 +55,15 @@ final class SourceRegistryRuntimeConfiguration {
     return production;
   }
 
+  /// Allows the pre-release filesystem registry only in an explicit debug
+  /// composition. Release builds must always use [production].
+  static bool useStagedRegistry({
+    required bool isDebugMode,
+    required bool requested,
+  }) {
+    return isDebugMode && requested;
+  }
+
   static SourceRegistryRuntimeConfiguration? fromValues({
     required String owner,
     required String repository,

@@ -46,6 +46,26 @@ final class SourcePackageStartupController extends ChangeNotifier {
   List<InstalledSourcePackage> get enabledPackages =>
       _manager?.enabledPackages ?? const <InstalledSourcePackage>[];
 
+  /// Validates a registry candidate against the current Wynime runtime and,
+  /// when present, the installed package identity. A null result means the
+  /// durable snapshot is not ready and the UI must not infer compatibility.
+  SourcePackageValidationResult? validateCandidate(
+    SourcePackageManifest package,
+  ) {
+    final manager = _manager;
+    if (_status != SourcePackageStartupStatus.ready || manager == null) {
+      return null;
+    }
+    SourcePackageManifest? previous;
+    for (final installed in manager.installedPackages) {
+      if (installed.package.packageId == package.packageId) {
+        previous = installed.package;
+        break;
+      }
+    }
+    return manager.validate(package, previous: previous);
+  }
+
   Future<void> initialize() {
     final existing = _initializeFuture;
     if (existing != null) return existing;

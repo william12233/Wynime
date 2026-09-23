@@ -2,8 +2,8 @@
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.1.0",
-  "wynimeVersion": "^1.0.0",
+  "version": "1.2.1",
+  "wynimeVersion": "^1.0.15",
   "cache": {
     "searchTtlSeconds": 0,
     "subjectMetadataTtlSeconds": 0,
@@ -24,6 +24,11 @@
         "schemes": ["https"]
       },
       {
+        "host": "api.xifandm.net",
+        "includeSubdomains": false,
+        "schemes": ["https"]
+      },
+      {
         "host": "player.moedot.net",
         "includeSubdomains": false,
         "schemes": ["https"]
@@ -32,9 +37,20 @@
         "host": "apn.moedot.net",
         "includeSubdomains": false,
         "schemes": ["https"]
+      },
+      {
+        "host": "bjdownload.pan.wo.cn",
+        "includeSubdomains": false,
+        "schemes": ["https"],
+        "ports": [30443]
       }
     ],
-    "permissions": ["network"],
+    "permissions": [
+      "network",
+      "cookies",
+      "webView",
+      "mediaRequestInspection"
+    ],
     "budget": {
       "maxDocumentBytes": 262144,
       "maxRecords": 128,

@@ -51,6 +51,24 @@ final class WebCaptureCandidateClassifier {
     return null;
   }
 
+  /// Deterministically ranks captured candidates without using a source name,
+  /// host, URL token or package-specific rule. Validation still happens in the
+  /// bounded probe; this score only avoids trying obvious segments and
+  /// redirectors before a supported media resource.
+  int score(WebMediaCandidate candidate) {
+    final kindScore = switch (candidate.kind) {
+      WebCandidateKind.hls => 400,
+      WebCandidateKind.video => 300,
+      WebCandidateKind.audio => 250,
+      WebCandidateKind.dash => 100,
+      WebCandidateKind.mediaSegment => 50,
+    };
+    final methodScore = candidate.requestMethod == 'GET' ? 40 : 0;
+    final redirectScore = candidate.isRedirect ? -20 : 0;
+    final provenanceScore = candidate.redirectChain.isEmpty ? 10 : 0;
+    return kindScore + methodScore + redirectScore + provenanceScore;
+  }
+
   static String? _headerValue(Map<String, String> headers, String name) {
     for (final entry in headers.entries) {
       if (entry.key.toLowerCase() == name) {

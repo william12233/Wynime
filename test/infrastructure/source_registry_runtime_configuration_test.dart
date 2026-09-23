@@ -21,6 +21,43 @@ void main() {
     expect(configuration.indexPath, 'sources/index.json');
   });
 
+  test('release composition cannot select a local staged registry', () {
+    expect(
+      SourceRegistryRuntimeConfiguration.useStagedRegistry(
+        isDebugMode: false,
+        requested: true,
+      ),
+      isFalse,
+    );
+    expect(
+      SourceRegistryRuntimeConfiguration.forApplication(
+        isDebugMode: false,
+        allowDevOverride: true,
+      ),
+      same(SourceRegistryRuntimeConfiguration.production),
+    );
+  });
+
+  test(
+    'staged registry selection requires both debug and explicit request',
+    () {
+      expect(
+        SourceRegistryRuntimeConfiguration.useStagedRegistry(
+          isDebugMode: true,
+          requested: false,
+        ),
+        isFalse,
+      );
+      expect(
+        SourceRegistryRuntimeConfiguration.useStagedRegistry(
+          isDebugMode: true,
+          requested: true,
+        ),
+        isTrue,
+      );
+    },
+  );
+
   test('rejects unsafe registry path and ref values before construction', () {
     final invalidConfigurations = <SourceRegistryRuntimeConfiguration?>[
       SourceRegistryRuntimeConfiguration.fromValues(

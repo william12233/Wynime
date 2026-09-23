@@ -11,6 +11,7 @@ void main() {
     int maxCandidates = 5,
     int maxHeaderBytes = 4096,
     int maxRedirects = 3,
+    bool captureDocument = false,
   }) {
     return WebCaptureRequest(
       initialUri: Uri.parse('https://example.com/watch'),
@@ -33,6 +34,7 @@ void main() {
         mode: WebUserAgentMode.platformDefault,
       ),
       captureMediaRequests: true,
+      captureDocument: captureDocument,
     );
   }
 
@@ -209,5 +211,28 @@ void main() {
 
     expect(snapshot.cookies, hasLength(1));
     expect(snapshot.toString(), isNot(contains('secret')));
+  });
+
+  test('document snapshots remain bounded and opt-in', () {
+    final documentRequest = request(captureDocument: true);
+    final documentSnapshot = WebCaptureAccumulator(documentRequest).finish(
+      finalUri: Uri.parse('https://example.com/search'),
+      documentBody: '<main>hydrated</main>',
+    );
+    expect(documentSnapshot.documentBody, '<main>hydrated</main>');
+
+    expect(
+      () => WebCaptureAccumulator(request()).finish(
+        finalUri: Uri.parse('https://example.com/search'),
+        documentBody: '<main>not requested</main>',
+      ),
+      throwsA(
+        isA<WebCaptureSecurityException>().having(
+          (error) => error.code,
+          'code',
+          'document_not_requested',
+        ),
+      ),
+    );
   });
 }

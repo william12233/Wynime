@@ -39,12 +39,16 @@ final class SourceEpisodeCorrelator {
 
     final expected = SourceEpisodeOrdinal.canonicalBangumiSort(episode.sort);
     if (expected.isEmpty) {
-      return const SourceEpisodeCorrelationResult(
+      final allEpisodes = _allEpisodes(details);
+      return SourceEpisodeCorrelationResult(
         status: SourceEpisodeCorrelationStatus.selectionRequired,
-        candidates: [],
-        reason: 'episode_sort_invalid',
+        candidates: allEpisodes,
+        reason: allEpisodes.isEmpty
+            ? 'episode_sort_invalid'
+            : 'episode_manual_selection_required',
       );
     }
+    final allEpisodes = _allEpisodes(details);
     final candidates = <SourceEpisode>[];
     for (final line in details.lines) {
       for (final sourceEpisode in line.episodes) {
@@ -65,12 +69,14 @@ final class SourceEpisodeCorrelator {
       );
     }
     return SourceEpisodeCorrelationResult(
-      status: values.isEmpty
+      status: values.isEmpty && allEpisodes.isEmpty
           ? SourceEpisodeCorrelationStatus.notFound
           : SourceEpisodeCorrelationStatus.selectionRequired,
-      candidates: values,
-      reason: values.isEmpty
+      candidates: values.isEmpty ? allEpisodes : values,
+      reason: values.isEmpty && allEpisodes.isEmpty
           ? 'episode_not_found'
+          : values.isEmpty
+          ? 'episode_manual_selection_required'
           : 'episode_ordinal_ambiguous',
     );
   }

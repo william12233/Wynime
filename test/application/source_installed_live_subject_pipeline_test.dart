@@ -11,6 +11,7 @@ import 'package:wynime/src/application/source_live_subject_coordinator.dart';
 import 'package:wynime/src/domain/models/source_http_models.dart';
 import 'package:wynime/src/domain/models/source_identity.dart';
 import 'package:wynime/src/domain/models/source_package_manager_models.dart';
+import 'package:wynime/src/domain/models/source_runtime_models.dart';
 import 'package:wynime/src/domain/services/source_http_transport.dart';
 import 'package:wynime/src/infrastructure/source_rules/declarative_source_package_manager.dart';
 import 'package:wynime/src/infrastructure/source_rules/declarative_source_package_runtime.dart';
@@ -25,7 +26,7 @@ void main() {
         File('sources/xifan.wynsrc.json').readAsStringSync(),
       );
       final manager = DeclarativeSourcePackageManager(
-        wynimeVersion: Version.parse('1.0.12'),
+        wynimeVersion: Version.parse('1.0.15'),
       );
       final pending = manager.install(package);
       final installed = manager.enable(
@@ -42,17 +43,17 @@ void main() {
       final runtime = SourceLiveHttpPackageRuntime(
         httpExecutor: SourceLiveHttpRequestExecutor(
           requestCoordinator: SourceLiveHttpRequestCoordinator(
-            wynimeVersion: Version.parse('1.0.12'),
+            wynimeVersion: Version.parse('1.0.15'),
           ),
           transport: transport,
         ),
         fixtureRuntime: DeclarativeSourcePackageRuntime(
-          wynimeVersion: Version.parse('1.0.12'),
+          wynimeVersion: Version.parse('1.0.15'),
         ),
       );
       final pipeline = SourceInstalledLiveSubjectPipeline(
         planFactory: SourceLiveOperationPlanFactory(
-          wynimeVersion: Version.parse('1.0.12'),
+          wynimeVersion: Version.parse('1.0.15'),
         ),
         subjectCoordinator: SourceLiveSubjectCoordinator(
           runtime: runtime,
@@ -90,17 +91,17 @@ void main() {
     final runtime = SourceLiveHttpPackageRuntime(
       httpExecutor: SourceLiveHttpRequestExecutor(
         requestCoordinator: SourceLiveHttpRequestCoordinator(
-          wynimeVersion: Version.parse('1.0.12'),
+          wynimeVersion: Version.parse('1.0.15'),
         ),
         transport: transport,
       ),
       fixtureRuntime: DeclarativeSourcePackageRuntime(
-        wynimeVersion: Version.parse('1.0.12'),
+        wynimeVersion: Version.parse('1.0.15'),
       ),
     );
     final pipeline = SourceInstalledLiveSubjectPipeline(
       planFactory: SourceLiveOperationPlanFactory(
-        wynimeVersion: Version.parse('1.0.12'),
+        wynimeVersion: Version.parse('1.0.15'),
       ),
       subjectCoordinator: SourceLiveSubjectCoordinator(
         runtime: runtime,
@@ -133,6 +134,69 @@ void main() {
     );
     expect(transport.requests, isEmpty);
   });
+
+  test(
+    'subject document fallback evaluates metadata and episodes once',
+    () async {
+      final package = const SourcePackageDecoder().decode(
+        File('sources/xifan.wynsrc.json').readAsStringSync(),
+      );
+      final manager = DeclarativeSourcePackageManager(
+        wynimeVersion: Version.parse('1.0.15'),
+      );
+      final pending = manager.install(package);
+      final installed = manager.enable(
+        packageId: pending.package.packageId,
+        version: pending.package.version,
+        userApproved: true,
+        reconsentGranted: false,
+      );
+      final transport = _RecordingTransport(body: '<main></main>');
+      final fallback = _RecordingSubjectFallback(installed: installed);
+      final runtime = SourceLiveHttpPackageRuntime(
+        httpExecutor: SourceLiveHttpRequestExecutor(
+          requestCoordinator: SourceLiveHttpRequestCoordinator(
+            wynimeVersion: Version.parse('1.0.15'),
+          ),
+          transport: transport,
+        ),
+        fixtureRuntime: DeclarativeSourcePackageRuntime(
+          wynimeVersion: Version.parse('1.0.15'),
+        ),
+      );
+      final pipeline = SourceInstalledLiveSubjectPipeline(
+        planFactory: SourceLiveOperationPlanFactory(
+          wynimeVersion: Version.parse('1.0.15'),
+        ),
+        subjectCoordinator: SourceLiveSubjectCoordinator(
+          runtime: runtime,
+          normalizer: const DeclarativeSourceSubjectNormalizer(),
+          documentFallback: fallback,
+        ),
+      );
+
+      final result = await pipeline.listSubjects(
+        targets: [
+          SourceInstalledLiveSubjectTarget(
+            installedPackage: installed,
+            subject: SourceSubjectIdentity(
+              sourceId: 'xifan',
+              subjectId: '3408',
+            ),
+          ),
+        ],
+      );
+
+      expect(result.status, SourceInstalledLiveSubjectPipelineStatus.available);
+      expect(result.subjectResults.single.details!.title, 'Hydrated title');
+      expect(
+        result.subjectResults.single.details!.lines.single.episodes,
+        hasLength(1),
+      );
+      expect(fallback.plans, hasLength(1));
+      expect(transport.requests, hasLength(1));
+    },
+  );
 }
 
 final class _RecordingTransport implements SourceHttpTransport {
@@ -157,4 +221,50 @@ final class _RecordingTransport implements SourceHttpTransport {
 
   @override
   Future<void> close() async {}
+}
+
+final class _RecordingSubjectFallback
+    implements SourceLiveSubjectDocumentFallback {
+  _RecordingSubjectFallback({required this.installed});
+
+  final InstalledSourcePackage installed;
+  final plans = <SourceLiveSubjectPlan>[];
+
+  @override
+  Future<SourceLiveSubjectDocumentFallbackResult> capture(
+    SourceLiveSubjectPlan plan,
+  ) async {
+    plans.add(plan);
+    return SourceLiveSubjectDocumentFallbackResult(
+      metadata: SourceRuntimeResult(
+        packageId: installed.package.packageId,
+        packageVersion: installed.package.version,
+        programId: 'subject_metadata',
+        status: SourceRuntimeStatus.available,
+        records: [
+          SourceRuntimeRecord({'title': 'Hydrated title'}),
+        ],
+        diagnostics: const [],
+        consumedSteps: 1,
+        selectorMatches: 1,
+      ),
+      episodes: SourceRuntimeResult(
+        packageId: installed.package.packageId,
+        packageVersion: installed.package.version,
+        programId: 'episode_links',
+        status: SourceRuntimeStatus.available,
+        records: [
+          SourceRuntimeRecord({
+            'lineId': 'xfxf1',
+            'subjectId': '3408',
+            'episodeId': '154427',
+            'episodeTitle': '第 1 集',
+          }),
+        ],
+        diagnostics: const [],
+        consumedSteps: 1,
+        selectorMatches: 1,
+      ),
+    );
+  }
 }

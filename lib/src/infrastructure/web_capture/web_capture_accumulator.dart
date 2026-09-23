@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../domain/models/source_security_policy.dart';
 import '../../domain/models/web_capture_models.dart';
 import '../../domain/services/web_capture_candidate_classifier.dart';
@@ -14,8 +16,27 @@ final class WebCaptureAccumulator {
   var _redirects = 0;
   var _lastSequence = -1;
   WebCaptureStopReason? _stopReason;
+  final List<Uri> _redirectChain = [];
 
   bool get isStopped => _stopReason != null;
+
+  /// Whether at least one bounded media candidate has been observed.
+  ///
+  /// The getter intentionally exposes only presence, not URI or header data,
+  /// so the platform view can decide when to complete an interactive capture
+  /// without widening the diagnostic surface.
+  bool get hasMediaCandidate => _candidates.isNotEmpty;
+
+  /// A candidate is validated enough for bounded completion only when the
+  /// WebView observed a GET for a supported playable resource. Redirectors,
+  /// DASH, and raw media segments remain available to downstream ranking but
+  /// must not terminate capture early.
+  bool get hasValidatedPlayableCandidate => _candidates.values.any(
+    (candidate) =>
+        candidate.requestMethod == 'GET' &&
+        candidate.kind != WebCandidateKind.dash &&
+        candidate.kind != WebCandidateKind.mediaSegment,
+  );
 
   bool add(WebCaptureEvent event) {
     if (isStopped) {
@@ -42,6 +63,9 @@ final class WebCaptureAccumulator {
       if (_redirects > request.securityPolicy.budget.maxRedirects) {
         _stopReason = WebCaptureStopReason.redirectBudgetExceeded;
         return false;
+      }
+      if (_redirectChain.length < request.securityPolicy.budget.maxRedirects) {
+        _redirectChain.add(event.uri);
       }
     }
     final eventHeaderBytes = webCaptureHeaderBytes(event.headers);
@@ -71,6 +95,10 @@ final class WebCaptureAccumulator {
             uri: normalized,
             headers: event.headers,
             sourceEventSequence: event.sequence,
+            pageUri: request.initialUri,
+            requestMethod: event.method,
+            isRedirect: event.isRedirect,
+            redirectChain: _redirectChain,
           );
         }
       }
@@ -81,6 +109,7 @@ final class WebCaptureAccumulator {
   WebCaptureSnapshot finish({
     required Uri finalUri,
     Iterable<WebCaptureCookie> cookies = const [],
+    String? documentBody,
   }) {
     if (!request.securityPolicy.allowsUri(finalUri)) {
       throw WebCaptureSecurityException(
@@ -115,13 +144,32 @@ final class WebCaptureAccumulator {
         );
       }
     }
+    if (!request.captureDocument && documentBody != null) {
+      throw WebCaptureSecurityException(
+        'document_not_requested',
+        'A document was captured without an explicit document request.',
+      );
+    }
+    if (documentBody != null &&
+        utf8.encode(documentBody).length >
+            request.securityPolicy.budget.maxDocumentBytes) {
+      throw WebCaptureSecurityException(
+        'document_budget_exceeded',
+        'Captured document exceeds the source document budget.',
+      );
+    }
 
+    final candidates = _candidates.values
+        .map((candidate) => candidate.withPageUri(finalUri))
+        .toList(growable: false);
     return WebCaptureSnapshot(
       events: _events,
-      candidates: _candidates.values,
+      candidates: candidates,
       cookies: cookieList,
       stopReason: _stopReason ?? WebCaptureStopReason.completed,
       finalUri: finalUri,
+      hasCompleteRequestMetadata: true,
+      documentBody: documentBody,
     );
   }
 }

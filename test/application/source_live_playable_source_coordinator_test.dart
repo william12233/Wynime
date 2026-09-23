@@ -72,6 +72,44 @@ void main() {
   );
 
   test(
+    'uses the document fallback only after typed static not-found',
+    () async {
+      final package = _package('example.anime');
+      final transport = _QueueTransport([
+        _success(_request(), '<main></main>'),
+      ]);
+      final fallback = _FallbackRuntime(
+        SourceRuntimeResult(
+          packageId: package.packageId,
+          packageVersion: package.version,
+          programId: 'playback',
+          status: SourceRuntimeStatus.available,
+          records: [
+            SourceRuntimeRecord({
+              'key': 'rendered',
+              'label': 'Rendered',
+              'kind': 'video',
+              'media': 'https://example.com/media/rendered.mp4',
+              'page': 'https://example.com/watch/rendered',
+            }),
+          ],
+          diagnostics: const [],
+          consumedSteps: 1,
+          selectorMatches: 1,
+        ),
+      );
+      final subject = _subject(transport, fallback: fallback);
+
+      final result = await subject.listPlayableSources(plans: [_plan(package)]);
+
+      expect(result.status, SourcePlayableSourceCoordinatorStatus.available);
+      expect(result.sources.single.sourceKey, 'rendered');
+      expect(fallback.calls, 1);
+      expect(transport.requests, hasLength(1));
+    },
+  );
+
+  test(
     'live package admission failure stays per-source and becomes partial',
     () async {
       final enabled = _package('enabled.anime');
@@ -320,6 +358,7 @@ void main() {
 _RuntimeSubject _subject(
   SourceHttpTransport transport, {
   SourcePlayableSourceNormalizer? normalizer,
+  SourceLivePlayableDocumentFallback? fallback,
 }) {
   final runtime = SourceLiveHttpPackageRuntime(
     httpExecutor: SourceLiveHttpRequestExecutor(
@@ -338,6 +377,7 @@ _RuntimeSubject _subject(
       runtime: runtime,
       normalizer:
           normalizer ?? const DeclarativeSourcePlayableSourceNormalizer(),
+      documentFallback: fallback,
     ),
   );
 }
@@ -613,5 +653,18 @@ final class _ThrowingNormalizer implements SourcePlayableSourceNormalizer {
     required SourcePlayableSourceFieldMapping mapping,
   }) {
     throw StateError('private playable normalization detail');
+  }
+}
+
+final class _FallbackRuntime implements SourceLivePlayableDocumentFallback {
+  _FallbackRuntime(this.result);
+
+  final SourceRuntimeResult result;
+  var calls = 0;
+
+  @override
+  Future<SourceRuntimeResult> capture(SourceLivePlayableSourcePlan plan) async {
+    calls++;
+    return result;
   }
 }

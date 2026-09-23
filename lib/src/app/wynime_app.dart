@@ -13,6 +13,9 @@ import 'package:wynime/src/domain/models/bangumi_models.dart';
 import 'package:wynime/src/domain/repositories/watch_history_repository.dart';
 import 'package:wynime/src/design_system/theme/wynime_theme.dart';
 import 'package:wynime/src/presentation/shell/responsive_app_shell.dart';
+import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_search_fallback.dart';
+import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_playable_fallback.dart';
+import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_subject_fallback.dart';
 
 class WynimeApp extends StatefulWidget {
   const WynimeApp({
@@ -21,6 +24,9 @@ class WynimeApp extends StatefulWidget {
     this.bangumi,
     this.sourcePackages,
     this.sourceSearchPipeline,
+    this.sourceSearchFallback,
+    this.sourcePlayableFallback,
+    this.sourceSubjectFallback,
     this.sourcePlaybackControllerFactory,
     this.sourceRegistry,
     this.watchHistory,
@@ -33,6 +39,9 @@ class WynimeApp extends StatefulWidget {
   final BangumiSessionController? bangumi;
   final SourcePackageStartupController? sourcePackages;
   final SourceInstalledLiveSearchPipeline? sourceSearchPipeline;
+  final InAppWebViewSourceLiveSearchFallback? sourceSearchFallback;
+  final InAppWebViewSourceLivePlayableDocumentFallback? sourcePlayableFallback;
+  final InAppWebViewSourceLiveSubjectFallback? sourceSubjectFallback;
   final SubjectSourcePlaybackController Function(BangumiSubject subject)?
   sourcePlaybackControllerFactory;
   final SourceRegistryController? sourceRegistry;
@@ -118,6 +127,9 @@ class _WynimeAppState extends State<WynimeApp> {
         bangumi: widget.bangumi,
         sourcePackages: widget.sourcePackages,
         sourceSearchPipeline: widget.sourceSearchPipeline,
+        sourceSearchFallback: widget.sourceSearchFallback,
+        sourcePlayableFallback: widget.sourcePlayableFallback,
+        sourceSubjectFallback: widget.sourceSubjectFallback,
         sourcePlaybackControllerFactory: widget.sourcePlaybackControllerFactory,
         sourceRegistry: widget.sourceRegistry,
         watchHistory: widget.watchHistory,

@@ -9,10 +9,120 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.14 release boundary is ready for exact-SHA CI and protected
+The v1.0.15+16 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
-the main, signing and release workflows; no unexecuted hardware or Computer
-Use result is represented as a pass.
+the main, signing and release workflows. No unexecuted hardware, Windows
+Computer Use, or authenticated Bangumi result is represented as a pass.
+The historical v1.0.14 evidence remains below as a separate public release
+record.
+
+## Post-1.0.14 continuation worktree
+
+The current continuation runtime is
+`1.0.15+16`; the xifan package revision used by it requires
+`^1.0.15` because the public 1.0.14 runtime does not contain the rendered
+document capture bridge. Before publication, the candidate must be tagged and
+submitted to the protected workflow at one immutable `main` SHA. The
+historical 1.0.14 release evidence below remains the public release record
+until that workflow publishes v1.0.15.
+
+### 2026-09-24 release decision
+
+- The current release request explicitly authorizes the v1.0.15 workflow.
+- Current-head deterministic evidence is 815 passing Flutter tests,
+  `flutter analyze --fatal-infos --no-pub`, Dart format with zero changes and
+  `git diff --check` passing.
+- Additional local UI and hardware verification was intentionally not rerun in
+  this release turn. `HARDWARE_VALIDATION_PENDING` and
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain truthful external-validation
+  disclosures; protected CI and the tag-triggered release workflow remain the
+  authorities for machine release gates, signing, packaging and publication.
+- The release contains no claim of authenticated Bangumi access, sustained
+  hardware playback, CAPTCHA solving, DRM bypass or access-control bypass.
+
+### 2026-09-23 live compatibility continuation
+
+- The unreleased local xifan package is `1.2.1`; it adds only the exact HTTPS
+  redirect authority `bjdownload.pan.wo.cn:30443` and is not admitted to the
+  public 1.0.14 registry. `sources/index.json` records the matching package
+  SHA-256.
+- Static CLI search and subject parsing truthfully return typed `notFound` for
+  the hydrated Next shell. The bounded rendered-document fallbacks complete
+  subject metadata and exact episode correlation on Android; the playable
+  document capture is empty and correctly falls back to public-control media
+  request capture.
+- Current API-36 Android x64 emulator evidence: APK build/install/launch pass;
+  subject pass; episode mapping pass (`xfxf1/154427`); media-request capture
+  pass with one candidate and zero captured cookies; the bounded `GET` plus
+  `Range` replay reaches the declared `https://bjdownload.pan.wo.cn:30443`
+  endpoint and observes HTTP 206 `video/mp4`. Initial Media3 handoff and
+  `PLAYBACK_SESSION` pass on both phone and tablet harness runs. A later tablet
+  attempt observed an upstream 502 after the initial handoff, so sustained
+  duration playback is not claimed and no access-control or CAPTCHA bypass is
+  attempted.
+- Browser evidence remains browser-only: the public page exposes a top-level
+  playable video and manual playback was observed there. It does not replace
+  Android production-route evidence. An ordinary Windows build reproduces the
+  VS/FileTracker `E_ACCESSDENIED` environment failure; a controlled elevated
+  retry produces the Debug executable, but Windows UI remains unavailable to
+  Computer Use.
+
+### 2026-09-23 Animeko-style playback UX correction
+
+`BLOCKED_PRE_RELEASE_REVIEW`
+
+- Normal playback now renders only Wynime's resolving/error/native player
+  surface. The source WebView is a transient, non-interactive 1x1 background
+  acquisition host and is removed as soon as a typed capture result arrives;
+  it is never the visible playback surface.
+- Detail and Player pages use the typed `SourceSubjectLine` list as the line
+  selector. A line switch closes the old session, resolves the exact
+  `SourceEpisodeIdentity` for the selected `lineId`, and performs only a
+  bounded best-effort position restore.
+- The debug-only Android live harness was changed to the same hidden host so
+  its screenshots cannot be mistaken for the production route. Phone and
+  tablet screenshots show native controls without xifan page chrome.
+- Deterministic acceptance: 805 Flutter tests, `flutter analyze
+  --fatal-infos --no-pub`, `git diff --check`, Android x64 Debug build and
+  Android API-36 acquisition/206/Media3 initial-handoff evidence pass.
+- Release remains blocked because the public runtime registry observed by the
+  normal app still serves xifan v1.1.0 rather than the dirty local v1.2.1
+  package, so the normal Bangumi detail-to-production-playback route was not
+  exercised end to end. Windows UI playback is also
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`. No commit, push, tag, protected
+  approval or release was performed.
+
+### 2026-09-23 production path admission validation
+
+`BLOCKED_PRE_RELEASE_REVIEW`
+
+- The debug-only `kDebugMode` plus compile-time opt-in staged registry now
+  reads `sources/index.json` and the exact local artifact through the same
+  strict decoder, catalog loader, byte budget, canonical-root check and
+  SHA-256/package verifier used by the registry boundary. Release builds keep
+  the fixed GitHub registry composition and cannot select this path.
+- On the fixed API-36 phone and tablet AVDs, the normal Sources page staged
+  xifan `1.2.1` from an installed `1.1.0`, displayed the broader policy,
+  required fresh consent, enabled the package, and restored `Enabled` after an
+  app restart. The normal source Search page returned three live xifan results
+  for `naruto` on both devices. Evidence is under the operation's temporary
+  `codex-ui-verification` directory.
+- The phone reached the public Bangumi OAuth authorization page. The account
+  holder did not grant external account access, so authenticated Bangumi
+  Library/subject detail, episode 24, exact mapping persistence, production
+  PlayerPage, live 502 line switch and real background acquisition remain
+  unverified. The source Search page is not substituted for that route.
+- The playback failure surface now maps `http_status_502` and
+  `upstream_http_502` to a localized HTTP 502 message with `[重試]` and
+  `[切換線路]` when more than one exact line is available; the latter closes
+  and reopens through the existing controller/session path. Widget coverage
+  is deterministic, not live HTTP proof.
+- Current validation is 815 passing Flutter tests and a clean fatal-info
+  analyzer. Two standard non-elevated Windows builds reproduce Visual Studio
+  FileTracker `E_ACCESSDENIED`; two controlled elevated debug builds pass, but
+  Windows live/UI evidence remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`. No commit, push, tag, protected
+  approval or release was performed.
 
 Approved Wynime distribution license: yes
 

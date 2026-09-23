@@ -129,23 +129,128 @@ bool _isNumericLoopback(Uri uri) =>
     (uri.host == '127.0.0.1' || uri.host == '::1');
 
 int _effectiveHeaderBytes(PlaybackSession session) {
-  final values = <String, String>{...session.headers};
-  if (session.referer != null) {
-    values['referer'] = session.referer.toString();
-  }
-  if (session.origin != null) {
-    values['origin'] = session.origin.toString();
-  }
-  if (session.userAgent != null) {
-    values['user-agent'] = session.userAgent!;
-  }
-  if (session.cookies.isNotEmpty) {
-    values['cookie'] = session.cookies.entries
-        .map((entry) => '${entry.key}=${entry.value}')
-        .join('; ');
-  }
-  values['accept-encoding'] = 'identity';
+  final values = playbackUpstreamHeaders(session, requestUri: session.mediaUri);
   return _headerBytes(values);
+}
+
+/// Builds one safe upstream request shape for the exact redirect hop.
+///
+/// The caller must invoke this for every hop. Captured Referer, Origin and
+/// User-Agent are used only when they were actually observed and requested by
+/// the caller; Origin is never synthesized from the page URI. Cookie scope is
+/// evaluated against the current URI, while legacy unscoped cookies are only
+/// retained on the original authority.
+Map<String, String> playbackUpstreamHeaders(
+  PlaybackSession session, {
+  required Uri requestUri,
+  String? range,
+  bool includeReferer = true,
+  bool includeOrigin = true,
+  bool includeUserAgent = true,
+  bool includeCookies = true,
+}) {
+  final headers = <String, String>{};
+  final sameAuthority = _sameAuthority(session.mediaUri, requestUri);
+  final sessionHeaders = <String, String>{...session.headers};
+  for (final entry in sessionHeaders.entries) {
+    final name = entry.key.toLowerCase();
+    if (name == 'cookie' ||
+        name == 'range' ||
+        name == 'referer' ||
+        name == 'origin' ||
+        name == 'user-agent') {
+      continue;
+    }
+    if (!sameAuthority && _isSensitiveRedirectHeader(name)) {
+      continue;
+    }
+    headers[name] = entry.value;
+  }
+  headers['accept-encoding'] = 'identity';
+  if (includeReferer && session.referer != null) {
+    headers['referer'] = session.referer.toString();
+  }
+  if (includeOrigin && session.origin != null) {
+    headers['origin'] = session.origin.toString();
+  }
+  if (includeUserAgent && session.userAgent != null) {
+    headers['user-agent'] = session.userAgent!;
+  }
+  if (includeCookies) {
+    final cookieHeader = _cookieHeaderForUri(session, requestUri);
+    if (cookieHeader != null) {
+      headers['cookie'] = cookieHeader;
+    }
+  }
+  if (range != null) {
+    if (!RegExp(r'^bytes=\d*\-\d*$').hasMatch(range.trim()) ||
+        !range.trim().substring(6).contains('-')) {
+      throw ArgumentError.value(
+        range,
+        'range',
+        'Must be one bounded byte range.',
+      );
+    }
+    headers['range'] = range.trim();
+  }
+  return headers;
+}
+
+bool _sameAuthority(Uri left, Uri right) =>
+    left.scheme.toLowerCase() == right.scheme.toLowerCase() &&
+    left.host.toLowerCase() == right.host.toLowerCase() &&
+    _effectivePort(left) == _effectivePort(right);
+
+int _effectivePort(Uri uri) =>
+    uri.hasPort ? uri.port : (uri.scheme.toLowerCase() == 'https' ? 443 : 80);
+
+bool _isSensitiveRedirectHeader(String name) =>
+    name == 'authorization' ||
+    name == 'proxy-authorization' ||
+    name == 'x-api-key' ||
+    name == 'x-auth-token' ||
+    name == 'x-access-token' ||
+    name == 'x-csrf-token';
+
+String? _cookieHeaderForUri(PlaybackSession session, Uri requestUri) {
+  final cookies = <String, String>{};
+  final metadata = session.cookieMetadata;
+  if (metadata.isNotEmpty) {
+    final now = DateTime.now().toUtc();
+    for (final cookie in metadata) {
+      if (cookie.expiresAt != null && !cookie.expiresAt!.toUtc().isAfter(now)) {
+        continue;
+      }
+      if (cookie.isSecure && requestUri.scheme != 'https') continue;
+      if (!_cookieDomainMatches(requestUri.host, cookie.domain) ||
+          !_cookiePathMatches(requestUri.path, cookie.path)) {
+        continue;
+      }
+      cookies[cookie.name] = cookie.value;
+    }
+  } else if (_sameAuthority(session.mediaUri, requestUri)) {
+    cookies.addAll(session.cookies);
+  }
+  if (cookies.isEmpty) return null;
+  return cookies.entries
+      .map((entry) => '${entry.key}=${entry.value}')
+      .join('; ');
+}
+
+bool _cookieDomainMatches(String host, String domain) {
+  final normalizedHost = host.toLowerCase();
+  final normalizedDomain = domain.toLowerCase();
+  return normalizedHost == normalizedDomain ||
+      normalizedHost.endsWith('.$normalizedDomain');
+}
+
+bool _cookiePathMatches(String requestPath, String cookiePath) {
+  final request = requestPath.isEmpty ? '/' : requestPath;
+  if (request == cookiePath) return true;
+  if (!request.startsWith(cookiePath)) return false;
+  return cookiePath.endsWith('/') ||
+      (request.length > cookiePath.length &&
+          request.codeUnitAt(cookiePath.length) == 0x2f);
 }
 
 int _headerBytes(Map<String, String> values) => values.entries.fold(

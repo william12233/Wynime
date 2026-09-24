@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../../domain/models/episode_mapping.dart';
 import '../../domain/models/source_identity.dart';
+import '../../domain/models/source_models.dart';
 import '../../domain/models/source_package_provenance.dart';
 import '../../domain/models/source_playback_mapping.dart';
 import '../../domain/repositories/source_playback_mapping_repository.dart';
@@ -242,6 +246,11 @@ final class DriftSourcePlaybackMappingRepository
       packageVersion: mapping.provenance.version.toString(),
       packageRevisionSha256: mapping.provenance.revisionSha256,
       mappingKind: mapping.mappingKind.name,
+      mappingMetadataJson: Value(
+        mapping.mapping == null
+            ? null
+            : jsonEncode(_encodeMapping(mapping.mapping!)),
+      ),
       confirmedAt: mapping.confirmedAt.toUtc(),
       updatedAt: now,
     );
@@ -271,16 +280,22 @@ final class DriftSourcePlaybackMappingRepository
 
   SourceEpisodeMapping _mapEpisode(SourceEpisodeMappingRecord row) {
     try {
-      return SourceEpisodeMapping(
-        bangumiSubjectId: row.bangumiSubjectId,
-        bangumiEpisodeId: row.bangumiEpisodeId,
-        packageId: row.packageId,
-        sourceEpisode: SourceEpisodeIdentity(
+      final sourceEpisode = SourceEpisode(
+        identity: SourceEpisodeIdentity(
           sourceId: row.sourceId,
           lineId: row.sourceLineId,
           subjectId: row.sourceSubjectId,
           episodeId: row.sourceEpisodeId,
         ),
+        title: _mappingRawLabel(row.mappingMetadataJson) ?? row.sourceEpisodeId,
+        episodeNumber: _mappingNumber(row.mappingMetadataJson, 'sourceNumber'),
+        episodeKind: _mappingKind(row.mappingMetadataJson),
+      );
+      return SourceEpisodeMapping(
+        bangumiSubjectId: row.bangumiSubjectId,
+        bangumiEpisodeId: row.bangumiEpisodeId,
+        packageId: row.packageId,
+        sourceEpisode: sourceEpisode.identity,
         provenance: SourcePackageProvenance(
           packageId: row.packageId,
           version: Version.parse(row.packageVersion),
@@ -288,6 +303,7 @@ final class DriftSourcePlaybackMappingRepository
         ),
         mappingKind: EpisodeMappingKind.values.byName(row.mappingKind),
         confirmedAt: row.confirmedAt.toUtc(),
+        mapping: _decodeMapping(row.mappingMetadataJson, sourceEpisode),
       );
     } on Object {
       throw StateError('Persisted source episode mapping is invalid.');
@@ -309,5 +325,124 @@ final class DriftSourcePlaybackMappingRepository
         mapping.bangumiEpisodeId.trim().isEmpty) {
       throw ArgumentError('Source episode mapping identity is inconsistent.');
     }
+  }
+
+  Map<String, Object?> _encodeMapping(EpisodeMapping mapping) => {
+    'sourceRawLabel': mapping.sourceEpisode.rawLabel,
+    'sourceNumber': mapping.sourceNumber,
+    'sourceKind': mapping.sourceEpisode.episodeKind.name,
+    'bangumiSort': mapping.bangumiSort,
+    'numberingMode': mapping.numberingMode.name,
+    'seasonRelativeNumber': mapping.seasonRelativeNumber,
+    'absoluteNumber': mapping.absoluteNumber,
+    'offset': mapping.offset,
+    'evidence': [
+      for (final item in mapping.evidence)
+        {
+          'code': item.code,
+          'offset': item.offset,
+          'alignedEpisodeCount': item.alignedEpisodeCount,
+        },
+    ],
+  };
+
+  EpisodeMapping? _decodeMapping(String? encoded, SourceEpisode sourceEpisode) {
+    if (encoded == null) return null;
+    final decoded = jsonDecode(encoded);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Source episode mapping metadata is invalid.',
+      );
+    }
+    final modeName = decoded['numberingMode'];
+    if (modeName is! String) {
+      throw const FormatException('Source episode mapping mode is invalid.');
+    }
+    final mode = EpisodeNumberingMode.values.byName(modeName);
+    final sourceNumber = _requiredDouble(decoded, 'sourceNumber');
+    final bangumiSort = _requiredDouble(decoded, 'bangumiSort');
+    final evidenceValue = decoded['evidence'];
+    if (evidenceValue is! List) {
+      throw const FormatException(
+        'Source episode mapping evidence is invalid.',
+      );
+    }
+    final evidence = <EpisodeMappingEvidence>[];
+    for (final item in evidenceValue) {
+      if (item is! Map<String, dynamic> || item['code'] is! String) {
+        throw const FormatException(
+          'Source episode mapping evidence item is invalid.',
+        );
+      }
+      evidence.add(
+        EpisodeMappingEvidence(
+          code: item['code'] as String,
+          offset: _optionalDouble(item['offset']),
+          alignedEpisodeCount: item['alignedEpisodeCount'] is int
+              ? item['alignedEpisodeCount'] as int
+              : null,
+        ),
+      );
+    }
+    return EpisodeMapping(
+      sourceEpisode: sourceEpisode,
+      bangumiSort: bangumiSort,
+      sourceNumber: sourceNumber,
+      numberingMode: mode,
+      seasonRelativeNumber: _optionalDouble(decoded['seasonRelativeNumber']),
+      absoluteNumber: _optionalDouble(decoded['absoluteNumber']),
+      offset: _optionalDouble(decoded['offset']),
+      evidence: evidence,
+    );
+  }
+
+  String? _mappingRawLabel(String? encoded) {
+    if (encoded == null) return null;
+    final decoded = jsonDecode(encoded);
+    if (decoded is! Map<String, dynamic> ||
+        decoded['sourceRawLabel'] is! String) {
+      throw const FormatException('Source episode mapping label is invalid.');
+    }
+    return decoded['sourceRawLabel'] as String;
+  }
+
+  double? _mappingNumber(String? encoded, String key) {
+    if (encoded == null) return null;
+    final decoded = jsonDecode(encoded);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Source episode mapping metadata is invalid.',
+      );
+    }
+    return _optionalDouble(decoded[key]);
+  }
+
+  SourceEpisodeKind? _mappingKind(String? encoded) {
+    if (encoded == null) return null;
+    final decoded = jsonDecode(encoded);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Source episode mapping metadata is invalid.',
+      );
+    }
+    final value = decoded['sourceKind'];
+    if (value == null) return null;
+    if (value is! String) {
+      throw const FormatException('Source episode mapping kind is invalid.');
+    }
+    return SourceEpisodeKind.values.byName(value);
+  }
+
+  double _requiredDouble(Map<String, dynamic> value, String key) {
+    final parsed = _optionalDouble(value[key]);
+    if (parsed == null) {
+      throw FormatException('Source episode mapping $key is invalid.');
+    }
+    return parsed;
+  }
+
+  double? _optionalDouble(Object? value) {
+    if (value is num && value.isFinite) return value.toDouble();
+    return null;
   }
 }

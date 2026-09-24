@@ -28,6 +28,7 @@ import 'package:wynime/src/application/subject_source_playback_controller.dart';
 import 'package:wynime/src/application/source_subject_matcher.dart';
 import 'package:wynime/src/domain/models/bangumi_episode_type.dart';
 import 'package:wynime/src/domain/models/bangumi_models.dart';
+import 'package:wynime/src/domain/models/episode_mapping.dart';
 import 'package:wynime/src/domain/models/source_http_models.dart';
 import 'package:wynime/src/domain/models/source_identity.dart';
 import 'package:wynime/src/domain/models/source_models.dart';
@@ -64,6 +65,20 @@ void main() {
     expect(SourceEpisodeOrdinal.parse('第１２.５０話')?.canonical, '12.5');
     expect(SourceEpisodeOrdinal.parse('SP 1'), isNull);
     expect(SourceEpisodeOrdinal.parse('OVA'), isNull);
+  });
+
+  test('source labels retain raw text, number, and episode kind', () {
+    final label = SourceEpisodeLabel.parse('第 ０１ 集');
+    expect(label.rawLabel, '第 ０１ 集');
+    expect(label.number, 1);
+    expect(label.kind, SourceEpisodeKind.main);
+
+    final special = SourceEpisodeLabel.parse('SP 1');
+    expect(special.rawLabel, 'SP 1');
+    expect(special.number, 1);
+    expect(special.kind, SourceEpisodeKind.special);
+    expect(SourceEpisodeOrdinal.parse('第 01 集')?.canonical, '1');
+    expect(SourceEpisodeOrdinal.parse('SP 1'), isNull);
   });
 
   test('title normalization does not perform fuzzy or translated matching', () {
@@ -227,7 +242,7 @@ void main() {
     () async {
       final database = openTestDatabase();
       addTearDown(database.close);
-      final version = Version.parse('1.0.15');
+      final version = Version.parse('1.0.16');
       final package = const SourcePackageDecoder().decode(
         File('sources/xifan.wynsrc.json').readAsStringSync(),
       );
@@ -401,6 +416,8 @@ void main() {
       );
       expect(persisted?.sourceEpisode, selected.identity);
       expect(persisted?.mappingKind, EpisodeMappingKind.userConfirmed);
+      expect(persisted?.mapping?.numberingMode, EpisodeNumberingMode.manual);
+      expect(persisted?.mapping?.sourceEpisode.rawLabel, selected.rawLabel);
     },
   );
 
@@ -461,6 +478,76 @@ void main() {
     expect(
       await (database.select(database.sourceEpisodeMappings)).get(),
       isEmpty,
+    );
+  });
+
+  test('episode correlation infers cumulative numbering with evidence', () {
+    final sourceSubject = SourceSubjectIdentity(
+      sourceId: 'xifan',
+      subjectId: 'source-638151',
+    );
+    final sourceEpisodes = [
+      for (var index = 1; index <= 3; index++)
+        SourceEpisode(
+          identity: SourceEpisodeIdentity(
+            sourceId: 'xifan',
+            lineId: 'line-a',
+            subjectId: 'source-638151',
+            episodeId: 'ep-$index',
+          ),
+          title: '第 ${index.toString().padLeft(2, '0')} 集',
+        ),
+    ];
+    final details = SourceSubjectDetails(
+      identity: sourceSubject,
+      title: 'Example season',
+      lines: [
+        SourceSubjectLine(
+          identity: sourceSubject,
+          lineId: 'line-a',
+          title: 'A',
+          episodes: sourceEpisodes,
+        ),
+      ],
+    );
+    final bangumiEpisodes = [
+      for (var index = 13; index <= 15; index++)
+        BangumiEpisode(
+          id: 'bgm-$index',
+          subjectId: '638151',
+          name: 'Episode $index',
+          nameCn: '第 $index 集',
+          sort: index.toDouble(),
+          type: 0,
+        ),
+    ];
+
+    final result = const SourceEpisodeCorrelator().correlate(
+      episode: bangumiEpisodes[1],
+      details: details,
+      bangumiEpisodes: bangumiEpisodes,
+    );
+
+    expect(result.status, SourceEpisodeCorrelationStatus.automatic);
+    expect(result.mapping?.sourceEpisode.identity, sourceEpisodes[1].identity);
+    expect(
+      result.mapping?.numberingMode,
+      EpisodeNumberingMode.cumulativeAbsolute,
+    );
+    expect(result.mapping?.offset, 12);
+    expect(
+      result.mapping?.evidence.map((evidence) => evidence.code),
+      contains('ordered_episode_index_alignment'),
+    );
+
+    final firstSeasonEpisode = const SourceEpisodeCorrelator().correlate(
+      episode: bangumiEpisodes.first,
+      details: details,
+      bangumiEpisodes: bangumiEpisodes,
+    );
+    expect(
+      firstSeasonEpisode.mapping?.sourceEpisode.identity,
+      sourceEpisodes.first.identity,
     );
   });
 

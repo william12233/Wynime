@@ -9741,6 +9741,17 @@ class $SourceEpisodeMappingsTable extends SourceEpisodeMappings
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _mappingMetadataJsonMeta =
+      const VerificationMeta('mappingMetadataJson');
+  @override
+  late final GeneratedColumn<String> mappingMetadataJson =
+      GeneratedColumn<String>(
+        'mapping_metadata_json',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _confirmedAtMeta = const VerificationMeta(
     'confirmedAt',
   );
@@ -9775,6 +9786,7 @@ class $SourceEpisodeMappingsTable extends SourceEpisodeMappings
     packageVersion,
     packageRevisionSha256,
     mappingKind,
+    mappingMetadataJson,
     confirmedAt,
     updatedAt,
   ];
@@ -9894,6 +9906,15 @@ class $SourceEpisodeMappingsTable extends SourceEpisodeMappings
     } else if (isInserting) {
       context.missing(_mappingKindMeta);
     }
+    if (data.containsKey('mapping_metadata_json')) {
+      context.handle(
+        _mappingMetadataJsonMeta,
+        mappingMetadataJson.isAcceptableOrUnknown(
+          data['mapping_metadata_json']!,
+          _mappingMetadataJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('confirmed_at')) {
       context.handle(
         _confirmedAtMeta,
@@ -9969,6 +9990,10 @@ class $SourceEpisodeMappingsTable extends SourceEpisodeMappings
         DriftSqlType.string,
         data['${effectivePrefix}mapping_kind'],
       )!,
+      mappingMetadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mapping_metadata_json'],
+      ),
       confirmedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}confirmed_at'],
@@ -9998,6 +10023,7 @@ class SourceEpisodeMappingRecord extends DataClass
   final String packageVersion;
   final String packageRevisionSha256;
   final String mappingKind;
+  final String? mappingMetadataJson;
   final DateTime confirmedAt;
   final DateTime updatedAt;
   const SourceEpisodeMappingRecord({
@@ -10011,6 +10037,7 @@ class SourceEpisodeMappingRecord extends DataClass
     required this.packageVersion,
     required this.packageRevisionSha256,
     required this.mappingKind,
+    this.mappingMetadataJson,
     required this.confirmedAt,
     required this.updatedAt,
   });
@@ -10027,6 +10054,9 @@ class SourceEpisodeMappingRecord extends DataClass
     map['package_version'] = Variable<String>(packageVersion);
     map['package_revision_sha256'] = Variable<String>(packageRevisionSha256);
     map['mapping_kind'] = Variable<String>(mappingKind);
+    if (!nullToAbsent || mappingMetadataJson != null) {
+      map['mapping_metadata_json'] = Variable<String>(mappingMetadataJson);
+    }
     map['confirmed_at'] = Variable<DateTime>(confirmedAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -10044,6 +10074,9 @@ class SourceEpisodeMappingRecord extends DataClass
       packageVersion: Value(packageVersion),
       packageRevisionSha256: Value(packageRevisionSha256),
       mappingKind: Value(mappingKind),
+      mappingMetadataJson: mappingMetadataJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mappingMetadataJson),
       confirmedAt: Value(confirmedAt),
       updatedAt: Value(updatedAt),
     );
@@ -10067,6 +10100,9 @@ class SourceEpisodeMappingRecord extends DataClass
         json['packageRevisionSha256'],
       ),
       mappingKind: serializer.fromJson<String>(json['mappingKind']),
+      mappingMetadataJson: serializer.fromJson<String?>(
+        json['mappingMetadataJson'],
+      ),
       confirmedAt: serializer.fromJson<DateTime>(json['confirmedAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -10085,6 +10121,7 @@ class SourceEpisodeMappingRecord extends DataClass
       'packageVersion': serializer.toJson<String>(packageVersion),
       'packageRevisionSha256': serializer.toJson<String>(packageRevisionSha256),
       'mappingKind': serializer.toJson<String>(mappingKind),
+      'mappingMetadataJson': serializer.toJson<String?>(mappingMetadataJson),
       'confirmedAt': serializer.toJson<DateTime>(confirmedAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -10101,6 +10138,7 @@ class SourceEpisodeMappingRecord extends DataClass
     String? packageVersion,
     String? packageRevisionSha256,
     String? mappingKind,
+    Value<String?> mappingMetadataJson = const Value.absent(),
     DateTime? confirmedAt,
     DateTime? updatedAt,
   }) => SourceEpisodeMappingRecord(
@@ -10114,6 +10152,9 @@ class SourceEpisodeMappingRecord extends DataClass
     packageVersion: packageVersion ?? this.packageVersion,
     packageRevisionSha256: packageRevisionSha256 ?? this.packageRevisionSha256,
     mappingKind: mappingKind ?? this.mappingKind,
+    mappingMetadataJson: mappingMetadataJson.present
+        ? mappingMetadataJson.value
+        : this.mappingMetadataJson,
     confirmedAt: confirmedAt ?? this.confirmedAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -10147,6 +10188,9 @@ class SourceEpisodeMappingRecord extends DataClass
       mappingKind: data.mappingKind.present
           ? data.mappingKind.value
           : this.mappingKind,
+      mappingMetadataJson: data.mappingMetadataJson.present
+          ? data.mappingMetadataJson.value
+          : this.mappingMetadataJson,
       confirmedAt: data.confirmedAt.present
           ? data.confirmedAt.value
           : this.confirmedAt,
@@ -10167,6 +10211,7 @@ class SourceEpisodeMappingRecord extends DataClass
           ..write('packageVersion: $packageVersion, ')
           ..write('packageRevisionSha256: $packageRevisionSha256, ')
           ..write('mappingKind: $mappingKind, ')
+          ..write('mappingMetadataJson: $mappingMetadataJson, ')
           ..write('confirmedAt: $confirmedAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -10185,6 +10230,7 @@ class SourceEpisodeMappingRecord extends DataClass
     packageVersion,
     packageRevisionSha256,
     mappingKind,
+    mappingMetadataJson,
     confirmedAt,
     updatedAt,
   );
@@ -10202,6 +10248,7 @@ class SourceEpisodeMappingRecord extends DataClass
           other.packageVersion == this.packageVersion &&
           other.packageRevisionSha256 == this.packageRevisionSha256 &&
           other.mappingKind == this.mappingKind &&
+          other.mappingMetadataJson == this.mappingMetadataJson &&
           other.confirmedAt == this.confirmedAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -10218,6 +10265,7 @@ class SourceEpisodeMappingsCompanion
   final Value<String> packageVersion;
   final Value<String> packageRevisionSha256;
   final Value<String> mappingKind;
+  final Value<String?> mappingMetadataJson;
   final Value<DateTime> confirmedAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -10232,6 +10280,7 @@ class SourceEpisodeMappingsCompanion
     this.packageVersion = const Value.absent(),
     this.packageRevisionSha256 = const Value.absent(),
     this.mappingKind = const Value.absent(),
+    this.mappingMetadataJson = const Value.absent(),
     this.confirmedAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -10247,6 +10296,7 @@ class SourceEpisodeMappingsCompanion
     required String packageVersion,
     required String packageRevisionSha256,
     required String mappingKind,
+    this.mappingMetadataJson = const Value.absent(),
     required DateTime confirmedAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -10273,6 +10323,7 @@ class SourceEpisodeMappingsCompanion
     Expression<String>? packageVersion,
     Expression<String>? packageRevisionSha256,
     Expression<String>? mappingKind,
+    Expression<String>? mappingMetadataJson,
     Expression<DateTime>? confirmedAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -10289,6 +10340,8 @@ class SourceEpisodeMappingsCompanion
       if (packageRevisionSha256 != null)
         'package_revision_sha256': packageRevisionSha256,
       if (mappingKind != null) 'mapping_kind': mappingKind,
+      if (mappingMetadataJson != null)
+        'mapping_metadata_json': mappingMetadataJson,
       if (confirmedAt != null) 'confirmed_at': confirmedAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -10306,6 +10359,7 @@ class SourceEpisodeMappingsCompanion
     Value<String>? packageVersion,
     Value<String>? packageRevisionSha256,
     Value<String>? mappingKind,
+    Value<String?>? mappingMetadataJson,
     Value<DateTime>? confirmedAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -10322,6 +10376,7 @@ class SourceEpisodeMappingsCompanion
       packageRevisionSha256:
           packageRevisionSha256 ?? this.packageRevisionSha256,
       mappingKind: mappingKind ?? this.mappingKind,
+      mappingMetadataJson: mappingMetadataJson ?? this.mappingMetadataJson,
       confirmedAt: confirmedAt ?? this.confirmedAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -10363,6 +10418,11 @@ class SourceEpisodeMappingsCompanion
     if (mappingKind.present) {
       map['mapping_kind'] = Variable<String>(mappingKind.value);
     }
+    if (mappingMetadataJson.present) {
+      map['mapping_metadata_json'] = Variable<String>(
+        mappingMetadataJson.value,
+      );
+    }
     if (confirmedAt.present) {
       map['confirmed_at'] = Variable<DateTime>(confirmedAt.value);
     }
@@ -10388,6 +10448,7 @@ class SourceEpisodeMappingsCompanion
           ..write('packageVersion: $packageVersion, ')
           ..write('packageRevisionSha256: $packageRevisionSha256, ')
           ..write('mappingKind: $mappingKind, ')
+          ..write('mappingMetadataJson: $mappingMetadataJson, ')
           ..write('confirmedAt: $confirmedAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -19393,6 +19454,7 @@ typedef $$SourceEpisodeMappingsTableCreateCompanionBuilder =
       required String packageVersion,
       required String packageRevisionSha256,
       required String mappingKind,
+      Value<String?> mappingMetadataJson,
       required DateTime confirmedAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -19409,6 +19471,7 @@ typedef $$SourceEpisodeMappingsTableUpdateCompanionBuilder =
       Value<String> packageVersion,
       Value<String> packageRevisionSha256,
       Value<String> mappingKind,
+      Value<String?> mappingMetadataJson,
       Value<DateTime> confirmedAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -19470,6 +19533,11 @@ class $$SourceEpisodeMappingsTableFilterComposer
 
   ColumnFilters<String> get mappingKind => $composableBuilder(
     column: $table.mappingKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mappingMetadataJson => $composableBuilder(
+    column: $table.mappingMetadataJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19543,6 +19611,11 @@ class $$SourceEpisodeMappingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get mappingMetadataJson => $composableBuilder(
+    column: $table.mappingMetadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get confirmedAt => $composableBuilder(
     column: $table.confirmedAt,
     builder: (column) => ColumnOrderings(column),
@@ -19606,6 +19679,11 @@ class $$SourceEpisodeMappingsTableAnnotationComposer
 
   GeneratedColumn<String> get mappingKind => $composableBuilder(
     column: $table.mappingKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get mappingMetadataJson => $composableBuilder(
+    column: $table.mappingMetadataJson,
     builder: (column) => column,
   );
 
@@ -19674,6 +19752,7 @@ class $$SourceEpisodeMappingsTableTableManager
                 Value<String> packageVersion = const Value.absent(),
                 Value<String> packageRevisionSha256 = const Value.absent(),
                 Value<String> mappingKind = const Value.absent(),
+                Value<String?> mappingMetadataJson = const Value.absent(),
                 Value<DateTime> confirmedAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -19688,6 +19767,7 @@ class $$SourceEpisodeMappingsTableTableManager
                 packageVersion: packageVersion,
                 packageRevisionSha256: packageRevisionSha256,
                 mappingKind: mappingKind,
+                mappingMetadataJson: mappingMetadataJson,
                 confirmedAt: confirmedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -19704,6 +19784,7 @@ class $$SourceEpisodeMappingsTableTableManager
                 required String packageVersion,
                 required String packageRevisionSha256,
                 required String mappingKind,
+                Value<String?> mappingMetadataJson = const Value.absent(),
                 required DateTime confirmedAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -19718,6 +19799,7 @@ class $$SourceEpisodeMappingsTableTableManager
                 packageVersion: packageVersion,
                 packageRevisionSha256: packageRevisionSha256,
                 mappingKind: mappingKind,
+                mappingMetadataJson: mappingMetadataJson,
                 confirmedAt: confirmedAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

@@ -77,7 +77,6 @@ final class SourceLiveHttpPackageRuntime {
           id: _failureForProgram(requestPlan, id, 'source_live_runtime_failed'),
       };
     }
-
     if (execution.status == SourceLiveHttpExecutionStatus.completed) {
       final response = execution.response;
       if (response == null) {

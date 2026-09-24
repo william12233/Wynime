@@ -3,6 +3,8 @@ package io.github.william12233.wynime
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -48,6 +50,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         const val AUTH_SESSION_KEY_ALIAS = "wynime_bangumi_refresh_v1"
         const val AUTH_SESSION_AAD = "io.github.william12233.wynime/bangumi-refresh-v1"
         const val AUTH_SESSION_MAX_TOKEN_LENGTH = 4096
+        const val POSITION_UPDATE_INTERVAL_MS = 500L
     }
 
     private data class TrackDescriptor(
@@ -77,6 +80,23 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private var activeSessionId: String? = null
     private var activeTimelineMapIdentity: String? = null
     private val boundTracks = mutableMapOf<Int, BoundTrack>()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var positionTickerScheduled = false
+    private val positionTicker = object : Runnable {
+        override fun run() {
+            val exoPlayer = player
+            if (
+                exoPlayer == null ||
+                    !exoPlayer.isPlaying ||
+                    activeSessionId == null
+            ) {
+                positionTickerScheduled = false
+                return
+            }
+            emitState("playing")
+            mainHandler.postDelayed(this, POSITION_UPDATE_INTERVAL_MS)
+        }
+    }
     private var pendingAuthCallback: Map<String, String?>? = null
     private var pendingAuthResult: MethodChannel.Result? = null
     private val authStatePreferences by lazy {
@@ -111,6 +131,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                stopPositionTicker()
                 val httpStatus = findHttpStatus(error)
                 val payload = mutableMapOf<String, Any?>(
                     "sequence" to nextSequence(),
@@ -606,6 +627,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     }
 
     private fun closePlayer(emitClosed: Boolean) {
+        stopPositionTicker()
         val closingSessionId = activeSessionId
         val closingTimelineMapIdentity = activeTimelineMapIdentity
         player?.let { existing ->
@@ -642,6 +664,11 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         sessionId: String? = activeSessionId,
         timelineMapIdentity: String? = activeTimelineMapIdentity,
     ) {
+        if (state == "playing") {
+            startPositionTicker()
+        } else {
+            stopPositionTicker()
+        }
         val payload = mutableMapOf<String, Any?>(
             "sequence" to nextSequence(),
             "state" to state,
@@ -702,6 +729,22 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     }
 
     private fun nextSequence(): Long = eventSequence++
+
+    private fun startPositionTicker() {
+        if (positionTickerScheduled) {
+            return
+        }
+        positionTickerScheduled = true
+        mainHandler.post(positionTicker)
+    }
+
+    private fun stopPositionTicker() {
+        if (!positionTickerScheduled) {
+            return
+        }
+        positionTickerScheduled = false
+        mainHandler.removeCallbacks(positionTicker)
+    }
 
     private fun safePosition(): Long = player?.currentPosition?.coerceAtLeast(0L) ?: 0L
 

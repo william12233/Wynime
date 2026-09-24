@@ -68,10 +68,10 @@ import 'package:wynime/src/platform/playback/playback_surface_host.dart';
 import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_playable_fallback.dart';
 import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_subject_fallback.dart';
 
-const _subjectId = '3408';
+const _subjectId = '3403';
 const _lineId = 'xfxf1';
-const _episodeId = '154427';
-const _wynimeVersion = '1.0.15';
+const _episodeId = '121397';
+const _wynimeVersion = '1.0.16';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -694,9 +694,28 @@ final class _HarnessAppState extends State<_HarnessApp> {
     required int candidateIndex,
   }) async {
     final playing = Completer<void>();
+    final advanced = Completer<Duration>();
+    Duration? firstPlayingPosition;
+    var observedEvents = 0;
     final subscription = widget.playbackCoordinator.events.listen((event) {
+      if (observedEvents < 20) {
+        observedEvents++;
+        debugPrint(
+          'LIVE_HARNESS PLAYER_EVENT state=${event.state.name} '
+          'position_ms=${event.position.inMilliseconds} '
+          'buffered_ms=${event.bufferedPosition.inMilliseconds} '
+          'failure=${event.failure?.code ?? 'none'} '
+          'http_status=${event.failure?.httpStatus ?? 'none'}',
+        );
+      }
       if (event.state == PlaybackState.playing && !playing.isCompleted) {
+        firstPlayingPosition ??= event.position;
         playing.complete();
+      }
+      if (event.state == PlaybackState.playing &&
+          event.position > Duration.zero &&
+          !advanced.isCompleted) {
+        advanced.complete(event.position);
       }
       if (event.state == PlaybackState.failed && !playing.isCompleted) {
         playing.completeError(StateError('media3_playback_failed'));
@@ -736,6 +755,14 @@ final class _HarnessAppState extends State<_HarnessApp> {
       _log(
         'ANDROID_PLAYER_HANDOFF: PASS candidate=$candidateIndex '
         '(media3_playing)',
+      );
+      final advancedPosition = await advanced.future.timeout(
+        const Duration(seconds: 12),
+      );
+      _log(
+        'POSITION: PASS candidate=$candidateIndex '
+        'start_ms=${firstPlayingPosition?.inMilliseconds ?? 0} '
+        'advanced_ms=${advancedPosition.inMilliseconds}',
       );
       return const _ActualPlaybackOutcome(
         sessionPrepared: true,
@@ -1238,7 +1265,7 @@ const _xifanPackageJson = r'''
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "wynimeVersion": "^1.0.15",
   "cache": {
     "searchTtlSeconds": 0,
@@ -1260,7 +1287,7 @@ const _xifanPackageJson = r'''
         "schemes": ["https"]
       },
       {
-        "host": "api.xifandm.net",
+        "host": "api.xifanacg.com",
         "includeSubdomains": false,
         "schemes": ["https"]
       },
@@ -1303,7 +1330,7 @@ const _xifanPackageJson = r'''
       "documentKind": "html",
       "root": {
         "type": "css",
-        "expression": "main a"
+        "expression": "main ul.grid a"
       },
       "resultLimit": 128,
       "fields": [
@@ -1402,11 +1429,7 @@ const _xifanPackageJson = r'''
           "value": "text",
           "attribute": null,
           "required": true,
-          "regex": {
-            "pattern": "([0-9][0-9.]*)",
-            "group": 1,
-            "caseSensitive": true
-          }
+          "regex": null
         }
       ]
     },

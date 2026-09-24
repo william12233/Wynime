@@ -180,7 +180,7 @@ final class LoopbackPlaybackProxyService implements PlaybackProxyService {
     required Uri initialUri,
   }) async {
     proxySession.throwIfClosed();
-    final range = request.headers.value(HttpHeaders.rangeHeader);
+    var range = request.headers.value(HttpHeaders.rangeHeader);
     if (range != null && !_validSingleRange(range)) {
       await _writeError(
         request.response,
@@ -194,60 +194,80 @@ final class LoopbackPlaybackProxyService implements PlaybackProxyService {
     final visited = <String>{currentUri.toString()};
     late ProxyUpstreamResponse upstream;
     while (true) {
-      final outboundHeaders = playbackUpstreamHeaders(
-        proxySession.session,
-        requestUri: currentUri,
-        range: range,
-      );
-      if (_encodedHeaderBytes(outboundHeaders) >
-          proxySession.budget.maxRequestHeaderBytes) {
-        throw PlaybackProxyException(
-          'request_header_budget_exceeded',
-          'Forwarded request headers exceed the configured byte budget.',
+      while (true) {
+        final outboundHeaders = playbackUpstreamHeaders(
+          proxySession.session,
+          requestUri: currentUri,
+          range: range,
         );
-      }
-      upstream = await proxySession.race(
-        _upstreamClient.send(
-          ProxyUpstreamRequest(
-            uri: currentUri,
-            method: request.method,
-            headers: outboundHeaders,
-            timeout: proxySession.budget.upstreamTimeout,
+        if (_encodedHeaderBytes(outboundHeaders) >
+            proxySession.budget.maxRequestHeaderBytes) {
+          throw PlaybackProxyException(
+            'request_header_budget_exceeded',
+            'Forwarded request headers exceed the configured byte budget.',
+          );
+        }
+        upstream = await proxySession.race(
+          _upstreamClient.send(
+            ProxyUpstreamRequest(
+              uri: currentUri,
+              method: request.method,
+              headers: outboundHeaders,
+              timeout: proxySession.budget.upstreamTimeout,
+            ),
           ),
-        ),
-      );
-      if (!_isRedirect(upstream.statusCode)) {
-        break;
-      }
-      await _cancelBody(upstream.body);
-      final location = upstream.firstLocation;
-      if (location == null || location.trim().isEmpty) {
-        throw PlaybackProxyException(
-          'invalid_redirect',
-          'Redirect response omitted Location.',
         );
+        if (!_isRedirect(upstream.statusCode)) {
+          break;
+        }
+        await _cancelBody(upstream.body);
+        final location = upstream.firstLocation;
+        if (location == null || location.trim().isEmpty) {
+          throw PlaybackProxyException(
+            'invalid_redirect',
+            'Redirect response omitted Location.',
+          );
+        }
+        if (redirectCount >= proxySession.budget.maxRedirects) {
+          throw PlaybackProxyException(
+            'redirect_budget_exceeded',
+            'Upstream redirect budget exceeded.',
+          );
+        }
+        final next = currentUri.resolve(location);
+        if (!proxySession.securityPolicy.allowsUri(next)) {
+          throw PlaybackProxyException(
+            'redirect_outside_allowlist',
+            'Redirect target is outside the source allowlist.',
+          );
+        }
+        if (!visited.add(next.toString())) {
+          throw PlaybackProxyException(
+            'redirect_loop',
+            'Upstream redirect loop detected.',
+          );
+        }
+        currentUri = next;
+        redirectCount += 1;
       }
-      if (redirectCount >= proxySession.budget.maxRedirects) {
-        throw PlaybackProxyException(
-          'redirect_budget_exceeded',
-          'Upstream redirect budget exceeded.',
-        );
+
+      if (range == null &&
+          request.method == 'GET' &&
+          _shouldRetryWithBoundedInitialRange(
+            uri: currentUri,
+            response: upstream,
+            budget: proxySession.budget,
+          )) {
+        await _cancelBody(upstream.body);
+        range = _boundedInitialRange(proxySession.budget);
+        currentUri = initialUri;
+        redirectCount = 0;
+        visited
+          ..clear()
+          ..add(initialUri.toString());
+        continue;
       }
-      final next = currentUri.resolve(location);
-      if (!proxySession.securityPolicy.allowsUri(next)) {
-        throw PlaybackProxyException(
-          'redirect_outside_allowlist',
-          'Redirect target is outside the source allowlist.',
-        );
-      }
-      if (!visited.add(next.toString())) {
-        throw PlaybackProxyException(
-          'redirect_loop',
-          'Upstream redirect loop detected.',
-        );
-      }
-      currentUri = next;
-      redirectCount += 1;
+      break;
     }
 
     proxySession.throwIfClosed();
@@ -580,6 +600,41 @@ bool _looksLikeHlsPlaylist(Uri uri, String? contentType) {
   return uri.path.toLowerCase().endsWith('.m3u8') ||
       type.contains('mpegurl') ||
       type.contains('vnd.apple.mpegurl');
+}
+
+bool _shouldRetryWithBoundedInitialRange({
+  required Uri uri,
+  required ProxyUpstreamResponse response,
+  required PlaybackProxyBudget budget,
+}) {
+  if (response.statusCode != HttpStatus.ok ||
+      _looksLikeHlsPlaylist(uri, response.contentType)) {
+    return false;
+  }
+  final length = response.contentLength;
+  if (length == null || length <= budget.maxResponseBytes) {
+    return false;
+  }
+  final contentType = response.contentType
+      ?.split(';')
+      .first
+      .trim()
+      .toLowerCase();
+  final mediaType =
+      contentType?.startsWith('video/') == true ||
+      contentType?.startsWith('audio/') == true ||
+      contentType == 'application/octet-stream';
+  final mediaPath = RegExp(
+    r'\.(?:aac|flac|m4a|m4s|mkv|mp3|mp4|mpeg|ogg|ts|webm|wav)(?:$|/)',
+    caseSensitive: false,
+  ).hasMatch(uri.path);
+  return mediaType || mediaPath;
+}
+
+String _boundedInitialRange(PlaybackProxyBudget budget) {
+  const initialWindowBytes = 4 * 1024 * 1024;
+  final length = min(initialWindowBytes, budget.maxResponseBytes);
+  return 'bytes=0-${length - 1}';
 }
 
 bool _validSingleRange(String value) {

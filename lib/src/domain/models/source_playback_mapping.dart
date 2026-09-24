@@ -1,5 +1,6 @@
 import 'source_identity.dart';
 import 'source_package_provenance.dart';
+import 'episode_mapping.dart';
 
 enum SubjectMappingKind { automaticExactTitle, userConfirmed }
 
@@ -32,6 +33,7 @@ final class SourceEpisodeMapping {
     required this.provenance,
     required this.mappingKind,
     required this.confirmedAt,
+    this.mapping,
   });
 
   final String bangumiSubjectId;
@@ -41,4 +43,5 @@ final class SourceEpisodeMapping {
   final SourcePackageProvenance provenance;
   final EpisodeMappingKind mappingKind;
   final DateTime confirmedAt;
+  final EpisodeMapping? mapping;
 }

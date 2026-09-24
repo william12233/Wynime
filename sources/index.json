@@ -5,9 +5,9 @@
   "packages": [
     {
       "packageId": "xifan",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "path": "xifan.wynsrc.json",
-      "sha256": "8307042D756317DB6831B8D9C3CE4E3B7214FDA85EF368E97CDA728A2FF6D9D1"
+      "sha256": "B22150318C0754D18394B542CBA94CB950299AC672F26ED7FBDB9737F1695370"
     }
   ]
 }

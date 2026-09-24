@@ -59,13 +59,13 @@ Future<void> main(List<String> arguments) async {
       'Usage: dart run tool/live_source_smoke.dart '
       '--query=<public title> --subject-id=<id> --line-id=<id> '
       '--episode-id=<id> [--package=sources/xifan.wynsrc.json] '
-      '[--wynime-version=1.0.15]',
+      '[--wynime-version=1.0.16]',
     );
     exitCode = 64;
     return;
   }
 
-  final wynimeVersion = Version.parse(options['wynime-version'] ?? '1.0.15');
+  final wynimeVersion = Version.parse(options['wynime-version'] ?? '1.0.16');
   final timestamp = DateTime.now().toUtc().toIso8601String();
   final decoder = const SourcePackageDecoder();
   final upstreamClient = DartIoProxyUpstreamClient();

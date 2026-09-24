@@ -4,6 +4,35 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.16 - Release-ready
+
+### Episode mapping, source compatibility and playback continuity
+
+- Added typed episode mappings that preserve the raw source label, episode
+  kind, season-relative or cumulative numbering, inferred offsets and mapping
+  evidence instead of guessing from one ordinal alone.
+- Added ordered-context correlation for cumulative source seasons, durable
+  mapping persistence through the database v8 migration, and exact mapping
+  restoration across controller reconstruction.
+- Published xifan source package `1.2.2` with the current API host and hydrated
+  result selector, and extended bounded document-capture time for slower
+  Android WebViews.
+- Added a bounded progressive-media retry that re-requests an oversized
+  response with an initial Range while preserving the existing proxy and
+  capability boundaries.
+- Added Android playing-position events and updated the live harness to record
+  position advancement without introducing a second playback lifecycle.
+
+### Validation boundary
+
+- Release validation is tied to the exact candidate SHA, protected CI,
+  external signing, native provenance, App Link association and the formal
+  four-asset publication workflow.
+- `HARDWARE_VALIDATION_PENDING` and
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain explicit unless first-party
+  evidence closes them. No authenticated Bangumi, CAPTCHA, DRM or
+  access-control-bypass claim is made.
+
 ## 1.0.15 - Release-ready
 
 ### Source playback UX and compatibility continuation

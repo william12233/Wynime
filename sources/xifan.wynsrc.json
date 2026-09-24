@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "wynimeVersion": "^1.0.15",
   "cache": {
     "searchTtlSeconds": 0,
@@ -24,7 +24,7 @@
         "schemes": ["https"]
       },
       {
-        "host": "api.xifandm.net",
+        "host": "api.xifanacg.com",
         "includeSubdomains": false,
         "schemes": ["https"]
       },
@@ -120,7 +120,7 @@
       "documentKind": "html",
       "root": {
         "type": "css",
-        "expression": "main a"
+        "expression": "main ul.grid a"
       },
       "resultLimit": 128,
       "fields": [
@@ -166,11 +166,7 @@
           "value": "text",
           "attribute": null,
           "required": true,
-          "regex": {
-            "pattern": "([0-9][0-9.]*)",
-            "group": 1,
-            "caseSensitive": true
-          }
+          "regex": null
         }
       ]
     },

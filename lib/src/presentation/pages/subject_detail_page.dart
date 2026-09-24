@@ -87,6 +87,10 @@ final class _BangumiSubjectDetailPageState
   Widget build(BuildContext context) {
     final current = widget.controller.subjectDetailState(widget.subjectId);
     _syncSourcePlayback(current?.snapshot?.subject);
+    final detailSnapshot = current?.snapshot;
+    if (detailSnapshot != null) {
+      _sourcePlayback?.updateBangumiDetail(detailSnapshot);
+    }
     final sourcePlayback = _sourcePlayback;
     final animation = Listenable.merge([
       widget.controller,

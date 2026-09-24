@@ -370,6 +370,7 @@ class SourceEpisodeMappings extends Table {
   TextColumn get packageVersion => text()();
   TextColumn get packageRevisionSha256 => text()();
   TextColumn get mappingKind => text()();
+  TextColumn get mappingMetadataJson => text().nullable()();
   DateTimeColumn get confirmedAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -416,7 +417,7 @@ final class WynimeDatabase extends _$WynimeDatabase {
       );
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   final DatabaseWriteGate writeGate = DatabaseWriteGate();
 
@@ -526,6 +527,15 @@ final class WynimeDatabase extends _$WynimeDatabase {
         await customStatement(
           'CREATE INDEX IF NOT EXISTS source_episode_mapping_package_idx '
           'ON source_episode_mappings (package_id, bangumi_subject_id)',
+        );
+      }
+      // Databases upgraded from v1-v6 create this table from the current
+      // definition in the v7 branch, so only a database already at v7 needs
+      // the incremental column migration.
+      if (from >= 7 && from < 8) {
+        await migrator.addColumn(
+          sourceEpisodeMappings,
+          sourceEpisodeMappings.mappingMetadataJson,
         );
       }
     },

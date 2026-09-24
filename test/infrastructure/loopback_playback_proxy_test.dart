@@ -190,6 +190,79 @@ segment.ts?token=segment-secret
   );
 
   test(
+    'large progressive media retries once with a bounded initial Range after redirect',
+    () async {
+      final entryUri = Uri.parse('https://media.example/video/entry.mp4');
+      final targetUri = Uri.parse('https://cdn.media.example/video/file.mp4');
+      final upstream = _FakeUpstreamClient((request) async {
+        if (request.uri == entryUri) {
+          return ProxyUpstreamResponse(
+            statusCode: 302,
+            headers: {
+              'location': [targetUri.toString()],
+            },
+            body: const Stream<List<int>>.empty(),
+          );
+        }
+        if (request.uri == targetUri && request.headers['range'] == null) {
+          return ProxyUpstreamResponse(
+            statusCode: 200,
+            headers: const {
+              'content-type': ['video/mp4'],
+              'content-length': ['5000000'],
+            },
+            body: const Stream<List<int>>.empty(),
+          );
+        }
+        expect(request.uri, targetUri);
+        expect(request.headers['range'], 'bytes=0-1023');
+        return ProxyUpstreamResponse(
+          statusCode: 206,
+          headers: const {
+            'content-type': ['video/mp4'],
+            'content-length': ['4'],
+            'content-range': ['bytes 0-3/5000000'],
+          },
+          body: Stream.value([1, 2, 3, 4]),
+        );
+      });
+      final service = LoopbackPlaybackProxyService(
+        upstreamClient: upstream,
+        random: Random(8),
+      );
+      final client = HttpClient();
+      addTearDown(() async {
+        client.close(force: true);
+        await service.close();
+      });
+      final lease = await service.expose(
+        PlaybackProxyRequest(
+          session: testPlaybackSession(mediaUri: entryUri),
+          securityPolicy: testSourcePolicy(),
+          budget: testProxyBudget(maxResponseBytes: 1024),
+        ),
+      );
+
+      final response = await (await client.getUrl(lease.playbackUri)).close();
+      final bytes = await response.fold<List<int>>(
+        <int>[],
+        (buffer, chunk) => buffer..addAll(chunk),
+      );
+
+      expect(response.statusCode, 206);
+      expect(bytes, [1, 2, 3, 4]);
+      expect(upstream.requests, hasLength(4));
+      expect(upstream.requests[0].uri, entryUri);
+      expect(upstream.requests[1].uri, targetUri);
+      expect(upstream.requests[2].uri, entryUri);
+      expect(upstream.requests[3].uri, targetUri);
+      expect(upstream.requests.first.headers['range'], isNull);
+      expect(upstream.requests[2].headers['range'], 'bytes=0-1023');
+      expect(upstream.requests.last.headers['range'], 'bytes=0-1023');
+    },
+  );
+
+  test(
     'active media plan passes through a master before sanitizing its child',
     () async {
       final mediaSource = File(

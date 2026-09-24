@@ -33,10 +33,12 @@ final class SourceSubjectMatcher {
   SourceSubjectMatchResult match({
     required BangumiSubject subject,
     required Iterable<SourceSearchResult> results,
+    Iterable<String> alternateTitles = const [],
   }) {
     final acceptedTitles = {
       normalizer.normalize(subject.name),
       normalizer.normalize(subject.nameCn),
+      ...alternateTitles.map(normalizer.normalize),
     }..remove('');
     final unique = <String, SourceSearchResult>{};
     for (final result in results) {

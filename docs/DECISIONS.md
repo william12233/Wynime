@@ -1888,7 +1888,7 @@ open proxy.
 canonical package identity, semantic policy comparison and re-consent boundary.
 Host equality, dot-boundary subdomain matching, HTTPS requirements, public DNS
 preflight, redirect budgets and bounded response handling remain unchanged.
-The xifan continuation package is therefore versioned as unreleased `1.2.1`
+The xifan continuation package is therefore versioned as `1.2.2`
 with an updated registry hash. An earlier Android replay reached that declared
 endpoint but received a typed HTTP 403 with zero captured cookies. The later
 bounded harness observed HTTP 206 `video/mp4` and an initial Media3 handoff;
@@ -1897,7 +1897,7 @@ attempted.
 
 ## ADR-083 — Keep source acquisition offstage and line identity exact in playback UX
 
-**Status:** Accepted for the unreleased `1.0.15+16` continuation
+**Status:** Accepted for `1.0.15+16`; carried into the `1.0.16+17` continuation
 
 **Decision:** The visible installed-source playback route is owned by Wynime:
 detail page, exact episode and source-line selection, transient background
@@ -1928,7 +1928,7 @@ absence of a visible source-page dependency.
 
 ## ADR-084 — Use the same verified registry boundary for debug admission
 
-**Status:** Accepted for the unreleased `1.0.15+16` continuation
+**Status:** Accepted for `1.0.15+16`; carried into the `1.0.16+17` continuation
 
 **Decision:** A debug build may opt into a read-only staged registry rooted at
 the app-support `source-registry` directory only when both `kDebugMode` and

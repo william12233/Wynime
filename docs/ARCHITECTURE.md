@@ -381,7 +381,7 @@ Every initial URI, redirect and HLS child URI must pass the same source allowlis
 
 ### Forwarding and resource budgets
 
-The proxy accepts only GET and HEAD plus one syntactically valid byte range. It forwards the authoritative session headers, scoped cookies, Referer, Origin and User-Agent under independent byte budgets. Redirect count, playlist bytes, total response bytes and registered HLS resources are bounded. Upstream Set-Cookie and redirect Location are never exposed downstream. Closing a lease invalidates its capability and cancels active body subscriptions; service shutdown closes all leases, the listener and the upstream client.
+The proxy accepts only GET and HEAD plus one syntactically valid byte range. It forwards the authoritative session headers, scoped cookies, Referer, Origin and User-Agent under independent byte budgets. Redirect count, playlist bytes, total response bytes and registered HLS resources are bounded. When a progressive media response without an incoming Range explicitly declares a size above the response budget, the proxy cancels that response and retries once with a bounded initial Range; HLS playlists are never given this media fallback. Upstream Set-Cookie and redirect Location are never exposed downstream. Closing a lease invalidates its capability and cancels active body subscriptions; service shutdown closes all leases, the listener and the upstream client.
 
 ### HLS rewrite boundary
 

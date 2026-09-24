@@ -27,7 +27,7 @@ void main() {
       File('sources/xifan.wynsrc.json').readAsStringSync(),
     );
     final manager = DeclarativeSourcePackageManager(
-      wynimeVersion: Version.parse('1.0.15'),
+      wynimeVersion: Version.parse('1.0.16'),
     );
     final pending = manager.install(package);
     installed = manager.enable(
@@ -63,21 +63,21 @@ void main() {
     expect(expanded.queryParameters['q'], '無職轉生');
   });
 
-  test('xifan live document bridge requires the unreleased next runtime', () {
+  test('xifan live document bridge requires the current runtime', () {
     final publicValidation = DeclarativeSourcePackageManager(
       wynimeVersion: Version.parse('1.0.14'),
     ).validate(package);
-    final nextValidation = DeclarativeSourcePackageManager(
-      wynimeVersion: Version.parse('1.0.15'),
+    final currentValidation = DeclarativeSourcePackageManager(
+      wynimeVersion: Version.parse('1.0.16'),
     ).validate(package);
 
     expect(publicValidation.isValid, isFalse);
     expect(publicValidation.code, 'incompatible_wynime_version');
-    expect(nextValidation.isValid, isTrue);
-    expect(nextValidation.code, 'valid');
+    expect(currentValidation.isValid, isTrue);
+    expect(currentValidation.code, 'valid');
   });
 
-  test('xifan 1.1.0 to 1.2.1 update requires fresh re-consent', () {
+  test('xifan 1.1.0 to 1.2.2 update requires fresh re-consent', () {
     final currentJson =
         jsonDecode(File('sources/xifan.wynsrc.json').readAsStringSync())
             as Map<String, dynamic>;
@@ -103,7 +103,7 @@ void main() {
     final decoder = const SourcePackageDecoder();
     final legacyPackage = decoder.decode(jsonEncode(legacyJson));
     final manager = DeclarativeSourcePackageManager(
-      wynimeVersion: Version.parse('1.0.15'),
+      wynimeVersion: Version.parse('1.0.16'),
     );
     final pending = manager.install(legacyPackage);
     final enabled = manager.enable(
@@ -115,7 +115,7 @@ void main() {
     expect(enabled.status, SourcePackageStatus.enabled);
 
     final updated = manager.update(package);
-    expect(updated.package.version, Version.parse('1.2.1'));
+    expect(updated.package.version, Version.parse('1.2.2'));
     expect(updated.status, SourcePackageStatus.disabled);
     expect(updated.requiresConsent, isTrue);
     expect(updated.requiresReconsent, isTrue);
@@ -183,6 +183,8 @@ void main() {
       expect(result.details!.lines, hasLength(1));
       expect(result.details!.lines.single.lineId, 'xfy2');
       expect(result.details!.lines.single.episodes, hasLength(13));
+      expect(result.details!.lines.single.episodes.first.rawLabel, '第 01 集');
+      expect(result.details!.lines.single.episodes.last.rawLabel, '第 13 集');
       expect(
         result.details!.lines.single.episodes.last.identity.episodeId,
         '9453',

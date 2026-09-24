@@ -9,36 +9,56 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.15+16 release boundary is ready for exact-SHA CI and protected
+The v1.0.16+17 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows. No unexecuted hardware, Windows
 Computer Use, or authenticated Bangumi result is represented as a pass.
-The historical v1.0.14 evidence remains below as a separate public release
+The historical v1.0.15 evidence remains below as a separate public release
 record.
 
-## Post-1.0.14 continuation worktree
+## Post-1.0.15 continuation worktree
 
 The current continuation runtime is
-`1.0.15+16`; the xifan package revision used by it requires
+`1.0.16+17`; the xifan package revision used by it is `1.2.2` and requires
 `^1.0.15` because the public 1.0.14 runtime does not contain the rendered
 document capture bridge. Before publication, the candidate must be tagged and
 submitted to the protected workflow at one immutable `main` SHA. The
-historical 1.0.14 release evidence below remains the public release record
-until that workflow publishes v1.0.15.
+historical 1.0.15 release evidence below remains the public release record
+until that workflow publishes v1.0.16.
 
-### 2026-09-24 release decision
+### 2026-09-24 v1.0.16 release decision
 
-- The current release request explicitly authorizes the v1.0.15 workflow.
-- Current-head deterministic evidence is 815 passing Flutter tests,
-  `flutter analyze --fatal-infos --no-pub`, Dart format with zero changes and
-  `git diff --check` passing.
-- Additional local UI and hardware verification was intentionally not rerun in
-  this release turn. `HARDWARE_VALIDATION_PENDING` and
-  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain truthful external-validation
-  disclosures; protected CI and the tag-triggered release workflow remain the
-  authorities for machine release gates, signing, packaging and publication.
+- The current release request explicitly authorizes the v1.0.16 workflow.
+- The candidate includes xifan package `1.2.2`, whose registry hash must match
+  the exact package bytes so installed `1.2.1` users can receive the update.
+- Current worktree deterministic evidence is 818 passing Flutter tests,
+  `flutter analyze --fatal-infos --no-pub`, Dart format with zero changes,
+  `dart run build_runner build` with no generated diff, and
+  `git diff --check` passing. The final candidate SHA must still be frozen and
+  revalidated by protected CI before publication.
+- API-36 Android phone and tablet emulator UI evidence completed for the staged
+  xifan `1.2.2` registry candidate: Sources page, update, bounded permission
+  review, consent, enabled state, and post-restart enabled persistence all
+  passed. The emulator log summaries contained no app `FATAL EXCEPTION`, ANR,
+  or Flutter error. This is emulator UI evidence, not physical hardware
+  validation, so `HARDWARE_VALIDATION_PENDING` remains explicit.
+- The Windows Debug executable built and launched, but the current Computer
+  Use runtime exposed no native app/window inventory (`apps=[]` and no native
+  control API), so action-level Windows UI remains
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`. Protected CI and the tag-triggered
+  release workflow remain the authorities for machine release gates, signing,
+  packaging and publication.
 - The release contains no claim of authenticated Bangumi access, sustained
   hardware playback, CAPTCHA solving, DRM bypass or access-control bypass.
+
+### 2026-09-24 v1.0.15 release decision (historical)
+
+- The v1.0.15 request explicitly authorized the v1.0.15 workflow.
+- The v1.0.15 protected CI and tag-triggered release workflow published the
+  exact-SHA candidate with four public assets.
+- Additional local UI and hardware verification was intentionally not rerun in
+  that release turn. `HARDWARE_VALIDATION_PENDING` and
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain truthful disclosures.
 
 ### 2026-09-23 live compatibility continuation
 

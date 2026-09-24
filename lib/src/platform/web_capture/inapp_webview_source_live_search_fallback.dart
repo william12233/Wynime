@@ -91,7 +91,10 @@ final class InAppWebViewSourceLiveSearchFallback extends ChangeNotifier
         captureMediaRequests: false,
         captureDocument: true,
         completionPolicy: WebCaptureCompletionPolicy.documentAfterLoad,
-        postLoadTimeout: const Duration(seconds: 5),
+        // xifan resolves its search RPC after the initial Next.js load. Keep
+        // the document capture bounded, but allow the rendered result list a
+        // complete client-side hydration window on slower Android WebViews.
+        postLoadTimeout: const Duration(seconds: 15),
         initialHeaders: plan.requestPlan.request.headers,
       );
       packagePlan = SourceLiveCapturePackagePlan(

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../domain/models/bangumi_models.dart';
+import '../domain/models/episode_mapping.dart';
 import '../domain/models/source_identity.dart';
 import '../domain/models/source_models.dart';
 import '../domain/models/source_package_manager_models.dart';
@@ -46,6 +47,7 @@ final class SubjectSourcePlaybackState {
     this.sourceCandidates = const [],
     this.episodeCandidates = const [],
     this.selectedEpisode,
+    this.episodeMapping,
     this.errorCode,
   });
 
@@ -58,6 +60,7 @@ final class SubjectSourcePlaybackState {
   final List<SourceSearchResult> sourceCandidates;
   final List<SourceEpisode> episodeCandidates;
   final SourceEpisodeIdentity? selectedEpisode;
+  final EpisodeMapping? episodeMapping;
   final String? errorCode;
 }
 
@@ -68,12 +71,16 @@ final class SourceEpisodeResolution {
     required this.status,
     this.identity,
     this.candidates = const [],
+    this.mapping,
+    this.mappingCandidates = const [],
     this.reason,
   });
 
   final SourceEpisodeResolutionStatus status;
   final SourceEpisodeIdentity? identity;
   final List<SourceEpisode> candidates;
+  final EpisodeMapping? mapping;
+  final List<EpisodeMapping> mappingCandidates;
   final String? reason;
 }
 
@@ -97,11 +104,13 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
     this.capturePlaybackEntryPoint,
     this.captureBrowserPort,
     this.wynimeVersion,
+    this.detailSnapshot,
   }) : _state = const SubjectSourcePlaybackState(
          phase: SubjectSourcePlaybackPhase.idle,
        ) {
     sourcePackages.addListener(_onSourcePackagesChanged);
     _packageSnapshot = _snapshotPackages(sourcePackages.enabledPackages);
+    _latestDetailSnapshot = detailSnapshot;
   }
 
   final BangumiSubject subject;
@@ -119,13 +128,24 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
   final SourceLiveCapturePlaybackEntryPoint? capturePlaybackEntryPoint;
   final WebSourceBrowserPort? captureBrowserPort;
   final Version? wynimeVersion;
+  final BangumiSubjectDetailSnapshot? detailSnapshot;
 
   SubjectSourcePlaybackState _state;
   String _packageSnapshot = '';
   int _generation = 0;
   bool _closed = false;
+  BangumiSubjectDetailSnapshot? _latestDetailSnapshot;
 
   SubjectSourcePlaybackState get state => _state;
+
+  /// Supplies the currently loaded Bangumi episode page. The source subject
+  /// controller is created before the detail request completes, so this keeps
+  /// cumulative-number inference tied to the exact current page rather than a
+  /// guessed episode count.
+  void updateBangumiDetail(BangumiSubjectDetailSnapshot snapshot) {
+    if (_closed || snapshot.subject.id != subject.id) return;
+    _latestDetailSnapshot = snapshot;
+  }
 
   Future<void> initialize() async {
     final generation = ++_generation;
@@ -168,28 +188,42 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         return;
       }
 
-      final result = await searchPipeline.search(
-        installedPackages: packages,
-        query: subject.nameCn.isNotEmpty ? subject.nameCn : subject.name,
-      );
+      final searchResults = <SourceSearchResult>[];
+      final seenSearchIdentities = <String>{};
+      SourceInstalledLiveSearchPipelineResult? lastSearchResult;
+      for (final query in _subjectSearchQueries()) {
+        final result = await searchPipeline.search(
+          installedPackages: packages,
+          query: query,
+        );
+        lastSearchResult = result;
+        for (final candidate
+            in result.coordinatorResult?.results ??
+                const <SourceSearchResult>[]) {
+          final key = '${candidate.sourceId}/${candidate.subjectId}';
+          if (seenSearchIdentities.add(key)) searchResults.add(candidate);
+        }
+        if (!_isCurrent(generation)) return;
+      }
+      final result = lastSearchResult;
       if (!_isCurrent(generation)) return;
-      if (result.coordinatorResult == null ||
-          result.coordinatorResult!.results.isEmpty) {
+      if (result == null || searchResults.isEmpty) {
         _setState(
           SubjectSourcePlaybackState(
             phase:
-                result.status ==
+                result?.status ==
                     SourceInstalledLiveSearchPipelineStatus.noUsableSources
                 ? SubjectSourcePlaybackPhase.sourceActionRequired
                 : SubjectSourcePlaybackPhase.notFound,
-            errorCode: result.reasonCode,
+            errorCode: result?.reasonCode,
           ),
         );
         return;
       }
       final match = const SourceSubjectMatcher().match(
         subject: subject,
-        results: result.coordinatorResult!.results,
+        results: searchResults,
+        alternateTitles: _subjectAlternateTitles(),
       );
       if (match.status == SourceSubjectMatchStatus.notFound) {
         _setState(
@@ -224,6 +258,54 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         );
       }
     }
+  }
+
+  List<String> _subjectSearchQueries() {
+    final values = <String>{};
+    void add(String value) {
+      final normalized = value.trim();
+      if (normalized.isNotEmpty) values.add(normalized);
+    }
+
+    add(subject.nameCn);
+    add(subject.name);
+    for (final item in subject.infobox) {
+      if (RegExp(
+        r'別名|别名|alias|alternative',
+        caseSensitive: false,
+      ).hasMatch(item.key)) {
+        for (final value in item.values) {
+          add(value.text);
+        }
+      }
+    }
+    for (final relation in _latestDetailSnapshot?.relations ?? const []) {
+      add(relation.nameCn);
+      add(relation.name);
+    }
+    return values.toList(growable: false);
+  }
+
+  List<String> _subjectAlternateTitles() {
+    final values = <String>{};
+    for (final item in subject.infobox) {
+      if (RegExp(
+        r'別名|别名|alias|alternative',
+        caseSensitive: false,
+      ).hasMatch(item.key)) {
+        for (final value in item.values) {
+          final normalized = value.text.trim();
+          if (normalized.isNotEmpty) values.add(normalized);
+        }
+      }
+    }
+    for (final relation in _latestDetailSnapshot?.relations ?? const []) {
+      final nameCn = relation.nameCn.trim();
+      final name = relation.name.trim();
+      if (nameCn.isNotEmpty) values.add(nameCn);
+      if (name.isNotEmpty) values.add(name);
+    }
+    return values.toList(growable: false);
   }
 
   Future<List<SourceSearchResult>> _persistedSubjectCandidates(
@@ -424,17 +506,20 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           subjectDetails: details,
           sourceCandidates: current.sourceCandidates,
           selectedEpisode: persisted.sourceEpisode,
+          episodeMapping: persisted.mapping,
         ),
       );
       return SourceEpisodeResolution(
         status: SourceEpisodeResolutionStatus.ready,
         identity: persisted.sourceEpisode,
+        mapping: persisted.mapping,
       );
     }
 
     final correlation = episodeCorrelator.correlate(
       episode: episode,
       details: details,
+      bangumiEpisodes: _latestDetailSnapshot?.episodes.episodes ?? const [],
     );
     final correlatedCandidates = correlation.candidates
         .where(
@@ -443,11 +528,19 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
               candidate.identity.lineId == preferredLineId,
         )
         .toList(growable: false);
+    final correlatedMappings = correlation.mappings
+        .where(
+          (mapping) =>
+              preferredLineId == null ||
+              mapping.sourceEpisode.identity.lineId == preferredLineId,
+        )
+        .toList(growable: false);
     final candidates = correlatedCandidates.isNotEmpty || preferredLine == null
         ? correlatedCandidates
         : preferredLine.episodes;
-    if (candidates.length == 1) {
-      final identity = candidates.single.identity;
+    if (correlatedMappings.length == 1) {
+      final mapping = correlatedMappings.single;
+      final identity = mapping.sourceEpisode.identity;
       await mappingRepository.upsertEpisodeMapping(
         SourceEpisodeMapping(
           bangumiSubjectId: subject.id,
@@ -457,6 +550,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           provenance: provenance,
           mappingKind: EpisodeMappingKind.automaticExactNumber,
           confirmedAt: DateTime.now().toUtc(),
+          mapping: mapping,
         ),
       );
       _setState(
@@ -468,11 +562,14 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           subjectDetails: details,
           sourceCandidates: current.sourceCandidates,
           selectedEpisode: identity,
+          episodeMapping: mapping,
         ),
       );
       return SourceEpisodeResolution(
         status: SourceEpisodeResolutionStatus.ready,
         identity: identity,
+        mapping: mapping,
+        mappingCandidates: correlatedMappings,
       );
     }
 
@@ -496,6 +593,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
           ? SourceEpisodeResolutionStatus.notFound
           : SourceEpisodeResolutionStatus.selectionRequired,
       candidates: candidates,
+      mappingCandidates: correlatedMappings,
       reason: notFound ? 'episode_not_found' : correlation.reason,
     );
   }
@@ -523,6 +621,20 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         reason: 'episode_selection_invalid',
       );
     }
+    final mapping = selected.episodeNumber == null
+        ? null
+        : EpisodeMapping(
+            sourceEpisode: selected,
+            bangumiSort: episode.sort,
+            sourceNumber: selected.episodeNumber!,
+            numberingMode: EpisodeNumberingMode.manual,
+            seasonRelativeNumber: selected.episodeNumber,
+            absoluteNumber: episode.sort,
+            offset: episode.sort - selected.episodeNumber!,
+            evidence: const [
+              EpisodeMappingEvidence(code: 'user_confirmed_selection'),
+            ],
+          );
     await mappingRepository.upsertEpisodeMapping(
       SourceEpisodeMapping(
         bangumiSubjectId: subject.id,
@@ -532,6 +644,7 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         provenance: provenance,
         mappingKind: EpisodeMappingKind.userConfirmed,
         confirmedAt: DateTime.now().toUtc(),
+        mapping: mapping,
       ),
     );
     _setState(
@@ -543,11 +656,13 @@ final class SubjectSourcePlaybackController extends ChangeNotifier {
         subjectDetails: details,
         sourceCandidates: current.sourceCandidates,
         selectedEpisode: selected.identity,
+        episodeMapping: mapping,
       ),
     );
     return SourceEpisodeResolution(
       status: SourceEpisodeResolutionStatus.ready,
       identity: selected.identity,
+      mapping: mapping,
     );
   }
 

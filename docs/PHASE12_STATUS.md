@@ -9,47 +9,49 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 `RELEASE_READY`
 
-The v1.0.16+17 release boundary is ready for exact-SHA CI and protected
+The v1.0.17+18 release boundary is ready for exact-SHA CI and protected
 publication. The final candidate SHA must still be frozen and revalidated by
 the main, signing and release workflows. No unexecuted hardware, Windows
 Computer Use, or authenticated Bangumi result is represented as a pass.
-The historical v1.0.15 evidence remains below as a separate public release
-record.
+The historical v1.0.16 and v1.0.15 evidence remains below as separate public
+release records.
 
-## Post-1.0.15 continuation worktree
+## Post-1.0.16 continuation worktree
 
 The current continuation runtime is
-`1.0.16+17`; the xifan package revision used by it is `1.2.2` and requires
+`1.0.17+18`; the xifan package revision used by it is `1.2.3` and requires
 `^1.0.15` because the public 1.0.14 runtime does not contain the rendered
 document capture bridge. Before publication, the candidate must be tagged and
 submitted to the protected workflow at one immutable `main` SHA. The
-historical 1.0.15 release evidence below remains the public release record
-until that workflow publishes v1.0.16.
+historical 1.0.16 release evidence below remains the public release record
+until that workflow publishes v1.0.17.
 
-### 2026-09-24 v1.0.16 release decision
+### 2026-09-26 v1.0.17 release decision
 
-- The current release request explicitly authorizes the v1.0.16 workflow.
-- The candidate includes xifan package `1.2.2`, whose registry hash must match
-  the exact package bytes so installed `1.2.1` users can receive the update.
-- Current worktree deterministic evidence is 818 passing Flutter tests,
+- The current release request explicitly authorizes the v1.0.17 workflow.
+- The candidate includes xifan package `1.2.3`, whose registry hash must match
+  the exact package bytes. It declares only the exact HTTPS media origin
+  `play.xfvod.pro:8088`; standard-port, adjacent-port and subdomain variants
+  remain rejected.
+- Each live episode request now obtains a fresh episode-specific media
+  candidate. Deterministic tests cover request ordering, episode identity,
+  candidate separation, package re-consent and exact-port policy.
+- Current-head deterministic evidence is 820 passing Flutter tests,
   `flutter analyze --fatal-infos --no-pub`, Dart format with zero changes,
   `dart run build_runner build` with no generated diff, and
-  `git diff --check` passing. The final candidate SHA must still be frozen and
-  revalidated by protected CI before publication.
-- API-36 Android phone and tablet emulator UI evidence completed for the staged
-  xifan `1.2.2` registry candidate: Sources page, update, bounded permission
-  review, consent, enabled state, and post-restart enabled persistence all
-  passed. The emulator log summaries contained no app `FATAL EXCEPTION`, ANR,
-  or Flutter error. This is emulator UI evidence, not physical hardware
-  validation, so `HARDWARE_VALIDATION_PENDING` remains explicit.
-- The Windows Debug executable built and launched, but the current Computer
-  Use runtime exposed no native app/window inventory (`apps=[]` and no native
-  control API), so action-level Windows UI remains
-  `WINDOWS_CUA_VALIDATION_UNAVAILABLE`. Protected CI and the tag-triggered
-  release workflow remain the authorities for machine release gates, signing,
-  packaging and publication.
-- The release contains no claim of authenticated Bangumi access, sustained
-  hardware playback, CAPTCHA solving, DRM bypass or access-control bypass.
+  `git diff --check` passing.
+- The final candidate SHA must be frozen and revalidated by protected CI before
+  publication. `HARDWARE_VALIDATION_PENDING` and
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain explicit, and no authenticated
+  Bangumi, sustained hardware playback, CAPTCHA solving, DRM bypass or
+  access-control-bypass claim is made.
+
+### 2026-09-24 v1.0.16 release record
+
+- The protected v1.0.16 workflow published the exact-SHA candidate with four
+  public assets.
+- Its Android emulator evidence, Windows UI limitation and hardware limitation
+  remain historical evidence classes; they do not become hardware passes.
 
 ### 2026-09-24 v1.0.15 release decision (historical)
 

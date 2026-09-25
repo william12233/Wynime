@@ -71,7 +71,7 @@ import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_subjec
 const _subjectId = '3403';
 const _lineId = 'xfxf1';
 const _episodeId = '121397';
-const _wynimeVersion = '1.0.16';
+const _wynimeVersion = '1.0.17';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -173,7 +173,7 @@ final class _HarnessApp extends StatefulWidget {
 }
 
 final class _HarnessAppState extends State<_HarnessApp> {
-  final _messages = <String>['INSTALL: PASS (xifan@1.2.1)'];
+  final _messages = <String>['INSTALL: PASS (xifan@1.2.3)'];
   SourceLiveCapturePackagePlan? _capturePlan;
   SourceLiveCapturePackageResult? _captureAdmission;
   Completer<SourceLiveCaptureResult>? _captureCompleter;
@@ -1265,7 +1265,7 @@ const _xifanPackageJson = r'''
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "wynimeVersion": "^1.0.15",
   "cache": {
     "searchTtlSeconds": 0,
@@ -1306,6 +1306,12 @@ const _xifanPackageJson = r'''
         "includeSubdomains": false,
         "schemes": ["https"],
         "ports": [30443]
+      },
+      {
+        "host": "play.xfvod.pro",
+        "includeSubdomains": false,
+        "schemes": ["https"],
+        "ports": [8088]
       }
     ],
     "permissions": [

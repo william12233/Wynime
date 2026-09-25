@@ -110,6 +110,49 @@ void main() {
   );
 
   test(
+    'acquires a fresh episode-specific media candidate on every request',
+    () async {
+      final package = _package('example.anime');
+      final transport = _DynamicEpisodeTransport();
+      final subject = _subject(transport);
+
+      final episodeA = _episode(package.packageId, episodeId: 'episode-a');
+      final episodeB = _episode(package.packageId, episodeId: 'episode-b');
+
+      final firstA = await subject.listPlayableSources(
+        plans: [_plan(package, episode: episodeA)],
+      );
+      final firstB = await subject.listPlayableSources(
+        plans: [_plan(package, episode: episodeB)],
+      );
+      final replayA = await subject.listPlayableSources(
+        plans: [_plan(package, episode: episodeA)],
+      );
+
+      expect(firstA.status, SourcePlayableSourceCoordinatorStatus.available);
+      expect(firstB.status, SourcePlayableSourceCoordinatorStatus.available);
+      expect(replayA.status, SourcePlayableSourceCoordinatorStatus.available);
+      expect(transport.requests, hasLength(3));
+      expect(transport.requests.map((request) => request.uri.path), [
+        '/play/episode-a',
+        '/play/episode-b',
+        '/play/episode-a',
+      ]);
+
+      final firstAMedia = firstA.sources.single.mediaUri;
+      final firstBMedia = firstB.sources.single.mediaUri;
+      final replayAMedia = replayA.sources.single.mediaUri;
+      expect(firstA.sources.single.episode, episodeA);
+      expect(firstB.sources.single.episode, episodeB);
+      expect(replayA.sources.single.episode, episodeA);
+      expect(firstAMedia.path, '/media/episode-a/acquisition-1.mp4');
+      expect(firstBMedia.path, '/media/episode-b/acquisition-2.mp4');
+      expect(replayAMedia.path, '/media/episode-a/acquisition-3.mp4');
+      expect(replayAMedia, isNot(equals(firstAMedia)));
+    },
+  );
+
+  test(
     'live package admission failure stays per-source and becomes partial',
     () async {
       final enabled = _package('enabled.anime');
@@ -386,11 +429,12 @@ SourceLivePlayableSourcePlan _plan(
   SourcePackageManifest package, {
   InstalledSourcePackage? installedPackage,
   SourceEpisodeIdentity? episode,
+  SourceHttpRequest? request,
 }) => SourceLivePlayableSourcePlan(
   requestPlan: SourceLiveHttpRequestPlan(
     installedPackage: installedPackage ?? _installed(package),
     programId: 'playback',
-    request: _request(),
+    request: request ?? _request(episodeId: episode?.episodeId),
   ),
   episode: episode ?? _episode(package.packageId),
   mapping: SourcePlayableSourceFieldMapping(
@@ -402,15 +446,22 @@ SourceLivePlayableSourcePlan _plan(
   ),
 );
 
-SourceEpisodeIdentity _episode(String sourceId) => SourceEpisodeIdentity(
+SourceEpisodeIdentity _episode(
+  String sourceId, {
+  String episodeId = 'episode-1',
+}) => SourceEpisodeIdentity(
   sourceId: sourceId,
   lineId: 'line-1',
   subjectId: 'subject-1',
-  episodeId: 'episode-1',
+  episodeId: episodeId,
 );
 
-SourceHttpRequest _request() => SourceHttpRequest(
-  uri: Uri.parse('https://example.com/playback'),
+SourceHttpRequest _request({String? episodeId}) => SourceHttpRequest(
+  uri: Uri.parse(
+    episodeId == null
+        ? 'https://example.com/playback'
+        : 'https://example.com/play/$episodeId',
+  ),
   securityPolicy: testSourcePolicy(),
   headers: const {'accept': 'text/html'},
   timeout: const Duration(seconds: 2),
@@ -527,6 +578,30 @@ final class _QueueTransport implements SourceHttpTransport {
   Future<SourceHttpTransportResult> send(SourceHttpRequest request) async {
     requests.add(request);
     return results.removeAt(0);
+  }
+
+  @override
+  Future<void> close() async {}
+}
+
+final class _DynamicEpisodeTransport implements SourceHttpTransport {
+  final requests = <SourceHttpRequest>[];
+
+  @override
+  Future<SourceHttpTransportResult> send(SourceHttpRequest request) async {
+    requests.add(request);
+    final episodeId = request.uri.pathSegments.last;
+    final acquisition = requests.length;
+    return _success(
+      request,
+      '<article class="source">'
+      '<span class="key">$episodeId-$acquisition</span>'
+      '<span class="label">Dynamic</span>'
+      '<span class="kind">video</span>'
+      '<span class="media">https://example.com/media/$episodeId/acquisition-$acquisition.mp4</span>'
+      '<span class="page">${request.uri}</span>'
+      '</article>',
+    );
   }
 
   @override

@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "wynimeVersion": "^1.0.15",
   "cache": {
     "searchTtlSeconds": 0,
@@ -37,6 +37,12 @@
         "host": "apn.moedot.net",
         "includeSubdomains": false,
         "schemes": ["https"]
+      },
+      {
+        "host": "play.xfvod.pro",
+        "includeSubdomains": false,
+        "schemes": ["https"],
+        "ports": [8088]
       },
       {
         "host": "bjdownload.pan.wo.cn",

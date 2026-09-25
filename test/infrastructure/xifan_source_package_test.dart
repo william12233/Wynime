@@ -77,7 +77,7 @@ void main() {
     expect(currentValidation.code, 'valid');
   });
 
-  test('xifan 1.1.0 to 1.2.2 update requires fresh re-consent', () {
+  test('xifan 1.1.0 to 1.2.3 update requires fresh re-consent', () {
     final currentJson =
         jsonDecode(File('sources/xifan.wynsrc.json').readAsStringSync())
             as Map<String, dynamic>;
@@ -115,7 +115,7 @@ void main() {
     expect(enabled.status, SourcePackageStatus.enabled);
 
     final updated = manager.update(package);
-    expect(updated.package.version, Version.parse('1.2.2'));
+    expect(updated.package.version, Version.parse('1.2.3'));
     expect(updated.status, SourcePackageStatus.disabled);
     expect(updated.requiresConsent, isTrue);
     expect(updated.requiresReconsent, isTrue);
@@ -144,6 +144,33 @@ void main() {
     expect(reconsented.status, SourcePackageStatus.enabled);
     expect(reconsented.requiresConsent, isFalse);
     expect(reconsented.requiresReconsent, isFalse);
+  });
+
+  test('xifan playable media origin requires the exact declared port', () {
+    expect(
+      package.securityPolicy.allowsUri(
+        Uri.parse('https://play.xfvod.pro:8088/media/current.mp4'),
+      ),
+      isTrue,
+    );
+    expect(
+      package.securityPolicy.allowsUri(
+        Uri.parse('https://play.xfvod.pro/media/current.mp4'),
+      ),
+      isFalse,
+    );
+    expect(
+      package.securityPolicy.allowsUri(
+        Uri.parse('https://play.xfvod.pro:8089/media/current.mp4'),
+      ),
+      isFalse,
+    );
+    expect(
+      package.securityPolicy.allowsUri(
+        Uri.parse('https://unlisted.xfvod.pro:8088/media/current.mp4'),
+      ),
+      isFalse,
+    );
   });
 
   test(

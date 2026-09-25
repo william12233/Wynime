@@ -1952,3 +1952,28 @@ bounded; symlinked or non-regular artifacts are rejected. The staging helper
 verifies the index-declared digest before placing bytes in the app's private
 support directory. The runtime remains declarative, and registry reads do not
 install, enable, bypass consent or create a second playback lifecycle.
+
+## ADR-085 — Version xifan 1.2.3 for exact media-origin and fresh episode resolution
+
+**Status:** Accepted for `1.0.17+18`
+
+**Decision:** The xifan source package is revised to `1.2.3` and declares the
+provider media origin `https://play.xfvod.pro:8088` as one exact HTTPS domain
+rule with the exact non-standard port `8088`. The package registry index stores
+the matching SHA-256 for the canonical package bytes. Each live episode
+operation must issue a fresh episode-specific request and return only the
+candidate correlated to that episode; it must not reuse a previous operation's
+media candidate.
+
+**Reason:** The provider's current playable media route uses a non-standard
+port, while episode resolution is operation-specific. A precise package rule
+closes the declared route without broadening network authority, and a fresh
+request prevents stale media from one episode being presented for another.
+
+**Safety:** Exact host, HTTPS scheme, port, DNS preflight, redirect budget,
+response limits, permission and consent checks remain authoritative. Adjacent
+ports, unlisted subdomains and standard-port variants are rejected. The
+package remains unsigned and declarative; no source JavaScript, credential,
+cookie, token, CAPTCHA, DRM or access-control bypass is introduced. The
+existing shared `PlaybackSession` and capability-URI boundary remain the only
+playback authorities.

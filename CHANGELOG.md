@@ -4,6 +4,27 @@ All notable Wynime changes are documented here. A version remains
 `Unreleased` until its release gate, signing, provenance and publication
 evidence are complete.
 
+## 1.0.17 - Release-ready
+
+### xifan source package refresh
+
+- Published xifan source package `1.2.3` with the exact HTTPS
+  `play.xfvod.pro:8088` media origin and matching registry SHA-256.
+- Kept non-standard port admission exact, consent-bound and limited to the
+  declared host; unlisted hosts and adjacent ports remain rejected.
+- Ensured each live episode request acquires a fresh episode-specific media
+  candidate instead of reusing a previous episode's result.
+
+### Validation boundary
+
+- Release validation remains tied to the exact candidate SHA, protected CI,
+  external signing, native provenance, App Link association and the formal
+  four-asset publication workflow.
+- `HARDWARE_VALIDATION_PENDING` and
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain explicit unless first-party
+  evidence closes them. No authenticated Bangumi, CAPTCHA, DRM or
+  access-control-bypass claim is made.
+
 ## 1.0.16 - Release-ready
 
 ### Episode mapping, source compatibility and playback continuity

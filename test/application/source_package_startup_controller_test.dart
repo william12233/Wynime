@@ -126,7 +126,7 @@ void main() {
   );
 
   test(
-    'updates xifan-shaped 1.1.0 to 1.2.2 and requires fresh permission consent',
+    'updates xifan-shaped 1.1.0 to 1.2.3 and requires fresh permission consent',
     () async {
       final repository = _MemorySourcePackageRepository(const []);
       final controller = SourcePackageStartupController(
@@ -155,7 +155,7 @@ void main() {
 
       final updated = await controller.installOrUpdate(
         _package(
-          version: '1.2.2',
+          version: '1.2.3',
           wynimeVersion: '^1.0.15',
           permissions: const {
             SourcePermission.network,
@@ -168,12 +168,12 @@ void main() {
       expect(updated.status, SourcePackageStatus.disabled);
       expect(updated.requiresConsent, isTrue);
       expect(updated.requiresReconsent, isTrue);
-      expect(repository.values.single.package.version, Version.parse('1.2.2'));
+      expect(repository.values.single.package.version, Version.parse('1.2.3'));
 
       await expectLater(
         controller.enable(
           packageId: 'example.anime',
-          version: Version.parse('1.2.2'),
+          version: Version.parse('1.2.3'),
           userApproved: true,
           reconsentGranted: false,
         ),
@@ -188,7 +188,7 @@ void main() {
 
       final enabled = await controller.enable(
         packageId: 'example.anime',
-        version: Version.parse('1.2.2'),
+        version: Version.parse('1.2.3'),
         userApproved: true,
         reconsentGranted: true,
       );

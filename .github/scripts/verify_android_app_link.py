@@ -63,16 +63,12 @@ def load_config(path: Path) -> tuple[str, str]:
     return package_name, fingerprint
 
 
-def read_apk_signer(apksigner: Path, apk: Path) -> str:
-    output = run_tool(
-        [str(apksigner), "verify", "--verbose", "--print-certs", str(apk)],
-        "apksigner",
-    )
+def parse_apk_signer_output(output: str) -> str:
     signer_counts = re.findall(r"^\s*Number of signers:\s*(\d+)\s*$", output, re.MULTILINE)
     if signer_counts != ["1"]:
         fail("APK must report exactly one signer")
     digest_lines = re.findall(
-        r"(?:Signer\s+#\d+|V\d+(?:\.\d+)?\s+Signer):\s*"
+        r"(?:Signer\s+#\d+|V\d+(?:\.\d+)?\s+Signer):?\s*"
         r"certificate\s+SHA-256\s+digest:\s*"
         r"((?:[0-9A-Fa-f]{2}:){31}[0-9A-Fa-f]{2}|[0-9A-Fa-f]{64})",
         output,
@@ -81,6 +77,14 @@ def read_apk_signer(apksigner: Path, apk: Path) -> str:
     if len(digest_lines) != 1:
         fail("APK must report exactly one signer SHA-256 digest")
     return normalize_fingerprint(digest_lines[0], "APK signer SHA-256 digest")
+
+
+def read_apk_signer(apksigner: Path, apk: Path) -> str:
+    output = run_tool(
+        [str(apksigner), "verify", "--verbose", "--print-certs", str(apk)],
+        "apksigner",
+    )
+    return parse_apk_signer_output(output)
 
 
 def read_apk_package(aapt2: Path, apk: Path) -> str:

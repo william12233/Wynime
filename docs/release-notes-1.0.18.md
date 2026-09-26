@@ -40,7 +40,7 @@ Wynime `1.0.18+19` is the next protected exact-SHA release after `v1.0.17`.
   publication gates run again for the immutable tag.
 - Production `assetlinks.json` returned direct HTTP 200 JSON with `no-store`;
   its package and release certificate matched the signed candidate.
-- `BLOCKED_REAL_ANDROID_E2E`, `HARDWARE_VALIDATION_PENDING` and
+- Real Android E2E remains unverified; `HARDWARE_VALIDATION_PENDING` and
   `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain explicit. The repository owner
   will perform Bangumi authentication, dynamic acquisition, proxy, Media3
   first-frame, playback-beyond-ten-seconds, A→B→A and second-anime checks on a

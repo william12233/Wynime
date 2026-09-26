@@ -7,7 +7,7 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 ## Status
 
-`BLOCKED_REAL_ANDROID_E2E`
+`RELEASE_READY`
 
 Operation `WYNIME-DYNAMIC-PLAYBACK-REAL-E2E-20260926` changes the release
 boundary: a protected exact-SHA signed Android candidate may be built for
@@ -51,7 +51,7 @@ release record and is not evidence for this operation.
   reachability, production App Link association, signed candidate metadata,
   alignment and signature checks, and two regression tests for current and
   legacy `apksigner` output.
-- `BLOCKED_REAL_ANDROID_E2E`, `HARDWARE_VALIDATION_PENDING` and
+- Real Android E2E remains unverified; `HARDWARE_VALIDATION_PENDING` and
   `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain explicit. No authenticated
   Bangumi callback, Media3 first frame, sustained hardware playback, A→B→A
   device sequence, CAPTCHA solving, DRM bypass or access-control-bypass claim

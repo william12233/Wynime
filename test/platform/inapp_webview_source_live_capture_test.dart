@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -13,6 +15,17 @@ import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_captur
 import '../helpers/source_rule_test_support.dart';
 
 void main() {
+  test('dynamic media DNS admission rejects private and special addresses', () {
+    expect(isPublicWebCaptureAddress(InternetAddress('8.8.8.8')), isTrue);
+    expect(isPublicWebCaptureAddress(InternetAddress('10.0.0.1')), isFalse);
+    expect(isPublicWebCaptureAddress(InternetAddress('127.0.0.1')), isFalse);
+    expect(isPublicWebCaptureAddress(InternetAddress('169.254.1.1')), isFalse);
+    expect(isPublicWebCaptureAddress(InternetAddress('192.168.1.1')), isFalse);
+    expect(isPublicWebCaptureAddress(InternetAddress('::1')), isFalse);
+    expect(isPublicWebCaptureAddress(InternetAddress('fc00::1')), isFalse);
+    expect(isPublicWebCaptureAddress(InternetAddress('2001:db8::1')), isFalse);
+  });
+
   testWidgets('port forwards one snapshot and ignores duplicate callbacks', (
     tester,
   ) async {
@@ -425,8 +438,9 @@ final class _BrowserPort implements WebSourceBrowserPort {
   @override
   Future<List<WebCaptureCookie>> exportCookies(
     WebCaptureRequest request,
-    Uri uri,
-  ) async {
+    Uri uri, {
+    RuntimeMediaOriginGrant? runtimeOriginGrant,
+  }) async {
     final failure = exportFailure;
     if (failure != null) {
       throw failure;

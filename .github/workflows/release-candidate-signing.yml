@@ -61,8 +61,8 @@ jobs:
           echo "CANDIDATE_VERSION_CODE=$candidate_version_code" >> "$GITHUB_ENV"
           echo "CANDIDATE_SPLIT_VERSION_CODE=$((2 * 1000 + candidate_version_code))" >> "$GITHUB_ENV"
           status="$(sed -n 's/^`\([^`]*\)`[[:space:]]*$/\1/p' docs/PHASE12_STATUS.md | head -n 1)"
-          if [[ "$status" != 'RELEASE_READY' ]]; then
-            echo "Phase 12 must be RELEASE_READY before candidate signing: $status." >&2
+          if [[ "$status" != 'RELEASE_READY' && "$status" != 'BLOCKED_REAL_ANDROID_E2E' ]]; then
+            echo "Phase 12 must permit release or require the signed-device gate before candidate signing: $status." >&2
             exit 1
           fi
           test -s assets/third_party/COPYING.LGPLv3

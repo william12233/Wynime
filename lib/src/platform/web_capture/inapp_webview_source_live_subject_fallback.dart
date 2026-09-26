@@ -232,7 +232,7 @@ final class InAppWebViewSourceLiveSubjectFallback extends ChangeNotifier
   };
 
   static int _boundedWebBudget(int maxDocumentBytes) =>
-      maxDocumentBytes.clamp(0, 256 * 1024);
+      maxDocumentBytes.clamp(0, 1024 * 1024);
 
   void _notifyListenersSafely() {
     try {

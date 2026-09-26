@@ -43,6 +43,22 @@ final class SourceLiveCaptureCoordinator {
       final result = _validateSnapshot(request, snapshot);
       _latestResult = result;
       return result;
+    } on SourceLiveCaptureFailure catch (error) {
+      if (_closed) {
+        return _closedResult(request);
+      }
+      if (generation != _generation) {
+        return _supersededResult(request);
+      }
+      final result = SourceLiveCaptureResult(
+        packageId: request.packageId,
+        packageVersion: request.packageVersion,
+        programId: request.programId,
+        status: SourceLiveCaptureStatus.failed,
+        reasonCode: _safeCaptureFailureCode(error.code),
+      );
+      _latestResult = result;
+      return result;
     } catch (_) {
       if (_closed) {
         return _closedResult(request);
@@ -96,3 +112,6 @@ final class SourceLiveCaptureCoordinator {
         reasonCode: 'capture_closed',
       );
 }
+
+String _safeCaptureFailureCode(String code) =>
+    RegExp(r'^[a-z][a-z0-9_]{0,63}$').hasMatch(code) ? code : 'capture_failed';

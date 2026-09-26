@@ -201,81 +201,97 @@ Future<void> main(List<String> arguments) async {
     final subjectExecution = await runtime.httpExecutor.execute(
       subjectRequestPlan,
     );
+    SourceEpisodeIdentity identity;
     if (subjectExecution.status != SourceLiveHttpExecutionStatus.completed) {
       _printHttpEvidence(
         stage: 'SUBJECT',
         request: subjectRequestPlan.request,
         execution: subjectExecution,
       );
-      _stageFailure(
-        'SUBJECT',
-        _executionCode(subjectExecution, 'subject_http_failed'),
+      final code = _executionCode(subjectExecution, 'subject_http_failed');
+      if (code != 'response_too_large') {
+        _stageFailure('SUBJECT', code);
+        exitCode = 1;
+        return;
+      }
+      print(
+        'SUBJECT: BROWSER_CAPTURE_REQUIRED '
+        '(static_response_budget_exceeded explicit_episode_continuation=true)',
       );
-      exitCode = 1;
-      return;
-    }
-    final subjectResponse = subjectExecution.response!;
-    final subjectFixture = SourceFixture(
-      initialUri: subjectRequestPlan.request.uri,
-      redirectChain: subjectResponse.redirectChain,
-      body: subjectResponse.body,
-    );
-    final metadataRuntime = runtime.fixtureRuntime.executeFixture(
-      installedPackage: installed,
-      programId: subjectRequestPlan.programId,
-      fixture: subjectFixture,
-    );
-    final episodeRuntime = runtime.fixtureRuntime.executeFixture(
-      installedPackage: installed,
-      programId: subjectMapping.episodeProgramId,
-      fixture: subjectFixture,
-    );
-    _printHttpEvidence(
-      stage: 'SUBJECT',
-      request: subjectRequestPlan.request,
-      execution: subjectExecution,
-      runtimeResult: metadataRuntime,
-    );
-    print(
-      'SUBJECT EPISODES: status=${episodeRuntime.status.name} '
-      'decoder=declarative_fixture '
-      'css_root_matches=${episodeRuntime.selectorMatches} '
-      'record_count=${episodeRuntime.records.length} '
-      'stable_code=${_runtimeCode(episodeRuntime, 'not_run')}',
-    );
-    final details = const DeclarativeSourceSubjectNormalizer()
-        .normalizeSubjectDetails(
-          package: package,
-          metadataRuntimeResult: metadataRuntime,
-          episodeRuntimeResult: episodeRuntime,
-          subject: sourceSubject,
-          mapping: subjectMapping,
-        )
-        .details;
-    if (details == null) {
-      _stageFailure(
-        'SUBJECT',
-        _runtimeCode(metadataRuntime, 'subject_unavailable'),
+      identity = SourceEpisodeIdentity(
+        sourceId: package.packageId,
+        subjectId: subjectId,
+        lineId: lineId!,
+        episodeId: episodeId!,
       );
-      exitCode = 1;
-      return;
+    } else {
+      final subjectResponse = subjectExecution.response!;
+      final subjectFixture = SourceFixture(
+        initialUri: subjectRequestPlan.request.uri,
+        redirectChain: subjectResponse.redirectChain,
+        body: subjectResponse.body,
+      );
+      final metadataRuntime = runtime.fixtureRuntime.executeFixture(
+        installedPackage: installed,
+        programId: subjectRequestPlan.programId,
+        fixture: subjectFixture,
+      );
+      final episodeRuntime = runtime.fixtureRuntime.executeFixture(
+        installedPackage: installed,
+        programId: subjectMapping.episodeProgramId,
+        fixture: subjectFixture,
+      );
+      _printHttpEvidence(
+        stage: 'SUBJECT',
+        request: subjectRequestPlan.request,
+        execution: subjectExecution,
+        runtimeResult: metadataRuntime,
+      );
+      print(
+        'SUBJECT EPISODES: status=${episodeRuntime.status.name} '
+        'decoder=declarative_fixture '
+        'css_root_matches=${episodeRuntime.selectorMatches} '
+        'record_count=${episodeRuntime.records.length} '
+        'stable_code=${_runtimeCode(episodeRuntime, 'not_run')}',
+      );
+      final details = const DeclarativeSourceSubjectNormalizer()
+          .normalizeSubjectDetails(
+            package: package,
+            metadataRuntimeResult: metadataRuntime,
+            episodeRuntimeResult: episodeRuntime,
+            subject: sourceSubject,
+            mapping: subjectMapping,
+          )
+          .details;
+      if (details == null) {
+        print(
+          'SUBJECT: BROWSER_CAPTURE_REQUIRED '
+          '(static_subject_unavailable explicit_episode_continuation=true)',
+        );
+        identity = SourceEpisodeIdentity(
+          sourceId: package.packageId,
+          subjectId: subjectId,
+          lineId: lineId!,
+          episodeId: episodeId!,
+        );
+      } else {
+        _stagePass('SUBJECT', 'available');
+        final matchingEpisodes = [
+          for (final line in details.lines)
+            for (final episode in line.episodes)
+              if (episode.identity.lineId == lineId &&
+                  episode.identity.episodeId == episodeId)
+                episode,
+        ];
+        if (matchingEpisodes.length != 1) {
+          _stageFailure('EPISODES', 'episode_identity_not_found');
+          exitCode = 1;
+          return;
+        }
+        identity = matchingEpisodes.single.identity;
+        _stagePass('EPISODES', 'available');
+      }
     }
-    _stagePass('SUBJECT', 'available');
-
-    final matchingEpisodes = [
-      for (final line in details.lines)
-        for (final episode in line.episodes)
-          if (episode.identity.lineId == lineId &&
-              episode.identity.episodeId == episodeId)
-            episode,
-    ];
-    if (matchingEpisodes.length != 1) {
-      _stageFailure('EPISODES', 'episode_identity_not_found');
-      exitCode = 1;
-      return;
-    }
-    final identity = matchingEpisodes.single.identity;
-    _stagePass('EPISODES', 'available');
 
     final playablePlan = planFactory.buildPlayableSourcePlan(
       installedPackage: installed,
@@ -304,7 +320,9 @@ Future<void> main(List<String> arguments) async {
         'STATIC_PLAYABLE',
         _runtimeCode(playableRuntime, 'playable_extraction_empty'),
       );
-      exitCode = 1;
+      print('BROWSER_CAPTURE_REQUIRED');
+      print('STATUS: BROWSER_CAPTURE_REQUIRED');
+      exitCode = 2;
       return;
     }
     if (playableResult.results.length != 1) {

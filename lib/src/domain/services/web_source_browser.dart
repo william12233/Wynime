@@ -7,8 +7,9 @@ abstract interface class WebSourceBrowserPort {
 
   Future<List<WebCaptureCookie>> exportCookies(
     WebCaptureRequest request,
-    Uri uri,
-  );
+    Uri uri, {
+    RuntimeMediaOriginGrant? runtimeOriginGrant,
+  });
 
   Future<void> clearCookies(WebCaptureRequest request, Uri uri);
 }

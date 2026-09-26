@@ -291,6 +291,7 @@ final class Media3PlayerBackend implements PlayerBackend {
         'subtitle',
       ),
       timelineMapIdentity: eventTimelineIdentity,
+      hasRenderedFirstFrame: raw['hasRenderedFirstFrame'] == true,
     );
   }
 

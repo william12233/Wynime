@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:wynime/src/domain/models/playback_session.dart';
 import 'package:wynime/src/domain/models/source_security_policy.dart';
+import 'package:wynime/src/domain/models/web_capture_models.dart';
 
 enum LoopbackAddressFamily { ipv4, ipv6 }
 
@@ -47,7 +48,7 @@ final class PlaybackProxyRequest {
     required this.budget,
     this.addressFamily = LoopbackAddressFamily.ipv4,
   }) {
-    if (!securityPolicy.allowsUri(session.mediaUri)) {
+    if (!playbackSessionAllowsUri(securityPolicy, session, session.mediaUri)) {
       throw ArgumentError.value(
         session.mediaUri,
         'session',
@@ -71,6 +72,17 @@ final class PlaybackProxyRequest {
   final PlaybackProxyBudget budget;
   final LoopbackAddressFamily addressFamily;
 }
+
+bool playbackSessionAllowsUri(
+  SourceSecurityPolicy policy,
+  PlaybackSession session,
+  Uri uri,
+) => webCaptureAllowsRuntimeUri(
+  policy: policy,
+  uri: uri,
+  grant: session.runtimeMediaOriginGrant,
+  acquisitionId: session.acquisitionId,
+);
 
 final class PlaybackProxyLease {
   factory PlaybackProxyLease({

@@ -108,6 +108,7 @@ final class SourceLiveCapturePlayableSourceCoordinator {
     }
 
     final snapshot = validatedCapture.snapshot!;
+    final acquisitionId = request.webCaptureRequest.acquisitionId;
     final mappings = _mappingByIndex(plan.mappings, snapshot.candidates.length);
     if (mappings == null) {
       return _failed(plan, 'candidate_mapping_invalid');
@@ -135,6 +136,21 @@ final class SourceLiveCapturePlayableSourceCoordinator {
           SourcePlayableSourceNormalizationDiagnostic(
             code: 'playable_kind_unsupported',
             message: 'The captured media candidate is unsupported.',
+            recordIndex: index,
+          ),
+        );
+        continue;
+      }
+      if (!webCaptureAllowsRuntimeUri(
+        policy: package.securityPolicy,
+        uri: candidate.uri,
+        grant: candidate.runtimeOriginGrant,
+        acquisitionId: acquisitionId,
+      )) {
+        diagnostics.add(
+          SourcePlayableSourceNormalizationDiagnostic(
+            code: 'media_candidate_rejected',
+            message: 'The captured media origin was not admitted.',
             recordIndex: index,
           ),
         );

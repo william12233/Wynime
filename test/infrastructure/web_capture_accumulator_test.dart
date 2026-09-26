@@ -12,6 +12,8 @@ void main() {
     int maxHeaderBytes = 4096,
     int maxRedirects = 3,
     bool captureDocument = false,
+    bool allowRuntimeMediaOrigins = false,
+    String? acquisitionId,
   }) {
     return WebCaptureRequest(
       initialUri: Uri.parse('https://example.com/watch'),
@@ -35,6 +37,8 @@ void main() {
       ),
       captureMediaRequests: true,
       captureDocument: captureDocument,
+      allowRuntimeMediaOrigins: allowRuntimeMediaOrigins,
+      acquisitionId: acquisitionId,
     );
   }
 
@@ -95,6 +99,135 @@ void main() {
       ),
       throwsA(isA<WebCaptureSecurityException>()),
     );
+  });
+
+  test('dynamic media origin is exact, short-lived, and acquisition-bound', () {
+    final runtimeRequest = request(
+      allowRuntimeMediaOrigins: true,
+      acquisitionId: 'episode-a-1',
+    );
+    final accumulator = WebCaptureAccumulator(runtimeRequest);
+    expect(
+      accumulator.add(
+        WebCaptureEvent(
+          sequence: 0,
+          kind: WebRequestKind.resource,
+          uri: Uri.parse('https://dynamic-cdn.invalid/stream?id=opaque'),
+          headers: const {
+            'Range': 'bytes=0-',
+            'Referer': 'https://example.com/watch',
+          },
+          runtimeOriginValidated: true,
+        ),
+      ),
+      isTrue,
+    );
+
+    final candidate = accumulator
+        .finish(finalUri: Uri.parse('https://example.com/watch'))
+        .candidates
+        .single;
+    expect(candidate.kind, WebCandidateKind.video);
+    expect(candidate.runtimeOriginGrant, isNotNull);
+    expect(
+      candidate.runtimeOriginGrant!.allows(
+        candidate.uri,
+        acquisitionId: 'episode-a-1',
+      ),
+      isTrue,
+    );
+    expect(
+      candidate.runtimeOriginGrant!.allows(
+        candidate.uri,
+        acquisitionId: 'episode-b-1',
+      ),
+      isFalse,
+    );
+    expect(
+      candidate.runtimeOriginGrant!.allows(
+        Uri.parse('https://other-cdn.invalid/video.mp4'),
+        acquisitionId: 'episode-a-1',
+      ),
+      isFalse,
+    );
+  });
+
+  test('runtime origin cannot be admitted without validated provenance', () {
+    final accumulator = WebCaptureAccumulator(
+      request(allowRuntimeMediaOrigins: true, acquisitionId: 'episode-a-2'),
+    );
+    expect(
+      () => accumulator.add(
+        WebCaptureEvent(
+          sequence: 0,
+          kind: WebRequestKind.resource,
+          uri: Uri.parse('https://dynamic-cdn.invalid/video.mp4'),
+        ),
+      ),
+      throwsA(isA<WebCaptureSecurityException>()),
+    );
+  });
+
+  test('runtime origin rejects unrelated ranged resources', () {
+    final accumulator = WebCaptureAccumulator(
+      request(allowRuntimeMediaOrigins: true, acquisitionId: 'episode-a-3'),
+    );
+    expect(
+      () => accumulator.add(
+        WebCaptureEvent(
+          sequence: 0,
+          kind: WebRequestKind.resource,
+          uri: Uri.parse('https://assets.invalid/poster'),
+          headers: const {
+            'Range': 'bytes=0-1023',
+            'Sec-Fetch-Dest': 'image',
+            'Accept': 'image/avif,image/webp',
+          },
+          runtimeOriginValidated: true,
+        ),
+      ),
+      throwsA(
+        isA<WebCaptureSecurityException>().having(
+          (error) => error.code,
+          'code',
+          'uri_not_allowed',
+        ),
+      ),
+    );
+  });
+
+  test('multiple candidates use deterministic media evidence ranking', () {
+    final accumulator = WebCaptureAccumulator(request());
+    expect(
+      accumulator.add(
+        WebCaptureEvent(
+          sequence: 0,
+          kind: WebRequestKind.resource,
+          uri: Uri.parse('https://cdn.example.com/opaque'),
+          headers: const {'Range': 'bytes=0-'},
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      accumulator.add(
+        WebCaptureEvent(
+          sequence: 1,
+          kind: WebRequestKind.fetch,
+          uri: Uri.parse('https://cdn.example.com/master.m3u8'),
+          headers: const {'Content-Type': 'application/vnd.apple.mpegurl'},
+        ),
+      ),
+      isTrue,
+    );
+
+    final candidates = accumulator
+        .finish(finalUri: Uri.parse('https://example.com/watch'))
+        .candidates;
+    expect(candidates, hasLength(2));
+    expect(candidates.first.kind, WebCandidateKind.hls);
+    expect(candidates.first.sourceEventSequence, 1);
+    expect(candidates.last.sourceEventSequence, 0);
   });
 
   test('event sequence must increase strictly', () {

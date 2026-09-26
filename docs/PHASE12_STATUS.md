@@ -7,24 +7,29 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 ## Status
 
-`RELEASE_READY`
+`BLOCKED_REAL_ANDROID_E2E`
 
-The v1.0.17+18 release boundary is ready for exact-SHA CI and protected
-publication. The final candidate SHA must still be frozen and revalidated by
-the main, signing and release workflows. No unexecuted hardware, Windows
-Computer Use, or authenticated Bangumi result is represented as a pass.
-The historical v1.0.16 and v1.0.15 evidence remains below as separate public
-release records.
+Operation `WYNIME-DYNAMIC-PLAYBACK-REAL-E2E-20260926` changes the release
+boundary: a protected exact-SHA signed Android candidate may be built for
+inspection and device validation, but publication remains blocked until the
+real-device Bangumi callback, dynamic source acquisition, proxy upstream,
+Media3 first-frame, playback beyond ten seconds, A→B→A fresh acquisitions and
+a second anime all pass. The historical v1.0.17, v1.0.16 and v1.0.15 evidence
+below remains a record of those earlier release boundaries and is not evidence
+for this operation.
 
 ## Post-1.0.16 continuation worktree
 
 The current continuation runtime is
-`1.0.17+18`; the xifan package revision used by it is `1.2.3` and requires
+`1.0.17+18`; operation `WYNIME-DYNAMIC-PLAYBACK-REAL-E2E-20260926` updates the
+xifan package revision to `1.2.4`, which requires
 `^1.0.15` because the public 1.0.14 runtime does not contain the rendered
-document capture bridge. Before publication, the candidate must be tagged and
-submitted to the protected workflow at one immutable `main` SHA. The
-historical 1.0.16 release evidence below remains the public release record
-until that workflow publishes v1.0.17.
+document capture bridge. Version 1.2.4 raises the bounded document budget to
+1 MiB after the live public subject page exceeded the earlier 256 KiB ceiling;
+the broader budget requires fresh package consent. Before publication, the
+candidate must be tagged and submitted to the protected workflow at one
+immutable `main` SHA. The historical release evidence below remains the public
+release record and is not evidence for this operation.
 
 ### 2026-09-26 v1.0.17 release decision
 

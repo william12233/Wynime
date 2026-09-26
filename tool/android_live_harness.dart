@@ -173,7 +173,7 @@ final class _HarnessApp extends StatefulWidget {
 }
 
 final class _HarnessAppState extends State<_HarnessApp> {
-  final _messages = <String>['INSTALL: PASS (xifan@1.2.3)'];
+  final _messages = <String>['INSTALL: PASS (xifan@1.2.4)'];
   SourceLiveCapturePackagePlan? _capturePlan;
   SourceLiveCapturePackageResult? _captureAdmission;
   Completer<SourceLiveCaptureResult>? _captureCompleter;
@@ -418,6 +418,9 @@ final class _HarnessAppState extends State<_HarnessApp> {
             mode: WebUserAgentMode.platformDefault,
           ),
           captureMediaRequests: true,
+          allowRuntimeMediaOrigins: true,
+          acquisitionId:
+              'harness-${DateTime.now().toUtc().microsecondsSinceEpoch}',
           completionPolicy: WebCaptureCompletionPolicy
               .firstValidatedPlayableCandidateAfterLoad,
           postLoadTimeout: const Duration(seconds: 20),
@@ -447,6 +450,9 @@ final class _HarnessAppState extends State<_HarnessApp> {
               mode: WebUserAgentMode.platformDefault,
             ),
             captureMediaRequests: true,
+            allowRuntimeMediaOrigins: true,
+            acquisitionId:
+                'harness-${DateTime.now().toUtc().microsecondsSinceEpoch}',
             completionPolicy: WebCaptureCompletionPolicy
                 .firstValidatedPlayableCandidateAfterLoad,
             postLoadTimeout: const Duration(seconds: 20),
@@ -694,6 +700,7 @@ final class _HarnessAppState extends State<_HarnessApp> {
     required int candidateIndex,
   }) async {
     final playing = Completer<void>();
+    final firstFrame = Completer<void>();
     final advanced = Completer<Duration>();
     Duration? firstPlayingPosition;
     var observedEvents = 0;
@@ -704,6 +711,7 @@ final class _HarnessAppState extends State<_HarnessApp> {
           'LIVE_HARNESS PLAYER_EVENT state=${event.state.name} '
           'position_ms=${event.position.inMilliseconds} '
           'buffered_ms=${event.bufferedPosition.inMilliseconds} '
+          'first_frame=${event.hasRenderedFirstFrame} '
           'failure=${event.failure?.code ?? 'none'} '
           'http_status=${event.failure?.httpStatus ?? 'none'}',
         );
@@ -712,8 +720,11 @@ final class _HarnessAppState extends State<_HarnessApp> {
         firstPlayingPosition ??= event.position;
         playing.complete();
       }
+      if (event.hasRenderedFirstFrame && !firstFrame.isCompleted) {
+        firstFrame.complete();
+      }
       if (event.state == PlaybackState.playing &&
-          event.position > Duration.zero &&
+          event.position >= const Duration(seconds: 10) &&
           !advanced.isCompleted) {
         advanced.complete(event.position);
       }
@@ -752,12 +763,13 @@ final class _HarnessAppState extends State<_HarnessApp> {
         );
       }
       await playing.future.timeout(const Duration(seconds: 20));
+      await firstFrame.future.timeout(const Duration(seconds: 20));
       _log(
         'ANDROID_PLAYER_HANDOFF: PASS candidate=$candidateIndex '
-        '(media3_playing)',
+        '(media3_playing first_frame=true)',
       );
       final advancedPosition = await advanced.future.timeout(
-        const Duration(seconds: 12),
+        const Duration(seconds: 25),
       );
       _log(
         'POSITION: PASS candidate=$candidateIndex '
@@ -1265,7 +1277,7 @@ const _xifanPackageJson = r'''
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "wynimeVersion": "^1.0.15",
   "cache": {
     "searchTtlSeconds": 0,
@@ -1321,7 +1333,7 @@ const _xifanPackageJson = r'''
       "mediaRequestInspection"
     ],
     "budget": {
-      "maxDocumentBytes": 262144,
+      "maxDocumentBytes": 1048576,
       "maxRecords": 128,
       "maxSelectorMatches": 512,
       "maxEvaluationSteps": 10000,

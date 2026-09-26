@@ -85,6 +85,7 @@ final class PlaybackEvent {
     this.audioTrackId,
     this.subtitleTrackId,
     this.timelineMapIdentity,
+    this.hasRenderedFirstFrame = false,
   }) {
     if (sequence < 0) {
       throw ArgumentError.value(sequence, 'sequence', 'Must not be negative.');
@@ -143,6 +144,7 @@ final class PlaybackEvent {
   final String? audioTrackId;
   final String? subtitleTrackId;
   final String? timelineMapIdentity;
+  final bool hasRenderedFirstFrame;
 }
 
 void _optionalEventText(String? value, String name, int maxLength) {

@@ -74,9 +74,10 @@ final class InAppWebViewBrowserPort implements WebSourceBrowserPort {
   @override
   Future<List<WebCaptureCookie>> exportCookies(
     WebCaptureRequest request,
-    Uri uri,
-  ) async {
-    _requireAllowedUri(request, uri);
+    Uri uri, {
+    RuntimeMediaOriginGrant? runtimeOriginGrant,
+  }) async {
+    _requireAllowedUri(request, uri, runtimeOriginGrant: runtimeOriginGrant);
     final platformCookies = await _cookieManager.getCookies(
       url: WebUri(uri.toString()),
     );
@@ -86,10 +87,17 @@ final class InAppWebViewBrowserPort implements WebSourceBrowserPort {
       final normalizedDomain = domain.startsWith('.')
           ? domain.substring(1)
           : domain;
+      final acquisitionId = request.acquisitionId;
       if (!webCapturePolicyCoversCookieDomain(
-        request.securityPolicy,
-        normalizedDomain,
-      )) {
+            request.securityPolicy,
+            normalizedDomain,
+          ) &&
+          !(acquisitionId != null &&
+              (runtimeOriginGrant?.coversCookieDomain(
+                    normalizedDomain,
+                    acquisitionId: acquisitionId,
+                  ) ??
+                  false))) {
         continue;
       }
       try {
@@ -167,8 +175,20 @@ final class InAppWebViewBrowserPort implements WebSourceBrowserPort {
     return uri;
   }
 
-  static void _requireAllowedUri(WebCaptureRequest request, Uri uri) {
-    if (!request.securityPolicy.allowsUri(uri)) {
+  static void _requireAllowedUri(
+    WebCaptureRequest request,
+    Uri uri, {
+    RuntimeMediaOriginGrant? runtimeOriginGrant,
+  }) {
+    final runtimeAllowed =
+        request.allowRuntimeMediaOrigins &&
+        request.acquisitionId != null &&
+        runtimeOriginGrant?.allows(
+              uri,
+              acquisitionId: request.acquisitionId!,
+            ) ==
+            true;
+    if (!request.securityPolicy.allowsUri(uri) && !runtimeAllowed) {
       throw WebCaptureSecurityException(
         'cookie_uri_not_allowed',
         'Cookie operation URI is outside the source allowlist.',

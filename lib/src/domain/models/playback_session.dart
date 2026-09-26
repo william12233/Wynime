@@ -50,6 +50,8 @@ final class PlaybackSession {
     Iterable<MediaTrack> subtitles = const [],
     Iterable<MediaTrack> audioTracks = const [],
     this.refresh,
+    this.runtimeMediaOriginGrant,
+    this.acquisitionId,
   }) : sessionId = _requiredToken(sessionId, 'sessionId', 128),
        mediaUri = _safeRemoteUri(mediaUri, 'mediaUri'),
        pageUri = _safeRemoteUri(pageUri, 'pageUri'),
@@ -74,6 +76,13 @@ final class PlaybackSession {
     if (adRemovalPlan.key.episode != episode) {
       throw ArgumentError(
         'AdRemovalPlan must describe the same source, line, subject, and episode.',
+      );
+    }
+    if ((runtimeMediaOriginGrant == null) != (acquisitionId == null) ||
+        (runtimeMediaOriginGrant != null &&
+            runtimeMediaOriginGrant!.acquisitionId != acquisitionId)) {
+      throw ArgumentError(
+        'Runtime media grant and acquisition identity must match.',
       );
     }
     _validateTrackIds(this.subtitles, this.audioTracks);
@@ -106,6 +115,8 @@ final class PlaybackSession {
   final UnmodifiableListView<MediaTrack> audioTracks;
   final AdRemovalPlan adRemovalPlan;
   final PlaybackSessionRefresher? refresh;
+  final RuntimeMediaOriginGrant? runtimeMediaOriginGrant;
+  final String? acquisitionId;
 
   Uri get effectivePlaybackUri => playbackUri ?? mediaUri;
 
@@ -147,6 +158,8 @@ final class PlaybackSession {
     audioTracks: audioTracks,
     adRemovalPlan: adRemovalPlan,
     refresh: refresh,
+    runtimeMediaOriginGrant: runtimeMediaOriginGrant,
+    acquisitionId: acquisitionId,
   );
 
   Future<PlaybackSession> refreshed() async {
@@ -183,6 +196,7 @@ final class PlaybackSession {
     'subtitleCount': subtitles.length,
     'audioTrackCount': audioTracks.length,
     'timelineMapIdentity': timelineMapIdentity,
+    'hasRuntimeMediaOriginGrant': runtimeMediaOriginGrant != null,
   };
 
   @override

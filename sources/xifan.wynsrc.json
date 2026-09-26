@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "packageId": "xifan",
   "displayName": "稀飯動漫",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "wynimeVersion": "^1.0.15",
   "cache": {
     "searchTtlSeconds": 0,
@@ -58,7 +58,7 @@
       "mediaRequestInspection"
     ],
     "budget": {
-      "maxDocumentBytes": 262144,
+      "maxDocumentBytes": 1048576,
       "maxRecords": 128,
       "maxSelectorMatches": 512,
       "maxEvaluationSteps": 10000,

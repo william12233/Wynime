@@ -50,6 +50,28 @@ void main() {
     expect(result.toString(), isNot(contains('media.example.com')));
   });
 
+  test('forwards only the exact acquisition-bound dynamic origin grant', () {
+    final fixture = _fixture(
+      runtimeOrigin: true,
+      acquisitionId: 'episode-a-acquisition-1',
+    );
+
+    final result = coordinator.buildRequest(
+      installedPackage: fixture.installedPackage,
+      routeResult: fixture.routeResult,
+      adRemovalPlan: fixture.adRemovalPlan,
+    );
+
+    expect(result.status, SourceLiveCapturePlaybackSessionRequestStatus.ready);
+    expect(result.request!.acquisitionId, 'episode-a-acquisition-1');
+    expect(
+      result.request!.runtimeMediaOriginGrant,
+      same(fixture.candidate.runtimeOriginGrant),
+    );
+    expect(result.request!.cookies.single.domain, 'cdn.example.net');
+    expect(result.toString(), isNot(contains('dynamic-episode-a.mp4')));
+  });
+
   test('does not build a resolver request for a non-selected route', () {
     final fixture = _fixture();
     final result = coordinator.buildRequest(
@@ -490,12 +512,16 @@ final class _Fixture {
 _Fixture _fixture({
   String packageId = 'demo.source',
   VersionConstraint? wynimeVersionConstraint,
+  bool runtimeOrigin = false,
+  String acquisitionId = 'capture-1',
 }) {
   final version = Version.parse('1.0.0');
   final programId = 'live';
   final pageUri = Uri.parse('https://page.example.com/watch/episode-1');
   final mediaUri = Uri.parse(
-    'https://media.example.com/video/episode-1.mp4',
+    runtimeOrigin
+        ? 'https://cdn.example.net/dynamic-episode-a.mp4'
+        : 'https://media.example.com/video/episode-1.mp4',
   ).replace(fragment: '');
   final episode = SourceEpisodeIdentity(
     sourceId: packageId,
@@ -503,7 +529,7 @@ _Fixture _fixture({
     subjectId: 'subject-1',
     episodeId: 'episode-1',
   );
-  final policy = _policy();
+  final policy = runtimeOrigin ? _dynamicPolicy() : _policy();
   final package = SourcePackageManifest(
     schemaVersion: 1,
     packageId: packageId,
@@ -532,8 +558,18 @@ _Fixture _fixture({
         value: 'Mozilla/5.0 Wynime Test Browser',
       ),
       captureMediaRequests: true,
+      allowRuntimeMediaOrigins: runtimeOrigin,
+      acquisitionId: runtimeOrigin ? acquisitionId : null,
     ),
   );
+  final runtimeGrant = runtimeOrigin
+      ? RuntimeMediaOriginGrant(
+          acquisitionId: acquisitionId,
+          origin: Uri.parse('https://cdn.example.net'),
+          sourceEventSequence: 10,
+          expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+        )
+      : null;
   final candidate = WebMediaCandidate(
     kind: WebCandidateKind.video,
     uri: mediaUri,
@@ -542,6 +578,7 @@ _Fixture _fixture({
       'referer': 'https://page.example.com/watch/episode-1',
     },
     sourceEventSequence: 10,
+    runtimeOriginGrant: runtimeGrant,
   );
   final captureResult = SourceLiveCaptureResult(
     packageId: packageId,
@@ -555,6 +592,7 @@ _Fixture _fixture({
           kind: WebRequestKind.resource,
           uri: mediaUri,
           headers: candidate.headers,
+          runtimeOriginValidated: runtimeOrigin,
         ),
       ],
       candidates: [candidate],
@@ -562,7 +600,7 @@ _Fixture _fixture({
         WebCaptureCookie(
           name: 'session',
           value: 'secret-cookie-value',
-          domain: 'example.com',
+          domain: runtimeOrigin ? 'cdn.example.net' : 'example.com',
         ),
       ],
       stopReason: WebCaptureStopReason.completed,
@@ -652,6 +690,28 @@ SourceSecurityPolicy _policy({int maxDocumentBytes = 1024}) =>
         maxRedirects: 2,
       ),
     );
+
+SourceSecurityPolicy _dynamicPolicy() => SourceSecurityPolicy(
+  allowedDomains: [
+    SourceDomainRule(host: 'page.example.com', includeSubdomains: false),
+  ],
+  permissions: const {
+    SourcePermission.network,
+    SourcePermission.cookies,
+    SourcePermission.desktopUserAgent,
+    SourcePermission.webView,
+    SourcePermission.mediaRequestInspection,
+  },
+  budget: SourceResourceBudget(
+    maxDocumentBytes: 1024,
+    maxRecords: 10,
+    maxSelectorMatches: 10,
+    maxEvaluationSteps: 100,
+    maxRegexPatternChars: 32,
+    maxRegexInputChars: 128,
+    maxRedirects: 2,
+  ),
+);
 
 SourceRuleProgram _program(String programId) => SourceRuleProgram(
   programId: programId,

@@ -116,6 +116,7 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
       package: package,
       playableResult: playableResult,
       snapshot: snapshot,
+      webRequest: playableResult.captureRequest!.webCaptureRequest,
     );
     if (sourceError != null) {
       return _failed(
@@ -169,13 +170,16 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
     required SourcePackageManifest package,
     required SourceLiveCapturePlayableSourceResult playableResult,
     required WebCaptureSnapshot snapshot,
+    required WebCaptureRequest webRequest,
   }) {
     final eventsBySequence = <int, WebCaptureEvent>{};
     var previousEventSequence = -1;
     for (final event in snapshot.events) {
       if (event.sequence <= previousEventSequence ||
           eventsBySequence.containsKey(event.sequence) ||
-          !package.securityPolicy.allowsUri(event.uri)) {
+          (!package.securityPolicy.allowsUri(event.uri) &&
+              !(webRequest.allowRuntimeMediaOrigins &&
+                  event.runtimeOriginValidated))) {
         return 'live_route_provenance_invalid';
       }
       previousEventSequence = event.sequence;
@@ -205,25 +209,35 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
       );
       expectedCandidatesByKey.putIfAbsent(
         _candidateKey(kind, normalizedUri),
-        () => WebMediaCandidate(
-          kind: kind,
-          uri: normalizedUri,
-          headers: event.headers,
-          sourceEventSequence: event.sequence,
-          pageUri: snapshot.hasCompleteRequestMetadata
-              ? snapshot.finalUri
-              : null,
-          requestMethod: event.method,
-          isRedirect: event.isRedirect,
-          redirectChain: snapshot.hasCompleteRequestMetadata
-              ? (redirectChainBySequence[event.sequence] ?? const [])
-              : const [],
-        ),
+        () {
+          final captured = snapshot.candidates.where(
+            (candidate) =>
+                candidate.sourceEventSequence == event.sequence &&
+                candidate.uri == normalizedUri,
+          );
+          return WebMediaCandidate(
+            kind: kind,
+            uri: normalizedUri,
+            headers: event.headers,
+            sourceEventSequence: event.sequence,
+            pageUri: snapshot.hasCompleteRequestMetadata
+                ? snapshot.finalUri
+                : null,
+            requestMethod: event.method,
+            isRedirect: event.isRedirect,
+            redirectChain: snapshot.hasCompleteRequestMetadata
+                ? (redirectChainBySequence[event.sequence] ?? const [])
+                : const [],
+            runtimeOriginGrant: captured.isEmpty
+                ? null
+                : captured.first.runtimeOriginGrant,
+          );
+        },
       );
     }
     final expectedCandidates = expectedCandidatesByKey.values.toList(
-      growable: false,
-    );
+      growable: true,
+    )..sort(_candidateClassifier.compareCandidates);
     if (snapshot.candidates.length != expectedCandidates.length) {
       return 'live_route_provenance_invalid';
     }
@@ -234,7 +248,12 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
       candidateIndex++
     ) {
       final candidate = snapshot.candidates[candidateIndex];
-      if (!package.securityPolicy.allowsUri(candidate.uri)) {
+      if (!webCaptureAllowsRuntimeUri(
+        policy: package.securityPolicy,
+        uri: candidate.uri,
+        grant: candidate.runtimeOriginGrant,
+        acquisitionId: webRequest.acquisitionId,
+      )) {
         return 'live_route_provenance_invalid';
       }
       final sourceEvent = eventsBySequence[candidate.sourceEventSequence];
@@ -268,7 +287,12 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
       if (!_sameCandidate(source.candidate, snapshotCandidate) ||
           source.source.episode.sourceId != package.packageId ||
           source.source.pageUri != snapshot.finalUri ||
-          !package.securityPolicy.allowsUri(source.source.mediaUri) ||
+          !webCaptureAllowsRuntimeUri(
+            policy: package.securityPolicy,
+            uri: source.source.mediaUri,
+            grant: source.candidate.runtimeOriginGrant,
+            acquisitionId: webRequest.acquisitionId,
+          ) ||
           !package.securityPolicy.allowsUri(source.source.pageUri) ||
           !_isSupportedCandidate(source.candidate.kind)) {
         return 'live_route_provenance_invalid';
@@ -302,7 +326,8 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
       left.kind == right.kind &&
       left.uri.toString() == right.uri.toString() &&
       left.sourceEventSequence == right.sourceEventSequence &&
-      _sameHeaders(left.headers, right.headers);
+      _sameHeaders(left.headers, right.headers) &&
+      _sameGrant(left.runtimeOriginGrant, right.runtimeOriginGrant);
 
   static bool _sameCandidateRequestMetadata(
     WebMediaCandidate candidate,
@@ -351,6 +376,18 @@ final class SourceLiveCapturePlaybackRouteCoordinator {
         _sameHeaders(candidate.headers, event.headers) &&
         candidate.sourceEventSequence == event.sequence;
   }
+
+  static bool _sameGrant(
+    RuntimeMediaOriginGrant? left,
+    RuntimeMediaOriginGrant? right,
+  ) =>
+      left == null && right == null ||
+      left != null &&
+          right != null &&
+          left.acquisitionId == right.acquisitionId &&
+          left.origin == right.origin &&
+          left.sourceEventSequence == right.sourceEventSequence &&
+          left.expiresAt == right.expiresAt;
 
   static String _candidateKey(WebCandidateKind kind, Uri uri) =>
       '${kind.name}:${_candidateClassifier.normalizeCandidateUri(uri)}';

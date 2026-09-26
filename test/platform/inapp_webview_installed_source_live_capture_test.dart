@@ -275,8 +275,9 @@ final class _BrowserPort implements WebSourceBrowserPort {
   @override
   Future<List<WebCaptureCookie>> exportCookies(
     WebCaptureRequest request,
-    Uri uri,
-  ) async => const [];
+    Uri uri, {
+    RuntimeMediaOriginGrant? runtimeOriginGrant,
+  }) async => const [];
 
   @override
   Future<void> importCookies(WebCaptureRequest request) async {}

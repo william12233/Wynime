@@ -233,9 +233,11 @@ final class InAppWebViewSourceLiveCapturePort implements SourceLiveCapturePort {
   }
 }
 
-final class InAppWebViewSourceLiveCaptureException implements Exception {
+final class InAppWebViewSourceLiveCaptureException
+    implements SourceLiveCaptureFailure {
   const InAppWebViewSourceLiveCaptureException(this.code, this.message);
 
+  @override
   final String code;
   final String message;
 

@@ -110,6 +110,52 @@ void main() {
   );
 
   test(
+    'uses browser fallback when static result has no usable candidate',
+    () async {
+      final package = _package('example.anime');
+      final transport = _QueueTransport([
+        _success(
+          _request(),
+          '<article class="source">'
+          '<span class="key">invalid</span>'
+          '<span class="label">Invalid static</span>'
+          '<span class="kind">video</span>'
+          '<span class="media">https://outside.invalid/media.mp4</span>'
+          '<span class="page">https://example.com/watch/static</span>'
+          '</article>',
+        ),
+      ]);
+      final fallback = _FallbackRuntime(
+        SourceRuntimeResult(
+          packageId: package.packageId,
+          packageVersion: package.version,
+          programId: 'playback',
+          status: SourceRuntimeStatus.available,
+          records: [
+            SourceRuntimeRecord({
+              'key': 'captured',
+              'label': 'Captured',
+              'kind': 'video',
+              'media': 'https://example.com/media/captured.mp4',
+              'page': 'https://example.com/watch/captured',
+            }),
+          ],
+          diagnostics: const [],
+          consumedSteps: 1,
+          selectorMatches: 1,
+        ),
+      );
+      final subject = _subject(transport, fallback: fallback);
+
+      final result = await subject.listPlayableSources(plans: [_plan(package)]);
+
+      expect(result.status, SourcePlayableSourceCoordinatorStatus.available);
+      expect(result.sources.single.sourceKey, 'captured');
+      expect(fallback.calls, 1);
+    },
+  );
+
+  test(
     'acquires a fresh episode-specific media candidate on every request',
     () async {
       final package = _package('example.anime');

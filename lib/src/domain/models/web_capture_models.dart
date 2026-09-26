@@ -29,6 +29,43 @@ enum WebRequestKind { navigation, iframe, resource, xmlHttpRequest, fetch }
 
 enum WebCandidateKind { hls, dash, video, audio, mediaSegment }
 
+/// One short-lived exact-origin authority derived from a browser request in a
+/// single acquisition. It is never part of a source package or persisted.
+final class RuntimeMediaOriginGrant {
+  RuntimeMediaOriginGrant({
+    required String acquisitionId,
+    required Uri origin,
+    required this.sourceEventSequence,
+    required DateTime expiresAt,
+  }) : acquisitionId = _requiredToken(acquisitionId, 'acquisitionId', 128),
+       origin = _origin(origin),
+       expiresAt = expiresAt.toUtc() {
+    if (sourceEventSequence < 0) {
+      throw ArgumentError.value(sourceEventSequence, 'sourceEventSequence');
+    }
+  }
+
+  final String acquisitionId;
+  final Uri origin;
+  final int sourceEventSequence;
+  final DateTime expiresAt;
+
+  bool allows(Uri uri, {required String acquisitionId, DateTime? now}) {
+    final current = (now ?? DateTime.now()).toUtc();
+    return this.acquisitionId == acquisitionId &&
+        expiresAt.isAfter(current) &&
+        uri.userInfo.isEmpty &&
+        uri.scheme == origin.scheme &&
+        uri.host.toLowerCase() == origin.host.toLowerCase() &&
+        _effectivePort(uri) == _effectivePort(origin);
+  }
+
+  bool coversCookieDomain(String domain, {required String acquisitionId}) =>
+      this.acquisitionId == acquisitionId &&
+      expiresAt.isAfter(DateTime.now().toUtc()) &&
+      domain.toLowerCase() == origin.host.toLowerCase();
+}
+
 enum WebCaptureStopReason {
   completed,
   eventBudgetExceeded,
@@ -154,7 +191,10 @@ final class WebCaptureRequest {
     this.postLoadTimeout = const Duration(seconds: 15),
     Map<String, String> initialHeaders = const {},
     Iterable<WebCaptureCookie> initialCookies = const [],
+    this.allowRuntimeMediaOrigins = false,
+    String? acquisitionId,
   }) : initialHeaders = _freezeHeaders(initialHeaders),
+       acquisitionId = _optionalToken(acquisitionId, 'acquisitionId', 128),
        initialCookies = UnmodifiableListView(
          List<WebCaptureCookie>.unmodifiable(initialCookies),
        ) {
@@ -179,6 +219,12 @@ final class WebCaptureRequest {
           SourcePermission.mediaRequestInspection,
         )) {
       throw ArgumentError('The mediaRequestInspection permission is required.');
+    }
+    if (allowRuntimeMediaOrigins &&
+        (!captureMediaRequests || this.acquisitionId == null)) {
+      throw ArgumentError(
+        'Runtime media origins require capture and an acquisition identity.',
+      );
     }
     if ((completionPolicy ==
                 WebCaptureCompletionPolicy.firstPlayableCandidateAfterLoad ||
@@ -233,6 +279,8 @@ final class WebCaptureRequest {
   final Duration postLoadTimeout;
   final UnmodifiableMapView<String, String> initialHeaders;
   final UnmodifiableListView<WebCaptureCookie> initialCookies;
+  final bool allowRuntimeMediaOrigins;
+  final String? acquisitionId;
 
   @override
   String toString() =>
@@ -253,6 +301,7 @@ final class WebCaptureEvent {
     Map<String, String> headers = const {},
     this.isMainFrame = false,
     this.isRedirect = false,
+    this.runtimeOriginValidated = false,
   }) : uri = _safeHttpUri(uri),
        method = _httpMethod(method),
        headers = _freezeHeaders(headers) {
@@ -268,6 +317,18 @@ final class WebCaptureEvent {
   final UnmodifiableMapView<String, String> headers;
   final bool isMainFrame;
   final bool isRedirect;
+  final bool runtimeOriginValidated;
+
+  WebCaptureEvent withRuntimeOriginValidated() => WebCaptureEvent(
+    sequence: sequence,
+    kind: kind,
+    uri: uri,
+    method: method,
+    headers: headers,
+    isMainFrame: isMainFrame,
+    isRedirect: isRedirect,
+    runtimeOriginValidated: true,
+  );
 
   Map<String, Object?> toRedactedDiagnostic() => {
     'sequence': sequence,
@@ -296,6 +357,7 @@ final class WebMediaCandidate {
     String requestMethod = 'GET',
     this.isRedirect = false,
     Iterable<Uri> redirectChain = const [],
+    this.runtimeOriginGrant,
   }) : uri = _safeHttpUri(uri),
        pageUri = pageUri == null ? null : _safeHttpUri(pageUri, 'pageUri'),
        requestMethod = _httpMethod(requestMethod),
@@ -329,6 +391,7 @@ final class WebMediaCandidate {
   final int sourceEventSequence;
   final bool isRedirect;
   final UnmodifiableListView<Uri> redirectChain;
+  final RuntimeMediaOriginGrant? runtimeOriginGrant;
 
   WebMediaCandidate withPageUri(Uri value) => WebMediaCandidate(
     kind: kind,
@@ -339,6 +402,7 @@ final class WebMediaCandidate {
     sourceEventSequence: sourceEventSequence,
     isRedirect: isRedirect,
     redirectChain: redirectChain,
+    runtimeOriginGrant: runtimeOriginGrant,
   );
 
   Map<String, Object?> toRedactedDiagnostic() => {
@@ -356,6 +420,7 @@ final class WebMediaCandidate {
     'redirectChain': [
       for (final redirect in redirectChain) _redactedWebUri(redirect),
     ],
+    'hasRuntimeOriginGrant': runtimeOriginGrant != null,
   };
 
   @override
@@ -456,6 +521,18 @@ bool webCapturePolicyCoversCookieDomain(
   String domain,
 ) => _policyCoversCookieDomain(policy, domain);
 
+bool webCaptureAllowsRuntimeUri({
+  required SourceSecurityPolicy policy,
+  required Uri uri,
+  RuntimeMediaOriginGrant? grant,
+  String? acquisitionId,
+  DateTime? now,
+}) =>
+    policy.allowsUri(uri) ||
+    (grant != null &&
+        acquisitionId != null &&
+        grant.allows(uri, acquisitionId: acquisitionId, now: now));
+
 int _headerBytes(Map<String, String> values) => values.entries.fold(
   0,
   (total, entry) => total + _utf8Bytes(entry.key) + _utf8Bytes(entry.value) + 4,
@@ -516,6 +593,24 @@ Uri _safeHttpUri(Uri value, [String name = 'uri']) {
   }
   return value;
 }
+
+Uri _origin(Uri value) {
+  final safe = _safeHttpUri(value, 'origin');
+  if (safe.scheme != 'https' ||
+      (safe.path.isNotEmpty && safe.path != '/') ||
+      safe.hasQuery ||
+      safe.hasFragment) {
+    throw ArgumentError.value(value, 'origin', 'Must be an HTTPS origin.');
+  }
+  return Uri(
+    scheme: safe.scheme,
+    host: safe.host,
+    port: safe.hasPort ? safe.port : null,
+  );
+}
+
+int _effectivePort(Uri uri) =>
+    uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 80);
 
 String _httpMethod(String value) {
   final method = value.trim().toUpperCase();

@@ -1977,3 +1977,89 @@ package remains unsigned and declarative; no source JavaScript, credential,
 cookie, token, CAPTCHA, DRM or access-control bypass is introduced. The
 existing shared `PlaybackSession` and capability-URI boundary remain the only
 playback authorities.
+
+## ADR-086 — Admit captured dynamic media origins as acquisition capabilities
+
+**Status:** Accepted
+
+**Decision:** Static HTTP remains the fast path, but a playable result with no
+usable normalized candidate may enter the existing bounded WebView path when
+the enabled package declares `mediaRequestInspection`. During one capture,
+the platform may admit a third-party media request outside the package's
+durable domain rules only after observing it as a non-navigation HTTPS request
+in that generation and resolving every returned address as public. The
+resulting `RuntimeMediaOriginGrant` authorizes one exact scheme, host and port,
+one acquisition identity and one source event sequence. The grant and captured
+request context are carried by the candidate into the existing
+`PlaybackSession`, probe and loopback proxy; they are never added to package
+policy or persisted. When one capture observes multiple candidates, the
+shared classifier ranks explicit media Content-Type, supported media suffix,
+browser media destination and Accept evidence ahead of a Range-only signal;
+event sequence and normalized URI are deterministic tie-breakers. Images,
+fonts, stylesheets and script requests carrying contradictory evidence are not
+admitted as Range-only media.
+
+**Reason:** Dynamic players commonly obtain an episode-specific CDN endpoint
+through JavaScript, XHR, fetch or the browser media stack. Requiring the final
+endpoint to be known when the declarative package is authored makes a durable
+allowlist double as episode resolution and fails whenever the provider changes
+CDN host, port or URL shape. An event-derived capability preserves the package
+as the authority to start acquisition without pretending the transient media
+origin is permanent source authority.
+
+**Safety:** Runtime admission requires explicit package permission and a fresh
+acquisition ID. Main-frame navigation, iframe admission, HTTP, embedded URL
+credentials, local/private/special-purpose addresses, stale events and forged
+candidate provenance fail closed. Snapshot, route, resolver, media probe and
+proxy boundaries revalidate the same exact grant; redirect and HLS child
+resources cannot escape it. Cookies are filtered to the exact candidate host,
+all values remain in memory, and diagnostics expose only bounded shapes and
+presence. A→B→A therefore creates three independent grants; process restart
+removes every transient grant. Media3's native first-frame callback is exposed
+as typed evidence separately from ready/playing state and position progress.
+
+## ADR-087 — Separate protected candidate signing from the real-device release gate
+
+**Status:** Accepted
+
+**Decision:** The protected release-candidate signing workflow may build an
+exact-`origin/main` inspection APK while Phase 12 is either `RELEASE_READY` or
+`BLOCKED_REAL_ANDROID_E2E`. This exception applies only to the workflow that
+uploads signed inspection artifacts and creates no tag or release. Publication
+workflows continue to require `RELEASE_READY`; this operation must not enter
+that state until the signed APK passes the complete real-device playback gate.
+
+**Reason:** Production App Link and Bangumi callback verification require the
+production-associated signer, while that verification is itself required
+before release readiness. Requiring release readiness before producing the
+inspection APK creates a circular gate and encourages invalid debug-signer
+substitution.
+
+**Safety:** Candidate checkout remains bound to the exact lowercase SHA at
+both `HEAD` and `origin/main`, signing secrets remain inside the protected
+`release` Environment, signer/alignment/metadata checks remain mandatory, and
+the workflow still cannot tag or publish. A signed candidate is evidence only;
+without all real-device checks, Phase 12 remains
+`BLOCKED_REAL_ANDROID_E2E`.
+
+## ADR-088 — Bound xifan rendered documents at one MiB
+
+**Status:** Accepted
+
+**Decision:** The xifan source package is revised to `1.2.4` and raises
+`maxDocumentBytes` from 256 KiB to 1 MiB. Search and subject WebView document
+capture use the declared package limit with an application ceiling of 1 MiB.
+The registry stores the exact canonical 1.2.4 package digest, and the broader
+resource budget requires fresh user consent before the package can be enabled.
+
+**Reason:** A live public subject request exceeded 256 KiB before declarative
+evaluation, so the installed production path could fail before episode
+selection even though the rendered page and dynamic playback acquisition were
+otherwise valid. One MiB admits the observed page without making document
+capture unbounded or provider-specific native code.
+
+**Safety:** The package's record, selector, evaluation, regex, redirect and
+timeout limits remain unchanged. Captured documents stay in memory, are
+evaluated only by the declarative runtime and are never logged. The application
+ceiling prevents future source packages from turning this change into an
+unbounded WebView bridge; larger pages continue to fail closed.

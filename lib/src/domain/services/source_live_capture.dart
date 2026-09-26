@@ -8,3 +8,8 @@ import '../models/web_capture_models.dart';
 abstract interface class SourceLiveCapturePort {
   Future<WebCaptureSnapshot> capture(SourceLiveCaptureRequest request);
 }
+
+/// Secret-safe platform failure that may cross the capture port boundary.
+abstract interface class SourceLiveCaptureFailure implements Exception {
+  String get code;
+}

@@ -235,7 +235,11 @@ final class LoopbackPlaybackProxyService implements PlaybackProxyService {
           );
         }
         final next = currentUri.resolve(location);
-        if (!proxySession.securityPolicy.allowsUri(next)) {
+        if (!playbackSessionAllowsUri(
+          proxySession.securityPolicy,
+          proxySession.session,
+          next,
+        )) {
           throw PlaybackProxyException(
             'redirect_outside_allowlist',
             'Redirect target is outside the source allowlist.',
@@ -446,7 +450,7 @@ final class _ProxySession {
 
   Uri register(Uri upstreamUri) {
     throwIfClosed();
-    if (!securityPolicy.allowsUri(upstreamUri)) {
+    if (!playbackSessionAllowsUri(securityPolicy, session, upstreamUri)) {
       throw PlaybackProxyException(
         'resource_outside_allowlist',
         'HLS child resource is outside the source allowlist.',

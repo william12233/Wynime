@@ -105,7 +105,7 @@ final class InAppWebViewSourceLivePlayableDocumentFallback
         userAgentPolicy: WebUserAgentPolicy(
           mode: WebUserAgentMode.platformDefault,
         ),
-        captureMediaRequests: false,
+        captureMediaRequests: true,
         captureDocument: true,
         completionPolicy: WebCaptureCompletionPolicy.documentAfterLoad,
         // Public player pages may finish their hydration after the initial

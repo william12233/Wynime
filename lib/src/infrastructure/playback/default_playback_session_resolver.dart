@@ -47,7 +47,12 @@ final class DefaultPlaybackSessionResolver implements PlaybackSessionResolver {
         'DASH playback is outside the Phase 4 HLS and direct-media MVP.',
       );
     }
-    if (!request.securityPolicy.allowsUri(candidate.uri)) {
+    if (!webCaptureAllowsRuntimeUri(
+      policy: request.securityPolicy,
+      uri: candidate.uri,
+      grant: candidate.runtimeOriginGrant,
+      acquisitionId: request.acquisitionId,
+    )) {
       throw PlaybackSessionResolutionException(
         'candidate_outside_allowlist',
         'The selected media candidate is outside the source allowlist.',
@@ -75,6 +80,8 @@ final class DefaultPlaybackSessionResolver implements PlaybackSessionResolver {
       request.cookies,
       candidate.uri,
       request.securityPolicy,
+      candidate.runtimeOriginGrant,
+      request.acquisitionId,
     );
 
     return PlaybackSession(
@@ -93,6 +100,8 @@ final class DefaultPlaybackSessionResolver implements PlaybackSessionResolver {
       audioTracks: request.audioTracks,
       adRemovalPlan: request.adRemovalPlan,
       refresh: request.refresh,
+      runtimeMediaOriginGrant: candidate.runtimeOriginGrant,
+      acquisitionId: request.acquisitionId,
     );
   }
 }
@@ -111,6 +120,8 @@ Map<String, String> _cookiesForUri(
   Iterable<WebCaptureCookie> cookies,
   Uri uri,
   SourceSecurityPolicy policy,
+  RuntimeMediaOriginGrant? grant,
+  String? acquisitionId,
 ) {
   final result = <String, String>{};
   final now = DateTime.now().toUtc();
@@ -123,7 +134,12 @@ Map<String, String> _cookiesForUri(
     }
     if (!_domainMatches(uri.host, cookie.domain) ||
         !_pathMatches(uri.path, cookie.path) ||
-        !webCapturePolicyCoversCookieDomain(policy, cookie.domain)) {
+        (!webCapturePolicyCoversCookieDomain(policy, cookie.domain) &&
+            !(grant?.coversCookieDomain(
+                  cookie.domain,
+                  acquisitionId: acquisitionId!,
+                ) ==
+                true))) {
       continue;
     }
     result[cookie.name] = cookie.value;

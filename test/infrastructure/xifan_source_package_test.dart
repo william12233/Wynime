@@ -75,9 +75,10 @@ void main() {
     expect(publicValidation.code, 'incompatible_wynime_version');
     expect(currentValidation.isValid, isTrue);
     expect(currentValidation.code, 'valid');
+    expect(package.securityPolicy.budget.maxDocumentBytes, 1024 * 1024);
   });
 
-  test('xifan 1.1.0 to 1.2.3 update requires fresh re-consent', () {
+  test('xifan 1.1.0 to 1.2.4 update requires fresh re-consent', () {
     final currentJson =
         jsonDecode(File('sources/xifan.wynsrc.json').readAsStringSync())
             as Map<String, dynamic>;
@@ -115,7 +116,7 @@ void main() {
     expect(enabled.status, SourcePackageStatus.enabled);
 
     final updated = manager.update(package);
-    expect(updated.package.version, Version.parse('1.2.3'));
+    expect(updated.package.version, Version.parse('1.2.4'));
     expect(updated.status, SourcePackageStatus.disabled);
     expect(updated.requiresConsent, isTrue);
     expect(updated.requiresReconsent, isTrue);

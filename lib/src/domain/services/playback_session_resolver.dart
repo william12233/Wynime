@@ -17,6 +17,8 @@ final class PlaybackSessionResolutionRequest {
     this.userAgent,
     this.expiresAt,
     this.refresh,
+    this.runtimeMediaOriginGrant,
+    this.acquisitionId,
     Iterable<MediaTrack> subtitles = const [],
     Iterable<MediaTrack> audioTracks = const [],
   }) : cookies = UnmodifiableListView(
@@ -38,6 +40,13 @@ final class PlaybackSessionResolutionRequest {
         'Page URI is outside the source allowlist.',
       );
     }
+    if ((runtimeMediaOriginGrant == null) != (acquisitionId == null) ||
+        (runtimeMediaOriginGrant != null &&
+            runtimeMediaOriginGrant!.acquisitionId != acquisitionId)) {
+      throw ArgumentError(
+        'Runtime media grant and acquisition identity must match.',
+      );
+    }
   }
 
   final SourceEpisodeIdentity episode;
@@ -49,6 +58,8 @@ final class PlaybackSessionResolutionRequest {
   final String? userAgent;
   final DateTime? expiresAt;
   final PlaybackSessionRefresher? refresh;
+  final RuntimeMediaOriginGrant? runtimeMediaOriginGrant;
+  final String? acquisitionId;
   final UnmodifiableListView<MediaTrack> subtitles;
   final UnmodifiableListView<MediaTrack> audioTracks;
 }

@@ -317,6 +317,17 @@ void main() {
     expect(result.toString(), isNot(contains('secret-token')));
   });
 
+  test('preserves a bounded platform capture stage code', () async {
+    final result = await SourceLiveCaptureCoordinator(
+      port: _FakeCapturePort(
+        (_) async => throw const _CaptureFailure('browser_capture_timeout'),
+      ),
+    ).capture(_request());
+
+    expect(result.status, SourceLiveCaptureStatus.failed);
+    expect(result.reasonCode, 'browser_capture_timeout');
+  });
+
   test(
     'supersedes an older completion and keeps the newer result current',
     () async {
@@ -564,6 +575,13 @@ final class _FakeCapturePort implements SourceLiveCapturePort {
     requests.add(request);
     return handler(request);
   }
+}
+
+final class _CaptureFailure implements SourceLiveCaptureFailure {
+  const _CaptureFailure(this.code);
+
+  @override
+  final String code;
 }
 
 extension on WebCaptureEvent {

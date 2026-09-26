@@ -79,6 +79,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private var eventSequence = 0L
     private var activeSessionId: String? = null
     private var activeTimelineMapIdentity: String? = null
+    private var hasRenderedFirstFrame = false
     private val boundTracks = mutableMapOf<Int, BoundTrack>()
     private val mainHandler = Handler(Looper.getMainLooper())
     private var positionTickerScheduled = false
@@ -130,6 +131,11 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                 }
             }
 
+            override fun onRenderedFirstFrame() {
+                hasRenderedFirstFrame = true
+                emitCurrentState()
+            }
+
             override fun onPlayerError(error: PlaybackException) {
                 stopPositionTicker()
                 val httpStatus = findHttpStatus(error)
@@ -145,6 +151,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                     "rate" to (player?.playbackParameters?.speed?.toDouble() ?: 1.0),
                     "audioTrackId" to selectedTrackId(C.TRACK_TYPE_AUDIO),
                     "subtitleTrackId" to selectedTrackId(C.TRACK_TYPE_TEXT),
+                    "hasRenderedFirstFrame" to hasRenderedFirstFrame,
                 )
                 activeSessionId?.let { payload["sessionId"] = it }
                 activeTimelineMapIdentity?.let { payload["timelineMapIdentity"] = it }
@@ -514,6 +521,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         closePlayer(emitClosed = false)
         activeSessionId = sessionId
         activeTimelineMapIdentity = timelineMapIdentity
+        hasRenderedFirstFrame = false
         boundTracks.clear()
         emitState("opening")
         try {
@@ -640,6 +648,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         rebindMedia3Views()
         activeSessionId = null
         activeTimelineMapIdentity = null
+        hasRenderedFirstFrame = false
         boundTracks.clear()
         if (emitClosed && closingSessionId != null && closingTimelineMapIdentity != null) {
             emitState("closed", closingSessionId, closingTimelineMapIdentity)
@@ -678,6 +687,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
             "rate" to (player?.playbackParameters?.speed?.toDouble() ?: 1.0),
             "audioTrackId" to selectedTrackId(C.TRACK_TYPE_AUDIO),
             "subtitleTrackId" to selectedTrackId(C.TRACK_TYPE_TEXT),
+            "hasRenderedFirstFrame" to hasRenderedFirstFrame,
         )
         sessionId?.let { payload["sessionId"] = it }
         timelineMapIdentity?.let { payload["timelineMapIdentity"] = it }

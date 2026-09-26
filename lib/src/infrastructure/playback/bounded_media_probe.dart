@@ -131,7 +131,7 @@ final class BoundedMediaProbe {
     bool includeUserAgent = true,
     bool includeCookies = true,
   }) async {
-    if (!securityPolicy.allowsUri(session.mediaUri)) {
+    if (!playbackSessionAllowsUri(securityPolicy, session, session.mediaUri)) {
       return _failed('media_uri_not_allowed', const []);
     }
 
@@ -224,7 +224,11 @@ final class BoundedMediaProbe {
     }
 
     if (playlist is HlsMasterPlaylist) {
-      final variant = _firstAllowedVariant(playlist.variants, securityPolicy);
+      final variant = _firstAllowedVariant(
+        playlist.variants,
+        securityPolicy,
+        session,
+      );
       if (variant == null) {
         return _failed('hls_resource_not_allowed', shapes, initial);
       }
@@ -268,7 +272,11 @@ final class BoundedMediaProbe {
     if (playlist is! HlsMediaPlaylist) {
       return _failed('hls_playlist_not_media', shapes, initial);
     }
-    final segment = _firstAllowedSegment(playlist.segments, securityPolicy);
+    final segment = _firstAllowedSegment(
+      playlist.segments,
+      securityPolicy,
+      session,
+    );
     if (segment == null) {
       return _failed('hls_resource_not_allowed', shapes, initial);
     }
@@ -319,7 +327,7 @@ final class BoundedMediaProbe {
     var redirectCount = 0;
     final visited = <String>{currentUri.toString()};
     while (true) {
-      if (!securityPolicy.allowsUri(currentUri)) {
+      if (!playbackSessionAllowsUri(securityPolicy, session, currentUri)) {
         return _FetchResult.failure('redirect_uri_not_allowed', currentUri);
       }
       final headers = playbackUpstreamHeaders(
@@ -385,7 +393,7 @@ final class BoundedMediaProbe {
         }
         if (next.userInfo.isNotEmpty ||
             next.fragment.isNotEmpty ||
-            !securityPolicy.allowsUri(next) ||
+            !playbackSessionAllowsUri(securityPolicy, session, next) ||
             !visited.add(next.toString())) {
           return _FetchResult.failure('redirect_uri_not_allowed', next);
         }
@@ -526,9 +534,10 @@ String _rangeFor(int maximumBytes) => 'bytes=0-${maximumBytes - 1}';
 HlsVariantStream? _firstAllowedVariant(
   Iterable<HlsVariantStream> variants,
   SourceSecurityPolicy policy,
+  PlaybackSession session,
 ) {
   for (final variant in variants) {
-    if (policy.allowsUri(variant.uri)) return variant;
+    if (playbackSessionAllowsUri(policy, session, variant.uri)) return variant;
   }
   return null;
 }
@@ -536,9 +545,10 @@ HlsVariantStream? _firstAllowedVariant(
 HlsMediaSegment? _firstAllowedSegment(
   Iterable<HlsMediaSegment> segments,
   SourceSecurityPolicy policy,
+  PlaybackSession session,
 ) {
   for (final segment in segments) {
-    if (policy.allowsUri(segment.uri)) return segment;
+    if (playbackSessionAllowsUri(policy, session, segment.uri)) return segment;
   }
   return null;
 }

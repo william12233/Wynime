@@ -26,6 +26,7 @@ import '../../platform/web_capture/inapp_webview_installed_source_live_capture_v
 import '../../platform/web_capture/inapp_webview_source_live_playable_fallback.dart';
 import 'source_line_selector.dart';
 import '../../domain/services/web_source_browser.dart';
+import '../../domain/services/player_backend.dart';
 import '../../application/source_live_capture_playback_entry_point.dart';
 import '../../application/source_live_operation_plan_factory.dart';
 import '../../application/source_live_playable_source_coordinator.dart';
@@ -61,6 +62,8 @@ final class _PlayerPageState extends State<PlayerPage> {
   Duration _lastPosition = Duration.zero;
   var _openGeneration = 0;
   var _captureCompleted = false;
+  Timer? _firstFrameTimer;
+  var _firstFrameObserved = false;
 
   PlaybackCoordinator? get _coordinator =>
       widget.sourceController.playbackCoordinator;
@@ -82,6 +85,9 @@ final class _PlayerPageState extends State<PlayerPage> {
     Duration? resumePosition,
   }) async {
     final generation = ++_openGeneration;
+    _firstFrameTimer?.cancel();
+    _firstFrameTimer = null;
+    _firstFrameObserved = false;
     setState(() {
       _opening = true;
       _failureCode = null;
@@ -148,6 +154,7 @@ final class _PlayerPageState extends State<PlayerPage> {
             : result.reasonCode ?? 'playback_resolution_failed';
         _state = opened ? PlaybackState.ready : PlaybackState.failed;
       });
+      if (opened) _armFirstFrameTimeout(generation);
       if (opened &&
           resumePosition != null &&
           _isSafeResumePosition(resumePosition)) {
@@ -197,6 +204,9 @@ final class _PlayerPageState extends State<PlayerPage> {
           mode: WebUserAgentMode.platformDefault,
         ),
         captureMediaRequests: true,
+        allowRuntimeMediaOrigins: true,
+        acquisitionId:
+            'player-$_openGeneration-${DateTime.now().microsecondsSinceEpoch}',
         completionPolicy:
             WebCaptureCompletionPolicy.firstValidatedPlayableCandidateAfterLoad,
         postLoadTimeout: const Duration(seconds: 20),
@@ -308,6 +318,7 @@ final class _PlayerPageState extends State<PlayerPage> {
                   'capture_playback_failed';
         _state = opened ? PlaybackState.ready : PlaybackState.failed;
       });
+      if (opened) _armFirstFrameTimeout(_openGeneration);
     } on Object {
       _finishCaptureFailure('capture_playback_failed');
     }
@@ -326,11 +337,38 @@ final class _PlayerPageState extends State<PlayerPage> {
   void _onPlaybackEvent(PlaybackEvent event) {
     if (!mounted) return;
     _lastPosition = event.position;
+    if (event.hasRenderedFirstFrame) {
+      _firstFrameObserved = true;
+      _firstFrameTimer?.cancel();
+      _firstFrameTimer = null;
+    }
     setState(() {
       _state = event.state;
       if (event.failure != null) {
         _failureCode = event.failure!.code;
       }
+    });
+  }
+
+  void _armFirstFrameTimeout(int generation) {
+    if (_firstFrameObserved ||
+        _coordinator?.activeBackendKind != PlayerBackendKind.media3) {
+      return;
+    }
+    _firstFrameTimer?.cancel();
+    _firstFrameTimer = Timer(const Duration(seconds: 20), () {
+      if (!mounted ||
+          generation != _openGeneration ||
+          _firstFrameObserved ||
+          _coordinator?.activeBackendKind != PlayerBackendKind.media3) {
+        return;
+      }
+      setState(() {
+        _opening = false;
+        _failureCode = 'player_first_frame_timeout';
+        _state = PlaybackState.failed;
+      });
+      unawaited(_coordinator?.stop());
     });
   }
 
@@ -438,6 +476,7 @@ final class _PlayerPageState extends State<PlayerPage> {
 
   @override
   void dispose() {
+    _firstFrameTimer?.cancel();
     unawaited(_events?.cancel());
     unawaited(_coordinator?.stop());
     widget.sourcePlayableFallback?.removeListener(_onPlayableFallbackChanged);

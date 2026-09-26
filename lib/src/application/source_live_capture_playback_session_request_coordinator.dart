@@ -121,7 +121,12 @@ final class SourceLiveCapturePlaybackSessionRequestCoordinator {
         route.source.source.kind != candidate.kind ||
         route.source.source.mediaUri != candidate.uri ||
         !_isSupportedCandidate(candidate.kind) ||
-        !package.securityPolicy.allowsUri(candidate.uri) ||
+        !webCaptureAllowsRuntimeUri(
+          policy: package.securityPolicy,
+          uri: candidate.uri,
+          grant: candidate.runtimeOriginGrant,
+          acquisitionId: webRequest.acquisitionId,
+        ) ||
         !package.securityPolicy.allowsUri(route.source.source.pageUri)) {
       return _failed('live_session_candidate_mismatch');
     }
@@ -138,6 +143,8 @@ final class SourceLiveCapturePlaybackSessionRequestCoordinator {
         adRemovalPlan: adRemovalPlan,
         cookies: validatedSnapshot.cookies,
         userAgent: webRequest.userAgentPolicy.value,
+        runtimeMediaOriginGrant: candidate.runtimeOriginGrant,
+        acquisitionId: webRequest.acquisitionId,
       );
       return SourceLiveCapturePlaybackSessionRequestResult(
         status: SourceLiveCapturePlaybackSessionRequestStatus.ready,
@@ -201,6 +208,14 @@ final class SourceLiveCapturePlaybackSessionRequestCoordinator {
         return false;
       }
     }
-    return true;
+    final leftGrant = left.runtimeOriginGrant;
+    final rightGrant = right.runtimeOriginGrant;
+    return leftGrant == null && rightGrant == null ||
+        leftGrant != null &&
+            rightGrant != null &&
+            leftGrant.acquisitionId == rightGrant.acquisitionId &&
+            leftGrant.origin == rightGrant.origin &&
+            leftGrant.sourceEventSequence == rightGrant.sourceEventSequence &&
+            leftGrant.expiresAt == rightGrant.expiresAt;
   }
 }

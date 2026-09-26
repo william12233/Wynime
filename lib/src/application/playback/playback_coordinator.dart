@@ -96,6 +96,8 @@ final class PlaybackCoordinator {
 
   bool get hasActivePlayback => _active != null;
 
+  PlayerBackendKind get activeBackendKind => _player.kind;
+
   Future<PlaybackSession> open(PlaybackOpenRequest request) async {
     try {
       return await _open(request);

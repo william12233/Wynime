@@ -242,6 +242,16 @@ A Windows machine without the WebView2 Runtime returns an explicit `webview2_run
 
 Every initial URI, navigation, iframe, resource, XHR and fetch target is checked against the same allowlist. Disallowed navigations are cancelled, disallowed resource requests receive an empty 403 response, and disallowed XHR/fetch requests are aborted.
 
+For a user-enabled package that explicitly declares `mediaRequestInspection`,
+one episode acquisition may additionally request bounded runtime media-origin
+admission. The WebView must begin on a package-allowed origin; only a
+non-navigation HTTPS request observed in that exact generation can receive an
+in-memory `RuntimeMediaOriginGrant`. Admission rejects credentials, local,
+private, link-local, multicast, documentation and other special-purpose IP
+ranges after bounded DNS resolution. The grant contains one exact scheme,
+host and port, the acquisition identity, source event sequence and expiry. It
+is neither written back to the package allowlist nor persisted.
+
 ### Browser hardening
 
 The platform surface enables JavaScript only because dynamic source pages require it, while enforcing these defaults:
@@ -261,11 +271,19 @@ Source packages cannot inject Dart, JavaScript, WASM or native executable adapte
 `WebCaptureAccumulator` stores bounded events, an explicitly requested bounded
 document and deduplicated media candidates in memory only. Candidate
 classification recognizes HLS, DASH, common direct audio/video files and media
-segments using response content type or URL path. A document is captured only
+segments using response content type, URL path or bounded media-request
+evidence such as destination, Accept and Range headers. A document is captured only
 after the fixed platform `getHtml()` call for a request whose completion policy
 is `documentAfterLoad`; source packages cannot supply script to obtain it.
 
 Diagnostic output contains scheme, host, path-segment count, method and header names only. Cookie values, Authorization values, query strings, fragments and complete media URLs are not logged or persisted. Phase 3 does not create a `PlaybackSession`; Phase 4 must validate and transform a chosen candidate through its own Gate.
+
+The selected candidate carries its exact runtime grant and captured request
+context through snapshot validation, route selection and session resolution.
+`PlaybackSession`, bounded probing and the loopback proxy revalidate the same
+acquisition-bound grant for the candidate, redirects, HLS children and scoped
+cookies. A later episode or replay creates a new acquisition identity and
+cannot reuse an earlier grant.
 
 ### Live capture admission and generation
 

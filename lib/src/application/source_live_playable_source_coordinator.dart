@@ -110,12 +110,22 @@ final class SourceLivePlayableSourceCoordinator {
         continue;
       }
 
-      final runtimeResult = await _executePlan(plan);
+      var runtimeResult = await _executePlan(plan);
       if (!_isCurrent(operation)) {
         return _staleResult();
       }
 
-      final normalized = _normalizePlan(plan, runtimeResult);
+      var normalized = _normalizePlan(plan, runtimeResult);
+      if (normalized.results.isEmpty &&
+          documentFallback != null &&
+          (runtimeResult.status == SourceRuntimeStatus.available ||
+              runtimeResult.status == SourceRuntimeStatus.notFound)) {
+        runtimeResult = await documentFallback!.capture(plan);
+        if (!_isCurrent(operation)) {
+          return _staleResult();
+        }
+        normalized = _normalizePlan(plan, runtimeResult);
+      }
       if (!_isCurrent(operation)) {
         return _staleResult();
       }
@@ -158,12 +168,7 @@ final class SourceLivePlayableSourceCoordinator {
     SourceLivePlayableSourcePlan plan,
   ) async {
     try {
-      final staticResult = await runtime.execute(plan.requestPlan);
-      if (staticResult.status == SourceRuntimeStatus.notFound &&
-          documentFallback != null) {
-        return await documentFallback!.capture(plan);
-      }
-      return staticResult;
+      return await runtime.execute(plan.requestPlan);
     } on Object {
       final package = plan.requestPlan.installedPackage.package;
       return SourceRuntimeResult(

@@ -9,6 +9,7 @@ import 'package:wynime/src/domain/models/source_package_manifest.dart';
 import 'package:wynime/src/domain/models/source_rule_program.dart';
 import 'package:wynime/src/domain/models/source_security_policy.dart';
 import 'package:wynime/src/domain/models/web_capture_models.dart';
+import 'package:wynime/src/domain/services/web_capture_candidate_classifier.dart';
 
 import '../helpers/source_rule_test_support.dart';
 
@@ -479,8 +480,8 @@ void main() {
     final result = _coordinator().normalize(plan);
 
     expect(result.status, SourceLiveCapturePlayableSourceStatus.available);
-    expect(result.sources.single.source.sourceKey, 'backup');
-    expect(result.sources.single.candidateIndex, 1);
+    expect(result.sources.single.source.sourceKey, 'primary');
+    expect(result.sources.single.candidateIndex, 0);
     expect(result.diagnostics.single.code, 'playable_kind_unsupported');
   });
 
@@ -711,17 +712,18 @@ WebCaptureSnapshot _snapshot({List<WebCandidateKind>? kinds}) {
         headers: headers,
       ),
   ];
+  final candidates = [
+    for (var index = 0; index < media.length; index++)
+      WebMediaCandidate(
+        kind: candidateKinds[index],
+        uri: media[index].replace(fragment: ''),
+        headers: headers,
+        sourceEventSequence: index,
+      ),
+  ]..sort(const WebCaptureCandidateClassifier().compareCandidates);
   return WebCaptureSnapshot(
     events: events,
-    candidates: [
-      for (var index = 0; index < media.length; index++)
-        WebMediaCandidate(
-          kind: candidateKinds[index],
-          uri: media[index].replace(fragment: ''),
-          headers: headers,
-          sourceEventSequence: index,
-        ),
-    ],
+    candidates: candidates,
     cookies: [
       WebCaptureCookie(name: 'session', value: 'secret', domain: 'example.com'),
     ],

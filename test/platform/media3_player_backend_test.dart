@@ -84,6 +84,7 @@ void main() {
         'volume': 0.5,
         'rate': 1.25,
         'audioTrackId': 'audio-1',
+        'hasRenderedFirstFrame': true,
       });
       transport.add({
         'sequence': 1,
@@ -103,6 +104,7 @@ void main() {
       expect(events.first.volume, 0.5);
       expect(events.first.rate, 1.25);
       expect(events.first.audioTrackId, 'audio-1');
+      expect(events.first.hasRenderedFirstFrame, isTrue);
       expect(events.last.failure?.kind, PlaybackFailureKind.sessionExpired);
       expect(events.last.failure?.shouldRefreshSession, isTrue);
     },

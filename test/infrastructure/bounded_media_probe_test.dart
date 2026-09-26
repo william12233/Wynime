@@ -170,7 +170,7 @@ void main() {
     expect(result.requestShapes.single.headerPresence['origin'], isFalse);
   });
 
-  test('F: redirector and later valid candidates are retained for ranking', () {
+  test('F: later valid candidate ranks before retained redirector', () {
     final request = WebCaptureRequest(
       initialUri: Uri.parse('https://media.example/watch'),
       securityPolicy: testSourcePolicy(
@@ -215,8 +215,8 @@ void main() {
       finalUri: Uri.parse('https://media.example/watch'),
     );
     expect(snapshot.candidates, hasLength(2));
-    expect(snapshot.candidates.first.isRedirect, isTrue);
-    expect(snapshot.candidates.last.isRedirect, isFalse);
+    expect(snapshot.candidates.first.isRedirect, isFalse);
+    expect(snapshot.candidates.last.isRedirect, isTrue);
     expect(accumulator.hasValidatedPlayableCandidate, isTrue);
   });
 

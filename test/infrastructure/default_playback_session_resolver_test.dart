@@ -101,6 +101,51 @@ void main() {
   });
 
   test(
+    'session preserves an exact acquisition-bound runtime origin grant',
+    () async {
+      final episode = testEpisode();
+      final grant = RuntimeMediaOriginGrant(
+        acquisitionId: 'episode-a-1',
+        origin: Uri.parse('https://dynamic.invalid:8443'),
+        sourceEventSequence: 9,
+        expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 2)),
+      );
+      final resolver = DefaultPlaybackSessionResolver(
+        idGenerator: _FixedIdGenerator('dynamic-session'),
+      );
+
+      final session = await resolver.resolve(
+        PlaybackSessionResolutionRequest(
+          episode: episode,
+          pageUri: Uri.parse('https://media.example/episode/1'),
+          candidate: WebMediaCandidate(
+            kind: WebCandidateKind.video,
+            uri: Uri.parse('https://dynamic.invalid:8443/stream'),
+            headers: const {'referer': 'https://media.example/episode/1'},
+            sourceEventSequence: 9,
+            runtimeOriginGrant: grant,
+          ),
+          securityPolicy: testSourcePolicy(),
+          adRemovalPlan: testAdRemovalPlan(episode),
+          acquisitionId: 'episode-a-1',
+          runtimeMediaOriginGrant: grant,
+          cookies: [
+            WebCaptureCookie(
+              name: 'dynamic',
+              value: 'opaque',
+              domain: 'dynamic.invalid',
+            ),
+          ],
+        ),
+      );
+
+      expect(session.runtimeMediaOriginGrant, same(grant));
+      expect(session.acquisitionId, 'episode-a-1');
+      expect(session.cookies, {'dynamic': 'opaque'});
+    },
+  );
+
+  test(
     'resolver fails closed for segments, DASH, and outside authorities',
     () async {
       final episode = testEpisode();

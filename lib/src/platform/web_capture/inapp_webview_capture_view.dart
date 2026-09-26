@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -186,6 +187,33 @@ final class _InAppWebViewCaptureViewState
     }
   }
 
+  Future<bool> _recordObservedRequest(WebCaptureEvent event) async {
+    if (widget.request.securityPolicy.allowsUri(event.uri)) {
+      return _record(event);
+    }
+    if (!widget.request.allowRuntimeMediaOrigins ||
+        event.uri.scheme != 'https' ||
+        event.uri.userInfo.isNotEmpty ||
+        event.uri.host.isEmpty ||
+        event.isMainFrame ||
+        event.kind == WebRequestKind.navigation ||
+        event.kind == WebRequestKind.iframe) {
+      return false;
+    }
+    try {
+      final addresses = await InternetAddress.lookup(
+        event.uri.host,
+      ).timeout(const Duration(seconds: 3));
+      if (addresses.isEmpty ||
+          addresses.any((address) => !isPublicWebCaptureAddress(address))) {
+        return false;
+      }
+      return _record(event.withRuntimeOriginValidated());
+    } on Object {
+      return false;
+    }
+  }
+
   Future<void> _complete(
     Uri finalUri, {
     InAppWebViewController? controller,
@@ -205,12 +233,24 @@ final class _InAppWebViewCaptureViewState
           );
         }
       }
-      final cookies =
-          widget.request.securityPolicy.permissions.contains(
-            SourcePermission.cookies,
-          )
-          ? await widget.browserPort.exportCookies(widget.request, finalUri)
-          : const <WebCaptureCookie>[];
+      final cookies = <WebCaptureCookie>[];
+      if (widget.request.securityPolicy.permissions.contains(
+        SourcePermission.cookies,
+      )) {
+        final cookieUris = <Uri>{finalUri, ..._accumulator.candidateUris};
+        final seenCookies = <String>{};
+        for (final uri in cookieUris) {
+          final exported = await widget.browserPort.exportCookies(
+            widget.request,
+            uri,
+            runtimeOriginGrant: _accumulator.runtimeGrantForUri(uri),
+          );
+          for (final cookie in exported) {
+            final key = '${cookie.domain}|${cookie.path}|${cookie.name}';
+            if (seenCookies.add(key)) cookies.add(cookie);
+          }
+        }
+      }
       if (!mounted) {
         // The completion flag is deliberately retained: a late platform
         // callback must not restart a superseded capture.
@@ -289,11 +329,13 @@ final class _InAppWebViewCaptureViewState
       },
       shouldInterceptRequest: (controller, request) async {
         final event = _mapper.resource(_nextSequence(), request);
-        return event != null && _record(event) ? null : _blockedResponse;
+        return event != null && await _recordObservedRequest(event)
+            ? null
+            : _blockedResponse;
       },
       shouldInterceptAjaxRequest: (controller, request) async {
         final event = _mapper.ajax(_nextSequence(), request);
-        if (event == null || !_record(event)) {
+        if (event == null || !await _recordObservedRequest(event)) {
           request.action = AjaxRequestAction.ABORT;
         } else {
           request.action = AjaxRequestAction.PROCEED;
@@ -302,7 +344,7 @@ final class _InAppWebViewCaptureViewState
       },
       shouldInterceptFetchRequest: (controller, request) async {
         final event = _mapper.fetch(_nextSequence(), request);
-        if (event == null || !_record(event)) {
+        if (event == null || !await _recordObservedRequest(event)) {
           request.action = FetchRequestAction.ABORT;
         } else {
           request.action = FetchRequestAction.PROCEED;
@@ -354,7 +396,7 @@ final class _InAppWebViewCaptureViewState
             unawaited(_complete(finalUri, controller: controller));
           } else {
             _failCapture(
-              'playable_capture_timeout',
+              'browser_capture_timeout',
               'The public player did not expose a validated playable media candidate within the bounded capture window.',
             );
           }
@@ -396,4 +438,92 @@ final class _InAppWebViewCaptureViewState
     _postLoadTimer = null;
     super.dispose();
   }
+}
+
+/// Returns whether a resolved address may be used for an event-derived media
+/// origin. Kept pure so private/special-purpose ranges remain regression
+/// tested without performing DNS or exposing the resolved address.
+bool isPublicWebCaptureAddress(InternetAddress address) {
+  if (address.isLoopback || address.isLinkLocal || address.isMulticast) {
+    return false;
+  }
+  final bytes = address.rawAddress;
+  if (address.type == InternetAddressType.IPv4) {
+    return !_isNonPublicIpv4(bytes);
+  }
+  if (bytes.every((value) => value == 0)) {
+    return false;
+  }
+  if (_isIpv4Embedded(bytes) || _isWellKnownNat64(bytes)) {
+    return !_isNonPublicIpv4(bytes.sublist(12));
+  }
+  final isLocalUseNat64 =
+      bytes[0] == 0x00 &&
+      bytes[1] == 0x64 &&
+      bytes[2] == 0xff &&
+      bytes[3] == 0x9b &&
+      bytes[4] == 0x00 &&
+      bytes[5] == 0x01;
+  final isDiscardOnly =
+      bytes[0] == 0x01 && bytes.skip(1).take(7).every((value) => value == 0);
+  final isIetfSpecialPurpose =
+      bytes[0] == 0x20 && bytes[1] == 0x01 && bytes[2] <= 0x01;
+  final isDocumentationV6 =
+      bytes[0] == 0x20 &&
+      bytes[1] == 0x01 &&
+      bytes[2] == 0x0d &&
+      bytes[3] == 0xb8;
+  final isSixToFour = bytes[0] == 0x20 && bytes[1] == 0x02;
+  final isDocumentation =
+      bytes[0] == 0x3f && bytes[1] == 0xff && (bytes[2] & 0xf0) == 0;
+  final isUniqueLocal = (bytes[0] & 0xfe) == 0xfc;
+  final isSiteLocal = bytes[0] == 0xfe && (bytes[1] & 0xc0) == 0xc0;
+  return !(isLocalUseNat64 ||
+      isDiscardOnly ||
+      isIetfSpecialPurpose ||
+      isDocumentationV6 ||
+      isSixToFour ||
+      isDocumentation ||
+      isUniqueLocal ||
+      isSiteLocal);
+}
+
+bool _isNonPublicIpv4(List<int> bytes) {
+  final a = bytes[0];
+  final b = bytes[1];
+  final c = bytes[2];
+  return a == 0 ||
+      a == 10 ||
+      a == 127 ||
+      (a == 100 && b >= 64 && b <= 127) ||
+      (a == 169 && b == 254) ||
+      (a == 172 && b >= 16 && b <= 31) ||
+      (a == 192 && b == 0 && c == 0) ||
+      (a == 192 && b == 0 && c == 2) ||
+      (a == 192 && b == 31 && c == 196) ||
+      (a == 192 && b == 52 && c == 193) ||
+      (a == 192 && b == 88 && c == 99) ||
+      (a == 192 && b == 168) ||
+      (a == 192 && b == 175 && c == 48) ||
+      (a == 198 && (b == 18 || b == 19)) ||
+      (a == 198 && b == 51 && c == 100) ||
+      (a == 203 && b == 0 && c == 113) ||
+      a >= 224;
+}
+
+bool _isWellKnownNat64(List<int> bytes) =>
+    bytes.length == 16 &&
+    bytes[0] == 0x00 &&
+    bytes[1] == 0x64 &&
+    bytes[2] == 0xff &&
+    bytes[3] == 0x9b &&
+    bytes.skip(4).take(8).every((value) => value == 0);
+
+bool _isIpv4Embedded(List<int> bytes) {
+  if (bytes.length != 16 || bytes.take(10).any((value) => value != 0)) {
+    return false;
+  }
+  final compatible = bytes[10] == 0 && bytes[11] == 0;
+  final mapped = bytes[10] == 0xff && bytes[11] == 0xff;
+  return compatible || mapped;
 }

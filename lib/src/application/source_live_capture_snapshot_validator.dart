@@ -60,7 +60,8 @@ final class SourceLiveCaptureSnapshotValidator {
         return _invalidResult(request, 'event_sequence_invalid');
       }
       previousSequence = event.sequence;
-      if (!policy.allowsUri(event.uri)) {
+      if (!policy.allowsUri(event.uri) &&
+          !_validRuntimeEvent(webRequest, event)) {
         return _invalidResult(request, 'event_uri_not_allowed');
       }
       if (event.isRedirect) {
@@ -99,20 +100,30 @@ final class SourceLiveCaptureSnapshotValidator {
         );
         expectedCandidatesByKey.putIfAbsent(
           _candidateKey(kind, normalizedUri),
-          () => WebMediaCandidate(
-            kind: kind,
-            uri: normalizedUri,
-            headers: event.headers,
-            sourceEventSequence: event.sequence,
-            pageUri: snapshot.hasCompleteRequestMetadata
-                ? snapshot.finalUri
-                : null,
-            requestMethod: event.method,
-            isRedirect: event.isRedirect,
-            redirectChain: snapshot.hasCompleteRequestMetadata
-                ? (redirectChainBySequence[event.sequence] ?? const [])
-                : const [],
-          ),
+          () {
+            final captured = snapshot.candidates.where(
+              (candidate) =>
+                  candidate.sourceEventSequence == event.sequence &&
+                  candidate.uri == normalizedUri,
+            );
+            return WebMediaCandidate(
+              kind: kind,
+              uri: normalizedUri,
+              headers: event.headers,
+              sourceEventSequence: event.sequence,
+              pageUri: snapshot.hasCompleteRequestMetadata
+                  ? snapshot.finalUri
+                  : null,
+              requestMethod: event.method,
+              isRedirect: event.isRedirect,
+              redirectChain: snapshot.hasCompleteRequestMetadata
+                  ? (redirectChainBySequence[event.sequence] ?? const [])
+                  : const [],
+              runtimeOriginGrant: captured.isEmpty
+                  ? null
+                  : captured.first.runtimeOriginGrant,
+            );
+          },
         );
       }
     }
@@ -120,15 +131,23 @@ final class SourceLiveCaptureSnapshotValidator {
       return _budgetResult(request, 'capture_candidate_budget_exceeded');
     }
     final expectedCandidates = expectedCandidatesByKey.values.toList(
-      growable: false,
-    );
+      growable: true,
+    )..sort(_candidateClassifier.compareCandidates);
     for (
       var candidateIndex = 0;
       candidateIndex < snapshot.candidates.length;
       candidateIndex++
     ) {
       final candidate = snapshot.candidates[candidateIndex];
-      if (!policy.allowsUri(candidate.uri)) {
+      if (!webCaptureAllowsRuntimeUri(
+            policy: policy,
+            uri: candidate.uri,
+            grant: candidate.runtimeOriginGrant,
+            acquisitionId: webRequest.acquisitionId,
+          ) ||
+          (candidate.runtimeOriginGrant != null &&
+              candidate.runtimeOriginGrant!.sourceEventSequence !=
+                  candidate.sourceEventSequence)) {
         return _invalidResult(request, 'candidate_uri_not_allowed');
       }
       final sourceEvent = eventsBySequence[candidate.sourceEventSequence];
@@ -199,7 +218,17 @@ final class SourceLiveCaptureSnapshotValidator {
     }
     for (final cookie in snapshot.cookies) {
       if (!webCapturePolicyCoversCookieDomain(policy, cookie.domain)) {
-        return _invalidResult(request, 'cookie_domain_not_allowed');
+        final coveredByGrant = snapshot.candidates.any(
+          (candidate) =>
+              candidate.runtimeOriginGrant?.coversCookieDomain(
+                cookie.domain,
+                acquisitionId: webRequest.acquisitionId!,
+              ) ==
+              true,
+        );
+        if (!coveredByGrant) {
+          return _invalidResult(request, 'cookie_domain_not_allowed');
+        }
       }
     }
 
@@ -254,7 +283,30 @@ bool _sameCandidate(WebMediaCandidate left, WebMediaCandidate right) =>
     left.kind == right.kind &&
     left.uri == right.uri &&
     left.sourceEventSequence == right.sourceEventSequence &&
-    _sameHeaders(left.headers, right.headers);
+    _sameHeaders(left.headers, right.headers) &&
+    _sameGrant(left.runtimeOriginGrant, right.runtimeOriginGrant);
+
+bool _validRuntimeEvent(WebCaptureRequest request, WebCaptureEvent event) =>
+    request.allowRuntimeMediaOrigins &&
+    request.acquisitionId != null &&
+    event.runtimeOriginValidated &&
+    !event.isMainFrame &&
+    event.kind != WebRequestKind.navigation &&
+    event.kind != WebRequestKind.iframe &&
+    event.method == 'GET' &&
+    event.uri.scheme == 'https';
+
+bool _sameGrant(
+  RuntimeMediaOriginGrant? left,
+  RuntimeMediaOriginGrant? right,
+) =>
+    left == null && right == null ||
+    left != null &&
+        right != null &&
+        left.acquisitionId == right.acquisitionId &&
+        left.origin == right.origin &&
+        left.sourceEventSequence == right.sourceEventSequence &&
+        left.expiresAt == right.expiresAt;
 
 bool _sameCandidateRequestMetadata(
   WebMediaCandidate candidate,

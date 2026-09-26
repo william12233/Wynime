@@ -11,17 +11,20 @@ of truth remain `AGENTS.md`, `docs/PROJECT_PLAN.md`,
 
 Operation `WYNIME-DYNAMIC-PLAYBACK-REAL-E2E-20260926` changes the release
 boundary: a protected exact-SHA signed Android candidate may be built for
-inspection and device validation, but publication remains blocked until the
-real-device Bangumi callback, dynamic source acquisition, proxy upstream,
-Media3 first-frame, playback beyond ten seconds, A→B→A fresh acquisitions and
-a second anime all pass. The historical v1.0.17, v1.0.16 and v1.0.15 evidence
-below remains a record of those earlier release boundaries and is not evidence
-for this operation.
+inspection and device validation. The real-device Bangumi callback, dynamic
+source acquisition, proxy upstream, Media3 first-frame, playback beyond ten
+seconds, A→B→A fresh acquisitions and a second anime remain unverified. The
+repository owner explicitly authorized v1.0.18 publication on 2026-09-26 so
+they can perform that hardware validation from the public signed artifact;
+this release authorization does not convert any missing device evidence into
+a pass. The historical v1.0.17, v1.0.16 and v1.0.15 evidence below remains a
+record of those earlier release boundaries and is not evidence for this
+operation.
 
 ## Post-1.0.16 continuation worktree
 
 The current continuation runtime is
-`1.0.17+18`; operation `WYNIME-DYNAMIC-PLAYBACK-REAL-E2E-20260926` updates the
+`1.0.18+19`; operation `WYNIME-DYNAMIC-PLAYBACK-REAL-E2E-20260926` updates the
 xifan package revision to `1.2.4`, which requires
 `^1.0.15` because the public 1.0.14 runtime does not contain the rendered
 document capture bridge. Version 1.2.4 raises the bounded document budget to
@@ -30,6 +33,29 @@ the broader budget requires fresh package consent. Before publication, the
 candidate must be tagged and submitted to the protected workflow at one
 immutable `main` SHA. The historical release evidence below remains the public
 release record and is not evidence for this operation.
+
+### 2026-09-26 v1.0.18 release decision
+
+- The repository owner explicitly authorizes direct `main` publication of
+  v1.0.18 and will perform the outstanding physical Android validation from
+  the published signed APK.
+- The release includes acquisition-bound runtime media-origin grants,
+  extensionless media-request classification, bounded public-address
+  admission, captured request context propagation through the shared
+  `PlaybackSession`, and native Media3 first-frame reporting.
+- Xifan package 1.2.4 raises the bounded rendered-document ceiling to 1 MiB
+  because the current public subject page exceeds 256 KiB; the permission and
+  package hash change requires fresh consent.
+- Current-head deterministic evidence includes 829 passing Flutter tests,
+  analyzer/build success, Android and Windows compilation, live public source
+  reachability, production App Link association, signed candidate metadata,
+  alignment and signature checks, and two regression tests for current and
+  legacy `apksigner` output.
+- `BLOCKED_REAL_ANDROID_E2E`, `HARDWARE_VALIDATION_PENDING` and
+  `WINDOWS_CUA_VALIDATION_UNAVAILABLE` remain explicit. No authenticated
+  Bangumi callback, Media3 first frame, sustained hardware playback, A→B→A
+  device sequence, CAPTCHA solving, DRM bypass or access-control-bypass claim
+  is made.
 
 ### 2026-09-26 v1.0.17 release decision
 

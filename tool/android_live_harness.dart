@@ -71,7 +71,7 @@ import 'package:wynime/src/platform/web_capture/inapp_webview_source_live_subjec
 const _subjectId = '3403';
 const _lineId = 'xfxf1';
 const _episodeId = '121397';
-const _wynimeVersion = '1.0.17';
+const _wynimeVersion = '1.0.18';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

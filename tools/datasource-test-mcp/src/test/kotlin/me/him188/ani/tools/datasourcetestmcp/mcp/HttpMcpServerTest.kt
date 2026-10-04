@@ -82,7 +82,7 @@ class HttpMcpServerTest {
         val result = response.rpcBody().getValue("result").jsonObject
         assertEquals("2025-03-26", result.getValue("protocolVersion").jsonPrimitive.content)
         assertEquals(
-            "animeko-datasource-test-mcp",
+            "wynime-source-plugin-media-test",
             result.getValue("serverInfo").jsonObject.getValue("name").jsonPrimitive.content,
         )
     }

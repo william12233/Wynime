@@ -112,8 +112,12 @@ class SourcePluginInstaller(
     }
 
     suspend fun uninstall(pluginId: String) {
-        val removed = installedRepository.remove(pluginId) ?: return
-        storage.deleteInstalled(removed)
+        val installed = installedRepository.snapshot().plugins.firstOrNull { it.id == pluginId } ?: return
+
+        // Remove the files first. If the filesystem rejects the operation, keep the
+        // installed record so the source is not silently lost from the next startup.
+        storage.deleteInstalled(installed)
+        installedRepository.remove(pluginId)
     }
 
     private fun validateManifest(manifest: SourcePluginManifest) {

@@ -34,24 +34,25 @@ class GetSubjectEpisodeInfoBundleFlowUseCaseImpl(
     private val flowContext: CoroutineContext = Dispatchers.Default,
 ) : GetSubjectEpisodeInfoBundleFlowUseCase, KoinComponent {
     private val subjectCollectionRepository: SubjectCollectionRepository by inject()
+    private val getEpisodeCollectionInfoFlowUseCase: GetEpisodeCollectionInfoFlowUseCase by inject()
 
     override fun invoke(idsFlow: Flow<GetSubjectEpisodeInfoBundleFlowUseCase.SubjectIdAndEpisodeId>): Flow<SubjectEpisodeInfoBundle> {
         return idsFlow.flatMapLatest { (subjectId, episodeId) ->
-            // 这里只需要查询一个网络请求 — subject collection. 
-
-            subjectCollectionRepository.subjectCollectionFlow(subjectId).map { subject ->
-                val episodeCollectionInfo = (subject.episodes.find { it.episodeId == episodeId }
-                    ?: throw NoSuchElementException("Episode $episodeId not found in subject $subjectId"))
-                SubjectEpisodeInfoBundle(
-                    subjectId, episodeId,
-                    subject,
-                    episodeCollectionInfo,
-                    seriesInfo = SubjectSeriesInfo.compute(subject),
-                    subjectCompleted = EpisodeCollections.isSubjectCompleted(
-                        subject.episodes.map { it.episodeInfo },
-                        subject.recurrence,
-                    ),
-                )
+            // 條目流可能先發出快取中的條目，再非同步補齊劇集；單集資訊使用可回補的查詢，
+            // 避免在這段短暫空窗把正常的集數誤判成不存在。
+            subjectCollectionRepository.subjectCollectionFlow(subjectId).flatMapLatest { subject ->
+                getEpisodeCollectionInfoFlowUseCase(subjectId, episodeId).map { episodeCollectionInfo ->
+                    SubjectEpisodeInfoBundle(
+                        subjectId, episodeId,
+                        subject,
+                        episodeCollectionInfo,
+                        seriesInfo = SubjectSeriesInfo.compute(subject),
+                        subjectCompleted = EpisodeCollections.isSubjectCompleted(
+                            subject.episodes.map { it.episodeInfo },
+                            subject.recurrence,
+                        ),
+                    )
+                }
             }
         }.flowOn(flowContext)
     }

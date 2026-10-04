@@ -98,7 +98,6 @@ import me.him188.ani.app.ui.foundation.widgets.BackNavigationIconButton
 import me.him188.ani.app.ui.lang.Lang
 import me.him188.ani.app.ui.lang.exploration_search
 import me.him188.ani.app.ui.lang.exploration_search_back_to_top
-import me.him188.ani.app.ui.lang.settings_mediasource_test_keyword
 import me.him188.ani.app.ui.search.TestSearchState
 import me.him188.ani.app.ui.search.collectItemsWithLifecycle
 import me.him188.ani.utils.platform.annotations.TestOnly
@@ -118,7 +117,7 @@ fun SearchPage(
     navigationIcon: @Composable () -> Unit = {},
 ) {
     val searchText = stringResource(Lang.exploration_search)
-    val keywordText = stringResource(Lang.settings_mediasource_test_keyword)
+    val keywordText = searchText
     val backToTopText = stringResource(Lang.exploration_search_back_to_top)
     val coroutineScope = rememberCoroutineScope()
     val items = state.searchState.collectItemsWithLifecycle()

@@ -91,8 +91,14 @@ class SourcePluginRegistry(
 
     suspend fun uninstall(pluginId: String) {
         loaded.remove(pluginId)?.close()
-        installer.uninstall(pluginId)
-        loadInstalled()
+        try {
+            installer.uninstall(pluginId)
+        } finally {
+            // Reconcile the in-memory registry even when filesystem or datastore
+            // cleanup fails. A failed uninstall must remain visible as an error,
+            // rather than leaving a stale source list in memory.
+            loadInstalled()
+        }
     }
 
     suspend fun resolve(request: SourceResolveRequest): ResolvedMedia {

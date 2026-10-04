@@ -33,12 +33,10 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import me.him188.ani.app.domain.mediasource.web.BlockReason
 import me.him188.ani.app.domain.mediasource.web.LoadedPage
-import me.him188.ani.app.domain.mediasource.web.PageExpectation
 import me.him188.ani.app.domain.mediasource.web.PageVerdict
 import me.him188.ani.app.domain.mediasource.web.SolveRequest
 import me.him188.ani.app.domain.mediasource.web.WebCaptchaDetector
 import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
-import me.him188.ani.app.domain.mediasource.web.isSearchCooldownPage
 import me.him188.ani.utils.io.absolutePath
 import me.him188.ani.utils.io.appendText
 import me.him188.ani.utils.io.createDirectories
@@ -134,7 +132,7 @@ class BrowserImageCaptchaSolver(
             },
             submitAnswer = { answer ->
                 browser.executeJavaScript(buildSubmitImageCaptchaScript(answer))
-                browser.awaitSolvedPage(ctx.request, ctx.evaluate)
+                browser.awaitSolvedPage(ctx.evaluate)
             },
             evaluate = ctx.evaluate,
             onSolved = ctx.retainSolvedPage,
@@ -172,7 +170,7 @@ private suspend fun solveImageCaptcha(
         val solvedPage = submitAnswer(answer)
         if (solvedPage != null) {
             val verdict = evaluate(solvedPage)
-            if (isSuccessfulSolve(solvedPage, verdict, request)) {
+            if (isSuccessfulSolve(verdict)) {
                 onSolved(solvedPage)
                 logger.info { "Solved image captcha on attempt ${attempt + 1}/$maxAttempts for ${request.pageUrl}" }
                 return SolveOutcome.Solved
@@ -350,13 +348,12 @@ private suspend fun CaptchaBrowser.awaitImageCaptchaPage(request: SolveRequest):
 }
 
 private suspend fun CaptchaBrowser.awaitSolvedPage(
-    request: SolveRequest,
     evaluate: suspend (LoadedPage) -> PageVerdict<*>,
 ): LoadedPage? {
     repeat(IMAGE_CAPTCHA_VALIDATION_POLL_COUNT) {
         delay(IMAGE_CAPTCHA_VALIDATION_POLL_INTERVAL)
         val page = currentPage() ?: return@repeat
-        if (isSuccessfulSolve(page, evaluate(page), request)) return page
+        if (isSuccessfulSolve(evaluate(page))) return page
     }
     return null
 }
@@ -382,29 +379,7 @@ private suspend fun CaptchaBrowser.captureImageCaptchaSample(): ImageCaptchaSamp
     return null
 }
 
-private fun isSuccessfulSolve(page: LoadedPage, verdict: PageVerdict<*>, request: SolveRequest): Boolean {
-    if (verdict is PageVerdict.Ok) return true
-    if (verdict !is PageVerdict.EmptyContent || request.expectation !is PageExpectation.SearchResults) return false
-    if (!page.isSearchResultLocationFor(request)) return false
-    if (WebCaptchaDetector.detect(page.finalUrl, page.html) != null) return false
-    val document = runCatching { Html.parse(page.html) }.getOrNull() ?: return false
-    return !document.isSearchCooldownPage() && document.isExplicitEmptySearchResultPage()
-}
-
-private fun LoadedPage.isSearchResultLocationFor(request: SolveRequest): Boolean {
-    val requested = runCatching { Url(request.pageUrl) }.getOrNull() ?: return false
-    val actual = runCatching { Url(finalUrl) }.getOrNull() ?: return false
-    val requestedPath = requested.encodedPath.trimEnd('/').ifBlank { "/" }
-    val actualPath = actual.encodedPath.trimEnd('/').ifBlank { "/" }
-    if (requestedPath != "/" && actualPath == "/") return false
-    return requestedPath == actualPath ||
-        (requestedPath.contains("search", true) && actualPath.contains("search", true))
-}
-
-private fun Document.isExplicitEmptySearchResultPage(): Boolean {
-    val normalized = text().replace(Regex("\\s+"), " ").trim().lowercase()
-    return EMPTY_SEARCH_RESULT_MARKERS.any { it in normalized }
-}
+private fun isSuccessfulSolve(verdict: PageVerdict<*>): Boolean = verdict is PageVerdict.Ok
 
 internal fun isValidImageCaptchaAnswer(answer: String): Boolean {
     return answer.length == 4 && answer.all { it in '0'..'9' }
@@ -514,10 +489,6 @@ private data class ImageCaptchaSampleManifestEntry(
 
 private val logger = logger("ImageCaptchaSolver")
 private val KNOWN_MACCMS_IMAGE_CAPTCHA_HOSTS = setOf("acgfta.com", "cycani.org", "youknow.tv")
-private val EMPTY_SEARCH_RESULT_MARKERS = listOf(
-    "什么都没有", "什麼都沒有", "暂无数据", "暫無資料", "暂无相关", "暫無相關",
-    "没有找到", "沒有找到", "搜索结果为空", "搜索結果為空", "no results", "no matches",
-)
 private const val IMAGE_CAPTCHA_MARKER_ID = "ani-image-captcha-sample"
 private const val IMAGE_CAPTCHA_MAX_ATTEMPTS = 3
 private const val IMAGE_CAPTCHA_HTTP_REFRESH_ATTEMPTS = 10

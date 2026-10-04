@@ -19,6 +19,11 @@ import io.ktor.http.headers
 import me.him188.ani.app.domain.foundation.HttpClientProvider
 import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
 import me.him188.ani.app.domain.foundation.get
+import me.him188.ani.app.domain.mediasource.web.PageExpectation
+import me.him188.ani.app.domain.mediasource.web.SolveRequest
+import me.him188.ani.app.domain.mediasource.web.WebCaptchaDetector
+import me.him188.ani.app.domain.mediasource.web.captcha.SolveOutcome
+import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceCookieJar
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
 import me.him188.ani.app.platform.Context
@@ -69,21 +74,28 @@ class SourcePluginContextFactory(
     private val httpClientProvider: HttpClientProvider,
     private val platform: SourcePluginPlatform,
     private val hostVersion: String = currentAniBuildConfig.versionName,
+    private val webSessionManager: WebSessionManager? = null,
+    private val cookieJar: WebSourceCookieJar = WebSourceCookieJar(),
     private val identityRegistry: WebSourceIdentityRegistry = WebSourceIdentityRegistry(),
 ) {
     fun create(pluginId: String): SourcePluginContext {
-        val cookieJar = WebSourceCookieJar()
         val scopedClient = httpClientProvider.get(
             userAgent = ScopedHttpClientUserAgent.BROWSER,
             cookieJar = cookieJar,
             identityRegistry = identityRegistry,
         )
+        val pluginLogger = SourcePluginLoggerAdapter(logger("source-plugin/$pluginId"))
         return DefaultSourcePluginContext(
             pluginId = pluginId,
             hostVersion = hostVersion,
             platform = platform,
-            http = SourcePluginHttpClient(scopedClient),
-            logger = SourcePluginLoggerAdapter(logger("source-plugin/$pluginId")),
+            http = SourcePluginHttpClient(
+                client = scopedClient,
+                pluginId = pluginId,
+                webSessionManager = webSessionManager,
+                pluginLogger = pluginLogger,
+            ),
+            logger = pluginLogger,
         )
     }
 }
@@ -98,11 +110,53 @@ private data class DefaultSourcePluginContext(
 
 class SourcePluginHttpClient(
     private val client: ScopedHttpClient,
+    private val pluginId: String? = null,
+    private val webSessionManager: WebSessionManager? = null,
+    private val pluginLogger: SourcePluginLogger? = null,
 ) : SourceHttpClient {
     private val logger = logger<SourcePluginHttpClient>()
 
     override suspend fun execute(pluginRequest: SourceHttpRequest): SourceHttpResponse = withTimeout(15.seconds) {
-        client.use {
+        val response = executeOnce(pluginRequest)
+        val sessionManager = webSessionManager
+        val challengeKind = sessionManager?.let {
+            WebCaptchaDetector.detect(
+                response.finalUrl.ifBlank { pluginRequest.url },
+                response.bodyAsText(),
+            )
+        }
+        if (sessionManager == null || challengeKind == null) {
+            return@withTimeout response
+        }
+
+        pluginLogger?.info("偵測到來源網站驗證，準備使用互動網頁工作階段處理")
+        val outcome = runCatching {
+            val request = SolveRequest(
+                mediaSourceId = pluginId.orEmpty(),
+                pageUrl = response.finalUrl.ifBlank { pluginRequest.url },
+                kind = challengeKind,
+                expectation = PageExpectation.AnyContent,
+            )
+            val automatic = sessionManager.solve(request, interactive = false)
+            if (automatic == SolveOutcome.Solved || !sessionManager.isInteractiveSupported) {
+                automatic
+            } else {
+                sessionManager.solve(request, interactive = true)
+            }
+        }.getOrElse { error ->
+            pluginLogger?.warn("來源網站驗證流程失敗", error)
+            SolveOutcome.Failed(null)
+        }
+        if (outcome != SolveOutcome.Solved) {
+            return@withTimeout response
+        }
+
+        // 驗證成功後只重試原請求一次；cookie 與 UA 已由 WebSessionManager 同步到共用 HTTP 工作階段。
+        executeOnce(pluginRequest)
+    }
+
+    private suspend fun executeOnce(pluginRequest: SourceHttpRequest): SourceHttpResponse {
+        return client.use {
             val response = request(pluginRequest.url) {
                 method = HttpMethod(pluginRequest.method)
                 expectSuccess = false

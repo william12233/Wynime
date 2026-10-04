@@ -19,17 +19,13 @@ kotlin {
 }
 
 dependencies {
-    implementation(projects.client)
     implementation(projects.datasource.datasourceApi)
-    implementation(projects.datasource.jellyfin)
-    implementation(projects.datasource.ikaros)
     implementation(projects.app.shared.appData)
     implementation(projects.app.shared.appPlatform)
     implementation(projects.utils.ktorClient)
     implementation(projects.utils.logging)
     implementation(projects.utils.serialization)
     implementation(projects.utils.xml)
-    implementation(projects.utils.jsonpath)
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)

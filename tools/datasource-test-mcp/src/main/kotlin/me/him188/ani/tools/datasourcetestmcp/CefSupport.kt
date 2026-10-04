@@ -20,7 +20,7 @@ import java.io.File
  */
 object McpCefApp {
     fun defaultWorkDir(): File = File(System.getProperty("java.io.tmpdir"))
-        .resolve("ani-datasource-test-mcp")
+        .resolve("wynime-source-plugin-media-test")
         .resolve("cef")
 
     suspend fun initialize(workDir: File = defaultWorkDir()) {

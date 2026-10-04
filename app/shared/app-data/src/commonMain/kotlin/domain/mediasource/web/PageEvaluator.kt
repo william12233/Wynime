@@ -9,7 +9,6 @@
 
 package me.him188.ani.app.domain.mediasource.web
 
-import me.him188.ani.app.domain.mediasource.web.format.SelectedChannelEpisodes
 import me.him188.ani.utils.xml.Document
 import me.him188.ani.utils.xml.Html
 import kotlin.time.Duration
@@ -31,22 +30,11 @@ data class LoadedPage(
 )
 
 /**
- * 页面的期望: 调用方希望从页面中解析出什么内容.
+ * 页面验证码流程的通用判定期望。
  *
- * [PageEvaluator] 会优先尝试按照期望解析页面, 解析成功 ([PageVerdict.Ok]) 优先于一切启发式检测.
+ * 搜尋、詳情與影片解析由來源插件自行處理；Host 只需要知道頁面是否已通過阻擋檢查。
  */
 sealed interface PageExpectation<out T> {
-    /** 期望解析出条目列表 (搜索结果页) */
-    data class SearchResults(val config: SelectorSearchConfig) : PageExpectation<List<WebSearchSubjectInfo>>
-
-    /** 期望解析出剧集列表 (条目详情页) */
-    data class SubjectDetails(
-        val config: SelectorSearchConfig,
-        /** episode 所属条目的完整 URL, 用于解析相对链接. */
-        val subjectUrl: String,
-    ) : PageExpectation<SelectedChannelEpisodes>
-
-    /** 无 selector 可用时的兜底 (视频页等): 只要没有被挡特征就算 [PageVerdict.Ok]. */
     data object AnyContent : PageExpectation<Document>
 }
 
@@ -75,7 +63,7 @@ sealed interface BlockReason {
 
     data object NotFound : BlockReason
 
-    /** 无结构化 selector 期望的页面返回 HTTP 403, 且无验证码特征. */
+    /** 没有验证码特征的 HTTP 403. */
     data class Forbidden(val status: Int) : BlockReason
 }
 
@@ -103,20 +91,9 @@ class BlockedException(
 ) : Exception("Blocked ($reason) @ ${request.pageUrl}")
 
 /**
- * 唯一判决函数: 所有 "这个页面算不算被挡" 的判断都必须经过 [evaluate].
+ * 所有通用 Web 会话都使用的唯一页面判定函数。
  *
- * 引擎解析路径、交互对话框的自动关闭、浏览器会话的页面加载共用同一个函数,
- * 保证 solve 的成功标准与 retry 的成功标准恒等.
- *
- * 判决顺序 (硬规则):
- * 1. HTTP 404 → [BlockReason.NotFound];
- * 2. 按 [PageExpectation] 解析, 解析出内容 → [PageVerdict.Ok], 直接结束 —— 即使启发式检测报警、即使状态码是 4xx;
- * 3. 站内冷却页 → [BlockReason.RateLimited];
- * 4. HTTP 429 → [BlockReason.RateLimited] (带 `Retry-After`);
- * 5. 启发式检测分类出验证码 → [BlockReason.Captcha];
- * 6. HTTP 403 无特征: selector 页面 → [BlockReason.Captcha] (Unknown), 其他页面 → [BlockReason.Forbidden];
- *    468 → [BlockReason.Captcha] (Unknown);
- * 7. 以上都不是 → [PageVerdict.EmptyContent] (对 [PageExpectation.AnyContent] 则为 [PageVerdict.Ok]).
+ * 来源插件负责自己的业务解析，Host 只负责识别 HTTP 错误、冷却页与验证码，并为播放器/下载器保留浏览器会话。
  */
 class PageEvaluator {
     fun <T> evaluate(page: LoadedPage, expectation: PageExpectation<T>): PageVerdict<T> {
@@ -127,72 +104,33 @@ class PageEvaluator {
 
         val document = runCatching { Html.parse(page.html) }.getOrNull()
 
-        // 2. 解析优先: selector 能解析出内容就是最终真相.
-        if (document != null) {
-            parseByExpectation(document, page.finalUrl, expectation)?.let { value ->
-                return PageVerdict.Ok(value, document)
-            }
-        }
-
-        // 3. 站内冷却页
+        // 2. 站内冷却页
         if (document != null && document.isSearchCooldownPage()) {
             return PageVerdict.Blocked(BlockReason.RateLimited(retryAfter = null))
         }
 
-        // 4. HTTP 429
+        // 3. HTTP 429
         if (page.status == 429) {
             return PageVerdict.Blocked(BlockReason.RateLimited(page.retryAfter))
         }
 
-        // 5. 启发式检测
+        // 4. 启发式检测
         WebCaptchaDetector.detect(page.finalUrl, page.html)?.let { kind ->
             return PageVerdict.Blocked(BlockReason.Captcha(kind))
         }
 
-        // 6. 无特征的被挡状态码
+        // 5. 无特征的被挡状态码
         when (page.status) {
             468 -> return PageVerdict.Blocked(BlockReason.Captcha(WebCaptchaKind.Unknown))
-            403 -> return PageVerdict.Blocked(
-                when (expectation) {
-                    is PageExpectation.SearchResults,
-                    is PageExpectation.SubjectDetails,
-                    -> BlockReason.Captcha(WebCaptchaKind.Unknown)
-
-                    PageExpectation.AnyContent -> BlockReason.Forbidden(403)
-                },
-            )
+            403 -> return PageVerdict.Blocked(BlockReason.Forbidden(403))
         }
 
-        // 7. 兜底
+        // 6. 兜底
         if (expectation is PageExpectation.AnyContent && document != null && hasMeaningfulHtml(page.html)) {
             @Suppress("UNCHECKED_CAST")
             return PageVerdict.Ok(document, document) as PageVerdict<T>
         }
         return PageVerdict.EmptyContent(document)
-    }
-
-    private fun <T> parseByExpectation(
-        document: Document,
-        pageUrl: String,
-        expectation: PageExpectation<T>,
-    ): T? {
-        @Suppress("UNCHECKED_CAST")
-        return when (expectation) {
-            is PageExpectation.SearchResults -> {
-                selectSubjectsForCaptchaProbe(document, expectation.config)
-                    ?.takeIf { it.isNotEmpty() } as T?
-            }
-
-            is PageExpectation.SubjectDetails -> {
-                runCatching {
-                    selectEpisodesImpl(document, expectation.subjectUrl, expectation.config)
-                }.getOrNull()
-                    ?.takeIf { it.episodes.isNotEmpty() } as T?
-            }
-
-            // AnyContent 没有强解析信号, 只能在排除全部被挡特征后才算 Ok (规则 7).
-            PageExpectation.AnyContent -> null
-        }
     }
 
     private fun hasMeaningfulHtml(html: String): Boolean {

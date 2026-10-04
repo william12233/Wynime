@@ -18,28 +18,17 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.serialization.kotlinx.json.json
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import me.him188.ani.app.domain.foundation.WebSourceIdentityFeatureHandler
-import me.him188.ani.app.domain.mediasource.web.DefaultSelectorMediaSourceEngine
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceCookieJar
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
-import me.him188.ani.tools.datasourcetestmcp.captcha.WebSourceSession
-import me.him188.ani.tools.datasourcetestmcp.info.AniInfoService
 import me.him188.ani.tools.datasourcetestmcp.mcp.McpRequestHandler
 import me.him188.ani.tools.datasourcetestmcp.mcp.buildToolRegistrations
 import me.him188.ani.tools.datasourcetestmcp.mcp.runHttpMcpServer
-import me.him188.ani.tools.datasourcetestmcp.resolver.WebViewVideoResolverEngine
-import me.him188.ani.tools.datasourcetestmcp.selector.SelectorEngineService
-import me.him188.ani.tools.datasourcetestmcp.source.DataSourceRegistry
-import me.him188.ani.tools.datasourcetestmcp.source.SourceTestService
 import me.him188.ani.tools.datasourcetestmcp.video.M3u8AdAnalyzer
 import me.him188.ani.tools.datasourcetestmcp.video.MpvVideoAnalyzer
 import me.him188.ani.tools.datasourcetestmcp.video.VideoProbe
 import me.him188.ani.tools.datasourcetestmcp.video.VideoService
-import me.him188.ani.utils.ktor.asScopedHttpClient
 import kotlin.time.Duration.Companion.seconds
 
 private const val DEFAULT_HOST = "127.0.0.1"
@@ -90,51 +79,21 @@ fun main(args: Array<String>) {
     WebSourceIdentityFeatureHandler.applyToClient(client, webSourceIdentityRegistry)
 
     client.use { client ->
-        val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val scopedClient = client.asScopedHttpClient()
-        val resolver = WebViewVideoResolverEngine()
         val probe = VideoProbe(client)
-
-        val webSourceSession = WebSourceSession(
-            client = scopedClient,
-            cookieJar = webSourceCookieJar,
-            identityRegistry = webSourceIdentityRegistry,
-            backgroundScope = backgroundScope,
-        )
-
-        val aniInfoService = AniInfoService(client)
-        val selectorEngineService = SelectorEngineService(
-            engine = DefaultSelectorMediaSourceEngine(scopedClient),
-            webSource = webSourceSession,
-            aniInfoService = aniInfoService,
-            json = json,
-            resolver = resolver,
-            probe = probe,
-        )
         val videoService = VideoService(
             probe = probe,
             analyzer = MpvVideoAnalyzer(),
             adAnalyzer = M3u8AdAnalyzer(client),
         )
-        val sourceTestService = SourceTestService(
-            httpClient = client,
-            registry = DataSourceRegistry(scopedClient, webSourceSession.sessionManager),
-            json = json,
-            resolver = resolver,
-            probe = probe,
-        )
 
         val handler = McpRequestHandler(
             registrations = buildToolRegistrations(
                 json = json,
-                aniInfoService = aniInfoService,
-                selectorEngineService = selectorEngineService,
                 videoService = videoService,
-                sourceTestService = sourceTestService,
             ),
             json = json,
         )
-        println("animeko-datasource-test-mcp: starting HTTP MCP server at http://$host:$port/mcp")
+        println("wynime-source-plugin-media-test: starting HTTP MCP server at http://$host:$port/mcp")
         runHttpMcpServer(host = host, port = port, handler = handler)
     }
 }

@@ -146,7 +146,7 @@ class McpRequestHandler(
             put(
                 "serverInfo",
                 buildJsonObject {
-                    put("name", "animeko-datasource-test-mcp")
+                    put("name", "wynime-source-plugin-media-test")
                     put("version", "0.3.0")
                 },
             )

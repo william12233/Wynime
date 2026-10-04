@@ -22,7 +22,6 @@ import me.him188.ani.app.domain.mediasource.web.BlockReason
 import me.him188.ani.app.domain.mediasource.web.LoadedPage
 import me.him188.ani.app.domain.mediasource.web.PageEvaluator
 import me.him188.ani.app.domain.mediasource.web.PageExpectation
-import me.him188.ani.app.domain.mediasource.web.SelectorSearchConfig
 import me.him188.ani.app.domain.mediasource.web.SolveRequest
 import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
 import me.him188.ani.utils.io.SystemPaths
@@ -102,24 +101,6 @@ class ImageCaptchaSolverTest {
         assertEquals(3, recognitionCount)
         assertEquals(2, session.refreshCount)
         assertEquals(1, session.submitCount)
-    }
-
-    @Test
-    fun `accepts explicit empty result only at requested search location`() = runTest {
-        val valid = FakeImageCaptchaBrowser(
-            correctAnswer = "1234",
-            solvedHtml = "<html><body>没有找到相关内容</body></html>",
-        )
-        val homeFallback = FakeImageCaptchaBrowser(
-            correctAnswer = "1234",
-            solvedFinalUrl = "https://example.com/",
-            solvedHtml = "<html><body>没有找到相关内容</body></html>",
-        )
-
-        assertIs<SolveOutcome.Solved>(attemptWithBrowser(valid, ImageCaptchaRecognizer { "1234" }, searchRequest))
-        assertIs<SolveOutcome.Failed>(
-            attemptWithBrowser(homeFallback, ImageCaptchaRecognizer { "1234" }, searchRequest),
-        )
     }
 
     @Test
@@ -272,11 +253,6 @@ class ImageCaptchaSolverTest {
             pageUrl = "https://example.com/search?q=test",
             kind = WebCaptchaKind.Image,
             expectation = PageExpectation.AnyContent,
-        )
-        val searchRequest = request.copy(
-            expectation = PageExpectation.SearchResults(
-                SelectorSearchConfig(searchUrl = "https://example.com/search?q={keyword}"),
-            ),
         )
     }
 }

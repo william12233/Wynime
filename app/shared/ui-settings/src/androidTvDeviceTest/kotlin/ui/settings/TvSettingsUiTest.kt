@@ -88,10 +88,6 @@ class TvSettingsUiTest {
                                 is TvSettingsIntent.SourceEnabled -> state.copy(sources = state.sources.map {
                                     if (it.id == intent.id) it.copy(enabled = intent.enabled) else it
                                 })
-                                is TvSettingsIntent.SubscriptionEnabled -> state.copy(
-                                    subscriptions = state.subscriptions.map { if (it.id == intent.id) it.copy(enabled = intent.enabled) else it },
-                                    sources = state.sources.map { if (it.subscription == intent.id) it.copy(enabled = intent.enabled) else it },
-                                )
                                 is TvSettingsIntent.SaveRegex -> state.copy(regexFilters = if (intent.isNew) {
                                     state.regexFilters + intent.filter
                                 } else state.regexFilters.map { if (it.id == intent.filter.id) intent.filter else it })
@@ -179,50 +175,6 @@ class TvSettingsUiTest {
         awaitFocus("tv-settings-section-Theme")
         mainClock.advanceTimeBy(500)
         onNodeWithTag("tv-settings-section-Theme").assertIsFocused()
-    }
-
-    @Test
-    fun subscriptionsAndIndividualSourcesToggleWithoutOpeningSourceDialogs() = runAniComposeUiTest {
-        state = state.copy(
-            sources = listOf(TvSettingsSource("test", "Example source", "Source description", "https://example.com", false, "web-selector", "group")),
-            subscriptions = listOf(TvSettingsSubscription("group", "https://example.com/sources.json", true)),
-        )
-        mount()
-        repeat(3) { key(Key.DirectionDown) }
-        awaitFocus("tv-settings-section-Sources")
-        key(Key.DirectionCenter)
-        awaitFocus("tv-settings-item-subscriptions")
-        key(Key.DirectionDown)
-        awaitFocus("tv-settings-item-source-test")
-        key(Key.DirectionCenter)
-        awaitFocus("tv-settings-item-source-test")
-        onNodeWithTag("tv-settings-item-source-test").assertIsOn()
-        onNodeWithTag("tv-settings-info").assertDoesNotExist()
-        capture("sources")
-        key(Key.DirectionUp)
-        key(Key.DirectionRight)
-        awaitFocus("tv-settings-item-subscription-group")
-        assertTrue(bounds("tv-settings-item-subscriptions").right <= bounds("tv-settings-extra").left)
-        key(Key.DirectionCenter)
-        onNodeWithTag("tv-settings-item-subscription-group").assertIsOff()
-        awaitFocus("tv-settings-item-subscription-group")
-        assertEquals(false, state.sources.single().enabled)
-        capture("subscriptions")
-        val focusedSubscription = onNodeWithTag("tv-settings-item-subscription-group").captureToImage().asAndroidBitmap()
-        val background = focusedSubscription.getPixel(focusedSubscription.width / 2, focusedSubscription.height / 10)
-        assertTrue((background ushr 16 and 0xff) > 200, "The focused subscription must retain its visible focus fill after toggling")
-        key(Key.DirectionCenter)
-        awaitFocus("tv-settings-item-subscription-group")
-        onNodeWithTag("tv-settings-item-subscription-group").assertIsOn()
-        assertEquals(true, state.sources.single().enabled)
-        key(Key.DirectionLeft)
-        awaitFocus("tv-settings-item-subscriptions")
-        key(Key.DirectionDown)
-        key(Key.DirectionCenter)
-        onNodeWithTag("tv-settings-item-source-test").assertIsOff()
-        assertEquals(true, state.subscriptions.single().enabled)
-        key(Key.Back)
-        awaitFocus("tv-settings-section-Sources")
     }
 
     @Test

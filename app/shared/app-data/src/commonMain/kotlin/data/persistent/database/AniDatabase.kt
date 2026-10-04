@@ -43,8 +43,6 @@ import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
 import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionEntity
 import me.him188.ani.app.data.persistent.database.dao.SubjectRelationsDao
 import me.him188.ani.app.data.persistent.database.dao.SubjectReviewDao
-import me.him188.ani.app.data.persistent.database.dao.WebSearchSessionCacheDao
-import me.him188.ani.app.data.persistent.database.dao.WebSearchSessionCacheEntity
 import me.him188.ani.app.data.persistent.database.entity.CharacterActorEntity
 import me.him188.ani.app.data.persistent.database.entity.CharacterEntity
 import me.him188.ani.app.data.persistent.database.entity.EpisodeCommentEntity
@@ -71,15 +69,13 @@ import me.him188.ani.utils.httpdownloader.DownloadState
         SubjectReviewEntity::class,
         EpisodeCommentEntity::class,
 
-        WebSearchSessionCacheEntity::class,
-
         DownloadState::class,
 
         PreferredWebMediaSource::class,
         PlaybackHistoryRecordEntity::class,
         PlaybackHistoryPendingOpEntity::class,
     ],
-    version = 28,
+    version = 29,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = Migrations.Migration_1_2::class),
         AutoMigration(from = 2, to = 3, spec = Migrations.Migration_2_3::class),
@@ -107,6 +103,7 @@ import me.him188.ani.utils.httpdownloader.DownloadState
         AutoMigration(from = 25, to = 26, spec = Migrations.Migration_25_26::class),
         AutoMigration(from = 26, to = 27, spec = Migrations.Migration_26_27::class),
         AutoMigration(from = 27, to = 28),
+        AutoMigration(from = 28, to = 29, spec = Migrations.Migration_28_29::class),
     ],
     exportSchema = true,
 )
@@ -137,11 +134,6 @@ abstract class AniDatabase : RoomDatabase() {
      * @since 4.1.0-alpha02
      */
     abstract fun episodeCommentDao(): EpisodeCommentDao
-
-    /**
-     * @since 6.1.0
-     */
-    abstract fun webSearchSessionCacheDao(): WebSearchSessionCacheDao
 
     abstract fun httpCacheDownloadStateDao(): HttpCacheDownloadStateDao
 
@@ -307,11 +299,7 @@ internal object Migrations {
         }
     }
 
-    /**
-     * Added [WebSearchSubjectInfoEntity], [WebSearchEpisodeInfoEntity],
-     * [WebSearchSubjectInfoDao], [WebSearchEpisodeInfoDao]
-     * @since 4.1.0-alpha03
-     */
+    /** Added the legacy web source search cache tables. @since 4.1.0-alpha03 */
     class Migration_12_13 : AutoMigrationSpec {
         override fun onPostMigrate(connection: SQLiteConnection) {
         }
@@ -377,10 +365,7 @@ internal object Migrations {
         }
     }
 
-    /**
-     * Web 源搜索缓存改用新表 [WebSearchSessionCacheEntity] (播放 session 级缓存, 完整复合唯一键),
-     * 删除旧的 `web_search_subject` / `web_search_episode`.
-     */
+    /** Web source search cache moved to a session-scoped table; the old tables were removed. */
     @DeleteTable("web_search_episode")
     @DeleteTable("web_search_subject")
     class Migration_21_22 : AutoMigrationSpec {
@@ -425,6 +410,13 @@ internal object Migrations {
     @DeleteTable("torrent_cache_episode")
     @DeleteTable("danmaku")
     class Migration_26_27 : AutoMigrationSpec {
+        override fun onPostMigrate(connection: SQLiteConnection) {
+        }
+    }
+
+    /** Remove the retired web source search session cache. */
+    @DeleteTable("web_search_session_cache")
+    class Migration_28_29 : AutoMigrationSpec {
         override fun onPostMigrate(connection: SQLiteConnection) {
         }
     }

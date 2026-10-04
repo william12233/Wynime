@@ -16,7 +16,7 @@ import me.him188.ani.datasources.api.source.MediaSource
 
 /**
  * 匹配 WebView 拦截到的资源.
- */ // see also: SelectorMediaSource
+ */
 fun interface WebVideoMatcher { // SPI service load
     sealed class MatchResult {
         data class Matched(

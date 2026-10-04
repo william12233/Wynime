@@ -47,7 +47,6 @@ import me.him188.ani.app.domain.mediasource.web.PageEvaluator
 import me.him188.ani.app.domain.mediasource.web.PageExpectation
 import me.him188.ani.app.domain.mediasource.web.PageVerdict
 import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.acceptSelectorSearch
 import me.him188.ani.app.domain.mediasource.web.normalizedSessionHost
 import me.him188.ani.app.domain.mediasource.web.normalizedStorageOrigin
 import me.him188.ani.utils.coroutines.IO_
@@ -88,7 +87,6 @@ class InteractiveSolveUi internal constructor(
  * @param solvers 自动解决策略链.
  * @param solverEnabled 自动解决总开关 (用户设置). 每次自动 solve 前读取, 关闭时不尝试任何 [solvers];
  * 不影响 interactive 手动解决.
- * @param searchRoutes 备用取数路由.
  */
 class WebSessionManager(
     private val browserFactory: CaptchaBrowserFactory,
@@ -99,7 +97,6 @@ class WebSessionManager(
     private val backgroundScope: CoroutineScope,
     private val solvers: List<CaptchaSolver> = emptyList(),
     private val solverEnabled: suspend () -> Boolean = { true },
-    private val searchRoutes: List<SearchRoute> = emptyList(),
     private val maxSessions: Int = 3,
     private val idleTtl: Duration = 5.minutes,
     private val stickyWindow: Duration = 60.seconds,
@@ -196,14 +193,6 @@ class WebSessionManager(
             }
         }
 
-        if (host != null) {
-            for (route in searchRoutes) {
-                if (route.matches(host)) {
-                    route.fetch(url, expectation, client)?.let { return it }
-                }
-            }
-        }
-
         // 浏览器粘滞: 60s 内 HTTP 刚被挡过且有暖会话, 不再先失败一次
         if (host != null && shouldStickToBrowser(host)) {
             loadInBrowser(host, url, expectation)?.let { verdict ->
@@ -214,7 +203,7 @@ class WebSessionManager(
             }
         }
 
-        val page = httpFetch(url, expectation)
+        val page = httpFetch(url)
         val verdict = evaluator.evaluate(page, expectation)
         if (verdict !is PageVerdict.Blocked || verdict.reason !is BlockReason.Captcha || host == null) {
             return verdict
@@ -322,15 +311,11 @@ class WebSessionManager(
         return pageHost == host || pageHost.endsWith(".$host") || host.endsWith(".$pageHost")
     }
 
-    private suspend fun httpFetch(url: String, expectation: PageExpectation<*>): LoadedPage = withContext(ioContext) {
+    private suspend fun httpFetch(url: String): LoadedPage = withContext(ioContext) {
         try {
             client.use {
                 prepareGet(url) {
-                    if (expectation is PageExpectation.SearchResults) {
-                        acceptSelectorSearch(expectation.config.subjectFormatId)
-                    } else {
-                        accept(ContentType.Text.Html)
-                    }
+                    accept(ContentType.Text.Html)
                 }.execute { response ->
                     response.toLoadedPage()
                 }

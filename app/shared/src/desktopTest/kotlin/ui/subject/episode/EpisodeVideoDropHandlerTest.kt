@@ -31,7 +31,7 @@ class EpisodeVideoDropHandlerTest {
         assertNotNull(handler.onDragStarted(files("episode-01.ass", "episode-01.mkv")))
         assertNotNull(handler.onDragStarted(null))
 
-        assertNull(handler.onDragStarted(files("Ani-4.12.0.dmg")))
+        assertNull(handler.onDragStarted(files("Wynime-4.12.0.dmg")))
         assertNull(handler.onDragStarted(files()))
         assertNull(handler.onDragStarted(DragAndDropContent.PlainText("/videos/episode-01.mkv")))
         assertNull(handler.onDragStarted(DragAndDropContent.Unsupported))
@@ -45,7 +45,7 @@ class EpisodeVideoDropHandlerTest {
 
     @Test
     fun `ignores drops without a video file`() {
-        assertFalse(handler.onDrop(files("Ani-4.12.0.dmg")))
+        assertFalse(handler.onDrop(files("Wynime-4.12.0.dmg")))
         assertFalse(handler.onDrop(DragAndDropContent.PlainText("/videos/episode-01.mkv")))
         assertFalse(handler.onDrop(DragAndDropContent.Unsupported))
         assertTrue(played.isEmpty())

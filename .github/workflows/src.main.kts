@@ -6,7 +6,7 @@
  * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
  * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
  *
- * https://github.com/open-ani/ani/blob/main/LICENSE
+ * https://github.com/william12233/Wynime/blob/main/LICENSE
  */
 
 // 也可以在 IDE 里右键 Run
@@ -270,10 +270,10 @@ data class MatrixInstance(
 }
 
 @Suppress("PropertyName")
-val ANI_ANDROID_ABIS = "ani.android.abis"
+val ANI_ANDROID_ABIS = "Wynime.android.abis"
 
 @Suppress("PropertyName")
-val ANI_ENABLE_IOS = "ani.enable.ios"
+val ANI_ENABLE_IOS = "Wynime.enable.ios"
 
 /**
  * 含 Android TV 界面的模块, 与 settings.gradle.kts 中的 `-tv` 模块一致.
@@ -290,7 +290,7 @@ val androidTvModules = listOf(
 )
 
 @Suppress("PropertyName")
-val ANI_BUILD_FRAMEWORK = "ani.build.framework"
+val ANI_BUILD_FRAMEWORK = "Wynime.build.framework"
 
 sealed class Runner(
     val id: String,
@@ -592,14 +592,14 @@ fun getBuildJobBody(matrix: MatrixInstance): JobBuilder<BuildJobOutputs>.() -> U
 
 object ArtifactNames {
     fun windowsPortable(arch: Arch) = when (arch) {
-        Arch.X64 -> "ani-windows-portable"
-        Arch.AARCH64 -> "ani-windows-aarch64-portable"
+        Arch.X64 -> "wynime-windows-portable"
+        Arch.AARCH64 -> "wynime-windows-aarch64-portable"
     }
 
-    fun macosDmg(arch: Arch) = "ani-macos-dmg-${arch}"
-    fun macosPortable(arch: Arch) = "ani-macos-portable-${arch}"
-    fun iosIpa() = "ani-ios-ipa"
-    fun linuxAppImage(arch: Arch) = "ani-linux-appimage-${arch}"
+    fun macosDmg(arch: Arch) = "wynime-macos-dmg-${arch}"
+    fun macosPortable(arch: Arch) = "wynime-macos-portable-${arch}"
+    fun iosIpa() = "wynime-ios-ipa"
+    fun linuxAppImage(arch: Arch) = "wynime-linux-appimage-${arch}"
 }
 
 fun getVerifyJobBody(
@@ -677,7 +677,7 @@ fun getVerifyJobBody(
         VerifyTask(
             name = "sentry-dsn",
             step = "Check that sentryDsn is valid",
-            `if` = expr { github.isAnimekoRepository and !github.isPullRequest },
+            `if` = expr { github.isWynimeRepository and !github.isPullRequest },
             disabledOn = listOf(Runner.GithubWindows11Arm64),
         ),
         // Windows ARM64 relies on the SQLite natives built by :ci-helper:sqlite-woa64 (AndroidX does
@@ -726,7 +726,7 @@ fun getVerifyJobBody(
                     shell = Shell.PowerShell,
                     command = shell(
                         $$"""
-                        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$${expr { github.workspace }}/ci-helper/verify/run-ani-test-windows-x64.ps1" "$${expr { github.workspace }}\ci-helper\verify" "$${task.name}"
+                        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$${expr { github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1" "$${expr { github.workspace }}\ci-helper\verify" "$${task.name}"
                         """.trimIndent(),
                     ),
                     `if` = task.`if`,
@@ -743,7 +743,7 @@ fun getVerifyJobBody(
             tasksToExecute.forEach { task ->
                 run(
                     name = task.step,
-                    command = shell($$""""$GITHUB_WORKSPACE/ci-helper/verify/run-ani-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg $${task.name}"""),
+                    command = shell($$""""$GITHUB_WORKSPACE/ci-helper/verify/run-wynime-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg $${task.name}"""),
                     `if` = task.`if`,
                     timeoutMinutes = task.timeoutMinutes,
                 )
@@ -760,7 +760,7 @@ fun getVerifyJobBody(
             )
             tasksToExecute.forEach { task ->
                 val appimagePath =
-                    """${expr { github.workspace }}/ci-helper/verify/Animeko-x86_64.AppImage"""
+                    """${expr { github.workspace }}/ci-helper/verify/Wynime-x86_64.AppImage"""
                 val commandPrefix = if (task.runWithXvfb) {
                     "XDG_SESSION_TYPE=wayland WAYLAND_DISPLAY=wayland-0 xvfb-run --auto-servernum env " + ""
                 } else {
@@ -773,7 +773,7 @@ fun getVerifyJobBody(
                         $$"""
                             ANI_APPIMAGE="$$appimagePath"
                             chmod +x "$ANI_APPIMAGE"
-                            $${commandPrefix}ANIMEKO_DESKTOP_TEST_TASK="$${task.name}" "$ANI_APPIMAGE"
+                            $${commandPrefix}Wynime_DESKTOP_TEST_TASK="$${task.name}" "$ANI_APPIMAGE"
                         """.trimIndent(),
                     ),
                     `if` = task.`if`,
@@ -792,7 +792,7 @@ fun WorkflowBuilder.addVerifyJob(build: Job<BuildJobOutputs>, runner: Runner, if
         name = """Verify (${runner.name})""",
         needs = listOf(build),
         `if` = if (runner.isSelfHosted) {
-            expr { github.isAnimekoRepository and ifExpr }
+            expr { github.isWynimeRepository and ifExpr }
         } else {
             expr { ifExpr }
         },
@@ -882,7 +882,7 @@ workflow(
             `if` = if (matrix.selfHosted) {
                 // For self-hosted runners, only run if it's our main repository (not a fork).
                 // For security concerns, all external contributors will need approval to run the workflow.
-                expr { github.isAnimekoRepository }
+                expr { github.isWynimeRepository }
             } else {
                 null // always
             },
@@ -1079,7 +1079,7 @@ workflow(
                 uploadAndroidApkToCloud()
                 generateQRCodeAndUpload()
                 if (matrix.isUbuntu) {
-                    // Ubuntu `uploadDesktopInstallers` assumes `Animeko-x86_64.AppImage` is already built
+                    // Ubuntu `uploadDesktopInstallers` assumes `Wynime-x86_64.AppImage` is already built
                     packageDesktopAndUpload()
                 }
                 uploadDesktopInstallers()
@@ -1101,7 +1101,7 @@ workflow(
             name = matrix.name,
             needs = listOf(createRelease),
             runsOn = RunnerType.Labelled(matrix.runsOn),
-            `if` = if (matrix.selfHosted) expr { github.isAnimekoRepository } else null, // Don't run on forks
+            `if` = if (matrix.selfHosted) expr { github.isWynimeRepository } else null, // Don't run on forks
             block = jobBody,
         )
     }
@@ -1236,7 +1236,7 @@ class WithMatrix(
                     if (matrix.buildIosFramework) {
                         property(ANI_BUILD_FRAMEWORK, "true")
                     }
-                    property("ani.sentry.dsn", expr { secrets.SENTRY_DSN })
+                    property("Wynime.sentry.dsn", expr { secrets.SENTRY_DSN })
                     property("kotlin.native.ignoreDisabledTargets", "true")
                 },
             ),
@@ -1249,13 +1249,13 @@ class WithMatrix(
                         appendLine("""echo "${"$key=$value"}" >> local.properties""")
                     }
 
-                    property("ani.enable.firebase", "true")
+                    property("Wynime.enable.firebase", "true")
                     property("firebase.ga.app.id", expr { secrets.FIREBASE_GA_APP_ID })
                     property("firebase.ga.api.secret", expr { secrets.FIREBASE_GA_API_SECRET })
                 },
             ),
             continueOnError = true,
-            `if` = expr { github.isAnimekoRepository and !github.isPullRequest },
+            `if` = expr { github.isWynimeRepository and !github.isPullRequest },
         )
     }
 
@@ -1517,7 +1517,7 @@ class WithMatrix(
         return if (matrix.uploadApk) {
             prepareBase64File(
                 name = "Prepare signing key",
-                `if` = expr { github.isAnimekoRepository and !github.isPullRequest },
+                `if` = expr { github.isWynimeRepository and !github.isPullRequest },
                 fileName = "android_signing_key",
                 fileDir = ".",
                 encodedString = expr { secrets.SIGNING_RELEASE_STOREFILE },
@@ -1533,7 +1533,7 @@ class WithMatrix(
     fun JobBuilder<*>.prepareGoogleServicesJson(): CommandStep {
         return prepareBase64File(
             name = "Prepare google-services.json",
-            `if` = expr { github.isAnimekoRepository and !github.isPullRequest },
+            `if` = expr { github.isWynimeRepository and !github.isPullRequest },
             fileName = "google-services.json",
             fileDir = "./app/android",
             encodedString = expr { secrets.GOOGLE_SERVICES_JSON },
@@ -1630,7 +1630,7 @@ class WithMatrix(
                 tasks = buildList {
                     for (module in listOf(":app:shared:tv", ":app:shared:ui-foundation-tv", ":app:shared:ui-episode-tv", ":app:shared:ui-subject-tv")) {
                         add("$module:testAndroidHostTest")
-                        add("--tests 'me.him188.ani.tv.*'")
+                        add("--tests 'me.him188.Wynime.tv.*'")
                     }
                 }.toTypedArray(),
             )
@@ -1646,7 +1646,7 @@ class WithMatrix(
                 usesWithAttempts(
                     name = "Upload Android Debug APK $arch",
                     action = UploadArtifact(
-                        name = "ani-android-${arch}-debug",
+                        name = "wynime-android-${arch}-debug",
                         path_Untyped = "app/android/build/outputs/apk/default/debug/android-default-${arch}-debug.apk",
                         overwrite = true,
                     ),
@@ -1657,7 +1657,7 @@ class WithMatrix(
         if (matrix.uploadApk) {
             runGradle(
                 name = "Build Android Release APKs",
-                `if` = expr { github.isAnimekoRepository and !github.isPullRequest },
+                `if` = expr { github.isWynimeRepository and !github.isPullRequest },
                 tasks = arrayOf("assembleDefaultRelease", "assembleTvRelease"),
                 env = mapOf(
                     "signing_release_storeFileFromRoot" to expr { prepareSigningKey.outputs["filePath"] },
@@ -1678,7 +1678,7 @@ class WithMatrix(
                 usesWithAttempts(
                     name = "Upload Android Release APK $arch",
                     action = UploadArtifact(
-                        name = "ani-android-${arch}-release",
+                        name = "wynime-android-${arch}-release",
                         path_Untyped = "app/android/build/outputs/apk/default/release/android-default-${arch}-release.apk",
                         overwrite = true,
                     ),
@@ -1686,7 +1686,7 @@ class WithMatrix(
                 usesWithAttempts(
                     name = "Upload Android TV Release APK $arch",
                     action = UploadArtifact(
-                        name = "ani-android-tv-${arch}-release",
+                        name = "wynime-android-tv-${arch}-release",
                         path_Untyped = "app/android/build/outputs/apk/tv/release/android-tv-${arch}-release.apk",
                         overwrite = true,
                     ),
@@ -1727,8 +1727,8 @@ class WithMatrix(
             usesWithAttempts(
                 name = "Upload iOS Debug IPA",
                 action = UploadArtifact(
-                    name = "ani-ios-debug",
-                    path_Untyped = "app/ios/build/archives/debug/Animeko.ipa",
+                    name = "wynime-ios-debug",
+                    path_Untyped = "app/ios/build/archives/debug/Wynime.ipa",
                     overwrite = true,
                 ),
             )
@@ -1957,7 +1957,7 @@ class WithMatrix(
                     name = "Upload macOS AArch64 dmg",
                     action = UploadArtifact(
                         name = ArtifactNames.macosDmg(matrix.arch),
-                        path_Untyped = "app/desktop/build/compose/binaries/main-release/dmg/Ani-*.dmg",
+                        path_Untyped = "app/desktop/build/compose/binaries/main-release/dmg/wynime-*.dmg",
                         overwrite = true,
                         ifNoFilesFound = UploadArtifact.BehaviorIfNoFilesFound.Error,
                     ),
@@ -1969,7 +1969,7 @@ class WithMatrix(
                     name = "Upload macOS x86_64 ZIP",
                     action = UploadArtifact(
                         name = ArtifactNames.macosPortable(matrix.arch),
-                        path_Untyped = "app/desktop/build/compose/binaries/main-release/app/Ani.app",
+                        path_Untyped = "app/desktop/build/compose/binaries/main-release/app/Wynime.app",
                         overwrite = true,
                         ifNoFilesFound = UploadArtifact.BehaviorIfNoFilesFound.Error,
                     ),
@@ -2005,16 +2005,16 @@ class WithMatrix(
                         
                         # Prepare AppDir
                         mkdir -p AppDir/usr
-                        cp -r app/desktop/build/compose/binaries/main-release/app/Ani/* AppDir/usr
+                        cp -r app/desktop/build/compose/binaries/main-release/app/Wynime/* AppDir/usr
                         cp "$appImageUpdateTool" AppDir/usr/lib/app/resources/
                         
                         cp app/desktop/appResources/linux-x64/AppRun AppDir/AppRun
-                        cp app/desktop/appResources/linux-x64/animeko.desktop AppDir/animeko.desktop
+                        cp app/desktop/appResources/linux-x64/Wynime.desktop AppDir/Wynime.desktop
                         cp app/desktop/appResources/linux-x64/icon.png AppDir/icon.png
                         
                         # Fix permissions
                         chmod a+x AppDir/AppRun
-                        chmod a+x AppDir/usr/bin/Ani
+                        chmod a+x AppDir/usr/bin/Wynime
 
                         # The CEF helpers get their executable bit from restoreLinuxRuntimeExecutables,
                         # so assert rather than chmod. A chmod here would keep the AppImage green while
@@ -2030,7 +2030,7 @@ class WithMatrix(
                         releaseVersion="$(printf '%s' "$releaseTag" | sed 's/^v//')"
                         # Pull request merge refs contain '/', which must not become a path separator here.
                         releaseVersion="${releaseVersion//\//-}"
-                        releaseAsset="ani-$releaseVersion-linux-x86_64.appimage"
+                        releaseAsset="wynime-$releaseVersion-linux-x86_64.appimage"
                         updateInformation="zsync|https://github.com/$GITHUB_REPOSITORY/releases/download/$releaseTag/$releaseAsset.zsync"
                         ARCH=x86_64 ./appimagetool-x86_64.AppImage \
                           -u "$updateInformation" \
@@ -2038,11 +2038,11 @@ class WithMatrix(
                           "$releaseAsset"
                         # Keep the zsync reusable on GitHub, d.myani.org and compatible mirrors.
                         sed -i "s|^URL:.*|URL: $releaseAsset|" "$releaseAsset.zsync"
-                        mv "$releaseAsset" Animeko-x86_64.AppImage
-                        mv "$releaseAsset.zsync" Animeko-x86_64.AppImage.zsync
+                        mv "$releaseAsset" Wynime-x86_64.AppImage
+                        mv "$releaseAsset.zsync" Wynime-x86_64.AppImage.zsync
                         """.trimIndent(),
                 )
-                // Expected output paths: Animeko-x86_64.AppImage and Animeko-x86_64.AppImage.zsync.
+                // Expected output paths: Wynime-x86_64.AppImage and Wynime-x86_64.AppImage.zsync.
                 // If changed, change also uploadDesktopDistributions in :ci-helper
 
                 usesWithAttempts(
@@ -2050,8 +2050,8 @@ class WithMatrix(
                     action = UploadArtifact(
                         name = ArtifactNames.linuxAppImage(matrix.arch),
                         path_Untyped = $$"""
-                            Animeko-x86_64.AppImage
-                            Animeko-x86_64.AppImage.zsync
+                            Wynime-x86_64.AppImage
+                            Wynime-x86_64.AppImage.zsync
                             """.trimIndent(),
                         overwrite = true,
                         ifNoFilesFound = UploadArtifact.BehaviorIfNoFilesFound.Error,
@@ -2129,7 +2129,7 @@ class WithMatrix(
                     name = "Generate QR code for APK (GitHub)",
                     `if` = condition,
                     action = Qrcode_Untyped(
-                        text_Untyped = """https://github.com/open-ani/animeko/releases/download/${expr { gitTag.tagExpr }}/ani-${expr { gitTag.tagVersionExpr }}-universal.apk""",
+                        text_Untyped = """https://github.com/william12233/Wynime/releases/download/${expr { gitTag.tagExpr }}/wynime-${expr { gitTag.tagVersionExpr }}-universal.apk""",
                         path_Untyped = "apk-qrcode-github.png",
                     ),
                 )
@@ -2137,7 +2137,7 @@ class WithMatrix(
                     name = "Generate QR code for APK (Cloudflare)",
                     `if` = condition,
                     action = Qrcode_Untyped(
-                        text_Untyped = """https://d.myani.org/${expr { gitTag.tagExpr }}/ani-${expr { gitTag.tagVersionExpr }}-universal.apk""",
+                        text_Untyped = """https://d.myani.org/${expr { gitTag.tagExpr }}/wynime-${expr { gitTag.tagVersionExpr }}-universal.apk""",
                         path_Untyped = "apk-qrcode-cloudflare.png",
                     ),
                 )
@@ -2151,7 +2151,7 @@ class WithMatrix(
                     name = "Generate QR code for iOS (GitHub)",
                     `if` = condition,
                     action = Qrcode_Untyped(
-                        text_Untyped = """https://github.com/open-ani/animeko/releases/download/${expr { gitTag.tagExpr }}/ani-${expr { gitTag.tagVersionExpr }}.ipa""",
+                        text_Untyped = """https://github.com/william12233/Wynime/releases/download/${expr { gitTag.tagExpr }}/wynime-${expr { gitTag.tagVersionExpr }}.ipa""",
                         path_Untyped = "ipa-qrcode-github.png",
                     ),
                 )
@@ -2159,7 +2159,7 @@ class WithMatrix(
                     name = "Generate QR code for iOS (Cloudflare)",
                     `if` = condition,
                     action = Qrcode_Untyped(
-                        text_Untyped = """https://d.myani.org/${expr { gitTag.tagExpr }}/ani-${expr { gitTag.tagVersionExpr }}.ipa""",
+                        text_Untyped = """https://d.myani.org/${expr { gitTag.tagExpr }}/wynime-${expr { gitTag.tagVersionExpr }}.ipa""",
                         path_Untyped = "ipa-qrcode-cloudflare.png",
                     ),
                 )
@@ -2187,8 +2187,8 @@ class WithMatrix(
                 usesWithAttempts(
                     name = "Upload iOS Release IPA to GitHub Assets",
                     action = UploadArtifact(
-                        name = "ani-ios-release",
-                        path_Untyped = "app/ios/build/archives/release/Animeko.ipa",
+                        name = "wynime-ios-release",
+                        path_Untyped = "app/ios/build/archives/release/Wynime.ipa",
                         overwrite = true,
                     ),
                 )
@@ -2257,8 +2257,8 @@ object Secrets {
 
 /// EXTENSIONS
 
-val GitHubContext.isAnimekoRepository
-    get() = """$repository == 'open-ani/animeko'"""
+val GitHubContext.isWynimeRepository
+    get() = """$repository == 'william12233/Wynime'"""
 
 val GitHubContext.isPullRequest
     get() = """$event_name == 'pull_request'"""

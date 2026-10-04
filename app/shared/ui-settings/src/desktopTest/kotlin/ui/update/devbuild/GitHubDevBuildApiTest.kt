@@ -31,7 +31,7 @@ class GitHubDevBuildApiTest {
     fun `lists commits of the branch with github headers`() = runTest {
         var authorization: String? = "unset"
         val client = gitHubMockClient { request ->
-            assertEquals("/repos/open-ani/animeko/commits", request.url.encodedPath)
+            assertEquals("/repos/william12233/Wynime/commits", request.url.encodedPath)
             assertEquals("main", request.url.parameters["sha"])
             assertEquals("30", request.url.parameters["per_page"])
             assertEquals("application/vnd.github+json", request.headers[HttpHeaders.Accept])
@@ -54,7 +54,7 @@ class GitHubDevBuildApiTest {
     @Test
     fun `lists push runs of the build workflow on the branch`() = runTest {
         val client = gitHubMockClient { request ->
-            assertEquals("/repos/open-ani/animeko/actions/workflows/build.yml/runs", request.url.encodedPath)
+            assertEquals("/repos/william12233/Wynime/actions/workflows/build.yml/runs", request.url.encodedPath)
             assertEquals("main", request.url.parameters["branch"])
             assertEquals("push", request.url.parameters["event"])
             respondJson(RUNS_JSON)
@@ -69,11 +69,11 @@ class GitHubDevBuildApiTest {
     @Test
     fun `lists artifacts by name`() = runTest {
         val client = gitHubMockClient { request ->
-            assertEquals("/repos/open-ani/animeko/actions/artifacts", request.url.encodedPath)
-            assertEquals("ani-macos-dmg-aarch64", request.url.parameters["name"])
-            respondJson(artifactsJson("ani-macos-dmg-aarch64"))
+            assertEquals("/repos/william12233/Wynime/actions/artifacts", request.url.encodedPath)
+            assertEquals("wynime-macos-dmg-aarch64", request.url.parameters["name"])
+            respondJson(artifactsJson("wynime-macos-dmg-aarch64"))
         }
-        val artifacts = GitHubDevBuildApi(client).listArtifacts(token = null, name = "ani-macos-dmg-aarch64")
+        val artifacts = GitHubDevBuildApi(client).listArtifacts(token = null, name = "wynime-macos-dmg-aarch64")
         assertEquals(listOf(11L, 10L, 9L), artifacts.map { it.id })
         assertTrue(artifacts[0].expired)
         assertEquals(SHA_A, artifacts[1].workflowRun?.headSha)
@@ -110,10 +110,10 @@ class GitHubDevBuildApiTest {
         val api = GitHubDevBuildApi(client)
         assertEquals(
             "https://blob.example.com/a.zip",
-            api.resolveArtifactDownloadUrl("good", "https://api.github.com/repos/open-ani/animeko/actions/artifacts/10/zip"),
+            api.resolveArtifactDownloadUrl("good", "https://api.github.com/repos/william12233/Wynime/actions/artifacts/10/zip"),
         )
         val e = assertFailsWith<GitHubApiException> {
-            api.resolveArtifactDownloadUrl("bad", "https://api.github.com/repos/open-ani/animeko/actions/artifacts/10/zip")
+            api.resolveArtifactDownloadUrl("bad", "https://api.github.com/repos/william12233/Wynime/actions/artifacts/10/zip")
         }
         assertTrue(e.isUnauthorized)
     }
@@ -192,17 +192,17 @@ class GitHubDevBuildApiTest {
 
     @Test
     fun `fetches single commit, pull request, run and artifact`() = runTest {
-        val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes())
+        val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
         val api = GitHubDevBuildApi(client)
 
         assertEquals(SHA_A, api.getCommit(null, SHA_A.take(7)).sha)
         val pr = api.getPullRequest(null, 42)
         assertEquals(SHA_A, pr.head.sha)
-        assertEquals("open-ani/animeko", pr.head.repo?.fullName)
+        assertEquals("william12233/Wynime", pr.head.repo?.fullName)
         assertEquals(listOf(200L, 100L), api.listWorkflowRunsForCommit(null, SHA_A).map { it.id })
         assertEquals("success", api.getWorkflowRun(null, 200).conclusion)
         assertEquals(listOf(11L, 10L), api.listRunArtifacts(null, 200).map { it.id })
-        assertEquals("ani-macos-dmg-aarch64", api.getArtifact(null, 10).name)
+        assertEquals("wynime-macos-dmg-aarch64", api.getArtifact(null, 10).name)
         assertTrue(assertFailsWith<GitHubApiException> { api.getArtifact(null, 999) }.isNotFound)
     }
 }

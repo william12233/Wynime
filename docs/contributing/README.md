@@ -39,7 +39,7 @@
     - [采集训练样本](code/image-captcha-sampling.md)
 
 > 以上文档除有标注外为人工编写。
-> 其他部分文档可以参考 DeepWiki (AI)（有很高正确性）：<https://deepwiki.com/open-ani/animeko>
+> 其他部分文档可以参考 DeepWiki (AI)（有很高正确性）：<https://deepwiki.com/william12233/Wynime>
 
 ## 更多信息
 

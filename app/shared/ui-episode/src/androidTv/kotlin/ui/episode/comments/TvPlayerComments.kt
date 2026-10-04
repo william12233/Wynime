@@ -228,7 +228,7 @@ private fun CommentAuthor(comment: EpisodeComment, modifier: Modifier = Modifier
                 overflow = TextOverflow.Ellipsis,
             )
             val source = when (comment.source) {
-                EpisodeCommentSource.ANI -> "Animeko"
+                EpisodeCommentSource.ANI -> "Wynime"
                 EpisodeCommentSource.BANGUMI -> "Bangumi"
             }
             val date = remember(comment.createdAt) {

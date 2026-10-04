@@ -49,7 +49,7 @@ private class FakeInstaller(
     }
 }
 
-private val droppedPackage = Path("/downloads/Ani-test.dmg")
+private val droppedPackage = Path("/downloads/Wynime-test.dmg")
 
 class InstallPackageDropHandlerTest {
     @Test
@@ -104,7 +104,7 @@ class InstallPackageDropUiTest {
         host.onDragStarted(DragAndDropContent.FileList(listOf(droppedPackage)), listOf(handler))
         waitForIdle()
         onNodeWithTag(WindowDropTestTags.OVERLAY).assertIsDisplayed()
-        onNodeWithText("Ani-test.dmg").assertIsDisplayed()
+        onNodeWithText("Wynime-test.dmg").assertIsDisplayed()
         onNodeWithText("content").assertIsDisplayed()
 
         host.onDragEnded()

@@ -146,7 +146,7 @@ import kotlin.io.path.absolutePathString
 import kotlin.system.exitProcess
 
 
-private val logger by lazy { logger("Ani") }
+private val logger by lazy { logger("Wynime") }
 private inline val toplevelLogger get() = logger
 
 object AniDesktop {
@@ -234,7 +234,7 @@ object AniDesktop {
             AppInfo(
                 "me",
                 "Him188",
-                if (AniBuildConfigDesktop.isDebug) "Ani-debug" else "Ani",
+                if (AniBuildConfigDesktop.isDebug) "Wynime-debug" else "Wynime",
             ),
         )
         val dataDir = projectDirectories.data
@@ -503,7 +503,7 @@ object AniDesktop {
             AniSystemTray(
                 state = trayState,
                 icon = appIcon,
-                tooltip = "Ani",
+                tooltip = "Wynime",
                 onExit = exitApplicationSavingWindowState,
             )
 
@@ -521,7 +521,7 @@ object AniDesktop {
                     )
                 },
                 state = windowState,
-                title = "Ani",
+            title = "Wynime",
                 icon = appIcon,
                 alwaysOnTop = alwaysOnTopState.value,
                 // 只在没有任何节点消费按键时才会走到这里 (通常是没有焦点, 例如侧边栏关闭后清除了焦点).
@@ -806,7 +806,7 @@ private fun isWindowSizeValid(
 
 private fun isWindowPositionValid(
     windowPosition: WindowPosition,
-    // In headless testing this will throw NoClassDefFoundError, see https://github.com/open-ani/animeko/runs/40761327501
+    // In headless testing this will throw NoClassDefFoundError; see the Wynime CI run for the environment.
     //  so we use runCatching to avoid this
     screenSize: DpSize = runCatching { ScreenUtils.getScreenSize() }.getOrElse { DpSize(1280.dp, 720.dp) },
 ): Boolean = (windowPosition.x > 0.dp && windowPosition.y > 0.dp

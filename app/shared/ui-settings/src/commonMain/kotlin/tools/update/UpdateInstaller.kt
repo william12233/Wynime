@@ -125,7 +125,7 @@ sealed class InstallationResult {
 
 enum class InstallationFailureReason {
     /**
-     * 未支持的安装目录结构. 例如 Windows 上未找到 `Ani.exe`
+     * 未支持的安装目录结构. 例如 Windows 上未找到 `Wynime.exe`
      */
     UNSUPPORTED_FILE_STRUCTURE,
 

@@ -11,6 +11,7 @@ package me.him188.ani.android
 
 import android.app.Application
 import android.util.Log
+import com.wynime.app.BuildConfig
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.analytics.analytics
 import dev.gitlive.firebase.initialize

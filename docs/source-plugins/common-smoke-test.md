@@ -1,6 +1,6 @@
 # 來源插件共同煙霧測試
 
-這份文件定義 Animeko fork 的來源插件人工驗收格式。測試應在實際 Android emulator 或桌面執行檔完成；fixture、HTTP 200、播放器頁載入或已建立 `MediaData` 都不能單獨算作播放成功。
+這份文件定義 Wynime fork 的來源插件人工驗收格式。測試應在實際 Android emulator 或桌面執行檔完成；fixture、HTTP 200、播放器頁載入或已建立 `MediaData` 都不能單獨算作播放成功。
 
 ## 測試輸入與判定
 
@@ -18,7 +18,7 @@
 | `eacg` | https://eacg.net/ | `re0` |
 | `dm1` | https://dm1.xfdm.pro/ | `re0` |
 | `next` | https://next.xifanacg.com/ | `re0` |
-| `girigiri` | https://ani.girigirilove.com/ | `re0` |
+| `girigiri` | https://Wynime.girigirilove.com/ | `re0` |
 | `2rk` | https://www.2rk.cc/ | `关于我转生变成史莱姆这档事` |
 | `dida` | https://www.didahd.pro/ | `re0` |
 | `dmbus` | https://dmbus.cc/ | `re0` |

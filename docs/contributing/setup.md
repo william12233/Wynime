@@ -5,7 +5,7 @@
 
 ## 主流程
 
-Animeko 使用 Gradle 构建，就是通常的 Kotlin/Android 构建方式。如果你熟悉，可以直接 clone 导入项目就行。但是要注意必须使用 JetBrains Runtime JDK (附带 JCEF 的版本)，版本必须为 21，否则会无法构建桌面端。可以参考下文[教程](#无法构建桌面端-jdk-不兼容--找不到-cef-相关类)。
+Wynime 使用 Gradle 构建，就是通常的 Kotlin/Android 构建方式。如果你熟悉，可以直接 clone 导入项目就行。但是要注意必须使用 JetBrains Runtime JDK (附带 JCEF 的版本)，版本必须为 21，否则会无法构建桌面端。可以参考下文[教程](#无法构建桌面端-jdk-不兼容--找不到-cef-相关类)。
 
 若你不熟悉 Kotlin/Android 开发，可以参考以下步骤：
 
@@ -39,9 +39,9 @@ Animeko 使用 Gradle 构建，就是通常的 Kotlin/Android 构建方式。如
 建议使用 IDE clone 功能. 如果你要自己使用命令行 clone, 必须添加 `--recursive`:
 
 ```shell
-git clone --recursive git@github.com:open-ani/animeko.git
+git clone --recursive git@github.com:william12233/Wynime.git
 # or 
-git clone --recursive https://github.com/open-ani/animeko.git
+git clone --recursive https://github.com/william12233/Wynime.git
 ```
 
 > [!WARNING]
@@ -79,8 +79,8 @@ Runtime (附带 JCEF 的版本)，版本必须为 21，下文简称 JBR。
 先在项目根目录的 `local.properties`（如果没有就创建一个）中加入：
 
 ```properties
-ani.enable.ios=true
-ani.build.framework=true
+Wynime.enable.ios=true
+Wynime.build.framework=true
 ```
 
 然后再安装 iOS 依赖：
@@ -95,11 +95,11 @@ ani.build.framework=true
 
 ```properties
 # 默认值，不写也一样
-ani.android.abis=arm64-v8a
+Wynime.android.abis=arm64-v8a
 
 # 如果你要给 x86_64 模拟器跑
-ani.android.abis=x86_64
+Wynime.android.abis=x86_64
 
 # 如果你需要完整产物
-ani.android.abis=all
+Wynime.android.abis=all
 ```

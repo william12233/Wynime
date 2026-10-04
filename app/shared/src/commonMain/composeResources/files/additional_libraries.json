@@ -43,7 +43,7 @@
     {
       "uniqueId": "com.github.proffitteoy:cnn-for-ani",
       "name": "CNN-for-Ani",
-      "description": "Captcha recognition model for Animeko",
+      "description": "Captcha recognition model for Wynime",
       "developers": [{ "name": "proffitteoy" }],
       "scm": { "url": "https://github.com/proffitteoy/CNN-for-Ani" },
       "licenses": ["Apache-2.0"],

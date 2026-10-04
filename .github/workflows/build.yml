@@ -63,10 +63,10 @@ jobs:
     - id: 'step-3'
       continue-on-error: true
       run: |
-        echo "ani.enable.firebase=true" >> local.properties
+        echo "Wynime.enable.firebase=true" >> local.properties
         echo "firebase.ga.app.id=${{ secrets.FIREBASE_GA_APP_ID }}" >> local.properties
         echo "firebase.ga.api.secret=${{ secrets.FIREBASE_GA_API_SECRET }}" >> local.properties
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-4'
       name: 'Get JBR (Windows)'
       env:
@@ -135,7 +135,7 @@ jobs:
         fi
         chmod 600 "$FILE_PATH"
         echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-13'
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
@@ -181,7 +181,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: 'app/desktop/build/compose/binaries/main-release/app'
         if-no-files-found: 'error'
         overwrite: 'true'
@@ -190,7 +190,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: 'app/desktop/build/compose/binaries/main-release/app'
         if-no-files-found: 'error'
         overwrite: 'true'
@@ -200,7 +200,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: 'app/desktop/build/compose/binaries/main-release/app'
         if-no-files-found: 'error'
         overwrite: 'true'
@@ -256,10 +256,10 @@ jobs:
     - id: 'step-3'
       continue-on-error: true
       run: |
-        echo "ani.enable.firebase=true" >> local.properties
+        echo "Wynime.enable.firebase=true" >> local.properties
         echo "firebase.ga.app.id=${{ secrets.FIREBASE_GA_APP_ID }}" >> local.properties
         echo "firebase.ga.api.secret=${{ secrets.FIREBASE_GA_API_SECRET }}" >> local.properties
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-4'
       name: 'Setup Android SDK'
       uses: 'android-actions/setup-android@v3'
@@ -334,7 +334,7 @@ jobs:
         fi
         chmod 600 "$FILE_PATH"
         echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-14'
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
@@ -380,7 +380,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-windows-aarch64-portable'
+        name: 'wynime-windows-aarch64-portable'
         path: 'app/desktop/build/compose/binaries/main-release/app'
         if-no-files-found: 'error'
         overwrite: 'true'
@@ -389,7 +389,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-windows-aarch64-portable'
+        name: 'wynime-windows-aarch64-portable'
         path: 'app/desktop/build/compose/binaries/main-release/app'
         if-no-files-found: 'error'
         overwrite: 'true'
@@ -399,7 +399,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-windows-aarch64-portable'
+        name: 'wynime-windows-aarch64-portable'
         path: 'app/desktop/build/compose/binaries/main-release/app'
         if-no-files-found: 'error'
         overwrite: 'true'
@@ -452,10 +452,10 @@ jobs:
     - id: 'step-5'
       continue-on-error: true
       run: |
-        echo "ani.enable.firebase=true" >> local.properties
+        echo "Wynime.enable.firebase=true" >> local.properties
         echo "firebase.ga.app.id=${{ secrets.FIREBASE_GA_APP_ID }}" >> local.properties
         echo "firebase.ga.api.secret=${{ secrets.FIREBASE_GA_API_SECRET }}" >> local.properties
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-6'
       name: 'Get JBR (Windows)'
       env:
@@ -526,7 +526,7 @@ jobs:
         fi
         chmod 600 "$FILE_PATH"
         echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-16'
       name: 'Prepare google-services.json'
       env:
@@ -548,7 +548,7 @@ jobs:
         fi
         chmod 600 "$FILE_PATH"
         echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-17'
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
@@ -586,19 +586,19 @@ jobs:
       name: 'Test Android TV (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew :app:shared:tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' :app:shared:ui-foundation-tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' :app:shared:ui-episode-tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' :app:shared:ui-subject-tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
+      run: './gradlew :app:shared:tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-foundation-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-episode-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-subject-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
     - id: 'step-24'
       name: 'Test Android TV (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew :app:shared:tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' :app:shared:ui-foundation-tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' :app:shared:ui-episode-tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' :app:shared:ui-subject-tv:testAndroidHostTest --tests ''me.him188.ani.tv.*'' "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
+      run: './gradlew :app:shared:tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-foundation-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-episode-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-subject-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
       if: '${{ steps.step-23.outcome == ''failure'' }}'
     - id: 'step-25'
       name: 'Upload Android Debug APK arm64-v8a (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-arm64-v8a-debug'
+        name: 'wynime-android-arm64-v8a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
         overwrite: 'true'
     - id: 'step-26'
@@ -606,7 +606,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-arm64-v8a-debug'
+        name: 'wynime-android-arm64-v8a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-25.outcome == ''failure'' }}'
@@ -615,7 +615,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-arm64-v8a-debug'
+        name: 'wynime-android-arm64-v8a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-26.outcome == ''failure'' }}'
@@ -624,7 +624,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-x86_64-debug'
+        name: 'wynime-android-x86_64-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-x86_64-debug.apk'
         overwrite: 'true'
     - id: 'step-29'
@@ -632,7 +632,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-x86_64-debug'
+        name: 'wynime-android-x86_64-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-x86_64-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-28.outcome == ''failure'' }}'
@@ -641,7 +641,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-x86_64-debug'
+        name: 'wynime-android-x86_64-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-x86_64-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-29.outcome == ''failure'' }}'
@@ -650,7 +650,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-armeabi-v7a-debug'
+        name: 'wynime-android-armeabi-v7a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-armeabi-v7a-debug.apk'
         overwrite: 'true'
     - id: 'step-32'
@@ -658,7 +658,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-armeabi-v7a-debug'
+        name: 'wynime-android-armeabi-v7a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-armeabi-v7a-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-31.outcome == ''failure'' }}'
@@ -667,7 +667,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-armeabi-v7a-debug'
+        name: 'wynime-android-armeabi-v7a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-armeabi-v7a-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-32.outcome == ''failure'' }}'
@@ -676,7 +676,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-universal-debug'
+        name: 'wynime-android-universal-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-universal-debug.apk'
         overwrite: 'true'
     - id: 'step-35'
@@ -684,7 +684,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-universal-debug'
+        name: 'wynime-android-universal-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-universal-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-34.outcome == ''failure'' }}'
@@ -693,7 +693,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-universal-debug'
+        name: 'wynime-android-universal-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-universal-debug.apk'
         overwrite: 'true'
       if: '${{ steps.step-35.outcome == ''failure'' }}'
@@ -707,7 +707,7 @@ jobs:
       continue-on-error: true
       timeout-minutes: 180
       run: './gradlew assembleDefaultRelease assembleTvRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-38'
       name: 'Build Android Release APKs (Attempt #2)'
       env:
@@ -724,7 +724,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-arm64-v8a-release'
+        name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
     - id: 'step-40'
@@ -732,7 +732,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-arm64-v8a-release'
+        name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-39.outcome == ''failure'' }}'
@@ -741,7 +741,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-arm64-v8a-release'
+        name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-40.outcome == ''failure'' }}'
@@ -750,7 +750,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-arm64-v8a-release'
+        name: 'wynime-android-tv-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-arm64-v8a-release.apk'
         overwrite: 'true'
     - id: 'step-43'
@@ -758,7 +758,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-arm64-v8a-release'
+        name: 'wynime-android-tv-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-arm64-v8a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-42.outcome == ''failure'' }}'
@@ -767,7 +767,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-arm64-v8a-release'
+        name: 'wynime-android-tv-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-arm64-v8a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-43.outcome == ''failure'' }}'
@@ -776,7 +776,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-x86_64-release'
+        name: 'wynime-android-x86_64-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-x86_64-release.apk'
         overwrite: 'true'
     - id: 'step-46'
@@ -784,7 +784,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-x86_64-release'
+        name: 'wynime-android-x86_64-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-x86_64-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-45.outcome == ''failure'' }}'
@@ -793,7 +793,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-x86_64-release'
+        name: 'wynime-android-x86_64-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-x86_64-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-46.outcome == ''failure'' }}'
@@ -802,7 +802,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-x86_64-release'
+        name: 'wynime-android-tv-x86_64-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-x86_64-release.apk'
         overwrite: 'true'
     - id: 'step-49'
@@ -810,7 +810,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-x86_64-release'
+        name: 'wynime-android-tv-x86_64-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-x86_64-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-48.outcome == ''failure'' }}'
@@ -819,7 +819,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-x86_64-release'
+        name: 'wynime-android-tv-x86_64-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-x86_64-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-49.outcome == ''failure'' }}'
@@ -828,7 +828,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-armeabi-v7a-release'
+        name: 'wynime-android-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-armeabi-v7a-release.apk'
         overwrite: 'true'
     - id: 'step-52'
@@ -836,7 +836,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-armeabi-v7a-release'
+        name: 'wynime-android-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-armeabi-v7a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-51.outcome == ''failure'' }}'
@@ -845,7 +845,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-armeabi-v7a-release'
+        name: 'wynime-android-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-armeabi-v7a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-52.outcome == ''failure'' }}'
@@ -854,7 +854,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-armeabi-v7a-release'
+        name: 'wynime-android-tv-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-armeabi-v7a-release.apk'
         overwrite: 'true'
     - id: 'step-55'
@@ -862,7 +862,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-armeabi-v7a-release'
+        name: 'wynime-android-tv-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-armeabi-v7a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-54.outcome == ''failure'' }}'
@@ -871,7 +871,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-armeabi-v7a-release'
+        name: 'wynime-android-tv-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-armeabi-v7a-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-55.outcome == ''failure'' }}'
@@ -880,7 +880,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-universal-release'
+        name: 'wynime-android-universal-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-universal-release.apk'
         overwrite: 'true'
     - id: 'step-58'
@@ -888,7 +888,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-universal-release'
+        name: 'wynime-android-universal-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-universal-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-57.outcome == ''failure'' }}'
@@ -897,7 +897,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-universal-release'
+        name: 'wynime-android-universal-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-universal-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-58.outcome == ''failure'' }}'
@@ -906,7 +906,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-universal-release'
+        name: 'wynime-android-tv-universal-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-universal-release.apk'
         overwrite: 'true'
     - id: 'step-61'
@@ -914,7 +914,7 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-universal-release'
+        name: 'wynime-android-tv-universal-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-universal-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-60.outcome == ''failure'' }}'
@@ -923,7 +923,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-android-tv-universal-release'
+        name: 'wynime-android-tv-universal-release'
         path: 'app/android/build/outputs/apk/tv/release/android-tv-universal-release.apk'
         overwrite: 'true'
       if: '${{ steps.step-61.outcome == ''failure'' }}'
@@ -964,16 +964,16 @@ jobs:
 
         # Prepare AppDir
         mkdir -p AppDir/usr
-        cp -r app/desktop/build/compose/binaries/main-release/app/Ani/* AppDir/usr
+        cp -r app/desktop/build/compose/binaries/main-release/app/Wynime/* AppDir/usr
         cp "$appImageUpdateTool" AppDir/usr/lib/app/resources/
 
         cp app/desktop/appResources/linux-x64/AppRun AppDir/AppRun
-        cp app/desktop/appResources/linux-x64/animeko.desktop AppDir/animeko.desktop
+        cp app/desktop/appResources/linux-x64/Wynime.desktop AppDir/Wynime.desktop
         cp app/desktop/appResources/linux-x64/icon.png AppDir/icon.png
 
         # Fix permissions
         chmod a+x AppDir/AppRun
-        chmod a+x AppDir/usr/bin/Ani
+        chmod a+x AppDir/usr/bin/Wynime
 
         # The CEF helpers get their executable bit from restoreLinuxRuntimeExecutables,
         # so assert rather than chmod. A chmod here would keep the AppImage green while
@@ -989,7 +989,7 @@ jobs:
         releaseVersion="$(printf '%s' "$releaseTag" | sed 's/^v//')"
         # Pull request merge refs contain '/', which must not become a path separator here.
         releaseVersion="${releaseVersion//\//-}"
-        releaseAsset="ani-$releaseVersion-linux-x86_64.appimage"
+        releaseAsset="wynime-$releaseVersion-linux-x86_64.appimage"
         updateInformation="zsync|https://github.com/$GITHUB_REPOSITORY/releases/download/$releaseTag/$releaseAsset.zsync"
         ARCH=x86_64 ./appimagetool-x86_64.AppImage \
           -u "$updateInformation" \
@@ -997,17 +997,17 @@ jobs:
           "$releaseAsset"
         # Keep the zsync reusable on GitHub, d.myani.org and compatible mirrors.
         sed -i "s|^URL:.*|URL: $releaseAsset|" "$releaseAsset.zsync"
-        mv "$releaseAsset" Animeko-x86_64.AppImage
-        mv "$releaseAsset.zsync" Animeko-x86_64.AppImage.zsync
+        mv "$releaseAsset" Wynime-x86_64.AppImage
+        mv "$releaseAsset.zsync" Wynime-x86_64.AppImage.zsync
     - id: 'step-68'
       name: 'Upload Linux packages (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-linux-appimage-x64'
+        name: 'wynime-linux-appimage-x64'
         path: |-
-          Animeko-x86_64.AppImage
-          Animeko-x86_64.AppImage.zsync
+          Wynime-x86_64.AppImage
+          Wynime-x86_64.AppImage.zsync
         if-no-files-found: 'error'
         overwrite: 'true'
     - id: 'step-69'
@@ -1015,10 +1015,10 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-linux-appimage-x64'
+        name: 'wynime-linux-appimage-x64'
         path: |-
-          Animeko-x86_64.AppImage
-          Animeko-x86_64.AppImage.zsync
+          Wynime-x86_64.AppImage
+          Wynime-x86_64.AppImage.zsync
         if-no-files-found: 'error'
         overwrite: 'true'
       if: '${{ steps.step-68.outcome == ''failure'' }}'
@@ -1027,10 +1027,10 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-linux-appimage-x64'
+        name: 'wynime-linux-appimage-x64'
         path: |-
-          Animeko-x86_64.AppImage
-          Animeko-x86_64.AppImage.zsync
+          Wynime-x86_64.AppImage
+          Wynime-x86_64.AppImage.zsync
         if-no-files-found: 'error'
         overwrite: 'true'
       if: '${{ steps.step-69.outcome == ''failure'' }}'
@@ -1201,10 +1201,10 @@ jobs:
     - id: 'step-4'
       continue-on-error: true
       run: |
-        echo "ani.enable.firebase=true" >> local.properties
+        echo "Wynime.enable.firebase=true" >> local.properties
         echo "firebase.ga.app.id=${{ secrets.FIREBASE_GA_APP_ID }}" >> local.properties
         echo "firebase.ga.api.secret=${{ secrets.FIREBASE_GA_API_SECRET }}" >> local.properties
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-5'
       name: 'Resolve JBR location'
       shell: 'bash'
@@ -1341,7 +1341,7 @@ jobs:
         fi
         chmod 600 "$FILE_PATH"
         echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-17'
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
@@ -1376,8 +1376,8 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-macos-portable-x64'
-        path: 'app/desktop/build/compose/binaries/main-release/app/Ani.app'
+        name: 'wynime-macos-portable-x64'
+        path: 'app/desktop/build/compose/binaries/main-release/app/Wynime.app'
         if-no-files-found: 'error'
         overwrite: 'true'
     - id: 'step-23'
@@ -1385,8 +1385,8 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-macos-portable-x64'
-        path: 'app/desktop/build/compose/binaries/main-release/app/Ani.app'
+        name: 'wynime-macos-portable-x64'
+        path: 'app/desktop/build/compose/binaries/main-release/app/Wynime.app'
         if-no-files-found: 'error'
         overwrite: 'true'
       if: '${{ steps.step-22.outcome == ''failure'' }}'
@@ -1395,8 +1395,8 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-macos-portable-x64'
-        path: 'app/desktop/build/compose/binaries/main-release/app/Ani.app'
+        name: 'wynime-macos-portable-x64'
+        path: 'app/desktop/build/compose/binaries/main-release/app/Wynime.app'
         if-no-files-found: 'error'
         overwrite: 'true'
       if: '${{ steps.step-23.outcome == ''failure'' }}'
@@ -1408,7 +1408,7 @@ jobs:
     - 'ARM64'
     permissions:
       actions: 'write'
-    if: '${{ github.repository == ''open-ani/animeko'' }}'
+    if: '${{ github.repository == ''william12233/Wynime'' }}'
     steps:
     - id: 'step-0'
       uses: 'actions/checkout@v4'
@@ -1420,10 +1420,10 @@ jobs:
     - id: 'step-3'
       continue-on-error: true
       run: |
-        echo "ani.enable.firebase=true" >> local.properties
+        echo "Wynime.enable.firebase=true" >> local.properties
         echo "firebase.ga.app.id=${{ secrets.FIREBASE_GA_APP_ID }}" >> local.properties
         echo "firebase.ga.api.secret=${{ secrets.FIREBASE_GA_API_SECRET }}" >> local.properties
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-4'
       name: 'Resolve JBR location'
       shell: 'bash'
@@ -1560,7 +1560,7 @@ jobs:
         fi
         chmod 600 "$FILE_PATH"
         echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-16'
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
@@ -1632,16 +1632,16 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-ios-debug'
-        path: 'app/ios/build/archives/debug/Animeko.ipa'
+        name: 'wynime-ios-debug'
+        path: 'app/ios/build/archives/debug/Wynime.ipa'
         overwrite: 'true'
     - id: 'step-29'
       name: 'Upload iOS Debug IPA (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-ios-debug'
-        path: 'app/ios/build/archives/debug/Animeko.ipa'
+        name: 'wynime-ios-debug'
+        path: 'app/ios/build/archives/debug/Wynime.ipa'
         overwrite: 'true'
       if: '${{ steps.step-28.outcome == ''failure'' }}'
     - id: 'step-30'
@@ -1649,8 +1649,8 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-ios-debug'
-        path: 'app/ios/build/archives/debug/Animeko.ipa'
+        name: 'wynime-ios-debug'
+        path: 'app/ios/build/archives/debug/Wynime.ipa'
         overwrite: 'true'
       if: '${{ steps.step-29.outcome == ''failure'' }}'
     - id: 'step-31'
@@ -1676,8 +1676,8 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
-        path: 'app/desktop/build/compose/binaries/main-release/dmg/Ani-*.dmg'
+        name: 'wynime-macos-dmg-aarch64'
+        path: 'app/desktop/build/compose/binaries/main-release/dmg/wynime-*.dmg'
         if-no-files-found: 'error'
         overwrite: 'true'
     - id: 'step-35'
@@ -1685,8 +1685,8 @@ jobs:
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
-        path: 'app/desktop/build/compose/binaries/main-release/dmg/Ani-*.dmg'
+        name: 'wynime-macos-dmg-aarch64'
+        path: 'app/desktop/build/compose/binaries/main-release/dmg/wynime-*.dmg'
         if-no-files-found: 'error'
         overwrite: 'true'
       if: '${{ steps.step-34.outcome == ''failure'' }}'
@@ -1695,8 +1695,8 @@ jobs:
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
-        path: 'app/desktop/build/compose/binaries/main-release/dmg/Ani-*.dmg'
+        name: 'wynime-macos-dmg-aarch64'
+        path: 'app/desktop/build/compose/binaries/main-release/dmg/wynime-*.dmg'
         if-no-files-found: 'error'
         overwrite: 'true'
       if: '${{ steps.step-35.outcome == ''failure'' }}'
@@ -1762,14 +1762,14 @@ jobs:
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
     - id: 'step-3'
       name: 'Download Windows x64 Portable (Attempt #2)'
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
     - id: 'step-4'
@@ -1777,15 +1777,15 @@ jobs:
       continue-on-error: false
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
     - id: 'step-7'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       shell: 'powershell'
-      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-ani-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "sentry-dsn"'
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "sentry-dsn"'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
   verify_github-windows-2022:
     name: 'Verify (Windows Server 2022 x86_64 (GitHub))'
     runs-on:
@@ -1810,14 +1810,14 @@ jobs:
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
     - id: 'step-3'
       name: 'Download Windows x64 Portable (Attempt #2)'
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
     - id: 'step-4'
@@ -1825,15 +1825,15 @@ jobs:
       continue-on-error: false
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-portable'
+        name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
     - id: 'step-7'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       shell: 'powershell'
-      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-ani-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "sentry-dsn"'
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "sentry-dsn"'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
   verify_github-windows-11-arm64:
     name: 'Verify (Windows 11 AArch64 (GitHub))'
     runs-on:
@@ -1851,14 +1851,14 @@ jobs:
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-aarch64-portable'
+        name: 'wynime-windows-aarch64-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
     - id: 'step-2'
       name: 'Download Windows AArch64 Portable (Attempt #2)'
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-aarch64-portable'
+        name: 'wynime-windows-aarch64-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-1.outcome == ''failure'' }}'
     - id: 'step-3'
@@ -1866,19 +1866,19 @@ jobs:
       continue-on-error: false
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-windows-aarch64-portable'
+        name: 'wynime-windows-aarch64-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
     - id: 'step-4'
       name: 'Check that MediaMP FFmpeg can run'
       timeout-minutes: 5
       shell: 'powershell'
-      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-ani-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "mediamp-ffmpeg-smoke-test"'
+      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "mediamp-ffmpeg-smoke-test"'
     - id: 'step-5'
       name: 'Check that bundled SQLite can be loaded'
       timeout-minutes: 5
       shell: 'powershell'
-      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-ani-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "sqlite-bundled-load-test"'
+      run: 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1" "${{ github.workspace }}\ci-helper\verify" "sqlite-bundled-load-test"'
   verify_self-hosted-macos-15:
     name: 'Verify (macOS 15 AArch64 (Self-Hosted))'
     runs-on:
@@ -1889,7 +1889,7 @@ jobs:
       actions: 'read'
     needs:
     - 'build_self-hosted-macos-15'
-    if: '${{ (github.repository == ''open-ani/animeko'') && (needs.build_self-hosted-macos-15.result == ''success'') }}'
+    if: '${{ (github.repository == ''william12233/Wynime'') && (needs.build_self-hosted-macos-15.result == ''success'') }}'
     steps:
     - id: 'step-0'
       uses: 'actions/checkout@v4'
@@ -1898,26 +1898,26 @@ jobs:
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
     - id: 'step-2'
       name: 'Download DMG (Attempt #2)'
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-1.outcome == ''failure'' }}'
     - id: 'step-3'
       name: 'Download DMG (Attempt #3)'
       continue-on-error: false
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
     - id: 'step-6'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
-      run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-ani-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-wynime-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
   verify_github-macos-14:
     name: 'Verify (macOS 14 AArch64 (GitHub))'
     runs-on:
@@ -1943,26 +1943,26 @@ jobs:
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
     - id: 'step-3'
       name: 'Download DMG (Attempt #2)'
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
     - id: 'step-4'
       name: 'Download DMG (Attempt #3)'
       continue-on-error: false
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
     - id: 'step-7'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
-      run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-ani-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-wynime-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
   verify_github-macos-15-apple:
     name: 'Verify (macOS 15 AArch64 (GitHub))'
     runs-on:
@@ -1988,26 +1988,26 @@ jobs:
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
     - id: 'step-3'
       name: 'Download DMG (Attempt #2)'
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
     - id: 'step-4'
       name: 'Download DMG (Attempt #3)'
       continue-on-error: false
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-macos-dmg-aarch64'
+        name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
     - id: 'step-7'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
-      run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-ani-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+      run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-wynime-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
   verify_github-ubuntu-2404:
     name: 'Verify (Ubuntu 24.04 x86_64 (GitHub))'
     runs-on:
@@ -2025,14 +2025,14 @@ jobs:
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-linux-appimage-x64'
+        name: 'wynime-linux-appimage-x64'
         path: '${{ github.workspace }}/ci-helper/verify'
     - id: 'step-2'
       name: 'Download Linux x64 AppImage (Attempt #2)'
       continue-on-error: true
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-linux-appimage-x64'
+        name: 'wynime-linux-appimage-x64'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-1.outcome == ''failure'' }}'
     - id: 'step-3'
@@ -2040,7 +2040,7 @@ jobs:
       continue-on-error: false
       uses: 'actions/download-artifact@v4'
       with:
-        name: 'ani-linux-appimage-x64'
+        name: 'wynime-linux-appimage-x64'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
     - id: 'step-5'
@@ -2048,23 +2048,23 @@ jobs:
       timeout-minutes: 5
       shell: 'bash'
       run: |-
-        ANI_APPIMAGE="${{ github.workspace }}/ci-helper/verify/Animeko-x86_64.AppImage"
+        ANI_APPIMAGE="${{ github.workspace }}/ci-helper/verify/Wynime-x86_64.AppImage"
         chmod +x "$ANI_APPIMAGE"
-        ANIMEKO_DESKTOP_TEST_TASK="sentry-dsn" "$ANI_APPIMAGE"
-      if: '${{ (github.repository == ''open-ani/animeko'') && (!(github.event_name == ''pull_request'')) }}'
+        Wynime_DESKTOP_TEST_TASK="sentry-dsn" "$ANI_APPIMAGE"
+      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
     - id: 'step-6'
       name: 'Check that bundled SQLite can be loaded'
       timeout-minutes: 5
       shell: 'bash'
       run: |-
-        ANI_APPIMAGE="${{ github.workspace }}/ci-helper/verify/Animeko-x86_64.AppImage"
+        ANI_APPIMAGE="${{ github.workspace }}/ci-helper/verify/Wynime-x86_64.AppImage"
         chmod +x "$ANI_APPIMAGE"
-        ANIMEKO_DESKTOP_TEST_TASK="sqlite-bundled-load-test" "$ANI_APPIMAGE"
+        Wynime_DESKTOP_TEST_TASK="sqlite-bundled-load-test" "$ANI_APPIMAGE"
     - id: 'step-7'
       name: 'Check that JCEF can be initialized'
       timeout-minutes: 5
       shell: 'bash'
       run: |-
-        ANI_APPIMAGE="${{ github.workspace }}/ci-helper/verify/Animeko-x86_64.AppImage"
+        ANI_APPIMAGE="${{ github.workspace }}/ci-helper/verify/Wynime-x86_64.AppImage"
         chmod +x "$ANI_APPIMAGE"
-        XDG_SESSION_TYPE=wayland WAYLAND_DISPLAY=wayland-0 xvfb-run --auto-servernum env ANIMEKO_DESKTOP_TEST_TASK="jcef-init-test" "$ANI_APPIMAGE"
+        XDG_SESSION_TYPE=wayland WAYLAND_DISPLAY=wayland-0 xvfb-run --auto-servernum env Wynime_DESKTOP_TEST_TASK="jcef-init-test" "$ANI_APPIMAGE"

@@ -123,7 +123,7 @@ class PlayerSessionHlsPlaybackPreparerTest {
                         StaticMediaResolver(
                             UriMediaData(
                                 "https://example.com/original.m3u8",
-                                mapOf("User-Agent" to "AnimekoTest"),
+                                mapOf("User-Agent" to "WynimeTest"),
                             ),
                         )
                     }

@@ -19,11 +19,11 @@ class DevBuildPackageSpecTest {
     @Test
     fun `windows uses the portable zip artifact of its arch`() {
         assertEquals(
-            DevBuildPackageSpec(listOf("ani-windows-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP),
+            DevBuildPackageSpec(listOf("wynime-windows-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP),
             DevBuildPackageSpec.forPlatform(Platform.Windows(Arch.X86_64)),
         )
         assertEquals(
-            DevBuildPackageSpec(listOf("ani-windows-aarch64-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP),
+            DevBuildPackageSpec(listOf("wynime-windows-aarch64-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP),
             DevBuildPackageSpec.forPlatform(Platform.Windows(Arch.AARCH64)),
         )
     }
@@ -31,7 +31,7 @@ class DevBuildPackageSpecTest {
     @Test
     fun `macos aarch64 uses the dmg artifact and x64 is unsupported`() {
         assertEquals(
-            DevBuildPackageSpec(listOf("ani-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG),
+            DevBuildPackageSpec(listOf("wynime-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG),
             DevBuildPackageSpec.forPlatform(Platform.MacOS(Arch.AARCH64)),
         )
         assertNull(DevBuildPackageSpec.forPlatform(Platform.MacOS(Arch.X86_64)))
@@ -40,7 +40,7 @@ class DevBuildPackageSpecTest {
     @Test
     fun `linux x64 downloads the appimage for manual install`() {
         val spec = DevBuildPackageSpec.forPlatform(Platform.Linux(Arch.X86_64))
-        assertEquals(DevBuildPackageSpec(listOf("ani-linux-appimage-x64"), DevBuildPackageKind.LINUX_APPIMAGE), spec)
+        assertEquals(DevBuildPackageSpec(listOf("wynime-linux-appimage-x64"), DevBuildPackageKind.LINUX_APPIMAGE), spec)
         assertEquals(false, spec!!.kind.supportsAutomaticInstall)
         assertNull(DevBuildPackageSpec.forPlatform(Platform.Linux(Arch.AARCH64)))
     }
@@ -48,15 +48,15 @@ class DevBuildPackageSpecTest {
     @Test
     fun `android prefers the abi specific release apk and falls back to universal`() {
         assertEquals(
-            listOf("ani-android-arm64-v8a-release", "ani-android-universal-release"),
+            listOf("wynime-android-arm64-v8a-release", "wynime-android-universal-release"),
             DevBuildPackageSpec.forPlatform(Platform.Android(Arch.ARMV8A))!!.artifactNames,
         )
         assertEquals(
-            listOf("ani-android-armeabi-v7a-release", "ani-android-universal-release"),
+            listOf("wynime-android-armeabi-v7a-release", "wynime-android-universal-release"),
             DevBuildPackageSpec.forPlatform(Platform.Android(Arch.ARMV7A))!!.artifactNames,
         )
         assertEquals(
-            listOf("ani-android-x86_64-release", "ani-android-universal-release"),
+            listOf("wynime-android-x86_64-release", "wynime-android-universal-release"),
             DevBuildPackageSpec.forPlatform(Platform.Android(Arch.X86_64))!!.artifactNames,
         )
         assertEquals(
@@ -73,9 +73,9 @@ class DevBuildPackageSpecTest {
     @Test
     fun `package file name uses the short sha and the package extension`() {
         val spec = DevBuildPackageSpec.forPlatform(Platform.MacOS(Arch.AARCH64))!!
-        assertEquals("ani-main-28ec14ac.dmg", spec.packageFileName("28ec14ac"))
+        assertEquals("wynime-main-28ec14ac.dmg", spec.packageFileName("28ec14ac"))
         assertEquals(
-            "ani-main-28ec14ac.AppImage",
+            "wynime-main-28ec14ac.AppImage",
             DevBuildPackageSpec.forPlatform(Platform.Linux(Arch.X86_64))!!.packageFileName("28ec14ac"),
         )
     }

@@ -195,7 +195,7 @@ class TvAccountNavigationUiTest {
     private class Fixture(loggedIn: Boolean) {
         var selfInfo by mutableStateOf(if (loggedIn) SelfInfo(
             Uuid.parse("00000000-0000-0000-0000-000000000001"),
-            "Animeko User", null, false, null, null,
+            "Wynime User", null, false, null, null,
         ) else null)
         var isLoggedIn by mutableStateOf<Boolean?>(loggedIn)
         var content by mutableStateOf(TvShellContent.Schedule)

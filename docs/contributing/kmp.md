@@ -1,6 +1,6 @@
 ## Kotlin 多平台
 
-Animeko 客户端基于 Kotlin 多平台技术，目前配置了 Android、桌面 JVM（Windows、macOS、Linux）和 iOS
+Wynime 客户端基于 Kotlin 多平台技术，目前配置了 Android、桌面 JVM（Windows、macOS、Linux）和 iOS
 编译目标。iOS 目标默认不启用，只能在 macOS 上构建；启用方式参见[构建和打包](building.md#打包-ios-app)。
 
 ### 什么是 Kotlin 多平台
@@ -24,7 +24,7 @@ Animeko 客户端基于 Kotlin 多平台技术，目前配置了 Android、桌�
 
 ### 多平台编译目标结构
 
-Ani 项目的几乎所有模块都使用 KMP。编译目标结构如下:
+Wynime 项目的几乎所有模块都使用 KMP。编译目标结构如下:
 
 图例:
 
@@ -74,10 +74,10 @@ app/shared/ui-episode/
 ├── src/androidMain/
 ├── src/androidTv/kotlin/      TV 生产代码
 ├── src/androidTvTest/kotlin/  TV 测试
-└── tv/build.gradle.kts        ani.kmp-compose 子模块，依赖原 KMP 模块
+└── tv/build.gradle.kts        Wynime.kmp-compose 子模块，依赖原 KMP 模块
 ```
 
-`tv/build.gradle.kts` 使用 `ani.kmp-compose`，
+`tv/build.gradle.kts` 使用 `Wynime.kmp-compose`，
 将 `../src/androidTv/kotlin` 加入自己的 `androidMain`，
 将 `../src/androidTvTest/kotlin` 加入自己的 `androidHostTest`。
 `androidTv` 和 `androidTvTest` 是目录名，不是 KMP target 或 KotlinSourceSet。

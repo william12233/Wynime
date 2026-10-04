@@ -19,7 +19,7 @@ class DesktopUpdateInstallerPackageTest {
     @Test
     fun `macOS installs dmg and zip packages`() {
         assertTrue(MacOSUpdateInstaller.isInstallablePackage(Path("/downloads/ani.dmg").inSystem))
-        assertTrue(MacOSUpdateInstaller.isInstallablePackage(Path("/downloads/Ani-4.0.0.DMG").inSystem))
+        assertTrue(MacOSUpdateInstaller.isInstallablePackage(Path("/downloads/Wynime-4.0.0.DMG").inSystem))
         assertTrue(MacOSUpdateInstaller.isInstallablePackage(Path("/downloads/ani.zip").inSystem))
         assertFalse(MacOSUpdateInstaller.isInstallablePackage(Path("/downloads/ani.exe").inSystem))
         assertFalse(MacOSUpdateInstaller.isInstallablePackage(Path("/downloads/dmg").inSystem))

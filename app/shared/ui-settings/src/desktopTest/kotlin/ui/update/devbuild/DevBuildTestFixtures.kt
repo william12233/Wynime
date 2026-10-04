@@ -39,7 +39,7 @@ internal const val COMMITS_JSON = """
 [
   {
     "sha": "$SHA_A",
-    "html_url": "https://github.com/open-ani/animeko/commit/$SHA_A",
+    "html_url": "https://github.com/william12233/Wynime/commit/$SHA_A",
     "commit": {
       "message": "feat(update): first line\n\nbody",
       "author": {"name": "Alice", "date": "2026-09-18T05:04:36Z"},
@@ -49,7 +49,7 @@ internal const val COMMITS_JSON = """
   },
   {
     "sha": "$SHA_B",
-    "html_url": "https://github.com/open-ani/animeko/commit/$SHA_B",
+    "html_url": "https://github.com/william12233/Wynime/commit/$SHA_B",
     "commit": {
       "message": "fix(ci): second",
       "author": {"name": "Bob", "date": "2026-09-17T05:04:36Z"}
@@ -63,9 +63,9 @@ internal const val RUNS_JSON = """
 {
   "total_count": 3,
   "workflow_runs": [
-    {"id": 300, "head_sha": "$SHA_B", "head_branch": "main", "status": "in_progress", "conclusion": null, "html_url": "https://github.com/open-ani/animeko/actions/runs/300"},
-    {"id": 200, "head_sha": "$SHA_A", "head_branch": "main", "status": "completed", "conclusion": "success", "html_url": "https://github.com/open-ani/animeko/actions/runs/200"},
-    {"id": 100, "head_sha": "$SHA_A", "head_branch": "main", "status": "completed", "conclusion": "failure", "html_url": "https://github.com/open-ani/animeko/actions/runs/100"}
+    {"id": 300, "head_sha": "$SHA_B", "head_branch": "main", "status": "in_progress", "conclusion": null, "html_url": "https://github.com/william12233/Wynime/actions/runs/300"},
+    {"id": 200, "head_sha": "$SHA_A", "head_branch": "main", "status": "completed", "conclusion": "success", "html_url": "https://github.com/william12233/Wynime/actions/runs/200"},
+    {"id": 100, "head_sha": "$SHA_A", "head_branch": "main", "status": "completed", "conclusion": "failure", "html_url": "https://github.com/william12233/Wynime/actions/runs/100"}
   ]
 }
 """
@@ -74,11 +74,11 @@ internal fun artifactsJson(name: String) = """
 {
   "total_count": 3,
   "artifacts": [
-    {"id": 11, "name": "$name", "size_in_bytes": 5, "archive_download_url": "https://api.github.com/repos/open-ani/animeko/actions/artifacts/11/zip", "expired": true,
+    {"id": 11, "name": "$name", "size_in_bytes": 5, "archive_download_url": "https://api.github.com/repos/william12233/Wynime/actions/artifacts/11/zip", "expired": true,
      "workflow_run": {"id": 200, "head_sha": "$SHA_A", "head_branch": "main"}},
-    {"id": 10, "name": "$name", "size_in_bytes": 1234, "archive_download_url": "https://api.github.com/repos/open-ani/animeko/actions/artifacts/10/zip", "expired": false,
+    {"id": 10, "name": "$name", "size_in_bytes": 1234, "archive_download_url": "https://api.github.com/repos/william12233/Wynime/actions/artifacts/10/zip", "expired": false,
      "workflow_run": {"id": 200, "head_sha": "$SHA_A", "head_branch": "main"}},
-    {"id": 9, "name": "$name", "size_in_bytes": 1, "archive_download_url": "https://api.github.com/repos/open-ani/animeko/actions/artifacts/9/zip", "expired": false,
+    {"id": 9, "name": "$name", "size_in_bytes": 1, "archive_download_url": "https://api.github.com/repos/william12233/Wynime/actions/artifacts/9/zip", "expired": false,
      "workflow_run": {"id": 50, "head_sha": "cccccccc", "head_branch": "feature"}}
   ]
 }
@@ -90,13 +90,13 @@ internal fun artifactsJson(name: String) = """
 internal fun pullRequestJson(
     number: Int,
     headSha: String,
-    headRepo: String? = "open-ani/animeko",
+    headRepo: String? = "william12233/Wynime",
     title: String = "feat: pr title",
 ) = """
 {
   "number": $number,
   "title": "$title",
-  "html_url": "https://github.com/open-ani/animeko/pull/$number",
+  "html_url": "https://github.com/william12233/Wynime/pull/$number",
   "head": {"sha": "$headSha", "ref": "feat/x", "repo": ${headRepo?.let { """{"full_name": "$it"}""" } ?: "null"}}
 }
 """

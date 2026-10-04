@@ -30,7 +30,7 @@ class DroppedFileMediaTest {
         assertTrue(DroppedFileMedia.isVideoFile(Path("/videos/EPISODE-01.MP4")))
         assertFalse(DroppedFileMedia.isVideoFile(Path("/videos/episode-01.ass")))
         assertFalse(DroppedFileMedia.isVideoFile(Path("/videos/mkv")))
-        assertFalse(DroppedFileMedia.isVideoFile(Path("/downloads/Ani-4.12.0.dmg")))
+        assertFalse(DroppedFileMedia.isVideoFile(Path("/downloads/Wynime-4.12.0.dmg")))
     }
 
     @Test

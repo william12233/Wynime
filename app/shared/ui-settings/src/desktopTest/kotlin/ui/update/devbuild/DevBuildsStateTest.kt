@@ -41,13 +41,13 @@ import kotlin.test.assertTrue
 
 @OptIn(TestOnly::class)
 class DevBuildsStateTest {
-    private val macosSpec = DevBuildPackageSpec(listOf("ani-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG)
-    private val windowsSpec = DevBuildPackageSpec(listOf("ani-windows-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP)
-    private val linuxSpec = DevBuildPackageSpec(listOf("ani-linux-appimage-x64"), DevBuildPackageKind.LINUX_APPIMAGE)
+    private val macosSpec = DevBuildPackageSpec(listOf("wynime-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG)
+    private val windowsSpec = DevBuildPackageSpec(listOf("wynime-windows-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP)
+    private val linuxSpec = DevBuildPackageSpec(listOf("wynime-linux-appimage-x64"), DevBuildPackageKind.LINUX_APPIMAGE)
     private val androidSpec = DevBuildPackageSpec(
-        listOf("ani-android-arm64-v8a-release", "ani-android-universal-release"),
+        listOf("wynime-android-arm64-v8a-release", "wynime-android-universal-release"),
         DevBuildPackageKind.ANDROID_APK,
-        debugArtifactNames = listOf("ani-android-arm64-v8a-debug", "ani-android-universal-debug"),
+        debugArtifactNames = listOf("wynime-android-arm64-v8a-debug", "wynime-android-universal-debug"),
     )
 
     private fun TestScope.createState(
@@ -98,7 +98,7 @@ class DevBuildsStateTest {
     @Test
     fun `refresh merges commits, build status and the platform artifact`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes())
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
             val state = createState(client, macosSpec, FakeInstaller(), saveDir)
             assertEquals(DevBuildListState.Idle, state.listState.value)
 
@@ -120,7 +120,7 @@ class DevBuildsStateTest {
     fun `refresh failure is exposed and a later refresh recovers`() = runTest {
         withTempDir { saveDir ->
             var fail = true
-            val healthy = fullGitHubMockHandler("ani-macos-dmg-aarch64", zipBytes())
+            val healthy = fullGitHubMockHandler("wynime-macos-dmg-aarch64", zipBytes())
             val client = gitHubMockClient { request ->
                 if (fail) {
                     respond(
@@ -148,7 +148,7 @@ class DevBuildsStateTest {
     fun `install requires a github token`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes())
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
             val state = createState(client, macosSpec, installer, saveDir, token = " ")
             val commit = state.loadCommits()[0]
 
@@ -169,7 +169,7 @@ class DevBuildsStateTest {
     fun `install ignores commits without a package`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val state = createState(fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes()), macosSpec, installer, saveDir)
+            val state = createState(fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes()), macosSpec, installer, saveDir)
             val commit = state.loadCommits()[1]
             state.install(commit, testContext)
             state.joinTasks()
@@ -183,7 +183,7 @@ class DevBuildsStateTest {
         withTempDir { saveDir ->
             val dmg = ByteArray(2048) { (it % 7).toByte() }
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes("Ani-4.12.0.dmg" to dmg))
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime-4.12.0.dmg" to dmg))
             val state = createState(client, macosSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
@@ -192,19 +192,19 @@ class DevBuildsStateTest {
 
             assertEquals(DevBuildInstallState.Idle, state.installState.value)
             val installed = installer.installed.single()
-            assertEquals(saveDir.resolve("ani-main-aaaaaaaa.dmg"), installed)
+            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.dmg"), installed)
             assertContentEquals(dmg, installed.readBytes())
             // artifact zip 已删除, 目录里只剩安装包
-            assertEquals(listOf("ani-main-aaaaaaaa.dmg"), saveDir.list().map { it.name })
+            assertEquals(listOf("wynime-main-aaaaaaaa.dmg"), saveDir.list().map { it.name })
         }
     }
 
     @Test
     fun `windows artifact zip is handed to the installer as the package`() = runTest {
         withTempDir { saveDir ->
-            val archive = zipBytes("Ani/Ani.exe" to byteArrayOf(1, 2), "Ani/app/x.jar" to byteArrayOf(3))
+            val archive = zipBytes("Wynime/Wynime.exe" to byteArrayOf(1, 2), "Wynime/app/x.jar" to byteArrayOf(3))
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("ani-windows-portable", archive)
+            val client = fullGitHubMockClient("wynime-windows-portable", archive)
             val state = createState(client, windowsSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
@@ -212,7 +212,7 @@ class DevBuildsStateTest {
             state.joinTasks()
 
             val installed = installer.installed.single()
-            assertEquals(saveDir.resolve("ani-main-aaaaaaaa.zip"), installed)
+            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.zip"), installed)
             assertContentEquals(archive, installed.readBytes())
         }
     }
@@ -222,8 +222,8 @@ class DevBuildsStateTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
             val client = fullGitHubMockClient(
-                "ani-linux-appimage-x64",
-                zipBytes("Animeko-x86_64.AppImage.zsync" to byteArrayOf(0), "Animeko-x86_64.AppImage" to byteArrayOf(7)),
+                "wynime-linux-appimage-x64",
+                zipBytes("Wynime-x86_64.AppImage.zsync" to byteArrayOf(0), "Wynime-x86_64.AppImage" to byteArrayOf(7)),
             )
             val state = createState(client, linuxSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
@@ -232,7 +232,7 @@ class DevBuildsStateTest {
             state.joinTasks()
 
             val ready = assertIs<DevBuildInstallState.ReadyForManualInstall>(state.installState.value)
-            assertEquals(saveDir.resolve("ani-main-aaaaaaaa.AppImage"), ready.file)
+            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.AppImage"), ready.file)
             assertContentEquals(byteArrayOf(7), ready.file.readBytes())
             assertTrue(ready.file.toFile().canExecute())
             assertTrue(installer.installed.isEmpty())
@@ -248,7 +248,7 @@ class DevBuildsStateTest {
     fun `missing package in the artifact is reported`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes("readme.txt" to byteArrayOf(1)))
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("readme.txt" to byteArrayOf(1)))
             val state = createState(client, macosSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
@@ -266,7 +266,7 @@ class DevBuildsStateTest {
         withTempDir { saveDir ->
             val result = InstallationResult.Failed(InstallationFailureReason.FAILED_TO_MOUNT_DMG, "boom")
             val installer = FakeInstaller(result)
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes("Ani.dmg" to byteArrayOf(1)))
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime.dmg" to byteArrayOf(1)))
             val state = createState(client, macosSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
@@ -275,7 +275,7 @@ class DevBuildsStateTest {
 
             val failed = assertIs<DevBuildInstallState.Failed>(state.installState.value)
             assertEquals(DevBuildInstallFailure.Installer(result), failed.failure)
-            assertEquals(saveDir.resolve("ani-main-aaaaaaaa.dmg"), failed.file)
+            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.dmg"), failed.file)
         }
     }
 
@@ -283,7 +283,7 @@ class DevBuildsStateTest {
     fun `network failure during download is reported without a file`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes(), expectedToken = "other")
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes(), expectedToken = "other")
             val state = createState(client, macosSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
@@ -300,11 +300,11 @@ class DevBuildsStateTest {
     @Test
     fun `lookup resolves a commit link to its latest build and artifact`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes())
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
             val state = createState(client, macosSpec, FakeInstaller(), saveDir)
             assertEquals(DevBuildLookupState.Idle, state.lookupState.value)
 
-            val result = state.lookupCommit("https://github.com/open-ani/animeko/commit/$SHA_A")
+            val result = state.lookupCommit("https://github.com/william12233/Wynime/commit/$SHA_A")
             assertNull(result.pullRequest)
             assertEquals(SHA_A, result.commit.sha)
             assertEquals("feat(update): first line", result.commit.title)
@@ -326,10 +326,10 @@ class DevBuildsStateTest {
     @Test
     fun `lookup resolves a pull request to its head commit`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes())
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
             val state = createState(client, macosSpec, FakeInstaller(), saveDir)
 
-            val result = state.lookupCommit("https://github.com/open-ani/animeko/pull/42/files")
+            val result = state.lookupCommit("https://github.com/william12233/Wynime/pull/42/files")
             val pr = assertNotNull(result.pullRequest)
             assertEquals(42, pr.number)
             assertEquals("feat: pr title", pr.title)
@@ -366,11 +366,11 @@ class DevBuildsStateTest {
 
                     path.endsWith("/actions/runs/500/artifacts") -> respondJson(
                         """{"artifacts": [
-                          {"id": 51, "name": "ani-android-universal-debug", "size_in_bytes": 2, "archive_download_url": "u51", "expired": false,
+                          {"id": 51, "name": "wynime-android-universal-debug", "size_in_bytes": 2, "archive_download_url": "u51", "expired": false,
                            "workflow_run": {"id": 500, "head_sha": "$forkSha"}},
-                          {"id": 52, "name": "ani-android-arm64-v8a-debug", "size_in_bytes": 3, "archive_download_url": "u52", "expired": false,
+                          {"id": 52, "name": "wynime-android-arm64-v8a-debug", "size_in_bytes": 3, "archive_download_url": "u52", "expired": false,
                            "workflow_run": {"id": 500, "head_sha": "$forkSha"}},
-                          {"id": 53, "name": "ani-macos-dmg-aarch64", "size_in_bytes": 4, "archive_download_url": "u53", "expired": false,
+                          {"id": 53, "name": "wynime-macos-dmg-aarch64", "size_in_bytes": 4, "archive_download_url": "u53", "expired": false,
                            "workflow_run": {"id": 500, "head_sha": "$forkSha"}}
                         ]}""",
                     )
@@ -380,10 +380,10 @@ class DevBuildsStateTest {
             }
             val state = createState(client, androidSpec, FakeInstaller(), saveDir)
 
-            val result = state.lookupCommit("https://github.com/open-ani/animeko/pull/7")
+            val result = state.lookupCommit("https://github.com/william12233/Wynime/pull/7")
             assertTrue(assertNotNull(result.pullRequest).isFromFork)
             val artifact = assertNotNull(result.commit.artifact)
-            assertEquals("ani-android-arm64-v8a-debug", artifact.name)
+            assertEquals("wynime-android-arm64-v8a-debug", artifact.name)
             assertTrue(state.spec.isDebugArtifact(artifact.name))
         }
     }
@@ -391,16 +391,16 @@ class DevBuildsStateTest {
     @Test
     fun `lookup resolves workflow run and artifact links`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes())
+            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
             val state = createState(client, macosSpec, FakeInstaller(), saveDir)
 
-            val run = state.lookupCommit("https://github.com/open-ani/animeko/actions/runs/100/job/1")
+            val run = state.lookupCommit("https://github.com/william12233/Wynime/actions/runs/100/job/1")
             assertEquals(SHA_A, run.commit.sha)
             assertEquals(100, run.commit.build?.id)
             assertEquals(DevBuildStatus.FAILURE, run.commit.build?.status)
             assertNull(run.commit.artifact, "run 100 uploaded nothing")
 
-            val artifact = state.lookupCommit("https://github.com/open-ani/animeko/actions/runs/200/artifacts/10")
+            val artifact = state.lookupCommit("https://github.com/william12233/Wynime/actions/runs/200/artifacts/10")
             assertEquals(SHA_A, artifact.commit.sha)
             assertEquals(200, artifact.commit.build?.id)
             assertEquals(10, artifact.commit.artifact?.id)
@@ -408,9 +408,9 @@ class DevBuildsStateTest {
             // 其他平台的 artifact
             val windows = createState(client, windowsSpec, FakeInstaller(), saveDir)
             val mismatch = assertIs<DevBuildLookupFailure.ArtifactNotForPlatform>(
-                windows.lookupFailure("https://api.github.com/repos/open-ani/animeko/actions/artifacts/10/zip"),
+                windows.lookupFailure("https://api.github.com/repos/william12233/Wynime/actions/artifacts/10/zip"),
             )
-            assertEquals("ani-macos-dmg-aarch64", mismatch.artifactName)
+            assertEquals("wynime-macos-dmg-aarch64", mismatch.artifactName)
         }
     }
 
@@ -420,14 +420,14 @@ class DevBuildsStateTest {
             val client = gitHubMockClient { error("no requests expected: ${it.url}") }
             val state = createState(client, macosSpec, FakeInstaller(), saveDir)
 
-            val url = "https://github.com/open-ani/animeko/releases/download/v4.12.0/ani-4.12.0-macos-aarch64.dmg"
+            val url = "https://github.com/william12233/Wynime/releases/download/v4.12.0/wynime-4.12.0-macos-aarch64.dmg"
             val resolved = assertIs<DevBuildLookupState.Resolved>(state.lookupAndJoin(url))
-            assertEquals(DevBuildLookupResult.Package(url, "ani-4.12.0-macos-aarch64.dmg"), resolved.result)
+            assertEquals(DevBuildLookupResult.Package(url, "wynime-4.12.0-macos-aarch64.dmg"), resolved.result)
 
             val unsupported = assertIs<DevBuildLookupFailure.UnsupportedPackage>(
-                state.lookupFailure("https://example.com/ani-windows.zip"),
+                state.lookupFailure("https://example.com/wynime-windows.zip"),
             )
-            assertEquals("ani-windows.zip", unsupported.fileName)
+            assertEquals("wynime-windows.zip", unsupported.fileName)
             assertEquals(DevBuildLookupFailure.Unrecognized, state.lookupFailure("what is this"))
             assertEquals(
                 DevBuildLookupFailure.Unrecognized,
@@ -461,14 +461,14 @@ class DevBuildsStateTest {
                 }
             }
             val state = createState(client, macosSpec, installer, saveDir, token = "")
-            val url = "https://github.com/open-ani/animeko/releases/download/v4.12.0/ani-4.12.0-macos-aarch64.dmg"
+            val url = "https://github.com/william12233/Wynime/releases/download/v4.12.0/wynime-4.12.0-macos-aarch64.dmg"
 
-            state.installPackage(url, "ani-4.12.0-macos-aarch64.dmg", testContext)
+            state.installPackage(url, "wynime-4.12.0-macos-aarch64.dmg", testContext)
             state.joinTasks()
 
             assertEquals(DevBuildInstallState.Idle, state.installState.value)
             val installed = installer.installed.single()
-            assertEquals(saveDir.resolve("ani-4.12.0-macos-aarch64.dmg"), installed)
+            assertEquals(saveDir.resolve("wynime-4.12.0-macos-aarch64.dmg"), installed)
             assertContentEquals(dmg, installed.readBytes())
             assertEquals(listOf("github.com", "objects.example.com"), requests.map { it.url.host })
             assertTrue(requests.all { it.headers[HttpHeaders.Authorization] == null })

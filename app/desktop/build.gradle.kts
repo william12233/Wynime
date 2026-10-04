@@ -185,13 +185,13 @@ compose.desktop {
                     *formats.toTypedArray(),
                 )
             }
-            packageName = "Ani"
+            packageName = "Wynime"
             description = project.description
-            vendor = "Him188"
+            vendor = "Wynime"
 
             val projectVersion = project.version.toString() // 3.0.0-beta22
             macOS {
-                dockName = "Animeko"
+                dockName = "Wynime"
                 pkgPackageVersion = projectVersion
                 pkgPackageBuildVersion = projectVersion
                 setDockNameSameAsPackageName = false
@@ -207,7 +207,7 @@ compose.desktop {
             }
             linux {
                 shortcut = true
-                packageName = "animeko"
+                packageName = "wynime"
 //                packageVersion = properties["package.version"].toString()
 //                debPackageVersion = properties["package.version"].toString()
 //                iconFile.set(file("icons/a_1024x1024_rounded.ico"))

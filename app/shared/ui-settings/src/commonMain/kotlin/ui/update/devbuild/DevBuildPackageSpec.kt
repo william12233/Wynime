@@ -45,7 +45,7 @@ data class DevBuildPackageSpec(
     /**
      * 下载到本地后安装包的文件名.
      */
-    fun packageFileName(shortSha: String): String = "ani-main-$shortSha.${kind.packageExtension}"
+    fun packageFileName(shortSha: String): String = "wynime-main-$shortSha.${kind.packageExtension}"
 
     companion object {
         /**
@@ -54,12 +54,12 @@ data class DevBuildPackageSpec(
         fun forPlatform(platform: Platform): DevBuildPackageSpec? = when (platform) {
             is Platform.Windows -> when (platform.arch) {
                 Arch.X86_64 -> DevBuildPackageSpec(
-                    listOf("ani-windows-portable"),
+                    listOf("wynime-windows-portable"),
                     DevBuildPackageKind.WINDOWS_PORTABLE_ZIP,
                 )
 
                 Arch.AARCH64 -> DevBuildPackageSpec(
-                    listOf("ani-windows-aarch64-portable"),
+                    listOf("wynime-windows-aarch64-portable"),
                     DevBuildPackageKind.WINDOWS_PORTABLE_ZIP,
                 )
 
@@ -68,17 +68,17 @@ data class DevBuildPackageSpec(
 
             is Platform.MacOS -> when (platform.arch) {
                 Arch.AARCH64 -> DevBuildPackageSpec(
-                    listOf("ani-macos-dmg-aarch64"),
+                    listOf("wynime-macos-dmg-aarch64"),
                     DevBuildPackageKind.MACOS_DMG,
                 )
 
-                // x86_64 的 CI 产物是直接上传的 Ani.app 目录. GitHub Actions artifact 不保留可执行权限, 解压后无法启动.
+                // x86_64 的 CI 产物是直接上传的 Wynime.app 目录. GitHub Actions artifact 不保留可执行权限, 解压后无法启动.
                 Arch.X86_64, Arch.ARMV7A, Arch.ARMV8A -> null
             }
 
             is Platform.Linux -> when (platform.arch) {
                 Arch.X86_64 -> DevBuildPackageSpec(
-                    listOf("ani-linux-appimage-x64"),
+                    listOf("wynime-linux-appimage-x64"),
                     DevBuildPackageKind.LINUX_APPIMAGE,
                 )
 
@@ -92,9 +92,9 @@ data class DevBuildPackageSpec(
                     Arch.X86_64 -> "x86_64"
                 }
                 DevBuildPackageSpec(
-                    listOf("ani-android-$abi-release", "ani-android-universal-release"),
+                    listOf("wynime-android-$abi-release", "wynime-android-universal-release"),
                     DevBuildPackageKind.ANDROID_APK,
-                    debugArtifactNames = listOf("ani-android-$abi-debug", "ani-android-universal-debug"),
+                    debugArtifactNames = listOf("wynime-android-$abi-debug", "wynime-android-universal-debug"),
                 )
             }
 
@@ -117,12 +117,12 @@ enum class DevBuildPackageKind(
     val supportsAutomaticInstall: Boolean,
 ) {
     /**
-     * artifact zip 内是 `Ani/` 目录, 与 Release 的 Windows 便携版 zip 结构相同, 整个 zip 直接交给安装器.
+     * artifact zip 内是 `Wynime/` 目录, 与 Release 的 Windows 便携版 zip 结构相同, 整个 zip 直接交给安装器.
      */
     WINDOWS_PORTABLE_ZIP(packageExtension = "zip", supportsAutomaticInstall = true),
 
     /**
-     * artifact zip 内含 `Ani-*.dmg`.
+     * artifact zip 内含 `Wynime-*.dmg`.
      */
     MACOS_DMG(packageExtension = "dmg", supportsAutomaticInstall = true),
 
@@ -132,7 +132,7 @@ enum class DevBuildPackageKind(
     ANDROID_APK(packageExtension = "apk", supportsAutomaticInstall = true),
 
     /**
-     * artifact zip 内含 `Animeko-x86_64.AppImage`.
+     * artifact zip 内含 `Wynime-x86_64.AppImage`.
      * Linux 的自动更新依赖 Release 附带的 zsync 元数据, CI 产物没有, 因此只能解压后由用户手动替换当前 AppImage.
      */
     LINUX_APPIMAGE(packageExtension = "AppImage", supportsAutomaticInstall = false),

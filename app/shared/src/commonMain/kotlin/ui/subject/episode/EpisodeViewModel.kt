@@ -231,7 +231,7 @@ sealed class EpisodePageLoadError {
 }
 
 /**
- * 要查看有关剧集播放页的详细信息，请参阅 PR 文档 [#1439](https://github.com/open-ani/animeko/pull/1439).
+ * 要查看有关剧集播放页的详细信息，请参阅 PR 文档 [#1439](https://github.com/william12233/Wynime/pull/1439).
  *
  * @see EpisodeFetchSelectPlayState
  */

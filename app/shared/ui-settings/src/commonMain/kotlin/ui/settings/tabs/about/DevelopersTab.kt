@@ -123,7 +123,7 @@ fun DevelopersTab(
         ListItem(
             headlineContent = { Text(stringResource(Lang.settings_developers_view_more_on_github)) },
             modifier = Modifier.clickable {
-                uriHandler.openUri("https://github.com/open-ani/animeko/graphs/contributors")
+                uriHandler.openUri("https://github.com/william12233/Wynime/graphs/contributors")
             },
             trailingContent = {
                 Icon(Icons.Rounded.ArrowOutward, null)

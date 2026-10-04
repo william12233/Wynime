@@ -13,7 +13,7 @@ interface MediaSource {
 - **Source plugin**：以獨立插件封裝網站專用的搜尋、條目詳情、線路、集數、播放頁與媒體解析。插件回傳網站實際列出的來源名稱與數量，不跨季合併結果。
 - **Jellyfin / Emby / Ikaros**：保留既有媒體庫連線，透過 App 內建的 `MediaSourceManager` 建立。
 - **本機與快取來源**：處理本機媒體、下載內容及已解析媒體的重用。
-- **Bangumi / Ani API**：提供條目與劇集元資料，不負責網站播放媒體的解析。
+- **Bangumi / Wynime API**：提供條目與劇集元資料，不負責網站播放媒體的解析。
 
 網站來源的主要入口是 source plugin bridge。它先以搜尋結果選定條目，再讀取該條目頁的完整線路與集數，最後在播放或下載時動態解析媒體 URL。每次解析都保留 URL、Referer、User-Agent、Cookie、原始播放頁及有效期限等要求上下文。
 

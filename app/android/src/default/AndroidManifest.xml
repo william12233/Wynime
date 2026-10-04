@@ -28,10 +28,10 @@
             android:maxSdkVersion="28"
             tools:ignore="ScopedStorage" />
 
-    <application android:name="AniApplication">
+    <application android:name="me.him188.ani.android.AniApplication">
 
         <activity
-                android:name=".activity.MainActivity"
+                android:name="me.him188.ani.android.activity.MainActivity"
                 android:exported="true"
                 android:launchMode="singleTask">
             <intent-filter>

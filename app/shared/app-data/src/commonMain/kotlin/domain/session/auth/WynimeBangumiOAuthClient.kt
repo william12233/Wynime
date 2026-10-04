@@ -23,7 +23,7 @@ import me.him188.ani.utils.platform.currentPlatform
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
-/** 直接通过 Wynime Cloud 完成 Bangumi OAuth，不经过 Animeko Account API。 */
+/** 直接通过 Wynime Cloud 完成 Bangumi OAuth，不经过 Wynime Account API。 */
 class WynimeBangumiOAuthClient(
     private val cloudClient: WynimeCloudClient,
     private val platform: Platform = currentPlatform(),

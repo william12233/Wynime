@@ -28,7 +28,7 @@ class ChangelogTest {
                 - 修复启动时可能的崩溃
                 - 修复识别电影剧集
 
-                **Full Changelog**: https://github.com/open-ani/animeko/compare/v4.0.0-beta04...v4.0.0-beta05
+                **Full Changelog**: https://github.com/william12233/Wynime/compare/v4.0.0-beta04...v4.0.0-beta05
                 """.trimIndent(),
             ).changes,
         )

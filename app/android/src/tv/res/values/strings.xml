@@ -9,5 +9,5 @@
 <resources>
     <!-- 手机的 app_name 定义在 :app:shared (defaultImplementation, 不进 tv variant), TV 自带.
          品牌名不做本地化. -->
-    <string name="app_name">Animeko TV</string>
+    <string name="app_name">Wynime TV</string>
 </resources>

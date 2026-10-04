@@ -1,15 +1,15 @@
 # 项目总体架构
 
-Animeko (简称 Ani) 现在已经是一个不小的项目，本章节将给你一个全面的了解。
+Wynime (简称 Wynime) 现在已经是一个不小的项目，本章节将给你一个全面的了解。
 
 ## 项目关系
 
-Ani 不只是一个客户端，还涉及 Ani API、Bangumi 等外部服务依赖。
-**此文章随后只关注 Ani 客户端部分**，不过了解相关服务关系仍然可以为你提供帮助：
+Wynime 不只是一个客户端，还涉及 Wynime API、Bangumi 等外部服务依赖。
+**此文章随后只关注 Wynime 客户端部分**，不过了解相关服务关系仍然可以为你提供帮助：
 
-[gh-animeko]: https://github.com/open-ani/animeko
+[gh-Wynime]: https://github.com/william12233/Wynime
 
-[gh-ani-api-server]: https://github.com/open-ani/ani-api-server
+[gh-ani-api-server]: https://github.com/william12233/ani-api-server
 
 [gh-bangumi-api]: https://github.com/bangumi/api
 
@@ -21,8 +21,8 @@ Ani 不只是一个客户端，还涉及 Ani API、Bangumi 等外部服务依赖
 
 | 名称           | 仓库/主页地址                                  | 说明                                               |
 |--------------|------------------------------------------|--------------------------------------------------|
-| Animeko 客户端  | 当前                                       | Android/iOS/PC 客户端统一仓库                           |
-| Animeko 服务端  | [GitHub][gh-ani-api-server]              | Ani API、Bangumi 排行榜与新番时间表等服务 |
+| Wynime 客户端  | 当前                                       | Android/iOS/PC 客户端统一仓库                           |
+| Wynime 服务端  | [GitHub][gh-ani-api-server]              | Wynime API、Bangumi 排行榜与新番时间表等服务 |
 | Bangumi      | [GitHub][gh-bangumi-api] / [主站][bangumi] | 提供番剧详情、剧集信息、评论等信息功能; Bangumi OAuth               |
 | Bangumi Next | [主站][bangumi-next]                       | 提供一些专用接口用来查询 Bangumi 的一些信息                       |
 
@@ -30,10 +30,10 @@ Ani 不只是一个客户端，还涉及 Ani API、Bangumi 等外部服务依赖
 
 ```mermaid
 flowchart TD
-    subgraph "open-ani 组织"
+    subgraph "Wynime 專案"
         direction LR
-        APP[Animeko 客户端]
-        ani-server[Animeko 服务端]
+        APP[Wynime 客户端]
+        Wynime-server[Wynime 服务端]
     end
 
     subgraph "Bangumi"
@@ -43,23 +43,23 @@ flowchart TD
     end
 
     APP ---> bangumi-api
-    ani-server --> bangumi-next
+    Wynime-server --> bangumi-next
     APP ---> bangumi-next
-    APP --> ani-server
-    ani-server --> bangumi-api
+    APP --> Wynime-server
+    Wynime-server --> bangumi-api
 ```
 
 一些关键点:
 
-- Ani 客户端依赖上述 API 与 Bangumi 服务；
-- Ani 服务端为 Bangumi OAuth 的中转站。用户想要登录客户端，须先经过 Ani 服务端协调，用户在浏览器登录完成后由
-  Ani 服务端处理回调信息；
-- Ani 服务端也依赖 Bangumi 服务，通常是用来获取信息并处理后缓存起来，加快客户端查询速度并减少对
-  Bangumi 服务的压力。对于客户端需要进行大量查询的操作应当优先在 Ani 服务端实现并缓存；
+- Wynime 客户端依赖上述 API 与 Bangumi 服务；
+- Wynime 服务端为 Bangumi OAuth 的中转站。用户想要登录客户端，须先经过 Wynime 服务端协调，用户在浏览器登录完成后由
+  Wynime 服务端处理回调信息；
+- Wynime 服务端也依赖 Bangumi 服务，通常是用来获取信息并处理后缓存起来，加快客户端查询速度并减少对
+  Bangumi 服务的压力。对于客户端需要进行大量查询的操作应当优先在 Wynime 服务端实现并缓存；
 
 # 客户端部分
 
-本章节将从大到小讲述 Ani 客户端 (本 GitHub 仓库) 的架构。
+本章节将从大到小讲述 Wynime 客户端 (本 GitHub 仓库) 的架构。
 
 我们会先从[仓库结构](#仓库结构) 了解仓库内有哪些模块及其作用，然后进入最重要的 APP
 模块了解 [APP 架构](#APP-架构)，随后按照架构的每一层级深入了解各个模块的作用。
@@ -68,16 +68,16 @@ flowchart TD
 
 ## 仓库结构
 
-Ani 使用 Gradle 构建系统。Gradle 构建系统由多个模块 (module) 组成，每个模块都有自己的功能和职责。
+Wynime 使用 Gradle 构建系统。Gradle 构建系统由多个模块 (module) 组成，每个模块都有自己的功能和职责。
 
-Ani 客户端大致包含 30 个模块。我们可以把它们分成以下几个类别，这也对应了仓库内的目录结构：
+Wynime 客户端大致包含 30 个模块。我们可以把它们分成以下几个类别，这也对应了仓库内的目录结构：
 
 - `utils`：基础工具模块，包含日志库、序列化、BBCode 等基础工具
 - `datasource`：数据源
     - `api`：通用数据源接口
     - `bangumi`：Bangumi 数据源
     - `ikaros`、`jellyfin`、...：各数据源实现
-- `client`：封装 Ani 服务端的接口
+- `client`：封装 Wynime 服务端的接口
 - `app`
     - `shared`：全平台共享代码，包括全部 UI 代码和业务逻辑等
     - `android`，`desktop`，`ios`：各个平台的入口模块，用于打包 apk/exe/dmg
@@ -99,7 +99,7 @@ graph TD
 
 UI 层负责展示数据，Domain 层负责业务逻辑，Data 层负责数据的获取和存储，Platform 层负责适配不同平台的基础需求。
 
-在 Ani 中，`shared` 模块内部依照该层级关系拆解为：
+在 Wynime 中，`shared` 模块内部依照该层级关系拆解为：
 
 <img width="300" src="images/app-arch-file-tree.png" alt="APP 文件树"/> 
 
@@ -118,7 +118,7 @@ UI 层负责展示数据，Domain 层负责业务逻辑，Data 层负责数据�
 数据层负责数据的获取和存储。它会执行网络请求，管理本地缓存，并暴露数据模型 `data class` 和数据仓库
 `Repository` 给业务层使用。
 
-在 Ani 中，数据层主要包含以下几个部分（在
+在 Wynime 中，数据层主要包含以下几个部分（在
 `app/shared/app-data/src/commonMain/data` 中）：
 
 [Room]: https://developer.android.com/training/data-storage/room
@@ -142,10 +142,10 @@ UI 层负责展示数据，Domain 层负责业务逻辑，Data 层负责数据�
 
 业务层会使用数据层提供的数据模型和数据仓库，处理数据，暴露特定业务的专业处理器和 UseCase 给 UI 层使用。例如：
 
-- Ani 支持查询多个数据源，获取查询进度、重启查询、取消查询等功能。业务层封装 `MediaFetcher` 来实现这些功能。
-- Ani 支持结合连载情况和季度信息自动过滤资源、按照用户偏好设置自动排序资源、分多个阶段的自动选择等复杂功能。业务层封装数据源选择器
+- Wynime 支持查询多个数据源，获取查询进度、重启查询、取消查询等功能。业务层封装 `MediaFetcher` 来实现这些功能。
+- Wynime 支持结合连载情况和季度信息自动过滤资源、按照用户偏好设置自动排序资源、分多个阶段的自动选择等复杂功能。业务层封装数据源选择器
   `MediaSelector` 来处理这些逻辑。
-- Ani 的播放功能多样。支持自动保存播放进度、自动选择数据源与自动切换数据源等功能。每个功能都分别有一个处理器负责，业务层又提供
+- Wynime 的播放功能多样。支持自动保存播放进度、自动选择数据源与自动切换数据源等功能。每个功能都分别有一个处理器负责，业务层又提供
   `EpisodeFetchSelectPlayState` 完成这些子功能的组装。
 
 这些处理器都与 UI 无关，且不会绑定到特定的数据来源（不直接依赖网络服务而是依赖抽象的 `Repository`
@@ -167,7 +167,7 @@ UI 层负责展示数据，Domain 层负责业务逻辑，Data 层负责数据�
 
 #### UseCase 的使用
 
-Ani 使用 UseCase 设计（参考安卓官方推荐）。对于同一个业务场景的重复操作，可以封装为一个
+Wynime 使用 UseCase 设计（参考安卓官方推荐）。对于同一个业务场景的重复操作，可以封装为一个
 UseCase 来减少重复。
 
 但 UseCase 封装不是必须的。如果功能非常简单，你可以在 UI 的 state holder（例如 ViewModel）中直接调用
@@ -198,11 +198,11 @@ UI 层负责展示数据，与用户交互。它只会跟 Domain 层接触，不
 
 [CMP]: https://www.jetbrains.com/compose-multiplatform/
 
-Ani UI 100% 使用 [Compose Multiplatform][CMP]（CMP）编写。
+Wynime UI 100% 使用 [Compose Multiplatform][CMP]（CMP）编写。
 > CMP 是 JetBrains 开发的，基于 Android
 [Jetpack Compose][JC] 的多平台 UI 框架，支持 iOS、PC 等平台，用法与 Jetpack Compose 几乎一样。
 
-前文已经说过，Ani 的 UI 代码按业务类型划分为一些名为 `ui-*` 的模块。
+前文已经说过，Wynime 的 UI 代码按业务类型划分为一些名为 `ui-*` 的模块。
 我们列举一些关键 UI 模块（以实际源码为准，这个列表不会及时更新）：
 
 - `ui-foundation`：基础 UI 组件。包含主题、错误处理、基础控件等
@@ -218,7 +218,7 @@ Ani UI 100% 使用 [Compose Multiplatform][CMP]（CMP）编写。
 有关 UI
 层的最佳实践，请参考 [Jetcaster](https://github.com/android/compose-samples/tree/main/Jetcaster)。
 
-由于历史遗留原因，Ani 项目内留有许多不好的实践，但新编写的代码遵循最佳实践。所以，如果你想查看 Ani
+由于历史遗留原因，Wynime 项目内留有许多不好的实践，但新编写的代码遵循最佳实践。所以，如果你想查看 Wynime
 中的最佳实践，可以阅读 `ui-exploration` 和 `ui-onboarding`。
 
 [//]: # (对于每个页面，我们会有一个 composable 函数实现页面的布局，一个 ui state class 用于管理页面的状态，一个)
@@ -237,9 +237,9 @@ TV 播放进度条使用 `video-player` 的 `MediaProgressSlider`、`PlayerProgr
 
 ## 组件项目
 
-我们将 Ani 的部分组件独立为单独的项目开发，并采用宽松的 Apache 2.0 协议开源 (相对于 Ani 的 AGPL
+我们将 Wynime 的部分组件独立为单独的项目开发，并采用宽松的 Apache 2.0 协议开源 (相对于 Wynime 的 AGPL
 协议)。如果你需要修改相关功能，请查看以下项目:
 
 - [Mediamp][Mediamp]: 多媒体播放器库，用于播放音频和视频。
-  注意，Mediamp 只包含播放器内核实现。播放器 UI 和控制部分仍然在 Ani 客户端 (当前) 项目中。
+  注意，Mediamp 只包含播放器内核实现。播放器 UI 和控制部分仍然在 Wynime 客户端 (当前) 项目中。
 

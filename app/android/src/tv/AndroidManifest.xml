@@ -24,11 +24,11 @@
 
     <!-- android:name / banner 覆写 main 交集的 <application> (flavor 增量优先级更高) -->
     <application
-            android:name=".tv.TvAniApplication"
-            android:banner="@drawable/tv_banner">
+            android:name="me.him188.ani.android.tv.TvAniApplication"
+            android:banner="@drawable/tv_banner_image">
 
         <activity
-                android:name=".tv.MainActivity"
+                android:name="me.him188.ani.android.tv.MainActivity"
                 android:exported="true"
                 android:launchMode="singleTask"
                 android:screenOrientation="landscape">

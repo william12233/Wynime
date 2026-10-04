@@ -51,7 +51,7 @@ SourcePluginMediaResolver
 
 ## 商店與安裝安全
 
-商店固定使用 `william12233/wynime-sources` 的 `main/index.json`。索引與 manifest 必須通過下列檢查：
+商店固定使用主專案 `william12233/Wynime` 的 `main/source/plugins/index.json`。索引與 manifest 必須通過下列檢查：
 
 - schema、plugin API、插件 ID、版本、平台與重複 ID。
 - manifest 路徑與 artifact 路徑只能位於固定 repository；絕對網址必須是 HTTPS 且與 repository host 相同。

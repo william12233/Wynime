@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=Animeko
+Name=Wynime
 Comment=集找番、追番、看番的一站式動畫平台
-Exec=Ani
+Exec=Wynime
 Icon=icon
 Terminal=false
 Type=Application

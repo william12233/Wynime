@@ -9,7 +9,7 @@
   ~ https://github.com/open-ani/ani/blob/main/LICENSE
   -->
 
-<!-- Leanback 横幅: 160x90dp (xhdpi 为 320x180px), 品牌图案与 Animeko TV 字标.
+<!-- Leanback 横幅: 160x90dp (xhdpi 为 320x180px), Wynime 品牌图案与字标.
      あ 字形来自 ic_launcher_foreground; 字标为 Roboto Regular 的矢量轮廓. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
         android:width="160dp"

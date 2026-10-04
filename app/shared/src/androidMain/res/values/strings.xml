@@ -8,7 +8,7 @@
   -->
 
 <resources>
-    <string name="app_name">Animeko</string>
+    <string name="app_name">Wynime</string>
     <string name="app_package" translatable="false">me.him188.ani</string>
     <string name="app_service_title_text_idle">No download tasks</string>
     <string name="app_service_title_text_working">Downloading %1$d resource(s)</string>

@@ -110,7 +110,7 @@ class TvSettingsUiTest {
         val title = bounds("tv-settings-title")
         assertEquals(screen.height, sections.height)
         assertTrue(title.left >= sections.left && title.right <= sections.right)
-        onNodeWithText("Animeko TV").assertDoesNotExist()
+        onNodeWithText("Wynime TV").assertDoesNotExist()
         val previewWidth = bounds("tv-settings-detail").width
         val sectionSize = bounds("tv-settings-section-Appearance").size
         capture("sections")

@@ -9,6 +9,6 @@
 
 export ANIMEKO_DESKTOP_TEST_TASK="download-update-and-install"
 export ANIMEKO_DESKTOP_TEST_ARGC=1
-export ANIMEKO_DESKTOP_TEST_ARGV_0="https://d.myani.org/v4.0.0-release-checksum-2/ani-4.0.0-release-checksum-2-windows-x86_64.zip"
-./Ani.exe
+export ANIMEKO_DESKTOP_TEST_ARGV_0="https://github.com/william12233/Wynime/releases/download/0.1/wynime-0.1-windows-x86_64.zip"
+./Wynime.exe
 read -p "Press enter to continue"

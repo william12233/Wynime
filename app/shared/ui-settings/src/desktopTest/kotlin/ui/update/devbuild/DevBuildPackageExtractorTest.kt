@@ -43,7 +43,7 @@ class DevBuildPackageExtractorTest {
                 zipBytes(
                     "readme.txt" to byteArrayOf(9),
                     "nested.DMG/" to byteArrayOf(),
-                    "Ani-4.12.0.DMG" to dmg,
+                    "Wynime-4.12.0.DMG" to dmg,
                     "other.dmg" to byteArrayOf(4),
                 ),
             )
@@ -67,7 +67,7 @@ class DevBuildPackageExtractorTest {
     @Test
     fun `marks the file executable`() = runTest {
         withTempDir { dir ->
-            val file = dir.resolve("Animeko.AppImage")
+            val file = dir.resolve("Wynime.AppImage")
             file.writeBytes(byteArrayOf(1))
             file.toFile().setExecutable(false, false)
             markExecutable(file)

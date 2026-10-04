@@ -268,7 +268,7 @@ class GitHubDevBuildApi(
     private fun HttpStatusCode.isSuccess(): Boolean = value in 200..299
 
     companion object {
-        const val DEFAULT_REPOSITORY = "open-ani/animeko"
+        const val DEFAULT_REPOSITORY = "william12233/Wynime"
         const val DEFAULT_BRANCH = "main"
         const val DEFAULT_WORKFLOW_FILE_NAME = "build.yml"
 

@@ -41,7 +41,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DevBuildsTabTest {
-    private val spec = DevBuildPackageSpec(listOf("ani-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG)
+    private val spec = DevBuildPackageSpec(listOf("wynime-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG)
 
     private data class Fixture(val saveDir: SystemPath, val installer: FakeInstaller)
 
@@ -86,7 +86,7 @@ class DevBuildsTabTest {
 
     @Test
     fun `lists commits and installs the selected one after confirmation`() = withTab(
-        fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes("Ani-4.12.0.dmg" to byteArrayOf(1))),
+        fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime-4.12.0.dmg" to byteArrayOf(1))),
     ) { (saveDir, installer) ->
         // 列表由后台线程更新, waitForIdle 不能保证已经重组, 直接等待节点出现
         waitUntil(timeoutMillis = 10_000) {
@@ -108,15 +108,15 @@ class DevBuildsTabTest {
         onNodeWithTag(DevBuildsTestTags.CONFIRM_BUTTON).assertIsDisplayed().performClick()
 
         waitUntil(timeoutMillis = 10_000) { installer.installed.isNotEmpty() }
-        assertEquals(listOf(saveDir.resolve("ani-main-aaaaaaaa.dmg")), installer.installed)
+        assertEquals(listOf(saveDir.resolve("wynime-main-aaaaaaaa.dmg")), installer.installed)
     }
 
     @Test
     fun `looks up a pasted commit link and installs it from the result card`() = withTab(
-        fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes("Ani-4.12.0.dmg" to byteArrayOf(1))),
+        fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime-4.12.0.dmg" to byteArrayOf(1))),
     ) { (saveDir, installer) ->
         onNodeWithTag(DevBuildsTestTags.LOOKUP_BUTTON).assertIsNotEnabled()
-        onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("https://github.com/open-ani/animeko/commit/$SHA_A")
+        onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("https://github.com/william12233/Wynime/commit/$SHA_A")
         onNodeWithTag(DevBuildsTestTags.LOOKUP_BUTTON).assertIsEnabled().performClick()
 
         waitUntil(timeoutMillis = 10_000) {
@@ -129,12 +129,12 @@ class DevBuildsTabTest {
         onNodeWithTag(DevBuildsTestTags.CONFIRM_BUTTON).assertIsDisplayed().performClick()
 
         waitUntil(timeoutMillis = 10_000) { installer.installed.isNotEmpty() }
-        assertEquals(listOf(saveDir.resolve("ani-main-aaaaaaaa.dmg")), installer.installed)
+        assertEquals(listOf(saveDir.resolve("wynime-main-aaaaaaaa.dmg")), installer.installed)
     }
 
     @Test
     fun `shows an error for unrecognized input and clears it`() = withTab(
-        fullGitHubMockClient("ani-macos-dmg-aarch64", zipBytes()),
+        fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes()),
     ) {
         onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("what is this")
         onNodeWithTag(DevBuildsTestTags.LOOKUP_BUTTON).performClick()
@@ -151,11 +151,11 @@ class DevBuildsTabTest {
         gitHubMockClient { request ->
             when (request.url.host) {
                 "example.com" -> respond(byteArrayOf(9), HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, "1"))
-                else -> fullGitHubMockHandler("ani-macos-dmg-aarch64", zipBytes())(request)
+                else -> fullGitHubMockHandler("wynime-macos-dmg-aarch64", zipBytes())(request)
             }
         },
     ) { (saveDir, installer) ->
-        onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("https://example.com/dl/Ani-dev.dmg")
+        onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("https://example.com/dl/Wynime-dev.dmg")
         onNodeWithTag(DevBuildsTestTags.LOOKUP_BUTTON).performClick()
         waitUntil(timeoutMillis = 10_000) {
             onAllNodesWithTag(DevBuildsTestTags.PACKAGE_ROW).fetchSemanticsNodes().isNotEmpty()
@@ -165,6 +165,6 @@ class DevBuildsTabTest {
         onNodeWithTag(DevBuildsTestTags.CONFIRM_BUTTON).assertIsDisplayed().performClick()
 
         waitUntil(timeoutMillis = 10_000) { installer.installed.isNotEmpty() }
-        assertEquals(listOf(saveDir.resolve("Ani-dev.dmg")), installer.installed)
+        assertEquals(listOf(saveDir.resolve("Wynime-dev.dmg")), installer.installed)
     }
 }

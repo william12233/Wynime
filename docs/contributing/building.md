@@ -4,18 +4,18 @@
 
 ## 本地建置設定
 
-Ani 依赖部分外部服务。建置前请在 `local.properties` 中配置本机 SDK 与目标 ABI；未配置可选服务时，
+Wynime 依赖部分外部服务。建置前请在 `local.properties` 中配置本机 SDK 与目标 ABI；未配置可选服务时，
 建置仍可完成，但对应联网功能无法使用。
 
 ```properties
 sdk.dir=D:\\william\\APP\\DevTools\\Android\\Sdk
-ani.android.abis=x86_64
+Wynime.android.abis=x86_64
 ```
 
 ## 打包 Android APP
 
 默认只构建 `arm64-v8a`。如果你需要完整 APK 集合，可在 `local.properties` 中加入
-`ani.android.abis=all`。
+`Wynime.android.abis=all`。
 
 在 IDE 中双击 Ctrl，可用的命令：
 
@@ -29,7 +29,7 @@ ani.android.abis=x86_64
 ### Android TV
 
 TV 文件放在对应共享模块的 `src/androidTv/kotlin` 与 `src/androidTvTest/kotlin`，
-由独立的 `ani.kmp-compose` 子模块分别作为 `androidMain` / `androidHostTest` 编译。
+由独立的 `Wynime.kmp-compose` 子模块分别作为 `androidMain` / `androidHostTest` 编译。
 功能子模块位于 `ui-xxx/tv`，主壳子模块位于 `app/shared/shared-tv`。
 例如 `:app:shared:ui-episode-tv` 依赖原 KMP 模块 `:app:shared:ui-episode`，
 编译后者目录下的 TV 文件；原 KMP 模块不编译 TV 文件。
@@ -66,8 +66,8 @@ TV 单元测试由四个子模块的 `testAndroidHostTest` 运行：
 默认不启用 iOS 构建。打包之前，请先在 `local.properties` 中加入：
 
 ```properties
-ani.enable.ios=true
-ani.build.framework=true
+Wynime.enable.ios=true
+Wynime.build.framework=true
 ```
 
 然后运行以下命令初始化项目：
@@ -120,5 +120,5 @@ JVM 平台测试，无法运行 iOS 测试。
 
 ### 启动 PC 版时报错 `ClassNotDefFoundError`
 
-打开 `Run Desktop` 的配置，复制一份，将 "Use classpath of module" 改为 `ani.app.desktop.test`。
-如果又遇到了，则改回来 `ani.app.desktop.main`。
+打开 `Run Desktop` 的配置，复制一份，将 "Use classpath of module" 改为 `Wynime.app.desktop.test`。
+如果又遇到了，则改回来 `Wynime.app.desktop.main`。

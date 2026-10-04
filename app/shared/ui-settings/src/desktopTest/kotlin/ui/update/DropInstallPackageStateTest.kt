@@ -78,11 +78,11 @@ class DropInstallPackageStateTest {
             DropInstallPackageOutcome.PENDING_CONFIRMATION,
             state.offer(
                 DragAndDropContent.FileList(
-                    listOf(Path("/downloads/notes.txt"), Path("/downloads/Ani-4.0.0.DMG"), Path("/downloads/b.zip")),
+                    listOf(Path("/downloads/notes.txt"), Path("/downloads/Wynime-4.0.0.DMG"), Path("/downloads/b.zip")),
                 ),
             ),
         )
-        assertEquals(Path("/downloads/Ani-4.0.0.DMG").inSystem, state.pendingPackage)
+        assertEquals(Path("/downloads/Wynime-4.0.0.DMG").inSystem, state.pendingPackage)
 
         state.dismissPending()
         assertNull(state.pendingPackage)
@@ -133,8 +133,8 @@ class DropInstallPackageStateTest {
         val state = DropInstallPackageState(FakeInstaller())
 
         assertEquals(
-            Path("/downloads/Ani-4.0.0.DMG").inSystem,
-            state.findInstallablePackage(listOf(Path("/downloads/notes.txt"), Path("/downloads/Ani-4.0.0.DMG"), Path("/downloads/b.zip"))),
+            Path("/downloads/Wynime-4.0.0.DMG").inSystem,
+            state.findInstallablePackage(listOf(Path("/downloads/notes.txt"), Path("/downloads/Wynime-4.0.0.DMG"), Path("/downloads/b.zip"))),
         )
         assertNull(state.findInstallablePackage(listOf(Path("/downloads/notes.txt"))))
         assertNull(state.findInstallablePackage(emptyList()))
@@ -142,9 +142,9 @@ class DropInstallPackageStateTest {
 
     @Test
     fun `parses the version from the package file name`() {
-        assertEquals("4.12.0", parsePackageVersion("Ani-4.12.0-macos-aarch64.dmg"))
-        assertEquals("4.12.0-beta02", parsePackageVersion("ani-4.12.0-beta02-windows-x86_64.zip"))
-        assertEquals("4.12.0-alpha01", parsePackageVersion("Ani-4.12.0-alpha01.dmg"))
+        assertEquals("4.12.0", parsePackageVersion("Wynime-4.12.0-macos-aarch64.dmg"))
+        assertEquals("4.12.0-beta02", parsePackageVersion("wynime-4.12.0-beta02-windows-x86_64.zip"))
+        assertEquals("4.12.0-alpha01", parsePackageVersion("Wynime-4.12.0-alpha01.dmg"))
         assertNull(parsePackageVersion("package.dmg"))
     }
 

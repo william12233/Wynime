@@ -16,7 +16,7 @@ import kotlin.time.Instant
 
 class DevBuildCommitTest {
     private val spec = DevBuildPackageSpec(
-        listOf("ani-android-arm64-v8a-release", "ani-android-universal-release"),
+        listOf("wynime-android-arm64-v8a-release", "wynime-android-universal-release"),
         DevBuildPackageKind.ANDROID_APK,
     )
 
@@ -69,11 +69,11 @@ class DevBuildCommitTest {
                 run(300, SHA_B, "in_progress"),
             ),
             artifacts = listOf(
-                artifact(1, SHA_A, "ani-android-universal-release"),
-                artifact(2, SHA_A, "ani-android-arm64-v8a-release"),
-                artifact(3, SHA_A, "ani-android-arm64-v8a-release", expired = true),
-                artifact(4, SHA_A, "ani-windows-portable"),
-                artifact(5, SHA_B, "ani-android-arm64-v8a-release", expired = true),
+                artifact(1, SHA_A, "wynime-android-universal-release"),
+                artifact(2, SHA_A, "wynime-android-arm64-v8a-release"),
+                artifact(3, SHA_A, "wynime-android-arm64-v8a-release", expired = true),
+                artifact(4, SHA_A, "wynime-windows-portable"),
+                artifact(5, SHA_B, "wynime-android-arm64-v8a-release", expired = true),
             ),
             spec = spec,
         )
@@ -86,7 +86,7 @@ class DevBuildCommitTest {
         assertEquals("aaaaaaaa", a.shortSha)
         assertEquals(Instant.parse("2026-09-18T05:04:36Z"), a.committedAt)
         assertEquals(DevBuildRun(200, DevBuildStatus.SUCCESS, "run/200"), a.build)
-        assertEquals(DevBuildArtifact(2, "ani-android-arm64-v8a-release", 100, "artifact/2/zip"), a.artifact)
+        assertEquals(DevBuildArtifact(2, "wynime-android-arm64-v8a-release", 100, "artifact/2/zip"), a.artifact)
 
         val b = result[1]
         assertEquals("Name", b.author)
@@ -99,7 +99,7 @@ class DevBuildCommitTest {
         val result = buildDevBuildCommits(
             commits = listOf(commit(SHA_A)),
             runs = emptyList(),
-            artifacts = listOf(artifact(7, SHA_A, "ani-android-universal-release")),
+            artifacts = listOf(artifact(7, SHA_A, "wynime-android-universal-release")),
             spec = spec,
         )
         assertNull(result.single().build)
@@ -112,8 +112,8 @@ class DevBuildCommitTest {
             commits = listOf(commit(SHA_A)),
             runs = emptyList(),
             artifacts = listOf(
-                artifact(7, SHA_A, "ani-android-arm64-v8a-release"),
-                artifact(9, SHA_A, "ani-android-arm64-v8a-release"),
+                artifact(7, SHA_A, "wynime-android-arm64-v8a-release"),
+                artifact(9, SHA_A, "wynime-android-arm64-v8a-release"),
             ),
             spec = spec,
         )

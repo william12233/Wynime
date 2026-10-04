@@ -3,7 +3,7 @@ set -euo pipefail
 
 GIT_TAG="${1:-${GITHUB_REF_NAME:-}}"
 TAG_VERSION="${2:-${GIT_TAG#v}}"
-REPOSITORY="${GITHUB_REPOSITORY:-open-ani/animeko}"
+REPOSITORY="${GITHUB_REPOSITORY:-william12233/Wynime}"
 
 if [[ -z "$GIT_TAG" ]]; then
   echo "Usage: $0 <git-tag> [tag-version]" >&2
@@ -105,7 +105,7 @@ if command -v gh >/dev/null 2>&1 && [[ -s "$workdir/pr-numbers.txt" ]]; then
 fi
 
 cat > "$workdir/prompt.md" <<PROMPT
-你是 Animeko 的发布经理。请根据下面的 release context 生成 GitHub Release Notes。
+你是 Wynime 的发布经理。请根据下面的 release context 生成 GitHub Release Notes。
 
 必须严格遵守：
 - 只输出 Markdown 正文，不要解释，不要代码块。

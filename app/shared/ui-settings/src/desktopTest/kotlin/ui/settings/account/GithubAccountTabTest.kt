@@ -120,7 +120,7 @@ class GithubAccountTabTest {
                 isDeveloper = true,
                 latestRequest = request(
                     DeveloperVerificationRequestStatus.APPROVED,
-                    url = "https://github.com/open-ani/animeko/pull/11",
+                    url = "https://github.com/william12233/Wynime/pull/11",
                 ),
             ),
             callbacks,

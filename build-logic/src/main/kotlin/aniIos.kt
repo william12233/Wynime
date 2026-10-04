@@ -39,7 +39,7 @@ fun Project.configureAniCocoapods() {
         configure<CocoapodsExtension> {
             version = project.version.toString()
             summary = project.name
-            homepage = "https://github.com/open-ani/animeko"
+            homepage = "https://github.com/william12233/Wynime"
             name = project.name
 
             ios.deploymentTarget = "16.0"

@@ -41,7 +41,7 @@ data object NoOpSingleInstanceChecker : SingleInstanceChecker {
     }
 }
 
-private const val WINDOW_NAME = "Ani"
+private const val WINDOW_NAME = "Wynime"
 
 data object WindowsSingleInstanceChecker : SingleInstanceChecker {
     private val logger = logger<WindowsSingleInstanceChecker>()

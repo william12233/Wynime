@@ -96,7 +96,7 @@
     <string name="tv_nav_schedule">时间表</string>
     <string name="tv_login_or">或</string>
     <string name="tv_login_qr_title">手机扫码登录</string>
-    <string name="tv_login_qr_hint">用手机 Animeko 的“扫码登录”或系统相机扫描</string>
+    <string name="tv_login_qr_hint">用手机 Wynime 的“扫码登录”或系统相机扫描</string>
     <string name="tv_login_qr_expires_in">二维码将在 %1$s 后刷新</string>
     <string name="tv_login_qr_content_description">登录二维码</string>
     <string name="tv_login_qr_loading">正在加载二维码…</string>

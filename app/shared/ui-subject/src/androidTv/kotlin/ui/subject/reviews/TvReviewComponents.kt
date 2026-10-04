@@ -211,7 +211,7 @@ internal fun TvReviewAuthor(comment: UIComment, modifier: Modifier = Modifier) {
             Text(comment.author?.nickname?.takeIf { it.isNotBlank() } ?: stringResource(Lang.foundation_anonymous),
                 style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
                 color = TvSubjectDetailsDefaults.Content, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(formatDateTime(comment.createdAt) + if (comment.source == UICommentSource.BANGUMI) " · Bangumi" else " · Animeko",
+            Text(formatDateTime(comment.createdAt) + if (comment.source == UICommentSource.BANGUMI) " · Bangumi" else " · Wynime",
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                 color = TvSubjectDetailsDefaults.SecondaryContent, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }

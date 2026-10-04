@@ -47,7 +47,7 @@ import java.security.MessageDigest
 import javax.inject.Inject
 
 object ReleaseArtifactNames {
-    private const val appName = "ani"
+    private const val appName = "wynime"
 
     fun fullVersionFromTag(tag: String): String = tag.removePrefix("v")
 

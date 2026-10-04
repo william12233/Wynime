@@ -40,7 +40,7 @@ class LinuxUpdateInstallerTest {
         val updateLog = tempDir.resolve("updates.log")
         val launchMarker = tempDir.resolve("launched")
 
-        val appImage = tempDir.resolve("Animeko.AppImage").apply {
+        val appImage = tempDir.resolve("Wynime.AppImage").apply {
             writeText(
                 """
                     #!/usr/bin/env bash
@@ -88,14 +88,14 @@ class LinuxUpdateInstallerTest {
         )
         assertFalse(launchMarker.exists())
         assertEquals("updated", appImage.readText())
-        assertTrue(tempDir.listFiles().orEmpty().none { it.name.startsWith(".Animeko.AppImage.update.") })
+        assertTrue(tempDir.listFiles().orEmpty().none { it.name.startsWith(".Wynime.AppImage.update.") })
     }
 
     @Test
     @EnabledOnOs(OS.LINUX)
     fun `failed update leaves original AppImage untouched`() {
         val tempDir = createTempDirectory("linux-update-installer-test").toFile()
-        val appImage = tempDir.resolve("Animeko.AppImage").apply {
+        val appImage = tempDir.resolve("Wynime.AppImage").apply {
             writeText("original")
             assertTrue(setExecutable(true))
         }
@@ -125,14 +125,14 @@ class LinuxUpdateInstallerTest {
         assertTrue(process.waitFor(10, TimeUnit.SECONDS))
         assertEquals(1, process.exitValue())
         assertEquals("original", appImage.readText())
-        assertTrue(tempDir.listFiles().orEmpty().none { it.name.startsWith(".Animeko.AppImage.update.") })
+        assertTrue(tempDir.listFiles().orEmpty().none { it.name.startsWith(".Wynime.AppImage.update.") })
     }
 
     @Test
     @EnabledOnOs(OS.LINUX)
     fun `cancelled update leaves original AppImage untouched`() {
         val tempDir = createTempDirectory("linux-update-installer-test").toFile()
-        val appImage = tempDir.resolve("Animeko.AppImage").apply {
+        val appImage = tempDir.resolve("Wynime.AppImage").apply {
             writeText("original")
             assertTrue(setExecutable(true))
         }
@@ -171,6 +171,6 @@ class LinuxUpdateInstallerTest {
 
         assertTrue(process.waitFor(10, TimeUnit.SECONDS))
         assertEquals("original", appImage.readText())
-        assertTrue(tempDir.listFiles().orEmpty().none { it.name.startsWith(".Animeko.AppImage.update.") })
+        assertTrue(tempDir.listFiles().orEmpty().none { it.name.startsWith(".Wynime.AppImage.update.") })
     }
 }

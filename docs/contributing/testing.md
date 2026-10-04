@@ -4,12 +4,12 @@
 
 ## 单元测试
 
-Animeko 拥有多平台测试。启用 iOS 目标后，在 macOS 上会运行 11,000+ 测试。其他平台上会略少一些。
+Wynime 拥有多平台测试。启用 iOS 目标后，在 macOS 上会运行 11,000+ 测试。其他平台上会略少一些。
 我们建议你为所有新功能编写测试，不仅是为了验证功能的正确性，也是为了防止未来出现回溯问题。
 
 ### 测试源集结构
 
-基于[多平台架构](kmp.md)，Ani 也拥有多平台测试。测试源集结构如下：
+基于[多平台架构](kmp.md)，Wynime 也拥有多平台测试。测试源集结构如下：
 
 - `commonTest`
     - `jvmTest`
@@ -79,4 +79,4 @@ PR 的 CI 总是会运行 instrumented test，如果 CI 报错才需要本地运
 在 `commonTest` 中可以编写 UI 测试。UI 测试使用 Compose Multiplatform 的测试框架，可以在所有平台运行。API
 非常类似 Jetpack Compose 的测试框架。
 
-示例：[me.him188.ani.app.ui.foundation.layout.CarouselAutoAdvanceEffectTest](https://github.com/open-ani/animeko/blob/e87c190fbe7078cfe461ae4176017174608e64bf/app/shared/ui-foundation/src/commonTest/kotlin/ui/foundation/layout/CarouselAutoAdvanceEffectTest.kt#L45)
+示例：[me.him188.ani.app.ui.foundation.layout.CarouselAutoAdvanceEffectTest](https://github.com/william12233/Wynime/blob/e87c190fbe7078cfe461ae4176017174608e64bf/app/shared/ui-foundation/src/commonTest/kotlin/ui/foundation/layout/CarouselAutoAdvanceEffectTest.kt#L45)

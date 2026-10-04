@@ -65,19 +65,19 @@
     <string name="settings_debug_metered_network">計費網路資訊</string>
     <string name="settings_debug_others">其他</string>
     <string name="settings_debug_get_bangumi_token">取得 Bangumi access token</string>
-    <string name="settings_debug_get_ani_token">取得 Ani access token</string>
+    <string name="settings_debug_get_ani_token">取得 Wynime access token</string>
     <string name="settings_debug_copied">已複製: %1$s</string>
     <string name="settings_debug_install_package">安裝包</string>
     <string name="settings_debug_install_package_on_drop">拖曳安裝包以安裝</string>
-    <string name="settings_debug_install_package_on_drop_description">將安裝包 (%1$s) 拖入 Ani 視窗，確認後自動安裝並重啟，用於試用測試版本</string>
+    <string name="settings_debug_install_package_on_drop_description">將安裝包 (%1$s) 拖入 Wynime 視窗，確認後自動安裝並重啟，用於試用測試版本</string>
     <string name="settings_debug_install_package_confirm_title">安裝這個版本？</string>
-    <string name="settings_debug_install_package_confirm_message">Ani 會立即退出，用這個安裝包覆蓋目前版本後自動重啟。設定和資料不受影響，安裝包不會被刪除。</string>
+    <string name="settings_debug_install_package_confirm_message">Wynime 會立即退出，用這個安裝包覆蓋目前版本後自動重啟。設定和資料不受影響，安裝包不會被刪除。</string>
     <string name="settings_debug_install_package_confirm">安裝並重啟</string>
     <string name="settings_debug_install_package_cancel">取消</string>
     <string name="settings_debug_install_package_unsupported">不支援的安裝包，僅支援：%1$s</string>
     <string name="settings_debug_install_package_drop_title">鬆手以安裝</string>
     <string name="settings_debug_install_package_drop_unknown_name">安裝包</string>
-    <string name="settings_debug_install_package_drop_meta">Ani 將退出，覆蓋目前 %1$s 後自動重啟</string>
+    <string name="settings_debug_install_package_drop_meta">Wynime 將退出，覆蓋目前 %1$s 後自動重啟</string>
     <string name="settings_debug_install_package_drop_supported_hint">%1$s 安裝包</string>
     <string name="settings_debug_install_package_drop_badge">開發者功能 · 拖曳安裝包以安裝</string>
     <string name="settings_debug_install_package_confirm_new_version">新版本</string>
@@ -117,7 +117,7 @@
     <string name="settings_debug_dev_builds_extracting">正在解壓縮安裝包…</string>
     <string name="settings_debug_dev_builds_installing">正在安裝…</string>
     <string name="settings_debug_dev_builds_confirm_title">安裝這個 commit？</string>
-    <string name="settings_debug_dev_builds_confirm_message_desktop">將下載 %1$s（%2$s）。隨後 Ani 會退出，用它覆蓋目前版本後自動重啟。設定和資料不受影響。</string>
+    <string name="settings_debug_dev_builds_confirm_message_desktop">將下載 %1$s（%2$s）。隨後 Wynime 會退出，用它覆蓋目前版本後自動重啟。設定和資料不受影響。</string>
     <string name="settings_debug_dev_builds_confirm_message_android">將下載 %1$s（%2$s），然後開啟系統安裝器。APK 使用發布金鑰簽章，不能覆蓋安裝到偵錯版本上。</string>
     <string name="settings_debug_dev_builds_confirm_message_manual">將下載 %1$s（%2$s）。下載完成後請手動用它取代目前的 AppImage。</string>
     <string name="settings_debug_dev_builds_confirm_install">下載並安裝</string>
@@ -154,7 +154,7 @@
     <string name="settings_help_telegram">Telegram</string>
     <string name="settings_help_github">GitHub</string>
     <string name="settings_help_feedback">回饋問題</string>
-    <string name="settings_help_website">Ani 官方網站</string>
+    <string name="settings_help_website">Wynime 官方網站</string>
     <string name="settings_about_version">版本號</string>
     <string name="settings_about_release_notes">更新說明</string>
     <string name="settings_about_website">官方網站</string>
@@ -162,8 +162,8 @@
     <string name="settings_about_source_code">原始碼</string>
     <string name="settings_about_chat_groups">交流群</string>
     <string name="settings_about_qq_group">QQ 群</string>
-    <string name="settings_about_icon_description">Animeko Icon</string>
-    <string name="settings_about_app_name">Animeko</string>
+    <string name="settings_about_icon_description">Wynime Icon</string>
+    <string name="settings_about_app_name">Wynime</string>
     <string name="settings_about_app_description">集找番、追番、看番的一站式動畫追番平台</string>
     <string name="settings_about_build_info">建置資訊</string>
     <string name="settings_build_info_branch">分支</string>
@@ -406,7 +406,7 @@
     <string name="settings_mediasource_server_error">伺服器錯誤</string>
     <string name="settings_mediasource_unknown_error">未知錯誤: %1$s</string>
     <string name="settings_mediasource_invalid_config">配置不完整</string>
-    <string name="settings_mediasource_invalid_content">剪貼簿內容無效，請檢查資料來源設定以及匯出時使用的 Ani 版本</string>
+    <string name="settings_mediasource_invalid_content">剪貼簿內容無效，請檢查資料來源設定以及匯出時使用的 Wynime 版本</string>
     <string name="settings_mediasource_error_title">未知錯誤</string>
     <string name="settings_mediasource_error_info">錯誤訊息</string>
     <string name="settings_mediasource_copied">已複製</string>
@@ -463,7 +463,7 @@
     <string name="exploration_horizontal_scroll_tip">按住 Shift + 滑鼠滾輪 同樣可以水平滾動</string>
 
     <!-- MainScreenPage -->
-    <string name="main_network_check_failed">無法連接到 Animeko 伺服器, 請檢查網路, 或在設定中配置代理</string>
+    <string name="main_network_check_failed">無法連接到 Wynime 伺服器, 請檢查網路, 或在設定中配置代理</string>
     <string name="main_screen_page_exploration">探索</string>
     <string name="main_screen_page_collection">追番</string>
     <string name="main_screen_page_cache_management">下載</string>
@@ -519,7 +519,7 @@
     <string name="settings_network_proxy_none">無</string>
     <string name="settings_network_proxy_password">密碼</string>
     <string name="settings_network_proxy_retest">重新測試</string>
-    <string name="settings_network_proxy_service_ani">Ani 服務</string>
+    <string name="settings_network_proxy_service_ani">Wynime 服務</string>
     <string name="settings_network_proxy_service_collection">收藏資料服務</string>
     <string name="settings_network_proxy_service_comment">評論服務</string>
     <string name="settings_network_proxy_test_success">連線成功</string>
@@ -566,7 +566,7 @@
     <string name="login_other_methods">其他登入方式</string>
 
     <!-- OAuth -->
-    <string name="oauth_bangumi_description">授權 Bangumi 帳號後，可以同步你的觀看紀錄到 Bangumi，或更方便地登入 Ani。</string>
+    <string name="oauth_bangumi_description">授權 Bangumi 帳號後，可以同步你的觀看紀錄到 Bangumi，或更方便地登入 Wynime。</string>
     <string name="oauth_authorize_title">授權 %1$s 登入</string>
     <string name="oauth_bind_account">綁定 %1$s 帳號</string>
     <string name="oauth_sign_in_or_sign_up">登入 / 註冊</string>
@@ -581,7 +581,7 @@
     <string name="oauth_bangumi_help_cant_receive_email">無法收到電子郵件驗證碼</string>
     <string name="oauth_bangumi_help_activation_failed">註冊時一直啟用失敗</string>
     <string name="oauth_bangumi_help_others">其他問題</string>
-    <string name="oauth_bangumi_help_bangumi_desc_content">Bangumi 番組計劃是一個中文網際網路的 ACGN 內容分享與交流網站，致力於提供一個輕鬆便捷又獨特的交流環境。\nBangumi 提供番劇索引、番劇收藏和追番進度等功能，Ani 可以將你的觀看紀錄同步到 Bangumi。</string>
+    <string name="oauth_bangumi_help_bangumi_desc_content">Bangumi 番組計劃是一個中文網際網路的 ACGN 內容分享與交流網站，致力於提供一個輕鬆便捷又獨特的交流環境。\nBangumi 提供番劇索引、番劇收藏和追番進度等功能，Wynime 可以將你的觀看紀錄同步到 Bangumi。</string>
     <string name="oauth_bangumi_help_website_blocked_content">請在系統設定中更換預設瀏覽器，建議使用 Google Chrome、Microsoft Edge 或 Mozilla Firefox。</string>
     <string name="oauth_bangumi_help_register_choose_content">選擇「管理 ACG 收藏與收視進度，分享交流」這一項。</string>
     <string name="oauth_bangumi_help_wrong_captcha_content">如果沒有驗證碼輸入框，可以多點幾次密碼輸入框；如果輸錯了驗證碼，需要重新整理頁面後再登入。</string>
@@ -793,13 +793,13 @@
     <string name="settings_account_popup_cancel">取消</string>
     <string name="settings_account_bangumi_manual_full_sync">手動全量同步</string>
     <string name="settings_account_bangumi_redownload_all_data">重新下載全部 Bangumi 資料</string>
-    <string name="settings_account_bangumi_redownload_all_data_description">將 Bangumi 的收藏資料下載到 Animeko 收藏服務。通常不需要進行這個操作，Animeko 能自動完成同步。僅在你發現資料不一致時才需要手動下載。此操作可能需要數分鐘才能完成，在同步過程中其他功能不可用。請注意，每十分鐘只能執行一次全量同步</string>
+    <string name="settings_account_bangumi_redownload_all_data_description">將 Bangumi 的收藏資料下載到 Wynime 收藏服務。通常不需要進行這個操作，Wynime 能自動完成同步。僅在你發現資料不一致時才需要手動下載。此操作可能需要數分鐘才能完成，在同步過程中其他功能不可用。請注意，每十分鐘只能執行一次全量同步</string>
     <string name="settings_account_bangumi_sync_queue">同步佇列</string>
     <string name="settings_account_bangumi_sync_title">Bangumi 同步</string>
     <string name="settings_account_bangumi_conflict_handling">衝突處理</string>
     <string name="bangumi_merge_title">合併收藏</string>
     <string name="bangumi_merge_title_conflicts">合併收藏 · %1$d 項衝突</string>
-    <string name="bangumi_merge_entry_description">處理 Animeko 與 Bangumi 兩側都修改過的收藏</string>
+    <string name="bangumi_merge_entry_description">處理 Wynime 與 Bangumi 兩側都修改過的收藏</string>
     <string name="bangumi_merge_entry_conflict_count">%1$d 項衝突</string>
     <string name="bangumi_merge_conflict_notification">偵測到 %1$d 項 Bangumi 收藏衝突</string>
     <string name="bangumi_merge_conflict_notification_action">處理</string>
@@ -821,7 +821,7 @@
     <string name="bangumi_merge_syncing_title">正在同步收藏…</string>
     <string name="bangumi_merge_syncing_description">首次同步完成後，需要處理的衝突會顯示在這裡。</string>
     <string name="bangumi_merge_synced">收藏已完全同步</string>
-    <string name="bangumi_merge_synced_description">Animeko 與 Bangumi 兩側沒有需要處理的收藏衝突。</string>
+    <string name="bangumi_merge_synced_description">Wynime 與 Bangumi 兩側沒有需要處理的收藏衝突。</string>
     <string name="bangumi_merge_last_synced">上次同步：%1$s</string>
     <string name="bangumi_merge_deleted_collection">已刪除收藏</string>
     <string name="bangumi_merge_score">%1$d 分</string>
@@ -838,7 +838,7 @@
     <string name="bangumi_merge_subject_column">條目</string>
     <string name="bangumi_merge_field_column">欄位</string>
     <string name="bangumi_merge_yesterday">昨</string>
-    <string name="bangumi_merge_from_animeko">來自 Animeko</string>
+    <string name="bangumi_merge_from_animeko">來自 Wynime</string>
     <string name="bangumi_merge_from_bangumi">來自 Bangumi</string>
     <string name="bangumi_merge_auto_new_collection">新增收藏 · %1$s</string>
     <string name="bangumi_merge_auto_collection_type">狀態 · %1$s</string>
@@ -877,18 +877,18 @@
     <string name="settings_account_developer_badge_certified">已認證</string>
     <string name="settings_account_developer_badge_pending">審核中</string>
     <string name="settings_account_developer_group">開發者認證</string>
-    <string name="settings_account_developer_description">為 Animeko 的功能開發與完善做出貢獻的開發者，可以申請認證</string>
+    <string name="settings_account_developer_description">為 Wynime 的功能開發與完善做出貢獻的開發者，可以申請認證</string>
     <string name="settings_account_developer_status_not_certified">未認證</string>
     <string name="settings_account_developer_status_certified">已認證開發者</string>
     <string name="settings_account_developer_status_pending">正在審核，通常需要幾分鐘</string>
     <string name="settings_account_developer_status_unavailable">目前伺服器未開放開發者認證</string>
     <string name="settings_account_developer_valid_until">有效期至 %1$s。到期前會自動重新評估，無需再次申請。</string>
-    <string name="settings_account_developer_outstanding_contributor">感謝你對 Animeko 的卓越貢獻。你的開發者身分長期有效。</string>
+    <string name="settings_account_developer_outstanding_contributor">感謝你對 Wynime 的卓越貢獻。你的開發者身分長期有效。</string>
     <string name="settings_account_developer_apply">申請認證</string>
     <string name="settings_account_developer_apply_limit">每天可申請 1 次，每週最多 3 次</string>
     <string name="settings_account_developer_next_apply_at">下次可申請：%1$s</string>
     <string name="settings_account_developer_result_rejected">您暫時未通過審核</string>
-    <string name="settings_account_developer_result_rejected_encouragement">歡迎繼續為 Animeko 提交 PR，合併後可以重新申請。</string>
+    <string name="settings_account_developer_result_rejected_encouragement">歡迎繼續為 Wynime 提交 PR，合併後可以重新申請。</string>
     <string name="settings_account_developer_result_failed_title">上次申請未能完成</string>
     <string name="settings_account_developer_result_failed">伺服器暫時無法完成判定，請稍後重新申請。本次不計入申請次數</string>
     <string name="settings_account_developer_load_failed">載入失敗，點擊重試</string>
@@ -1134,7 +1134,7 @@
     <string name="rating_summary">%1$d 人評丨#%2$d</string>
     <string name="comment_send_failed_network">發送失敗：網路錯誤</string>
     <string name="comment_send_failed_unknown">發送失敗，請附帶日誌反饋此問題\n%1$s</string>
-    <string name="comment_ani_only_notice">評論將發送到 Ani，Bangumi 評論為唯讀</string>
+    <string name="comment_ani_only_notice">評論將發送到 Wynime，Bangumi 評論為唯讀</string>
     <string name="comment_send_comment">發送評論</string>
     <string name="comment_rendering">渲染中...</string>
     <string name="comment_reply">回覆評論</string>
@@ -1149,7 +1149,7 @@
     <string name="comment_report">檢舉</string>
     <string name="comment_copied">已複製</string>
     <string name="comment_report_title">檢舉評論</string>
-    <string name="comment_report_subtitle">檢舉會提交給 Animeko 審核，不會通知對方</string>
+    <string name="comment_report_subtitle">檢舉會提交給 Wynime 審核，不會通知對方</string>
     <string name="comment_report_reason_spam">垃圾廣告或引流</string>
     <string name="comment_report_reason_harassment">人身攻擊、騷擾</string>
     <string name="comment_report_reason_spoiler">劇透</string>
@@ -1173,7 +1173,7 @@
     <string name="comment_preview">預覽</string>
     <string name="comment_send">發送</string>
     <string name="foundation_browser_open_failed_copied">無法打開連結，已將連結複製到剪貼簿，請打開瀏覽器訪問</string>
-    <string name="foundation_richtext_external_app_link_warning_prefix">此連結可能會打開其他應用，ani 將不會打開此連結：\n</string>
+    <string name="foundation_richtext_external_app_link_warning_prefix">此連結可能會打開其他應用，Wynime 將不會打開此連結：\n</string>
     <string name="foundation_richtext_open_failed_prefix">無法打開此連結：\n</string>
     <string name="foundation_nsfw_hidden">此內容不適合展示</string>
     <string name="foundation_nsfw_temporary_display">臨時展示</string>
@@ -1323,7 +1323,7 @@
     <string name="qr_login_title">掃碼登入</string>
     <string name="qr_login_settings_description">在電視等裝置上登入此帳號</string>
     <string name="qr_login_scan_hint">對準電視上的 QR Code</string>
-    <string name="qr_login_scan_invalid">這不是 Animeko 登入 QR Code</string>
+    <string name="qr_login_scan_invalid">這不是 Wynime 登入 QR Code</string>
     <string name="qr_login_scan_torch">手電筒</string>
     <string name="qr_login_camera_permission">需要相機權限才能掃碼</string>
     <string name="qr_login_camera_permission_grant">允許使用相機</string>
@@ -1341,7 +1341,7 @@
     <string name="qr_login_rejected_title">已拒絕登入</string>
     <string name="qr_login_expired">QR Code 已過期, 請在電視上重新整理後再試</string>
     <string name="qr_login_already_handled">這個 QR Code 已被使用</string>
-    <string name="qr_login_requires_login">請先在此裝置上登入 Animeko</string>
+    <string name="qr_login_requires_login">請先在此裝置上登入 Wynime</string>
     <string name="qr_login_failed">操作失敗, 請檢查網路後再試</string>
     <string name="qr_login_retry">重試</string>
     <string name="qr_login_done">完成</string>

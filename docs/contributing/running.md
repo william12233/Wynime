@@ -53,12 +53,12 @@ PC 版本有三种启动方式：
 先在 `local.properties` 中加入：
 
 ```properties
-ani.enable.ios=true
-ani.build.framework=true
+Wynime.enable.ios=true
+Wynime.build.framework=true
 ```
 
 1. 在 App Store 安装 Xcode
-2. 在 Xcode 中打开项目 `app/ios/Animeko`
+2. 在 Xcode 中打开项目 `app/ios/Wynime`
 3. 在 Xcode 内运行
 
 在 Android Studio 中，也可以选择运行配置 `Run iOS Debug`，点击按钮运行即可。

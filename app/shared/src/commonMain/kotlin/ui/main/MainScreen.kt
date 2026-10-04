@@ -68,6 +68,7 @@ import me.him188.ani.app.navigation.SettingsTab
 import me.him188.ani.app.navigation.getIcon
 import me.him188.ani.app.navigation.getText
 import me.him188.ani.app.platform.LocalContext
+import me.him188.ani.app.platform.WynimeBrand
 import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuite
 import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuiteDefaults
 import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuiteLayout
@@ -475,11 +476,11 @@ private fun BoxScope.UpdateNotifierWithVersionExpiryCheck() {
                         )
                         pushLink(
                             LinkAnnotation.Url(
-                                "https://myani.org",
+                                WynimeBrand.githubHome,
                                 styles = TextLinkStyles(style = SpanStyle(color = MaterialTheme.colorScheme.primary)),
                             ),
                         )
-                        append("https://myani.org")
+                        append(WynimeBrand.githubHome)
                     },
                     Modifier.padding(horizontal = 24.dp),
                     style = MaterialTheme.typography.titleMedium,

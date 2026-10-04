@@ -13,14 +13,14 @@
 #   - extracts a DMG directly, OR
 #   - extracts a ZIP that contains a DMG, then extracts that DMG.
 #
-# Finally, it sets ANIMEKO_DESKTOP_TEST_TASK and runs Ani.app.
+# Finally, it sets ANIMEKO_DESKTOP_TEST_TASK and runs Wynime.app.
 #
 # USAGE:
-#   ./run-ani-test-macos-aarch64.sh <path-to-dmg-or-zip> <test-string>
+#   ./run-wynime-test-macos-aarch64.sh <path-to-dmg-or-zip> <test-string>
 #
 # Example:
-#   ./run-ani-test-macos-aarch64.sh /path/to/file.zip "SOME_TEST"
-#   ./run-ani-test-macos-aarch64.sh /path/to/file.dmg "SOME_TEST"
+#   ./run-wynime-test-macos-aarch64.sh /path/to/file.zip "SOME_TEST"
+#   ./run-wynime-test-macos-aarch64.sh /path/to/file.dmg "SOME_TEST"
 
 set -e  # Exit immediately on error
 
@@ -88,19 +88,19 @@ echo "Step 4: Setting ANIMEKO_DESKTOP_TEST_TASK to '$TEST_STRING'..."
 export ANIMEKO_DESKTOP_TEST_TASK="$TEST_STRING"
 export ANI_DISALLOW_PROJECT_DIRECTORIES_FALLBACK="true"
 
-# The final Ani.app is likely found at:
-#   extracted_dmg/Ani/Ani.app/Contents/MacOS/Ani
+# The final Wynime.app is likely found at:
+#   extracted_dmg/Wynime/Wynime.app/Contents/MacOS/Wynime
 # or
-#   extracted_dmg/Ani.app/Contents/MacOS/Ani
+#   extracted_dmg/Wynime.app/Contents/MacOS/Wynime
 # Adjust as necessary based on your actual structure.
-ANI_BINARY="extracted_dmg/Ani/Ani.app/Contents/MacOS/Ani"
+ANI_BINARY="extracted_dmg/Wynime/Wynime.app/Contents/MacOS/Ani"
 if [ ! -f "$ANI_BINARY" ]; then
-  # Fallback check in case there's no top-level "Ani" folder:
-  ANI_BINARY_FALLBACK="extracted_dmg/Ani.app/Contents/MacOS/Ani"
+  # Fallback check in case there's no top-level "Wynime" folder:
+  ANI_BINARY_FALLBACK="extracted_dmg/Wynime.app/Contents/MacOS/Wynime"
   if [ -f "$ANI_BINARY_FALLBACK" ]; then
     ANI_BINARY="$ANI_BINARY_FALLBACK"
   else
-    echo "Error: Could not find Ani binary at either:"
+    echo "Error: Could not find Wynime binary at either:"
     echo "       $ANI_BINARY"
     echo "       $ANI_BINARY_FALLBACK"
     ls -R extracted_dmg || true
@@ -108,19 +108,19 @@ if [ ! -f "$ANI_BINARY" ]; then
   fi
 fi
 
-echo "Ani binary found at: $ANI_BINARY"
+echo "Wynime binary found at: $ANI_BINARY"
 echo "Making it executable..."
 chmod +x "$ANI_BINARY"
 
-# --- Step 5: Run Ani.app and capture exit code ---
-echo "Step 5: Running Ani..."
+# --- Step 5: Run Wynime.app and capture exit code ---
+echo "Step 5: Running Wynime..."
 "$ANI_BINARY"
 EXIT_CODE=$?
 
 if [ "$EXIT_CODE" -ne 0 ]; then
-  echo "Error: Ani exited with non-zero code: $EXIT_CODE"
+  echo "Error: Wynime exited with non-zero code: $EXIT_CODE"
   exit $EXIT_CODE
 fi
 
-echo "Success: Ani exited normally (code 0)."
+echo "Success: Wynime exited normally (code 0)."
 exit 0

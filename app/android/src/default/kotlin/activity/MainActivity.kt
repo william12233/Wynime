@@ -25,9 +25,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
+import com.wynime.app.BuildConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.him188.ani.android.BuildConfig
 import me.him188.ani.app.domain.session.auth.OAuthCallbackRegistry
 import me.him188.ani.app.navigation.AniNavigator
 import me.him188.ani.app.platform.AniComponentActivity

@@ -87,7 +87,7 @@ object MacOSUpdateInstaller : DesktopUpdateInstaller {
         val scriptFile = File(tempDir, "macos-update.command")
         // We'll pass in essential parameters to the script.
         val oldPid = ProcessHandle.current().pid()
-        val appName = appDir.name  // e.g. Ani.app
+        val appName = appDir.name  // e.g. Wynime.app
         val targetParentDir = appDir.parentFile.absolutePath
 
         // Generate the shell script content based on the extension
@@ -347,7 +347,7 @@ object LinuxUpdateInstaller : DesktopUpdateInstaller {
         }
 
         try {
-            val tempDir = createTempDirectory(prefix = "animeko-appimage-update-").toFile()
+            val tempDir = createTempDirectory(prefix = "wynime-appimage-update-").toFile()
             val updater = tempDir.resolve(LINUX_APPIMAGE_UPDATE_TOOL)
             bundledUpdater.copyTo(updater)
             check(updater.setExecutable(true)) { "Failed to make updater executable: ${updater.absolutePath}" }
@@ -472,8 +472,8 @@ object WindowsUpdateInstaller : DesktopUpdateInstaller {
         logger.info { "Installing update for Windows" }
         val appDir = ExecutableDirectoryDetector.INSTANCE.getExecutableDirectory()
         logger.info { "Current app dir: ${appDir.absolutePath}" }
-        if (!appDir.resolve("Ani.exe").exists()) {
-            logger.info { "Current app dir does not have 'Ani.exe'. Fallback to manual update" }
+        if (!appDir.resolve("Wynime.exe").exists()) {
+            logger.info { "Current app dir does not have 'Wynime.exe'. Fallback to manual update" }
             return InstallationResult.Failed(InstallationFailureReason.UNSUPPORTED_FILE_STRUCTURE)
         }
 

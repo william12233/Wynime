@@ -121,6 +121,7 @@ includeProject(":client")
 
 // Stable Host/Plugin boundary for executable online source plugins.
 includeProject(":source:plugin-api", "source/plugin-api")
+includeProject(":source:plugins", "source/plugins")
 
 // server
 //includeProject(":server:core", "server/core") // server core

@@ -20,10 +20,10 @@ const val SOURCE_PLUGIN_API_VERSION = 1
 /** The single first-party repository configured by the host application. */
 object SourcePluginRepositoryDefaults {
     const val owner = "william12233"
-    const val repository = "wynime-sources"
+    const val repository = "Wynime"
     const val branch = "main"
     const val indexPath = "index.json"
-    const val rawBaseUrl = "https://raw.githubusercontent.com/william12233/wynime-sources/main"
+    const val rawBaseUrl = "https://raw.githubusercontent.com/william12233/Wynime/main/source/plugins"
 }
 
 @Serializable

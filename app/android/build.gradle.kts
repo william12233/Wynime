@@ -33,10 +33,10 @@ val archs = getPropertyOrNull("ani.android.abis")
     ?: listOf("arm64-v8a")
 
 android {
-    namespace = "me.him188.ani.android"
+    namespace = "com.wynime.app"
     compileSdk = getIntProperty("android.compile.sdk")
     defaultConfig {
-        applicationId = "me.him188.ani"
+        applicationId = "com.wynime.app"
         minSdk = getIntProperty("android.min.sdk")
         targetSdk = getIntProperty("android.compile.sdk")
         versionCode = getIntProperty("android.version.code")

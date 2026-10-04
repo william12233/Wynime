@@ -48,6 +48,7 @@ import me.him188.ani.app.navigation.MainScreenPage
 import me.him188.ani.app.navigation.getIcon
 import me.him188.ani.app.navigation.getText
 import me.him188.ani.app.platform.currentAniBuildConfig
+import me.him188.ani.app.ui.settings.tabs.AniHelperDestination
 import me.him188.ani.app.ui.foundation.LocalPlatform
 import me.him188.ani.app.ui.foundation.SteppedSlider
 import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
@@ -348,7 +349,7 @@ fun SettingsScope.SoftwareUpdateGroup(
         RowButtonItem(
             onClick = {
                 uriHandler.openUri(
-                    "https://github.com/open-ani/ani/releases/tag/v${currentAniBuildConfig.versionName}",
+                    AniHelperDestination.RELEASE_PREFIX + currentAniBuildConfig.versionName,
                 )
             },
             icon = { Icon(Icons.Rounded.ArrowOutward, null) },

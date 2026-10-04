@@ -1,24 +1,24 @@
 <#
 .SYNOPSIS
-  Locate and run Ani.exe either from a directory or by first unzipping a .zip file.
+  Locate and run Wynime.exe either from a directory or by first unzipping a .zip file.
 
 .DESCRIPTION
-  1. If the path is a directory, search that directory for Ani.exe.
-  2. If the path is a .zip file, unzip to extracted_zip, then search for Ani.exe.
-  3. Set ANIMEKO_DESKTOP_TEST_TASK to the second argument and run Ani.exe.
-  4. If Ani.exe exits non-zero, exit with that code. Otherwise, exit with 0.
+  1. If the path is a directory, search that directory for Wynime.exe.
+  2. If the path is a .zip file, unzip to extracted_zip, then search for Wynime.exe.
+  3. Set ANIMEKO_DESKTOP_TEST_TASK to the second argument and run Wynime.exe.
+  4. If Wynime.exe exits non-zero, exit with that code. Otherwise, exit with 0.
 
 .PARAMETER InputPath
-  A directory or a .zip file where Ani.exe is located.
+  A directory or a .zip file where Wynime.exe is located.
 
 .PARAMETER TestString
   The test identifier to assign to ANIMEKO_DESKTOP_TEST_TASK.
 
 .EXAMPLE
-  PS> .\run-ani-test.ps1 "C:\my\dir" "TEST_ABC"
+  PS> .\run-wynime-test.ps1 "C:\my\dir" "TEST_ABC"
 
 .EXAMPLE
-  PS> .\run-ani-test.ps1 "C:\downloads\ani.zip" "TEST_XYZ"
+  PS> .\run-wynime-test.ps1 "C:\downloads\ani.zip" "TEST_XYZ"
 #>
 
 param (
@@ -29,7 +29,7 @@ param (
     [string]$TestString
 )
 
-Write-Host "=== Ani Test Runner ==="
+Write-Host "=== Wynime Test Runner ==="
 
 # --- Step 1: Validate input path ---
 if (!(Test-Path -Path $InputPath)) {
@@ -50,7 +50,7 @@ else {
     $extension = [System.IO.Path]::GetExtension($InputPath).ToLower()
 
     if ($extension -eq ".zip") {
-        Write-Host "Detected a .zip file. Will unzip and then search for Ani.exe."
+        Write-Host "Detected a .zip file. Will unzip and then search for Wynime.exe."
 
         # Cleanup old extracted folder
         if (Test-Path "extracted_zip") {
@@ -72,29 +72,29 @@ else {
     }
 }
 
-# --- Step 3: Search for Ani.exe ---
-Write-Host "Searching for 'Ani.exe' under '$aniSearchRoot'..."
-$aniExe = Get-ChildItem -Path $aniSearchRoot -Filter "Ani.exe" -Recurse -Force | Select-Object -First 1
+# --- Step 3: Search for Wynime.exe ---
+Write-Host "Searching for 'Wynime.exe' under '$aniSearchRoot'..."
+$aniExe = Get-ChildItem -Path $aniSearchRoot -Filter "Wynime.exe" -Recurse -Force | Select-Object -First 1
 
 if (-not $aniExe) {
-    Write-Error "Error: Ani.exe not found in '$aniSearchRoot'."
+    Write-Error "Error: Wynime.exe not found in '$aniSearchRoot'."
     exit 1
 }
 
-Write-Host "Found Ani.exe at: $($aniExe.FullName)"
+Write-Host "Found Wynime.exe at: $($aniExe.FullName)"
 
-# --- Step 4: Set environment variable & run Ani.exe ---
+# --- Step 4: Set environment variable & run Wynime.exe ---
 Write-Host "Setting ANIMEKO_DESKTOP_TEST_TASK to '$TestString'..."
 $env:ANIMEKO_DESKTOP_TEST_TASK = $TestString
 $env:ANI_DISALLOW_PROJECT_DIRECTORIES_FALLBACK = "true"
 
-Write-Host "Running Ani.exe..."
+Write-Host "Running Wynime.exe..."
 $process = Start-Process -FilePath $aniExe.FullName -Wait -PassThru
 
 if ($process.ExitCode -ne 0) {
-    Write-Error "Ani.exe exited with code $($process.ExitCode)."
+    Write-Error "Wynime.exe exited with code $($process.ExitCode)."
     exit $process.ExitCode
 }
 
-Write-Host "Success: Ani.exe exited with code 0."
+Write-Host "Success: Wynime.exe exited with code 0."
 exit 0

@@ -145,8 +145,8 @@ object TestTasks {
         logger.info { "Bundled SQLite check: global scope owned by $owner" }
     }
 
-    // https://d.myani.org/v4.0.0-release-checksum-1/ani-4.0.0-release-checksum-1-macos-aarch64.dmg
-    // https://d.myani.org/v4.0.0-release-checksum-1/ani-4.0.0-release-checksum-1-windows-x86_64.zip
+    // https://github.com/william12233/Wynime/releases/download/0.1/wynime-0.1-macos-aarch64.dmg
+    // https://github.com/william12233/Wynime/releases/download/0.1/wynime-0.1-windows-x86_64.zip
     private fun downloadUpdateAndInstall(args: List<String>, context: DesktopContext): Nothing {
         val url = args[0]
 

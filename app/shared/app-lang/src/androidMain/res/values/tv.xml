@@ -96,7 +96,7 @@
     <string name="tv_nav_schedule">Schedule</string>
     <string name="tv_login_or">or</string>
     <string name="tv_login_qr_title">Sign in with your phone</string>
-    <string name="tv_login_qr_hint">Use “Scan to sign in” in Animeko on your phone, or scan with the phone camera</string>
+    <string name="tv_login_qr_hint">Use “Scan to sign in” in Wynime on your phone, or scan with the phone camera</string>
     <string name="tv_login_qr_expires_in">QR code refreshes in %1$s</string>
     <string name="tv_login_qr_content_description">Sign-in QR code</string>
     <string name="tv_login_qr_loading">Loading QR code…</string>

@@ -189,7 +189,7 @@ internal fun TvPeopleDiscussion(
     val author = selected?.author?.nickname?.takeIf { it.isNotBlank() } ?: stringResource(Lang.foundation_anonymous)
     val subtitle = if (page == TvPeopleDiscussionPage.List)
         state.name + " · " + stringResource(Lang.person_details_comments_count, peopleDiscussionCount(comments, state.bangumiUnavailable))
-    else selected?.let { (if (it.source == UICommentSource.BANGUMI) "Bangumi" else "Animeko") + " · " + formatDateTime(it.createdAt) }
+    else selected?.let { (if (it.source == UICommentSource.BANGUMI) "Bangumi" else "Wynime") + " · " + formatDateTime(it.createdAt) }
 
     TvModalOverlay(onClose = { onAction(TvPeopleDiscussionAction.Close) }, background = {},
         modifier = Modifier.tvFocusNavSignal(focus).testTag("tv-people-discussion")) {

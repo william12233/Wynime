@@ -388,7 +388,7 @@ private fun MergeColumnHeaderSide(
         )
         Text(
             when (side) {
-                BangumiMergeSide.ANIMEKO -> "Animeko"
+                BangumiMergeSide.ANIMEKO -> "Wynime"
                 BangumiMergeSide.BANGUMI -> "Bangumi"
             },
             style = MaterialTheme.typography.labelMedium,

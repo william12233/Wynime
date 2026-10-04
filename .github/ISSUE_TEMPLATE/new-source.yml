@@ -22,10 +22,10 @@ body:
       required: true
 
   - type: input
-    id: version-ani
+    id: version-Wynime
     attributes:
-      label: 当前 Ani 版本号
-      description: 你正在使用的 Ani 版本号，可在 "设置-界面与应用" 中找到，如 `4.0.0`。
+      label: 当前 Wynime 版本号
+      description: 你正在使用的 Wynime 版本号，可在 "设置-界面与应用" 中找到，如 `4.0.0`。
       placeholder: "例如: 4.0.0"
     validations:
       required: true

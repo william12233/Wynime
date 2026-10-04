@@ -62,8 +62,8 @@ MediaSelector 主要包含以下四个阶段：
 
 > [!WARNING]
 >
-> 此行为暂未在 Ani 4.8.0 中实现。4.8.0 实现的算法总是优先匹配 `sort`。
-> 此问题在 [#1448](https://github.com/open-ani/animeko/issues/1448) 中跟踪。
+> 此行为暂未在 Wynime 4.8.0 中实现。4.8.0 实现的算法总是优先匹配 `sort`。
+> 此问题在 [#1448](https://github.com/william12233/Wynime/issues/1448) 中跟踪。
 
 ## 过滤阶段
 

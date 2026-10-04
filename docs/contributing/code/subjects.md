@@ -1,6 +1,6 @@
 # 条目系统
 
-Ani 的条目系统包括番剧、番剧的剧集和相关其他信息。
+Wynime 的条目系统包括番剧、番剧的剧集和相关其他信息。
 
 ## 条目
 
@@ -17,7 +17,7 @@ Ani 的条目系统包括番剧、番剧的剧集和相关其他信息。
 > [!TIP]
 > **条目数据来源**
 >
-> Ani 的条目数据目前完全使用 Bangumi，因此，Ani 的条目的所有数据和
+> Wynime 的条目数据目前完全使用 Bangumi，因此，Wynime 的条目的所有数据和
 > Bangumi 的都是一样的（包括 ID）。
 
 ## 条目系列和续集
@@ -108,5 +108,5 @@ UI 位于 `ui/subject/relations`：窄屏为纵向时间线，宽屏为横向的
 
 在 Bangumi 上，OVA 和 SP 有两种形式存在。有可能是一个独立的 OVA/SP 条目（包含单个剧集），也有可能是作为一个特殊剧集归属于主条目中。
 
-Ani
-的条目系统暂未考虑上述类型，但这在近期计划中 [#492](https://github.com/open-ani/animeko/issues/492)。
+Wynime
+的条目系统暂未考虑上述类型，但这在近期计划中 [#492](https://github.com/william12233/Wynime/issues/492)。

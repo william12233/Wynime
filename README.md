@@ -1,10 +1,10 @@
 <div align="center">
 
-![Animeko](https://socialify.git.ci/open-ani/animeko/image?description=1&descriptionEditable=%E9%9B%86%E6%89%BE%E7%95%AA%E3%80%81%E8%BF%BD%E7%95%AA%E3%80%81%E7%9C%8B%E7%95%AA%E7%9A%84%E4%B8%80%E7%AB%99%E5%BC%8F%E5%BC%B9%E5%B9%95%E8%BF%BD%E7%95%AA%E5%B9%B3%E5%8F%B0&font=Jost&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fopen-ani%2Fanimeko%2Frefs%2Fheads%2Fmain%2F.github%2Fassets%2Flogo.png&name=1&owner=1&pattern=Plus&theme=Light)
+![Wynime](https://socialify.git.ci/william12233/Wynime/image?description=1&descriptionEditable=%E9%9B%86%E6%89%BE%E7%95%AA%E3%80%81%E8%BF%BD%E7%95%AA%E3%80%81%E7%9C%8B%E7%95%AA%E7%9A%84%E4%B8%80%E7%AB%99%E5%BC%8F%E5%BC%B9%E5%B9%95%E8%BF%BD%E7%95%AA%E5%B9%B3%E5%8F%B0&font=Jost&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fwilliam12233%2FWynime%2Frefs%2Fheads%2Fmain%2F.github%2Fassets%2Flogo.png&name=1&owner=1&pattern=Plus&theme=Light)
 
 | 正式版                                                                                                                                                                          | 测试版                                                                                                                                                                                     | 讨论群                                                                                                                                                                                                                                                                                                                                                                                                           |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [![Stable](https://img.shields.io/github/release/open-ani/ani.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://github.com/open-ani/ani/releases/latest) | [![Beta](https://img.shields.io/github/v/release/open-ani/ani.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39&include_prereleases)](https://github.com/open-ani/ani/releases) | [![Group](https://img.shields.io/badge/Telegram-2CA5E0?style=flat-squeare&logo=telegram&logoColor=white)](https://t.me/openani) |
+| [![Stable](https://img.shields.io/github/release/william12233/Wynime.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://github.com/william12233/Wynime/releases/latest) | [![Beta](https://img.shields.io/github/v/release/william12233/Wynime.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39&include_prereleases)](https://github.com/william12233/Wynime/releases) | [![Group](https://img.shields.io/badge/Telegram-2CA5E0?style=flat-squeare&logo=telegram&logoColor=white)](https://t.me/openani) |
 
 </div>
 
@@ -20,11 +20,11 @@
 
 [VLC]: https://www.videolan.org/vlc/
 
-Animeko 支持云同步观看记录 ([Bangumi][Bangumi])、多视频数据源、缓存以及更多功能，提供尽可能简单且舒适的追番体验。
+Wynime 支持云同步观看记录 ([Bangumi][Bangumi])、多视频数据源、缓存以及更多功能，提供尽可能简单且舒适的追番体验。
 
-> Animeko 曾用名 Ani，现在也简称 Ani。
+> Wynime 曾用名 Wynime，现在也简称 Wynime。
 
-[立即下载](https://animeko.org/)
+[立即下载](https://github.com/william12233/Wynime)
 
 https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
 
@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
 
 ### 丰富的检索方式：新番时间表、标签搜索
 
-> 由 Bangumi 和 Animeko 服务端共同提供的精确新番时间表
+> 由 Bangumi 和 Wynime 服务端共同提供的精确新番时间表
 
 | <img src=".readme/images/features/anime-schedule.png" alt="" width="200"/> | <img src=".readme/images/features/search-by-tag.png" alt="" width="200"/> | 
 |:--------------------------------------------------------------------------:|:-------------------------------------------------------------------------:|
@@ -52,7 +52,7 @@ https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
 
 ### 聚合数据源
 
-- [聚合视频数据源](https://github.com/creamycake-anime/ani-subs)，全自动选择
+- [聚合视频数据源](https://github.com/creamycake-anime/Wynime-subs)，全自动选择
   > 还支持 Jellyfin、Emby、以及自定义源
 
 | <img src=".readme/images/features/mediaselector-simple.png" alt="" width="200"/> | <img src=".readme/images/features/mediaselector-detailed.png" alt="" width="200"/> |
@@ -91,16 +91,16 @@ https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
 
 ## 下载
 
-Animeko 支持所有主流平台：Android、iOS、Windows、macOS、Linux。
+Wynime 支持所有主流平台：Android、iOS、Windows、macOS、Linux。
 
 - 稳定版本: 功能稳定  
-  [下载稳定版本](https://animeko.org/downloads/)
+  [下载稳定版本](https://github.com/william12233/Wynime/releases)
 
 通常建议使用稳定版本. 如果你愿意参与测试并拥有一定的对 bug 的处理能力, 也欢迎使用测试版本更快体验新功能.
 具体版本类型可查看下方.
 
 - 测试版本: 体验最新功能  
-  [下载测试版本](https://animeko.org/downloads/)
+  [下载测试版本](https://github.com/william12233/Wynime/releases)
 
 ## 技术总览
 
@@ -122,6 +122,6 @@ Animeko 支持所有主流平台：Android、iOS、Windows、macOS、Linux。
 
 ### 资源来源是什么?
 
-全部视频数据都来自网络, Animeko 本身不存储任何视频数据。
-Animeko 使用在线视频数据源，目前使用 [creamycake ani-subs](https://github.com/creamycake-anime/ani-subs)。Animeko
+全部视频数据都来自网络, Wynime 本身不存储任何视频数据。
+Wynime 使用在线视频数据源，目前使用 [creamycake Wynime-subs](https://github.com/creamycake-anime/Wynime-subs)。Wynime
 本身并不提供任何视频资源。

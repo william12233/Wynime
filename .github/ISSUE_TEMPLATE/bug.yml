@@ -35,10 +35,10 @@ body:
       required: false
 
   - type: input
-    id: version-ani
+    id: version-Wynime
     attributes:
-      label: Ani 版本号
-      description: 你正在使用的 Ani 版本号，可在 "设置-软件更新" 中找到，如 `4.0.0`。`4.4.0-beta01` 也可以简写为 `440b1`。
+      label: Wynime 版本号
+      description: 你正在使用的 Wynime 版本号，可在 "设置-软件更新" 中找到，如 `4.0.0`。`4.4.0-beta01` 也可以简写为 `440b1`。
       placeholder: "例如: 4.0.0"
     validations:
       required: true

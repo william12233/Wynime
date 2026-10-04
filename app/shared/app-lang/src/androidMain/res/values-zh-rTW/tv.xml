@@ -96,7 +96,7 @@
     <string name="tv_nav_schedule">時間表</string>
     <string name="tv_login_or">或</string>
     <string name="tv_login_qr_title">手機掃碼登入</string>
-    <string name="tv_login_qr_hint">用手機 Animeko 的「掃碼登入」或系統相機掃描</string>
+    <string name="tv_login_qr_hint">用手機 Wynime 的「掃碼登入」或系統相機掃描</string>
     <string name="tv_login_qr_expires_in">QR Code 將在 %1$s 後更新</string>
     <string name="tv_login_qr_content_description">登入 QR Code</string>
     <string name="tv_login_qr_loading">正在載入 QR Code…</string>

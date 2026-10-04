@@ -8,7 +8,7 @@
   -->
 
 <resources>
-    <string name="app_name">Animeko</string>
+    <string name="app_name">Wynime</string>
     <string name="app_service_title_text_idle">没有下载任务</string>
     <string name="app_service_title_text_working">正在下载 %1$d 个资源</string>
     <string name="app_service_content_text">下载：%1$s，上传：%2$s</string>

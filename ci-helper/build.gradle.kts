@@ -122,7 +122,7 @@ val zipDesktopDistribution = tasks.register("zipDesktopDistribution", Zip::class
     from(project(":app:desktop").layout.buildDirectory.dir("compose/binaries/main-release/app"))
     // Preserve launchers and bundled runtime helpers that must remain executable.
     useFileSystemPermissions()
-    archiveBaseName.set("ani")
+    archiveBaseName.set("wynime")
     archiveVersion.set(ciReleaseFullVersion)
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
     archiveExtension.set("zip")
@@ -147,15 +147,15 @@ tasks.register("uploadDesktopInstallers", UploadDesktopInstallersTask::class) {
         }
 
         ReleaseHostOs.LINUX -> {
-            linuxAppImage.set(rootProject.layout.projectDirectory.file("Animeko-x86_64.AppImage"))
-            linuxAppImageZsync.set(rootProject.layout.projectDirectory.file("Animeko-x86_64.AppImage.zsync"))
+            linuxAppImage.set(rootProject.layout.projectDirectory.file("Wynime-x86_64.AppImage"))
+            linuxAppImageZsync.set(rootProject.layout.projectDirectory.file("Wynime-x86_64.AppImage.zsync"))
         }
     }
 }
 
 tasks.register("uploadIosIpa", UploadReleaseAssetTask::class) {
     configureReleaseUploadInputs()
-    artifactFile.set(project(":app:ios").layout.buildDirectory.file("archives/release/Animeko.ipa"))
+    artifactFile.set(project(":app:ios").layout.buildDirectory.file("archives/release/Wynime.ipa"))
     assetContentType.set("application/x-iphone")
     assetName.set(ciReleaseFullVersion.map(ReleaseArtifactNames::iosIpa))
 }
@@ -172,7 +172,7 @@ val prepareAppStoreConnectKey = tasks.register("prepareAppStoreConnectKey", Prep
 
 tasks.register("uploadAppStoreConnectTestflight", UploadAppStoreConnectTestflightTask::class) {
     dependsOn(prepareAppStoreConnectKey)
-    ipaFile.set(project(":app:ios").layout.buildDirectory.file("archives/release-signed/export/Animeko.ipa"))
+    ipaFile.set(project(":app:ios").layout.buildDirectory.file("archives/release-signed/export/Wynime.ipa"))
     workingDirectory.set(project(":app:ios").layout.projectDirectory)
     apiKeyId.convention(appStoreApiKeyId)
     apiIssuerId.convention(appStoreIssuerId)
@@ -237,7 +237,7 @@ tasks.register("prepareArtifactsForManualUpload") {
                     "x86_64",
                     extension = "appimage",
                 ),
-                file = rootProject.file("Animeko-x86_64.AppImage"),
+                file = rootProject.file("Wynime-x86_64.AppImage"),
             )
         }
 

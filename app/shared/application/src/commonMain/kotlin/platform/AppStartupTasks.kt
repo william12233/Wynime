@@ -41,7 +41,7 @@ object AppStartupTasks {
     }
 
     fun printVersions() {
-        logger.info { "Ani started. platform: ${currentPlatform()}, version: ${currentAniBuildConfig.versionName}, isDebug: ${currentAniBuildConfig.isDebug}" }
+        logger.info { "Wynime started. platform: ${currentPlatform()}, version: ${currentAniBuildConfig.versionName}, isDebug: ${currentAniBuildConfig.isDebug}" }
     }
 
     private val logger = logger<AppStartupTasks>()

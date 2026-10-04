@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import me.him188.ani.app.platform.LocalContext
+import me.him188.ani.app.platform.WynimeBrand
 import me.him188.ani.app.platform.navigation.rememberAsyncBrowserNavigator
 import me.him188.ani.app.ui.lang.Lang
 import me.him188.ani.app.ui.lang.settings_help_feedback
@@ -25,13 +26,13 @@ import me.him188.ani.app.ui.lang.settings_help_website
 import org.jetbrains.compose.resources.stringResource
 
 object AniHelperDestination {
-    const val GITHUB_HOME = "https://github.com/open-ani/animeko"
-    const val GITHUB_CONTRIBUTORS = "https://github.com/open-ani/animeko/graphs/contributors"
-    const val ANI_WEBSITE = "https://myani.org"
-    const val ISSUE_TRACKER = "https://github.com/open-ani/animeko/issues"
-    const val RELEASE_PREFIX = "https://github.com/open-ani/animeko/releases/tag/v"
+    const val GITHUB_HOME = WynimeBrand.githubHome
+    const val GITHUB_CONTRIBUTORS = WynimeBrand.githubContributors
+    const val ANI_WEBSITE = WynimeBrand.githubHome
+    const val ISSUE_TRACKER = WynimeBrand.githubIssues
+    const val RELEASE_PREFIX = WynimeBrand.githubReleaseTagPrefix
 
-    const val GITHUB_REPO = "https://github.com/him188/ani"
+    const val GITHUB_REPO = WynimeBrand.githubHome
     const val BANGUMI = "https://bangumi.tv"
 }
 

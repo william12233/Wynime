@@ -27,17 +27,25 @@
 
 ## 目前人工證據索引
 
-下表只記錄目前工作區已存在且能追溯的證據；未列為 `PASS` 的來源仍須在下一輪人工煙霧測試中補齊，不能由其他來源的成功結果代替。
+下表只記錄目前工作區已存在且能追溯的證據。播放 `PASS` 必須能在截圖或同一操作的播放器狀態中辨識實際畫面；下載 `PASS` 必須有完成與刪除後清理證據。
 
 | 來源 | 播放 | 下載與清理 | 證據／備註 |
 | --- | --- | --- | --- |
-| `eacg` | `UNVERIFIED` | `UNVERIFIED` | `.tmp-rezero-eacg-2k.log`、`.tmp-rezero-eacg-edd.log` 有播放進度紀錄，但目前紀錄尚未把所選來源與該進度一一對應；另有 `.tmp-play-eacg-v105.log` 的播放器格式錯誤。 |
-| `dm1` | `UNVERIFIED` | `UNVERIFIED` | 有 `.tmp-app-log-dmbus-latest.txt` 的 DM1 媒體請求紀錄，但仍需隔離成單一來源、單一集數的播放與下載證據。 |
-| `next` | `UNVERIFIED` | `UNVERIFIED` | `.tmp-slime-next-playing.log` 有帶 referer 的短期 MP4 媒體請求，但尚缺同一操作的正向播放進度。 |
+| `eacg` | `PASS` | `PASS` | `re0` 精確選到 E-ACG；`.tmp-eacg-episode-diagnostic.png` 顯示實際畫面，`.tmp-eacg-diagnostic-logcat.txt` 記錄驗證後的詳情頁、3 條網站頻道與 XHS MP4 resolve；`.tmp-download-eacg-complete.png`／`.tmp-download-eacg-deleted.png` 顯示下載完成與刪除後清理。 |
+| `dm1` | `PASS` | `UNVERIFIED` | `.tmp-final-play-dm1.png` 顯示播放器實際畫面，來源卡為稀飯動漫；下載未另行測試，依目前人工驗收指示只需一個來源完成下載驗證。 |
+| `next` | `PASS` | `UNVERIFIED` | `.tmp-final-play-next.png` 顯示播放器實際畫面，來源卡為稀飯動漫 Next；下載未另行測試，依目前人工驗收指示只需一個來源完成下載驗證。 |
 | `girigiri` | `PASS` | `PASS` | `re0` 搜尋由公開 API 取得 6 個候選，精確選到 `GV1222`；網站詳情頁只有 `简中` 1 個頻道、25 集。`.tmp-girigiri-playing-confirmed.png`／`.tmp-girigiri-download.log` 可核對播放與 `206` 媒體請求；`.tmp-girigiri-download-completed.png` 顯示 `1/25 已完成 · 333.7 MB`，`.tmp-girigiri-download-clean.png` 顯示由 App 刪除後回到 `0/25 已完成`。 |
-| `2rk` | `BLOCKED` | `UNVERIFIED` | 網站 `c.js` 實際列出 `线路1`、`线路2`、`线路3`。目前播放鏈取得 `/saber` 的 31-byte 回應，ExoPlayer 報 `InvalidKeyException: Unsupported key size: 31 bytes`；不能把 HTTP 200 或建立 HLS proxy 當成播放成功。 |
-| `dida` | `PASS` | `PASS` | `.tmp-dida-playing-all.log` 有正向 `positionMillis`／`durationMillis`；下載完成與刪除後證據為 `.tmp-dida-download-complete.xml`、`.tmp-dida-download-deleted.png`。 |
+| `2rk` | `PASS`（線路 1） | `UNVERIFIED` | `.tmp-final-play-2rk-line1.png` 顯示線路 1 實際畫面。網站 `c.js` 實際列出 `线路1`、`线路2`、`线路3`；線路 2、3 的 `/saber` 回應仍是 31 bytes，ExoPlayer 報 `InvalidKeyException: Unsupported key size: 31 bytes`，因此個別標為上游 `BLOCKED`，沒有假稱三條都能播放。 |
+| `dida` | `PASS` | `PASS` | `.tmp-dida-static-matcher-fix-playing.png` 顯示嘀嗒影視實際畫面與來源卡；`.tmp-dida-download-progress-20s.png` 顯示已取得 `138.6 MB`，完成與刪除後證據為 `.tmp-dida-download-complete.xml`、`.tmp-dida-download-deleted.png`。 |
 | `dmbus` | `PASS` | `PASS` | `.tmp-android-dmbus-slime-playing-fixed-logcat.txt` 有同一番劇的正向播放進度；下載完成、刪除與清理證據為 `.tmp-android-dmbus-download-finished-menu.xml`、`.tmp-android-dmbus-download-after-delete.xml`、`.tmp-android-dmbus-download-clean.png`。 |
+
+目前已有下載完成／刪除後清理證據的來源為 E-ACG、Girigiri、DIDA 與 DMBUS；下載驗收只要求一個來源時，這些證據已超出最低數量。
+
+### 多線路結果
+
+- E-ACG 詳情頁實際回傳 `EDD动漫`、`极速在线`、`看吧备用` 三條線路；最新模擬器測試以 `看吧备用` 成功播放。其餘線路保留網站實際錯誤（TLS 憑證鏈或上游 timeout），不以替代 URL 或停用驗證冒充成功。
+- 2RK 詳情頁實際回傳 `线路1`、`线路2`、`线路3`；線路 1 播放成功，線路 2、3 因站方金鑰回應不是可用的 32-byte AES 金鑰而標示 `BLOCKED`。
+- DIDA、DMBUS 的來源卡與網站線路名稱均來自插件詳情解析，沒有由 host 補造不存在的線路。
 
 ### 2RK 線路記錄
 

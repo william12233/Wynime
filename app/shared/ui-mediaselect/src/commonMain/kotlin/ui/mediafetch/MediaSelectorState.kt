@@ -274,26 +274,9 @@ class MediaSelectorState(
         }.flatMapLatest { (sources, allMediaList, resolvingCaptchaInstanceIds) ->
             val showWebSources = sources.map { source ->
 
-                // 属于这个数据源的 medias
-                val sourceMediaList = allMediaList
-                    .asSequence()
-                    .filter {
-                        // Filter medias that are from this source
-                        it.result?.mediaSourceId == source.mediaSourceId // null result gives `false` and is hence excluded
-                    }
-                    .toList()
-
-                // 優先使用精確匹配；若網站標題只有繁簡、標點或副標題差異，
-                // 精確匹配可能為空，但 selector 已判定為 included 的資源仍可播放。
-                // 只有在沒有精確匹配時才回退到 included，排除的季度／集數不會被帶入。
-                val exactMedia = sourceMediaList
-                    .asSequence()
-                    .filter { it.isPerfectMatch() }
-                    .mapNotNull { it.result }
-                    .toList()
-                val myMediaList = (exactMedia.ifEmpty {
-                    sourceMediaList.mapNotNull { it.result }
-                }).asSequence()
+                // 只把目前可用的資源放進簡單模式。`filteredCandidates` 同時包含
+                // 被排除的候選；那些候選只供詳細模式顯示排除原因，不能變成播放線路。
+                val myMediaList = visibleSourceMedia(allMediaList, source.mediaSourceId).asSequence()
 
                 createWebSourceFlow(
                     source,
@@ -393,6 +376,24 @@ class MediaSelectorState(
             resolvingCaptchaInstanceIds.value = resolvingCaptchaInstanceIds.value - source.instanceId
         }
     }
+}
+
+/**
+ * Returns the resources that may be exposed as simple-mode channels for one source.
+ * Excluded candidates remain available to detailed mode, but cannot become playback
+ * choices in the compact source list.
+ */
+internal fun visibleSourceMedia(
+    candidates: List<MaybeExcludedMedia>,
+    mediaSourceId: String,
+): List<Media> {
+    val sourceCandidates = candidates
+        .filter { it.result?.mediaSourceId == mediaSourceId }
+    val exactMedia = sourceCandidates
+        .filter { it.isPerfectMatch() }
+        .mapNotNull { it.result }
+    return (exactMedia.ifEmpty { sourceCandidates.mapNotNull { it.result } })
+        .distinctBy { it.mediaId }
 }
 
 @Stable

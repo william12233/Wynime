@@ -18,17 +18,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,12 +53,13 @@ import me.him188.ani.app.domain.media.selector.MaybeExcludedMedia
 import me.him188.ani.app.domain.media.selector.MediaExclusionReason
 import me.him188.ani.app.domain.media.selector.MediaSelectorContext
 import me.him188.ani.app.domain.media.selector.TestMatchMetadata
-import me.him188.ani.app.domain.media.selector.UnsafeOriginalMediaAccess
 import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
 import me.him188.ani.app.ui.foundation.icons.EditSquare
 import me.him188.ani.app.ui.foundation.ifThen
 import me.him188.ani.app.ui.lang.Lang
 import me.him188.ani.app.ui.lang.media_selector_view_detailed_mode
+import me.him188.ani.app.ui.lang.media_selector_view_filtered_count
+import me.him188.ani.app.ui.lang.media_selector_view_show_excluded
 import me.him188.ani.app.ui.lang.media_selector_view_simple_mode
 import me.him188.ani.app.ui.lang.settings_media_source_more
 import me.him188.ani.app.ui.mediafetch.request.MediaFetchRequestEditorDialog
@@ -64,7 +70,6 @@ import me.him188.ani.datasources.api.Media
 import me.him188.ani.datasources.api.source.MediaFetchRequest
 import me.him188.ani.datasources.api.topic.ResourceLocation
 import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.isMobile
 import org.jetbrains.compose.resources.stringResource
 
 
@@ -85,12 +90,13 @@ fun MediaSelectorView(
     scrollable: Boolean = true,
 ) {
     val presentation by state.presentationFlow.collectAsStateWithLifecycle()
+    val sourceResults by state.sourceResultsPresentationFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     Column(modifier) {
         // 编辑查询请求的对话框
-        var showEditRequest by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-        var isDetailedMode by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+        var showEditRequest by rememberSaveable { mutableStateOf(false) }
+        var isDetailedMode by rememberSaveable { mutableStateOf(false) }
         if (showEditRequest && fetchRequest != null) {
             MediaFetchRequestEditorDialog(
                 fetchRequest,
@@ -112,9 +118,11 @@ fun MediaSelectorView(
         if (isDetailedMode) {
             MediaSelectorDetailedList(
                 presentation = presentation,
+                sourceResults = sourceResults,
                 state = state,
                 scope = scope,
                 onClickItem = onClickItem,
+                onRestartSource = onRestartSource,
                 modifier = Modifier.padding(bottom = WINDOW_VERTICAL_PADDING)
                     .weight(1f, fill = false)
                     .fillMaxWidth()
@@ -147,6 +155,7 @@ fun MediaSelectorView(
 
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun MediaSelectorActionsRow(
     isDetailedMode: Boolean,
@@ -157,33 +166,23 @@ private fun MediaSelectorActionsRow(
     Row(
         modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        TextButton(
-            onClick = { onDetailedModeChange(false) },
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = if (!isDetailedMode) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            ),
-        ) {
-            Text(stringResource(Lang.media_selector_view_simple_mode))
+        SingleChoiceSegmentedButtonRow(Modifier.weight(1f)) {
+            SegmentedButton(
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                onClick = { onDetailedModeChange(false) },
+                selected = !isDetailedMode,
+            ) {
+                Text(stringResource(Lang.media_selector_view_simple_mode), softWrap = false)
+            }
+            SegmentedButton(
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                onClick = { onDetailedModeChange(true) },
+                selected = isDetailedMode,
+            ) {
+                Text(stringResource(Lang.media_selector_view_detailed_mode), softWrap = false)
+            }
         }
-        TextButton(
-            onClick = { onDetailedModeChange(true) },
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = if (isDetailedMode) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            ),
-        ) {
-            Text(stringResource(Lang.media_selector_view_detailed_mode))
-        }
-        Box(Modifier.weight(1f))
         Box {
             IconButton(onRequestFetchRequestEdit) {
                 Icon(Icons.Rounded.EditSquare, contentDescription = stringResource(Lang.settings_media_source_more))
@@ -206,17 +205,49 @@ private fun MediaSelectorActionsRow(
 @Composable
 private fun MediaSelectorDetailedList(
     presentation: MediaSelectorState.Presentation,
+    sourceResults: MediaSourceResultListPresentation,
     state: MediaSelectorState,
     scope: CoroutineScope,
     onClickItem: (Media) -> Unit,
+    onRestartSource: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val groups = presentation.groupedMediaListIncluded + presentation.groupedMediaListExcluded
+    var showExcluded by rememberSaveable { mutableStateOf(false) }
+    val filteredCountText = stringResource(
+        Lang.media_selector_view_filtered_count,
+        presentation.preferredCandidates.size,
+        presentation.filteredCandidates.size,
+    )
+    val showExcludedText = stringResource(
+        Lang.media_selector_view_show_excluded,
+        presentation.groupedMediaListExcluded.size,
+    )
     Column(
         modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        groups.forEach { group ->
+        // Animeko 原版詳細模式的來源狀態列；BT 資源頁不接入，因此只顯示線上來源。
+        MediaSourceResultsView(
+            sourceResults = sourceResults,
+            mediaSelector = state,
+            onRefresh = {
+                sourceResults.webSources.forEach { onRestartSource(it.instanceId) }
+            },
+            onRestartSource = onRestartSource,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            filteredCountText,
+            style = MaterialTheme.typography.titleMedium,
+        )
+        MediaSelectorFilters(
+            resolution = state.resolution,
+            subtitleLanguageId = state.subtitleLanguageId,
+            alliance = state.alliance,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        presentation.groupedMediaListIncluded.forEach { group ->
             MediaSelectorItem(
                 group = group,
                 groupState = state.getGroupState(group.groupId),
@@ -233,6 +264,42 @@ private fun MediaSelectorDetailedList(
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+
+        if (presentation.groupedMediaListExcluded.isNotEmpty()) {
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    showExcludedText,
+                    Modifier.padding(end = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Switch(showExcluded, { showExcluded = !showExcluded })
+            }
+        }
+
+        if (showExcluded) {
+            presentation.groupedMediaListExcluded.forEach { group ->
+                MediaSelectorItem(
+                    group = group,
+                    groupState = state.getGroupState(group.groupId),
+                    mediaSourceInfoProvider = state.mediaSourceInfoProvider,
+                    selected = group.list.any { it.result?.mediaId == presentation.selected?.mediaId },
+                    onSelect = onClickItem,
+                    preferredResolution = { presentation.resolution.finalSelected },
+                    onPreferResolution = { resolution ->
+                        scope.launch { state.resolution.prefer(resolution) }
+                    },
+                    preferredSubtitleLanguageId = { presentation.subtitleLanguageId.finalSelected },
+                    onPreferSubtitleLanguageId = { languageId ->
+                        scope.launch { state.subtitleLanguageId.prefer(languageId) }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

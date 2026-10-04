@@ -168,6 +168,20 @@ class MediaSelectorState(
     private val groupStates: SnapshotStateMap<MediaGroupId, MediaGroupState> = SnapshotStateMap()
     private val resolvingCaptchaInstanceIds = MutableStateFlow<Set<String>>(emptySet())
 
+    /**
+     * 供詳細模式顯示每個資料來源的查詢狀態。來源結果和媒體候選分開呈現，
+     * 這樣即使某個來源目前沒有可顯示的線路，使用者仍能看到查詢失敗、驗證或載入狀態。
+     */
+    val sourceResultsPresentationFlow = MediaSourceResultListPresenter(
+        resultListFlow = mediaSourceFetchResults,
+        preferredWebMediaSourceIdFlow = preferredWebMediaSource,
+    ).presentationFlow.map(::MediaSourceResultListPresentation)
+        .stateIn(
+            backgroundScope,
+            started = SharingStarted.WhileSubscribed(),
+            initialValue = MediaSourceResultListPresentation.Empty,
+        )
+
     fun getGroupState(groupId: MediaGroupId): MediaGroupState {
         return groupStates.getOrPut(groupId) {
             MediaGroupState(groupId)
@@ -196,9 +210,9 @@ class MediaSelectorState(
         // 属于其他集的资源不展示, 否则每集都会看到整季的资源.
         val visibleCandidates = filteredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
         val visiblePreferred = preferredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
-        // Detailed mode needs the complete filtered list so it can explain why a resource is
-        // excluded. Simple mode uses the exact-match list below and never mixes seasons.
-        val (groupsExcluded, groupsIncluded) = MediaGrouper.buildGroups(visibleCandidates).partition { it.isExcluded }
+        // 詳細模式依照原版把偏好篩選後的資源分為「包含」和「排除」；
+        // 簡單模式只顯示可用的來源線路，排除項不會混入播放入口。
+        val (groupsExcluded, groupsIncluded) = MediaGrouper.buildGroups(visiblePreferred).partition { it.isExcluded }
         Presentation(
             visibleCandidates,
             visiblePreferred.mapNotNull { it.result },
@@ -261,14 +275,25 @@ class MediaSelectorState(
             val showWebSources = sources.map { source ->
 
                 // 属于这个数据源的 medias
-                val myMediaList = allMediaList
+                val sourceMediaList = allMediaList
                     .asSequence()
                     .filter {
                         // Filter medias that are from this source
                         it.result?.mediaSourceId == source.mediaSourceId // null result gives `false` and is hence excluded
                     }
+                    .toList()
+
+                // 優先使用精確匹配；若網站標題只有繁簡、標點或副標題差異，
+                // 精確匹配可能為空，但 selector 已判定為 included 的資源仍可播放。
+                // 只有在沒有精確匹配時才回退到 included，排除的季度／集數不會被帶入。
+                val exactMedia = sourceMediaList
+                    .asSequence()
                     .filter { it.isPerfectMatch() }
                     .mapNotNull { it.result }
+                    .toList()
+                val myMediaList = (exactMedia.ifEmpty {
+                    sourceMediaList.mapNotNull { it.result }
+                }).asSequence()
 
                 createWebSourceFlow(
                     source,

@@ -10,7 +10,11 @@
 package me.him188.ani.app.ui.settings.tabs.media.source
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Refresh
@@ -23,10 +27,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.him188.ani.app.domain.sourceplugin.SourcePluginRuntimeState
 import me.him188.ani.app.domain.sourceplugin.compareSourcePluginVersions
+import me.him188.ani.app.ui.foundation.AsyncImage
 import me.him188.ani.app.ui.settings.framework.components.SettingsScope
 import me.him188.ani.app.ui.settings.framework.components.TextItem
 
@@ -91,6 +99,21 @@ fun SettingsScope.SourcePluginStoreTab(state: SourcePluginStoreState) {
                     Column {
                         Text("${entry.id} · v${entry.version}")
                         if (entry.description.isNotBlank()) Text(entry.description)
+                        Text(
+                            "網站：${entry.website}",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                },
+                icon = entry.icon?.let { iconUrl ->
+                    {
+                        AsyncImage(
+                            iconUrl,
+                            contentDescription = entry.displayName,
+                            modifier = Modifier.size(40.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
                     }
                 },
                 action = {
@@ -137,13 +160,30 @@ private fun SettingsScope.InstalledSourcePluginItem(
     TextItem(
         title = { Text(runtime.metadata?.displayName ?: plugin.manifest.displayName) },
         description = {
-            Text(
-                runtime.errorMessage
-                    ?: "${plugin.id} · v${plugin.version}${if (plugin.enabled) " · 啟用" else " · 停用"}",
-            )
+            Column {
+                Text(
+                    runtime.errorMessage
+                        ?: "${plugin.id} · v${plugin.version}${if (plugin.enabled) " · 啟用" else " · 停用"}",
+                )
+                Text(
+                    "網站：${runtime.metadata?.website ?: plugin.manifest.website}",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        },
+        icon = (runtime.metadata?.iconUrl ?: plugin.manifest.icon)?.let { iconUrl ->
+            {
+                AsyncImage(
+                    iconUrl,
+                    contentDescription = runtime.metadata?.displayName ?: plugin.manifest.displayName,
+                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                )
+            }
         },
         action = {
-            androidx.compose.foundation.layout.Row {
+            Row {
                 androidx.compose.material3.Switch(
                     checked = plugin.enabled,
                     onCheckedChange = onEnabledChange,

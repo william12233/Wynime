@@ -122,6 +122,44 @@ class SourcePluginRepositoryClientTest {
     }
 
     @Test
+    fun `manifest rejects non https icon`() = runTest {
+        val entry = validEntry()
+        val http = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/manifests/demo.json" to ArrayDeque(
+                    listOf(response(validManifestJson(icon = "http://icons.example/demo.png"))),
+                ),
+            ),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            SourcePluginRepositoryClient(http, baseUrl = "https://repo.example").fetchManifest(entry)
+        }
+    }
+
+    @Test
+    fun `absolute repository url must stay under configured repository path`() = runTest {
+        val http = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/first-party/manifests/demo.json" to ArrayDeque(
+                    listOf(
+                        response(
+                            validManifestJson(artifactUrl = "https://repo.example/other/demo.jar"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            SourcePluginRepositoryClient(
+                http,
+                baseUrl = "https://repo.example/first-party",
+            ).fetchManifest(validEntry(manifest = "manifests/demo.json"))
+        }
+    }
+
+    @Test
     fun `repository paths and artifact hashes are validated`() = runTest {
         val http = FakeSourceHttpClient(emptyMap())
         val client = SourcePluginRepositoryClient(http, baseUrl = "https://repo.example")
@@ -160,10 +198,12 @@ class SourcePluginRepositoryClientTest {
     private fun validManifestJson(
         id: String = "demo",
         artifactUrl: String = "artifacts/demo.jar",
+        icon: String? = null,
     ): String =
         """
         {"id":"$id","name":"Demo","version":"1.0.0","pluginApiVersion":1,
          "minHostVersion":"1.0.0","entryClass":"demo.Entry","website":"https://demo.example",
+         ${icon?.let { "\"icon\":\"$it\"," } ?: ""}
          "platforms":["desktop"],"artifacts":{"desktop":{"url":"$artifactUrl","sha256":"${"0".repeat(64)}","format":"jar"}}}
         """.trimIndent().replace("\n", "")
 

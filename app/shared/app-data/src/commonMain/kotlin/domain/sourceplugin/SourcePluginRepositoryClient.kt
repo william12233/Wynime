@@ -119,6 +119,7 @@ class SourcePluginRepositoryClient(
         require(manifest.version.isNotBlank()) { "Plugin ${manifest.id} has no version" }
         require(manifest.entryClass.isNotBlank()) { "Manifest entryClass must not be blank" }
         require(manifest.website.isHttpsUrl()) { "Plugin ${manifest.id} website must use HTTPS" }
+        manifest.icon?.let { require(it.isHttpsUrl()) { "Plugin ${manifest.id} icon must use HTTPS" } }
         require(manifest.platforms.isNotEmpty()) { "Plugin ${manifest.id} has no supported platform" }
         require(manifest.platforms == entry.platforms) {
             "Manifest platforms do not match index entry ${entry.id}"
@@ -151,6 +152,15 @@ class SourcePluginRepositoryClient(
             }
             require(url.host == baseUrlObject.host) {
                 "Repository URL host is outside the configured repository"
+            }
+            val configuredPath = baseUrlObject.encodedPath.trimEnd('/')
+            val requestedPath = url.encodedPath
+            require(
+                configuredPath.isEmpty() ||
+                    requestedPath == configuredPath ||
+                    requestedPath.startsWith("$configuredPath/"),
+            ) {
+                "Repository URL path is outside the configured repository"
             }
             return url.toString()
         }

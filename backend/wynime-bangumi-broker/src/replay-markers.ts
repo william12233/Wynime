@@ -216,11 +216,9 @@ export class ReplayMarker {
     for (const change of request.changes) {
       const recordKey = playbackRecordKey(user, change.subjectId, change.episodeId);
       const current = await this.state.storage.get<StoredPlaybackRecord>(recordKey);
-      if (
-        !current ||
-        change.baseRevision === current.revision ||
-        isPlaybackChangeNewer(change, current, request.deviceId)
-      ) {
+      // Revision identifies the version the client edited from; it must not let an older
+      // offline timestamp overwrite a newer server state when both happen to share a base.
+      if (!current || isPlaybackChangeNewer(change, current, request.deviceId)) {
         cursor += 1;
         const next: StoredPlaybackRecord = {
           subjectId: change.subjectId,
@@ -261,7 +259,9 @@ export class ReplayMarker {
       const current = await this.state.storage.get<StoredPlaybackRecord>(
         playbackRecordKey(user, change.subjectId, change.episodeId),
       );
-      if (current && change.baseRevision !== current.revision) {
+      // Return the winning record for every submitted identity. This also reports a
+      // same-revision conflict rejected by the timestamp policy to the losing device.
+      if (current) {
         const serverChange = toServerChange(current);
         serverChanges.set(changeIdentity(serverChange), serverChange);
       }

@@ -38,6 +38,17 @@ class BangumiApiProvider(
 ) {
     suspend fun hasAccessToken(): Boolean = currentAccessToken() != null
 
+    /**
+     * 取得目前 access token 對應的 Bangumi 使用者名稱。
+     *
+     * `/v0/users/{username}/collections` 需要真實 username；`-` 只適用於部分目前使用者的
+     * 單筆或修改端點，不能用來列出整個收藏清單。
+     */
+    suspend fun currentUsername(): String? {
+        if (!hasAccessToken()) return null
+        return request { getMyself() }.username
+    }
+
     suspend fun <T : Any> request(block: suspend DefaultApi.() -> HttpResponse<T>): T {
         return withApi { block(this).body() }
     }

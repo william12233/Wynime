@@ -69,10 +69,10 @@ class BangumiSubjectService(
         offset: Int,
         limit: Int,
     ): List<AniSubjectCollection> = withContext(ioDispatcher) {
-        if (!bangumiApi.hasAccessToken()) return@withContext emptyList()
+        val username = bangumiApi.currentUsername() ?: return@withContext emptyList()
         val page = bangumiApi.request {
             getUserCollectionsByUsername(
-                username = "-",
+                username = username,
                 subjectType = BangumiSubjectType.Anime,
                 type = type,
                 limit = limit,
@@ -80,12 +80,14 @@ class BangumiSubjectService(
             )
         }
         page.data.orEmpty().mapNotNull { collection ->
-            buildSubjectCollection(collection.subjectId, collection)
+            buildSubjectCollection(collection.subjectId, collection, username)
         }
     }
 
     override suspend fun getSubjectCollection(subjectId: Int): AniSubjectCollection? =
-        withContext(ioDispatcher) { buildSubjectCollection(subjectId) }
+        withContext(ioDispatcher) {
+            buildSubjectCollection(subjectId, username = bangumiApi.currentUsername())
+        }
 
     override suspend fun getSubjectRelations(
         subjectId: Int,
@@ -155,14 +157,15 @@ class BangumiSubjectService(
     }
 
     override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts> = flow {
-        if (!bangumiApi.hasAccessToken()) {
+        val username = bangumiApi.currentUsername()
+        if (username == null) {
             emit(SubjectCollectionCounts(0, 0, 0, 0, 0, 0))
             return@flow
         }
         val totals = BangumiSubjectCollectionType.entries.map { type ->
             bangumiApi.request {
                 getUserCollectionsByUsername(
-                    username = "-",
+                    username = username,
                     subjectType = BangumiSubjectType.Anime,
                     type = type,
                     limit = 1,
@@ -189,6 +192,7 @@ class BangumiSubjectService(
     private suspend fun buildSubjectCollection(
         subjectId: Int,
         collection: BangumiUserSubjectCollection? = null,
+        username: String? = null,
     ): AniSubjectCollection? {
         val subject = try {
             bangumiApi.request { getSubjectById(subjectId) }
@@ -196,7 +200,7 @@ class BangumiSubjectService(
             if (e.response.status == HttpStatusCode.NotFound) return null
             throw e
         }
-        val userCollection = collection ?: loadUserCollection(subjectId)
+        val userCollection = collection ?: loadUserCollection(subjectId, username)
         val episodes = loadEpisodes(subjectId)
         val episodeCollections = loadEpisodeCollections(subjectId)
 
@@ -207,10 +211,13 @@ class BangumiSubjectService(
         )
     }
 
-    private suspend fun loadUserCollection(subjectId: Int): BangumiUserSubjectCollection? {
-        if (!bangumiApi.hasAccessToken()) return null
+    private suspend fun loadUserCollection(
+        subjectId: Int,
+        username: String? = null,
+    ): BangumiUserSubjectCollection? {
+        val currentUsername = username ?: bangumiApi.currentUsername() ?: return null
         return try {
-            bangumiApi.request { getUserCollection(username = "-", subjectId = subjectId) }
+            bangumiApi.request { getUserCollection(username = currentUsername, subjectId = subjectId) }
         } catch (e: ResponseException) {
             if (e.response.status == HttpStatusCode.NotFound ||
                 e.response.status == HttpStatusCode.Unauthorized ||

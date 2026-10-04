@@ -24,6 +24,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -79,7 +80,7 @@ import me.him188.ani.app.data.repository.episode.toEpisodeCollectionInfo
 import me.him188.ani.app.data.repository.shouldRetry
 import me.him188.ani.app.domain.search.SubjectType
 import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.app.domain.session.checkAccessAniApiNow
+import me.him188.ani.app.domain.session.checkAccessBangumiApiNow
 import me.him188.ani.app.domain.session.restartOnNewLogin
 import me.him188.ani.client.models.AniAnimeRecurrence
 import me.him188.ani.client.models.AniCollectionType
@@ -262,6 +263,9 @@ class SubjectCollectionRepositoryImpl(
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
     private val cacheExpiry: Duration = 1.hours,
 ) : SubjectCollectionRepository(defaultDispatcher) {
+    private val bangumiFullSyncMutex = Mutex()
+    private val bangumiFullSyncState = MutableStateFlow<BangumiSyncState?>(null)
+
     override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts?> {
         return (subjectService.subjectCollectionCountsFlow() as Flow<SubjectCollectionCounts?>)
             .restartOnNewLogin(sessionManager)
@@ -467,11 +471,19 @@ class SubjectCollectionRepositoryImpl(
 
         // 批量插入条目信息
         val lastFetched = currentTimeMillis()
-        subjectCollectionDao.upsert(
-            items.mapIndexed { index, batchSubjectCollection ->
-                batchSubjectCollection.toEntity(lastFetched = lastFetched)
-            },
-        )
+        saveSubjectCollectionsWithEpisodes(items, lastFetched)
+    }
+
+    /**
+     * 將一次成功取得的 Bangumi 收藏頁寫入本機快取。
+     *
+     * 先寫入條目再寫入集數，並清理同一條目已不存在的舊集數，避免外鍵與過期觀看狀態殘留。
+     */
+    private suspend fun saveSubjectCollectionsWithEpisodes(
+        items: List<AniSubjectCollection>,
+        lastFetched: Long,
+    ) {
+        subjectCollectionDao.upsert(items.map { it.toEntity(lastFetched = lastFetched) })
 
         // 必须先插入好条目信息, 否则插入 episode 会 foreign key constraint failed
         episodeCollectionDao.upsert(
@@ -484,6 +496,16 @@ class SubjectCollectionRepositoryImpl(
                     )
                 },
         )
+
+        items.forEach { item ->
+            val subjectId = item.id.toInt()
+            val newEpisodeIds = item.episodes.mapTo(HashSet()) { it.episodeId.toInt() }
+            val oldEpisodeIds = episodeCollectionDao.listIdBySubjectId(subjectId).first()
+            val staleEpisodeIds = oldEpisodeIds.filterNot(newEpisodeIds::contains)
+            if (staleEpisodeIds.isNotEmpty()) {
+                episodeCollectionDao.deleteAllByEpisodeIds(subjectId, staleEpisodeIds)
+            }
+        }
     }
 
     override suspend fun updateRating(
@@ -567,7 +589,7 @@ class SubjectCollectionRepositoryImpl(
         type: UnifiedCollectionType?,
     ) {
         return withContext(defaultDispatcher) {
-            sessionManager.checkAccessAniApiNow()
+            sessionManager.checkAccessBangumiApiNow()
             if (type == null || type == UnifiedCollectionType.NOT_COLLECTED) {
                 deleteSubjectCollection(subjectId)
             } else {
@@ -625,21 +647,74 @@ class SubjectCollectionRepositoryImpl(
     override suspend fun performBangumiFullSync() {
         try {
             withContext(defaultDispatcher) {
-                subjectService.performBangumiFullSync()
+                bangumiFullSyncMutex.withLock {
+                    sessionManager.checkAccessBangumiApiNow()
+                    bangumiFullSyncState.value = BangumiSyncState.Preparing
+                    val syncStartedAt = currentTimeMillis()
+                    val pageSize = 30
+                    val remoteCollections = ArrayList<AniSubjectCollection>()
+
+                    for (type in FULL_SYNC_COLLECTION_TYPES) {
+                        var offset = 0
+                        while (true) {
+                            val page = subjectService.getSubjectCollections(
+                                type = type.toSubjectCollectionType(),
+                                offset = offset,
+                                limit = pageSize,
+                            )
+                            remoteCollections += page
+                            bangumiFullSyncState.value = BangumiSyncState.FetchingSubjects(remoteCollections.size)
+                            if (page.size < pageSize) break
+                            offset += page.size
+                        }
+                    }
+
+                    val existing = subjectCollectionDao
+                        .filterMostRecentUpdated(FULL_SYNC_COLLECTION_TYPES, Int.MAX_VALUE)
+                        .first()
+                        .associateBy { it.subjectId }
+                    val remoteById = remoteCollections.distinctBy { it.id }.associateBy { it.id.toInt() }
+                    val protectedLocalIds = existing.values
+                        .asSequence()
+                        .filter { it.subjectId !in remoteById && it.lastUpdated > syncStartedAt }
+                        .map { it.subjectId }
+                        .toSet()
+                    val staleIds = existing.keys - remoteById.keys - protectedLocalIds
+                    if (staleIds.isNotEmpty()) {
+                        subjectCollectionDao.deleteByIds(staleIds.toList())
+                    }
+
+                    bangumiFullSyncState.value = BangumiSyncState.Inserting(0)
+                    val lastFetched = currentTimeMillis()
+                    var savedCount = 0
+                    for ((subjectId, remote) in remoteById) {
+                        val remoteEntity = remote.toEntity(lastFetched)
+                        val local = existing[subjectId]
+                        // Bangumi updatedAt 是收藏狀態的版本時間；較舊的回應不可覆蓋較新的本機狀態。
+                        if (local != null &&
+                            remoteEntity.lastUpdated > 0L &&
+                            local.lastUpdated > remoteEntity.lastUpdated
+                        ) {
+                            continue
+                        }
+                        saveSubjectCollectionsWithEpisodes(listOf(remote), lastFetched)
+                        savedCount++
+                        bangumiFullSyncState.value = BangumiSyncState.Inserting(savedCount)
+                    }
+
+                    bangumiFullSyncState.value = BangumiSyncState.Finishing(savedCount)
+                    bangumiFullSyncState.value = BangumiSyncState.Finished(savedCount, null)
+                    notifyCollectionsInvalidated()
+                }
             }
         } catch (e: Exception) {
+            bangumiFullSyncState.value = null
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
     }
 
     override suspend fun getBangumiFullSyncState(): BangumiSyncState? {
-        return try {
-            withContext(defaultDispatcher) {
-                subjectService.getBangumiFullSyncState()
-            }
-        } catch (e: Exception) {
-            throw RepositoryException.wrapOrThrowCancellation(e)
-        }
+        return bangumiFullSyncState.value
     }
 
     override suspend fun invalidateCache(subjectIds: List<Int>) {
@@ -688,6 +763,14 @@ class SubjectCollectionRepositoryImpl(
 
     private companion object {
         private val logger = logger<SubjectCollectionRepository>()
+
+        private val FULL_SYNC_COLLECTION_TYPES = listOf(
+            UnifiedCollectionType.WISH,
+            UnifiedCollectionType.DONE,
+            UnifiedCollectionType.DOING,
+            UnifiedCollectionType.ON_HOLD,
+            UnifiedCollectionType.DROPPED,
+        )
 
         /**
          * [invalidateCache] 重新拉取条目的最大并行数.

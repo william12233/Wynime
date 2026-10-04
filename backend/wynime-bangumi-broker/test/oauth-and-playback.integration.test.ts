@@ -291,6 +291,14 @@ describe("Wynime playback Durable Object", () => {
       expect.objectContaining({ subjectId: 10, episodeId: 20, completed: true, revision: 3 }),
     );
 
+    const staleOlderTimestampWithCurrentBase = await request("device-a", staleIncomplete.cursor, [
+      playbackChange({ positionMs: 2000, completed: false, lastPlayedAt: 200, baseRevision: 3 }),
+    ]);
+    expect(staleOlderTimestampWithCurrentBase.accepted).toEqual([]);
+    expect(staleOlderTimestampWithCurrentBase.serverChanges).toContainEqual(
+      expect.objectContaining({ subjectId: 10, episodeId: 20, positionMs: 10000, completed: true, revision: 3 }),
+    );
+
     expect([...storage.values.keys()].some((key) => key.startsWith("playback-event:"))).toBe(false);
     expect([...storage.values.keys()].filter((key) => key.startsWith("playback-record:"))).toHaveLength(2);
   });

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import me.him188.ani.app.data.models.subject.SubjectRelation
 import me.him188.ani.app.data.models.subject.SubjectRelationGraph
 import me.him188.ani.app.data.models.subject.SubjectRelationGraphBranch
@@ -22,20 +23,20 @@ import me.him188.ani.app.data.models.subject.SubjectRelationGraphMainNode
 import me.him188.ani.app.data.models.subject.SubjectRelationGraphPlatform
 import me.him188.ani.app.data.models.subject.SubjectRelationGraphSubject
 import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
+import me.him188.ani.app.data.network.BangumiApiProvider
 import me.him188.ani.app.data.repository.Repository
 import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.client.apis.SubjectsAniApi
 import me.him188.ani.client.models.AniSubjectRelationGraph
 import me.him188.ani.client.models.AniSubjectRelationGraphNode
 import me.him188.ani.client.models.AniSubjectRelationGraphNodeRole
 import me.him188.ani.datasources.api.PackedDate
 import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.ktor.ApiInvoker
-import me.him188.ani.utils.platform.collections.mapToIntArray
+import me.him188.ani.datasources.bangumi.models.BangumiSubject
+import me.him188.ani.datasources.bangumi.models.BangumiV0SubjectRelation
 import kotlin.coroutines.CoroutineContext
 
 class SubjectRelationGraphRepository(
-    private val subjectApi: ApiInvoker<SubjectsAniApi>,
+    private val bangumiApi: BangumiApiProvider,
     private val subjectCollectionDao: SubjectCollectionDao,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
 ) : Repository(defaultDispatcher) {
@@ -47,21 +48,126 @@ class SubjectRelationGraphRepository(
      */
     fun subjectRelationGraphFlow(subjectId: Int): Flow<SubjectRelationGraph> = flow {
         val graph = try {
-            subjectApi { getSubjectRelationGraph(subjectId.toLong()).body() }
+            withContext(defaultDispatcher) {
+                val subject = bangumiApi.request { getSubjectById(subjectId) }
+                val relations = bangumiApi.request { getRelatedSubjectsBySubjectId(subjectId) }
+                subject.toSubjectRelationGraph(relations)
+            }
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
         // 本地记录消失说明用户在此期间取消了收藏, 此时不能回退到服务器在请求时返回的状态
         val seenLocally = mutableSetOf<Int>()
         emitAll(
-            subjectCollectionDao.filterByIds(graph.nodes.mapToIntArray { it.id.toInt() }).map { collections ->
+            subjectCollectionDao.filterByIds(graph.subjectIds.toIntArray()).map { collections ->
                 val local = collections.associate { it.subjectId to it.collectionType }
                 val removed = (seenLocally - local.keys).associateWith { UnifiedCollectionType.NOT_COLLECTED }
                 seenLocally += local.keys
-                graph.toSubjectRelationGraph(local + removed)
+                graph.withCollections(local + removed)
             },
         )
     }.flowOn(defaultDispatcher)
+}
+
+private data class OfficialRelationGraph(
+    val graph: SubjectRelationGraph,
+    val subjectIds: List<Int>,
+) {
+    fun withCollections(collectionTypes: Map<Int, UnifiedCollectionType>): SubjectRelationGraph {
+        fun SubjectRelationGraphSubject.withCollection() = copy(
+            collectionType = collectionTypes[subjectId] ?: UnifiedCollectionType.NOT_COLLECTED,
+        )
+
+        return graph.copy(
+            mainline = graph.mainline.map { main ->
+                main.copy(
+                    subject = main.subject.withCollection(),
+                    branches = main.branches.map { branch ->
+                        branch.copy(subject = branch.subject.withCollection())
+                    },
+                )
+            },
+        )
+    }
+}
+
+private fun BangumiSubject.toSubjectRelationGraph(
+    relations: List<BangumiV0SubjectRelation>,
+): OfficialRelationGraph {
+    val prequels = relations.filter { it.relation.toSubjectRelation() == SubjectRelation.PREQUEL }
+    val sequels = relations.filter { it.relation.toSubjectRelation() == SubjectRelation.SEQUEL }
+    val mainline = prequels.map { it.toGraphSubject() } +
+        listOf(toGraphSubject()) +
+        sequels.map { it.toGraphSubject() }
+    val branches = relations
+        .filter { it.relation.toSubjectRelation() !in setOf(SubjectRelation.PREQUEL, SubjectRelation.SEQUEL) }
+        .map { relation ->
+            SubjectRelationGraphBranch(
+                subject = relation.toGraphSubject(),
+                relation = relation.relation.toSubjectRelation(),
+            )
+        }
+    return OfficialRelationGraph(
+        graph = SubjectRelationGraph(
+            subjectId = id,
+            mainline = mainline.mapIndexed { index, graphSubject ->
+                SubjectRelationGraphMainNode(
+                    subject = graphSubject,
+                    isMinor = index != prequels.size,
+                    branches = if (index == prequels.size) branches else emptyList(),
+                )
+            },
+            truncated = false,
+        ),
+        subjectIds = (mainline.map { it.subjectId } + branches.map { it.subject.subjectId }).distinct(),
+    )
+}
+
+private fun BangumiSubject.toGraphSubject() = SubjectRelationGraphSubject(
+    subjectId = id,
+    name = name,
+    nameCn = nameCn,
+    image = images.large,
+    airDate = date.toPackedDate(),
+    platform = platform.toGraphPlatform(),
+    episodeCount = totalEpisodes,
+    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+)
+
+private fun BangumiV0SubjectRelation.toGraphSubject() = SubjectRelationGraphSubject(
+    subjectId = id,
+    name = name,
+    nameCn = nameCn,
+    image = images?.large.orEmpty(),
+    airDate = PackedDate.Invalid,
+    platform = when (type) {
+        2 -> SubjectRelationGraphPlatform.TV
+        else -> null
+    },
+    episodeCount = 0,
+    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+)
+
+private fun String?.toPackedDate(): PackedDate =
+    if (isNullOrBlank()) PackedDate.Invalid else PackedDate.parseFromDate(requireNotNull(this))
+
+private fun String.toGraphPlatform(): SubjectRelationGraphPlatform? = when {
+    contains("tv", ignoreCase = true) -> SubjectRelationGraphPlatform.TV
+    contains("ova", ignoreCase = true) -> SubjectRelationGraphPlatform.OVA
+    contains("movie", ignoreCase = true) || contains("剧场") || contains("電影") ->
+        SubjectRelationGraphPlatform.MOVIE
+    contains("web", ignoreCase = true) -> SubjectRelationGraphPlatform.WEB
+    else -> null
+}
+
+private fun String.toSubjectRelation(): SubjectRelation? = when (lowercase()) {
+    "前传", "前傳", "prequel" -> SubjectRelation.PREQUEL
+    "续集", "續集", "sequel" -> SubjectRelation.SEQUEL
+    "衍生", "derived" -> SubjectRelation.DERIVED
+    "番外篇", "番外", "special" -> SubjectRelation.SPECIAL
+    "主线故事", "主線故事", "主线", "主線", "main story" -> SubjectRelation.MAIN_STORY
+    "总集篇", "總集篇", "compilation" -> SubjectRelation.COMPILATION
+    else -> null
 }
 
 /**

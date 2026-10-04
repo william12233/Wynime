@@ -10,7 +10,6 @@
 package me.him188.ani.app.data.repository
 
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.network.AniApiProvider
 import me.him188.ani.app.data.network.AutoSkipRepository
 import me.him188.ani.app.data.network.RecommendationRepository
 import me.him188.ani.app.data.network.TrendsRepository
@@ -25,16 +24,11 @@ import me.him188.ani.app.data.repository.media.EpisodePreferencesRepository
 import me.him188.ani.app.data.repository.media.EpisodePreferencesRepositoryImpl
 import me.him188.ani.app.data.repository.media.MediaSourceInstanceRepository
 import me.him188.ani.app.data.repository.media.MediaSourceInstanceRepositoryImpl
-import me.him188.ani.app.data.repository.media.MediaSourceSubscriptionRepository
-import me.him188.ani.app.data.repository.media.SelectorMediaSourceEpisodeCacheRepository
 import me.him188.ani.app.data.repository.person.PersonCommentRepository
 import me.him188.ani.app.data.repository.person.PersonDetailsRepository
 import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepository
 import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepositoryImpl
 import me.him188.ani.app.data.repository.player.PlaybackHistorySyncer
-import me.him188.ani.app.data.repository.subject.BangumiMergeRepository
-import me.him188.ani.app.data.repository.subject.BangumiSyncCommandRepository
-import me.him188.ani.app.data.repository.subject.DefaultBangumiMergeRepository
 import me.him188.ani.app.data.repository.subject.DefaultSubjectRelationsRepository
 import me.him188.ani.app.data.repository.subject.FollowedSubjectsRepository
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
@@ -44,22 +38,15 @@ import me.him188.ani.app.data.repository.subject.SubjectRelationsRepository
 import me.him188.ani.app.data.repository.subject.SubjectSearchCompletionRepository
 import me.him188.ani.app.data.repository.subject.SubjectSearchHistoryRepository
 import me.him188.ani.app.data.repository.subject.SubjectSearchRepository
-import me.him188.ani.app.data.repository.user.DefaultDeveloperVerificationRepository
-import me.him188.ani.app.data.repository.user.DefaultQrLoginRepository
-import me.him188.ani.app.data.repository.user.DeveloperVerificationRepository
 import me.him188.ani.app.data.repository.user.PreferencesRepositoryImpl
-import me.him188.ani.app.data.repository.user.QrLoginRepository
 import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.app.data.repository.user.UserRepository
-import me.him188.ani.app.domain.bangumi.BangumiConflictChecker
 import me.him188.ani.app.domain.foundation.get
 import me.him188.ani.app.platform.Context
 import org.koin.core.KoinApplication
 import org.koin.core.scope.Scope
 import org.koin.dsl.module
-
-val Scope.aniApiProvider get() = get<AniApiProvider>()
 
 private val Scope.database get() = get<AniDatabase>()
 private val Scope.settingsRepository get() = get<SettingsRepository>()
@@ -70,35 +57,15 @@ fun KoinApplication.repositoryModules(
 ) = module {
     single<UserRepository> {
         UserRepository(
-            getContext().dataStores.selfInfoStore,
-            get(),
-            aniApiProvider.userApi,
-            aniApiProvider.userAuthApi,
-            aniApiProvider.userProfileApi,
-            aniApiProvider.bangumiApi,
-            aniApiProvider.oauthApi,
-            get(),
-        )
-    }
-    single<QrLoginRepository> { DefaultQrLoginRepository(aniApiProvider.qrLoginApi, get()) }
-    single<DeveloperVerificationRepository> {
-        DefaultDeveloperVerificationRepository(aniApiProvider.developerVerificationApi)
-    }
-    single<BangumiSyncCommandRepository> {
-        BangumiSyncCommandRepository(
-            aniApiProvider.bangumiApi,
-        )
-    }
-    single<BangumiMergeRepository> {
-        DefaultBangumiMergeRepository(
-            aniApiProvider.bangumiApi,
-            get(),
-        )
-    }
-    single<BangumiConflictChecker> {
-        BangumiConflictChecker(
-            mergeRepository = get(),
-            subjectCollectionRepository = get(),
+            dataStore = getContext().dataStores.selfInfoStore,
+            sessionStateProvider = get(),
+            userApi = null,
+            authApi = null,
+            profileApi = null,
+            bangumiApi = null,
+            oauthApi = null,
+            sessionManager = get(),
+            officialBangumiApi = get(),
         )
     }
 
@@ -170,13 +137,12 @@ fun KoinApplication.repositoryModules(
         )
     }
     single<SubjectRelationGraphRepository> {
-        SubjectRelationGraphRepository(aniApiProvider.subjectApi, database.subjectCollection())
+        SubjectRelationGraphRepository(get(), database.subjectCollection())
     }
 
     single<PersonDetailsRepository> {
         PersonDetailsRepository(
-            personsApi = aniApiProvider.personsApi,
-            charactersApi = aniApiProvider.charactersApi,
+            bangumiApi = get(),
         )
     }
 
@@ -215,10 +181,6 @@ fun KoinApplication.repositoryModules(
         MediaSourceInstanceRepositoryImpl(getContext().dataStores.mediaSourceSaveStore)
     }
 
-    single<MediaSourceSubscriptionRepository> {
-        MediaSourceSubscriptionRepository(getContext().dataStores.mediaSourceSubscriptionStore)
-    }
-
     single<EpisodePlayHistoryRepository> {
         EpisodePlayHistoryRepositoryImpl(
             dataStore = getContext().dataStores.episodeHistoryStore,
@@ -227,18 +189,12 @@ fun KoinApplication.repositoryModules(
         )
     }
 
-    single<TrendsRepository> { TrendsRepository(get<AniApiProvider>().trendsApi) }
+    single<TrendsRepository> { TrendsRepository() }
 
-    single<RecommendationRepository> { RecommendationRepository(get<AniApiProvider>().homeApi) }
+    single<RecommendationRepository> { RecommendationRepository() }
 
-    single<AutoSkipRepository> { AutoSkipRepository(get<AniApiProvider>().episodesApi) }
+    single<AutoSkipRepository> { AutoSkipRepository() }
 
     single<SettingsRepository> { PreferencesRepositoryImpl(getContext().dataStores.preferencesStore) }
 
-    single<SelectorMediaSourceEpisodeCacheRepository> {
-        SelectorMediaSourceEpisodeCacheRepository(
-            dao = database.webSearchSessionCacheDao(),
-            userTtlFlow = get<SettingsRepository>().mediaSelectorSettings.flow.map { it.webSearchCacheTtl },
-        )
-    }
 }

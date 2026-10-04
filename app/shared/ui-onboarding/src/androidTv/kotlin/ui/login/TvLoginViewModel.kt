@@ -9,121 +9,65 @@
 
 package me.him188.ani.tv.ui.login
 
-import android.os.Build
-import kotlin.time.Clock
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import me.him188.ani.app.data.repository.RepositoryRateLimitedException
-import me.him188.ani.app.data.repository.user.QrLoginRepository
-import me.him188.ani.app.data.repository.user.UserRepository
-import me.him188.ani.app.domain.session.auth.QrLoginPoller
-import me.him188.ani.app.domain.session.auth.QrLoginProgress
-import me.him188.ani.app.ui.login.EmailLoginViewModel
+import kotlinx.coroutines.launch
+import me.him188.ani.app.data.network.WynimeCloudClient
+import me.him188.ani.app.domain.session.SessionManager
+import me.him188.ani.app.domain.session.SessionStateProvider
+import me.him188.ani.app.domain.session.auth.OAuthConfigurator
+import me.him188.ani.app.domain.session.auth.WynimeBangumiOAuthClient
+import me.him188.ani.app.ui.foundation.AbstractViewModel
 import me.him188.ani.tv.ui.foundation.TvNavigationEvent
 import me.him188.ani.tv.ui.foundation.TvNavigationEvents
 import org.koin.core.Koin
 
-/** Reuses the shared OTP session; request ownership and TV step transitions live here. */
-@OptIn(ExperimentalCoroutinesApi::class)
+/** Coordinates the TV Bangumi OAuth flow and exposes only presentation-safe state. */
 class TvLoginViewModel(
     koin: Koin,
-    private val clock: Clock = Clock.System,
-    deviceName: String = "${Build.MANUFACTURER} ${Build.MODEL}".trim(),
-) : EmailLoginViewModel(koin) {
-    private val qrLoginPoller = QrLoginPoller(koin.get<QrLoginRepository>(), deviceName)
+) : AbstractViewModel() {
+    private val oauthConfigurator = OAuthConfigurator(
+        client = WynimeBangumiOAuthClient(koin.get<WynimeCloudClient>()),
+        sessionManager = koin.get<SessionManager>(),
+        sessionStateProvider = koin.get<SessionStateProvider>(),
+    )
     private val fields = MutableStateFlow(TvLoginUiState())
     private val requestMutex = Mutex()
     private val navigation = TvNavigationEvents()
     val navigationEvents = navigation.events
 
-    private val ticker = flow {
-        while (true) {
-            emit(clock.now())
-            delay(1_000)
-        }
-    }
-
-    // 只在登录页可见 (uiState 被收集) 时轮询; 每次 RefreshQr 重新开始.
-    private val qrRefreshes = MutableStateFlow(0)
-    private val qr = qrRefreshes.flatMapLatest { qrLoginPoller.run() }
-        .onEach { if (it == QrLoginProgress.Approved) navigation.emit(TvNavigationEvent.LoggedIn) }
-        .map { it.toUiState() }
-
-    val uiState = combine(state, fields, ticker, qr) { login, fields, now, qr ->
-        fields.copy(
-            email = login.email,
-            isExistingAccount = login.isExistingAccount,
-            resendRemainSec = (login.nextResendTime - now).inWholeSeconds.coerceAtLeast(0),
-            qr = qr,
-        )
-    }.stateIn(backgroundScope, SharingStarted.WhileSubscribed(5_000), TvLoginUiState())
+    val uiState: StateFlow<TvLoginUiState> = fields.asStateFlow()
 
     fun onIntent(intent: TvLoginIntent) {
         when (intent) {
-            is TvLoginIntent.ChangeEmail -> if (!fields.value.busy) setEmail(intent.value)
-            is TvLoginIntent.ChangeOtp -> if (!fields.value.busy && intent.value.length <= 6) {
-                fields.update { it.copy(otp = intent.value) }
-            }
-            TvLoginIntent.ReenterEmail -> if (!fields.value.busy) {
-                fields.update { it.copy(step = TvLoginStep.Email, otp = "", error = null) }
-            }
-            TvLoginIntent.RefreshQr -> qrRefreshes.update { it + 1 }
-            TvLoginIntent.SendOtp -> request(sending = true) {
-                sendEmailOtp()
-                fields.update { it.copy(step = TvLoginStep.Otp, otp = "") }
-            }
-            TvLoginIntent.SubmitOtp -> if (fields.value.step == TvLoginStep.Otp) {
-                request(sending = false) {
-                    when (submitEmailOtp(fields.value.otp)) {
-                        is UserRepository.SendOtpResult.Success -> navigation.emit(TvNavigationEvent.LoggedIn)
-                        UserRepository.SendOtpResult.InvalidOtp -> fields.update { it.copy(error = "验证码不正确") }
-                        UserRepository.SendOtpResult.EmailAlreadyExist -> fields.update { it.copy(error = "邮箱已被占用") }
-                    }
-                }
-            }
+            TvLoginIntent.Authorize -> Unit
         }
     }
 
-    private fun request(sending: Boolean, action: suspend () -> Unit) {
-        // Acquire before launching: repeated remote/IME events cannot start duplicate requests.
+    fun startOAuth(onOpenUrl: suspend (String) -> Unit) {
         if (!requestMutex.tryLock()) return
         fields.update { it.copy(busy = true, error = null) }
         backgroundScope.launch {
             try {
-                action()
+                when (oauthConfigurator.auth(isRegister = false, onOpenUrl = onOpenUrl)) {
+                    is OAuthConfigurator.State.Success -> navigation.emit(TvNavigationEvent.LoggedIn)
+                    is OAuthConfigurator.State.Failed -> fields.update {
+                        it.copy(error = "Bangumi 登入失敗，請重試")
+                    }
+                    else -> Unit
+                }
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: RepositoryRateLimitedException) {
-                fields.update { it.copy(error = "发送太频繁, 请稍后再试") }
             } catch (e: Exception) {
-                fields.update {
-                    it.copy(error = if (sending) "发送失败, 请检查邮箱地址与网络" else "登录失败, 请重试")
-                }
+                fields.update { it.copy(error = "Bangumi 登入失敗，請重試") }
             } finally {
                 fields.update { it.copy(busy = false) }
                 requestMutex.unlock()
             }
         }
     }
-}
-
-private fun QrLoginProgress.toUiState(): TvQrLoginUiState = when (this) {
-    QrLoginProgress.Loading -> TvQrLoginUiState.Loading
-    is QrLoginProgress.Waiting -> TvQrLoginUiState.Waiting(qrContent, remaining.inWholeSeconds)
-    is QrLoginProgress.Scanned -> TvQrLoginUiState.Scanned(qrContent, nickname)
-    QrLoginProgress.Approved -> TvQrLoginUiState.Success
-    QrLoginProgress.Rejected -> TvQrLoginUiState.Invalid(TvQrLoginUiState.Invalid.Reason.Rejected)
-    is QrLoginProgress.Failed -> TvQrLoginUiState.Invalid(TvQrLoginUiState.Invalid.Reason.Failed)
 }

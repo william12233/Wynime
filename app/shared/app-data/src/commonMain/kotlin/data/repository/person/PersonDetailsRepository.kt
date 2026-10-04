@@ -27,113 +27,120 @@ import me.him188.ani.app.data.models.person.PersonSubjectSummary
 import me.him188.ani.app.data.models.person.PersonWorkInfo
 import me.him188.ani.app.data.models.subject.CharacterInfo
 import me.him188.ani.app.data.models.subject.CharacterRole
+import me.him188.ani.app.data.models.subject.PersonCareer
 import me.him188.ani.app.data.models.subject.PersonInfo
 import me.him188.ani.app.data.models.subject.PersonPosition
 import me.him188.ani.app.data.models.subject.PersonType
+import me.him188.ani.app.data.network.BangumiApiProvider
 import me.him188.ani.app.data.repository.Repository
 import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.client.apis.CharactersAniApi
-import me.him188.ani.client.apis.PersonsAniApi
-import me.him188.ani.client.models.AniCharacter
-import me.him188.ani.client.models.AniInfobox
-import me.him188.ani.client.models.AniPerson
-import me.him188.ani.client.models.AniSubjectSummary
-import me.him188.ani.utils.ktor.ApiInvoker
+import me.him188.ani.datasources.bangumi.models.BangumiCharacterPerson
+import me.him188.ani.datasources.bangumi.models.BangumiCharacterDetail
+import me.him188.ani.datasources.bangumi.models.BangumiPerson
+import me.him188.ani.datasources.bangumi.models.BangumiPersonCareer
+import me.him188.ani.datasources.bangumi.models.BangumiPersonCharacter
+import me.him188.ani.datasources.bangumi.models.BangumiPersonDetail
+import me.him188.ani.datasources.bangumi.models.BangumiV0RelatedSubject
 
 /**
- * 人物 (声优/制作人员) 与角色详情页数据仓库, 数据来自 ani 服务端 `/persons` 与 `/characters` 接口.
+ * 人物 (聲優/製作人員) 與角色詳情頁資料倉庫，資料直接來自官方 Bangumi API。
  * 评论见 [PersonCommentRepository].
  */
 class PersonDetailsRepository(
-    private val personsApi: ApiInvoker<PersonsAniApi>,
-    private val charactersApi: ApiInvoker<CharactersAniApi>,
+    private val bangumiApi: BangumiApiProvider,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
 ) : Repository(defaultDispatcher) {
 
     fun personDetailsFlow(personId: Int): Flow<PersonDetailsInfo> = flow {
         val details = try {
             withContext(defaultDispatcher) {
-                personsApi { getPersonDetails(personId.toLong()).body() }
+                val person = bangumiApi.request { getPersonById(personId) }
+                val works = bangumiApi.request { getRelatedSubjectsByPersonId(personId) }
+                val casts = bangumiApi.request { getRelatedCharactersByPersonId(personId) }
+                PersonDetailsInfo(
+                    person = person.toPersonInfo(),
+                    career = person.career.map(BangumiPersonCareer::toString),
+                    infobox = person.infobox.toRows(),
+                    collects = person.stat.collects,
+                    commentCount = person.stat.comments,
+                    workCount = works.size,
+                    castCount = casts.size,
+                )
             }
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
-        emit(
-            PersonDetailsInfo(
-                person = details.person.toPersonInfo(),
-                career = details.career,
-                infobox = details.person.infobox.toRows(),
-                collects = details.collects,
-                commentCount = details.commentCount,
-                workCount = details.workCount,
-                castCount = details.castCount,
-            ),
-        )
+        emit(details)
     }
 
     fun characterDetailsFlow(characterId: Int): Flow<CharacterDetailsInfo> = flow {
         val details = try {
             withContext(defaultDispatcher) {
-                charactersApi { getCharacterDetails(characterId.toLong()).body() }
+                val character = bangumiApi.request { getCharacterById(characterId) }
+                val actors = bangumiApi.request { getRelatedPersonsByCharacterId(characterId) }
+                val subjects = bangumiApi.request { getRelatedSubjectsByCharacterId(characterId) }
+                CharacterDetailsInfo(
+                    character = character.toCharacterInfo(actors.map(BangumiCharacterPerson::toPersonInfo)),
+                    role = character.type.value,
+                    summary = character.summary,
+                    infobox = character.infobox.toRows(),
+                    collects = character.stat.collects,
+                    commentCount = character.stat.comments,
+                    subjectCount = subjects.size,
+                )
             }
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
-        emit(
-            CharacterDetailsInfo(
-                character = details.character.toCharacterInfo(),
-                role = details.role,
-                summary = details.summary,
-                infobox = details.infobox.toRows(),
-                collects = details.collects,
-                commentCount = details.commentCount,
-                subjectCount = details.subjectCount,
-            ),
-        )
+        emit(details)
     }
 
     fun personWorksPager(personId: Int): Flow<PagingData<PersonWorkInfo>> = offsetPager { offset, limit ->
-        personsApi { getPersonWorks(personId.toLong(), offset, limit).body() }.let { page ->
-            Paged(
-                total = page.total,
-                items = page.items.map {
-                    PersonWorkInfo(
-                        subject = it.subject.toSummary(),
-                        positions = it.positions.map(::PersonPosition),
-                    )
-                },
-            )
-        }
+        val works = bangumiApi.request { getRelatedSubjectsByPersonId(personId) }
+        Paged(
+            total = works.size,
+            items = works.drop(offset).take(limit).map { work ->
+                PersonWorkInfo(
+                    subject = work.toSummary(),
+                    positions = work.staff.toPositions(),
+                )
+            },
+        )
     }
 
     fun personCastsPager(personId: Int): Flow<PagingData<PersonCastInfo>> = offsetPager { offset, limit ->
-        personsApi { getPersonCasts(personId.toLong(), offset, limit).body() }.let { page ->
-            Paged(
-                total = page.total,
-                items = page.items.map {
-                    PersonCastInfo(
-                        subject = it.subject.toSummary(),
-                        character = it.character.toCharacterInfo(),
-                    )
-                },
-            )
-        }
+        val casts = bangumiApi.request { getRelatedCharactersByPersonId(personId) }
+        Paged(
+            total = casts.size,
+            items = casts.drop(offset).take(limit).map { cast ->
+                PersonCastInfo(
+                    subject = PersonSubjectSummary(
+                        subjectId = cast.subjectId,
+                        name = cast.subjectName,
+                        nameCn = cast.subjectNameCn,
+                        imageLarge = cast.images?.large.orEmpty(),
+                    ),
+                    character = cast.toCharacterInfo(),
+                )
+            },
+        )
     }
 
     fun characterSubjectsPager(characterId: Int): Flow<PagingData<CharacterSubjectInfo>> =
         offsetPager { offset, limit ->
-            charactersApi { getCharacterSubjects(characterId.toLong(), offset, limit).body() }.let { page ->
-                Paged(
-                    total = page.total,
-                    items = page.items.map {
-                        CharacterSubjectInfo(
-                            subject = it.subject.toSummary(),
-                            role = CharacterRole(it.type),
-                            actors = it.actors.map { actor -> actor.toPersonInfo() },
-                        )
-                    },
-                )
-            }
+            val subjects = bangumiApi.request { getRelatedSubjectsByCharacterId(characterId) }
+            val actors = bangumiApi.request { getRelatedPersonsByCharacterId(characterId) }
+                .map(BangumiCharacterPerson::toPersonInfo)
+            Paged(
+                total = subjects.size,
+                items = subjects.drop(offset).take(limit).map { subject ->
+                    CharacterSubjectInfo(
+                        subject = subject.toSummary(),
+                        role = CharacterRole(0),
+                        actors = actors,
+                    )
+                },
+            )
         }
 
     private class Paged<T>(val total: Int, val items: List<T>)
@@ -170,51 +177,89 @@ class PersonDetailsRepository(
     }
 }
 
-private fun AniPerson.toPersonInfo(): PersonInfo {
-    return PersonInfo(
-        id = id.toInt(),
-        name = name,
-        type = PersonType.fromId(type),
-        careers = emptyList(),
-        imageLarge = imageLarge,
-        imageMedium = imageMedium,
-        summary = summary,
-        locked = false,
-        nameCn = nameCn,
-    )
+private fun BangumiPersonDetail.toPersonInfo() = PersonInfo(
+    id = id,
+    name = name,
+    type = PersonType.fromId(type.value),
+    careers = career.map(BangumiPersonCareer::toPersonCareer),
+    imageLarge = images?.large.orEmpty(),
+    imageMedium = images?.medium.orEmpty(),
+    summary = summary,
+    locked = locked,
+    nameCn = "",
+)
+
+private fun BangumiPerson.toPersonInfo() = PersonInfo(
+    id = id,
+    name = name,
+    type = PersonType.fromId(type.value),
+    careers = career.map(BangumiPersonCareer::toPersonCareer),
+    imageLarge = images?.large.orEmpty(),
+    imageMedium = images?.medium.orEmpty(),
+    summary = shortSummary,
+    locked = locked,
+    nameCn = "",
+)
+
+private fun BangumiCharacterPerson.toPersonInfo() = PersonInfo(
+    id = id,
+    name = name,
+    type = PersonType.Individual,
+    careers = emptyList(),
+    imageLarge = images?.large.orEmpty(),
+    imageMedium = images?.medium.orEmpty(),
+    summary = "",
+    locked = null,
+    nameCn = "",
+)
+
+private fun BangumiCharacterDetail.toCharacterInfo(actors: List<PersonInfo>) = CharacterInfo(
+    id = id,
+    name = name,
+    nameCn = "",
+    actors = actors,
+    imageMedium = images?.medium.orEmpty(),
+    imageLarge = images?.large.orEmpty(),
+)
+
+private fun BangumiPersonCharacter.toCharacterInfo() = CharacterInfo(
+    id = id,
+    name = name,
+    nameCn = "",
+    actors = emptyList(),
+    imageMedium = images?.medium.orEmpty(),
+    imageLarge = images?.large.orEmpty(),
+)
+
+private fun BangumiV0RelatedSubject.toSummary() = PersonSubjectSummary(
+    subjectId = id,
+    name = name.orEmpty(),
+    nameCn = nameCn,
+    imageLarge = image.orEmpty(),
+)
+
+private fun String.toPositions(): List<PersonPosition> {
+    val positions = split('、', ',', '，', '/', '|')
+        .map { PersonPosition.findByName(it.trim()) }
+        .filter { it != PersonPosition.Invalid }
+    return positions.ifEmpty { listOf(PersonPosition.Invalid) }
 }
 
-private fun AniCharacter.toCharacterInfo(): CharacterInfo {
-    return CharacterInfo(
-        id = id.toInt(),
-        name = name,
-        nameCn = nameCn,
-        actors = actors.map { it.toPersonInfo() },
-        imageMedium = imageMedium,
-        imageLarge = imageLarge,
-    )
+private fun List<String>?.toRows(): List<InfoboxRowInfo> = orEmpty().mapIndexedNotNull { index, item ->
+    val separator = item.indexOfAny(charArrayOf(':', '：'))
+    val key = if (separator > 0) item.substring(0, separator).trim() else "info${index + 1}"
+    val value = if (separator > 0) item.substring(separator + 1).trim() else item.trim()
+    if (key in HIDDEN_INFOBOX_KEYS || value.isBlank()) null else InfoboxRowInfo(key, value)
 }
 
-private fun AniSubjectSummary.toSummary(): PersonSubjectSummary {
-    return PersonSubjectSummary(
-        subjectId = id.toInt(),
-        name = name,
-        nameCn = nameCn,
-        imageLarge = imageLarge,
-    )
+private fun BangumiPersonCareer.toPersonCareer() = when (this) {
+    BangumiPersonCareer.PRODUCER -> PersonCareer.PRODUCER
+    BangumiPersonCareer.MANGAKA -> PersonCareer.MANGAKA
+    BangumiPersonCareer.ARTIST -> PersonCareer.ARTIST
+    BangumiPersonCareer.SEIYU -> PersonCareer.SEIYU
+    BangumiPersonCareer.WRITER -> PersonCareer.WRITER
+    BangumiPersonCareer.ILLUSTRATOR -> PersonCareer.ILLUSTRATOR
+    BangumiPersonCareer.ACTOR -> PersonCareer.ACTOR
 }
 
-/** 与名字重复或不适合在“基本信息”表展示的 infobox 字段. */
-private val HIDDEN_INFOBOX_KEYS = setOf("简体中文名")
-
-private fun AniInfobox?.toRows(): List<InfoboxRowInfo> {
-    if (this == null) return emptyList()
-    return fields.mapNotNull { item ->
-        if (item.key in HIDDEN_INFOBOX_KEYS) return@mapNotNull null
-        val value = item.propertyValues.joinToString("、") { v ->
-            if (v.k != null) "${v.k} ${v.v}" else v.v
-        }
-        if (value.isBlank()) return@mapNotNull null
-        InfoboxRowInfo(key = item.key, value = value)
-    }
-}
+private val HIDDEN_INFOBOX_KEYS = setOf("简体中文名", "中文名", "名前", "name")

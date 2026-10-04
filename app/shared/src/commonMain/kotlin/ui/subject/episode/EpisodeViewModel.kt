@@ -71,7 +71,6 @@ import me.him188.ani.app.data.network.AutoSkipRepository
 import me.him188.ani.app.data.repository.RepositoryServiceUnavailableException
 import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
 import me.him188.ani.app.data.repository.episode.EpisodeCommentRepository
-import me.him188.ani.app.data.repository.media.SelectorMediaSourceEpisodeCacheRepository
 import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepository
 import me.him188.ani.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import me.him188.ani.app.data.repository.user.SettingsRepository
@@ -259,7 +258,6 @@ open class EpisodeViewModel(
     private val autoSkipRepository: AutoSkipRepository by inject()
     private val getMediaSelectorSettings: GetMediaSelectorSettingsUseCase by inject()
     private val getMediaSourceInstances: GetMediaSourceInstancesUseCase by inject()
-    private val selectorEpisodeCacheRepository: SelectorMediaSourceEpisodeCacheRepository by inject()
     val setEpisodeCollectionType: SetEpisodeCollectionTypeUseCase by inject()
     private val getSubjectRecommendations: GetSubjectRecommendationUseCase by inject()
     private val setSubjectCollectionTypeOrDeleteUseCase: SetSubjectCollectionTypeOrDeleteUseCase by inject()
@@ -854,8 +852,6 @@ open class EpisodeViewModel(
 
     fun refreshFetch() {
         launchInBackground {
-            // 手动重新查询: 清除本条目的 web 源搜索缓存, 让所有数据源真正重新搜索
-            selectorEpisodeCacheRepository.clearByRequestedSubject(subjectId)
             // Although it's flow, it should be ready.
             fetchPlayState.episodeSessionFlow.flatMapLatest { it.fetchSelectFlow }
                 .mapNotNull { it?.mediaFetchSession }
@@ -907,8 +903,6 @@ open class EpisodeViewModel(
                 ?.mediaSourceResults
                 ?.find { it.instanceId == instanceId }
                 ?: return@launchInBackground
-            // 手动刷新单个源: 只清除该源的搜索缓存, 让它真正重新搜索, 不影响其他源的缓存
-            selectorEpisodeCacheRepository.clearByRequestedSubjectAndSource(subjectId, result.mediaSourceId)
             result.restart()
         }
     }
@@ -1012,8 +1006,6 @@ open class EpisodeViewModel(
 
     fun updateFetchRequest(request: MediaFetchRequest) {
         launchInBackground {
-            // 编辑查询条件后会重启所有源的搜索, 同样清除本条目的 web 源搜索缓存
-            selectorEpisodeCacheRepository.clearByRequestedSubject(subjectId)
             fetchPlayState.episodeSessionFlow
                 .firstOrNull()
                 ?.fetchSelectFlow

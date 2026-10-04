@@ -23,7 +23,6 @@ val aniAuthServerUrlDebug =
 val aniAuthServerUrlRelease = getPropertyOrNull("ani.auth.server.url.release") ?: "https://auth.myani.org"
 val sentryDsn = getPropertyOrNull("ani.sentry.dsn") ?: ""
 val analyticsKey = getPropertyOrNull("ani.analytics.key") ?: ""
-val overrideAniApiServer = getPropertyOrNull("ani.api.server")?.takeIf { it.isNotBlank() }
 
 val distroChannel = getPropertyOrNull("ani.distro.channel") ?: "default"
 
@@ -131,7 +130,6 @@ buildConfig {
             "System.getenv(\"ANI_DEBUG\") == \"true\" || System.getProperty(\"ani.debug\") == \"true\"",
         )
         stringField("sentryDsn", sentryDsn)
-        stringField("overrideAniApiServer", overrideAniApiServer ?: "")
         stringField("distroChannel", distroChannel)
         gitFields()
 
@@ -143,7 +141,6 @@ buildConfig {
         stringField("versionName", project.version.toString())
         expressionField("isDebug", "me.him188.ani.buildconfig.AndroidBuildConfig.DEBUG")
         stringField("sentryDsn", sentryDsn)
-        stringField("overrideAniApiServer", overrideAniApiServer ?: "")
         stringField("distroChannel", distroChannel)
         gitFields()
 
@@ -159,7 +156,6 @@ buildConfig {
 
             val sentryEnabled = (getPropertyOrNull("ani.sentry.ios") ?: "true").toBooleanStrict()
             booleanField("sentryEnabled", sentryEnabled)
-            stringField("overrideAniApiServer", overrideAniApiServer ?: "")
             stringField("distroChannel", distroChannel)
             gitFields()
 

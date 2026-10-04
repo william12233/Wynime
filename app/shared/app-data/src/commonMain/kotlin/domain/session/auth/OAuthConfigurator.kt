@@ -19,7 +19,6 @@ import me.him188.ani.app.data.repository.user.AccessTokenSession
 import me.him188.ani.app.domain.foundation.LoadError
 import me.him188.ani.app.domain.session.SessionManager
 import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.app.domain.session.checkAccessAniApiNow
 import me.him188.ani.utils.logging.error
 import me.him188.ani.utils.logging.info
 import me.him188.ani.utils.logging.logger
@@ -57,7 +56,6 @@ class OAuthConfigurator(
         try {
             val externalUrl = if (!isRegister) {
                 logger.info { "Request bind, request id: $requestId" }
-                sessionStateProvider.checkAccessAniApiNow()
                 client.getOAuthBindLink(requestId)
             } else {
                 logger.info { "Request register, request id: $requestId" }

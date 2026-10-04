@@ -14,27 +14,25 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
-import me.him188.ani.app.data.network.AniApiProvider
 import me.him188.ani.app.data.network.AniCommentReportService
 import me.him188.ani.app.data.network.AniEpisodeCommentService
 import me.him188.ani.app.data.network.AniPersonCommentService
 import me.him188.ani.app.data.network.AniSubjectRelationIndexService
 import me.him188.ani.app.data.network.AniSubjectSearchService
 import me.him188.ani.app.data.network.AnimeScheduleService
+import me.him188.ani.app.data.network.BangumiApiProvider
+import me.him188.ani.app.data.network.WynimeCloudClient
 import me.him188.ani.app.data.network.BangumiSummaryService
 import me.him188.ani.app.data.network.BangumiBangumiCommentServiceImpl
 import me.him188.ani.app.data.network.BangumiCommentService
 import me.him188.ani.app.data.network.BangumiRelatedPeopleService
+import me.him188.ani.app.data.network.BangumiSubjectService
 import me.him188.ani.app.data.network.EpisodeService
 import me.him188.ani.app.data.network.EpisodeServiceImpl
 import me.him188.ani.app.data.network.RemoteSubjectService
@@ -43,11 +41,8 @@ import me.him188.ani.app.data.persistent.dataStores
 import me.him188.ani.app.data.persistent.database.AniDatabase
 import me.him188.ani.app.data.persistent.database.MIGRATION_19_20
 import me.him188.ani.app.data.persistent.database.createDatabaseBuilder
-import me.him188.ani.app.data.repository.media.MediaSourceSaves
-import me.him188.ani.app.data.repository.media.MediaSourceSubscriptionRepository
 import me.him188.ani.app.data.repository.player.PlaybackHistorySyncer
 import me.him188.ani.app.data.repository.repositoryModules
-import me.him188.ani.app.data.repository.user.AccessTokenSession
 import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.domain.foundation.ConvertSendCountExceedExceptionFeature
 import me.him188.ani.app.domain.foundation.ConvertSendCountExceedExceptionFeatureHandler
@@ -89,12 +84,19 @@ import me.him188.ani.app.domain.media.cache.storage.HttpMediaCacheStorage
 import me.him188.ani.app.domain.media.cache.storage.MediaSaveDirProvider
 import me.him188.ani.app.domain.media.fetch.MediaSourceManager
 import me.him188.ani.app.domain.media.fetch.MediaSourceManagerImpl
-import me.him188.ani.app.domain.mediasource.codec.MediaSourceCodecManager
-import me.him188.ani.app.domain.mediasource.subscription.MediaSourceSubscriptionRequesterImpl
-import me.him188.ani.app.domain.mediasource.subscription.MediaSourceSubscriptionUpdater
-import me.him188.ani.app.domain.session.AniSessionRefresher
+import me.him188.ani.app.domain.sourceplugin.InstalledSourcePluginRepository
+import me.him188.ani.app.domain.sourceplugin.SourcePluginContextFactory
+import me.him188.ani.app.domain.sourceplugin.SourcePluginHttpClient
+import me.him188.ani.app.domain.sourceplugin.SourcePluginInstaller
+import me.him188.ani.app.domain.sourceplugin.SourcePluginLoader
+import me.him188.ani.app.domain.sourceplugin.SourcePluginRegistry
+import me.him188.ani.app.domain.sourceplugin.SourcePluginRepositoryClient
+import me.him188.ani.app.domain.sourceplugin.SourcePluginStorage
+import me.him188.ani.app.domain.sourceplugin.createSourcePluginLoader
+import me.him188.ani.app.domain.sourceplugin.currentSourcePluginPlatform
 import me.him188.ani.app.domain.session.SessionManager
 import me.him188.ani.app.domain.session.SessionStateProvider
+import me.him188.ani.app.domain.session.auth.WynimeCloudSessionRefresher
 import me.him188.ani.app.domain.settings.ProxyProvider
 import me.him188.ani.app.domain.settings.SettingsBasedProxyProvider
 import me.him188.ani.app.domain.update.UpdateManager
@@ -110,14 +112,13 @@ import me.him188.ani.utils.httpdownloader.HttpDownloader
 import me.him188.ani.utils.io.resolve
 import me.him188.ani.utils.logging.logger
 import me.him188.ani.utils.logging.warn
+import me.him188.ani.source.plugin.api.SourceHttpClient
 import org.koin.core.KoinApplication
 import org.koin.core.scope.Scope
 import org.koin.dsl.module
-import kotlin.time.Duration.Companion.minutes
 
 private val Scope.client get() = get<BangumiClient>()
 private val Scope.database get() = get<AniDatabase>()
-private val Scope.aniApiProvider get() = get<AniApiProvider>()
 
 /**
  * 各端共享的 Koin 装配，默认包含 HTTP 媒体缓存模块。
@@ -145,37 +146,24 @@ private fun KoinApplication.otherModules(
         SessionManager(
             tokenRepository = get(),
             coroutineScope = coroutineScope,
-            refreshSession = AniSessionRefresher { aniApiProvider.userAuthApi },
+            refreshSession = WynimeCloudSessionRefresher(get()),
         )
     }
     single<SessionStateProvider> {
         get<SessionManager>().stateProvider
     }
-    single<ServerSelector> {
-        ServerSelector(
-            flowOf(null),
-            proxyProvider = get(),
-            coroutineScope,
-        )
-    }
     single<HttpClientProvider> {
-        val sessionManager by inject<SessionManager>()
         DefaultHttpClientProvider(
             get(), coroutineScope,
             featureHandlers = listOf(
                 UserAgentFeatureHandler,
-                UseAniTokenFeatureHandler(
-                    sessionManager.sessionFlow.map {
-                        (it as? AccessTokenSession)?.tokens?.aniAccessToken
-                    },
-                    onRefresh = { null },
-                ),
+                UseAniTokenFeatureHandler(flowOf(null), onRefresh = { null }),
                 ServerListFeatureHandler(
-                    get<ServerSelector>().flow,
+                    flowOf(emptyList()),
                 ),
                 DistributionChannelFeatureHandler { currentAniBuildConfig.distroChannel },
                 ConvertSendCountExceedExceptionFeatureHandler,
-                VersionExpiryFeatureHandler, // handle 426 Upgrade Required -> show blocking dialog
+                VersionExpiryFeatureHandler,
                 SseFeatureHandler,
                 CookieJarFeatureHandler, // web 数据源统一 cookie jar (构造时注入)
                 WebSourceIdentityFeatureHandler, // web 数据源 per-host UA 对齐
@@ -222,7 +210,23 @@ private fun KoinApplication.otherModules(
             }
         }
     }
-    single<AniApiProvider> { AniApiProvider(get<HttpClientProvider>().get(useAniToken = true)) }
+    single<WynimeCloudClient> {
+        WynimeCloudClient(
+            get<HttpClientProvider>().get(
+                userAgent = ScopedHttpClientUserAgent.ANI,
+                useAniToken = false,
+            ),
+        )
+    }
+    single<BangumiApiProvider> {
+        BangumiApiProvider(
+            client = get<HttpClientProvider>().get(
+                userAgent = ScopedHttpClientUserAgent.ANI,
+                useAniToken = false,
+            ),
+            tokenRepository = get(),
+        )
+    }
     single<BangumiClient> {
         BangumiClientImpl(
             get<HttpClientProvider>().get(
@@ -233,43 +237,43 @@ private fun KoinApplication.otherModules(
 
     single<AniSubjectSearchService> {
         AniSubjectSearchService(
-            subjectApi = aniApiProvider.subjectApi,
+            bangumiApi = get(),
         )
     }
 
     // Data layer network services
     single<SubjectService> {
-        RemoteSubjectService(
-            aniApiProvider.subjectApi,
-            sessionManager = get(),
+        BangumiSubjectService(get())
+    }
+    single<EpisodeService> { EpisodeServiceImpl(get()) }
+
+    single<BangumiRelatedPeopleService> { BangumiRelatedPeopleService(get()) }
+    single<BangumiCommentService> { BangumiBangumiCommentServiceImpl(get()) }
+    single<AniEpisodeCommentService> {
+        AniEpisodeCommentService(
+            episodesApi = null,
+            bangumiApi = get(),
         )
     }
-    single<EpisodeService> { EpisodeServiceImpl(aniApiProvider.subjectApi) }
-
-    single<BangumiRelatedPeopleService> { BangumiRelatedPeopleService(get<AniApiProvider>().subjectApi) }
-    single<BangumiCommentService> { BangumiBangumiCommentServiceImpl(get<AniApiProvider>().subjectApi) }
-    single<AniEpisodeCommentService> { AniEpisodeCommentService(get<AniApiProvider>().episodesApi) }
-    single<AniCommentReportService> { AniCommentReportService(get<AniApiProvider>().commentsApi) }
+    single<AniCommentReportService> { AniCommentReportService() }
     single<AniPersonCommentService> {
-        AniPersonCommentService(
-            personsApi = get<AniApiProvider>().personsApi,
-            charactersApi = get<AniApiProvider>().charactersApi,
-        )
+        AniPersonCommentService(bangumiApi = get())
     }
     single(createdAtStart = true) {
         PlaybackHistorySyncer(
             repository = get(),
-            api = aniApiProvider.playbackHistoryApi,
+            cloudClient = get(),
+            tokenRepository = get(),
+            settingsRepository = get(),
             sessionStateProvider = get(),
             scope = coroutineScope,
         ).also { it.start() }
     }
     single<AniSubjectRelationIndexService> {
-        val provider = get<AniApiProvider>()
-        AniSubjectRelationIndexService(provider.subjectRelationsApi)
+        AniSubjectRelationIndexService(get())
     }
 
-    single<AnimeScheduleService> { AnimeScheduleService(get<AniApiProvider>().scheduleApi) }
+    single<AnimeScheduleService> { AnimeScheduleService() }
     // TV 横版 backdrop / 分集剧照; 未配置 ani.tmdb.api.token 时自动关闭
     single<BangumiSummaryService> { BangumiSummaryService(get()) }
 
@@ -277,6 +281,50 @@ private fun KoinApplication.otherModules(
         UpdateManager(
             // Android FileProvider 共享整个 updates/ 目录, 见 file_paths.xml
             rootDir = getContext().files.cacheDir.resolve("updates"),
+        )
+    }
+
+    // Executable source plugin host. The registry owns plugin instances; the media selector only
+    // receives its read-only MediaSource adapters through the flow below.
+    single<SourcePluginStorage> {
+        SourcePluginStorage.defaultRoot(getContext().files.dataDir)
+    }
+    single<InstalledSourcePluginRepository> {
+        InstalledSourcePluginRepository(getContext().dataStores.installedSourcePluginsStore)
+    }
+    single<SourceHttpClient> {
+        SourcePluginHttpClient(
+            get<HttpClientProvider>().get(ScopedHttpClientUserAgent.BROWSER),
+        )
+    }
+    single<SourcePluginRepositoryClient> {
+        SourcePluginRepositoryClient(get<SourceHttpClient>())
+    }
+    single<SourcePluginLoader> {
+        createSourcePluginLoader(getContext())
+    }
+    single<SourcePluginContextFactory> {
+        SourcePluginContextFactory(
+            httpClientProvider = get(),
+            platform = currentSourcePluginPlatform,
+            hostVersion = currentAniBuildConfig.versionName,
+        )
+    }
+    single<SourcePluginInstaller> {
+        SourcePluginInstaller(
+            repositoryClient = get(),
+            installedRepository = get(),
+            storage = get(),
+            platform = currentSourcePluginPlatform,
+            hostVersion = currentAniBuildConfig.versionName,
+        )
+    }
+    single<SourcePluginRegistry> {
+        SourcePluginRegistry(
+            installedRepository = get(),
+            installer = get(),
+            loader = get(),
+            contextFactory = get(),
         )
     }
 
@@ -344,27 +392,14 @@ private fun KoinApplication.otherModules(
     }
 
     // Media source services
-    single<MediaSourceCodecManager> {
-        MediaSourceCodecManager()
-    }
     single<MediaSourceManager> {
         MediaSourceManagerImpl(
             additionalSources = {
                 get<MediaDownloadManager>().storages.map { it.cacheMediaSource }
             },
+            pluginSources = get<SourcePluginRegistry>().mediaSources,
         )
     }
-    single<MediaSourceSubscriptionUpdater> {
-        val settings = koin.get<ProxyProvider>()
-        val client = get<HttpClientProvider>().get(ScopedHttpClientUserAgent.ANI)
-        MediaSourceSubscriptionUpdater(
-            get<MediaSourceSubscriptionRepository>(),
-            get<MediaSourceManager>(),
-            get<MediaSourceCodecManager>(),
-            requester = MediaSourceSubscriptionRequesterImpl(client, get<AniApiProvider>().subscriptionApi),
-        )
-    }
-
     // Caching
     single<MeteredNetworkDetector> { createMeteredNetworkDetector(getContext()) }
     single<SubjectDetailsStateFactory> { DefaultSubjectDetailsStateFactory() }
@@ -399,20 +434,7 @@ fun KoinApplication.startCommonKoinModule(
     }
 
     coroutineScope.launch {
-        val subscriptionUpdater = koin.get<MediaSourceSubscriptionUpdater>()
-        while (currentCoroutineContext().isActive) {
-            val nextDelay = subscriptionUpdater.updateAllOutdated()
-            delay(nextDelay.coerceAtLeast(10.minutes))
-        }
-    }
-
-    coroutineScope.launch {
-        val currentSaves = context.dataStores.mediaSourceSaveStore.data.first()
-        val defaultInstanceIds = MediaSourceSaves.Default.instances.map { it.instanceId }
-        // 如果当前的数据源列表的 instance ids 都在默认列表里, 说明用户没有自定义过数据源, 直接写入默认源
-        if (currentSaves.instances.all { it.instanceId in defaultInstanceIds }) {
-            context.dataStores.mediaSourceSaveStore.updateData { MediaSourceSaves.Default }
-        }
+        koin.get<SourcePluginRegistry>().loadInstalled()
     }
 
     koin.get<SessionManager>().startBackgroundJob()
@@ -428,7 +450,7 @@ private fun holdingInstanceMatrixSequence() = sequence {
             HoldingInstanceMatrix(
                 setOf(
                     UserAgentFeature.withValue(userAgent),
-                    ServerListFeature.withValue(ServerListFeatureConfig.Default),
+                    ServerListFeature.withValue(ServerListFeatureConfig(aniServerRules = null)),
                     ConvertSendCountExceedExceptionFeature.withValue(true),
                 ),
             ),
@@ -439,7 +461,7 @@ private fun holdingInstanceMatrixSequence() = sequence {
         HoldingInstanceMatrix(
             setOf(
                 UserAgentFeature.withValue(ScopedHttpClientUserAgent.ANI),
-                ServerListFeature.withValue(ServerListFeatureConfig.Default),
+                ServerListFeature.withValue(ServerListFeatureConfig(aniServerRules = null)),
                 ConvertSendCountExceedExceptionFeature.withValue(true),
             ),
         ),

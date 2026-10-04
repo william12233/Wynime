@@ -15,7 +15,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import me.him188.ani.app.data.repository.media.SelectorMediaSourceEpisodeCacheRepository
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
 import me.him188.ani.app.domain.episode.CreateMediaFetchSelectBundleFlowUseCase
 import me.him188.ani.app.domain.media.selector.trace.MediaSelectionTraceRecorder
@@ -34,7 +33,6 @@ internal class DesktopMediaTraceCapture private constructor(
     private val scope: CoroutineScope,
     private val duration: Duration,
     private val episodes: List<Pair<Int, Int>>,
-    private val cacheToClear: SelectorMediaSourceEpisodeCacheRepository?,
     private val subjects: SubjectCollectionRepository,
 ) {
     fun start(navigator: AniNavigator) {
@@ -53,7 +51,6 @@ internal class DesktopMediaTraceCapture private constructor(
                     logger.warn { "Skipping capture: episode metadata unavailable for $subjectId:$episodeId" }
                     continue
                 }
-                cacheToClear?.clearByRequestedSubject(subjectId)
                 logger.info { "Opening real playback for capture: subject=$subjectId, episode=$episodeId" }
                 navigator.navigateEpisodeDetails(subjectId, episodeId)
                 delay(duration + 15.seconds)
@@ -75,17 +72,13 @@ internal class DesktopMediaTraceCapture private constructor(
                     require(ids.size == 2) { "Expected subjectId:episodeId" }
                     ids[0].toInt() to ids[1].toInt()
                 }
-            val clearCache = System.getenv("ANIMEKO_MEDIA_TRACE_CLEAR_SEARCH_CACHE").toBoolean()
-            require(!clearCache || episodes.isNotEmpty()) { "Clearing search cache requires a capture episode list" }
-            val recorder = MediaSelectionTraceRecorder(File(directory), koin, duration, clearCache)
+            val recorder = MediaSelectionTraceRecorder(File(directory), koin, duration)
             val delegate = koin.get<CreateMediaFetchSelectBundleFlowUseCase>()
             koin.loadModules(listOf(module {
                 single<CreateMediaFetchSelectBundleFlowUseCase> { recorder.decorate(delegate) }
             }))
             return DesktopMediaTraceCapture(
-                scope, duration, episodes,
-                if (clearCache) koin.get<SelectorMediaSourceEpisodeCacheRepository>() else null,
-                koin.get<SubjectCollectionRepository>(),
+                scope, duration, episodes, koin.get<SubjectCollectionRepository>(),
             )
         }
     }

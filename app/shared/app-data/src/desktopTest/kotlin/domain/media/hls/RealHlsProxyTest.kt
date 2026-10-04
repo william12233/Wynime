@@ -238,23 +238,27 @@ abstract class AbstractRealHlsProxyTest internal constructor(
     }
 
     @Test
-    fun `aes encrypted playlist keeps absolute key uri and forwards ciphertext that decrypts to valid ts`() = withFixture {
-        val result = prepare("/hls/aes/index.m3u8")
+    fun `aes encrypted playlist proxies key and forwards ciphertext that decrypts to valid ts`() = withFixture {
+        val result = prepare(
+            "/hls/aes/index.m3u8",
+            headers = mapOf("Referer" to "https://site.example/watch/aes", "X-Token" to "abc"),
+        )
         val session = result.session()
         try {
             val local = text(httpGet(result.data.uri))
             val keyLine = local.lineSequence().first { it.startsWith("#EXT-X-KEY") }
-            assertEquals(
-                "#EXT-X-KEY:METHOD=AES-128,URI=\"${origin.url("/hls/aes/key.bin")}\",IV=0x000102030405060708090a0b0c0d0e0f",
-                keyLine,
-            )
+            val keyUrl = keyLine.substringAfter("URI=\"").substringBefore('"')
+            assertLocal(keyUrl)
+            assertContentEquals(origin.bytesOf("/hls/aes/key.bin"), httpGet(keyUrl).body)
+            assertEquals("https://site.example/watch/aes", origin.lastHeaders("/hls/aes/key.bin")?.get("referer"))
+            assertEquals("abc", origin.lastHeaders("/hls/aes/key.bin")?.get("x-token"))
             val uris = local.segmentUris()
             assertEquals(10, uris.size)
             val cipherBytes = httpGet(uris[4]).body
             assertContentEquals(origin.bytesOf("/hls/aes/seg004.ts"), cipherBytes)
 
             // 播放器会自己拿密钥解密; 这里模拟一遍, 证明转发的密文是完整的
-            val key = httpGet(origin.url("/hls/aes/key.bin")).body
+            val key = origin.bytesOf("/hls/aes/key.bin")
             assertEquals(16, key.size)
             val iv = ByteArray(16) { it.toByte() }
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
@@ -267,14 +271,19 @@ abstract class AbstractRealHlsProxyTest internal constructor(
     }
 
     @Test
-    fun `fmp4 playlist keeps absolute init segment uri and proxies media segments`() = withFixture {
-        val result = prepare("/hls/fmp4/index.m3u8")
+    fun `fmp4 playlist proxies init segment and media segments`() = withFixture {
+        val result = prepare(
+            "/hls/fmp4/index.m3u8",
+            headers = mapOf("Referer" to "https://site.example/watch/fmp4"),
+        )
         val session = result.session()
         try {
             val local = text(httpGet(result.data.uri))
             val mapLine = local.lineSequence().first { it.startsWith("#EXT-X-MAP") }
-            assertEquals("#EXT-X-MAP:URI=\"${origin.url("/hls/fmp4/init.mp4")}\"", mapLine)
-            val init = httpGet(origin.url("/hls/fmp4/init.mp4")).body
+            val initUrl = mapLine.substringAfter("URI=\"").substringBefore('"')
+            assertLocal(initUrl)
+            val init = httpGet(initUrl).body
+            assertEquals("https://site.example/watch/fmp4", origin.lastHeaders("/hls/fmp4/init.mp4")?.get("referer"))
             assertTrue(init.toString(StandardCharsets.ISO_8859_1).contains("ftyp"), "init segment should be an MP4")
 
             val uris = local.segmentUris()

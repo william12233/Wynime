@@ -49,7 +49,7 @@ class TvAniApplication : Application() {
             // TV 使用不啟用媒體快取的通用裝配。
             modules(getCommonKoinModule({ this@TvAniApplication }, scope, enableMediaCache = false))
             modules(getCommonAndroidModules(scope))
-            modules(getTvAndroidModules()) // src/tv — Web 解析链 / BrowserNavigator 降级 / AppTerminator
+            modules(getTvAndroidModules()) // src/tv — Web 解析链 / BrowserNavigator / AppTerminator
         }.startCommonKoinModule(this@TvAniApplication, scope)
     }
 }

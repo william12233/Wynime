@@ -1,12 +1,3 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 /**
  *
  * Please note:
@@ -19,30 +10,32 @@
     "ArrayInDataClass",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport",
+    "UnusedImport"
 )
 
 package me.him188.ani.datasources.bangumi.next.models
 
-import kotlinx.serialization.Required
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import me.him188.ani.datasources.bangumi.next.models.BangumiNextCollectionType
+
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
  * 
  *
- * @param comment
- * @param epStatus
- * @param `private`
- * @param rate
- * @param tags
+ * @param comment 
+ * @param epStatus 
+ * @param `private` 
+ * @param rate 
+ * @param tags 
  * @param type 
  * @param updatedAt 
  * @param volStatus 
  */
 @Serializable
 
-data class BangumiNextSubjectInterest(
+data class BangumiNextSubjectInterest (
 
     @SerialName(value = "comment") @Required val comment: kotlin.String,
 

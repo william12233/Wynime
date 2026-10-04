@@ -17,6 +17,7 @@ import me.him188.ani.app.data.models.person.PersonComment
 import me.him188.ani.app.data.models.person.PersonCommentReaction
 import me.him188.ani.app.data.models.person.PersonCommentSource
 import me.him188.ani.app.data.models.person.PersonCommentTarget
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.app.data.repository.RepositoryException
 import me.him188.ani.client.apis.CharactersAniApi
 import me.him188.ani.client.apis.PersonsAniApi
@@ -38,10 +39,15 @@ import kotlin.coroutines.CoroutineContext
  * 两组接口形状相同, 由 [PersonCommentTarget] 决定用哪组.
  */
 open class AniPersonCommentService(
-    private val personsApi: ApiInvoker<PersonsAniApi>,
-    private val charactersApi: ApiInvoker<CharactersAniApi>,
+    private val personsApi: ApiInvoker<PersonsAniApi>? = null,
+    private val charactersApi: ApiInvoker<CharactersAniApi>? = null,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
+    private val bangumiApi: BangumiApiProvider? = null,
 ) {
+    private val legacyPersonsApi: ApiInvoker<PersonsAniApi>
+        get() = personsApi ?: throw RepositoryRequestError("人物留言服務目前未啟用")
+    private val legacyCharactersApi: ApiInvoker<CharactersAniApi>
+        get() = charactersApi ?: throw RepositoryRequestError("角色留言服務目前未啟用")
     /**
      * 获取评论, 新评论在前. 服务端已合并 Bangumi 评论, 客户端不再自行拉取 Bangumi.
      *
@@ -56,8 +62,16 @@ open class AniPersonCommentService(
         after: String? = null,
         limit: Int = 30,
     ): AniPersonCommentsResponse = call {
+        if (bangumiApi != null) {
+            return@call AniPersonCommentsResponse(
+                total = 0,
+                items = emptyList(),
+                bangumiUnavailable = false,
+                nextCursor = null,
+            )
+        }
         when (target) {
-            is PersonCommentTarget.Person -> personsApi {
+            is PersonCommentTarget.Person -> legacyPersonsApi {
                 listPersonComments(
                     personId = target.personId.toLong(),
                     limit = limit,
@@ -66,7 +80,7 @@ open class AniPersonCommentService(
                 ).body()
             }
 
-            is PersonCommentTarget.Character -> charactersApi {
+            is PersonCommentTarget.Character -> legacyCharactersApi {
                 listCharacterComments(
                     characterId = target.characterId.toLong(),
                     limit = limit,
@@ -78,16 +92,19 @@ open class AniPersonCommentService(
     }
 
     open suspend fun createComment(target: PersonCommentTarget, contentBbcode: String) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 目前不提供人物或角色留言寫入介面")
+        }
         call {
             when (target) {
-                is PersonCommentTarget.Person -> personsApi {
+                is PersonCommentTarget.Person -> legacyPersonsApi {
                     createPersonComment(
                         personId = target.personId.toLong(),
                         aniCreatePersonCommentRequest = AniCreatePersonCommentRequest(contentBbcode),
                     ).body()
                 }
 
-                is PersonCommentTarget.Character -> charactersApi {
+                is PersonCommentTarget.Character -> legacyCharactersApi {
                     createCharacterComment(
                         characterId = target.characterId.toLong(),
                         aniCreateCharacterCommentRequest = AniCreateCharacterCommentRequest(contentBbcode),
@@ -98,9 +115,12 @@ open class AniPersonCommentService(
     }
 
     open suspend fun createReply(target: PersonCommentTarget, commentId: String, contentBbcode: String) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 目前不提供人物或角色留言回覆介面")
+        }
         call {
             when (target) {
-                is PersonCommentTarget.Person -> personsApi {
+                is PersonCommentTarget.Person -> legacyPersonsApi {
                     createPersonReply(
                         personId = target.personId.toLong(),
                         commentId = commentId,
@@ -108,7 +128,7 @@ open class AniPersonCommentService(
                     ).body()
                 }
 
-                is PersonCommentTarget.Character -> charactersApi {
+                is PersonCommentTarget.Character -> legacyCharactersApi {
                     createCharacterReply(
                         characterId = target.characterId.toLong(),
                         commentId = commentId,
@@ -120,13 +140,16 @@ open class AniPersonCommentService(
     }
 
     open suspend fun addReaction(target: PersonCommentTarget, commentId: String, value: String) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 目前不提供人物或角色留言互動介面")
+        }
         call {
             when (target) {
-                is PersonCommentTarget.Person -> personsApi {
+                is PersonCommentTarget.Person -> legacyPersonsApi {
                     addPersonCommentReaction(target.personId.toLong(), commentId, value).body()
                 }
 
-                is PersonCommentTarget.Character -> charactersApi {
+                is PersonCommentTarget.Character -> legacyCharactersApi {
                     addCharacterCommentReaction(target.characterId.toLong(), commentId, value).body()
                 }
             }
@@ -134,13 +157,16 @@ open class AniPersonCommentService(
     }
 
     open suspend fun removeReaction(target: PersonCommentTarget, commentId: String, value: String) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 目前不提供人物或角色留言互動介面")
+        }
         call {
             when (target) {
-                is PersonCommentTarget.Person -> personsApi {
+                is PersonCommentTarget.Person -> legacyPersonsApi {
                     removePersonCommentReaction(target.personId.toLong(), commentId, value).body()
                 }
 
-                is PersonCommentTarget.Character -> charactersApi {
+                is PersonCommentTarget.Character -> legacyCharactersApi {
                     removeCharacterCommentReaction(target.characterId.toLong(), commentId, value).body()
                 }
             }
@@ -151,9 +177,12 @@ open class AniPersonCommentService(
      * 对评论投票. [vote] 为 `null` 表示取消投票. 只有 Ani 源的根评论可投票.
      */
     open suspend fun vote(target: PersonCommentTarget, commentId: String, vote: CommentVoteValue?) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 目前不提供人物或角色評價投票介面")
+        }
         call {
             when (target) {
-                is PersonCommentTarget.Person -> personsApi {
+                is PersonCommentTarget.Person -> legacyPersonsApi {
                     if (vote == null) {
                         removePersonCommentVote(target.personId.toLong(), commentId).body()
                     } else {
@@ -161,7 +190,7 @@ open class AniPersonCommentService(
                     }
                 }
 
-                is PersonCommentTarget.Character -> charactersApi {
+                is PersonCommentTarget.Character -> legacyCharactersApi {
                     if (vote == null) {
                         removeCharacterCommentVote(target.characterId.toLong(), commentId).body()
                     } else {

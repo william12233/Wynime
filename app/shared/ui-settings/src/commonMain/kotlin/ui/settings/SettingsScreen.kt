@@ -106,7 +106,6 @@ import me.him188.ani.app.ui.adaptive.ListDetailLayoutParameters
 import me.him188.ani.app.ui.adaptive.PaneScope
 import me.him188.ani.app.ui.adaptive.TopAppBarSize
 import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
 import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
 import me.him188.ani.app.ui.foundation.animation.NavigationMotionScheme
 import me.him188.ani.app.ui.foundation.ifThen
@@ -126,8 +125,6 @@ import me.him188.ani.app.ui.lang.acknowledgements
 import me.him188.ani.app.ui.lang.developer_list
 import me.him188.ani.app.ui.lang.settings_about_build_info
 import me.him188.ani.app.ui.lang.settings
-import me.him188.ani.app.ui.lang.settings_account_bangumi_sync_title
-import me.him188.ani.app.ui.lang.settings_account_github_title
 import me.him188.ani.app.ui.lang.settings_acknowledgements_oss_licenses
 import me.him188.ani.app.ui.lang.settings_category_app_ui
 import me.him188.ani.app.ui.lang.settings_category_data_playback
@@ -148,8 +145,6 @@ import me.him188.ani.app.ui.lang.settings_tab_settings_backup
 import me.him188.ani.app.ui.lang.settings_tab_storage
 import me.him188.ani.app.ui.lang.settings_tab_theme
 import me.him188.ani.app.ui.lang.settings_tab_update
-import me.him188.ani.app.ui.settings.account.BangumiSyncTab
-import me.him188.ani.app.ui.settings.account.GithubAccountTab
 import me.him188.ani.app.ui.settings.account.ProfileGroup
 import me.him188.ani.app.ui.settings.account.SelfInfoBanner
 import me.him188.ani.app.ui.settings.framework.components.SettingsScope
@@ -168,10 +163,7 @@ import me.him188.ani.app.ui.settings.tabs.log.LogTab
 import me.him188.ani.app.ui.settings.tabs.media.BackupSettings
 import me.him188.ani.app.ui.settings.tabs.media.CacheDirectoryGroup
 import me.him188.ani.app.ui.settings.tabs.media.MediaSelectionGroup
-import me.him188.ani.app.ui.settings.tabs.media.source.MediaSourceGroup
-import me.him188.ani.app.ui.settings.tabs.media.source.MediaSourceSelectionActions
-import me.him188.ani.app.ui.settings.tabs.media.source.MediaSourceSubscriptionGroup
-import me.him188.ani.app.ui.settings.tabs.media.source.rememberMediaSourceSelectionState
+import me.him188.ani.app.ui.settings.tabs.media.source.SourcePluginStoreTab
 import me.him188.ani.app.ui.settings.tabs.network.ConfigureProxyGroup
 import me.him188.ani.app.ui.settings.tabs.theme.ThemeGroup
 import me.him188.ani.app.ui.update.devbuild.DevBuildsTab
@@ -211,16 +203,9 @@ fun SettingsScreen(
     var lastSelectedTab by rememberSaveable(initialTab) {
         mutableStateOf(initialTab)
     }
-    val mediaSourceSelectionState = rememberMediaSourceSelectionState()
-
     LaunchedEffect(Unit) {
         if (lastSelectedTab == null && !layoutParameters.preferSinglePane) {
             lastSelectedTab = SettingsTab.APPEARANCE
-        }
-    }
-    LaunchedEffect(lastSelectedTab) {
-        if (lastSelectedTab != SettingsTab.MEDIA_SOURCE) {
-            mediaSourceSelectionState.clear()
         }
     }
     val coroutineScope = rememberCoroutineScope()
@@ -247,12 +232,8 @@ fun SettingsScreen(
             }
         },
         onClickBackOnDetailPage = {
-            if (mediaSourceSelectionState.inSelection) {
-                mediaSourceSelectionState.clear()
-            } else {
-                coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
-                    navigator.navigateBack(BackNavigationBehavior.PopUntilScaffoldValueChange)
-                }
+            coroutineScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                navigator.navigateBack(BackNavigationBehavior.PopUntilScaffoldValueChange)
             }
         },
         navItems = {
@@ -349,13 +330,9 @@ fun SettingsScreen(
                         when (currentTab) {
                             SettingsTab.PROFILE -> ProfileGroup(
                                 onNavigateToEmail = onNavigateToEmailLogin,
-                                onNavigateToBangumiSync = {
-                                    navigateTo(DetailPaneRoutes.BangumiSync)
-                                },
+                                onNavigateToBangumiSync = {},
                                 onNavigateToOAuth = onNavigateToOAuth,
-                                onNavigateToGithubAccount = {
-                                    navigateTo(DetailPaneRoutes.GithubAccount)
-                                },
+                                onNavigateToGithubAccount = {},
                                 onNavigateToQrLogin = onNavigateToQrLogin,
                             )
 
@@ -371,14 +348,7 @@ fun SettingsScreen(
                             }
 
                             SettingsTab.MEDIA_SOURCE -> {
-                                MediaSourceSubscriptionGroup(
-                                    vm.mediaSourceSubscriptionGroupState,
-                                )
-                                MediaSourceGroup(
-                                    vm.mediaSourceGroupState,
-                                    vm.editMediaSourceState,
-                                    mediaSourceSelectionState,
-                                )
+                                SourcePluginStoreTab(vm.sourcePluginStoreState)
                             }
 
                             SettingsTab.MEDIA_SELECTOR -> MediaSelectionGroup(vm.mediaSelectionGroupState)
@@ -397,31 +367,11 @@ fun SettingsScreen(
                         }
                     }
                 }
-                if (currentTab == SettingsTab.MEDIA_SOURCE) {
-                    AniAnimatedVisibility(mediaSourceSelectionState.inSelection) {
-                        Spacer(Modifier.height(80.dp))
-                    }
-                }
                 Spacer(
                     Modifier.height(
                         currentWindowAdaptiveInfo1().windowSizeClass.paneVerticalPadding,
                     ),
                 )
-            }
-        },
-        detailPaneBottomBar = { currentTab, bottomBarInsets ->
-            if (currentTab == SettingsTab.MEDIA_SOURCE) {
-                AniAnimatedVisibility(
-                    visible = mediaSourceSelectionState.inSelection,
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                ) {
-                    MediaSourceSelectionActions(
-                        mediaSources = vm.mediaSourceGroupState.mediaSources,
-                        selectionState = mediaSourceSelectionState,
-                        editState = vm.editMediaSourceState,
-                        windowInsets = bottomBarInsets,
-                    )
-                }
             }
         },
         modifier = modifier,
@@ -811,48 +761,6 @@ internal fun SettingsPageLayout(
                             }
                         }
                     }
-                    entry<DetailPaneRoutes.BangumiSync> {
-                        DetailPaneRoute(
-                            topAppBar = {
-                                AniTopAppBar(
-                                    title = { AniTopAppBarDefaults.Title(stringResource(Lang.settings_account_bangumi_sync_title)) },
-                                    navigationIcon = {
-                                        BackNavigationIconButton(navigateUp)
-                                    },
-                                    colors = topAppBarColors,
-                                    windowInsets = topAppBarWindowInsets,
-                                    size = topAppBarSize,
-                                    scrollBehavior = detailPaneTopAppBarScrollBehavior,
-                                )
-                            },
-                            detailPaneTopAppBarScrollBehavior,
-                        ) {
-                            RouteContent(scrollable = false) {
-                                BangumiSyncTab()
-                            }
-                        }
-                    }
-                    entry<DetailPaneRoutes.GithubAccount> {
-                        DetailPaneRoute(
-                            topAppBar = {
-                                AniTopAppBar(
-                                    title = { AniTopAppBarDefaults.Title(stringResource(Lang.settings_account_github_title)) },
-                                    navigationIcon = {
-                                        BackNavigationIconButton(navigateUp)
-                                    },
-                                    colors = topAppBarColors,
-                                    windowInsets = topAppBarWindowInsets,
-                                    size = topAppBarSize,
-                                    scrollBehavior = detailPaneTopAppBarScrollBehavior,
-                                )
-                            },
-                            detailPaneTopAppBarScrollBehavior,
-                        ) {
-                            RouteContent {
-                                GithubAccountTab()
-                            }
-                        }
-                    }
                     entry<DetailPaneRoutes.DevBuilds> {
                         DetailPaneRoute(
                             topAppBar = {
@@ -1000,12 +908,6 @@ sealed class DetailPaneRoutes : NavKey {
     data object BuildInfo : DetailPaneRoutes()
 
     @Serializable
-    data object BangumiSync : DetailPaneRoutes()
-
-    @Serializable
-    data object GithubAccount : DetailPaneRoutes()
-
-    @Serializable
     data object DevBuilds : DetailPaneRoutes()
 }
 
@@ -1022,8 +924,6 @@ private val DetailPaneBackStackSaver: Saver<SnapshotStateList<DetailPaneRoutes>,
                     "OpenSourceLicenses" -> DetailPaneRoutes.OpenSourceLicenses
                     "Developers" -> DetailPaneRoutes.Developers
                     "BuildInfo" -> DetailPaneRoutes.BuildInfo
-                    "BangumiSync" -> DetailPaneRoutes.BangumiSync
-                    "GithubAccount" -> DetailPaneRoutes.GithubAccount
                     "DevBuilds" -> DetailPaneRoutes.DevBuilds
                     else -> DetailPaneRoutes.Main
                 }

@@ -9,6 +9,7 @@
 
 package me.him188.ani.android.tv
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
@@ -17,14 +18,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import me.him188.ani.app.data.models.preference.ThemeSettings
 import me.him188.ani.app.data.models.preference.UISettings
 import me.him188.ani.app.domain.foundation.HttpClientProvider
 import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
 import me.him188.ani.app.domain.foundation.get
+import me.him188.ani.app.domain.session.auth.OAuthCallbackRegistry
+import me.him188.ani.app.navigation.BrowserNavigator
 import me.him188.ani.app.navigation.AniNavigator
 import me.him188.ani.app.platform.AniComponentActivity
+import me.him188.ani.app.platform.navigation.LocalBrowserNavigator
 import me.him188.ani.app.ui.foundation.LocalSketch
 import me.him188.ani.app.ui.foundation.rememberAniSketchInstance
 import me.him188.ani.app.ui.foundation.widgets.LocalToaster
@@ -43,8 +49,14 @@ class MainActivity : AniComponentActivity() {
 
     private val aniNavigator = AniNavigator()
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleStartIntent(intent)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleStartIntent(intent)
         // 全面屏: 内容画到系统栏后面 (对齐参考版沉浸效果)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
@@ -53,6 +65,7 @@ class MainActivity : AniComponentActivity() {
         // Resolve application services before entering composition.
         val dependencies = TvAppDependencies.fromKoin(getKoin())
         val imageLoaderClient = getKoin().get<HttpClientProvider>().get(ScopedHttpClientUserAgent.ANI)
+        val browserNavigator = getKoin().get<BrowserNavigator>()
         val themeSettings = dependencies.settingsRepository.themeSettings.flow
         val uiSettings = dependencies.settingsRepository.uiSettings.flow
         setContent {
@@ -73,11 +86,38 @@ class MainActivity : AniComponentActivity() {
                 }
                 CompositionLocalProvider(
                     LocalSketch provides sketch,
+                    LocalBrowserNavigator provides browserNavigator,
                     LocalToaster provides toaster,
                 ) {
                     TvAniAppContent(aniNavigator, dependencies)
                 }
             }
         }
+    }
+
+    private fun handleStartIntent(intent: Intent) {
+        val data = intent.data ?: return
+        val isHttpsCallback = data.scheme == OAUTH_CALLBACK_SCHEME_HTTPS &&
+            data.host == OAUTH_CALLBACK_HOST &&
+            data.path == OAUTH_CALLBACK_PATH
+        val isSchemeCallback = data.scheme == OAUTH_CALLBACK_SCHEME &&
+            data.host == OAUTH_CALLBACK_HOST_SCHEME
+        if (!isHttpsCallback && !isSchemeCallback) return
+
+        val state = data.getQueryParameter("state")
+        val ticket = data.getQueryParameter("ticket")
+        val error = data.getQueryParameter("error")
+        if (state.isNullOrBlank() || (ticket.isNullOrBlank() && error.isNullOrBlank())) return
+        lifecycleScope.launch {
+            OAuthCallbackRegistry.publish(state, ticket, error)
+        }
+    }
+
+    private companion object {
+        const val OAUTH_CALLBACK_SCHEME_HTTPS = "https"
+        const val OAUTH_CALLBACK_SCHEME = "ani"
+        const val OAUTH_CALLBACK_HOST = "wynime-bangumi-broker.wzhou785.workers.dev"
+        const val OAUTH_CALLBACK_PATH = "/app/oauth-complete"
+        const val OAUTH_CALLBACK_HOST_SCHEME = "bangumi-oauth-callback"
     }
 }

@@ -26,6 +26,7 @@ data class EpisodeHistory(
     val durationMillis: Long? = null,
     val updatedAtMillis: Long = 0,
     val deletedAtMillis: Long? = null,
+    val serverRevision: Long = 0,
     val isDirty: Boolean = true,
 ) {
     val isDeleted: Boolean get() = deletedAtMillis != null

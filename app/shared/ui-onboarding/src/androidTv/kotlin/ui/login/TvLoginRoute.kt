@@ -15,6 +15,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import me.him188.ani.app.platform.LocalContext
+import me.him188.ani.app.platform.navigation.rememberAsyncBrowserNavigator
 import me.him188.ani.tv.ui.foundation.TvNavigationEffect
 import me.him188.ani.tv.ui.foundation.TvNavigationEvent
 
@@ -26,6 +28,19 @@ fun TvLoginRoute(
     navigationRailInsets: PaddingValues = PaddingValues(0.dp),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val browserNavigator = rememberAsyncBrowserNavigator()
+    val context = LocalContext.current
     TvNavigationEffect(viewModel.navigationEvents, onNavigate)
-    TvLoginScreen(state, viewModel::onIntent, modifier, navigationRailInsets)
+    TvLoginScreen(
+        uiState = state,
+        onIntent = { intent ->
+            when (intent) {
+                TvLoginIntent.Authorize -> viewModel.startOAuth { url ->
+                    browserNavigator.openBrowser(context, url)
+                }
+            }
+        },
+        modifier = modifier,
+        navigationRailInsets = navigationRailInsets,
+    )
 }

@@ -13,8 +13,6 @@ import me.him188.ani.app.data.network.AutoSkipRepository
 import me.him188.ani.app.data.network.BangumiSummaryService
 import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
 import me.him188.ani.app.data.repository.episode.EpisodeCommentRepository
-import me.him188.ani.app.data.repository.media.MediaSourceSubscriptionRepository
-import me.him188.ani.app.data.repository.media.SelectorMediaSourceEpisodeCacheRepository
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
 import me.him188.ani.app.data.repository.subject.SubjectSearchRepository
 import me.him188.ani.app.data.repository.user.SettingsRepository
@@ -39,7 +37,6 @@ class TvAppDependencies(
     val subjectCollectionRepository: SubjectCollectionRepository,
     val bangumiSummaryService: BangumiSummaryService,
     val mediaSourceManager: MediaSourceManager,
-    val mediaSourceSubscriptionRepository: MediaSourceSubscriptionRepository,
     val subjectSearchRepository: SubjectSearchRepository,
     val settingsRepository: SettingsRepository,
     val subjectDetailsStateFactory: SubjectDetailsStateFactory,
@@ -48,7 +45,6 @@ class TvAppDependencies(
     val episodeCommentRepository: EpisodeCommentRepository,
     val getSubjectRecommendations: GetSubjectRecommendationUseCase,
     val autoSkipRepository: AutoSkipRepository,
-    val selectorEpisodeCacheRepository: SelectorMediaSourceEpisodeCacheRepository,
     val webSessionManager: WebSessionManager,
     val sessionStateProvider: SessionStateProvider,
     val setEpisodeCollectionType: SetEpisodeCollectionTypeUseCase,
@@ -62,7 +58,6 @@ class TvAppDependencies(
             userRepository = koin.get(),
             subjectCollectionRepository = koin.get(),
             mediaSourceManager = koin.get(),
-            mediaSourceSubscriptionRepository = koin.get(),
             bangumiSummaryService = koin.get(),
             subjectSearchRepository = koin.get(),
             settingsRepository = koin.get(),
@@ -72,7 +67,6 @@ class TvAppDependencies(
             episodeCommentRepository = koin.get(),
             getSubjectRecommendations = koin.get(),
             autoSkipRepository = koin.get(),
-            selectorEpisodeCacheRepository = koin.get(),
             webSessionManager = koin.get(),
             sessionStateProvider = koin.get(),
             setEpisodeCollectionType = koin.get(),

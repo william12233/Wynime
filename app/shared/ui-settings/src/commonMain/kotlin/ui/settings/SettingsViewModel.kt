@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -35,22 +34,20 @@ import me.him188.ani.app.data.models.preference.UISettings
 import me.him188.ani.app.data.models.preference.UpdateSettings
 import me.him188.ani.app.data.models.preference.VideoResolverSettings
 import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.repository.media.MediaSourceInstanceRepository
-import me.him188.ani.app.data.repository.media.MediaSourceSubscriptionRepository
+import me.him188.ani.app.data.persistent.dataStores
 import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.app.data.repository.user.TokenSave
 import me.him188.ani.app.domain.foundation.HttpClientProvider
 import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
-import me.him188.ani.app.domain.mediasource.codec.MediaSourceCodecManager
-import me.him188.ani.app.domain.mediasource.codec.serializeSubscriptionToString
-import me.him188.ani.app.domain.mediasource.subscription.MediaSourceSubscriptionUpdater
+import me.him188.ani.app.domain.sourceplugin.SourcePluginRegistry
+import me.him188.ani.app.domain.sourceplugin.SourcePluginRepositoryClient
 import me.him188.ani.app.domain.settings.ProxySettingsFlowProxyProvider
 import me.him188.ani.app.domain.settings.ProxyTester
 import me.him188.ani.app.domain.settings.ServiceConnectionTester
 import me.him188.ani.app.domain.settings.ServiceConnectionTesters
 import me.him188.ani.app.platform.PermissionManager
+import me.him188.ani.app.platform.Context
 import me.him188.ani.app.platform.currentAniBuildConfig
 import me.him188.ani.app.ui.foundation.launchInBackground
 import me.him188.ani.app.ui.settings.framework.AbstractSettingsViewModel
@@ -59,10 +56,7 @@ import me.him188.ani.app.ui.settings.tabs.about.AboutTabInfo
 import me.him188.ani.app.ui.settings.tabs.app.SoftwareUpdateGroupState
 import me.him188.ani.app.ui.settings.tabs.media.CacheDirectoryGroupState
 import me.him188.ani.app.ui.settings.tabs.media.MediaSelectionGroupState
-import me.him188.ani.app.ui.settings.tabs.media.source.EditMediaSourceState
-import me.him188.ani.app.ui.settings.tabs.media.source.MediaSourceGroupState
-import me.him188.ani.app.ui.settings.tabs.media.source.MediaSourceLoader
-import me.him188.ani.app.ui.settings.tabs.media.source.MediaSourceSubscriptionGroupState
+import me.him188.ani.app.ui.settings.tabs.media.source.SourcePluginStoreState
 import me.him188.ani.app.ui.settings.tabs.network.ConfigureProxyState
 import me.him188.ani.app.ui.settings.tabs.network.ConfigureProxyUIState
 import me.him188.ani.app.ui.settings.tabs.network.ProxyTestCase
@@ -82,13 +76,10 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
     private val settingsRepository: SettingsRepository by inject()
     private val permissionManager: PermissionManager by inject()
 
-    private val mediaSourceManager: MediaSourceManager by inject()
-    private val mediaSourceInstanceRepository: MediaSourceInstanceRepository by inject()
-    private val mediaSourceSubscriptionRepository: MediaSourceSubscriptionRepository by inject()
-    private val mediaSourceSubscriptionUpdater: MediaSourceSubscriptionUpdater by inject()
-    private val mediaSourceCodecManager: MediaSourceCodecManager by inject()
     private val clientProvider: HttpClientProvider by inject()
     private val tokenRepository: TokenRepository by inject()
+    private val sourcePluginRepositoryClient: SourcePluginRepositoryClient by inject()
+    private val sourcePluginRegistry: SourcePluginRegistry by inject()
 
     private val proxyProvider = ProxySettingsFlowProxyProvider(settingsRepository.proxySettings.flow, backgroundScope)
 
@@ -189,51 +180,11 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
     )
     // endregion
 
-    private val mediaSourceLoader = MediaSourceLoader(
-        mediaSourceManager,
-        mediaSourceSubscriptionRepository.flow,
-        backgroundScope.coroutineContext,
-    )
-    val mediaSourceGroupState = MediaSourceGroupState(
-        mediaSourceLoader.mediaSourcesFlow.produceState(emptyList()),
-        mediaSourceLoader.availableMediaSourceTemplates.produceState(emptyList()),
-        onReorder = { mediaSourceInstanceRepository.partiallyReorder(it) },
-        backgroundScope,
-    )
-
-    val editMediaSourceState = EditMediaSourceState(
-        getConfigFlow = { id ->
-            mediaSourceManager.instanceConfigFlow(id).map {
-                checkNotNull(it) { "Could not find MediaSourceConfig for id $id" }
-            }
-        },
-        onAdd = { factoryId, instanceId, config ->
-            mediaSourceManager.addInstance(instanceId, instanceId, factoryId, config)
-        },
-        onEdit = { instanceId, config -> mediaSourceManager.updateConfig(instanceId, config) },
-        onDelete = { instanceIds -> mediaSourceManager.removeInstances(instanceIds) },
-        onSetEnabled = { instanceIds, enabled -> mediaSourceManager.setEnabled(instanceIds, enabled) },
-        backgroundScope,
-    )
-
-    private val subscriptionsState = mediaSourceSubscriptionRepository.flow.produceState(emptyList())
-    val mediaSourceSubscriptionGroupState = MediaSourceSubscriptionGroupState(
-        subscriptionsState = subscriptionsState,
-        onUpdateAll = { mediaSourceSubscriptionUpdater.updateAllOutdated(force = true) },
-        onAdd = { mediaSourceSubscriptionRepository.add(it) },
-        onDelete = {
-            launchInBackground {
-                mediaSourceManager.removeInstances(
-                    mediaSourceManager.getListBySubscriptionId(it.subscriptionId).map { save -> save.instanceId },
-                )
-                mediaSourceSubscriptionRepository.remove(it)
-            }
-        },
-        onExportLocalChangesToString = { subscription ->
-            val saves = mediaSourceManager.getListBySubscriptionId(subscription.subscriptionId)
-            mediaSourceCodecManager.serializeSubscriptionToString(saves)
-        },
-        backgroundScope,
+    val sourcePluginStoreState = SourcePluginStoreState(
+        repositoryClient = sourcePluginRepositoryClient,
+        registry = sourcePluginRegistry,
+        repositoryCache = getKoin().get<Context>().dataStores.sourcePluginRepositoryCacheStore,
+        scope = backgroundScope,
     )
 
     val debugTriggerState = DebugTriggerState(debugSettingsState, backgroundScope)
@@ -301,7 +252,6 @@ private fun Map<String, ServiceConnectionTester.TestState>.toUIState(): List<Pro
     return buildList {
         this@toUIState.forEach { (id, state) ->
             val case = when (id) {
-                ServiceConnectionTesters.ID_ANI -> ProxyTestCase.AniApi
                 ServiceConnectionTesters.ID_BANGUMI -> ProxyTestCase.BangumiApi
                 ServiceConnectionTesters.ID_BANGUMI_NEXT -> ProxyTestCase.BangumiNextApi
                 else -> return@forEach

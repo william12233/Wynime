@@ -72,7 +72,7 @@ import kotlin.coroutines.CoroutineContext
  *
  * ## 数据源阶级
  *
- * 每个数据源 [me.him188.ani.datasources.api.source.MediaSource] 都拥有阶级 [me.him188.ani.app.domain.mediasource.codec.MediaSourceTier]. 阶级会影响排序.
+ * 每个数据源 [me.him188.ani.datasources.api.source.MediaSource] 都拥有阶级 [me.him188.ani.app.domain.mediasource.MediaSourceTier]. 阶级会影响排序.
  * 阶级值越低, 数据源排序越靠前.
  *
  * 数据源还可以为各个 channel (对应 [me.him188.ani.datasources.api.MediaProperties.alliance]) 单独指定 tier

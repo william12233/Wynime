@@ -12,26 +12,35 @@ package me.him188.ani.app.data.network
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.client.apis.SubjectRelationsAniApi
 import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.ktor.ApiInvoker
 import kotlin.coroutines.CoroutineContext
 
 
 // For 查询第一季时自动排除第二季的资源 #1324
-// Server-side: https://github.com/open-ani/ani-api-server/commit/5b513e607eca222c6352d3e4243df43de83469ba
 class AniSubjectRelationIndexService(
-    private val relationsApi: ApiInvoker<SubjectRelationsAniApi>,
+    private val bangumiApi: BangumiApiProvider,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
 ) {
     suspend fun getSubjectRelationIndex(subjectId: Int) = withContext(ioDispatcher) {
         try {
-            // https://auth.myani.org/v1/subject-relations/239816
-            relationsApi {
-                getSubjectRelations(subjectId.toLong()).body()
-            }
+            val relations = bangumiApi.request { getRelatedSubjectsBySubjectId(subjectId) }
+            val prequels = relations.filter { it.relation.isPrequel() }.map { it.id }.asReversed()
+            BangumiSubjectRelationIndex(
+                sequelSubjects = relations.filter { it.relation.isSequel() }.map { it.id },
+                seriesMainSubjectIds = (prequels + subjectId + relations.filter { it.relation.isSequel() }.map { it.id })
+                    .distinct(),
+            )
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
     }
 }
+
+data class BangumiSubjectRelationIndex(
+    val sequelSubjects: List<Int>,
+    val seriesMainSubjectIds: List<Int>,
+)
+
+private fun String.isPrequel() = trim().lowercase() in setOf("前传", "prequel")
+
+private fun String.isSequel() = trim().lowercase() in setOf("续集", "sequel")

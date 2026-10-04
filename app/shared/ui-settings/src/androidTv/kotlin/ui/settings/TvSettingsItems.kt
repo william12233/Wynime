@@ -46,7 +46,6 @@ internal enum class TvSettingsExtra(val origin: String, val playerPage: TvSettin
     Picture("player-Picture", TvSettingsPlayerPage.Picture),
     PlayerAdvanced("player-Advanced", TvSettingsPlayerPage.Advanced),
     WatchingAdvanced("watching-advanced"),
-    Subscriptions("subscriptions"),
 }
 
 internal data class TvSettingItem(

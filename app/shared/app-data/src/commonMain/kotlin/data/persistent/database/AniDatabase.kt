@@ -79,7 +79,7 @@ import me.him188.ani.utils.httpdownloader.DownloadState
         PlaybackHistoryRecordEntity::class,
         PlaybackHistoryPendingOpEntity::class,
     ],
-    version = 27,
+    version = 28,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = Migrations.Migration_1_2::class),
         AutoMigration(from = 2, to = 3, spec = Migrations.Migration_2_3::class),
@@ -106,6 +106,7 @@ import me.him188.ani.utils.httpdownloader.DownloadState
         AutoMigration(from = 24, to = 25, spec = Migrations.Migration_24_25::class),
         AutoMigration(from = 25, to = 26, spec = Migrations.Migration_25_26::class),
         AutoMigration(from = 26, to = 27, spec = Migrations.Migration_26_27::class),
+        AutoMigration(from = 27, to = 28),
     ],
     exportSchema = true,
 )

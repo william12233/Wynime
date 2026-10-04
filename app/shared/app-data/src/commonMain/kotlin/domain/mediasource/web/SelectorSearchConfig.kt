@@ -218,7 +218,7 @@ fun <C : SelectorFormatConfig> SelectorSearchConfig.getFormatConfig(format: Sele
 /**
  * [SelectorSearchConfig] 的自动匹配层: [me.him188.ani.datasources.api.source.MediaSource.fetch] 在列表规则之上怎样自动找到当前剧集.
  *
- * 数据源级与线路级阶级 (`tier`, `channelTiers`) 也属于自动匹配, 但它们在 `SelectorMediaSourceArguments` 上, 与其他类型的数据源共用.
+ * 数据源级与线路级阶级 (`tier`, `channelTiers`) 也属于自动匹配, 供需要自动选集的来源适配器共用.
  *
  * @since 6.2
  */

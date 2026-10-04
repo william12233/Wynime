@@ -10,14 +10,17 @@
     "ArrayInDataClass",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport",
+    "UnusedImport"
 )
 
 package me.him188.ani.datasources.bangumi.models
 
-import kotlinx.serialization.Required
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import me.him188.ani.datasources.bangumi.models.BangumiSubjectType
+import me.him188.ani.datasources.bangumi.models.BangumiTag
+
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
  * 
@@ -29,19 +32,19 @@ import kotlinx.serialization.Serializable
  * @param name 条目原名
  * @param nameCn 条目中文名
  * @param tags 
+ * @param type 
  * @param score 评分
  * @param rank 排名
- * @param type 
  */
 @Serializable
 
-data class BangumiSearchSubjects200ResponseDataInner(
+data class BangumiSearchSubjects200ResponseDataInner (
 
     /* 条目ID */
     @SerialName(value = "id") @Required val id: kotlin.Int,
 
     /* 上映/开播/连载开始日期，可能为空字符串 */
-    @SerialName(value = "date") @Required val date: kotlin.String,
+    @SerialName(value = "date") @Required val date: kotlin.String?,
 
     /* 封面 */
     @SerialName(value = "image") @Required val image: kotlin.String,
@@ -57,13 +60,13 @@ data class BangumiSearchSubjects200ResponseDataInner(
 
     @SerialName(value = "tags") @Required val tags: kotlin.collections.List<BangumiTag>,
 
+    @SerialName(value = "type") val type: BangumiSubjectType? = null,
+
     /* 评分 */
-    @SerialName(value = "score") @Required val score: @Serializable(me.him188.ani.utils.serialization.BigNumAsDoubleStringSerializer::class) me.him188.ani.utils.serialization.BigNum,
+    @SerialName(value = "score") val score: @Serializable(me.him188.ani.utils.serialization.BigNumAsDoubleStringSerializer::class) me.him188.ani.utils.serialization.BigNum? = null,
 
     /* 排名 */
-    @SerialName(value = "rank") @Required val rank: kotlin.Int,
-
-    @SerialName(value = "type") val type: BangumiSubjectType? = null
+    @SerialName(value = "rank") val rank: kotlin.Int? = null
 
 ) {
 

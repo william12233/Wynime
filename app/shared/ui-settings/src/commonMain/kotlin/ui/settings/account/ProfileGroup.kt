@@ -148,56 +148,41 @@ fun SettingsScope.ProfileGroup(
 ) {
     val state by vm.stateFlow.collectAsStateWithLifecycle(initialValue = AccountSettingsState.Empty)
     val asyncHandler = rememberAsyncHandler()
-    ProfileGroupImpl(
-        state,
-        isNicknameErrorProvider = { !vm.validateNickname(it) },
-        onSaveNickname = { nickname ->
-            asyncHandler.launch {
-                vm.saveProfile(EditProfileState(nickname))
+    val selfInfo = state.selfInfo.selfInfo
+    val isLoggedIn = state.selfInfo.isSessionValid == true
+
+    Column(modifier) {
+        HeroIcon(
+            Modifier.padding(vertical = if (currentWindowAdaptiveInfo1().windowSizeClass.isHeightAtLeastExpanded) 36.dp else 24.dp),
+        ) {
+            AvatarImage(
+                url = selfInfo?.avatarUrl,
+                modifier = Modifier.clip(CircleShape),
+            )
+        }
+
+        Group({ Text("Bangumi") }) {
+            TextItem(
+                title = { Text(if (isLoggedIn) "Bangumi 帳號" else "登入 Bangumi") },
+                description = {
+                    Text(selfInfo?.bangumiUsername ?: "使用 Bangumi 帳號登入以同步收藏與播放進度。")
+                },
+                icon = { Image(Icons.Default.BangumiNext, contentDescription = "Bangumi") },
+                onClick = if (isLoggedIn) null else { { onNavigateToOAuth(OAuthPlatform.BANGUMI) } },
+                modifier = Modifier.testTag("bangumi-account"),
+            )
+            if (isLoggedIn) {
+                TextItem(
+                    title = { Text("登出") },
+                    description = { Text("清除此裝置的 Bangumi session。") },
+                    onClick = {
+                        asyncHandler.launch { vm.logout() }
+                    },
+                    modifier = Modifier.testTag("bangumi-logout"),
+                )
             }
-        },
-        onLogout = {
-            asyncHandler.launch {
-                vm.logout()
-            }
-        },
-        onNavigateToEmail = onNavigateToEmail,
-        onBangumiClick = {
-            if (state.selfInfo.selfInfo?.bangumiUsername.isNullOrEmpty()) {
-                onNavigateToOAuth(OAuthPlatform.BANGUMI)
-            } else {
-                onNavigateToBangumiSync()
-            }
-        },
-        onExternalAccountClick = onNavigateToOAuth,
-        onGithubAccountClick = onNavigateToGithubAccount,
-        onQrLoginClick = onNavigateToQrLogin,
-        onAvatarUpload = {
-            vm.uploadAvatar(it)
-        },
-        onAvatarUploadBytes = {
-            vm.uploadAvatar(it)
-        },
-        onResetAvatarUploadState = {
-            vm.resetAvatarUploadState()
-        },
-        onUnbindBangumi = {
-            asyncHandler.launch {
-                vm.unbindBangumi()
-            }
-        },
-        onUnbindExternalAccount = { provider ->
-            asyncHandler.launch {
-                vm.unbindExternalAccount(provider)
-            }
-        },
-        onUnbindEmail = {
-            asyncHandler.launch {
-                vm.unbindEmail()
-            }
-        },
-        modifier = modifier,
-    )
+        }
+    }
 }
 
 /**

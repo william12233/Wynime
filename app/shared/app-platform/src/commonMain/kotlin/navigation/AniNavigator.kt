@@ -23,7 +23,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import me.him188.ani.datasources.api.source.FactoryId
 import me.him188.ani.utils.analytics.Analytics
 import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.EpisodeEnter
 
@@ -125,7 +124,7 @@ interface AniNavigator {
 
     @MainThread
     fun navigateEmailLoginStart() {
-        navigate(NavRoutes.EmailLoginStart)
+        navigateBangumiAuthorize()
     }
 
     @MainThread
@@ -146,7 +145,7 @@ interface AniNavigator {
      * 登录页面
      */
     fun navigateLogin() {
-        navigate(NavRoutes.EmailLoginStart)
+        navigateBangumiAuthorize()
     }
 
     /**
@@ -185,13 +184,6 @@ interface AniNavigator {
 
     fun navigateSubjectSearch(tag: String) {
         navigate(NavRoutes.SubjectSearch(tags = listOf(tag)))
-    }
-
-    fun navigateEditMediaSource(
-        factoryId: FactoryId,
-        mediaSourceInstanceId: String,
-    ) {
-        navigate(NavRoutes.EditMediaSource(factoryId.value, mediaSourceInstanceId))
     }
 
     fun navigateCaches() {

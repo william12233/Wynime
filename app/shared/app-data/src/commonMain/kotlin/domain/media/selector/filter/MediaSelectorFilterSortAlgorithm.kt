@@ -24,7 +24,7 @@ import me.him188.ani.app.domain.mediasource.MediaListFilterContext
 import me.him188.ani.app.domain.mediasource.MediaListFilters
 import me.him188.ani.app.domain.mediasource.StringMatcher
 import me.him188.ani.app.domain.mediasource.asCandidate
-import me.him188.ani.app.domain.mediasource.codec.MediaSourceTier
+import me.him188.ani.app.domain.mediasource.MediaSourceTier
 import me.him188.ani.datasources.api.EpisodeSort
 import me.him188.ani.datasources.api.EpisodeType
 import me.him188.ani.datasources.api.Media

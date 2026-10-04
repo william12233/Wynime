@@ -12,15 +12,19 @@ package me.him188.ani.app.ui.mediafetch
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,6 +53,8 @@ import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
 import me.him188.ani.app.ui.foundation.icons.EditSquare
 import me.him188.ani.app.ui.foundation.ifThen
 import me.him188.ani.app.ui.lang.Lang
+import me.him188.ani.app.ui.lang.media_selector_view_detailed_mode
+import me.him188.ani.app.ui.lang.media_selector_view_simple_mode
 import me.him188.ani.app.ui.lang.settings_media_source_more
 import me.him188.ani.app.ui.mediafetch.request.MediaFetchRequestEditorDialog
 import me.him188.ani.app.ui.mediafetch.request.TestMediaFetchRequest
@@ -84,6 +90,7 @@ fun MediaSelectorView(
     Column(modifier) {
         // 编辑查询请求的对话框
         var showEditRequest by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+        var isDetailedMode by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
         if (showEditRequest && fetchRequest != null) {
             MediaFetchRequestEditorDialog(
                 fetchRequest,
@@ -96,44 +103,86 @@ fun MediaSelectorView(
         }
 
         MediaSelectorActionsRow(
+            isDetailedMode = isDetailedMode,
+            onDetailedModeChange = { isDetailedMode = it },
             onRequestFetchRequestEdit = { showEditRequest = true },
             Modifier.fillMaxWidth().padding(bottom = 16.dp),
         )
 
-        MediaSelectorWebSourcesColumn(
-            presentation.webSources,
-            selectedSource = { presentation.selectedWebSource },
-            selectedChannel = { presentation.selectedWebSourceChannel },
-            onSelect = { _, channel ->
-                channel.original?.let { onClickItem(it) }
-            },
-            onRefresh = { onRestartSource(it.instanceId) },
-            onResolveCaptcha = { source ->
-                scope.launch {
-                    if (state.resolveCaptcha(source)) {
-                        onRestartSource(source.instanceId)
+        if (isDetailedMode) {
+            MediaSelectorDetailedList(
+                presentation = presentation,
+                state = state,
+                scope = scope,
+                onClickItem = onClickItem,
+                modifier = Modifier.padding(bottom = WINDOW_VERTICAL_PADDING)
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .ifThen(scrollable) { verticalScroll(rememberScrollState()) },
+            )
+        } else {
+            MediaSelectorWebSourcesColumn(
+                presentation.webSources,
+                selectedSource = { presentation.selectedWebSource },
+                selectedChannel = { presentation.selectedWebSourceChannel },
+                onSelect = { _, channel ->
+                    channel.original?.let { onClickItem(it) }
+                },
+                onRefresh = { onRestartSource(it.instanceId) },
+                onResolveCaptcha = { source ->
+                    scope.launch {
+                        if (state.resolveCaptcha(source)) {
+                            onRestartSource(source.instanceId)
+                        }
                     }
-                }
-            },
-            onRequestQueryEdit = { showEditRequest = true },
-            Modifier.padding(bottom = WINDOW_VERTICAL_PADDING)
-                .weight(1f, fill = false)
-                .fillMaxWidth()
-                .ifThen(scrollable) { verticalScroll(rememberScrollState()) },
-        )
+                },
+                onRequestQueryEdit = { showEditRequest = true },
+                Modifier.padding(bottom = WINDOW_VERTICAL_PADDING)
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .ifThen(scrollable) { verticalScroll(rememberScrollState()) },
+            )
+        }
     }
 
 }
 
 @Composable
 private fun MediaSelectorActionsRow(
+    isDetailedMode: Boolean,
+    onDetailedModeChange: (Boolean) -> Unit,
     onRequestFetchRequestEdit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier,
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        TextButton(
+            onClick = { onDetailedModeChange(false) },
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = if (!isDetailedMode) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            ),
+        ) {
+            Text(stringResource(Lang.media_selector_view_simple_mode))
+        }
+        TextButton(
+            onClick = { onDetailedModeChange(true) },
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = if (isDetailedMode) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            ),
+        ) {
+            Text(stringResource(Lang.media_selector_view_detailed_mode))
+        }
         Box(Modifier.weight(1f))
         Box {
             IconButton(onRequestFetchRequestEdit) {
@@ -150,6 +199,40 @@ private fun MediaSelectorActionsRow(
 //            }
 
             // 编辑请求
+        }
+    }
+}
+
+@Composable
+private fun MediaSelectorDetailedList(
+    presentation: MediaSelectorState.Presentation,
+    state: MediaSelectorState,
+    scope: CoroutineScope,
+    onClickItem: (Media) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val groups = presentation.groupedMediaListIncluded + presentation.groupedMediaListExcluded
+    Column(
+        modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        groups.forEach { group ->
+            MediaSelectorItem(
+                group = group,
+                groupState = state.getGroupState(group.groupId),
+                mediaSourceInfoProvider = state.mediaSourceInfoProvider,
+                selected = group.list.any { it.result?.mediaId == presentation.selected?.mediaId },
+                onSelect = onClickItem,
+                preferredResolution = { presentation.resolution.finalSelected },
+                onPreferResolution = { resolution ->
+                    scope.launch { state.resolution.prefer(resolution) }
+                },
+                preferredSubtitleLanguageId = { presentation.subtitleLanguageId.finalSelected },
+                onPreferSubtitleLanguageId = { languageId ->
+                    scope.launch { state.subtitleLanguageId.prefer(languageId) }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

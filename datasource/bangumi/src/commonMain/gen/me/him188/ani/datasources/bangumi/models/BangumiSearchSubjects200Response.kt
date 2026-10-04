@@ -10,13 +10,16 @@
     "ArrayInDataClass",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport",
+    "UnusedImport"
 )
 
 package me.him188.ani.datasources.bangumi.models
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import me.him188.ani.datasources.bangumi.models.BangumiSearchSubjects200ResponseDataInner
+
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
  * 用户信息
@@ -28,7 +31,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 
-data class BangumiSearchSubjects200Response(
+data class BangumiSearchSubjects200Response (
 
     /* 搜索结果数量 */
     @SerialName(value = "total") val total: kotlin.Int? = null,

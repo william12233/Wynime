@@ -10,15 +10,15 @@
     "ArrayInDataClass",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport",
+    "UnusedImport"
 )
 
 package me.him188.ani.datasources.bangumi.next.models
 
 
-import kotlinx.serialization.Required
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
  * 
@@ -31,7 +31,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 
-data class BangumiNextSubjectImages(
+data class BangumiNextSubjectImages (
 
     @SerialName(value = "common") @Required val common: kotlin.String,
 

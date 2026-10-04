@@ -23,7 +23,6 @@ data class TvSettingsUiState(
     val selector: MediaSelectorSettings = MediaSelectorSettings.Default,
     val resolver: VideoResolverSettings = VideoResolverSettings.Default,
     val sources: List<TvSettingsSource> = emptyList(),
-    val subscriptions: List<TvSettingsSubscription> = emptyList(),
     val libraries: List<TvSettingsLibrary> = emptyList(),
     val librariesLoading: Boolean = false,
     val librariesFailed: Boolean = false,
@@ -39,8 +38,6 @@ data class TvSettingsSource(
     val factory: String,
     val subscription: String?,
 )
-
-data class TvSettingsSubscription(val id: String, val url: String, val enabled: Boolean)
 
 data class TvSettingsLibrary(
     val id: String,
@@ -61,7 +58,6 @@ sealed interface TvSettingsIntent {
     data class Selector(val update: MediaSelectorSettings.() -> MediaSelectorSettings) : TvSettingsIntent
     data class Resolver(val update: VideoResolverSettings.() -> VideoResolverSettings) : TvSettingsIntent
     data class SourceEnabled(val id: String, val enabled: Boolean) : TvSettingsIntent
-    data class SubscriptionEnabled(val id: String, val enabled: Boolean) : TvSettingsIntent
     data object LoadLibraries : TvSettingsIntent
     data object Retry : TvSettingsIntent
 }

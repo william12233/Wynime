@@ -59,10 +59,8 @@ import me.him188.ani.app.ui.lang.Lang
 import me.him188.ani.app.ui.lang.foundation_loading
 import me.him188.ani.app.ui.lang.settings_load_failed
 import me.him188.ani.app.ui.lang.settings_media_advanced_settings
-import me.him188.ani.app.ui.lang.settings_media_source_subscription
 import me.him188.ani.app.ui.lang.settings_mediasource_retry
 import me.him188.ani.app.ui.lang.subject_details_empty
-import me.him188.ani.app.ui.lang.tv_settings_subscriptions_description
 import me.him188.ani.app.ui.settings.tabs.media.MediaSelectorWorkflowPreview
 import me.him188.ani.app.ui.settings.tabs.media.rememberMediaSelectorWorkflowDemoState
 import me.him188.ani.app.ui.settings.tabs.theme.ThemePalette
@@ -165,7 +163,7 @@ fun TvSettingsScreen(
             TvSettingsSection.Player -> content.player(TvSettingsPlayerPage.Overview, displayModes) { page ->
                 openExtra(TvSettingsExtra.entries.first { it.playerPage == page })
             }
-            TvSettingsSection.Sources -> content.sources { openExtra(TvSettingsExtra.Subscriptions) }
+            TvSettingsSection.Sources -> content.sources()
             TvSettingsSection.Watching -> content.watching { openExtra(TvSettingsExtra.WatchingAdvanced) }
             TvSettingsSection.About -> content.about(aboutPage, ::openPage)
         }
@@ -292,14 +290,8 @@ fun TvSettingsScreen(
                     rememberMediaSelectorWorkflowDemoState(state.selector.fastSelectWebKind)
                 } else null
                 Text(
-                    page.playerPage?.title() ?: stringResource(if (page == TvSettingsExtra.Subscriptions) {
-                        Lang.settings_media_source_subscription
-                    } else Lang.settings_media_advanced_settings),
+                    page.playerPage?.title() ?: stringResource(Lang.settings_media_advanced_settings),
                     style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface,
-                )
-                if (page == TvSettingsExtra.Subscriptions) Text(
-                    stringResource(Lang.tv_settings_subscriptions_description),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (workflow != null) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     MediaSelectorWorkflowPreview(workflow,
@@ -308,7 +300,7 @@ fun TvSettingsScreen(
                 val extraContent = TvSettingsItems(state, onIntent) { dialog = it }
                 if (page.playerPage != null) extraContent.player(page.playerPage, displayModes) {}
                 else if (workflow != null) extraContent.watchingAdvanced(workflow)
-                else extraContent.subscriptions()
+                else extraContent.items
                 savedContent.SaveableStateProvider("extra-$page") {
                     TvSettingsItemsPane(extraContent.items.withEmptyPlaceholder(), focus, dialog == null, paneId = "extra")
                 }

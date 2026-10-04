@@ -39,7 +39,6 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.domain.mediasource.web.SelectorMediaSource
 import me.him188.ani.app.domain.search.SubjectSearchQuery
 import me.him188.ani.app.domain.session.auth.OAuthPlatform
 import me.him188.ani.app.navigation.AniNavigator
@@ -74,15 +73,8 @@ import me.him188.ani.app.ui.foundation.widgets.LocalToaster
 import me.him188.ani.app.ui.foundation.widgets.TopAppBarActionButton
 import me.him188.ani.app.ui.lang.Lang
 import me.him188.ani.app.ui.lang.main_network_check_failed
-import me.him188.ani.app.ui.login.EmailLoginStartScreen
-import me.him188.ani.app.ui.login.EmailLoginVerifyScreen
-import me.him188.ani.app.ui.login.EmailLoginViewModel
 import me.him188.ani.app.ui.oauth.OAuthAuthorizeScreen
 import me.him188.ani.app.ui.oauth.OAuthAuthorizeViewModel
-import me.him188.ani.app.ui.qrlogin.QrLoginConfirmScreen
-import me.him188.ani.app.ui.qrlogin.QrLoginConfirmViewModel
-import me.him188.ani.app.ui.qrlogin.QrLoginScanScreen
-import me.him188.ani.app.ui.qrlogin.isQrCodeScannerSupported
 import me.him188.ani.app.ui.playback.PlaybackHistoryScreen
 import me.him188.ani.app.ui.playback.PlaybackHistorySyncStatusScreen
 import me.him188.ani.app.ui.playback.PlaybackHistoryViewModel
@@ -90,8 +82,6 @@ import me.him188.ani.app.ui.profile.auth.AniContactList
 import me.him188.ani.app.ui.search.SearchScreen
 import me.him188.ani.app.ui.settings.SettingsScreen
 import me.him188.ani.app.ui.settings.SettingsViewModel
-import me.him188.ani.app.ui.settings.mediasource.selector.EditSelectorMediaSourceScreen
-import me.him188.ani.app.ui.settings.mediasource.selector.EditSelectorMediaSourceViewModel
 import me.him188.ani.app.ui.subject.details.SubjectDetailsScreen
 import me.him188.ani.app.ui.subject.details.SubjectDetailsViewModel
 import me.him188.ani.app.ui.subject.episode.EpisodeScreen
@@ -103,7 +93,6 @@ import me.him188.ani.app.ui.subject.person.PersonDetailsViewModel
 import me.him188.ani.app.ui.subject.relations.SubjectRelationGraphScreen
 import me.him188.ani.app.ui.subject.relations.SubjectRelationGraphViewModel
 import me.him188.ani.app.ui.user.SelfInfoStateProducer
-import me.him188.ani.datasources.api.source.FactoryId
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -154,8 +143,6 @@ private fun AniAppContentImpl(
     val windowInsets = ScaffoldDefaults.contentWindowInsets
         .add(WindowInsets.desktopTitleBar()) // Compose 目前不支持这个所以我们要自己加上
     val navMotionScheme by rememberUpdatedState(NavigationMotionScheme.current)
-    val emailLoginViewModel = viewModel<EmailLoginViewModel> { EmailLoginViewModel() }
-
     NavDisplay(
         backStack = backStack,
         modifier = modifier,
@@ -175,43 +162,20 @@ private fun AniAppContentImpl(
             navMotionScheme.popEnterTransition togetherWith navMotionScheme.popExitTransition
         },
         entryProvider = entryProvider {
-            entry<NavRoutes.EmailLoginStart> {
-                EmailLoginStartScreen(
-                    onOtpSent = {
-                        aniNavigator.navigateEmailLoginVerify()
-                    },
-                    onThirdPartyLoginClick = {
-                        aniNavigator.navigateOAuthAuthorize(it.id)
-                    },
-                    onNavigateSettings = {
-                        aniNavigator.navigateSettings()
-                    },
-                    onNavigateBack = {
-                        aniNavigator.popBackStack(NavRoutes.EmailLoginStart, true)
-                    },
-                    vm = emailLoginViewModel,
-                )
+            entry<NavRoutes.EmailLoginStart> { route ->
+                LaunchedEffect(route) {
+                    aniNavigator.popBackStack(route, inclusive = true)
+                    aniNavigator.navigateBangumiAuthorize()
+                }
             }
-            entry<NavRoutes.EmailLoginVerify> {
-                EmailLoginVerifyScreen(
-                    onSuccess = {
-                        aniNavigator.popBackOrNavigateToMain(mainSceneInitialPage)
-                    },
-                    onThirdPartyLoginClick = {
-                        aniNavigator.navigateOAuthAuthorize(it.id)
-                    },
-                    onNavigateSettings = {
-                        aniNavigator.navigateSettings()
-                    },
-                    onNavigateBack = {
-                        aniNavigator.popBackStack(NavRoutes.EmailLoginVerify, true)
-                    },
-                    vm = emailLoginViewModel,
-                )
+            entry<NavRoutes.EmailLoginVerify> { route ->
+                LaunchedEffect(route) {
+                    aniNavigator.popBackStack(route, inclusive = true)
+                    aniNavigator.navigateBangumiAuthorize()
+                }
             }
             entry<NavRoutes.OAuthAuthorize> { route ->
-                // 未知平台 (例如旧版本保存的导航状态) 回退到 Bangumi
-                val platform = OAuthPlatform.fromId(route.provider) ?: OAuthPlatform.BANGUMI
+                val platform = OAuthPlatform.BANGUMI
                 val vm = viewModel<OAuthAuthorizeViewModel>(key = platform.id) { OAuthAuthorizeViewModel(platform) }
                 OAuthAuthorizeScreen(
                     vm,
@@ -232,27 +196,16 @@ private fun AniAppContentImpl(
                 )
             }
             entry<NavRoutes.QrLoginScan> { route ->
-                QrLoginScanScreen(
-                    onScanned = { requestId ->
-                        // 确认页取代扫码页: 从确认页返回时不再回到相机
-                        aniNavigator.popBackStack(route, true)
-                        aniNavigator.navigateQrLoginConfirm(requestId)
-                    },
-                    onNavigateBack = { aniNavigator.popBackStack(route, true) },
-                )
+                LaunchedEffect(route) {
+                    aniNavigator.popBackStack(route, inclusive = true)
+                    aniNavigator.navigateBangumiAuthorize()
+                }
             }
             entry<NavRoutes.QrLoginConfirm> { route ->
-                val vm = viewModel<QrLoginConfirmViewModel>(key = route.requestId) {
-                    QrLoginConfirmViewModel.create(route.requestId)
+                LaunchedEffect(route) {
+                    aniNavigator.popBackStack(route, inclusive = true)
+                    aniNavigator.navigateBangumiAuthorize()
                 }
-                QrLoginConfirmScreen(
-                    vm,
-                    onNavigateBack = { aniNavigator.popBackStack(route, true) },
-                    onNavigateLogin = {
-                        aniNavigator.popBackStack(route, true)
-                        aniNavigator.navigateLogin()
-                    },
-                )
             }
             entry<NavRoutes.Main> { route ->
                 val navigationLayoutType =
@@ -364,14 +317,12 @@ private fun AniAppContentImpl(
                     viewModel {
                         SettingsViewModel()
                     },
-                    onNavigateToEmailLogin = { aniNavigator.navigateEmailLoginStart() },
-                    onNavigateToOAuth = { aniNavigator.navigateOAuthAuthorize(it.id) },
+                    onNavigateToEmailLogin = { aniNavigator.navigateBangumiAuthorize() },
+                    onNavigateToOAuth = { if (it == OAuthPlatform.BANGUMI) aniNavigator.navigateBangumiAuthorize() },
                     loadOpenSourceLibrariesJsons = ::loadOpenSourceLibrariesJsons,
                     Modifier.fillMaxSize(),
                     route.tab,
-                    onNavigateToQrLogin = if (isQrCodeScannerSupported) {
-                        { aniNavigator.navigateQrLoginScan() }
-                    } else null,
+                    onNavigateToQrLogin = null,
                     navigationIcon = {
                         BackNavigationIconButton(
                             {
@@ -529,31 +480,6 @@ private fun AniAppContentImpl(
                         )
                     },
                 )
-            }
-            entry<NavRoutes.EditMediaSource> { route ->
-                val factoryId = FactoryId(route.factoryId)
-                val mediaSourceInstanceId = route.mediaSourceInstanceId
-                when (factoryId) {
-                    SelectorMediaSource.FactoryId -> {
-                        val context = LocalContext.current
-                        EditSelectorMediaSourceScreen(
-                            viewModel<EditSelectorMediaSourceViewModel>(key = mediaSourceInstanceId) {
-                                EditSelectorMediaSourceViewModel(mediaSourceInstanceId, context)
-                            },
-                            Modifier,
-                            windowInsets = windowInsets,
-                            navigationIcon = {
-                                BackNavigationIconButton(
-                                    {
-                                        aniNavigator.popBackStack(route, inclusive = true)
-                                    },
-                                )
-                            },
-                        )
-                    }
-
-                    else -> error("Unknown factoryId: $factoryId")
-                }
             }
             entry<NavRoutes.Schedule> { route ->
                 val vm = viewModel { ScheduleViewModel() }

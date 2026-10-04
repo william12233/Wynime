@@ -119,6 +119,9 @@ includeProject(":app:ios", "app/ios") // iOS Launcher
 
 includeProject(":client")
 
+// Stable Host/Plugin boundary for executable online source plugins.
+includeProject(":source:plugin-api", "source/plugin-api")
+
 // server
 //includeProject(":server:core", "server/core") // server core
 //includeProject(":server:database", "server/database") // server database interfaces
@@ -132,7 +135,6 @@ includeProject(
 ) // data source managers: MediaFetcher, MediaCacheStorage
 includeProject(":datasource:bangumi", "datasource/bangumi") // https://bangumi.tv
 //   Web 数据源
-includeProject(":datasource:web-base", "datasource/web/web-base") // web 基础
 includeProject(":datasource:jellyfin", "datasource/jellyfin")
 includeProject(":datasource:ikaros", "datasource/ikaros") // https://ikaros.run/
 

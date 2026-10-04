@@ -74,7 +74,6 @@ import me.him188.ani.app.ui.lang.settings_network_proxy_retest
 import me.him188.ani.app.ui.lang.settings_network_proxy_save_and_test
 import me.him188.ani.app.ui.lang.settings_network_proxy_service_collection
 import me.him188.ani.app.ui.lang.settings_network_proxy_service_comment
-import me.him188.ani.app.ui.lang.settings_network_proxy_service_ani
 import me.him188.ani.app.ui.lang.settings_network_proxy_system
 import me.him188.ani.app.ui.lang.settings_network_proxy_test_failed
 import me.him188.ani.app.ui.lang.settings_network_proxy_test_success
@@ -194,7 +193,6 @@ private fun SettingsScope.ProxyTestStatusGroup(
 @Composable
 private fun renderTestCaseName(case: ProxyTestCase): String {
     return when (case.name) {
-        ProxyTestCaseEnums.ANI -> "Animeko"
         ProxyTestCaseEnums.BANGUMI -> "Bangumi"
         ProxyTestCaseEnums.BANGUMI_NEXT -> "Bangumi"
     }
@@ -203,7 +201,6 @@ private fun renderTestCaseName(case: ProxyTestCase): String {
 @Composable
 private fun renderTestCaseDescription(case: ProxyTestCase): String {
     return when (case.name) {
-        ProxyTestCaseEnums.ANI -> stringResource(Lang.settings_network_proxy_service_ani)
         ProxyTestCaseEnums.BANGUMI -> stringResource(Lang.settings_network_proxy_service_collection)
         ProxyTestCaseEnums.BANGUMI_NEXT -> stringResource(Lang.settings_network_proxy_service_comment)
     }

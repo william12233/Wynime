@@ -19,9 +19,10 @@ import kotlinx.serialization.builtins.nullable
 import me.him188.ani.app.data.models.user.SelfInfo
 import me.him188.ani.app.data.repository.SavedWindowState
 import me.him188.ani.app.data.repository.media.MediaSourceSaves
-import me.him188.ani.app.data.repository.media.MediaSourceSubscriptionsSaveData
 import me.him188.ani.app.data.repository.player.EpisodeHistories
 import me.him188.ani.app.data.repository.user.TokenSave
+import me.him188.ani.app.domain.sourceplugin.InstalledSourcePlugins
+import me.him188.ani.app.domain.sourceplugin.SourcePluginRepositoryCache
 import me.him188.ani.app.domain.media.cache.storage.MediaCacheSave
 import me.him188.ani.utils.httpdownloader.DownloadState
 import me.him188.ani.utils.io.SystemPath
@@ -35,17 +36,6 @@ abstract class PlatformDataStoreManager {
             produceFile = { resolveDataStoreFile("mediaSourceSaves") },
             corruptionHandler = ReplaceFileCorruptionHandler {
                 MediaSourceSaves.Default
-            },
-        )
-    }
-
-    val mediaSourceSubscriptionStore by lazy {
-        DataStoreFactory.create(
-            serializer = MediaSourceSubscriptionsSaveData.serializer()
-                .asDataStoreSerializer({ MediaSourceSubscriptionsSaveData.Default }),
-            produceFile = { resolveDataStoreFile("mediaSourceSubscription") },
-            corruptionHandler = ReplaceFileCorruptionHandler {
-                MediaSourceSubscriptionsSaveData.Default
             },
         )
     }
@@ -99,6 +89,23 @@ abstract class PlatformDataStoreManager {
             serializer = SelfInfo.serializer().nullable.asDataStoreSerializer({ null }),
             produceFile = { resolveDataStoreFile("selfInfo") },
             corruptionHandler = ReplaceFileCorruptionHandler { null },
+        )
+    }
+
+    val installedSourcePluginsStore by lazy {
+        DataStoreFactory.create(
+            serializer = InstalledSourcePlugins.serializer().asDataStoreSerializer({ InstalledSourcePlugins.Empty }),
+            produceFile = { resolveDataStoreFile("installedSourcePlugins") },
+            corruptionHandler = ReplaceFileCorruptionHandler { InstalledSourcePlugins.Empty },
+        )
+    }
+
+    val sourcePluginRepositoryCacheStore by lazy {
+        DataStoreFactory.create(
+            serializer = SourcePluginRepositoryCache.serializer()
+                .asDataStoreSerializer({ SourcePluginRepositoryCache() }),
+            produceFile = { resolveDataStoreFile("sourcePluginRepositoryCache") },
+            corruptionHandler = ReplaceFileCorruptionHandler { SourcePluginRepositoryCache() },
         )
     }
 

@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.him188.ani.app.data.models.user.ExternalAccount
 import me.him188.ani.app.data.models.user.SelfInfo
+import me.him188.ani.app.data.network.BangumiApiProvider
 import me.him188.ani.app.data.repository.RepositoryAuthorizationException
 import me.him188.ani.app.data.repository.RepositoryException
 import me.him188.ani.app.data.repository.RepositoryRequestError
@@ -62,13 +63,18 @@ import kotlin.uuid.Uuid
 class UserRepository(
     private val dataStore: DataStore<SelfInfo?>,
     private val sessionStateProvider: SessionStateProvider,
-    private val userApi: ApiInvoker<UserAniApi>,
-    private val authApi: ApiInvoker<UserAuthenticationAniApi>,
-    private val profileApi: ApiInvoker<UserProfileAniApi>,
-    private val bangumiApi: ApiInvoker<BangumiAniApi>,
-    private val oauthApi: ApiInvoker<OAuthAniApi>,
+    private val userApi: ApiInvoker<UserAniApi>?,
+    private val authApi: ApiInvoker<UserAuthenticationAniApi>?,
+    private val profileApi: ApiInvoker<UserProfileAniApi>?,
+    private val bangumiApi: ApiInvoker<BangumiAniApi>?,
+    private val oauthApi: ApiInvoker<OAuthAniApi>?,
     private val sessionManager: SessionManager,
     coroutineContext: CoroutineContext = Dispatchers.Default,
+    /**
+     * 直連 Bangumi 模式。設定後只讀取官方 Bangumi 使用者資料，不建立 Animeko 帳號請求。
+     * 舊參數保留給歷史測試與資料相容層使用。
+     */
+    private val officialBangumiApi: BangumiApiProvider? = null,
 ) {
     private val logger = logger<UserRepository>()
     private val scope = CoroutineScope(coroutineContext)
@@ -79,24 +85,58 @@ class UserRepository(
      * 先读缓存, 然后网络.
      */
     val selfInfoFlow: Flow<SelfInfo?> = sessionStateProvider.stateFlow.transformLatest { state ->
+        if (officialBangumiApi != null) {
+            when (state) {
+                is SessionState.Invalid -> emit(null)
+                is SessionState.Valid -> {
+                    emit(dataStore.data.firstOrNull())
+                    suspend {
+                        officialBangumiApi.request { getMyself() }.toSelfInfo()
+                    }
+                        .asFlow()
+                        .retryWhen { e, attempt ->
+                            val wrapped = RepositoryException.wrapOrThrowCancellation(e)
+                            (wrapped is RepositoryAuthorizationException && attempt < 3).also {
+                                if (it) {
+                                    logger.warn(wrapped) { "Failed to get Bangumi user info, retried $attempt, max retries: 3" }
+                                    delay(125L)
+                                }
+                            }
+                        }
+                        .catching()
+                        .restartable(selfInfoRefresher)
+                        .collectLatest { result ->
+                            result
+                                .onSuccess { self ->
+                                    coroutineScope {
+                                        launch { dataStore.updateData { self } }
+                                        emit(self)
+                                    }
+                                }
+                                .onFailure { e ->
+                                    logger.error(RepositoryException.wrapOrThrowCancellation(e)) {
+                                        "Failed to refresh Bangumi user profile info."
+                                    }
+                                }
+                        }
+                }
+            }
+            return@transformLatest
+        }
+
         when (state) {
             is SessionState.Invalid -> {
                 when (state.reason) {
-                    InvalidSessionReason.NETWORK_ERROR -> {
-                        emit(dataStore.data.firstOrNull())
-                    }
-
+                    InvalidSessionReason.NETWORK_ERROR -> emit(dataStore.data.firstOrNull())
                     InvalidSessionReason.NO_TOKEN,
-                    InvalidSessionReason.UNKNOWN -> {
-                        emit(null)
-                    }
+                    InvalidSessionReason.UNKNOWN -> emit(null)
                 }
             }
 
             is SessionState.Valid -> {
                 emit(dataStore.data.firstOrNull())
                 suspend {
-                    userApi.invoke { getUser().body() }.toSelfInfo()
+                    legacyApi(userApi, "使用者資料").invoke { getUser().body() }.toSelfInfo()
                 }
                     .asFlow()
                     // 首次登录这里的 http client 可能还是旧的, 添加重试机制确保 user info 能够正确获取.
@@ -160,7 +200,7 @@ class UserRepository(
     }
 
     private suspend fun requestEmailOtpAuth(block: suspend UserAuthenticationAniApi.() -> AniUserAuthRoutingAuthenticationResponse): SendOtpResult {
-        return authApi.invoke {
+        return legacyApi(authApi, "Email 登入").invoke {
             try {
                 val data = block()
 
@@ -207,7 +247,7 @@ class UserRepository(
     suspend fun sendEmailOtpForLogin(
         email: String,
     ): SendEmailOtpInfo = withContext(Dispatchers.Default) {
-        authApi.invoke {
+        legacyApi(authApi, "Email 登入").invoke {
             try {
                 val resp = this.sendEmailOtp(
                     AniSendEmailOtpRequest(
@@ -244,7 +284,7 @@ class UserRepository(
         if (nickname == null) {
             return@withContext
         }
-        profileApi.invoke {
+        legacyApi(profileApi, "個人資料").invoke {
             try {
                 this.updateProfile(AniUpdateProfileRequest(nickname)).body()
                     // 更新 profile 后刷新一下
@@ -258,7 +298,7 @@ class UserRepository(
     suspend fun uploadAvatar(
         avatar: ByteArray,
     ) = withContext(Dispatchers.Default) {
-        profileApi.invoke {
+        legacyApi(profileApi, "個人頭像").invoke {
             try {
                 // openapi generator 生成的 OctetByteArray 有问题，改成 OutgoingContent
                 // 每次生成 API 都要把参数类型改成 OutgoingContent
@@ -299,8 +339,9 @@ class UserRepository(
      * @throws RepositoryException
      */
     suspend fun getOAuthProviders(): List<String> = withContext(Dispatchers.Default) {
+        if (officialBangumiApi != null) return@withContext listOf("bangumi")
         try {
-            oauthApi.invoke { getProviders().body().providers }
+            legacyApi(oauthApi, "OAuth provider").invoke { getProviders().body().providers }
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
@@ -314,7 +355,7 @@ class UserRepository(
      */
     suspend fun unbindExternalAccount(provider: String) = withContext(Dispatchers.Default) {
         try {
-            val resp = oauthApi.invoke { removeBind(provider).body() }
+            val resp = legacyApi(oauthApi, "第三方帳號").invoke { removeBind(provider).body() }
             applyAuthenticationResponse(resp)
         } catch (e: ClientRequestException) {
             if (e.response.status == HttpStatusCode.Conflict) {
@@ -334,7 +375,7 @@ class UserRepository(
      */
     suspend fun unbindEmail() = withContext(Dispatchers.Default) {
         try {
-            val resp = authApi.invoke { unbindEmail().body() }
+            val resp = legacyApi(authApi, "Email 帳號").invoke { unbindEmail().body() }
             applyAuthenticationResponse(resp)
         } catch (e: ClientRequestException) {
             if (e.response.status == HttpStatusCode.Conflict) {
@@ -365,8 +406,12 @@ class UserRepository(
     }
 
     suspend fun unbindBangumi() = withContext(Dispatchers.Default) {
+        if (officialBangumiApi != null) {
+            sessionManager.clearSession()
+            return@withContext
+        }
         try {
-            val resp = bangumiApi.invoke { unbind().body() }
+            val resp = legacyApi(bangumiApi, "Bangumi 綁定").invoke { unbind().body() }
             applyAuthenticationResponse(resp)
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
@@ -390,3 +435,20 @@ private fun AniAniSelfUser.toSelfInfo(): SelfInfo {
         externalAccounts = externalAccounts.map { ExternalAccount(it.provider, it.username) },
     )
 }
+
+private fun me.him188.ani.datasources.bangumi.models.BangumiUser.toSelfInfo(): SelfInfo {
+    val stableId = id.toString().padStart(12, '0')
+    return SelfInfo(
+        id = Uuid.parse("00000000-0000-0000-0000-$stableId"),
+        nickname = nickname,
+        email = null,
+        hasPassword = false,
+        avatarUrl = avatar.large,
+        bangumiUsername = username,
+        isBangumiSessionValid = true,
+        externalAccounts = emptyList(),
+    )
+}
+
+private fun <T> legacyApi(api: T?, feature: String): T =
+    api ?: throw RepositoryRequestError("\${feature}已由官方 Bangumi 登入取代")

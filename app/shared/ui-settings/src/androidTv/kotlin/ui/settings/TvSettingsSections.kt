@@ -78,7 +78,6 @@ import me.him188.ani.app.ui.lang.settings_player_fullscreen_button
 import me.him188.ani.app.ui.lang.settings_player_fullscreen_only_in_controller
 import me.him188.ani.app.ui.lang.settings_media_advanced_settings
 import me.him188.ani.app.ui.lang.settings_media_advanced_settings_description
-import me.him188.ani.app.ui.lang.settings_media_source_subscription
 import me.him188.ani.app.ui.lang.settings_player_group_advanced_description
 import me.him188.ani.app.ui.lang.settings_player_group_picture
 import me.him188.ani.app.ui.lang.settings_player_group_picture_description
@@ -97,7 +96,6 @@ import me.him188.ani.app.ui.lang.settings_search_visibility_description
 import me.him188.ani.app.ui.lang.settings_tab_player
 import me.him188.ani.app.ui.lang.settings_theme_mode_auto
 import me.him188.ani.app.ui.lang.settings_theme_palette
-import me.him188.ani.app.ui.lang.tv_settings_subscription_sources_count
 import me.him188.ani.app.ui.settings.tabs.media.MediaSelectorWorkflowDemoState
 import me.him188.ani.app.ui.lang.video_player_off
 import me.him188.ani.app.ui.lang.video_player_performance
@@ -373,22 +371,10 @@ internal fun TvSettingsItems.watchingAdvanced(workflow: MediaSelectorWorkflowDem
 }
 
 @Composable
-internal fun TvSettingsItems.sources(openSubscriptions: () -> Unit) {
-    action("subscriptions", stringResource(Lang.settings_media_source_subscription), opensPane = true, onClick = openSubscriptions)
+internal fun TvSettingsItems.sources() {
     state.sources.forEach { source ->
         toggle("source-${source.id}", source.name, source.enabled, source.description.takeIf(String::isNotBlank)) {
             onIntent(TvSettingsIntent.SourceEnabled(source.id, it))
         }
-    }
-}
-
-@Composable
-internal fun TvSettingsItems.subscriptions() {
-    state.subscriptions.forEach { subscription ->
-        toggle(
-            "subscription-${subscription.id}", subscription.url.removePrefix("https://").removePrefix("http://"),
-            subscription.enabled,
-            stringResource(Lang.tv_settings_subscription_sources_count, state.sources.count { it.subscription == subscription.id }),
-        ) { onIntent(TvSettingsIntent.SubscriptionEnabled(subscription.id, it)) }
     }
 }

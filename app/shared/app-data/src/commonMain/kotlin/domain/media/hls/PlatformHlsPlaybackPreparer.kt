@@ -147,6 +147,9 @@ private class LocalHlsProxySession private constructor(
     /** `/segment/N` -> 分片 */
     private val segmentRoutes = HashMap<String, ProxiedSegment>()
 
+    /** `/resource/N` -> 需要沿用原请求上下文的 key、init map 或其他 HLS 資源. */
+    private val resourceRoutes = HashMap<String, String>()
+
     /** 最近一次提供给播放器的、分片已代理的媒体播放列表. 预缓存以它的时间轴为准. */
     @Volatile
     private var activePlaylist: ProxiedPlaylist? = null
@@ -265,6 +268,11 @@ private class LocalHlsProxySession private constructor(
             serveSegment(segment, request, output)
             return
         }
+        val resource = synchronized(routesLock) { resourceRoutes[path] }
+        if (resource != null) {
+            serveRemoteResource(resource, request, output, DEFAULT_RESOURCE_CONTENT_TYPE)
+            return
+        }
         val content = try {
             playlistContentFor(path)
         } catch (e: CancellationException) {
@@ -308,10 +316,20 @@ private class LocalHlsProxySession private constructor(
             serveBytes(cached, request.headers["range"], output)
             return
         }
+        serveRemoteResource(segment.remoteUri, request, output, DEFAULT_SEGMENT_CONTENT_TYPE)
+    }
+
+    /** 以相同的 headers 轉發 segment、AES key、EXT-X-MAP 與其他 HLS 資源. */
+    private suspend fun serveRemoteResource(
+        remoteUri: String,
+        request: HlsProxyRequest,
+        output: HlsProxyResponseSink,
+        fallbackContentType: String,
+    ) {
         var headersWritten = false
         try {
             httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
-                prepareGet(segment.remoteUri) {
+                prepareGet(remoteUri) {
                     // 源站的错误状态原样转发给播放器, 由播放器决定重试策略
                     expectSuccess = false
                     this@LocalHlsProxySession.headers.forEach { (name, value) -> header(name, value) }
@@ -320,7 +338,7 @@ private class LocalHlsProxySession private constructor(
                     val contentLength = response.contentLength()
                     val header = buildString {
                         append("HTTP/1.1 ").append(response.status.value).append(' ').append(response.status.description).append("\r\n")
-                        append("Content-Type: ").append(response.contentType()?.toString() ?: DEFAULT_SEGMENT_CONTENT_TYPE).append("\r\n")
+                        append("Content-Type: ").append(response.contentType()?.toString() ?: fallbackContentType).append("\r\n")
                         response.headers[HttpHeaders.ContentRange]?.let { append("Content-Range: ").append(it).append("\r\n") }
                         response.headers[HttpHeaders.AcceptRanges]?.let { append("Accept-Ranges: ").append(it).append("\r\n") }
                         if (contentLength != null) {
@@ -359,7 +377,7 @@ private class LocalHlsProxySession private constructor(
         } catch (e: Throwable) {
             // 连接源站失败等: 若还没开始写响应, 回一个 502, 让播放器按加载失败处理; 已经在写正文则只能断开
             if (!headersWritten) {
-                logger.warn(e) { "Failed to proxy HLS segment ${segment.remoteUri}" }
+                logger.warn(e) { "Failed to proxy HLS resource $remoteUri" }
                 output.write(errorResponseHeader(502, "Bad Gateway").encodeToByteArray())
             } else {
                 throw e
@@ -428,62 +446,66 @@ private class LocalHlsProxySession private constructor(
     }
 
     /**
-     * 媒体播放列表: 分片地址改到本地 (可代理时) 或改为绝对地址.
+     * 媒体播放列表: 把所有子資源改到本地路由，讓 playlist、segment、key 與 init map 共用同一組 headers.
      */
     private fun rewriteMediaPlaylist(content: String, baseUri: String): String {
-        if (!options.proxySegments) {
-            return content.rewriteMediaPlaylistUris(baseUri)
-        }
         val playlist = runCatching { DefaultM3u8Parser.parse(content, baseUri) }.getOrNull()
         val eligible = playlist is M3u8Playlist.MediaPlaylist &&
                 playlist.isEndlist &&
                 playlist.segments.isNotEmpty() &&
                 playlist.segments.none { it.byteRange != null }
-        if (!eligible) {
-            return content.rewriteMediaPlaylistUris(baseUri)
+        val proxied = if (options.proxySegments && eligible) {
+            val segmentLineCount = content.lineSequence().count { it.isNotBlank() && !it.startsWith("#") }
+            if (segmentLineCount != playlist.segments.size) {
+                logger.warn { "HLS segment line count $segmentLineCount != parsed ${playlist.segments.size}; using generic resource routes for $baseUri" }
+                null
+            } else {
+                val result = ArrayList<ProxiedSegment>(playlist.segments.size)
+                var cursorMillis = 0L
+                synchronized(routesLock) {
+                    for ((index, segment) in playlist.segments.withIndex()) {
+                        val durationMillis = (segment.duration.toDouble() * 1000).roundToLong().coerceAtLeast(0L)
+                        val remoteUri = resolveHlsUri(baseUri, segment.uri)
+                        // 保留原分片的扩展名: 新版 FFmpeg (mpv) 会依赖扩展名判断媒体类型.
+                        val route = "/segment/${nextRouteId++}${segmentExtension(remoteUri)}"
+                        val item = ProxiedSegment(
+                            index = index,
+                            route = route,
+                            remoteUri = remoteUri,
+                            timeRange = MediaTimeRange(cursorMillis, cursorMillis + durationMillis),
+                        )
+                        result += item
+                        segmentRoutes[route] = item
+                        cursorMillis += durationMillis
+                    }
+                }
+                result
+            }
+        } else {
+            null
         }
-        playlist as M3u8Playlist.MediaPlaylist
-        val segmentLineCount = content.lineSequence().count { it.isNotBlank() && !it.startsWith("#") }
-        if (segmentLineCount != playlist.segments.size) {
-            logger.warn { "HLS segment line count $segmentLineCount != parsed ${playlist.segments.size}; not proxying segments for $baseUri" }
-            return content.rewriteMediaPlaylistUris(baseUri)
+        if (proxied != null) {
+            activePlaylist = ProxiedPlaylist(proxied)
+            onActivePlaylistChanged()
         }
 
-        val proxied = ArrayList<ProxiedSegment>(playlist.segments.size)
-        var cursorMillis = 0L
-        synchronized(routesLock) {
-            for ((index, segment) in playlist.segments.withIndex()) {
-                val durationMillis = (segment.duration.toDouble() * 1000).roundToLong().coerceAtLeast(0L)
-                val remoteUri = resolveHlsUri(baseUri, segment.uri)
-                // 保留原分片的扩展名: 新版 FFmpeg (mpv 的解复用器) 会拒绝扩展名不在白名单内的分片地址
-                val route = "/segment/${nextRouteId++}${segmentExtension(remoteUri)}"
-                val item = ProxiedSegment(
-                    index = index,
-                    route = route,
-                    remoteUri = remoteUri,
-                    timeRange = MediaTimeRange(cursorMillis, cursorMillis + durationMillis),
-                )
-                proxied += item
-                segmentRoutes[route] = item
-                cursorMillis += durationMillis
-            }
-        }
         var segmentCursor = 0
         val rewritten = content.lineSequence().joinToString("\n") { line ->
             when {
                 line.isBlank() -> line
                 line.startsWith("#") -> {
                     line.replace(URI_ATTRIBUTE_REGEX) { match ->
-                        match.groupValues[1] + resolveHlsUri(baseUri, match.groupValues[2]) + match.groupValues[3]
+                        match.groupValues[1] + localResourceUri(resolveHlsUri(baseUri, match.groupValues[2])) + match.groupValues[3]
                     }
                 }
 
-                else -> "http://127.0.0.1:${server.port}${proxied[segmentCursor++].route}"
+                else -> {
+                    val remoteUri = resolveHlsUri(baseUri, line)
+                    proxied?.getOrNull(segmentCursor++)?.let { "http://127.0.0.1:${server.port}${it.route}" }
+                        ?: localResourceUri(remoteUri)
+                }
             }
         } + if (content.endsWith('\n')) "\n" else ""
-
-        activePlaylist = ProxiedPlaylist(proxied)
-        onActivePlaylistChanged()
         return rewritten
     }
 
@@ -500,7 +522,7 @@ private class LocalHlsProxySession private constructor(
                 line.startsWith("#") -> {
                     line.replace(URI_ATTRIBUTE_REGEX) { match ->
                         val uri = resolveHlsUri(baseUri, match.groupValues[2])
-                        match.groupValues[1] + uri + match.groupValues[3]
+                        match.groupValues[1] + localResourceUri(uri) + match.groupValues[3]
                     }
                 }
 
@@ -517,6 +539,13 @@ private class LocalHlsProxySession private constructor(
         return "http://127.0.0.1:${server.port}$route"
     }
 
+    private fun localResourceUri(remoteUri: String): String {
+        val route = synchronized(routesLock) {
+            "/resource/${nextRouteId++}".also { resourceRoutes[it] = remoteUri }
+        }
+        return "http://127.0.0.1:${server.port}$route"
+    }
+
     private class ProxiedSegment(
         val index: Int,
         val route: String,
@@ -528,6 +557,7 @@ private class LocalHlsProxySession private constructor(
 
     companion object {
         private const val DEFAULT_SEGMENT_CONTENT_TYPE = "video/mp2t"
+        private const val DEFAULT_RESOURCE_CONTENT_TYPE = "application/octet-stream"
         private val CRLF = "\r\n".encodeToByteArray()
 
         /**
@@ -668,22 +698,6 @@ private val logger = me.him188.ani.utils.logging.logger<PlatformHlsPlaybackPrepa
 private fun String.isCandidateHlsUri(): Boolean {
     val scheme = substringBefore("://", missingDelimiterValue = "").lowercase()
     return (scheme == "http" || scheme == "https") && lowercase().contains(".m3u8")
-}
-
-private fun String.rewriteMediaPlaylistUris(baseUri: String): String {
-    return lineSequence().joinToString("\n") { line ->
-        when {
-            line.isBlank() -> line
-            line.startsWith("#") -> {
-                line.replace(URI_ATTRIBUTE_REGEX) { match ->
-                    val uri = match.groupValues[2]
-                    match.groupValues[1] + resolveHlsUri(baseUri, uri) + match.groupValues[3]
-                }
-            }
-
-            else -> resolveHlsUri(baseUri, line)
-        }
-    } + if (endsWith('\n')) "\n" else ""
 }
 
 /**

@@ -35,7 +35,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.repository.media.SelectorMediaSourceEpisodeCacheRepository
 import me.him188.ani.app.domain.foundation.LoadError
 import me.him188.ani.app.domain.media.fetch.MediaFetchSession
 import me.him188.ani.app.domain.media.fetch.MediaSourceManager
@@ -94,7 +93,6 @@ class EpisodeFetchSelectPlayState(
         suspend fun isFullscreen(): Boolean? = false
     }
 
-    private val selectorCacheRepo by koin.inject<SelectorMediaSourceEpisodeCacheRepository>()
     private val mediaSourceManager by koin.inject<MediaSourceManager>()
 
     /**
@@ -233,10 +231,6 @@ class EpisodeFetchSelectPlayState(
             }
         }
 
-        // 清除已过期的 web 源搜索缓存. 与启动查询无关 (读取本身就会过滤过期行), 因此不阻塞 session 启动.
-        backgroundScope.launch {
-            selectorCacheRepo.purgeExpired()
-        }
     }
 
     /**
@@ -246,8 +240,6 @@ class EpisodeFetchSelectPlayState(
         extensionManager.call { it.onClose() }
         playerSession.stopPlayback()
         fetchSessions.close()
-        // 未过期的缓存会保留, 短暂退出后重进播放页仍可复用; 这里只是顺手回收已过期的行.
-        selectorCacheRepo.purgeExpired()
     }
 
     /**

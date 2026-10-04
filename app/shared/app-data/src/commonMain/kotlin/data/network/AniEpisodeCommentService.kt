@@ -17,21 +17,28 @@ import me.him188.ani.app.data.models.episode.EpisodeComment
 import me.him188.ani.app.data.models.episode.EpisodeCommentReaction
 import me.him188.ani.app.data.models.episode.EpisodeCommentSource
 import me.him188.ani.app.data.repository.RepositoryException
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.client.apis.EpisodesAniApi
 import me.him188.ani.client.models.AniCommentVoteValue
 import me.him188.ani.client.models.AniCreateEpisodeCommentRequest
 import me.him188.ani.client.models.AniCreateEpisodeReplyRequest
 import me.him188.ani.client.models.AniEpisodeComment
+import me.him188.ani.client.models.AniEpisodeCommentAuthor
+import me.him188.ani.client.models.AniEpisodeCommentReaction
 import me.him188.ani.client.models.AniEpisodeCommentReply
 import me.him188.ani.client.models.AniEpisodeCommentSource
 import me.him188.ani.client.models.AniEpisodeCommentsResponse
+import me.him188.ani.datasources.bangumi.next.models.BangumiNextCommentBase
+import me.him188.ani.datasources.bangumi.next.models.BangumiNextGetEpisodeComments200ResponseInner
+import me.him188.ani.datasources.bangumi.next.models.BangumiNextSlimUser
 import me.him188.ani.utils.coroutines.IO_
 import me.him188.ani.utils.ktor.ApiInvoker
 import kotlin.coroutines.CoroutineContext
 
 open class AniEpisodeCommentService(
-    private val episodesApi: ApiInvoker<EpisodesAniApi>,
+    private val episodesApi: ApiInvoker<EpisodesAniApi>?,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
+    private val bangumiApi: BangumiApiProvider? = null,
 ) {
     /**
      * 获取剧集评论, 新评论在前. 服务端已合并 Bangumi 评论, 客户端不再自行拉取 Bangumi.
@@ -47,8 +54,21 @@ open class AniEpisodeCommentService(
         after: String? = null,
         limit: Int = 30,
     ): AniEpisodeCommentsResponse = withContext(ioDispatcher) {
+        bangumiApi?.let { api ->
+            val all = api.nextEpisodeRequest { getEpisodeComments(episodeId.toInt()) }
+            val offset = after?.removePrefix(BANGUMI_CURSOR_PREFIX)?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+            val items = all.drop(offset).take(limit)
+            return@withContext AniEpisodeCommentsResponse(
+                total = all.size.toLong(),
+                items = items.map { it.toAniEpisodeComment(episodeId) },
+                bangumiUnavailable = false,
+                nextCursor = (offset + items.size).takeIf { it < all.size }
+                    ?.let { "$BANGUMI_CURSOR_PREFIX$it" },
+            )
+        }
         try {
-            episodesApi.invoke {
+            val api = episodesApi ?: throw RepositoryRequestError("目前未提供官方 Bangumi 留言寫入介面")
+            api.invoke {
                 listEpisodeComments(
                     episodeId = episodeId,
                     limit = limit,
@@ -65,8 +85,12 @@ open class AniEpisodeCommentService(
         episodeId: Long,
         contentBbcode: String,
     ) = withContext(ioDispatcher) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 吐槽箱建立留言需要互動驗證，目前只提供讀取")
+        }
         try {
-            episodesApi.invoke {
+            val api = episodesApi ?: throw RepositoryRequestError("目前未提供官方 Bangumi 留言寫入介面")
+            api.invoke {
                 createEpisodeComment(
                     episodeId = episodeId,
                     aniCreateEpisodeCommentRequest = AniCreateEpisodeCommentRequest(contentBbcode),
@@ -82,8 +106,12 @@ open class AniEpisodeCommentService(
         commentId: String,
         contentBbcode: String,
     ) = withContext(ioDispatcher) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 吐槽箱回覆需要互動驗證，目前只提供讀取")
+        }
         try {
-            episodesApi.invoke {
+            val api = episodesApi ?: throw RepositoryRequestError("目前未提供官方 Bangumi 留言互動介面")
+            api.invoke {
                 createEpisodeReply(
                     episodeId = episodeId,
                     commentId = commentId,
@@ -100,8 +128,12 @@ open class AniEpisodeCommentService(
         commentId: String,
         value: String,
     ) = withContext(ioDispatcher) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 吐槽箱目前不提供此互動介面")
+        }
         try {
-            episodesApi.invoke {
+            val api = episodesApi ?: throw RepositoryRequestError("目前未提供官方 Bangumi 留言互動介面")
+            api.invoke {
                 addEpisodeCommentReaction(
                     episodeId = episodeId,
                     commentId = commentId,
@@ -118,8 +150,12 @@ open class AniEpisodeCommentService(
         commentId: String,
         value: String,
     ) = withContext(ioDispatcher) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 吐槽箱目前不提供此互動介面")
+        }
         try {
-            episodesApi.invoke {
+            val api = episodesApi ?: throw RepositoryRequestError("目前未提供官方 Bangumi 評價投票介面")
+            api.invoke {
                 removeEpisodeCommentReaction(
                     episodeId = episodeId,
                     commentId = commentId,
@@ -140,8 +176,12 @@ open class AniEpisodeCommentService(
         commentId: String,
         vote: CommentVoteValue?,
     ) = withContext(ioDispatcher) {
+        if (bangumiApi != null) {
+            throw RepositoryRequestError("官方 Bangumi 吐槽箱目前不提供評價投票介面")
+        }
         try {
-            episodesApi.invoke {
+            val api = episodesApi ?: throw RepositoryRequestError("目前未提供官方 Bangumi 評價投票介面")
+            api.invoke {
                 if (vote == null) {
                     removeEpisodeCommentVote(
                         episodeId = episodeId,
@@ -160,6 +200,54 @@ open class AniEpisodeCommentService(
         }
     }
 }
+
+private const val BANGUMI_CURSOR_PREFIX = "bangumi:"
+
+private fun BangumiNextGetEpisodeComments200ResponseInner.toAniEpisodeComment(episodeId: Long) =
+    AniEpisodeComment(
+        id = "bangumi:$id",
+        sourceCommentId = id.toString(),
+        episodeId = episodeId,
+        contentBbcode = content,
+        createdAtMillis = createdAt.toLong() * 1000,
+        replyCount = replies.size,
+        briefReplies = replies.map { it.toAniEpisodeCommentReply(episodeId) },
+        reactions = reactions.orEmpty().map { reaction ->
+            AniEpisodeCommentReaction(
+                value = reaction.value.toString(),
+                count = reaction.users.size,
+                selected = false,
+            )
+        },
+        canReply = false,
+        source = AniEpisodeCommentSource.BANGUMI,
+        likeCount = reactions.orEmpty().sumOf { it.users.size },
+        author = user?.toAniEpisodeCommentAuthor(),
+        selfVote = null,
+    )
+
+private fun BangumiNextCommentBase.toAniEpisodeCommentReply(episodeId: Long) =
+    AniEpisodeCommentReply(
+        id = "bangumi:$id",
+        sourceCommentId = id.toString(),
+        episodeId = episodeId,
+        contentBbcode = content,
+        createdAtMillis = createdAt.toLong() * 1000,
+        reactions = reactions.orEmpty().map { reaction ->
+            AniEpisodeCommentReaction(
+                value = reaction.value.toString(),
+                count = reaction.users.size,
+                selected = false,
+            )
+        },
+        author = user?.toAniEpisodeCommentAuthor(),
+    )
+
+private fun BangumiNextSlimUser.toAniEpisodeCommentAuthor() = AniEpisodeCommentAuthor(
+        id = id.toString(),
+        nickname = nickname,
+        avatarUrl = avatar.large,
+    )
 
 internal fun CommentVoteValue.toAniCommentVoteValue(): AniCommentVoteValue = when (this) {
     CommentVoteValue.LIKE -> AniCommentVoteValue.LIKE

@@ -20,8 +20,6 @@ import me.him188.ani.app.data.models.preference.ProxyAuthorization
 import me.him188.ani.app.data.models.preference.ProxyConfig
 import me.him188.ani.app.data.models.preference.ProxyMode
 import me.him188.ani.app.data.models.preference.ProxySettings
-import me.him188.ani.app.ui.foundation.icons.Animeko
-import me.him188.ani.app.ui.foundation.icons.AnimekoIconColor
 import me.him188.ani.app.ui.foundation.icons.BangumiNext
 import me.him188.ani.app.ui.foundation.icons.BangumiNextIconColor
 
@@ -77,7 +75,6 @@ sealed class SystemProxyPresentation {
 
 @Immutable
 enum class ProxyTestCaseEnums {
-    ANI,
     BANGUMI,
     BANGUMI_NEXT,
 }
@@ -88,12 +85,6 @@ sealed class ProxyTestCase(
     val icon: ImageVector,
     val color: Color
 ) {
-    data object AniApi : ProxyTestCase(
-        name = ProxyTestCaseEnums.ANI,
-        icon = Icons.Default.Animeko,
-        color = AnimekoIconColor,
-    )
-
     data object BangumiApi : ProxyTestCase(
         name = ProxyTestCaseEnums.BANGUMI,
         icon = Icons.Default.BangumiNext,

@@ -1,0 +1,189 @@
+/*
+ * Copyright (C) 2026 OpenAni and contributors.
+ * Use of this source code is governed by the GNU AGPLv3 license.
+ */
+
+package me.him188.ani.app.domain.sourceplugin
+
+import kotlinx.coroutines.test.runTest
+import me.him188.ani.source.plugin.api.SourceHttpClient
+import me.him188.ani.source.plugin.api.SourceHttpRequest
+import me.him188.ani.source.plugin.api.SourceHttpResponse
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+
+class SourcePluginRepositoryClientTest {
+    @Test
+    fun `index accepts valid entries and sends cached etag`() = runTest {
+        val first = validIndexResponse(etag = "\"one\"")
+        val http = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/index.json" to ArrayDeque(
+                    listOf(
+                        first,
+                        SourceHttpResponse(
+                            statusCode = 304,
+                            finalUrl = "https://repo.example/index.json",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val client = SourcePluginRepositoryClient(http, baseUrl = "https://repo.example")
+
+        val initial = client.fetchIndex()
+        val cached = client.fetchIndex(
+            SourcePluginRepositoryCache(etag = "\"one\"", index = initial),
+        )
+
+        assertEquals("demo", initial.plugins.single().id)
+        assertTrue(cached.fromCache)
+        assertEquals(initial, cached.index)
+        assertEquals("\"one\"", cached.etag)
+        assertEquals("\"one\"", http.requests[1].headers["If-None-Match"])
+    }
+
+    @Test
+    fun `304 without cached index is rejected`() = runTest {
+        val http = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/index.json" to ArrayDeque(
+                    listOf(SourceHttpResponse(304, "https://repo.example/index.json")),
+                ),
+            ),
+        )
+        val client = SourcePluginRepositoryClient(http, baseUrl = "https://repo.example")
+
+        assertFailsWith<SourcePluginRepositoryException> {
+            client.fetchIndex(SourcePluginRepositoryCache(etag = "\"cached\""))
+        }
+    }
+
+    @Test
+    fun `newer repository schema and duplicate ids are rejected`() = runTest {
+        val newerSchema = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/index.json" to ArrayDeque(
+                    listOf(response("{\"schemaVersion\":2,\"pluginApiVersion\":1,\"plugins\":[]}")),
+                ),
+            ),
+        )
+        assertFailsWith<UnsupportedSourcePluginException> {
+            SourcePluginRepositoryClient(newerSchema, baseUrl = "https://repo.example").fetchIndex()
+        }
+
+        val duplicate = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/index.json" to ArrayDeque(
+                    listOf(
+                        response(
+                            """
+                            {"schemaVersion":1,"pluginApiVersion":1,"plugins":[
+                              {"id":"demo","name":"Demo","version":"1.0.0","website":"https://demo.example","platforms":["desktop"],"manifest":"manifests/demo.json"},
+                              {"id":"demo","name":"Demo 2","version":"1.0.1","website":"https://demo.example","platforms":["desktop"],"manifest":"manifests/demo-2.json"}
+                            ]}
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        assertFailsWith<IllegalArgumentException> {
+            SourcePluginRepositoryClient(duplicate, baseUrl = "https://repo.example").fetchIndex()
+        }
+    }
+
+    @Test
+    fun `manifest rejects mismatched identity and outside artifact`() = runTest {
+        val entry = validEntry()
+        val mismatchedHttp = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/manifests/demo.json" to ArrayDeque(
+                    listOf(response(validManifestJson(id = "other"))),
+                ),
+            ),
+        )
+        assertFailsWith<IllegalArgumentException> {
+            SourcePluginRepositoryClient(mismatchedHttp, baseUrl = "https://repo.example").fetchManifest(entry)
+        }
+
+        val outsideHttp = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/manifests/demo.json" to ArrayDeque(
+                    listOf(response(validManifestJson(artifactUrl = "https://evil.example/demo.jar"))),
+                ),
+            ),
+        )
+        assertFailsWith<IllegalArgumentException> {
+            SourcePluginRepositoryClient(outsideHttp, baseUrl = "https://repo.example").fetchManifest(entry)
+        }
+    }
+
+    @Test
+    fun `repository paths and artifact hashes are validated`() = runTest {
+        val http = FakeSourceHttpClient(emptyMap())
+        val client = SourcePluginRepositoryClient(http, baseUrl = "https://repo.example")
+        val unsafeEntry = validEntry(manifest = "../escape.json")
+
+        assertFailsWith<IllegalArgumentException> { client.fetchManifest(unsafeEntry) }
+        assertFailsWith<IllegalArgumentException> {
+            client.downloadArtifact(SourcePluginArtifact("artifacts/demo.jar", "not-a-sha"))
+        }
+    }
+
+    private fun validIndexResponse(etag: String? = null): SourceHttpResponse {
+        return response(
+            """
+            {"schemaVersion":1,"pluginApiVersion":1,"plugins":[
+              {"id":"demo","name":"Demo","version":"1.0.0","website":"https://demo.example","platforms":["desktop"],"manifest":"manifests/demo.json"}
+            ]}
+            """.trimIndent(),
+            headers = etag?.let { mapOf("ETag" to it) }.orEmpty(),
+        )
+    }
+
+    private fun validEntry(
+        id: String = "demo",
+        version: String = "1.0.0",
+        manifest: String = "manifests/demo.json",
+    ) = SourcePluginIndexEntry(
+        id = id,
+        displayName = "Demo",
+        version = version,
+        website = "https://demo.example",
+        platforms = setOf(me.him188.ani.source.plugin.api.SourcePluginPlatform.DESKTOP),
+        manifest = manifest,
+    )
+
+    private fun validManifestJson(
+        id: String = "demo",
+        artifactUrl: String = "artifacts/demo.jar",
+    ): String =
+        """
+        {"id":"$id","name":"Demo","version":"1.0.0","pluginApiVersion":1,
+         "minHostVersion":"1.0.0","entryClass":"demo.Entry","website":"https://demo.example",
+         "platforms":["desktop"],"artifacts":{"desktop":{"url":"$artifactUrl","sha256":"${"0".repeat(64)}","format":"jar"}}}
+        """.trimIndent().replace("\n", "")
+
+    private fun response(body: String, headers: Map<String, String> = emptyMap()) = SourceHttpResponse(
+        statusCode = 200,
+        finalUrl = "https://repo.example/document",
+        headers = headers,
+        body = body.encodeToByteArray(),
+    )
+
+    private class FakeSourceHttpClient(
+        responses: Map<String, ArrayDeque<SourceHttpResponse>>,
+    ) : SourceHttpClient {
+        private val responses = responses.toMutableMap()
+        val requests = mutableListOf<SourceHttpRequest>()
+
+        override suspend fun execute(request: SourceHttpRequest): SourceHttpResponse {
+            requests += request
+            return responses[request.url]?.removeFirstOrNull()
+                ?: error("No fake response for ${request.url}")
+        }
+    }
+}

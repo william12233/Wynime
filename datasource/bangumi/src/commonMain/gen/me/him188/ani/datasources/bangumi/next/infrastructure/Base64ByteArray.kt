@@ -8,11 +8,8 @@ import kotlinx.serialization.encoding.*
 class Base64ByteArray(val value: ByteArray) {
     companion object : KSerializer<Base64ByteArray> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("Base64ByteArray", PrimitiveKind.STRING)
-        override fun serialize(encoder: Encoder, value: Base64ByteArray): Unit =
-            encoder.encodeString(value.value.encodeBase64())
-
-        override fun deserialize(decoder: Decoder): Base64ByteArray =
-            Base64ByteArray(decoder.decodeString().decodeBase64Bytes())
+        override fun serialize(encoder: Encoder, value: Base64ByteArray): Unit = encoder.encodeString(value.value.encodeBase64())
+        override fun deserialize(decoder: Decoder): Base64ByteArray = Base64ByteArray(decoder.decodeString().decodeBase64Bytes())
     }
 
     override fun equals(other: Any?): Boolean {

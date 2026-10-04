@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "wynime-bangumi-broker",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-09-01",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REPLAY_MARKERS",
+        "class_name": "ReplayMarker"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["ReplayMarker"]
+    }
+  ],
+  "vars": {
+    "BANGUMI_AUTHORIZE_URL": "https://bgm.tv/oauth/authorize",
+    "BANGUMI_TOKEN_URL": "https://bgm.tv/oauth/access_token",
+    "BANGUMI_API_BASE_URL": "https://api.bgm.tv",
+    "APP_LINK_REDIRECT_URI": "https://wynime-bangumi-broker.wzhou785.workers.dev/app/oauth-complete",
+    "CUSTOM_SCHEME_REDIRECT_URI": "ani://bangumi-oauth-callback"
+  }
+}

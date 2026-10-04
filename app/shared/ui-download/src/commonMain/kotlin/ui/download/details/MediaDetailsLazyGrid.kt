@@ -130,22 +130,26 @@ data class MediaDetails(
             val originalUri = when (val download = originalMedia.download) {
                 is ResourceLocation.HttpStreamingFile -> download.uri
                 is ResourceLocation.LocalFile -> download.filePath
+                is ResourceLocation.SourcePluginMedia -> download.uri
                 is ResourceLocation.WebVideo -> download.uri
             }
             val fileType = when (val download = cachedMedia?.download ?: originalMedia.download) {
                 is ResourceLocation.HttpStreamingFile -> null
                 is ResourceLocation.LocalFile -> download.fileType
+                is ResourceLocation.SourcePluginMedia -> null
                 is ResourceLocation.WebVideo -> null
             }
             val contentDownloadUri = when (val download = cachedMedia?.download) {
                 is ResourceLocation.LocalFile -> download.originalUri
                 is ResourceLocation.HttpStreamingFile,
+                is ResourceLocation.SourcePluginMedia,
                 is ResourceLocation.WebVideo,
                 null -> null
             }
             val localCacheFilePath = when (val download = cachedMedia?.download) {
                 is ResourceLocation.LocalFile -> Path(download.filePath)
                 is ResourceLocation.HttpStreamingFile,
+                is ResourceLocation.SourcePluginMedia,
                 is ResourceLocation.WebVideo,
                 null -> null
             }

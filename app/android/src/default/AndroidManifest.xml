@@ -50,6 +50,18 @@
                         android:scheme="ani" />
             </intent-filter>
 
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                        android:host="wynime-bangumi-broker.wzhou785.workers.dev"
+                        android:path="/app/oauth-complete"
+                        android:scheme="https" />
+            </intent-filter>
+
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -61,17 +73,6 @@
                         android:scheme="ani" />
             </intent-filter>
 
-            <!-- 扫码登录: 系统相机扫描电视上的二维码后, 网页跳转到 ani://qr-login?requestId=... -->
-            <intent-filter android:autoVerify="false">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                        android:host="qr-login"
-                        android:scheme="ani" />
-            </intent-filter>
         </activity>
     </application>
 </manifest>

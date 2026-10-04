@@ -25,7 +25,7 @@ import kotlin.test.Test
 /**
  * @see DefaultMediaSelector.filteredCandidates
  * @see MediaSelectorSourceTiers
- * @see me.him188.ani.app.domain.mediasource.codec.MediaSourceTier
+ * @see me.him188.ani.app.domain.mediasource.MediaSourceTier
  */
 @DisabledOnNative // TODO: ContextParameters crashes on Native
 class MediaSelectorSourceTierSortTest {

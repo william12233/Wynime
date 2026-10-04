@@ -10,6 +10,7 @@
 package me.him188.ani.app.data.persistent.database.dao
 
 import androidx.room.Dao
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.Insert
@@ -44,6 +45,7 @@ data class PlaybackHistoryRecordEntity(
     val durationMillis: Long? = null,
     val updatedAtMillis: Long = 0,
     val deletedAtMillis: Long? = null,
+    @ColumnInfo(defaultValue = "0") val serverRevision: Long = 0,
 )
 
 @Entity(
@@ -66,6 +68,7 @@ data class PlaybackHistoryPendingOpEntity(
     val durationMillis: Long? = null,
     val updatedAtMillis: Long? = null,
     val deletedAtMillis: Long? = null,
+    @ColumnInfo(defaultValue = "0") val baseRevision: Long = 0,
 )
 
 @Dao
@@ -137,6 +140,7 @@ fun PlaybackHistoryRecordEntity.toEpisodeHistory(): EpisodeHistory {
         durationMillis = durationMillis,
         updatedAtMillis = updatedAtMillis,
         deletedAtMillis = deletedAtMillis,
+        serverRevision = serverRevision,
         isDirty = false,
     )
 }
@@ -153,6 +157,7 @@ fun EpisodeHistory.toEntity(): PlaybackHistoryRecordEntity {
         durationMillis = durationMillis,
         updatedAtMillis = updatedAtMillis,
         deletedAtMillis = deletedAtMillis,
+        serverRevision = serverRevision,
     )
 }
 
@@ -162,6 +167,7 @@ fun PlaybackHistoryPendingOpEntity.toPendingOp(): PlaybackHistoryPendingOp {
             id = id,
             episodeId = episodeId,
             subjectId = requireNotNull(subjectId) { "subjectId is required for upsert playback history op" },
+            baseRevision = baseRevision,
             episodeSort = episodeSort,
             subjectName = subjectName,
             subjectImageUrl = subjectImageUrl,
@@ -174,6 +180,8 @@ fun PlaybackHistoryPendingOpEntity.toPendingOp(): PlaybackHistoryPendingOp {
         PlaybackHistoryPendingOpEntityType.Delete -> PlaybackHistoryPendingOp.Delete(
             id = id,
             episodeId = episodeId,
+            subjectId = subjectId,
+            baseRevision = baseRevision,
             deletedAtMillis = requireNotNull(deletedAtMillis) {
                 "deletedAtMillis is required for delete playback history op"
             },
@@ -195,6 +203,7 @@ fun PlaybackHistoryPendingOp.Upsert.toEntity(): PlaybackHistoryPendingOpEntity {
         positionMillis = positionMillis,
         durationMillis = durationMillis,
         updatedAtMillis = updatedAtMillis,
+        baseRevision = baseRevision,
     )
 }
 
@@ -202,7 +211,9 @@ fun PlaybackHistoryPendingOp.Delete.toEntity(): PlaybackHistoryPendingOpEntity {
     return PlaybackHistoryPendingOpEntity(
         opType = PlaybackHistoryPendingOpEntityType.Delete,
         episodeId = episodeId,
+        subjectId = subjectId,
         deletedAtMillis = deletedAtMillis,
+        baseRevision = baseRevision,
     )
 }
 

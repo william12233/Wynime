@@ -10,7 +10,7 @@
     "ArrayInDataClass",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport",
+    "UnusedImport"
 )
 
 package me.him188.ani.datasources.bangumi.next.apis
@@ -40,17 +40,12 @@ open class CollectionBangumiNextApi : ApiClient {
         httpClientEngine: HttpClientEngine? = null,
         httpClientConfig: ((HttpClientConfig<*>) -> Unit)? = null,
         jsonSerializer: Json = ApiClient.JSON_DEFAULT
-    ) : super(
-        baseUrl = baseUrl,
-        httpClientEngine = httpClientEngine,
-        httpClientConfig = httpClientConfig,
-        jsonBlock = jsonSerializer,
-    )
+    ) : super(baseUrl = baseUrl, httpClientEngine = httpClientEngine, httpClientConfig = httpClientConfig, jsonBlock = jsonSerializer)
 
     constructor(
         baseUrl: String,
         httpClient: HttpClient
-    ) : super(baseUrl = baseUrl, httpClient = httpClient)
+    ): super(baseUrl = baseUrl, httpClient = httpClient)
 
     /**
      * 获取当前用户的条目收藏
@@ -63,13 +58,7 @@ open class CollectionBangumiNextApi : ApiClient {
      * @return BangumiNextGetMySubjectCollections200Response
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun getMySubjectCollections(
-        subjectType: BangumiNextSubjectType? = null,
-        type: BangumiNextCollectionType? = null,
-        since: kotlin.Int? = null,
-        limit: kotlin.Int? = 20,
-        offset: kotlin.Int? = 0
-    ): HttpResponse<BangumiNextGetMySubjectCollections200Response> {
+    open suspend fun getMySubjectCollections(subjectType: BangumiNextSubjectType? = null, type: BangumiNextCollectionType? = null, since: kotlin.Int? = null, limit: kotlin.Int? = 20, offset: kotlin.Int? = 0): HttpResponse<BangumiNextGetMySubjectCollections200Response> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -77,8 +66,8 @@ open class CollectionBangumiNextApi : ApiClient {
             io.ktor.client.utils.EmptyContent
 
         val localVariableQuery = mutableMapOf<String, List<String>>()
-        subjectType?.apply { localVariableQuery["subjectType"] = listOf("${subjectType.value}") }
-        type?.apply { localVariableQuery["type"] = listOf("${type.value}") }
+        subjectType?.apply { localVariableQuery["subjectType"] = listOf("${ subjectType.value }") }
+        type?.apply { localVariableQuery["type"] = listOf("${ type.value }") }
         since?.apply { localVariableQuery["since"] = listOf("$since") }
         limit?.apply { localVariableQuery["limit"] = listOf("$limit") }
         offset?.apply { localVariableQuery["offset"] = listOf("$offset") }
@@ -95,7 +84,7 @@ open class CollectionBangumiNextApi : ApiClient {
         return request(
             localVariableConfig,
             localVariableBody,
-            localVariableAuthNames,
+            localVariableAuthNames
         ).wrap()
     }
 
@@ -108,10 +97,7 @@ open class CollectionBangumiNextApi : ApiClient {
      * @return kotlin.String
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun updateSubjectCollection(
-        subjectID: kotlin.Int,
-        bangumiNextCollectSubject: BangumiNextCollectSubject? = null
-    ): HttpResponse<kotlin.String> {
+    open suspend fun updateSubjectCollection(subjectID: kotlin.Int, bangumiNextCollectSubject: BangumiNextCollectSubject? = null): HttpResponse<kotlin.String> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -131,7 +117,7 @@ open class CollectionBangumiNextApi : ApiClient {
         return jsonRequest(
             localVariableConfig,
             localVariableBody,
-            localVariableAuthNames,
+            localVariableAuthNames
         ).wrap()
     }
 
@@ -145,10 +131,7 @@ open class CollectionBangumiNextApi : ApiClient {
      * @return kotlin.String
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun updateSubjectProgress(
-        subjectID: kotlin.Int,
-        bangumiNextUpdateSubjectProgress: BangumiNextUpdateSubjectProgress? = null
-    ): HttpResponse<kotlin.String> {
+    open suspend fun updateSubjectProgress(subjectID: kotlin.Int, bangumiNextUpdateSubjectProgress: BangumiNextUpdateSubjectProgress? = null): HttpResponse<kotlin.String> {
 
         val localVariableAuthNames = listOf<String>()
 
@@ -168,9 +151,10 @@ open class CollectionBangumiNextApi : ApiClient {
         return jsonRequest(
             localVariableConfig,
             localVariableBody,
-            localVariableAuthNames,
+            localVariableAuthNames
         ).wrap()
     }
+
 
 
 }

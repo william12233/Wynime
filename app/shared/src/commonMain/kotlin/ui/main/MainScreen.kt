@@ -71,7 +71,6 @@ import me.him188.ani.app.platform.LocalContext
 import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuite
 import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuiteDefaults
 import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuiteLayout
-import me.him188.ani.app.ui.bangumi.merge.BangumiConflictNotifier
 import me.him188.ani.app.ui.exploration.ExplorationPageViewModel
 import me.him188.ani.app.ui.download.DownloadManagementScreen
 import me.him188.ani.app.ui.download.DownloadManagementViewModel
@@ -208,7 +207,7 @@ private fun MainScreenContent(
             },
             onNavigateToLogin = {
                 showAccountSettingsPopup = false
-                navigator.navigateEmailLoginStart()
+                navigator.navigateBangumiAuthorize()
             },
         )
     }
@@ -418,26 +417,14 @@ private fun TabContent(
                 Modifier.matchParentSize()
                     .padding(LocalAppChromeOverlayInsets.current.asPaddingValues()),
                 top = { UpdateNotifierWithVersionExpiryCheck() },
-                bottom = {
-                    // 版本过期锁定页展示时不检查 Bangumi 收藏冲突, 也不在其上叠加可跳转的提示.
-                    val versionExpiryService = remember { KoinPlatform.getKoin().get<VersionExpiryService>() }
-                    val versionExpired by versionExpiryService.state.collectAsStateWithLifecycle(null)
-                    if (versionExpired == null) {
-                        val navigator = LocalNavigator.current
-                        BangumiConflictNotifier(
-                            selfInfo = selfInfo,
-                            onNavigateToMerge = { navigator.navigateBangumiMerge() },
-                        )
-                    }
-                },
+                bottom = {},
             )
         }
     }
 }
 
 /**
- * 主界面底部的通知堆叠: [top] (更新提示 / 版本过期锁定页) 在上, [bottom] (Bangumi 收藏冲突提示) 在下, 竖向排列.
- * 两者各自持有 SnackbarHostState 且都是 Indefinite (手机上更新提示也是 snackbar), 若都锚在同一个 BottomCenter 会互相遮挡.
+ * 主界面底部的通知堆疊: [top] 顯示更新提示或版本過期鎖定頁；[bottom] 保留給平台端額外通知。
  *
  * 版本过期锁定页 (fillMaxSize) 也在 [top] 里, 用 weight 让它能占满剩余高度; 平时更新提示只占自身高度.
  */

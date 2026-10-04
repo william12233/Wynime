@@ -44,8 +44,22 @@ class SourcePluginInstaller(
             ?: throw UnsupportedSourcePluginException("Plugin ${manifest.id} has no $platform artifact")
 
         val existing = installedRepository.snapshot().plugins.firstOrNull { it.id == manifest.id }
-        if (existing?.version == manifest.version && existing.artifactPath.isUsableArtifact()) {
-            return existing
+        val reusable = existing?.takeIf {
+            it.version == manifest.version &&
+                it.artifactPath.isUsableArtifact() &&
+                it.manifest.artifacts[platform] == artifact
+        }
+        if (reusable != null) {
+            try {
+                validateLoaded(reusable)
+                return reusable
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.warn(e) {
+                    "Installed source plugin ${reusable.id} ${reusable.version} failed validation; reinstalling"
+                }
+            }
         }
 
         storage.ensureRootDirectories()
@@ -71,15 +85,19 @@ class SourcePluginInstaller(
                 "Plugin ${manifest.id} package did not contain a loadable artifact"
             }
 
-            committed = storage.commit(staging, manifest.id, manifest.version)
-            val installed = InstalledSourcePlugin(
+            val staged = InstalledSourcePlugin(
                 id = manifest.id,
                 version = manifest.version,
                 manifest = manifest,
-                artifactPath = extractedPathAfterCommit(extracted, staging, committed),
+                artifactPath = extracted.absolutePath,
                 enabled = existing?.enabled ?: true,
             )
-            validateLoaded(installed)
+            validateLoaded(staged)
+
+            committed = storage.commit(staging, manifest.id, manifest.version)
+            val installed = staged.copy(
+                artifactPath = extractedPathAfterCommit(extracted, staging, committed),
+            )
             installedRepository.upsert(installed)
             if (existing != null && existing.version != installed.version) {
                 runCatching {

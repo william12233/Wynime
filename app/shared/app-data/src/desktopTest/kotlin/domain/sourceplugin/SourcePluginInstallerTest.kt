@@ -91,6 +91,29 @@ class SourcePluginInstallerTest {
     }
 
     @Test
+    fun `same-version failed validation is repaired from a fresh artifact`() = runTest {
+        val artifact = createFixtureArtifact()
+        val entry = fixtureEntry("1.0.0")
+        val repository = InstalledSourcePluginRepository(MemoryDataStore(InstalledSourcePlugins.Empty))
+        val first = createInstaller(repository, entry, artifact).install(entry)
+        var validationCalls = 0
+
+        val repaired = createInstaller(repository, entry, artifact).install(entry) { candidate ->
+            validationCalls++
+            if (validationCalls == 1) {
+                assertEquals(first.artifactPath, candidate.artifactPath)
+                error("fixture load validation failed")
+            }
+            assertTrue(candidate.artifactPath.contains("staging"))
+        }
+
+        assertEquals(2, validationCalls)
+        assertEquals("1.0.0", repaired.version)
+        assertTrue(File(repaired.artifactPath).isFile)
+        assertTrue(File(root.resolve("staging").absolutePath).listFiles().orEmpty().isEmpty())
+    }
+
+    @Test
     fun `failed update preserves the previous installed version`() = runTest {
         val artifact = createFixtureArtifact()
         val repository = InstalledSourcePluginRepository(MemoryDataStore(InstalledSourcePlugins.Empty))

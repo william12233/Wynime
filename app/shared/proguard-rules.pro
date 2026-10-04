@@ -7,6 +7,21 @@
 	*;
 }
 
+# The host and dynamically loaded source plugins must resolve the same API types.
+-keep public class me.him188.ani.source.plugin.api.** {
+    *;
+}
+-keep public interface me.him188.ani.source.plugin.api.** {
+    *;
+}
+
+# Android source plugins are compiled against the Kotlin standard library and
+# loaded after R8 has finished shrinking the host application. Keep the
+# runtime API they can call because those calls are not visible to R8.
+-keep class kotlin.** {
+    *;
+}
+
 -keep class ** extends me.him188.ani.datasources.api.subject.SubjectProvider {}
 -keep class ** extends me.him188.ani.datasources.api.source.MediaSource {}
 -keep class ** extends me.him188.ani.datasources.api.source.MediaSourceFactory {}

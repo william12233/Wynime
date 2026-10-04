@@ -75,6 +75,9 @@ function createWorkerEnv(marker: ReplayMarker): Env {
     BANGUMI_CALLBACK_URL: "https://broker.test/api/v1/oauth/bangumi/callback",
     APP_LINK_REDIRECT_URI: "https://broker.test/app/oauth-complete",
     CUSTOM_SCHEME_REDIRECT_URI: "ani://bangumi-oauth-callback",
+    ANDROID_APP_PACKAGES: "com.wynime.app,com.wynime.app.tv",
+    ANDROID_APP_SHA256_CERT_FINGERPRINTS:
+      "57:F2:6D:84:A3:3C:10:A7:3B:42:9E:95:20:D7:2A:93:65:4E:90:AE:1F:E8:29:8D:47:9E:E3:42:D6:38:33:BD",
   };
 }
 
@@ -102,6 +105,26 @@ afterEach(() => {
 });
 
 describe("Wynime OAuth callback and ticket flow", () => {
+  it("publishes the current phone and TV release App Links", async () => {
+    const { marker } = createMarker();
+    const response = await workerRequest(createWorkerEnv(marker), "https://broker.test/.well-known/assetlinks.json");
+
+    expect(response.status).toBe(200);
+    const statements = (await response.json()) as Array<{
+      target: { package_name: string; sha256_cert_fingerprints: string[] };
+    }>;
+    const currentStatements = statements.filter(({ target }) =>
+      ["com.wynime.app", "com.wynime.app.tv"].includes(target.package_name),
+    );
+
+    expect(currentStatements).toHaveLength(2);
+    for (const statement of currentStatements) {
+      expect(statement.target.sha256_cert_fingerprints).toEqual([
+        "57:F2:6D:84:A3:3C:10:A7:3B:42:9E:95:20:D7:2A:93:65:4E:90:AE:1F:E8:29:8D:47:9E:E3:42:D6:38:33:BD",
+      ]);
+    }
+  });
+
   it("returns to the app, exchanges a one-time ticket, and rejects callback/ticket replay", async () => {
     const { marker } = createMarker();
     const env = createWorkerEnv(marker);

@@ -93,6 +93,7 @@ fun SettingsScope.SourcePluginStoreTab(state: SourcePluginStoreState) {
             val current = installed.firstOrNull { it.installed.id == entry.id }
             val busy = entry.id in busyPluginIds
             val updateAvailable = current != null && compareSourcePluginVersions(entry.version, current.installed.version) > 0
+            val repairNeeded = current?.errorMessage != null
             TextItem(
                 title = { Text(entry.displayName) },
                 description = {
@@ -119,10 +120,17 @@ fun SettingsScope.SourcePluginStoreTab(state: SourcePluginStoreState) {
                 action = {
                     TextButton(
                         onClick = { state.install(entry) },
-                        enabled = !busy && (current == null || updateAvailable),
+                        enabled = !busy && (current == null || updateAvailable || repairNeeded),
                         modifier = Modifier.testTag(SourcePluginStoreTestTags.INSTALL_PREFIX + entry.id),
                     ) {
-                        Text(if (current == null) "安裝" else if (updateAvailable) "更新" else "已是最新")
+                        Text(
+                            when {
+                                current == null -> "安裝"
+                                repairNeeded -> "重新安裝"
+                                updateAvailable -> "更新"
+                                else -> "已是最新"
+                            },
+                        )
                     }
                 },
             )

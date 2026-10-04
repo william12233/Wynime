@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
+import java.util.zip.ZipFile
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -110,6 +111,17 @@ tasks.register("packageAndroidPlugins") {
                 output.putNextEntry(JarEntry("classes.dex").apply { time = 0L })
                 dexFile.inputStream().use { it.copyTo(output) }
                 output.closeEntry()
+            }
+            ZipFile(androidArtifact).use { zip ->
+                require(zip.getEntry("classes.dex") != null) {
+                    "Android artifact for $pluginId does not contain classes.dex"
+                }
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    require(!entries.nextElement().name.endsWith(".class")) {
+                        "Android artifact for $pluginId must not contain JVM class files"
+                    }
+                }
             }
         }
     }

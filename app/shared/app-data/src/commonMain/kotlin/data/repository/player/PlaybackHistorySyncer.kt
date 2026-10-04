@@ -15,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -23,29 +23,34 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import me.him188.ani.app.data.models.player.EpisodeHistory
+import me.him188.ani.app.data.network.WynimeCloudClient
+import me.him188.ani.app.data.network.WynimePlaybackChange
+import me.him188.ani.app.data.network.WynimePlaybackServerChange
+import me.him188.ani.app.data.network.WynimePlaybackSyncRequest
 import me.him188.ani.app.data.repository.Repository
 import me.him188.ani.app.data.repository.RepositoryException
+import me.him188.ani.app.data.repository.user.SettingsRepository
+import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.app.domain.session.SessionEvent
 import me.him188.ani.app.domain.session.SessionState
 import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.client.apis.PlaybackHistoryAniApi
-import me.him188.ani.client.models.AniDELETE
-import me.him188.ani.client.models.AniPlaybackHistoryDeleteRecord
-import me.him188.ani.client.models.AniPlaybackHistoryOp
-import me.him188.ani.client.models.AniPlaybackHistoryUpsertRecord
-import me.him188.ani.client.models.AniSyncRequest
-import me.him188.ani.client.models.AniUPSERT
 import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.ktor.ApiInvoker
 import me.him188.ani.utils.logging.info
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
 
+/**
+ * 將本機播放紀錄以 local-first 方式同步到 Wynime Cloud。
+ *
+ * 播放器只寫入 Room 和 pending-op；網路錯誤不會回傳到播放流程。Worker 以 Bangumi user、subjectId、episodeId
+ * 為複合身份，並透過 revision/baseRevision 在多裝置同時更新時做 deterministic conflict resolution。
+ */
 class PlaybackHistorySyncer(
     private val repository: EpisodePlayHistoryRepository,
-    private val api: ApiInvoker<PlaybackHistoryAniApi>,
+    private val cloudClient: WynimeCloudClient,
+    private val tokenRepository: TokenRepository,
+    private val settingsRepository: SettingsRepository,
     private val sessionStateProvider: SessionStateProvider,
     private val scope: CoroutineScope,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
@@ -59,16 +64,19 @@ class PlaybackHistorySyncer(
     )
 
     fun start() {
-        scope.launch(CoroutineName("PlaybackHistorySyncer")) {
-            sessionStateProvider.stateFlow
-                .filterIsInstance<SessionState.Valid>()
-                .first()
-            requestSync()
-
-            sessionStateProvider.eventFlow.collect { event ->
-                if (event is SessionEvent.NewLogin) {
+        scope.launch(CoroutineName("PlaybackHistorySyncer.session")) {
+            sessionStateProvider.stateFlow.collectLatest { state ->
+                if (state !is SessionState.Valid || !state.bangumiConnected) return@collectLatest
+                requestSync()
+                while (currentCoroutineContext().isActive) {
+                    delay(STEADY_SYNC_INTERVAL)
                     requestSync()
                 }
+            }
+        }
+        scope.launch(CoroutineName("PlaybackHistorySyncer.login")) {
+            sessionStateProvider.eventFlow.collect { event ->
+                if (event is SessionEvent.NewLogin) requestSync()
             }
         }
     }
@@ -78,28 +86,35 @@ class PlaybackHistorySyncer(
     }
 
     suspend fun syncOnce() = syncMutex.withLock {
-        if (sessionStateProvider.stateFlow.first() !is SessionState.Valid) return@withLock
+        val state = sessionStateProvider.stateFlow.first()
+        if (state !is SessionState.Valid || !state.bangumiConnected) return@withLock
 
+        val cloudSessionToken = tokenRepository.refreshToken.first()?.takeIf(String::isNotBlank)
+            ?: return@withLock
         val pendingOps = repository.pendingOpsFlow.first()
-        val ops = pendingOps.latestPerEpisode().map { it.toApiOp() }
-        val cursor = repository.lastSyncAtMillisFlow.first()
+        val changes = pendingOps.latestPerIdentity().mapNotNull { it.toCloudChange() }
+        val sentPendingOpIds = pendingOps
+            .filter { it.toCloudChange() != null }
+            .map { it.id }
+        val storedCursor = repository.lastSyncAtMillisFlow.first()
+        val cursor = storedCursor.takeUnless { it >= LEGACY_TIMESTAMP_THRESHOLD } ?: 0L
+        val deviceId = settingsRepository.analyticsSettings.flow.first().deviceId
 
         val response = withContext(ioDispatcher) {
-            api {
-                sync(
-                    AniSyncRequest(
-                        ops = ops,
-                        lastSyncAt = cursor.toApiInstantString(),
-                    ),
-                ).body()
-            }
+            cloudClient.syncPlayback(
+                sessionToken = cloudSessionToken,
+                request = WynimePlaybackSyncRequest(
+                    deviceId = deviceId,
+                    cursor = cursor,
+                    changes = changes,
+                ),
+            )
         }
 
         repository.applySyncResult(
-            sentPendingOpIds = pendingOps.map { it.id },
-            records = response.upserts.map { it.toEpisodeHistory() } +
-                    response.deletes.map { it.toEpisodeHistory() },
-            nextSyncAtMillis = response.nextSyncAt.toEpochMillis(),
+            sentPendingOpIds = sentPendingOpIds,
+            records = response.serverChanges.map { it.toEpisodeHistory() },
+            nextSyncAtMillis = response.cursor,
         )
     }
 
@@ -112,66 +127,50 @@ class PlaybackHistorySyncer(
         }
     }
 
-    private fun PlaybackHistoryPendingOp.toApiOp(): AniPlaybackHistoryOp {
+    private fun PlaybackHistoryPendingOp.toCloudChange(): WynimePlaybackChange? {
         return when (this) {
-            is PlaybackHistoryPendingOp.Delete -> toApiDelete()
-            is PlaybackHistoryPendingOp.Upsert -> toApiUpsert()
+            is PlaybackHistoryPendingOp.Upsert -> WynimePlaybackChange(
+                subjectId = subjectId,
+                episodeId = episodeId,
+                positionMs = positionMillis,
+                durationMs = durationMillis,
+                completed = durationMillis > 0 && positionMillis >= durationMillis,
+                lastPlayedAt = updatedAtMillis,
+                baseRevision = baseRevision,
+            )
+
+            is PlaybackHistoryPendingOp.Delete -> {
+                val subjectId = subjectId ?: return null
+                WynimePlaybackChange(
+                    subjectId = subjectId,
+                    episodeId = episodeId,
+                    positionMs = 0,
+                    durationMs = 0,
+                    completed = false,
+                    lastPlayedAt = deletedAtMillis,
+                    baseRevision = baseRevision,
+                    deleted = true,
+                )
+            }
         }
     }
 
-    private fun PlaybackHistoryPendingOp.Upsert.toApiUpsert(): AniUPSERT {
-        return AniUPSERT(
-            episodeId = episodeId.toLong(),
-            subjectId = subjectId.toLong(),
-            positionMillis = positionMillis,
-            durationMillis = durationMillis,
-            updatedAt = updatedAtMillis.toApiInstantString(),
-            episodeSort = episodeSort,
-            subjectName = subjectName,
-            subjectImageUrl = subjectImageUrl,
-            episodeName = episodeName,
-        )
-    }
-
-    private fun PlaybackHistoryPendingOp.Delete.toApiDelete(): AniDELETE {
-        return AniDELETE(
-            episodeId = episodeId.toLong(),
-            deletedAt = deletedAtMillis.toApiInstantString(),
-        )
-    }
-
-    private fun AniPlaybackHistoryUpsertRecord.toEpisodeHistory(): EpisodeHistory {
+    private fun WynimePlaybackServerChange.toEpisodeHistory(): EpisodeHistory {
         return EpisodeHistory(
-            episodeId = episodeId.toInt(),
-            positionMillis = positionMillis,
-            subjectId = subjectId.toInt(),
-            episodeSort = episodeSort,
-            subjectName = subjectName,
-            subjectImageUrl = subjectImageUrl,
-            episodeName = episodeName,
-            durationMillis = durationMillis,
-            updatedAtMillis = updatedAt.toEpochMillis(),
-            deletedAtMillis = null,
+            episodeId = episodeId,
+            positionMillis = positionMs,
+            subjectId = subjectId,
+            durationMillis = durationMs.takeIf { it > 0 },
+            updatedAtMillis = lastPlayedAt,
+            deletedAtMillis = lastPlayedAt.takeIf { deleted },
+            serverRevision = revision,
             isDirty = false,
         )
     }
 
-    private fun AniPlaybackHistoryDeleteRecord.toEpisodeHistory(): EpisodeHistory {
-        return EpisodeHistory(
-            episodeId = episodeId.toInt(),
-            positionMillis = 0,
-            updatedAtMillis = 0,
-            deletedAtMillis = deletedAt.toEpochMillis(),
-            isDirty = false,
-        )
-    }
-
-    private fun Long.toApiInstantString(): String {
-        return Instant.fromEpochMilliseconds(this).toString()
-    }
-
-    private fun String.toEpochMillis(): Long {
-        return Instant.parse(this).toEpochMilliseconds()
+    private companion object {
+        val STEADY_SYNC_INTERVAL = 60.seconds
+        const val LEGACY_TIMESTAMP_THRESHOLD = 100_000_000_000L
     }
 }
 
@@ -202,6 +201,17 @@ internal class LeadingTrailingSyncGate(
     fun request() {
         requests.trySend(Unit)
     }
+}
+
+internal fun List<PlaybackHistoryPendingOp>.latestPerIdentity(): List<PlaybackHistoryPendingOp> {
+    return groupBy { it.subjectId to it.episodeId }
+        .values
+        .map { episodeOps ->
+            episodeOps.maxWith(
+                compareBy(PlaybackHistoryPendingOp::versionMillis, PlaybackHistoryPendingOp::id),
+            )
+        }
+        .sortedBy(PlaybackHistoryPendingOp::id)
 }
 
 internal fun List<PlaybackHistoryPendingOp>.latestPerEpisode(): List<PlaybackHistoryPendingOp> {

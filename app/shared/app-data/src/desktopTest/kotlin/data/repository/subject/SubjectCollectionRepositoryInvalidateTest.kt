@@ -12,6 +12,8 @@ package me.him188.ani.app.data.repository.subject
 import androidx.paging.PagingDataEvent
 import androidx.paging.PagingDataPresenter
 import app.cash.turbine.test
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import me.him188.ani.app.data.models.bangumi.BangumiSyncState
+import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
 import me.him188.ani.app.data.models.preference.NsfwMode
 import me.him188.ani.app.data.models.subject.RatingInfo
 import me.him188.ani.app.data.models.subject.SelfRatingInfo
@@ -34,8 +37,11 @@ import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
 import me.him188.ani.app.data.models.subject.SubjectCollectionStats
 import me.him188.ani.app.data.network.AnimeScheduleService
 import me.him188.ani.app.data.network.BatchSubjectRelations
+import me.him188.ani.app.data.network.BangumiApiProvider
 import me.him188.ani.app.data.network.EpisodeServiceImpl
+import me.him188.ani.app.data.network.EpisodeService
 import me.him188.ani.app.data.network.SubjectService
+import me.him188.ani.app.data.persistent.MemoryDataStore
 import me.him188.ani.app.data.persistent.database.AniDatabase
 import me.him188.ani.app.data.persistent.database.createTestAniDatabase
 import me.him188.ani.app.data.persistent.database.dao.EpisodeCollectionEntity
@@ -43,6 +49,8 @@ import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
 import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionEntity
 import me.him188.ani.app.data.repository.episode.AnimeScheduleRepository
 import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
+import me.him188.ani.app.data.repository.user.TokenRepository
+import me.him188.ani.app.data.repository.user.TokenSave
 import me.him188.ani.app.domain.session.SessionEvent
 import me.him188.ani.app.domain.session.SessionState
 import me.him188.ani.app.domain.session.SessionStateProvider
@@ -62,9 +70,12 @@ import me.him188.ani.client.models.AniUpdateSubjectCollectionRequest
 import me.him188.ani.datasources.api.EpisodeSort
 import me.him188.ani.datasources.api.EpisodeType
 import me.him188.ani.datasources.api.PackedDate
+import me.him188.ani.datasources.api.paging.Paged
 import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import me.him188.ani.datasources.bangumi.models.BangumiEpType
 import me.him188.ani.datasources.bangumi.models.BangumiSubjectCollectionType
 import me.him188.ani.utils.ktor.ApiInvoker
+import me.him188.ani.utils.ktor.asScopedHttpClient
 import me.him188.ani.utils.platform.currentTimeMillis
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
@@ -201,6 +212,13 @@ class SubjectCollectionRepositoryInvalidateTest {
         }
     }
 
+    private val unusedEpisodeService: EpisodeService = EpisodeServiceImpl(
+        bangumiApi = BangumiApiProvider(
+            client = HttpClient(MockEngine { error("EpisodeService not expected in tests") }).asScopedHttpClient(),
+            tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+        ),
+    )
+
     private class FakeSessionStateProvider : SessionStateProvider {
         override val stateFlow: Flow<SessionState> = MutableStateFlow(SessionState.Valid(bangumiConnected = true))
         override val eventFlow: Flow<SessionEvent> = emptyFlow()
@@ -218,7 +236,7 @@ class SubjectCollectionRepositoryInvalidateTest {
         val database = createTestAniDatabase()
         try {
             val service = FakeSubjectService()
-            val episodeService = EpisodeServiceImpl(UnusedSubjectsApi)
+            val episodeService = unusedEpisodeService
             val animeScheduleRepository = AnimeScheduleRepository(AnimeScheduleService(UnusedScheduleApi))
             val getEpisodeTypeFiltersUseCase = GetEpisodeTypeFiltersUseCase { flowOf(EpisodeType.entries) }
             lateinit var repository: SubjectCollectionRepositoryImpl

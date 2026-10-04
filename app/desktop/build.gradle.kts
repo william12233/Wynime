@@ -98,9 +98,19 @@ val isRedHatBased: Boolean by lazy {
 
 compose.desktop {
     application {
+        // JDK 24+ uses generational ZGC by default and no longer accepts these
+        // legacy flags. Keep them for the supported JDK 21-23 range.
+        val legacyZgcFlagsSupported = System.getProperty("java.specification.version")
+            .toIntOrNull()
+            ?.let { it in 21..23 }
+            ?: false
+        if (legacyZgcFlagsSupported) {
+            jvmArgs(
+                "-XX:+UseZGC",
+                "-XX:+ZGenerational",
+            )
+        }
         jvmArgs(
-            "-XX:+UseZGC",
-            "-XX:+ZGenerational",
             "-XX:SoftMaxHeapSize=512m",
             "-Dorg.slf4j.simpleLogger.defaultLogLevel=TRACE",
             "-Dsun.java2d.metal=true",

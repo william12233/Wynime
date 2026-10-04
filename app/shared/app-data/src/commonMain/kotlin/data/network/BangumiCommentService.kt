@@ -15,15 +15,11 @@ import me.him188.ani.app.data.models.UserInfo
 import me.him188.ani.app.data.models.comment.CommentVoteValue
 import me.him188.ani.app.data.models.subject.SubjectReview
 import me.him188.ani.app.data.models.subject.SubjectReviewSource
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.client.apis.SubjectsAniApi
-import me.him188.ani.client.models.AniSubjectReview
-import me.him188.ani.client.models.AniSubjectReviewSource
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.datasources.api.paging.Paged
-import me.him188.ani.utils.ktor.ApiInvoker
+import me.him188.ani.datasources.bangumi.next.models.BangumiNextSubjectInterestComment
 import me.him188.ani.utils.coroutines.IO_
 import kotlin.coroutines.CoroutineContext
-import kotlin.time.Instant
 
 interface BangumiCommentService {
     /**
@@ -39,17 +35,17 @@ interface BangumiCommentService {
 }
 
 class BangumiBangumiCommentServiceImpl(
-    private val subjectsApi: ApiInvoker<SubjectsAniApi>,
+    private val bangumiApi: BangumiApiProvider,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
 ) : BangumiCommentService {
     override suspend fun getSubjectComments(subjectId: Int, offset: Int, limit: Int): Paged<SubjectReview>? {
         return withContext(ioDispatcher) {
-            val response = subjectsApi {
-                getSubjectReviews(subjectId.toLong(), offset, limit).body()
+            val response = bangumiApi.nextSubjectRequest {
+                getSubjectComments(subjectID = subjectId, limit = limit, offset = offset)
             }
-            val list = response.items.map { it.toSubjectReview() }
+            val list = response.data.map { it.toSubjectReview() }
             Paged(
-                total = response.total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+                total = response.total,
                 hasMore = offset + list.size < response.total,
                 page = list,
             )
@@ -57,40 +53,22 @@ class BangumiBangumiCommentServiceImpl(
     }
 
     override suspend fun voteSubjectReview(subjectId: Int, reviewId: String, vote: CommentVoteValue?) {
-        withContext(ioDispatcher) {
-            try {
-                subjectsApi {
-                    if (vote == null) {
-                        removeSubjectReviewVote(subjectId.toLong(), reviewId).body()
-                    } else {
-                        voteSubjectReview(subjectId.toLong(), reviewId, vote.toAniCommentVoteValue()).body()
-                    }
-                }
-            } catch (e: Exception) {
-                throw RepositoryException.wrapOrThrowCancellation(e)
-            }
-        }
+        throw RepositoryRequestError("官方 Bangumi 吐槽箱目前不提供評價投票介面")
     }
 }
 
-private fun AniSubjectReview.toSubjectReview() = SubjectReview(
-    id = id.hashCode().toLong(),
-    reviewId = id,
-    source = when (source) {
-        AniSubjectReviewSource.ANIMEKO -> SubjectReviewSource.ANI
-        AniSubjectReviewSource.BANGUMI -> SubjectReviewSource.BANGUMI
-    },
-    content = contentBbcode,
-    updatedAt = Instant.parse(updatedAt).toEpochMilliseconds(),
-    rating = rating,
-    creator = author?.let {
-        UserInfo(
-            id = it.id,
-            nickname = it.nickname,
-            username = null,
-            avatarUrl = it.avatarUrl,
-        )
-    },
-    likeCount = likeCount,
-    selfVote = selfVote?.toCommentVoteValue(),
+private fun BangumiNextSubjectInterestComment.toSubjectReview() = SubjectReview(
+    id = id.toLong(),
+    reviewId = id.toString(),
+    source = SubjectReviewSource.BANGUMI,
+    content = comment,
+    updatedAt = updatedAt.toLong() * 1000,
+    rating = rate,
+    creator = UserInfo(
+        id = user.id.toString(),
+        nickname = user.nickname,
+        username = user.username,
+        avatarUrl = user.avatar.large,
+    ),
+    likeCount = reactions.orEmpty().sumOf { it.users.size },
 )

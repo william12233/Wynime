@@ -49,6 +49,29 @@
                         android:host="subjects"
                         android:scheme="ani" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                        android:host="bangumi-oauth-callback"
+                        android:scheme="ani" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                        android:host="wynime-bangumi-broker.wzhou785.workers.dev"
+                        android:path="/app/oauth-complete"
+                        android:scheme="https" />
+            </intent-filter>
         </activity>
 
     </application>

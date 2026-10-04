@@ -100,6 +100,7 @@ class HttpMediaCacheEngine(
 
         return when (media.download) {
             is ResourceLocation.HttpStreamingFile -> mediaResolver.supports(media)
+            is ResourceLocation.SourcePluginMedia -> mediaResolver.supports(media)
             is ResourceLocation.LocalFile,
                 -> {
                 false

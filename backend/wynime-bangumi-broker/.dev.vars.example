@@ -1,0 +1,11 @@
+BANGUMI_CLIENT_ID=replace-with-bangumi-client-id
+BANGUMI_CLIENT_SECRET=replace-with-bangumi-client-secret
+SESSION_ENCRYPTION_KEY=replace-with-a-long-random-secret
+# Set this only when the Bangumi OAuth app is registered with a non-default
+# callback. The value must exactly match the URI registered at Bangumi.
+# BANGUMI_CALLBACK_URL=https://wynime-bangumi-broker.wzhou785.workers.dev/api/v1/oauth/bangumi/callback
+# Configure the exact package names and fingerprints for every installed flavor
+# using Wrangler vars. Do not commit release signing fingerprints or secrets.
+# ANDROID_APP_PACKAGES=me.him188.ani,me.him188.ani.tv
+# ANDROID_APP_SHA256_CERT_FINGERPRINTS=AA:BB:CC:...
+# The singular names remain supported for one package/fingerprint deployments.

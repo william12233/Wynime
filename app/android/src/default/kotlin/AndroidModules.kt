@@ -25,6 +25,7 @@ import me.him188.ani.app.domain.media.resolver.AndroidWebMediaResolver
 import me.him188.ani.app.domain.media.resolver.HttpStreamingMediaResolver
 import me.him188.ani.app.domain.media.resolver.LocalFileMediaResolver
 import me.him188.ani.app.domain.media.resolver.MediaResolver
+import me.him188.ani.app.domain.sourceplugin.SourcePluginMediaResolver
 import me.him188.ani.app.domain.mediasource.web.AndroidOnnxImageCaptchaRecognizer
 import me.him188.ani.app.domain.mediasource.web.captcha.AndroidCaptchaBrowserFactory
 import me.him188.ani.app.domain.mediasource.web.captcha.CaptchaBrowserFactory
@@ -92,16 +93,16 @@ fun getAndroidModules() = module {
     }
 
     factory<MediaResolver> {
+        val webResolver = AndroidWebMediaResolver(
+            get<MediaSourceManager>().webVideoMatcherLoader,
+            get<SettingsRepository>(),
+            get<WebSessionManager>(),
+        )
         MediaResolver.from(
             listOf<MediaResolver>(LocalFileMediaResolver())
+                .plus(SourcePluginMediaResolver(get(), webResolver))
                 .plus(HttpStreamingMediaResolver())
-                .plus(
-                    AndroidWebMediaResolver(
-                        get<MediaSourceManager>().webVideoMatcherLoader,
-                        get<SettingsRepository>(),
-                        get<WebSessionManager>(),
-                    ),
-                ),
+                .plus(webResolver),
         )
     }
     single<UpdateInstaller> { AndroidUpdateInstaller() }

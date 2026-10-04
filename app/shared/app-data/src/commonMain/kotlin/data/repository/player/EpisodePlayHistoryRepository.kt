@@ -40,12 +40,14 @@ data class EpisodeHistories(
 sealed class PlaybackHistoryPendingOp {
     abstract val id: Long
     abstract val episodeId: Int
+    abstract val subjectId: Int?
+    abstract val baseRevision: Long
     abstract val versionMillis: Long
 
     data class Upsert(
         override val id: Long,
         override val episodeId: Int,
-        val subjectId: Int,
+        override val subjectId: Int,
         val episodeSort: Float? = null,
         val subjectName: String? = null,
         val subjectImageUrl: String? = null,
@@ -53,6 +55,7 @@ sealed class PlaybackHistoryPendingOp {
         val positionMillis: Long,
         val durationMillis: Long,
         val updatedAtMillis: Long,
+        override val baseRevision: Long = 0,
     ) : PlaybackHistoryPendingOp() {
         override val versionMillis: Long get() = updatedAtMillis
     }
@@ -61,6 +64,8 @@ sealed class PlaybackHistoryPendingOp {
         override val id: Long,
         override val episodeId: Int,
         val deletedAtMillis: Long,
+        override val subjectId: Int? = null,
+        override val baseRevision: Long = 0,
     ) : PlaybackHistoryPendingOp() {
         override val versionMillis: Long get() = deletedAtMillis
     }
@@ -148,6 +153,8 @@ class EpisodePlayHistoryRepositoryImpl(
                 PlaybackHistoryPendingOp.Delete(
                     id = 0,
                     episodeId = history.episodeId,
+                    subjectId = history.subjectId,
+                    baseRevision = history.serverRevision,
                     deletedAtMillis = now,
                 ).toEntity()
             },
@@ -181,6 +188,8 @@ class EpisodePlayHistoryRepositoryImpl(
                 PlaybackHistoryPendingOp.Delete(
                     id = 0,
                     episodeId = history.episodeId,
+                    subjectId = history.subjectId,
+                    baseRevision = history.serverRevision,
                     deletedAtMillis = now,
                 ).toEntity()
             },
@@ -212,6 +221,7 @@ class EpisodePlayHistoryRepositoryImpl(
             durationMillis = durationMillis ?: existing?.durationMillis,
             updatedAtMillis = now,
             deletedAtMillis = null,
+            serverRevision = existing?.serverRevision ?: 0,
             isDirty = false,
         )
         logger.info { "save or update play progress $episodeHistory" }
@@ -238,7 +248,18 @@ class EpisodePlayHistoryRepositoryImpl(
         playbackHistoryDao.upsertRecords(
             records
                 .filter { it.episodeId !in pendingEpisodeIds }
-                .map { it.copy(isDirty = false).toEntity() },
+                .map { remote ->
+                    val local = playbackHistoryDao.getRecordByEpisodeId(remote.episodeId)?.toEpisodeHistory()
+                    remote.copy(
+                        subjectId = remote.subjectId ?: local?.subjectId,
+                        episodeSort = remote.episodeSort ?: local?.episodeSort,
+                        subjectName = remote.subjectName ?: local?.subjectName,
+                        subjectImageUrl = remote.subjectImageUrl ?: local?.subjectImageUrl,
+                        episodeName = remote.episodeName ?: local?.episodeName,
+                        durationMillis = remote.durationMillis ?: local?.durationMillis,
+                        isDirty = false,
+                    ).toEntity()
+                },
         )
         dataStore.updateData { current ->
             current.copy(lastSyncAtMillis = nextSyncAtMillis)
@@ -276,6 +297,7 @@ class EpisodePlayHistoryRepositoryImpl(
             positionMillis = positionMillis,
             durationMillis = durationMillis,
             updatedAtMillis = updatedAtMillis,
+            baseRevision = serverRevision,
         )
     }
 

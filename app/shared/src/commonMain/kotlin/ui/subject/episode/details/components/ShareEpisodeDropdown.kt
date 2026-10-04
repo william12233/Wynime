@@ -62,6 +62,7 @@ fun ShareEpisodeDropdown(
             val downloadText = when (download) {
                 is ResourceLocation.HttpStreamingFile -> stringResource(Lang.subject_episode_share_stream_link)
                 is ResourceLocation.LocalFile -> stringResource(Lang.subject_episode_share_local_file_link)
+                is ResourceLocation.SourcePluginMedia -> stringResource(Lang.subject_episode_share_webpage_link)
                 is ResourceLocation.WebVideo -> stringResource(Lang.subject_episode_share_webpage_link) // should not happen though
             }
             val copyDownloadText = stringResource(Lang.subject_episode_share_copy_link, downloadText)
@@ -87,7 +88,10 @@ fun ShareEpisodeDropdown(
                 },
                 leadingIcon = { Icon(Icons.Rounded.ArrowOutward, null) },
             )
-            if (LocalPlatform.current.isAndroid() && download !is ResourceLocation.WebVideo) {
+            if (LocalPlatform.current.isAndroid() &&
+                download !is ResourceLocation.WebVideo &&
+                download !is ResourceLocation.SourcePluginMedia
+            ) {
                 DropdownMenuItem(
                     text = { Text(openWithOtherAppText) },
                     onClick = {

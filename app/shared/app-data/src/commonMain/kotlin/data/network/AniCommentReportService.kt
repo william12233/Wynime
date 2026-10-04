@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import me.him188.ani.app.data.models.comment.CommentReportReason
 import me.him188.ani.app.data.models.comment.CommentReportTargetType
 import me.him188.ani.app.data.repository.RepositoryException
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.client.apis.CommentsAniApi
 import me.him188.ani.client.models.AniCommentReportReason
 import me.him188.ani.client.models.AniCommentReportTargetType
@@ -23,7 +24,7 @@ import me.him188.ani.utils.ktor.ApiInvoker
 import kotlin.coroutines.CoroutineContext
 
 open class AniCommentReportService(
-    private val commentsApi: ApiInvoker<CommentsAniApi>,
+    private val commentsApi: ApiInvoker<CommentsAniApi>? = null,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
 ) {
     /**
@@ -43,8 +44,9 @@ open class AniCommentReportService(
         subjectId: Long? = null,
         episodeId: Long? = null,
     ) = withContext(ioDispatcher) {
+        val api = commentsApi ?: throw RepositoryRequestError("目前未提供官方 Bangumi 留言檢舉介面")
         try {
-            commentsApi.invoke {
+            api.invoke {
                 createCommentReport(
                     AniCreateCommentReportRequest(
                         targetType = targetType.toAniCommentReportTargetType(),

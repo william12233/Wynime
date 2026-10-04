@@ -217,6 +217,12 @@ class MediaSourceMediaFetcher(
                     .flatMapMerge { sources ->
                         sources.results.map { it.media }
                     }
+                    .onEach { media ->
+                        logger.info {
+                            "Media source result emitted: source=$mediaSourceId mediaId=${media.mediaId} " +
+                                "episodeRange=${media.episodeRange}"
+                        }
+                    }
                     .catch { exception ->
                         terminalState = when {
                             exception is BlockedException -> when (val reason = exception.reason) {

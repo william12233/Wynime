@@ -10,13 +10,16 @@
     "ArrayInDataClass",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport",
+    "UnusedImport"
 )
 
 package me.him188.ani.datasources.bangumi.next.models
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import me.him188.ani.datasources.bangumi.next.models.BangumiNextCollectionType
+
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
  * 
@@ -29,7 +32,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 
-data class BangumiNextCollectSubject(
+data class BangumiNextCollectSubject (
 
     /* 评价 */
     @SerialName(value = "comment") val comment: kotlin.String? = null,

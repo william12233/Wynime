@@ -28,7 +28,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.him188.ani.android.BuildConfig
-import me.him188.ani.app.data.repository.user.QrLoginRepository
+import me.him188.ani.app.domain.session.auth.OAuthCallbackRegistry
 import me.him188.ani.app.navigation.AniNavigator
 import me.him188.ani.app.platform.AniComponentActivity
 import me.him188.ani.app.platform.rememberPlatformWindow
@@ -58,16 +58,36 @@ class MainActivity : AniComponentActivity() {
 
     private fun handleStartIntent(intent: Intent) {
         val data = intent.data ?: return
+        if (data.scheme == "https" &&
+            data.host == OAUTH_CALLBACK_HOST &&
+            data.path == OAUTH_CALLBACK_PATH
+        ) {
+            publishOAuthCallback(data.getQueryParameter("state"), data.getQueryParameter("ticket"), data.getQueryParameter("error"))
+            return
+        }
+
         if (data.scheme != "ani") return
         when (data.host) {
+            "bangumi-oauth-callback" -> {
+                publishOAuthCallback(data.getQueryParameter("state"), data.getQueryParameter("ticket"), data.getQueryParameter("error"))
+            }
+
             "subjects" -> {
                 val id = data.pathSegments.getOrNull(0)?.toIntOrNull() ?: return
                 navigateWhenReady("subject details") { navigateSubjectDetails(id, placeholder = null) }
             }
 
-            "qr-login" -> {
-                val requestId = QrLoginRepository.parseRequestId(data.toString()) ?: return
-                navigateWhenReady("QR login confirm") { navigateQrLoginConfirm(requestId) }
+        }
+    }
+
+    private fun publishOAuthCallback(state: String?, ticket: String?, error: String?) {
+        if (state.isNullOrBlank()) return
+        if (ticket.isNullOrBlank() && error.isNullOrBlank()) return
+        lifecycleScope.launch {
+            try {
+                OAuthCallbackRegistry.publish(state, ticket, error)
+            } catch (e: Exception) {
+                logger.error(e) { "Failed to accept OAuth callback" }
             }
         }
     }
@@ -139,5 +159,10 @@ class MainActivity : AniComponentActivity() {
                 }
             }
         }
+    }
+
+    private companion object {
+        const val OAUTH_CALLBACK_HOST = "wynime-bangumi-broker.wzhou785.workers.dev"
+        const val OAUTH_CALLBACK_PATH = "/app/oauth-complete"
     }
 }

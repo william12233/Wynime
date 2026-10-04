@@ -28,24 +28,28 @@ import me.him188.ani.utils.logging.error
 import kotlin.coroutines.CoroutineContext
 
 class TrendsRepository(
-    private val trendsApi: ApiInvoker<TrendsAniApi>,
+    private val trendsApi: ApiInvoker<TrendsAniApi>? = null,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_
 ) : Repository() {
     suspend fun getTrendsInfo(): TrendsInfo {
         return withContext(ioDispatcher) {
-            trendsApi {
+            val api = trendsApi ?: return@withContext TrendsInfo(emptyList())
+            api {
                 getTrends().body().toTrendsInfo()
             }
         }
     }
 
-    // From animeko server
     fun trendsInfoPager(): Flow<PagingData<TrendsInfo>> {
+        val api = trendsApi
+        if (api == null) {
+            return kotlinx.coroutines.flow.flowOf(PagingData.from(listOf(TrendsInfo(emptyList()))))
+        }
         return Pager(defaultPagingConfig) {
             SinglePagePagingSource<Unit, TrendsInfo> {
                 runWrappingExceptionAsLoadResult<Unit, TrendsInfo> {
                     val trendsInfo = withContext(ioDispatcher) {
-                        trendsApi {
+                        api {
                             getTrends().body().toTrendsInfo()
                         }
                     }

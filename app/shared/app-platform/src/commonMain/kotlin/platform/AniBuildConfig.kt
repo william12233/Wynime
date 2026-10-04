@@ -21,8 +21,6 @@ interface AniBuildConfig {
     val versionName: String
     val isDebug: Boolean
     val sentryDsn: String
-    val overrideAniApiServer: String
-        get() = ""
 
     val distroChannel: String
 

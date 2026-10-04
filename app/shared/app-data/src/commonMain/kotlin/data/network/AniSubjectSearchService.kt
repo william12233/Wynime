@@ -20,19 +20,17 @@ import me.him188.ani.app.data.models.subject.Tag
 import me.him188.ani.app.domain.mediasource.MediaListFilters
 import me.him188.ani.app.domain.search.SearchSort
 import me.him188.ani.app.domain.search.SubjectType
-import me.him188.ani.client.apis.SubjectsAniApi
-import me.him188.ani.client.models.AniNsfwFilter
-import me.him188.ani.client.models.AniSubjectSearch
-import me.him188.ani.client.models.AniSubjectSearchField
-import me.him188.ani.client.models.AniSubjectSearchSortBy
 import me.him188.ani.datasources.api.PackedDate
+import me.him188.ani.datasources.bangumi.models.BangumiSearchSubjectsRequest
+import me.him188.ani.datasources.bangumi.models.BangumiSearchSubjectsRequestFilter
+import me.him188.ani.datasources.bangumi.models.BangumiSubjectType
+import me.him188.ani.datasources.bangumi.models.BangumiTag
 import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.ktor.ApiInvoker
 import kotlin.coroutines.CoroutineContext
 
 
 class AniSubjectSearchService(
-    private val subjectApi: ApiInvoker<SubjectsAniApi>,
+    private val bangumiApi: BangumiApiProvider,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
 ) {
     suspend fun searchSubjects(
@@ -44,31 +42,31 @@ class AniSubjectSearchService(
         filters: SubjectSearchFilters? = null,
         fields: List<SubjectSearchField>? = null,
     ): List<BatchSubjectDetails> = withContext(ioDispatcher) {
-        val result = subjectApi.invoke {
+        val result = bangumiApi.request {
             searchSubjects(
-                q = keyword,
+                bangumiSearchSubjectsRequest = BangumiSearchSubjectsRequest(
+                    keyword = keyword,
+                    sort = when (sort) {
+                        SearchSort.MATCH -> BangumiSearchSubjectsRequest.Sort.MATCH
+                        SearchSort.RANK -> BangumiSearchSubjectsRequest.Sort.RANK
+                        SearchSort.COLLECTION -> BangumiSearchSubjectsRequest.Sort.HEAT
+                        SearchSort.DATE -> BangumiSearchSubjectsRequest.Sort.MATCH
+                    },
+                    filter = BangumiSearchSubjectsRequestFilter(
+                        type = listOf(BangumiSubjectType.Anime),
+                        tag = filters?.tags,
+                        airDate = filters?.airDates,
+                        rating = filters?.ratings,
+                        rank = filters?.ranks,
+                        nsfw = filters?.nsfw,
+                    ),
+                ),
                 offset = offset,
                 limit = limit,
-                tags = filters?.tags,
-                airDates = filters?.airDates,
-                ratings = filters?.ratings,
-                ranks = filters?.ranks,
-                includeNsfw = when (filters?.nsfw) {
-                    true -> AniNsfwFilter.ONLY
-                    false -> AniNsfwFilter.EXCLUDE
-                    null -> AniNsfwFilter.INCLUDE
-                },
-                sortBy = when (sort) {
-                    SearchSort.MATCH -> AniSubjectSearchSortBy.RELEVANCE
-                    SearchSort.RANK -> AniSubjectSearchSortBy.RATING_DESC
-                    SearchSort.COLLECTION -> AniSubjectSearchSortBy.COLLECTION_DESC
-                    SearchSort.DATE -> AniSubjectSearchSortBy.AIR_DATE_DESC
-                },
-                fields = fields?.map { it.toAniField() },
             )
-        }.body()
+        }
 
-        result.items.map { search -> search.toBatchSubjectDetails() }
+        result.data.orEmpty().map { search -> search.toBatchSubjectDetails() }
     }
 
     companion object {
@@ -85,7 +83,8 @@ class AniSubjectSearchService(
         }
     }
 
-    private fun AniSubjectSearch.toBatchSubjectDetails(): BatchSubjectDetails {
+    private fun me.him188.ani.datasources.bangumi.models.BangumiSearchSubjects200ResponseDataInner
+        .toBatchSubjectDetails(): BatchSubjectDetails {
         return BatchSubjectDetails(
             subjectInfo = SubjectInfo(
                 subjectId = this.id.toInt(),
@@ -93,39 +92,29 @@ class AniSubjectSearchService(
                 name = this.name,
                 nameCn = this.nameCn,
                 summary = this.summary,
-                nsfw = this.nsfw,
-                imageLarge = this.imageLarge,
-                totalEpisodes = this.mainEpisodeCount,
-                airDate = PackedDate.parseFromDate(this.airDate),
-                tags = this.tags.map { Tag(it.name, it.count) },
+                nsfw = false,
+                imageLarge = this.image,
+                totalEpisodes = 0,
+                airDate = this.date?.let(PackedDate::parseFromDate) ?: PackedDate.Invalid,
+                tags = this.tags.map(BangumiTag::toTag),
                 aliases = emptyList(),
-                ratingInfo = RatingInfo(this.rank ?: 0, this.ratingTotal, RatingCounts.Zero, this.score ?: ""),
+                ratingInfo = RatingInfo(
+                    rank = this.rank ?: 0,
+                    total = 0,
+                    count = RatingCounts.Zero,
+                    score = this.score?.toString().orEmpty(),
+                ),
                 collectionStats = SubjectCollectionStats.Zero,
                 completeDate = PackedDate.Invalid,
 
                 ),
-            mainEpisodeCount = this.mainEpisodeCount,
+            mainEpisodeCount = 0,
             lightSubjectRelations = LightSubjectRelations(
-                lightRelatedPersonInfoList = this.lightRelatedPersonInfoList.map { pi ->
-                    LightRelatedPersonInfo(pi.name, PersonPosition(pi.position))
-                },
+                lightRelatedPersonInfoList = emptyList(),
                 lightRelatedCharacterInfoList = emptyList(),
             ),
         )
     }
 }
 
-private fun SubjectSearchField.toAniField(): AniSubjectSearchField = when (this) {
-    SubjectSearchField.NAME -> AniSubjectSearchField.NAME
-    SubjectSearchField.SUMMARY -> AniSubjectSearchField.SUMMARY
-    SubjectSearchField.IMAGE_LARGE -> AniSubjectSearchField.IMAGE_LARGE
-    SubjectSearchField.NSFW -> AniSubjectSearchField.NSFW
-    SubjectSearchField.AIR_DATE -> AniSubjectSearchField.AIR_DATE
-    SubjectSearchField.SCORE -> AniSubjectSearchField.SCORE
-    SubjectSearchField.RANK -> AniSubjectSearchField.RANK
-    SubjectSearchField.RATING_TOTAL -> AniSubjectSearchField.RATING_TOTAL
-    SubjectSearchField.FAVORITE -> AniSubjectSearchField.FAVORITE
-    SubjectSearchField.TAGS -> AniSubjectSearchField.TAGS
-    SubjectSearchField.MAIN_EPISODE_COUNT -> AniSubjectSearchField.MAIN_EPISODE_COUNT
-    SubjectSearchField.LIGHT_RELATED_PERSON_INFO -> AniSubjectSearchField.LIGHT_RELATED_PERSON_INFO
-}
+private fun BangumiTag.toTag() = Tag(name, count)

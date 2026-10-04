@@ -10,7 +10,7 @@
     "ArrayInDataClass",
     "EnumEntryName",
     "RemoveRedundantQualifierName",
-    "UnusedImport",
+    "UnusedImport"
 )
 
 package me.him188.ani.datasources.bangumi.next.models
@@ -60,10 +60,10 @@ enum class BangumiNextSubjectSort(val value: kotlin.String) {
          * Returns a valid [BangumiNextSubjectSort] for [data], null otherwise.
          */
         fun decode(data: kotlin.Any?): BangumiNextSubjectSort? = data?.let {
-            val normalizedData = "$it".lowercase()
-            values().firstOrNull { value ->
-                it == value || normalizedData == "$value".lowercase()
-            }
+          val normalizedData = "$it".lowercase()
+          values().firstOrNull { value ->
+            it == value || normalizedData == "$value".lowercase()
+          }
         }
     }
 }

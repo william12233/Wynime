@@ -40,7 +40,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.media.SelectorMediaSourceEpisodeCacheRepository
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
 import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.domain.episode.EpisodeCompletionContext.isKnownCompleted
@@ -89,7 +88,6 @@ class TvEpisodeViewModel(
     private val episodeCollectionRepository: EpisodeCollectionRepository,
     private val subjectCollectionRepository: SubjectCollectionRepository,
     private val settingsRepository: SettingsRepository,
-    private val selectorEpisodeCacheRepository: SelectorMediaSourceEpisodeCacheRepository,
     private val webSessionManager: WebSessionManager,
 ) : EpisodeViewModel(subjectId, initialEpisodeId, initialIsFullscreen = true, context = context, koin = koin) {
     private val resolvingCaptchaSources = MutableStateFlow<Set<String>>(emptySet())
@@ -524,12 +522,10 @@ class TvEpisodeViewModel(
         }
         val bundle = session.fetchSelectFlow.filterNotNull().first()
         if (instanceId == null) {
-            selectorEpisodeCacheRepository.clearByRequestedSubject(subjectId)
             bundle.mediaFetchSession.restartAll()
         } else {
             val source =
                 bundle.mediaFetchSession.mediaSourceResults.find { it.instanceId == instanceId } ?: return@runAction
-            selectorEpisodeCacheRepository.clearByRequestedSubjectAndSource(subjectId, source.mediaSourceId)
             source.restart()
         }
     }
@@ -543,7 +539,6 @@ class TvEpisodeViewModel(
         resolvingCaptchaSources.update { it + instanceId }
         try {
             if (webSessionManager.solve(request, interactive = true) == SolveOutcome.Solved) {
-                selectorEpisodeCacheRepository.clearByRequestedSubjectAndSource(subjectId, source.mediaSourceId)
                 source.restart()
             }
         } finally {
@@ -553,7 +548,6 @@ class TvEpisodeViewModel(
 
     @OptIn(UnsafeEpisodeSessionApi::class)
     private fun retryPlayback(requestId: Long) = runAction {
-        selectorEpisodeCacheRepository.clearByRequestedSubject(subjectId)
         fetchPlayState.switchEpisode(currentEpisodeIdFlow.value)
         events.send(TvEpisodeEvent.PlaybackRetried(requestId))
     }

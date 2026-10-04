@@ -26,7 +26,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -44,10 +43,10 @@ import me.him188.ani.app.domain.media.resolver.HttpStreamingMediaResolver
 import me.him188.ani.app.domain.media.resolver.IosWebMediaResolver
 import me.him188.ani.app.domain.media.resolver.LocalFileUriMediaResolver
 import me.him188.ani.app.domain.media.resolver.MediaResolver
+import me.him188.ani.app.domain.sourceplugin.SourcePluginMediaResolver
 import me.him188.ani.app.domain.mediasource.web.captcha.CaptchaBrowserFactory
 import me.him188.ani.app.domain.mediasource.web.captcha.ImageCaptchaRecognizer
 import me.him188.ani.app.domain.mediasource.web.captcha.UnsupportedCaptchaBrowserFactory
-import me.him188.ani.app.data.repository.user.QrLoginRepository
 import me.him188.ani.app.navigation.AniNavigator
 import me.him188.ani.app.navigation.BrowserNavigator
 import me.him188.ani.app.navigation.IosBrowserNavigator
@@ -66,6 +65,7 @@ import me.him188.ani.app.platform.getCommonKoinModule
 import me.him188.ani.app.platform.rememberPlatformWindow
 import me.him188.ani.app.platform.startCommonKoinModule
 import me.him188.ani.app.platform.trace.recordAppStart
+import me.him188.ani.app.domain.session.auth.OAuthCallbackRegistry
 import me.him188.ani.app.tools.update.IosUpdateInstaller
 import me.him188.ani.app.tools.update.UpdateInstaller
 import me.him188.ani.app.ui.foundation.TestGlobalLifecycleOwner
@@ -118,14 +118,14 @@ class AniIosApplication(
      */
     @Suppress("unused") // used in Swift
     fun openUrl(url: String): Boolean {
-        // 扫码登录: 系统相机扫描电视上的二维码后, 网页跳转到 ani://qr-login?requestId=...
-        val qrLoginRequestId = QrLoginRepository.parseRequestId(url) ?: return false
+        val parsed = runCatching { io.ktor.http.Url(url) }.getOrNull() ?: return false
+        if (parsed.protocol.name != "ani" || parsed.host != "bangumi-oauth-callback") return false
+        val state = parsed.parameters["state"] ?: return false
+        val ticket = parsed.parameters["ticket"]
+        val error = parsed.parameters["error"]
+        if (ticket.isNullOrBlank() && error.isNullOrBlank()) return false
         scope.launch(Dispatchers.Main) {
-            if (!aniNavigator.isBackStackReady()) {
-                aniNavigator.awaitBackStack()
-                delay(1000) // 等待初始化好, 否则跳转可能无效
-            }
-            aniNavigator.navigateQrLoginConfirm(qrLoginRequestId)
+            OAuthCallbackRegistry.publish(state, ticket, error)
         }
         return true
     }
@@ -340,16 +340,16 @@ fun getIosModules(
 
 
     factory<MediaResolver> {
+        val webResolver = IosWebMediaResolver(
+            get<MediaSourceManager>().webVideoMatcherLoader,
+            context,
+            get<SettingsRepository>(),
+        )
         MediaResolver.from(
             listOf<MediaResolver>(LocalFileUriMediaResolver())
+                .plus(SourcePluginMediaResolver(get(), webResolver))
                 .plus(HttpStreamingMediaResolver())
-                .plus(
-                    IosWebMediaResolver(
-                        get<MediaSourceManager>().webVideoMatcherLoader,
-                        context,
-                        get<SettingsRepository>(),
-                    ),
-                ),
+                .plus(webResolver),
         )
     }
     single<UpdateInstaller> { IosUpdateInstaller }

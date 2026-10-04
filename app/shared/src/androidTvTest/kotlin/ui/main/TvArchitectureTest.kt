@@ -209,7 +209,7 @@ class TvArchitectureTest {
             "TvScheduleViewModel" to "ScheduleViewModel",
             "TvCollectionViewModel" to "UserCollectionsViewModel",
             "TvSearchViewModel" to "SearchViewModel",
-            "TvLoginViewModel" to "EmailLoginViewModel",
+            "TvLoginViewModel" to "AbstractViewModel",
             "TvSettingsViewModel" to "SettingsViewModel",
             "TvSubjectDetailsViewModel" to "SubjectDetailsViewModel",
             "TvPeopleDetailsViewModel" to "PeopleDetailsViewModel",

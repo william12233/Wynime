@@ -27,7 +27,7 @@ import kotlin.time.Clock
  * Client-side helper for AutoSkip reporting and querying rules.
  */
 class AutoSkipRepository(
-    private val api: ApiInvoker<EpisodesAniApi>,
+    private val api: ApiInvoker<EpisodesAniApi>? = null,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
 ) : Repository() {
 
@@ -39,6 +39,7 @@ class AutoSkipRepository(
      * Client-side throttling: at most 2 reports per episode, and at most once per 10 minutes per episode.
      */
     suspend fun reportSkip(episodeId: Int, mediaSourceId: String, timeSeconds: Int, timeMillis: Long) = lock.withLock {
+        val api = api ?: return@withLock
         val now = Clock.System.now().toEpochMilliseconds()
         val state = reportStates.getOrPut(episodeId) { EpisodeReportState(0, 0L) }
         if (state.count >= 2) return@withLock
@@ -60,6 +61,10 @@ class AutoSkipRepository(
      * Fetch autoskip rules for an episode. Emits once.
      */
     fun rulesFlow(episodeId: Int): Flow<List<Long>> = flow {
+        val api = api ?: run {
+            emit(emptyList())
+            return@flow
+        }
         val rules = withContext(ioDispatcher) {
             api { this.getAutoSkipRules(episodeId.toLong()).body().rules.map { it.timeMs } }
         }

@@ -18,7 +18,7 @@ import me.him188.ani.app.data.models.subject.SubjectSeriesInfo
 import me.him188.ani.app.data.repository.RepositoryException
 import me.him188.ani.app.data.repository.RepositoryUnknownException
 import me.him188.ani.app.domain.media.selector.MediaSelectorContext.Companion.Initial
-import me.him188.ani.app.domain.mediasource.codec.MediaSourceTier
+import me.him188.ani.app.domain.mediasource.MediaSourceTier
 import me.him188.ani.utils.coroutines.retryWithBackoffDelay
 import me.him188.ani.utils.logging.error
 import me.him188.ani.utils.logging.logger

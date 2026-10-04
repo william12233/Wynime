@@ -96,7 +96,7 @@ sealed class HttpClientProvider {
  */
 fun HttpClientProvider.get(
     userAgent: ScopedHttpClientUserAgent = ScopedHttpClientUserAgent.ANI,
-    serverListConfig: ServerListFeatureConfig = ServerListFeatureConfig.Default,
+    serverListConfig: ServerListFeatureConfig = ServerListFeatureConfig(aniServerRules = null),
     useAniToken: Boolean = false,
     useSse: Boolean = false,
     distroChannel: String? = currentAniBuildConfig.distroChannel,
@@ -109,7 +109,7 @@ fun HttpClientProvider.get(
         add(ConvertSendCountExceedExceptionFeature.withValue(true))
         add(UseAniTokenFeature.withValue(useAniToken))
         add(SseFeature.withValue(useSse))
-        add(VersionExpiryFeature.withValue(true))
+        add(VersionExpiryFeature.withValue(false))
         add(DistributionChannelFeature.withValue { distroChannel })
         if (cookieJar != null) add(CookieJarFeature.withValue(cookieJar))
         if (identityRegistry != null) add(WebSourceIdentityFeature.withValue(identityRegistry))

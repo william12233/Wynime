@@ -19,17 +19,15 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.repository.media.MediaSourceSubscriptionRepository
 import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
+import me.him188.ani.app.domain.sourceplugin.SourcePluginRegistry
 import me.him188.ani.app.ui.settings.SettingsViewModel
 import me.him188.ani.app.ui.settings.tabs.about.mergeOpenSourceLibraries
 
 @Stable
 class TvSettingsViewModel(
     private val settings: SettingsRepository,
-    private val sourceManager: MediaSourceManager,
-    private val subscriptions: MediaSourceSubscriptionRepository,
+    private val sourcePlugins: SourcePluginRegistry,
     private val loadLibraries: suspend () -> List<ByteArray>,
 ) : SettingsViewModel() {
     private val eventsChannel = Channel<TvSettingsEvent>(Channel.BUFFERED)
@@ -50,20 +48,25 @@ class TvSettingsViewModel(
     ) { state, preference, selector, resolver ->
         state.copy(preference = preference, selector = selector, resolver = resolver)
     }
-    private val sources = sourceManager.allInstances.map { instances ->
-        instances.filterNot { sourceManager.isLocal(it.factoryId) }.map {
+    private val sources = sourcePlugins.states.map { plugins ->
+        plugins.map { plugin ->
+            val manifest = plugin.installed.manifest
             TvSettingsSource(
-                it.instanceId, it.source.info.displayName, it.source.info.description.orEmpty(), it.source.info.websiteUrl.orEmpty(),
-                it.isEnabled, it.factoryId.value, it.config.subscriptionId,
+                id = plugin.installed.id,
+                name = plugin.metadata?.displayName ?: manifest.displayName,
+                description = plugin.metadata?.description ?: manifest.description,
+                url = plugin.metadata?.website ?: manifest.website,
+                enabled = plugin.installed.enabled && plugin.errorMessage == null,
+                factory = "source-plugin",
+                subscription = null,
             )
         }
     }
     private val settingsFlow = combine(
-        preferences, sources, subscriptions.flow,
-    ) { state, sources, subscriptions ->
+        preferences, sources,
+    ) { state, sources ->
         state.copy(
             loaded = true, sources = sources,
-            subscriptions = subscriptions.map { TvSettingsSubscription(it.subscriptionId, it.url, it.enabled) },
         )
     }
     val uiState = combine(
@@ -88,13 +91,7 @@ class TvSettingsViewModel(
                     is TvSettingsIntent.Preference -> settings.defaultMediaPreference.update(intent.update)
                     is TvSettingsIntent.Selector -> settings.mediaSelectorSettings.update(intent.update)
                     is TvSettingsIntent.Resolver -> settings.videoResolverSettings.update(intent.update)
-                    is TvSettingsIntent.SourceEnabled -> sourceManager.setEnabled(intent.id, intent.enabled)
-                    is TvSettingsIntent.SubscriptionEnabled -> subscriptions.update(intent.id) { current ->
-                        sourceManager.setEnabled(
-                            sourceManager.getListBySubscriptionId(intent.id).map { it.instanceId }, intent.enabled,
-                        )
-                        current.copy(enabled = intent.enabled)
-                    }
+                    is TvSettingsIntent.SourceEnabled -> sourcePlugins.setEnabled(intent.id, intent.enabled)
                     TvSettingsIntent.LoadLibraries -> readLibraries()
                     TvSettingsIntent.Retry -> Unit
                 }

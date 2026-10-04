@@ -42,11 +42,35 @@ sealed class ResourceLocation {
          * Web 页面地址
          */
         override val uri: String,
+        /** Headers required for the initial page request, such as Referer or a short-lived token. */
+        val headers: Map<String, String> = emptyMap(),
     ) : ResourceLocation() {
         init {
             require(uri.startsWith("https://") || uri.startsWith("http://")) {
                 "WebVideo uri must start with 'http://' or 'https://', but was $uri"
             }
+        }
+    }
+
+    /**
+     * A stable reference to a runtime source plugin. The plugin resolves the short-lived media
+     * URL only when playback or download starts.
+     */
+    @Serializable
+    data class SourcePluginMedia(
+        val pluginId: String,
+        val subjectId: String,
+        val channelId: String,
+        val episodeId: String,
+        /** Original page URL, used for diagnostics and browser fallback. */
+        override val uri: String,
+    ) : ResourceLocation() {
+        init {
+            require(pluginId.isNotBlank()) { "pluginId must not be blank" }
+            require(subjectId.isNotBlank()) { "subjectId must not be blank" }
+            require(channelId.isNotBlank()) { "channelId must not be blank" }
+            require(episodeId.isNotBlank()) { "episodeId must not be blank" }
+            require(uri.isNotBlank()) { "SourcePluginMedia uri must not be blank" }
         }
     }
 

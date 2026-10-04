@@ -18,12 +18,13 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.onEach
 import me.him188.ani.app.data.models.preference.MediaPreference.Companion.ANY_FILTER
 import me.him188.ani.app.domain.media.fetch.MediaFetchSession
 import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
 import me.him188.ani.app.domain.media.fetch.isFinal
 import me.him188.ani.app.domain.media.selector.MatchMetadata.SubjectMatchKind
-import me.him188.ani.app.domain.mediasource.codec.MediaSourceTier
+import me.him188.ani.app.domain.mediasource.MediaSourceTier
 import me.him188.ani.datasources.api.Media
 import me.him188.ani.datasources.api.source.MediaSourceKind
 import me.him188.ani.utils.logging.info
@@ -78,6 +79,11 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
             ) { snapshot, phase, currentSelection ->
                 if (currentSelection != expectedSelection) Decision.Exhausted
                 else decide(snapshot, config, phase)
+            }.onEach { decision ->
+                logger.info {
+                    "Auto select decision=$decision stage=$stage selected=${mediaSelector.selected.value} " +
+                        "sources=${session.mediaSourceResults.map { it.mediaSourceId }}"
+                }
             }.first { decision ->
                 when (decision) {
                     Decision.StartFallback -> {

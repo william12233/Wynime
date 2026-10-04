@@ -17,9 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.ServerListFeature
-import me.him188.ani.app.domain.foundation.ServerListFeatureConfig
-import me.him188.ani.app.domain.foundation.withValue
+import me.him188.ani.app.domain.foundation.get
 import me.him188.ani.app.trace.ErrorReport
 import me.him188.ani.datasources.bangumi.BangumiClientImpl
 import me.him188.ani.utils.analytics.Analytics
@@ -45,13 +43,10 @@ class ProxyTester(
     private val proxyTestRestarter = FlowRestarter()
 
     private val connectionTester = clientProvider.configurationFlow.map {
-        val client = clientProvider.get(
-            setOf(ServerListFeature.withValue(ServerListFeatureConfig.Default)),
-        )
+        val client = clientProvider.get()
 
         ServiceConnectionTesters.createDefault(
             bangumiClient = BangumiClientImpl(client),
-            aniClient = client,
             serviceIds = serviceIds,
         )
     }

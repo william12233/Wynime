@@ -15,8 +15,11 @@
 
 package me.him188.ani.datasources.bangumi.models
 
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import me.him188.ani.datasources.bangumi.models.BangumiSubjectType
+
+import kotlinx.serialization.*
+import kotlinx.serialization.descriptors.*
+import kotlinx.serialization.encoding.*
 
 /**
  * 不同条件之间是 `且` 的关系
@@ -30,7 +33,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 
-data class BangumiSearchSubjectsRequestFilter(
+data class BangumiSearchSubjectsRequestFilter (
 
     /* 条目类型，参照 `SubjectType` enum，多值之间为 `或` 的关系。 */
     @SerialName(value = "type") val type: kotlin.collections.List<BangumiSubjectType>? = null,

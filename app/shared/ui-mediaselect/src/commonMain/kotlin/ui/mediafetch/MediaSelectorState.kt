@@ -196,7 +196,9 @@ class MediaSelectorState(
         // 属于其他集的资源不展示, 否则每集都会看到整季的资源.
         val visibleCandidates = filteredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
         val visiblePreferred = preferredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
-        val (groupsExcluded, groupsIncluded) = MediaGrouper.buildGroups(visiblePreferred).partition { it.isExcluded }
+        // Detailed mode needs the complete filtered list so it can explain why a resource is
+        // excluded. Simple mode uses the exact-match list below and never mixes seasons.
+        val (groupsExcluded, groupsIncluded) = MediaGrouper.buildGroups(visibleCandidates).partition { it.isExcluded }
         Presentation(
             visibleCandidates,
             visiblePreferred.mapNotNull { it.result },
@@ -265,10 +267,7 @@ class MediaSelectorState(
                         // Filter medias that are from this source
                         it.result?.mediaSourceId == source.mediaSourceId // null result gives `false` and is hence excluded
                     }
-                    .filter {
-                        // Take only exact matches
-                        it.isPerfectMatch()
-                    }
+                    .filter { it.isPerfectMatch() }
                     .mapNotNull { it.result }
 
                 createWebSourceFlow(

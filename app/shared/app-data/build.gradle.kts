@@ -46,6 +46,7 @@ kotlin {
         api(projects.utils.jsonpath)
         api(projects.utils.httpDownloader)
         api(projects.utils.serialization)
+        api(projects.source.pluginApi)
 
         api(libs.datastore.core) // Data Persistence
         api(libs.datastore.preferences.core) // Preferences

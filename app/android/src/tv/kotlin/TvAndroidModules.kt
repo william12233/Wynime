@@ -12,10 +12,12 @@ package me.him188.ani.android.tv
 import android.app.Activity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import me.him188.ani.android.navigation.AndroidBrowserNavigator
 import me.him188.ani.app.domain.media.resolver.AndroidWebMediaResolver
 import me.him188.ani.app.domain.media.resolver.HttpStreamingMediaResolver
 import me.him188.ani.app.domain.media.resolver.LocalFileMediaResolver
 import me.him188.ani.app.domain.media.resolver.MediaResolver
+import me.him188.ani.app.domain.sourceplugin.SourcePluginMediaResolver
 import me.him188.ani.app.domain.media.fetch.MediaSourceManager
 import me.him188.ani.app.domain.mediasource.web.AndroidOnnxImageCaptchaRecognizer
 import me.him188.ani.app.domain.mediasource.web.captcha.AndroidCaptchaBrowserFactory
@@ -24,7 +26,6 @@ import me.him188.ani.app.domain.mediasource.web.captcha.ImageCaptchaRecognizer
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
 import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.navigation.BrowserNavigator
-import me.him188.ani.app.navigation.NoopBrowserNavigator
 import me.him188.ani.app.platform.AppTerminator
 import me.him188.ani.app.platform.ContextMP
 import me.him188.ani.app.platform.findActivity
@@ -40,8 +41,7 @@ import kotlin.system.exitProcess
  * 服务于播放取源, 而非评论发送 (评论发送的 TurnstileState 才是裁剪对象).
  */
 fun getTvAndroidModules() = module {
-    // M2: 换成二维码降级实现 (弹对话框展示 URL 二维码, §6.1)
-    single<BrowserNavigator> { NoopBrowserNavigator }
+    single<BrowserNavigator> { AndroidBrowserNavigator() }
 
     // Web 数据源解析链 (取源播放必需, §8.1)
     single<CaptchaBrowserFactory> { AndroidCaptchaBrowserFactory(androidContext()) }
@@ -49,16 +49,16 @@ fun getTvAndroidModules() = module {
 
     // TV 版 MediaResolver: 仅在线链路.
     factory<MediaResolver> {
+        val webResolver = AndroidWebMediaResolver(
+            get<MediaSourceManager>().webVideoMatcherLoader,
+            get<SettingsRepository>(),
+            get<WebSessionManager>(),
+        )
         MediaResolver.from(
             listOf<MediaResolver>(LocalFileMediaResolver())
+                .plus(SourcePluginMediaResolver(get(), webResolver))
                 .plus(HttpStreamingMediaResolver())
-                .plus(
-                    AndroidWebMediaResolver(
-                        get<MediaSourceManager>().webVideoMatcherLoader,
-                        get<SettingsRepository>(),
-                        get<WebSessionManager>(),
-                    ),
-                ),
+                .plus(webResolver),
         )
     }
 

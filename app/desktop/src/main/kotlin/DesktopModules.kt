@@ -28,6 +28,7 @@ import me.him188.ani.app.domain.media.resolver.DesktopWebMediaResolver
 import me.him188.ani.app.domain.media.resolver.HttpStreamingMediaResolver
 import me.him188.ani.app.domain.media.resolver.LocalFileMediaResolver
 import me.him188.ani.app.domain.media.resolver.MediaResolver
+import me.him188.ani.app.domain.sourceplugin.SourcePluginMediaResolver
 import me.him188.ani.app.domain.mediasource.web.DesktopOnnxImageCaptchaRecognizer
 import me.him188.ani.app.domain.mediasource.web.captcha.CaptchaBrowserFactory
 import me.him188.ani.app.domain.mediasource.web.captcha.DesktopCaptchaBrowserFactory
@@ -110,16 +111,16 @@ fun getDesktopModules(getContext: () -> DesktopContext, scope: CoroutineScope) =
     single<ImageCaptchaRecognizer> { DesktopOnnxImageCaptchaRecognizer() }
     single<HlsPlaybackPreparer> { PlatformHlsPlaybackPreparer(get()) }
     factory<MediaResolver> {
+        val webResolver = DesktopWebMediaResolver(
+            getContext(),
+            get<MediaSourceManager>().webVideoMatcherLoader,
+            get<WebSessionManager>(),
+        )
         MediaResolver.from(
             listOf<MediaResolver>(LocalFileMediaResolver())
+                .plus(SourcePluginMediaResolver(get(), webResolver))
                 .plus(HttpStreamingMediaResolver())
-                .plus(
-                    DesktopWebMediaResolver(
-                        getContext(),
-                        get<MediaSourceManager>().webVideoMatcherLoader,
-                        get<WebSessionManager>(),
-                    ),
-                ),
+                .plus(webResolver),
         )
     }
     single<UpdateInstaller> { DesktopUpdateInstaller.currentOS() }

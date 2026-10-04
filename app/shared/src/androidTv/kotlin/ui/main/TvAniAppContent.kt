@@ -66,7 +66,7 @@ import me.him188.ani.tv.ui.subject.person.TvPeopleTarget
  * 所有 TV ViewModel 只在这里通过 tvViewModel 显式构造, 生命周期归属所在导航条目.
  * 主壳内的功能页首次显示时才创建对应 ViewModel, Route 只接收实例并连接状态/Intent.
  *
- * `Caches`/`BangumiAuthorize` 等按 §1.2 裁剪永不注册.
+ * TV 登入 route 使用 Bangumi OAuth，播放、搜尋與收藏共用同一組 session。
  */
 @Composable
 fun TvAniAppContent(
@@ -168,8 +168,7 @@ fun TvAniAppContent(
                     val viewModel = tvViewModel {
                         TvSettingsViewModel(
                             dependencies.settingsRepository,
-                            dependencies.mediaSourceManager,
-                            dependencies.mediaSourceSubscriptionRepository,
+                            dependencies.koin.get(),
                             loadLibraries = ::loadOpenSourceLibrariesJsons,
                         )
                     }
@@ -238,7 +237,6 @@ fun TvAniAppContent(
                             episodeCollectionRepository = dependencies.episodeCollectionRepository,
                             subjectCollectionRepository = dependencies.subjectCollectionRepository,
                             settingsRepository = dependencies.settingsRepository,
-                            selectorEpisodeCacheRepository = dependencies.selectorEpisodeCacheRepository,
                             webSessionManager = dependencies.webSessionManager,
                         )
                     }

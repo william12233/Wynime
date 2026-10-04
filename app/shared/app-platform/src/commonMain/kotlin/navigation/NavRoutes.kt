@@ -113,12 +113,6 @@ sealed class NavRoutes : NavKey {
     ) : NavRoutes()
 
     @Serializable
-    data class EditMediaSource(
-        val factoryId: String,
-        val mediaSourceInstanceId: String,
-    ) : NavRoutes()
-
-    @Serializable
     data object Caches : NavRoutes()
 
     @Serializable

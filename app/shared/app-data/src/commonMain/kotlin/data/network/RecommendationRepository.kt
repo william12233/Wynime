@@ -29,10 +29,13 @@ import me.him188.ani.utils.logging.error
 import kotlin.coroutines.CoroutineContext
 
 class RecommendationRepository(
-    private val homeApi: ApiInvoker<HomeAniApi>,
+    private val homeApi: ApiInvoker<HomeAniApi>? = null,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_
 ) : Repository() {
     fun recommendedSubjectsPager(): Flow<PagingData<RecommendedItemInfo>> {
+        if (homeApi == null) {
+            return kotlinx.coroutines.flow.flowOf(PagingData.empty())
+        }
         return Pager(defaultPagingConfig, initialKey = 0) {
             HomeRecommendationPagingSource()
         }.flow
@@ -46,7 +49,7 @@ class RecommendationRepository(
             val loadSize = params.loadSize
             return runWrappingExceptionAsLoadResult {
                 val response = withContext(ioDispatcher) {
-                    homeApi {
+                    homeApi!! {
                         getHomeRecommendations(
                             offset = offset,
                             limit = loadSize,

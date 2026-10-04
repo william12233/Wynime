@@ -26,24 +26,18 @@ import kotlinx.serialization.json.JsonElement
 import me.him188.ani.app.data.models.preference.ProxyAuthorization
 import me.him188.ani.app.data.models.preference.ProxyConfig
 import me.him188.ani.app.data.repository.media.MediaSourceInstanceRepository
-import me.him188.ani.app.data.repository.media.SelectorMediaSourceEpisodeCacheRepository
 import me.him188.ani.app.data.repository.media.updateConfig
 import me.him188.ani.app.domain.foundation.HttpClientProvider
 import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
 import me.him188.ani.app.domain.foundation.get
 import me.him188.ani.app.domain.media.download.MediaDownloadManager.Companion.LOCAL_FS_MEDIA_SOURCE_ID
 import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.mediasource.codec.MediaSourceCodecManager
-import me.him188.ani.app.domain.mediasource.codec.getArgumentOrNull
 import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
 import me.him188.ani.app.domain.mediasource.instance.MediaSourceSave
-import me.him188.ani.app.domain.mediasource.web.SelectorMediaSource
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceCookieJar
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
 import me.him188.ani.app.domain.settings.ProxyProvider
 import me.him188.ani.app.platform.getAniUserAgent
-import me.him188.ani.app.tools.ServiceLoader
 import me.him188.ani.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
 import me.him188.ani.datasources.api.source.FactoryId
 import me.him188.ani.datasources.api.source.MediaFetchRequest
@@ -212,16 +206,14 @@ class MediaSourceManagerImpl(
      * @see LOCAL_FS_MEDIA_SOURCE_ID
      */
     additionalSources: () -> List<MediaSource>, // local sources, calculated only once
+    private val pluginSources: Flow<List<MediaSource>> = flowOf(emptyList()),
     private val flowCoroutineContext: CoroutineContext = Dispatchers.Default,
 ) : MediaSourceManager, KoinComponent {
     private val proxyProvider: ProxyProvider by inject()
     private val instances: MediaSourceInstanceRepository by inject()
-    private val selectorMediaSourceEpisodeCacheRepository: SelectorMediaSourceEpisodeCacheRepository by inject()
-    private val webSessionManager: WebSessionManager by inject()
     private val webSourceCookieJar: WebSourceCookieJar by inject()
     private val webSourceIdentityRegistry: WebSourceIdentityRegistry by inject()
     private val clientProvider: HttpClientProvider by inject()
-    private val codecManager: MediaSourceCodecManager by inject()
 
     private val scope = CoroutineScope(
         CoroutineExceptionHandler { _, throwable ->
@@ -230,11 +222,9 @@ class MediaSourceManagerImpl(
         },
     )
     private val factories: List<MediaSourceFactory> = buildSet {
-        addAll(ServiceLoader.loadServices(MediaSourceFactory::class))
         add(JellyfinMediaSource.Factory())
         add(EmbyMediaSource.Factory())
         add(IkarosMediaSource.Factory())
-        add(SelectorMediaSource.Factory(selectorMediaSourceEpisodeCacheRepository, webSessionManager))
     }.toList()
 
     private val additionalSources by lazy {
@@ -249,9 +239,17 @@ class MediaSourceManagerImpl(
         }
     }
     override val allInstances =
-        combine(instances.flow, proxyProvider.proxy.distinctUntilChanged()) { saves, config ->
+        combine(instances.flow, proxyProvider.proxy.distinctUntilChanged(), pluginSources) { saves, config, plugins ->
             // 一定要 additionalSources 在前面, local sources 需要优先使用
-            this.additionalSources + saves.mapNotNull { createInstance(it, config) }
+            this.additionalSources + plugins.map { plugin ->
+                MediaSourceInstance(
+                    instanceId = plugin.mediaSourceId,
+                    factoryId = FactoryId(plugin.mediaSourceId),
+                    isEnabled = true,
+                    config = MediaSourceConfig.Default,
+                    source = plugin,
+                )
+            } + saves.mapNotNull { createInstance(it, config) }
         }.onReplacement { list ->
             list.forEach { it.close() }
         }.flowOn(flowCoroutineContext).shareIn(scope, replay = 1, started = SharingStarted.Lazily)
@@ -355,21 +353,7 @@ class MediaSourceManagerImpl(
         instances.removeAll(instanceIds)
     }
 
-    override fun mediaSourceTiersFlow(): Flow<MediaSelectorSourceTiers> = instances.flow.map { list ->
-        val arguments = list.mapNotNull { save ->
-            save.getArgumentOrNull(codecManager)?.let { save.mediaSourceId to it }
-        }
-        MediaSelectorSourceTiers(
-            tiers = arguments.associate { (id, argument) -> id to argument.tier },
-            channelTiers = buildMap {
-                for ((id, argument) in arguments) {
-                    if (argument.channelTiers.isNotEmpty()) {
-                        put(id, argument.channelTiers)
-                    }
-                }
-            },
-        )
-    }.flowOn(flowCoroutineContext)
+    override fun mediaSourceTiersFlow(): Flow<MediaSelectorSourceTiers> = flowOf(MediaSelectorSourceTiers.Empty)
 
     private fun MediaSourceFactory.create(
         proxyConfig: ProxyConfig?,

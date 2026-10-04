@@ -38,13 +38,14 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
 class AnimeScheduleService(
-    private val scheduleApi: ApiInvoker<ScheduleAniApi>,
+    private val scheduleApi: ApiInvoker<ScheduleAniApi>? = null,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_
 ) {
     suspend fun getSeasonIds(): List<AnimeSeasonId> {
         return withContext(ioDispatcher) {
+            val api = scheduleApi ?: return@withContext emptyList()
             try {
-                scheduleApi {
+                api {
                     getAnimeSeasons().body().list.map {
                         it.toAnimeSeasonId()
                     }
@@ -59,8 +60,9 @@ class AnimeScheduleService(
      * @return `null` if not found.
      */
     suspend fun getScheduleInfo(seasonId: AnimeSeasonId): AnimeScheduleInfo? = withContext(ioDispatcher) {
+        val api = scheduleApi ?: return@withContext null
         val resp = try {
-            scheduleApi {
+            api {
                 getAnimeSeason(seasonId.id).body()
             }
         } catch (e: ClientRequestException) {
@@ -87,8 +89,9 @@ class AnimeScheduleService(
             return emptyList()
         }
         return withContext(ioDispatcher) {
+            val api = scheduleApi ?: return@withContext List(subjectIds.size) { null }
             try {
-                scheduleApi {
+                api {
                     val resp = getSubjectRecurrences(subjectIds)
                     resp.typedBody<AniBatchGetSubjectRecurrenceResponse>(typeInfo<AniBatchGetSubjectRecurrenceResponse>()).recurrences.map {
                         it?.toAnimeRecurrence()
@@ -101,8 +104,9 @@ class AnimeScheduleService(
     }
 
     suspend fun getLatestAnimeScheduleInfos(): List<AnimeScheduleInfo> = withContext(ioDispatcher) {
+        val api = scheduleApi ?: return@withContext emptyList()
         try {
-            scheduleApi {
+            api {
                 val resp = getLatestAnimeSeasons()
                 resp.typedBody<AniLatestAnimeSchedules>(typeInfo<AniLatestAnimeSchedules>()).list.map { item ->
                     AnimeScheduleInfo(item.seasonId.toAnimeSeasonId(), item.list.map { it.toAnimeScheduleInfo() })
@@ -114,8 +118,9 @@ class AnimeScheduleService(
     }
 
     suspend fun getLatestAiringSchedule(today: String, timeZone: String): AniLatestAiringSchedule = withContext(ioDispatcher) {
+        val api = scheduleApi ?: return@withContext AniLatestAiringSchedule(emptyList())
         try {
-            scheduleApi {
+            api {
                 getLatestAiringSchedule(today, timeZone).body()
             }
         } catch (e: Exception) {

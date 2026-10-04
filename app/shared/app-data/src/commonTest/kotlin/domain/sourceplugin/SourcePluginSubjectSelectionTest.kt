@@ -38,4 +38,32 @@ class SourcePluginSubjectSelectionTest {
 
         assertNull(selected)
     }
+
+    @Test
+    fun `first season marker is accepted for a base title`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(
+                SourceSubject("season-4", "Re：从零开始的异世界生活 第四季 夺还篇"),
+                SourceSubject("movie", "Re：从零开始的异世界生活 冰结之绊"),
+                SourceSubject("season-1", "Re：从零开始的异世界生活 第一季"),
+            ),
+            queryNames = listOf("Re：从零开始的异世界生活"),
+        )
+
+        assertEquals("season-1", selected?.subject?.id)
+    }
+
+    @Test
+    fun `cover image suffix does not change an exact base title`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(
+                SourceSubject("base", "Re：从零开始的异世界生活封面图"),
+                SourceSubject("movie", "Re：从零开始的异世界生活 雪之回忆"),
+            ),
+            queryNames = listOf("Re：从零开始的异世界生活"),
+        )
+
+        assertEquals("base", selected?.subject?.id)
+        assertEquals(true, selected?.isExactTitle)
+    }
 }

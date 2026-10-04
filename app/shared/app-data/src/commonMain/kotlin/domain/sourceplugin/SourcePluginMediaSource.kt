@@ -268,7 +268,6 @@ internal fun selectBestSourceSubject(
 
     val matches = subjects.distinctBy { it.id }.mapIndexedNotNull { subjectIndex, subject ->
         var best: SubjectMatch? = null
-        val subjectHasVariantMarker = subject.title.hasSubjectVariantMarker()
         for ((queryIndex, queryName) in names.withIndex()) {
             val query = queryName.normalizeSubjectMatch()
             if (query.isBlank()) continue
@@ -277,11 +276,16 @@ internal fun selectBestSourceSubject(
                 val normalizedTitle = title.normalizeSubjectMatch()
                 if (normalizedTitle.isBlank()) continue
 
-                val exactTitle = title == subject.title && normalizedTitle == query
-                if (!exactTitle && subjectHasVariantMarker && !queryHasVariantMarker) continue
+                val exactTitle = normalizedTitle == query
+                val titleIsBaseEquivalent = title.isBaseTitleEquivalent()
+                if (!exactTitle && title.hasSubjectVariantMarker() && !queryHasVariantMarker && !titleIsBaseEquivalent) {
+                    continue
+                }
 
                 val score = when {
                     normalizedTitle == query -> 1_000_000
+                    titleIsBaseEquivalent && !queryHasVariantMarker && normalizedTitle.startsWith(query) ->
+                        900_000 + query.length
                     query.length >= 3 && normalizedTitle.contains(query) -> 600_000 + query.length
                     normalizedTitle.length >= 3 && query.contains(normalizedTitle) -> 500_000 + normalizedTitle.length
                     else -> null
@@ -305,15 +309,25 @@ private data class SubjectMatch(
     val isExactTitle: Boolean,
 )
 
-private fun String.normalizeSubjectMatch(): String = lowercase().filter(Char::isLetterOrDigit)
+private fun String.normalizeSubjectMatch(): String = lowercase()
+    .replace(Regex("(?i)(封面图|封面圖)$"), "")
+    .filter(Char::isLetterOrDigit)
 
 private fun String.hasSubjectVariantMarker(): Boolean {
-    val lower = lowercase()
+    val lower = lowercase().replace(Regex("(?i)(封面图|封面圖)$"), "")
     return Regex("第[一二三四五六七八九十百0-9]+[季部]").containsMatchIn(lower) ||
         listOf(
             "season", "part", "ova", "oad", "剧场版", "劇場版", "电影", "電影", "movie",
-            "日记", "日記", "外传", "外傳", "特别篇", "特別篇",
+            "日记", "日記", "外传", "外傳", "特别篇", "特別篇", "冰结之绊", "冰結之絆",
+            "雪之回忆", "雪之回憶",
         ).any(lower::contains)
+}
+
+private fun String.isBaseTitleEquivalent(): Boolean {
+    val lower = lowercase().replace(Regex("(?i)(封面图|封面圖)$"), "")
+    return Regex("第\\s*(?:一|1)\\s*[季部]").containsMatchIn(lower) ||
+        Regex("(?i)\\b(?:first|1st)\\s+season\\b").containsMatchIn(lower) ||
+        listOf("新编集版", "新編集版", "新编辑版", "新編集版").any(lower::contains)
 }
 
 private const val SUBJECT_MARKER = "#wynime-source-subject=v1:"

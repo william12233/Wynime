@@ -34,7 +34,7 @@
 | `eacg` | `UNVERIFIED` | `UNVERIFIED` | `.tmp-rezero-eacg-2k.log`、`.tmp-rezero-eacg-edd.log` 有播放進度紀錄，但目前紀錄尚未把所選來源與該進度一一對應；另有 `.tmp-play-eacg-v105.log` 的播放器格式錯誤。 |
 | `dm1` | `UNVERIFIED` | `UNVERIFIED` | 有 `.tmp-app-log-dmbus-latest.txt` 的 DM1 媒體請求紀錄，但仍需隔離成單一來源、單一集數的播放與下載證據。 |
 | `next` | `UNVERIFIED` | `UNVERIFIED` | `.tmp-slime-next-playing.log` 有帶 referer 的短期 MP4 媒體請求，但尚缺同一操作的正向播放進度。 |
-| `girigiri` | `UNVERIFIED` | `UNVERIFIED` | 目前只保留查詢／選集與播放器操作檔，尚缺可核對的正向播放進度。 |
+| `girigiri` | `PASS` | `PASS` | `re0` 搜尋由公開 API 取得 6 個候選，精確選到 `GV1222`；網站詳情頁只有 `简中` 1 個頻道、25 集。`.tmp-girigiri-playing-confirmed.png`／`.tmp-girigiri-download.log` 可核對播放與 `206` 媒體請求；`.tmp-girigiri-download-completed.png` 顯示 `1/25 已完成 · 333.7 MB`，`.tmp-girigiri-download-clean.png` 顯示由 App 刪除後回到 `0/25 已完成`。 |
 | `2rk` | `BLOCKED` | `UNVERIFIED` | 網站 `c.js` 實際列出 `线路1`、`线路2`、`线路3`。目前播放鏈取得 `/saber` 的 31-byte 回應，ExoPlayer 報 `InvalidKeyException: Unsupported key size: 31 bytes`；不能把 HTTP 200 或建立 HLS proxy 當成播放成功。 |
 | `dida` | `PASS` | `PASS` | `.tmp-dida-playing-all.log` 有正向 `positionMillis`／`durationMillis`；下載完成與刪除後證據為 `.tmp-dida-download-complete.xml`、`.tmp-dida-download-deleted.png`。 |
 | `dmbus` | `PASS` | `PASS` | `.tmp-android-dmbus-slime-playing-fixed-logcat.txt` 有同一番劇的正向播放進度；下載完成、刪除與清理證據為 `.tmp-android-dmbus-download-finished-menu.xml`、`.tmp-android-dmbus-download-after-delete.xml`、`.tmp-android-dmbus-download-clean.png`。 |

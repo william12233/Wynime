@@ -128,9 +128,10 @@ open class ApiClient(
      * @param bearerToken The bearer token.
      */
     fun setBearerToken(bearerToken: String) {
-        val auth = authentications?.values?.firstOrNull { it is HttpBearerAuth } as HttpBearerAuth?
+        val auths = authentications?.values?.filterIsInstance<HttpBearerAuth>()
                 ?: throw Exception("No Bearer authentication configured")
-        auth.bearerToken = bearerToken
+        if (auths.isEmpty()) throw Exception("No Bearer authentication configured")
+        auths.forEach { it.bearerToken = bearerToken }
     }
 
     protected suspend fun <T: Any?> multipartFormRequest(requestConfig: RequestConfig<T>, body: kotlin.collections.List<PartData>?, authNames: kotlin.collections.List<String>): HttpResponse {

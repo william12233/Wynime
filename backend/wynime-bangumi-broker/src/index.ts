@@ -138,17 +138,20 @@ async function completeOAuth(url: URL, env: Env): Promise<Response> {
     return redirectToApp(stateRecord.redirectUri, state, undefined, "missing_code");
   }
 
+  let failureStage = "validate_config";
   try {
     requireOAuthSecrets(env);
     const callbackUri =
       env.BANGUMI_CALLBACK_URL ||
       new URL("/api/v1/oauth/bangumi/callback", url.origin).toString();
+    failureStage = "bangumi_token_exchange";
     const token = await exchangeBangumiToken(env, {
       grant_type: "authorization_code",
       code,
       redirect_uri: callbackUri,
     });
     if (!token.refreshToken) throw new Error("Bangumi token response is missing refresh token");
+    failureStage = "bangumi_user_lookup";
     const userKey = await fetchBangumiUserKey(env, token.accessToken);
     const grant: BangumiGrant = {
       userKey,
@@ -158,11 +161,13 @@ async function completeOAuth(url: URL, env: Env): Promise<Response> {
     };
     const ticket = randomToken();
     const ticketHash = await hashToken(ticket);
+    failureStage = "ticket_encrypt";
     const payloadCiphertext = await encryptJson({ ticket, grant }, env.SESSION_ENCRYPTION_KEY);
     const ticketRecord: OAuthTicketRecord = {
       expiresAt: Date.now() + OAUTH_TICKET_TTL_MS,
       payloadCiphertext,
     };
+    failureStage = "oauth_state_commit";
     const result = await rpc<{ accepted: boolean }>(env, {
       op: "oauthComplete",
       stateHash,
@@ -173,6 +178,10 @@ async function completeOAuth(url: URL, env: Env): Promise<Response> {
     return redirectToApp(stateRecord.redirectUri, state, ticket);
   } catch (error) {
     if (error instanceof HttpError && error.status === 409) throw error;
+    console.error("oauth_complete_failed", {
+      stage: failureStage,
+      type: error instanceof Error ? error.message : "unknown",
+    });
     await markOAuthError(env, stateHash, "upstream_authorization_failed");
     return redirectToApp(stateRecord.redirectUri, state, undefined, "upstream_authorization_failed");
   }
@@ -351,7 +360,11 @@ async function exchangeBangumiToken(
 
 async function fetchBangumiUserKey(env: Env, accessToken: string): Promise<string> {
   const response = await fetch((env.BANGUMI_API_BASE_URL || DEFAULT_API_BASE_URL) + "/v0/me", {
-    headers: { authorization: "Bearer " + accessToken, accept: "application/json" },
+    headers: {
+      authorization: "Bearer " + accessToken,
+      accept: "application/json",
+      "user-agent": "Wynime/1.0",
+    },
   });
   if (!response.ok) throw new Error("Bangumi user lookup failed");
   const payload = (await response.json()) as Record<string, unknown>;

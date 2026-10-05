@@ -2055,7 +2055,8 @@ class WithMatrix(
             "GITHUB_REPOSITORY" to expr { secrets.GITHUB_REPOSITORY },
             "CI_RELEASE_ID" to expr { releaseIdExpr },
             "CI_TAG" to expr { gitTag.tagExpr },
-            "UPLOAD_TO_S3" to "true",
+            // This release publishes the two GitHub Release assets only. S3 is optional.
+            "UPLOAD_TO_S3" to "false",
             "AWS_ACCESS_KEY_ID" to expr { secrets.AWS_ACCESS_KEY_ID },
             "AWS_SECRET_ACCESS_KEY" to expr { secrets.AWS_SECRET_ACCESS_KEY },
             "AWS_BASEURL" to expr { secrets.AWS_BASEURL },

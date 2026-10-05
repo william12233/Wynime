@@ -235,16 +235,6 @@ abstract class ReleaseUploadTask : DefaultTask() {
                         fileName = name,
                         contentType = ContentType.parse(contentType),
                     )
-                    uploadFileToGitHub(
-                        client = client,
-                        repository = repository,
-                        releaseId = releaseId,
-                        token = token,
-                        file = sha1File,
-                        fileName = sha1FileName,
-                        contentType = ContentType.Text.Plain,
-                    )
-
                     if (uploadToS3.get()) {
                         putS3Object(tag, name, file, contentType)
                         putS3Object(tag, sha1FileName, sha1File, "text/plain")

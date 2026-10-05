@@ -160,10 +160,10 @@ data class SubjectInfo(
 val SubjectInfo.nameCnOrName get() = nameCn.takeIf { it.isNotBlank() } ?: name
 
 /**
- * 列表和卡片里显示的封面: 优先缩略图, 没有时用原图.
+ * 列表和卡片里显示的封面: 优先使用原图，缺少原图时回退到列表缩略图.
  */
 @Stable
-val SubjectInfo.listCoverUrl: String get() = imageThumb.ifEmpty { imageLarge }
+val SubjectInfo.listCoverUrl: String get() = imageLarge.ifEmpty { imageThumb }
 
 @Stable
 val SubjectInfo.nameOrNameCn get() = name.ifBlank { nameCn }

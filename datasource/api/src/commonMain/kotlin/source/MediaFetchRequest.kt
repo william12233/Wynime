@@ -78,6 +78,8 @@ data class MediaFetchRequest(
      * 为空表示未知.
      */
     val episodes: List<Episode> = emptyList(),
+    /** Host-generated identifier shared by all provider phases of this discovery session. */
+    val traceId: String = "",
 ) {
     /**
      * 两个请求是否查询同一个条目: 条目 ID, 名称与剧集列表相同, 忽略仅作提示的当前剧集字段.

@@ -77,10 +77,68 @@ data class SourceSubjectDetails(
     val channels: List<SourceChannelEpisodes>,
 )
 
+/** Phases emitted by the host while one provider request is being traced. */
+@Serializable
+enum class SourceTracePhase {
+    DISCOVERY_START,
+    SEARCH_REQUEST,
+    SEARCH_RESPONSE,
+    MATCH_RESULT,
+    SUBJECT_RESOLVE,
+    EPISODE_FETCH,
+    EPISODE_MATCH,
+    PLAY_RESOLVE,
+    FINAL_MEDIA_CHECK,
+    DOWNLOAD_RESOLVE,
+    PLAYBACK_RESULT,
+}
+
+/** Stable result categories shared by discovery, resolution, and playback diagnostics. */
+@Serializable
+enum class SourceResultStatus {
+    SUCCESS,
+    NO_MATCH,
+    TIMEOUT,
+    NETWORK_ERROR,
+    HTTP_ERROR,
+    BLOCKED_BY_CHALLENGE,
+    AUTH_REQUIRED,
+    PARSE_ERROR,
+    RESOLVE_ERROR,
+    MEDIA_UNREACHABLE,
+    PLAYBACK_ERROR,
+    PLUGIN_ERROR,
+}
+
+/** Safe diagnostics. Cookie values, tokens, and authentication material are never stored here. */
+@Serializable
+data class SourceDiagnostics(
+    val traceId: String,
+    val provider: String,
+    val entryPoint: String,
+    val query: String? = null,
+    val url: String? = null,
+    val domain: String? = null,
+    val statusCode: Int? = null,
+    val contentType: String? = null,
+    val redirectCount: Int? = null,
+    val elapsedMillis: Long? = null,
+    val responseCategory: SourceResultStatus,
+    val userAgentProfile: String? = null,
+    val refererPresent: Boolean? = null,
+    val cookieNames: List<String> = emptyList(),
+    val challengeDetected: String? = null,
+    val parserResultCount: Int? = null,
+    val matcherScore: Int? = null,
+    val failureReason: String? = null,
+)
+
 @Serializable
 data class SourceSearchRequest(
     val query: String,
     val limit: Int = 20,
+    val traceId: String = "",
+    val entryPoint: String = "search",
 )
 
 @Serializable
@@ -92,6 +150,8 @@ data class SourceResolveRequest(
     val episodeEp: String? = null,
     /** Filled by the host when routing a request through the shared registry. */
     val pluginId: String = "",
+    val traceId: String = "",
+    val entryPoint: String = "resolve",
 )
 
 /** The state returned by a non-mutating source health check. */
@@ -228,6 +288,8 @@ data class SourceHttpRequest(
     val url: String,
     val headers: Map<String, String> = emptyMap(),
     val body: ByteArray? = null,
+    val traceId: String = "",
+    val entryPoint: String = "http",
 )
 
 data class SourceHttpResponse(
@@ -235,6 +297,9 @@ data class SourceHttpResponse(
     val finalUrl: String,
     val headers: Map<String, String> = emptyMap(),
     val body: ByteArray = ByteArray(0),
+    val elapsedMillis: Long? = null,
+    val redirectCount: Int? = null,
+    val contentType: String? = null,
 ) {
     fun bodyAsText(): String = body.decodeToString()
 }

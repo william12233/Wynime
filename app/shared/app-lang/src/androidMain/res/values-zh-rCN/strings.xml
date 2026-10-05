@@ -1056,6 +1056,7 @@
     <string name="media_source_results_settings">设置</string>
     <string name="media_source_results_temp_enable">点击临时启用</string>
     <string name="media_source_results_failed">查询失败</string>
+    <string name="media_source_results_no_match">没有匹配的剧集</string>
     <string name="media_source_results_click_retry">点击重试</string>
     <string name="media_source_results_captcha_required">需要验证码</string>
     <string name="media_source_results_click_verify">点击验证</string>
@@ -1243,6 +1244,8 @@
     <string name="subject_episode_video_loading_cause_no_matching_file">未找到可播放的文件</string>
     <string name="subject_episode_video_loading_cause_cancelled">已取消</string>
     <string name="subject_episode_video_loading_cause_network_error">网络错误</string>
+    <string name="subject_episode_video_loading_cause_source_error">此数据源无法播放，请切换其他数据源</string>
+    <string name="subject_episode_video_loading_cause_source_verification">此数据源需要网站验证</string>
     <string name="subject_episode_wish_change_to">已想看，可更改为：</string>
     <string name="subject_episode_select_media_source">选择数据源</string>
     <string name="subject_episode_close_selector">关闭选择器</string>

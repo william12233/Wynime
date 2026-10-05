@@ -13,6 +13,7 @@ import me.him188.ani.app.data.models.subject.TestFollowedSubjectInfos
 import me.him188.ani.app.data.models.subject.preferredDisplayName as subjectPreferredDisplayName
 import me.him188.ani.app.data.models.subject.subjectInfo
 import me.him188.ani.utils.platform.annotations.TestOnly
+import kotlinx.datetime.LocalDate
 
 sealed class RecommendedItemInfo
 
@@ -22,6 +23,10 @@ data class RecommendedSubjectInfo(
     /** 条目原名 (通常为日文), 供"显示原名"设置开启时使用. */
     val name: String,
     val imageLarge: String,
+    val nsfw: Boolean = false,
+    val score: Double = 0.0,
+    val scoreCount: Int = 0,
+    val airDate: LocalDate? = null,
 ) : RecommendedItemInfo()
 
 /**

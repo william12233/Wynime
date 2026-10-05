@@ -336,12 +336,13 @@ class MediaSelectorState(
                     name = source.sourceInfo.displayName,
                     channels = channels,
                     isLoading = state.isWorking,
-                    isError = state.isFailedOrAbandoned,
+                    isError = state.isFailedOrAbandoned || state is MediaSourceFetchState.NoMatch,
                     isPreferred = source.mediaSourceId == preferred,
                     captchaRequest = captchaRequest,
                     isResolvingCaptcha = source.instanceId in resolvingCaptchaInstanceIds,
                     rateLimitedUntilMillis = rateLimitedUntil,
                     isCaptchaSupported = webSessionManager.isInteractiveSupported,
+                    isNoMatch = state is MediaSourceFetchState.NoMatch,
                 )
             }
         }

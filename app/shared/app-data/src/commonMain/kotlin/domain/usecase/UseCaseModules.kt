@@ -38,6 +38,7 @@ import me.him188.ani.app.domain.media.cache.GetMediaCacheUseCaseImpl
 import me.him188.ani.app.domain.media.download.AddDownloadUseCase
 import me.him188.ani.app.domain.media.download.AddDownloadUseCaseImpl
 import me.him188.ani.app.domain.media.download.DownloadRequestSessionFactory
+import me.him188.ani.app.domain.media.fetch.SubjectMediaFetchSessionRegistry
 import me.him188.ani.app.domain.media.selector.GetPreferredMediaSourceSortingUseCase
 import me.him188.ani.app.domain.media.selector.GetPreferredMediaSourceSortingUseCaseImpl
 import me.him188.ani.app.domain.media.selector.MediaSelectorAutoSelectUseCase
@@ -89,7 +90,12 @@ fun KoinApplication.useCaseModules() = module {
     single<AddDownloadUseCase> {
         AddDownloadUseCaseImpl(get())
     }
-    single { DownloadRequestSessionFactory(get(), get(), get(), MediaSelectorFactory.withKoin(koin), get(), get()) }
+    single {
+        DownloadRequestSessionFactory(
+            get(), get(), get(), MediaSelectorFactory.withKoin(koin), get(), get(),
+            get<SubjectMediaFetchSessionRegistry>(),
+        )
+    }
     single<GetPreferredWebMediaSourceUseCase> { GetPreferredWebMediaSourceUseCaseImpl(get()) }
     single<SetPreferredWebMediaSourceUseCase> { SetPreferredWebMediaSourceUseCaseImpl(get()) }
 }

@@ -1043,6 +1043,7 @@
     <string name="media_source_results_settings">設定</string>
     <string name="media_source_results_temp_enable">點擊暫時啟用</string>
     <string name="media_source_results_failed">查詢失敗</string>
+    <string name="media_source_results_no_match">找不到符合的劇集</string>
     <string name="media_source_results_click_retry">點擊重試</string>
     <string name="media_source_results_captcha_required">需要驗證碼</string>
     <string name="media_source_results_click_verify">點擊驗證</string>
@@ -1230,6 +1231,8 @@
     <string name="subject_episode_video_loading_cause_no_matching_file">未找到可播放的檔案</string>
     <string name="subject_episode_video_loading_cause_cancelled">已取消</string>
     <string name="subject_episode_video_loading_cause_network_error">網絡錯誤</string>
+    <string name="subject_episode_video_loading_cause_source_error">此數據源無法播放，請切換其他數據源</string>
+    <string name="subject_episode_video_loading_cause_source_verification">此數據源需要網站驗證</string>
     <string name="subject_episode_wish_change_to">已想看，可更改為：</string>
     <string name="subject_episode_select_media_source">選擇數據源</string>
     <string name="subject_episode_close_selector">關閉選擇器</string>

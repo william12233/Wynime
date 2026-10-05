@@ -33,7 +33,13 @@ import me.him188.ani.app.domain.media.resolver.UnsupportedMediaException
 import me.him188.ani.app.domain.media.selector.MediaSelector
 import me.him188.ani.app.domain.player.VideoLoadingState
 import me.him188.ani.app.domain.settings.GetVideoScaffoldConfigUseCase
+import me.him188.ani.app.domain.sourceplugin.SourcePluginFailure
+import me.him188.ani.app.domain.sourceplugin.safeSourceUrl
+import me.him188.ani.app.domain.sourceplugin.sourceFailureDiagnostics
 import me.him188.ani.datasources.api.Media
+import me.him188.ani.datasources.api.topic.ResourceLocation
+import me.him188.ani.source.plugin.api.SourceResultStatus
+import me.him188.ani.source.plugin.api.SourceTracePhase
 import me.him188.ani.utils.logging.error
 import me.him188.ani.utils.logging.info
 import me.him188.ani.utils.logging.logger
@@ -123,6 +129,7 @@ class PlayerSession(
             player.setMediaData(preparedData, playWhenReady = true)
             hlsPlaybackProxySession = preparedHlsPlaybackProxySession
             preparedHlsPlaybackProxySession = null
+            traceSourcePlaybackResult(media, SourceResultStatus.SUCCESS)
 
             _videoLoadingStateFlow.value = VideoLoadingState.Succeed
         } catch (e: UnsupportedMediaException) {
@@ -130,17 +137,40 @@ class PlayerSession(
             _videoLoadingStateFlow.value = VideoLoadingState.UnsupportedMedia
             stopPlayback()
         } catch (e: MediaSourceOpenException) { // during playerState.setVideoSource
+            val sourceError = sourcePlaybackError(
+                media = media,
+                status = SourceResultStatus.MEDIA_UNREACHABLE,
+                reason = e.reason.name,
+                retryable = true,
+            )
+            if (sourceError != null) {
+                _videoLoadingStateFlow.value = sourceError
+            } else {
+                logger.warn {
+                    IllegalStateException(
+                        "Failed to resolve video source due to VideoSourceOpenException",
+                        e,
+                    )
+                }
+                _videoLoadingStateFlow.value = when (e.reason) {
+                    OpenFailures.NO_MATCHING_FILE -> VideoLoadingState.NoMatchingFile
+                    OpenFailures.UNSUPPORTED_VIDEO_SOURCE -> VideoLoadingState.UnsupportedMedia
+                    OpenFailures.ENGINE_DISABLED -> VideoLoadingState.UnsupportedMedia
+                }
+            }
+            stopPlayback()
+        } catch (e: SourcePluginFailure) {
+            traceSourcePlaybackResult(media, e.status, e.diagnostics.failureReason)
             logger.warn {
-                IllegalStateException(
-                    "Failed to resolve video source due to VideoSourceOpenException",
-                    e,
-                )
+                "Source plugin playback failed: status=${e.status.name} " +
+                    "provider=${e.diagnostics.provider} traceId=${e.diagnostics.traceId}"
             }
-            _videoLoadingStateFlow.value = when (e.reason) {
-                OpenFailures.NO_MATCHING_FILE -> VideoLoadingState.NoMatchingFile
-                OpenFailures.UNSUPPORTED_VIDEO_SOURCE -> VideoLoadingState.UnsupportedMedia
-                OpenFailures.ENGINE_DISABLED -> VideoLoadingState.UnsupportedMedia
-            }
+            _videoLoadingStateFlow.value = VideoLoadingState.SourceError(
+                status = e.status,
+                diagnostics = e.diagnostics,
+                requiresVerification = e.requiresVerification,
+                retryable = e.retryable,
+            )
             stopPlayback()
         } catch (e: MediaResolutionException) { // during MediaResolver.resolve
             logger.warn {
@@ -160,12 +190,34 @@ class PlayerSession(
             _videoLoadingStateFlow.value = VideoLoadingState.Cancelled
             throw e
         } catch (e: PlaybackException) { // during player.setMediaData, 播放器拒绝了这个媒体
-            logger.warn { IllegalStateException("Player rejected the media data", e) }
-            _videoLoadingStateFlow.value = VideoLoadingState.UnknownError(e)
+            val sourceError = sourcePlaybackError(
+                media = media,
+                status = SourceResultStatus.PLAYBACK_ERROR,
+                reason = e::class.simpleName,
+                retryable = false,
+            )
+            if (sourceError != null) {
+                _videoLoadingStateFlow.value = sourceError
+            } else {
+                traceSourcePlaybackResult(media, SourceResultStatus.PLAYBACK_ERROR, e::class.simpleName)
+                logger.warn { IllegalStateException("Player rejected the media data", e) }
+                _videoLoadingStateFlow.value = VideoLoadingState.UnknownError(e)
+            }
             stopPlayback()
         } catch (e: Throwable) {
-            logger.error { IllegalStateException("Failed to resolve video source with unknown error", e) }
-            _videoLoadingStateFlow.value = VideoLoadingState.UnknownError(e)
+            val sourceError = sourcePlaybackError(
+                media = media,
+                status = SourceResultStatus.PLAYBACK_ERROR,
+                reason = e::class.simpleName,
+                retryable = true,
+            )
+            if (sourceError != null) {
+                _videoLoadingStateFlow.value = sourceError
+            } else {
+                traceSourcePlaybackResult(media, SourceResultStatus.PLAYBACK_ERROR, e::class.simpleName)
+                logger.error { IllegalStateException("Failed to resolve video source with unknown error", e) }
+                _videoLoadingStateFlow.value = VideoLoadingState.UnknownError(e)
+            }
             stopPlayback()
         } finally {
             preparedHlsPlaybackProxySession?.close()
@@ -208,6 +260,39 @@ class PlayerSession(
     private fun closeHlsPlaybackProxySession() {
         hlsPlaybackProxySession?.close()
         hlsPlaybackProxySession = null
+    }
+
+    private fun traceSourcePlaybackResult(media: Media?, status: SourceResultStatus, detail: String? = null) {
+        val reference = media?.download as? ResourceLocation.SourcePluginMedia ?: return
+        val traceId = reference.traceId.ifBlank { "-" }
+        logger.info {
+            "source_trace phase=PLAYBACK_RESULT traceId=$traceId provider=${reference.pluginId} " +
+                "status=${status.name} url=${safeSourceUrl(reference.uri)} detail=${detail.orEmpty()}"
+        }
+    }
+
+    private fun sourcePlaybackError(
+        media: Media?,
+        status: SourceResultStatus,
+        reason: String?,
+        retryable: Boolean,
+    ): VideoLoadingState.SourceError? {
+        val reference = media?.download as? ResourceLocation.SourcePluginMedia ?: return null
+        val diagnostics = sourceFailureDiagnostics(
+            traceId = reference.traceId.ifBlank { "-" },
+            provider = reference.pluginId,
+            entryPoint = SourceTracePhase.PLAYBACK_RESULT.name,
+            status = status,
+            url = reference.uri,
+            failureReason = reason,
+        )
+        traceSourcePlaybackResult(media, status, reason)
+        return VideoLoadingState.SourceError(
+            status = status,
+            diagnostics = diagnostics,
+            requiresVerification = false,
+            retryable = retryable,
+        )
     }
 
     companion object {

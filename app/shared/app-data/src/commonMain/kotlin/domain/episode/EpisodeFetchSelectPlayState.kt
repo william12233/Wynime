@@ -38,6 +38,7 @@ import kotlinx.coroutines.withContext
 import me.him188.ani.app.domain.foundation.LoadError
 import me.him188.ani.app.domain.media.fetch.MediaFetchSession
 import me.him188.ani.app.domain.media.fetch.MediaSourceManager
+import me.him188.ani.app.domain.media.fetch.SubjectMediaFetchSessionRegistry
 import me.him188.ani.app.domain.media.fetch.createFetchFetchSession
 import me.him188.ani.app.domain.media.resolver.toEpisodeMetadata
 import me.him188.ani.app.domain.media.selector.MediaSelector
@@ -94,13 +95,18 @@ class EpisodeFetchSelectPlayState(
     }
 
     private val mediaSourceManager by koin.inject<MediaSourceManager>()
+    private val sharedFetchSessionRegistry = koin.getOrNull<SubjectMediaFetchSessionRegistry>()
 
     /**
      * 条目级查询会话, 各集共用: 切集只重建选择器, 不重新查询.
      */
-    private val fetchSessions = SubjectMediaFetchSessions(backgroundScope) { request ->
-        mediaSourceManager.createFetchFetchSession(flowOf(request))
-    }
+    private val fetchSessions = SubjectMediaFetchSessions(
+        scope = backgroundScope,
+        createSession = { request ->
+            mediaSourceManager.createFetchFetchSession(flowOf(request))
+        },
+        sharedRegistry = sharedFetchSessionRegistry,
+    )
 
     private val _episodeSessionFlow = MutableStateFlow(
         newEpisodeSession(initialEpisodeId),

@@ -105,6 +105,22 @@ afterEach(() => {
 });
 
 describe("Wynime OAuth callback and ticket flow", () => {
+  it("hands an App Link callback back to the app when Android opened the browser", async () => {
+    const { marker } = createMarker();
+    const response = await workerRequest(
+      createWorkerEnv(marker),
+      "https://broker.test/app/oauth-complete?state=oauth-state-fallback-123456&ticket=short-lived-ticket",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    const body = await response.text();
+    expect(body).toContain("ani://bangumi-oauth-callback");
+    expect(body).toContain("oauth-state-fallback-123456");
+    expect(body).toContain("short-lived-ticket");
+    expect(body).not.toContain("access-token");
+  });
+
   it("publishes the current phone and TV release App Links", async () => {
     const { marker } = createMarker();
     const response = await workerRequest(createWorkerEnv(marker), "https://broker.test/.well-known/assetlinks.json");

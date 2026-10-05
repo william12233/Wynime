@@ -63,12 +63,21 @@ class WynimeBangumiOAuthClient(
                 mode = "login",
                 platform = platform.name.lowercase(),
                 arch = platform.arch.displayName.lowercase(),
+                redirectUri = if (platform is Platform.Android) {
+                    ANDROID_CUSTOM_SCHEME_REDIRECT_URI
+                } else {
+                    null
+                },
             )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
+    }
+
+    private companion object {
+        const val ANDROID_CUSTOM_SCHEME_REDIRECT_URI = "ani://bangumi-oauth-callback"
     }
 }
 

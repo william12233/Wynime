@@ -15,16 +15,13 @@ import me.him188.ani.client.apis.CharactersAniApi
 import me.him188.ani.client.apis.CommentsAniApi
 import me.him188.ani.client.apis.DeveloperVerificationAniApi
 import me.him188.ani.client.apis.EpisodesAniApi
-import me.him188.ani.client.apis.HomeAniApi
 import me.him188.ani.client.apis.OAuthAniApi
 import me.him188.ani.client.apis.QRLoginAniApi
 import me.him188.ani.client.apis.PersonsAniApi
 import me.him188.ani.client.apis.PlaybackHistoryAniApi
-import me.him188.ani.client.apis.ScheduleAniApi
 import me.him188.ani.client.apis.SubjectRelationsAniApi
 import me.him188.ani.client.apis.SubjectsAniApi
 import me.him188.ani.client.apis.SubscriptionsAniApi
-import me.him188.ani.client.apis.TrendsAniApi
 import me.him188.ani.client.apis.UpdatesAniApi
 import me.him188.ani.client.apis.UserAniApi
 import me.him188.ani.client.apis.UserAuthenticationAniApi
@@ -36,12 +33,9 @@ class AniApiProvider(
     @PublishedApi
     internal val client: ScopedHttpClient,
 ) {
-    val trendsApi = ApiInvoker(client) { TrendsAniApi(baseurl, it) }
-    val scheduleApi = ApiInvoker(client) { ScheduleAniApi(baseurl, it) }
     val oauthApi = ApiInvoker(client) { OAuthAniApi(baseurl, it) }
     val qrLoginApi = ApiInvoker(client) { QRLoginAniApi(baseurl, it) }
     val developerVerificationApi = ApiInvoker(client) { DeveloperVerificationAniApi(baseurl, it) }
-    val homeApi = ApiInvoker(client) { HomeAniApi(baseurl, it) }
     val subjectRelationsApi = ApiInvoker(client) { SubjectRelationsAniApi(baseurl, it) }
     val episodesApi = ApiInvoker(client) { EpisodesAniApi(baseurl, it) }
     val commentsApi = ApiInvoker(client) { CommentsAniApi(baseurl, it) }

@@ -28,6 +28,7 @@ import me.him188.ani.app.domain.media.cache.DownloaderStatus
 import me.him188.ani.app.domain.media.cache.MediaCache
 import me.him188.ani.app.domain.media.cache.MediaCacheState
 import me.him188.ani.app.domain.media.download.averageRate
+import me.him188.ani.app.domain.media.resolver.DownloadMediaResolver
 import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
 import me.him188.ani.app.domain.media.resolver.MediaResolver
 import me.him188.ani.app.tools.Progress
@@ -154,7 +155,9 @@ class HttpMediaCacheEngine(
     ): MediaCache {
         if (!supports(origin)) throw UnsupportedOperationException("Media is not supported by this engine $this: ${origin.download}")
 
-        val mediaDataProvider = mediaResolver.resolve(origin, episodeMetadata)
+        val mediaDataProvider = (mediaResolver as? DownloadMediaResolver)
+            ?.resolveForDownload(origin, episodeMetadata)
+            ?: mediaResolver.resolve(origin, episodeMetadata)
         when (val mediaData = mediaDataProvider.open(CoroutineScope(parentContext))) {
             is SeekableInputMediaData -> {
                 // This should not happen.

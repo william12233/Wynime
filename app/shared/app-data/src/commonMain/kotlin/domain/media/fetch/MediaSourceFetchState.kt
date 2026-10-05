@@ -11,6 +11,7 @@ package me.him188.ani.app.domain.media.fetch
 
 import androidx.compose.runtime.Stable
 import me.him188.ani.app.domain.mediasource.web.SolveRequest
+import me.him188.ani.source.plugin.api.SourceDiagnostics
 
 /**
  * @see MediaSourceFetchResult.state
@@ -34,11 +35,19 @@ sealed class MediaSourceFetchState {
         override val id: Int, // restartCount
     ) : Completed()
 
+    /** The provider completed discovery but found no safe subject or episode match. */
+    data class NoMatch(
+        val diagnostics: SourceDiagnostics,
+        override val id: Int,
+    ) : Completed()
+
     /**
      * The data source upstream has failed. E.g. a network request failed.
      */
     data class Failed(
-        val cause: Throwable, override val id: Int,
+        val cause: Throwable,
+        override val id: Int,
+        val diagnostics: SourceDiagnostics? = null,
     ) : Completed()
 
     /**

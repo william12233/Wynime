@@ -13,6 +13,8 @@ import androidx.compose.runtime.Immutable
 import me.him188.ani.app.domain.media.resolver.MediaResolver
 import me.him188.ani.app.domain.media.selector.MediaSelector
 import me.him188.ani.datasources.api.Media
+import me.him188.ani.source.plugin.api.SourceDiagnostics
+import me.him188.ani.source.plugin.api.SourceResultStatus
 
 @Immutable
 sealed interface VideoLoadingState {
@@ -44,6 +46,12 @@ sealed interface VideoLoadingState {
      */
     data object UnsupportedMedia : Failed()
     data object NoMatchingFile : Failed()
+    data class SourceError(
+        val status: SourceResultStatus,
+        val diagnostics: SourceDiagnostics,
+        val requiresVerification: Boolean,
+        val retryable: Boolean,
+    ) : Failed()
     data class UnknownError(
         val cause: Throwable,
     ) : Failed()

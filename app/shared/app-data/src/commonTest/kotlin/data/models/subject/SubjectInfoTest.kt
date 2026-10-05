@@ -46,4 +46,24 @@ class SubjectInfoTest {
         val info = subject(name = "", nameCn = "孤独摇滚！")
         assertEquals("孤独摇滚！", info.preferredDisplayName(useOriginalTitle = true))
     }
+
+    @Test
+    fun `listCoverUrl_prefers_imageLarge_over_imageThumb`() {
+        val info = SubjectInfo.Empty.copy(
+            imageLarge = "https://example.test/large.jpg",
+            imageThumb = "https://example.test/thumb.jpg",
+        )
+
+        assertEquals("https://example.test/large.jpg", info.listCoverUrl)
+    }
+
+    @Test
+    fun `listCoverUrl_falls_back_to_imageThumb_when_imageLarge_is_blank`() {
+        val info = SubjectInfo.Empty.copy(
+            imageLarge = "",
+            imageThumb = "https://example.test/thumb.jpg",
+        )
+
+        assertEquals("https://example.test/thumb.jpg", info.listCoverUrl)
+    }
 }

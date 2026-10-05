@@ -72,6 +72,7 @@ import me.him188.ani.app.ui.lang.media_source_results_click_retry
 import me.him188.ani.app.ui.lang.media_source_results_click_verify
 import me.him188.ani.app.ui.lang.media_source_results_data_sources_count
 import me.him188.ani.app.ui.lang.media_source_results_failed
+import me.him188.ani.app.ui.lang.media_source_results_no_match
 import me.him188.ani.app.ui.lang.media_source_results_help
 import me.him188.ani.app.ui.lang.media_source_results_searched
 import me.him188.ani.app.ui.lang.media_source_results_searching
@@ -194,7 +195,7 @@ fun MediaSourceResultsView(
                 { item ->
                     if (item.isCaptchaRequired) {
                         onResolveCaptcha(item)
-                    } else if (item.isDisabled || item.isFailedOrAbandoned || item.isRateLimited) {
+                    } else if (item.isDisabled || item.isFailedOrAbandoned || item.isNoMatch || item.isRateLimited) {
                         onRestartSource(item.instanceId)
                     } else {
                         onClickEnabled(item.mediaSourceId)
@@ -294,6 +295,7 @@ private fun MediaSourceResultCard(
 ) {
     val temporaryEnableText = stringResource(Lang.media_source_results_temp_enable)
     val failedText = stringResource(Lang.media_source_results_failed)
+    val noMatchText = stringResource(Lang.media_source_results_no_match)
     val clickRetryText = stringResource(Lang.media_source_results_click_retry)
     val captchaRequiredText = stringResource(Lang.media_source_results_captcha_required)
     val rateLimitedText = stringResource(Lang.media_source_results_rate_limited)
@@ -356,6 +358,13 @@ private fun MediaSourceResultCard(
                                 }
                             }
 
+                            source.isNoMatch -> {
+                                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
+                                    Icon(Icons.Outlined.Close, noMatchText)
+                                    Text(noMatchText)
+                                }
+                            }
+
                             source.isCaptchaRequired -> {
                                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                                     Icon(Icons.AutoMirrored.Outlined.HelpOutline, captchaRequiredText)
@@ -404,6 +413,12 @@ private fun MediaSourceResultCard(
                     source.isFailedOrAbandoned -> {
                         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                             Icon(Icons.Outlined.Close, failedText)
+                        }
+                    }
+
+                    source.isNoMatch -> {
+                        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
+                            Icon(Icons.Outlined.Close, noMatchText)
                         }
                     }
 

@@ -11,7 +11,6 @@ package me.him188.ani.app.ui.exploration
 
 import androidx.compose.runtime.Stable
 import androidx.paging.cachedIn
-import androidx.paging.compose.launchAsLazyPagingItemsIn
 import androidx.paging.filter
 import androidx.paging.flatMap
 import kotlinx.coroutines.flow.combine
@@ -26,6 +25,7 @@ import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.domain.session.SessionManager
 import me.him188.ani.app.domain.usecase.GlobalKoin
 import me.him188.ani.app.ui.foundation.AbstractViewModel
+import me.him188.ani.utils.logging.info
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -44,13 +44,16 @@ open class ExplorationPageViewModel(private val koin: Koin = GlobalKoin) : Abstr
     private val horizontalScrollTipFlow =
         settingsRepository.oneshotActionConfig.flow.map { it.horizontalScrollTip }
 
+    init {
+        logger.info { "ExplorationPageViewModel created." }
+    }
+
     val explorationPageState: ExplorationPageState = ExplorationPageState(
-        trendingSubjectInfoPager = trendsRepository.trendsInfoPager()
+        trendingSubjectInfoFlow = trendsRepository.trendsInfoPager()
             .map { pagingData ->
                 pagingData.flatMap { it.subjects.take(10) }
             }
-            .cachedIn(backgroundScope)
-            .launchAsLazyPagingItemsIn(backgroundScope),
+            .cachedIn(backgroundScope),
 //        TrendingSubjectsState(
 //            suspend { trendsRepository.getTrendsInfo() }
 //                .asFlow()

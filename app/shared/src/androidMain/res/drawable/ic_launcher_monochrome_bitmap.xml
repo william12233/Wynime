@@ -1,0 +1,10 @@
+<!--
+  ~ Copyright (C) 2024-2026 Wynime contributors.
+  ~
+  ~ Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
+  ~ https://github.com/william12233/Wynime/blob/main/LICENSE
+  -->
+
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+        android:src="@drawable/ic_launcher_monochrome_bitmap_image"
+        android:gravity="fill" />

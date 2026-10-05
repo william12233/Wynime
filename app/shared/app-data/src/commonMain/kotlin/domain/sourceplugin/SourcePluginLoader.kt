@@ -16,6 +16,10 @@ import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpMethod
 import io.ktor.http.headers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
 import me.him188.ani.app.domain.foundation.HttpClientProvider
 import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
 import me.him188.ani.app.domain.foundation.get
@@ -26,6 +30,7 @@ import me.him188.ani.app.domain.mediasource.web.captcha.SolveOutcome
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceCookieJar
 import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
+import me.him188.ani.source.plugin.api.SourceResultStatus
 import me.him188.ani.app.platform.Context
 import me.him188.ani.app.platform.currentAniBuildConfig
 import me.him188.ani.source.plugin.api.SourceHttpClient
@@ -43,7 +48,7 @@ import me.him188.ani.utils.logging.info
 import me.him188.ani.utils.logging.logger
 import me.him188.ani.utils.logging.warn
 import me.him188.ani.utils.ktor.ScopedHttpClient
-import kotlinx.coroutines.withTimeout
+import kotlin.time.TimeSource
 import kotlin.time.Duration.Companion.seconds
 
 data class LoadedSourcePlugin(
@@ -116,17 +121,87 @@ class SourcePluginHttpClient(
 ) : SourceHttpClient {
     private val logger = logger<SourcePluginHttpClient>()
 
-    override suspend fun execute(pluginRequest: SourceHttpRequest): SourceHttpResponse = withTimeout(15.seconds) {
+    override suspend fun execute(pluginRequest: SourceHttpRequest): SourceHttpResponse = try {
+        withTimeout(15.seconds) {
+            executeWithRetry(pluginRequest)
+        }
+    } catch (error: TimeoutCancellationException) {
+        throw SourcePluginFailure(
+            status = SourceResultStatus.TIMEOUT,
+            diagnostics = sourceFailureDiagnostics(
+                traceId = pluginRequest.traceId,
+                provider = pluginId ?: "host",
+                entryPoint = pluginRequest.entryPoint,
+                status = SourceResultStatus.TIMEOUT,
+                url = pluginRequest.url,
+                refererPresent = pluginRequest.headers.keys.any { it.equals("Referer", ignoreCase = true) },
+                failureReason = "request timeout",
+            ),
+            retryable = true,
+            cause = error,
+        )
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: SourcePluginFailure) {
+        throw error
+    } catch (error: Throwable) {
+        throw SourcePluginFailure(
+            status = SourceResultStatus.NETWORK_ERROR,
+            diagnostics = sourceFailureDiagnostics(
+                traceId = pluginRequest.traceId,
+                provider = pluginId ?: "host",
+                entryPoint = pluginRequest.entryPoint,
+                status = SourceResultStatus.NETWORK_ERROR,
+                url = pluginRequest.url,
+                refererPresent = pluginRequest.headers.keys.any { it.equals("Referer", ignoreCase = true) },
+                failureReason = error::class.simpleName,
+            ),
+            retryable = true,
+            cause = error,
+        )
+    }
+
+    private suspend fun executeWithRetry(pluginRequest: SourceHttpRequest): SourceHttpResponse {
+        var retryCount = 0
+        while (true) {
+            try {
+                return executeWithChallengeHandling(pluginRequest)
+            } catch (error: SourcePluginFailure) {
+                if (!error.retryable || retryCount >= MAX_RETRY_COUNT) throw error
+                retryCount++
+                delay(RETRY_DELAY_MILLIS)
+            }
+        }
+    }
+
+    private suspend fun executeWithChallengeHandling(pluginRequest: SourceHttpRequest): SourceHttpResponse {
         val response = executeOnce(pluginRequest)
         val sessionManager = webSessionManager
-        val challengeKind = sessionManager?.let {
-            WebCaptchaDetector.detect(
-                response.finalUrl.ifBlank { pluginRequest.url },
-                response.bodyAsText(),
-            )
+        val challengeKind = WebCaptchaDetector.detect(
+            response.finalUrl.ifBlank { pluginRequest.url },
+            response.bodyAsText(),
+        )
+        if (challengeKind == null) {
+            return validatePluginResponse(pluginRequest, response)
         }
-        if (sessionManager == null || challengeKind == null) {
-            return@withTimeout response
+
+        // Repository downloads use the same client type but have no provider identity and must
+        // retain their existing response handling. Provider traffic never hands a challenge page
+        // to a plugin parser.
+        if (pluginId == null) {
+            return response
+        }
+
+        if (sessionManager == null) {
+            throw failure(
+                request = pluginRequest,
+                response = response,
+                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+                retryable = false,
+                requiresVerification = true,
+                challengeKind = challengeKind.name,
+                reason = "shared web session is unavailable",
+            )
         }
 
         pluginLogger?.info("偵測到來源網站驗證，準備使用互動網頁工作階段處理")
@@ -144,18 +219,93 @@ class SourcePluginHttpClient(
                 sessionManager.solve(request, interactive = true)
             }
         }.getOrElse { error ->
-            pluginLogger?.warn("來源網站驗證流程失敗", error)
+            pluginLogger?.warn("來源網站驗證流程失敗: ${error::class.simpleName}")
             SolveOutcome.Failed(null)
         }
         if (outcome != SolveOutcome.Solved) {
-            return@withTimeout response
+            throw failure(
+                request = pluginRequest,
+                response = response,
+                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+                retryable = false,
+                requiresVerification = true,
+                challengeKind = challengeKind.name,
+                reason = "web session verification was not completed",
+            )
         }
 
         // 驗證成功後只重試原請求一次；cookie 與 UA 已由 WebSessionManager 同步到共用 HTTP 工作階段。
-        executeOnce(pluginRequest)
+        val retried = executeOnce(pluginRequest)
+        val retryChallenge = WebCaptchaDetector.detect(
+            retried.finalUrl.ifBlank { pluginRequest.url },
+            retried.bodyAsText(),
+        )
+        if (retryChallenge != null) {
+            throw failure(
+                request = pluginRequest,
+                response = retried,
+                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+                retryable = false,
+                requiresVerification = true,
+                challengeKind = retryChallenge.name,
+                reason = "challenge remained after the verified retry",
+            )
+        }
+        return validatePluginResponse(pluginRequest, retried)
     }
 
+    private fun validatePluginResponse(
+        request: SourceHttpRequest,
+        response: SourceHttpResponse,
+    ): SourceHttpResponse {
+        if (pluginId == null || response.statusCode in 200..399) return response
+
+        val status = if (response.statusCode == 401 || response.statusCode == 407) {
+            SourceResultStatus.AUTH_REQUIRED
+        } else {
+            SourceResultStatus.HTTP_ERROR
+        }
+        throw failure(
+            request = request,
+            response = response,
+            status = status,
+            retryable = response.statusCode == 408 || response.statusCode == 425 ||
+                response.statusCode == 429 || response.statusCode >= 500,
+            requiresVerification = status == SourceResultStatus.AUTH_REQUIRED,
+            reason = "HTTP ${response.statusCode}",
+        )
+    }
+
+    private fun failure(
+        request: SourceHttpRequest,
+        response: SourceHttpResponse?,
+        status: SourceResultStatus,
+        retryable: Boolean,
+        requiresVerification: Boolean = false,
+        challengeKind: String? = null,
+        reason: String? = null,
+    ): SourcePluginFailure = SourcePluginFailure(
+        status = status,
+        diagnostics = sourceFailureDiagnostics(
+            traceId = request.traceId,
+            provider = pluginId ?: "host",
+            entryPoint = request.entryPoint,
+            status = status,
+            url = response?.finalUrl?.ifBlank { request.url } ?: request.url,
+            statusCode = response?.statusCode,
+            contentType = response?.contentType,
+            redirectCount = response?.redirectCount,
+            elapsedMillis = response?.elapsedMillis,
+            refererPresent = request.headers.keys.any { it.equals("Referer", ignoreCase = true) },
+            challengeDetected = challengeKind,
+            failureReason = reason,
+        ),
+        retryable = retryable,
+        requiresVerification = requiresVerification,
+    )
+
     private suspend fun executeOnce(pluginRequest: SourceHttpRequest): SourceHttpResponse {
+        val started = TimeSource.Monotonic.markNow()
         return client.use {
             val response = request(pluginRequest.url) {
                 method = HttpMethod(pluginRequest.method)
@@ -163,13 +313,27 @@ class SourcePluginHttpClient(
                 pluginRequest.headers.forEach { (name, value) -> header(name, value) }
                 pluginRequest.body?.let(::setBody)
             }
+            val responseHeaders = response.headers.entries().associate { (name, values) ->
+                name to values.joinToString(",")
+            }
+            val finalUrl = response.call.request.url.toString()
             SourceHttpResponse(
                 statusCode = response.status.value,
-                finalUrl = response.call.request.url.toString(),
-                headers = response.headers.entries().associate { (name, values) -> name to values.joinToString(",") },
+                finalUrl = finalUrl,
+                headers = responseHeaders,
                 body = response.bodyAsBytes(),
+                elapsedMillis = started.elapsedNow().inWholeMilliseconds,
+                redirectCount = if (finalUrl == pluginRequest.url) 0 else 1,
+                contentType = responseHeaders.entries
+                    .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
+                    ?.value,
             )
         }
+    }
+
+    private companion object {
+        const val MAX_RETRY_COUNT = 1
+        const val RETRY_DELAY_MILLIS = 250L
     }
 }
 

@@ -61,6 +61,7 @@ data class MediaSourceResultPresentation(
     val isWorking: Boolean get() = state.isWorking
     val isDisabled: Boolean get() = state.isDisabled
     val isFailedOrAbandoned: Boolean get() = state.isFailedOrAbandoned
+    val isNoMatch: Boolean get() = state is MediaSourceFetchState.NoMatch
     val isCaptchaRequired: Boolean get() = state.isCaptchaRequired
     val isRateLimited: Boolean get() = state.isRateLimited
     val rateLimitedUntilMillis: Long? get() = (state as? MediaSourceFetchState.RateLimited)?.retryAt

@@ -64,6 +64,8 @@ sealed class ResourceLocation {
         val episodeId: String,
         /** Original page URL, used for diagnostics and browser fallback. */
         override val uri: String,
+        /** Short-lived discovery trace association; it is not part of the stable media identity. */
+        val traceId: String = "",
     ) : ResourceLocation() {
         init {
             require(pluginId.isNotBlank()) { "pluginId must not be blank" }

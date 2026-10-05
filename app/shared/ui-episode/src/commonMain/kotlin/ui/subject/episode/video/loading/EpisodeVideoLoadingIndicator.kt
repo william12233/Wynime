@@ -36,6 +36,8 @@ import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_cancelled
 import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_network_error
 import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_no_matching_file
 import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_resolution_timed_out
+import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_error
+import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_verification
 import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_unknown_error
 import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_unsupported_media
 import me.him188.ani.app.ui.lang.subject_episode_video_loading_decoding_data
@@ -101,6 +103,8 @@ fun EpisodeVideoLoadingIndicator(
         noMatchingFile = stringResource(Lang.subject_episode_video_loading_cause_no_matching_file),
         cancelled = stringResource(Lang.subject_episode_video_loading_cause_cancelled),
         networkError = stringResource(Lang.subject_episode_video_loading_cause_network_error),
+        sourceError = stringResource(Lang.subject_episode_video_loading_cause_source_error),
+        sourceVerification = stringResource(Lang.subject_episode_video_loading_cause_source_verification),
     )
     VideoLoadingIndicator(
         showProgress = state is VideoLoadingState.Progressing,
@@ -179,6 +183,8 @@ private data class VideoLoadingCauseLabels(
     val noMatchingFile: String,
     val cancelled: String,
     val networkError: String,
+    val sourceError: String,
+    val sourceVerification: String,
 )
 
 private fun renderCause(cause: VideoLoadingState.Failed, labels: VideoLoadingCauseLabels): String = when (cause) {
@@ -188,6 +194,11 @@ private fun renderCause(cause: VideoLoadingState.Failed, labels: VideoLoadingCau
     VideoLoadingState.NoMatchingFile -> labels.noMatchingFile
     VideoLoadingState.Cancelled -> labels.cancelled
     VideoLoadingState.NetworkError -> labels.networkError
+    is VideoLoadingState.SourceError -> if (cause.requiresVerification) {
+        labels.sourceVerification
+    } else {
+        labels.sourceError
+    }
 }
 
 @Preview(name = "Selecting Media")

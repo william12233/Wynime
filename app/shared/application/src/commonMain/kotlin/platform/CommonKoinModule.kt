@@ -27,6 +27,8 @@ import me.him188.ani.app.data.network.AniSubjectRelationIndexService
 import me.him188.ani.app.data.network.AniSubjectSearchService
 import me.him188.ani.app.data.network.AnimeScheduleService
 import me.him188.ani.app.data.network.BangumiApiProvider
+import me.him188.ani.app.data.network.BangumiExploreDataSource
+import me.him188.ani.app.data.network.BangumiScheduleService
 import me.him188.ani.app.data.network.WynimeCloudClient
 import me.him188.ani.app.data.network.BangumiSummaryService
 import me.him188.ani.app.data.network.BangumiBangumiCommentServiceImpl
@@ -83,6 +85,8 @@ import me.him188.ani.app.domain.media.cache.storage.HttpMediaCacheStorage
 import me.him188.ani.app.domain.media.cache.storage.MediaSaveDirProvider
 import me.him188.ani.app.domain.media.fetch.MediaSourceManager
 import me.him188.ani.app.domain.media.fetch.MediaSourceManagerImpl
+import me.him188.ani.app.domain.media.fetch.SubjectMediaFetchSessionRegistry
+import me.him188.ani.app.domain.media.fetch.createFetchFetchSession
 import me.him188.ani.app.domain.sourceplugin.InstalledSourcePluginRepository
 import me.him188.ani.app.domain.sourceplugin.SourcePluginContextFactory
 import me.him188.ani.app.domain.sourceplugin.SourcePluginHttpClient
@@ -225,6 +229,7 @@ private fun KoinApplication.otherModules(
             tokenRepository = get(),
         )
     }
+    single<BangumiExploreDataSource> { get<BangumiApiProvider>() }
     single<BangumiClient> {
         BangumiClientImpl(
             get<HttpClientProvider>().get(
@@ -272,6 +277,7 @@ private fun KoinApplication.otherModules(
     }
 
     single<AnimeScheduleService> { AnimeScheduleService() }
+    single<BangumiScheduleService> { BangumiScheduleService(get()) }
     // TV 横版 backdrop / 分集剧照; 未配置 ani.tmdb.api.token 时自动关闭
     single<BangumiSummaryService> { BangumiSummaryService(get()) }
 
@@ -399,6 +405,14 @@ private fun KoinApplication.otherModules(
                 get<MediaDownloadManager>().storages.map { it.cacheMediaSource }
             },
             pluginSources = get<SourcePluginRegistry>().mediaSources,
+        )
+    }
+    single {
+        SubjectMediaFetchSessionRegistry(
+            scope = coroutineScope,
+            createSession = { request ->
+                get<MediaSourceManager>().createFetchFetchSession(flowOf(request))
+            },
         )
     }
     // Caching

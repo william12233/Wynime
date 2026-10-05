@@ -146,7 +146,12 @@ fun KoinApplication.repositoryModules(
         )
     }
 
-    single<AnimeScheduleRepository> { AnimeScheduleRepository(get()) }
+    single<AnimeScheduleRepository> {
+        AnimeScheduleRepository(
+            animeScheduleService = get(),
+            bangumiScheduleService = get(),
+        )
+    }
 
     single<BangumiCommentRepository> {
         BangumiCommentRepository(
@@ -189,9 +194,15 @@ fun KoinApplication.repositoryModules(
         )
     }
 
-    single<TrendsRepository> { TrendsRepository() }
+    single<TrendsRepository> { TrendsRepository(dataSource = get()) }
 
-    single<RecommendationRepository> { RecommendationRepository() }
+    single<RecommendationRepository> {
+        RecommendationRepository(
+            dataSource = get(),
+            trendsRepository = get(),
+            settingsRepository = get(),
+        )
+    }
 
     single<AutoSkipRepository> { AutoSkipRepository() }
 

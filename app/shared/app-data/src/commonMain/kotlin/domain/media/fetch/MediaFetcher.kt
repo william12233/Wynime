@@ -53,6 +53,8 @@ import me.him188.ani.app.data.repository.RepositoryUnknownException
 import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
 import me.him188.ani.app.domain.mediasource.web.BlockReason
 import me.him188.ani.app.domain.mediasource.web.BlockedException
+import me.him188.ani.app.domain.sourceplugin.SourcePluginFailure
+import me.him188.ani.app.domain.sourceplugin.SourcePluginNoMatchException
 import me.him188.ani.app.platform.currentAniBuildConfig
 import me.him188.ani.datasources.api.Media
 import me.him188.ani.datasources.api.paging.SizedSource
@@ -71,6 +73,7 @@ import me.him188.ani.utils.logging.warn
 import me.him188.ani.utils.platform.collections.EnumMap
 import me.him188.ani.utils.platform.collections.ImmutableEnumMap
 import me.him188.ani.utils.platform.currentTimeMillis
+import me.him188.ani.utils.platform.Uuid
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration.Companion.seconds
@@ -240,6 +243,17 @@ class MediaSourceMediaFetcher(
                                 else -> MediaSourceFetchState.Failed(exception, restartCount)
                             }
 
+                            exception is SourcePluginNoMatchException -> MediaSourceFetchState.NoMatch(
+                                diagnostics = exception.diagnostics,
+                                id = restartCount,
+                            )
+
+                            exception is SourcePluginFailure -> MediaSourceFetchState.Failed(
+                                cause = exception,
+                                id = restartCount,
+                                diagnostics = exception.diagnostics,
+                            )
+
                             else -> MediaSourceFetchState.Failed(exception, restartCount)
                         }
                         logUpstreamException(exception)
@@ -318,6 +332,21 @@ class MediaSourceMediaFetcher(
 
                 is CancellationException -> {
                     logger.warn { "Failed to fetch media from ${sourceInfo.displayName} due to CancellationException" }
+                }
+
+                is SourcePluginFailure -> {
+                    logger.warn {
+                        "Failed to fetch media from ${sourceInfo.displayName} due to source plugin " +
+                            "status=${exception.status.name} provider=${exception.diagnostics.provider} " +
+                            "traceId=${exception.diagnostics.traceId}"
+                    }
+                }
+
+                is SourcePluginNoMatchException -> {
+                    logger.info {
+                        "Source plugin returned no match: provider=${exception.diagnostics.provider} " +
+                            "traceId=${exception.diagnostics.traceId}"
+                    }
                 }
 
                 is RepositoryException -> {
@@ -523,7 +552,11 @@ class MediaSourceMediaFetcher(
         requestLazy: Flow<MediaFetchRequest>,
         flowContext: CoroutineContext
     ): MediaFetchSession {
-        return MediaFetchSessionImpl(requestLazy, configProvider(), this.flowContext + flowContext)
+        val traceId = Uuid.randomString()
+        val tracedRequest = requestLazy.take(1).map { request ->
+            request.takeIf { it.traceId.isNotBlank() } ?: request.copy(traceId = traceId)
+        }
+        return MediaFetchSessionImpl(tracedRequest, configProvider(), this.flowContext + flowContext)
     }
 
     private companion object {

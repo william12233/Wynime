@@ -51,9 +51,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     return json({ ok: true });
   }
   if (url.pathname === "/app/oauth-complete" && request.method === "GET") {
-    return new Response("Wynime OAuth callback. Return to the Wynime app.", {
-      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
-    });
+    return oauthAppLinkFallback(url, env);
   }
   if (url.pathname === "/api/v1/oauth/bangumi/start" && request.method === "GET") {
     return startOAuth(url, env);
@@ -450,6 +448,63 @@ function redirectToApp(
   if (ticket) target.searchParams.set("ticket", ticket);
   if (error) target.searchParams.set("error", error);
   return Response.redirect(target.toString(), 302);
+}
+
+/**
+ * App Links are preferred for release builds, but Android may open this URL in
+ * a browser when the installed build is not covered by the published
+ * assetlinks statement (for example, a debug application ID). Keep the
+ * callback short-lived and hand it to the app's custom scheme as a fallback.
+ */
+function oauthAppLinkFallback(url: URL, env: Env): Response {
+  const state = url.searchParams.get("state");
+  const ticket = url.searchParams.get("ticket");
+  const error = url.searchParams.get("error");
+  if (!state || (!ticket && !error)) {
+    return new Response("Wynime OAuth callback is missing its result.", {
+      status: 400,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
+
+  const target = new URL(env.CUSTOM_SCHEME_REDIRECT_URI || DEFAULT_CUSTOM_SCHEME_REDIRECT_URI);
+  target.searchParams.set("state", state);
+  if (ticket) target.searchParams.set("ticket", ticket);
+  if (error) target.searchParams.set("error", error);
+
+  const targetUrl = target.toString();
+  const escapedTargetUrl = escapeHtml(targetUrl);
+  const scriptTargetUrl = JSON.stringify(targetUrl)
+    .replaceAll("<", "\\u003c")
+    .replaceAll(">", "\\u003e")
+    .replaceAll("&", "\\u0026");
+  return new Response(
+    `<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="0;url=${escapedTargetUrl}">
+<title>Return to Wynime</title>
+</head><body>
+<p>Returning to Wynime…</p>
+<p><a href="${escapedTargetUrl}">Open Wynime</a></p>
+<script>window.location.replace(${scriptTargetUrl});</script>
+</body></html>`,
+    {
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    },
+  );
+}
+
+function escapeHtml(value: string): string {
+  const entities: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return value.replace(/[&<>"']/g, (character) => entities[character]);
 }
 
 async function assetLinks(env: Env): Promise<Response> {

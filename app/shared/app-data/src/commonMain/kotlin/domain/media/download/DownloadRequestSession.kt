@@ -37,6 +37,7 @@ import me.him188.ani.app.data.repository.media.EpisodePreferencesRepository
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
 import me.him188.ani.app.domain.media.fetch.MediaFetchSession
 import me.him188.ani.app.domain.media.fetch.MediaSourceManager
+import me.him188.ani.app.domain.media.fetch.SubjectMediaFetchSessionRegistry
 import me.him188.ani.app.domain.media.fetch.create
 import me.him188.ani.app.domain.media.fetch.createFetchFetchSession
 import me.him188.ani.app.domain.media.selector.MediaSelector
@@ -164,6 +165,7 @@ class DownloadRequestSession internal constructor(
     private val downloadManager: MediaDownloadManager,
     private val addDownload: AddDownloadUseCase,
     parentScope: CoroutineScope,
+    private val sharedFetchSessionRegistry: SubjectMediaFetchSessionRegistry? = null,
 ) {
     val episodeIds: List<Int> = episodeIds.distinct().also {
         require(it.isNotEmpty()) { "episodeIds must not be empty" }
@@ -329,7 +331,9 @@ class DownloadRequestSession internal constructor(
         episodes: List<EpisodeInfo>,
         existing: List<ExistingDownload>,
     ): List<Pair<EpisodeInfo, Media>> = coroutineScope {
-        val fetchSession = sources.createFetchFetchSession(flowOf(MediaFetchRequest.create(subject, episode, episodes)))
+        val request = MediaFetchRequest.create(subject, episode, episodes)
+        val fetchSession = sharedFetchSessionRegistry?.get(request)
+            ?: sources.createFetchFetchSession(flowOf(request))
         val selector = selectors.create(subjectId, episodeId, fetchSession.cumulativeResults, fetchRequest = fetchSession.latestRequest)
         // 保持查询进行, 与弹窗是否可见无关.
         launch { fetchSession.cumulativeResults.collect() }
@@ -444,6 +448,7 @@ class DownloadRequestSessionFactory(
     private val selectors: MediaSelectorFactory,
     private val downloadManager: MediaDownloadManager,
     private val addDownload: AddDownloadUseCase,
+    private val sharedFetchSessionRegistry: SubjectMediaFetchSessionRegistry? = null,
 ) {
     /**
      * 创建会话但不开始处理.
@@ -453,5 +458,6 @@ class DownloadRequestSessionFactory(
             subjectId, episodeIds,
             subjects, preferences, sources, selectors, downloadManager, addDownload,
             parentScope,
+            sharedFetchSessionRegistry,
         )
 }

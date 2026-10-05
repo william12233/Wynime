@@ -15,7 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.paging.compose.collectWithLifecycle
+import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
 import me.him188.ani.tv.ui.foundation.TvNavigationEffect
 import me.him188.ani.tv.ui.foundation.TvNavigationEvent
 
@@ -27,7 +27,7 @@ fun TvExplorationRoute(
     navigationRailInsets: PaddingValues = PaddingValues(0.dp),
 ) {
     val page = viewModel.explorationPageState
-    val trends = page.trendingSubjectInfoPager.collectWithLifecycle()
+    val trends = page.trendingSubjectInfoFlow.collectAsLazyPagingItemsWithLifecycle()
     val recommendations = viewModel.recommendations.collectWithLifecycle()
     val followed = viewModel.followed.collectWithLifecycle()
     val media by viewModel.mediaState.collectAsStateWithLifecycle()

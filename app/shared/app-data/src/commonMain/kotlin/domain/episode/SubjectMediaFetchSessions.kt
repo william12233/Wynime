@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import me.him188.ani.app.domain.media.fetch.MediaFetchSession
 import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
+import me.him188.ani.app.domain.media.fetch.SubjectMediaFetchSessionRegistry
 import me.him188.ani.app.domain.media.fetch.isFailedOrAbandoned
 import me.him188.ani.datasources.api.source.MediaFetchRequest
 
@@ -31,6 +32,7 @@ import me.him188.ani.datasources.api.source.MediaFetchRequest
  */
 class SubjectMediaFetchSessions(
     private val scope: CoroutineScope,
+    private val sharedRegistry: SubjectMediaFetchSessionRegistry? = null,
     private val createSession: suspend (MediaFetchRequest) -> MediaFetchSession,
 ) : AutoCloseable {
     private val lock = Mutex()
@@ -41,6 +43,11 @@ class SubjectMediaFetchSessions(
      * 取得可用于 [request] 的会话: 与当前会话查询同一条目时复用, 否则创建.
      */
     suspend fun get(request: MediaFetchRequest): MediaFetchSession = lock.withLock {
+        if (sharedRegistry != null) {
+            val session = sharedRegistry.get(request)
+            current = request to session
+            return@withLock session
+        }
         current?.let { (currentRequest, session) ->
             if (currentRequest.isSameSubjectQuery(request)) {
                 retryFailedSources(session)
@@ -63,6 +70,11 @@ class SubjectMediaFetchSessions(
     }
 
     override fun close() {
+        if (sharedRegistry != null) {
+            current?.second?.let(sharedRegistry::release)
+            current = null
+            return
+        }
         subscription?.cancel()
         subscription = null
         current = null

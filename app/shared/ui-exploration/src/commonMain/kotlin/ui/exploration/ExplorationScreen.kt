@@ -37,7 +37,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.carousel.CarouselState
+import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
@@ -52,7 +52,6 @@ import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.paging.PagingData
-import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -121,21 +120,12 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Stable
 class ExplorationPageState(
-    val trendingSubjectInfoPager: LazyPagingItems<TrendingSubjectInfo>,
+    val trendingSubjectInfoFlow: Flow<PagingData<TrendingSubjectInfo>>,
     val followedSubjectsPager: Flow<PagingData<FollowedSubjectInfo>>,
     val recommendationPager: Flow<PagingData<RecommendedItemInfo>>,
     val horizontalScrollTipFlow: Flow<Boolean>,
     private val onSetDisableHorizontalScrollTip: () -> Unit,
 ) {
-    val trendingSubjectsCarouselState = CarouselState(
-        itemCount = {
-            if (trendingSubjectInfoPager.isLoadingFirstPageOrRefreshing) {
-                8
-            } else {
-                trendingSubjectInfoPager.itemCount
-            }
-        },
-    )
     val followedSubjectsLazyRowState = LazyListState()
 
 
@@ -215,6 +205,14 @@ fun ExplorationScreen(
         val scope = rememberCoroutineScope()
         val horizontalScrollTip = stringResource(Lang.exploration_horizontal_scroll_tip)
 
+        val trendingSubjectInfoPager = state.trendingSubjectInfoFlow.collectAsLazyPagingItemsWithLifecycle()
+        val trendingSubjectsCarouselState = rememberCarouselState(initialItem = 0) {
+            if (trendingSubjectInfoPager.isLoadingFirstPageOrRefreshing) {
+                8
+            } else {
+                trendingSubjectInfoPager.itemCount
+            }
+        }
         val recommendationPager = state.recommendationPager.collectAsLazyPagingItemsWithLifecycle()
         val recommendationPagerLoadError by recommendationPager.rememberLoadErrorState()
         val aniMotionScheme = LocalAniMotionScheme.current
@@ -256,10 +254,10 @@ fun ExplorationScreen(
                     val carouselItemSize = CarouselItemDefaults.itemSize()
                     HorizontalScrollControlScaffoldOnDesktop(
                         rememberHorizontalScrollControlState(
-                            state.trendingSubjectsCarouselState,
+                            trendingSubjectsCarouselState,
                             onClickScroll = { direction ->
                                 scope.launch {
-                                    state.trendingSubjectsCarouselState.animateScrollBy(
+                                    trendingSubjectsCarouselState.animateScrollBy(
                                         with<Density, Float>(density) { (carouselItemSize.preferredWidth * 2).toPx() } *
                                                 if (direction == HorizontalScrollControlState.Direction.BACKWARD) -1 else 1,
                                     )
@@ -272,7 +270,7 @@ fun ExplorationScreen(
                         ),
                     ) {
                         TrendingSubjectsCarousel(
-                            state.trendingSubjectInfoPager,
+                            trendingSubjectInfoPager,
                             onClick = {
                                 Analytics.recordEvent(SubjectEnter) {
                                     put("source", "home_trending")
@@ -288,7 +286,7 @@ fun ExplorationScreen(
                                 )
                             },
                             contentPadding = PaddingValues(vertical = 8.dp),
-                            carouselState = state.trendingSubjectsCarouselState,
+                            carouselState = trendingSubjectsCarouselState,
                         )
                     }
 
@@ -388,12 +386,10 @@ fun RecommendedSubjectInfo.toNavPlaceholder(): SubjectDetailPlaceholder {
 @PreviewLightDark
 private fun PreviewExplorationPage() {
     ProvideCompositionLocalsForPreview {
-        val scope = rememberCoroutineScope()
-        val trendingSubjectInfoPager = createTestPager(TestTrendingSubjectInfos).collectAsLazyPagingItemsWithLifecycle()
         ExplorationScreen(
             remember {
                 ExplorationPageState(
-                    trendingSubjectInfoPager,
+                    trendingSubjectInfoFlow = createTestPager(TestTrendingSubjectInfos),
                     followedSubjectsPager = createTestPager(TestFollowedSubjectInfos),
                     recommendationPager = createTestPager(TestRecommendedItemInfos),
                     horizontalScrollTipFlow = flowOf(false),

@@ -9,6 +9,7 @@
 
 package me.him188.ani.app.domain.sourceplugin
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flow
 import me.him188.ani.datasources.api.DefaultMedia
 import me.him188.ani.datasources.api.EpisodeSort
@@ -34,13 +35,17 @@ import me.him188.ani.datasources.api.topic.EpisodeRange
 import me.him188.ani.datasources.api.topic.FileSize
 import me.him188.ani.datasources.api.topic.ResourceLocation
 import me.him188.ani.source.plugin.api.SourceConnectionState
+import me.him188.ani.source.plugin.api.SourceDiagnostics
+import me.him188.ani.source.plugin.api.SourceResultStatus
 import me.him188.ani.source.plugin.api.SourcePlugin
 import me.him188.ani.source.plugin.api.SourceSearchRequest
 import me.him188.ani.source.plugin.api.SourceMediaIdentity
 import me.him188.ani.source.plugin.api.SourceSubject
+import me.him188.ani.source.plugin.api.SourceTracePhase
 import me.him188.ani.source.plugin.api.SourceWebResourceMatch
 import me.him188.ani.utils.logging.info
 import me.him188.ani.utils.logging.logger
+import me.him188.ani.utils.platform.Uuid
 
 /** Adapts one executable plugin to the host media-source contract. */
 class SourcePluginMediaSource(
@@ -76,14 +81,33 @@ class SourcePluginMediaSource(
         -> ConnectionStatus.FAILED
     }
 
-    override suspend fun searchSubjects(keyword: String): List<BrowseSubject> = plugin.search(
-        SourceSearchRequest(keyword),
-    ).map { subject ->
-        BrowseSubject(
-            name = subject.title,
-            url = subject.detailUrl?.withPluginSubjectMarker(subject.id)
-                ?: internalSubjectUrl(subject.id),
+    override suspend fun searchSubjects(keyword: String): List<BrowseSubject> {
+        val traceId = Uuid.randomString()
+        trace(traceId, SourceTracePhase.SEARCH_REQUEST, SourceResultStatus.SUCCESS, query = keyword)
+        val subjects = try {
+            plugin.search(SourceSearchRequest(keyword, traceId = traceId, entryPoint = "browse-search"))
+        } catch (error: SourcePluginFailure) {
+            traceFailure(traceId, SourceTracePhase.SEARCH_RESPONSE, error)
+            throw error
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            throw parseFailure(traceId, "browse-search", keyword, error)
+        }
+        trace(
+            traceId,
+            SourceTracePhase.SEARCH_RESPONSE,
+            if (subjects.isEmpty()) SourceResultStatus.NO_MATCH else SourceResultStatus.SUCCESS,
+            query = keyword,
+            parserResultCount = subjects.size,
         )
+        return subjects.map { subject ->
+            BrowseSubject(
+                name = subject.title,
+                url = subject.detailUrl?.withPluginSubjectMarker(subject.id)
+                    ?: internalSubjectUrl(subject.id),
+            )
+        }
     }
 
     override suspend fun browseSubject(subject: BrowseSubject): List<BrowseChannel> {
@@ -153,13 +177,30 @@ class SourcePluginMediaSource(
 
     override suspend fun fetch(query: MediaFetchRequest): SizedSource<MediaMatch> = SinglePagePagedSource {
         flow {
-            logger.info { "Source plugin fetch started: $mediaSourceId" }
+            val traceId = query.traceId.ifBlank { Uuid.randomString() }
             val names = query.subjectNames.ifEmpty { listOfNotNull(query.subjectNameCN) }
+            trace(traceId, SourceTracePhase.DISCOVERY_START, SourceResultStatus.SUCCESS, query = names.joinToString(" | "))
             val subjects = buildList {
                 val seen = HashSet<String>()
                 for (name in names) {
-                    val searchResults = plugin.search(SourceSearchRequest(name))
-                    logger.info { "Source plugin search finished: $mediaSourceId name=$name results=${searchResults.size}" }
+                    trace(traceId, SourceTracePhase.SEARCH_REQUEST, SourceResultStatus.SUCCESS, query = name)
+                    val searchResults = try {
+                        plugin.search(SourceSearchRequest(name, traceId = traceId, entryPoint = "discovery-search"))
+                    } catch (error: SourcePluginFailure) {
+                        traceFailure(traceId, SourceTracePhase.SEARCH_RESPONSE, error)
+                        throw error
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Throwable) {
+                        throw parseFailure(traceId, "discovery-search", name, error)
+                    }
+                    trace(
+                        traceId,
+                        SourceTracePhase.SEARCH_RESPONSE,
+                        if (searchResults.isEmpty()) SourceResultStatus.NO_MATCH else SourceResultStatus.SUCCESS,
+                        query = name,
+                        parserResultCount = searchResults.size,
+                    )
                     for (subject in searchResults) {
                         if (seen.add(subject.id)) add(subject)
                     }
@@ -167,21 +208,44 @@ class SourcePluginMediaSource(
             }
             val selectedSubject = selectBestSourceSubject(subjects, names)
             if (selectedSubject == null) {
-                logger.info {
-                    "Source plugin subject selection produced no safe match: " +
-                        "$mediaSourceId names=${names.size} candidates=${subjects.size}"
-                }
-                return@flow
+                val diagnostics = trace(
+                    traceId,
+                    SourceTracePhase.MATCH_RESULT,
+                    SourceResultStatus.NO_MATCH,
+                    query = names.joinToString(" | "),
+                    parserResultCount = subjects.size,
+                    failureReason = "no safe subject match",
+                )
+                throw SourcePluginNoMatchException(diagnostics)
             }
             val subject = selectedSubject.subject
-            logger.info {
-                "Source plugin detail page selected: $mediaSourceId id=${subject.id} " +
-                    "title=${subject.title} exact=${selectedSubject.isExactTitle} candidates=${subjects.size}; " +
-                    "all detail-page channels will be retained"
-            }
+            trace(
+                traceId,
+                SourceTracePhase.MATCH_RESULT,
+                SourceResultStatus.SUCCESS,
+                query = names.joinToString(" | "),
+                url = subject.detailUrl,
+                parserResultCount = subjects.size,
+                matcherScore = selectedSubject.score,
+            )
+            trace(
+                traceId,
+                SourceTracePhase.SUBJECT_RESOLVE,
+                SourceResultStatus.SUCCESS,
+                url = subject.detailUrl,
+            )
             var matchCount = 0
-            val details = plugin.getSubject(subject.id)
-            logger.info { "Source plugin details finished: $mediaSourceId subject=${subject.id} channels=${details.channels.size}" }
+            trace(traceId, SourceTracePhase.EPISODE_FETCH, SourceResultStatus.SUCCESS, url = subject.detailUrl)
+            val details = try {
+                plugin.getSubject(subject.id)
+            } catch (error: SourcePluginFailure) {
+                traceFailure(traceId, SourceTracePhase.EPISODE_FETCH, error)
+                throw error
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                throw parseFailure(traceId, "episode-fetch", subject.detailUrl, error)
+            }
             for (channel in details.channels) {
                 for (episode in channel.episodes) {
                     val pageUrl = episode.playPageUrl ?: subject.detailUrl ?: continue
@@ -205,6 +269,7 @@ class SourcePluginMediaSource(
                                     channelId = channel.channel.id,
                                     episodeId = episode.id,
                                     uri = pageUrl,
+                                    traceId = traceId,
                                 ),
                                 originalTitle = "${subject.title} ${channel.channel.displayName} ${episode.displayName}".trim(),
                                 publishedTime = 0L,
@@ -232,8 +297,93 @@ class SourcePluginMediaSource(
                     )
                 }
             }
-            logger.info { "Source plugin fetch finished: $mediaSourceId matches=$matchCount" }
+            if (matchCount == 0) {
+                val diagnostics = trace(
+                    traceId,
+                    SourceTracePhase.EPISODE_MATCH,
+                    SourceResultStatus.NO_MATCH,
+                    url = subject.detailUrl,
+                    parserResultCount = 0,
+                    failureReason = "subject detail contained no playable episodes",
+                )
+                throw SourcePluginNoMatchException(diagnostics)
+            }
+            trace(
+                traceId,
+                SourceTracePhase.EPISODE_MATCH,
+                SourceResultStatus.SUCCESS,
+                url = subject.detailUrl,
+                parserResultCount = matchCount,
+            )
         }
+    }
+
+    private fun traceFailure(traceId: String, phase: SourceTracePhase, failure: SourcePluginFailure) {
+        trace(
+            traceId = traceId,
+            phase = phase,
+            status = failure.status,
+            url = failure.diagnostics.url,
+            statusCode = failure.diagnostics.statusCode,
+            elapsedMillis = failure.diagnostics.elapsedMillis,
+            failureReason = failure.diagnostics.failureReason,
+        )
+    }
+
+    private fun parseFailure(
+        traceId: String,
+        entryPoint: String,
+        url: String?,
+        error: Throwable,
+    ): SourcePluginFailure = SourcePluginFailure(
+        status = SourceResultStatus.PARSE_ERROR,
+        diagnostics = sourceFailureDiagnostics(
+            traceId = traceId,
+            provider = mediaSourceId,
+            entryPoint = entryPoint,
+            status = SourceResultStatus.PARSE_ERROR,
+            url = url,
+            failureReason = error::class.simpleName,
+        ),
+        retryable = false,
+        cause = error,
+    )
+
+    private fun trace(
+        traceId: String,
+        phase: SourceTracePhase,
+        status: SourceResultStatus,
+        query: String? = null,
+        url: String? = null,
+        statusCode: Int? = null,
+        elapsedMillis: Long? = null,
+        parserResultCount: Int? = null,
+        matcherScore: Int? = null,
+        failureReason: String? = null,
+    ): SourceDiagnostics {
+        val diagnostics = SourceDiagnostics(
+            traceId = traceId,
+            provider = mediaSourceId,
+            entryPoint = phase.name,
+            query = query,
+            url = url?.let(::safeSourceUrl),
+            domain = url?.let(::sourceDomain),
+            statusCode = statusCode,
+            elapsedMillis = elapsedMillis,
+            responseCategory = status,
+            userAgentProfile = "BROWSER",
+            parserResultCount = parserResultCount,
+            matcherScore = matcherScore,
+            failureReason = failureReason,
+        )
+        logger.info {
+            "source_trace phase=${phase.name} traceId=$traceId provider=$mediaSourceId " +
+                "status=${status.name} query=${query.orEmpty()} url=${diagnostics.url.orEmpty()} " +
+                "statusCode=${statusCode ?: "-"} elapsedMs=${elapsedMillis ?: "-"} " +
+                "parserCount=${parserResultCount ?: "-"} matcherScore=${matcherScore ?: "-"} " +
+                "failure=${failureReason.orEmpty()}"
+        }
+        return diagnostics
     }
 
     private fun subjectIdFromBrowseSubject(subject: BrowseSubject): String {

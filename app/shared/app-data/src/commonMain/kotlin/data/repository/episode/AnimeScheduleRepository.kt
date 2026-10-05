@@ -21,6 +21,7 @@ import me.him188.ani.app.data.models.subject.LightEpisodeInfo
 import me.him188.ani.app.data.models.subject.LightSubjectInfo
 import me.him188.ani.app.data.models.subject.SubjectRecurrence
 import me.him188.ani.app.data.network.AnimeScheduleService
+import me.him188.ani.app.data.network.BangumiScheduleService
 import me.him188.ani.app.data.repository.Repository
 import me.him188.ani.app.data.repository.RepositoryServiceUnavailableException
 import me.him188.ani.app.domain.episode.AiringScheduleForDate
@@ -43,6 +44,7 @@ import kotlin.time.Instant
 
 class AnimeScheduleRepository(
     private val animeScheduleService: AnimeScheduleService,
+    private val bangumiScheduleService: BangumiScheduleService? = null,
     private val updatePeriod: Duration = 1.hours,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
 ) : Repository(defaultDispatcher) {
@@ -74,10 +76,26 @@ class AnimeScheduleRepository(
     }
 
     fun recentAiringSchedulesFlow(today: LocalDate, timeZone: TimeZone): Flow<List<AiringScheduleForDate>> {
+        var forceBangumiRefresh = true
         return refreshTicker.mapLatest {
-            animeScheduleService.getLatestAiringSchedule(today.toString(), timeZone.id)
-                .list
-                .map { it.toAiringScheduleForDate() }
+            try {
+                bangumiScheduleService?.let { service ->
+                    service.getRecentAiringSchedules(
+                        today = today,
+                        timeZone = timeZone,
+                        forceRefresh = forceBangumiRefresh,
+                    ).also { forceBangumiRefresh = false }
+                } ?: animeScheduleService.getLatestAiringSchedule(today.toString(), timeZone.id)
+                    .list
+                    .map { it.toAiringScheduleForDate() }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                logger.error(e) {
+                    "Failed to load airing schedule (operation=Bangumi calendar plus episodes)."
+                }
+                throw e
+            }
         }.flowOn(defaultDispatcher)
     }
 }

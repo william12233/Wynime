@@ -47,6 +47,8 @@ import me.him188.ani.app.ui.lang.subject_episode_statistics_error_details
 import me.him188.ani.app.ui.lang.subject_episode_statistics_network_error
 import me.him188.ani.app.ui.lang.subject_episode_statistics_no_matching_file
 import me.him188.ani.app.ui.lang.subject_episode_statistics_resolution_timed_out
+import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_error
+import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_verification
 import me.him188.ani.app.ui.lang.subject_episode_statistics_unknown_error_tap
 import me.him188.ani.app.ui.lang.subject_episode_statistics_unsupported_media
 import org.jetbrains.compose.resources.stringResource
@@ -109,19 +111,28 @@ fun VideoLoadingSummary(
         val unknownErrorTapText = stringResource(Lang.subject_episode_statistics_unknown_error_tap)
         val cancelledText = stringResource(Lang.subject_episode_statistics_cancelled)
         val networkErrorText = stringResource(Lang.subject_episode_statistics_network_error)
+        val sourceErrorText = stringResource(Lang.subject_episode_video_loading_cause_source_error)
+        val sourceVerificationText = stringResource(Lang.subject_episode_video_loading_cause_source_verification)
         ProvideContentColor(color) {
             var showErrorDialog by rememberSaveable(state) { mutableStateOf(false) }
             if (showErrorDialog) {
                 val text = remember(state) {
                     when (state) {
                         is VideoLoadingState.UnknownError -> state.cause.stackTraceToString()
+                        is VideoLoadingState.SourceError -> buildString {
+                            appendLine("status=${state.status.name}")
+                            appendLine("provider=${state.diagnostics.provider}")
+                            appendLine("traceId=${state.diagnostics.traceId}")
+                            state.diagnostics.url?.let { appendLine("url=$it") }
+                            state.diagnostics.failureReason?.let { appendLine("reason=$it") }
+                        }
                         else -> state.toString()
                     }
                 }
                 SimpleErrorDialog({ text }) { showErrorDialog = false }
             }
             Row(
-                Modifier.ifThen(state is VideoLoadingState.UnknownError) {
+                Modifier.ifThen(state is VideoLoadingState.UnknownError || state is VideoLoadingState.SourceError) {
                     clickable { showErrorDialog = true }
                 },
                 verticalAlignment = Alignment.CenterVertically,
@@ -147,6 +158,9 @@ fun VideoLoadingSummary(
 
                     VideoLoadingState.Cancelled -> Text(cancelledText)
                     VideoLoadingState.NetworkError -> Text(networkErrorText)
+                    is VideoLoadingState.SourceError -> Text(
+                        if (state.requiresVerification) sourceVerificationText else sourceErrorText,
+                    )
                 }
             }
         }

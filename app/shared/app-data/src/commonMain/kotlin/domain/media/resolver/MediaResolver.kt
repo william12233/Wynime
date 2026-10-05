@@ -66,6 +66,11 @@ interface MediaResolver {
     }
 }
 
+/** Optional resolver capability for callers that need a distinct download entry point. */
+interface DownloadMediaResolver {
+    suspend fun resolveForDownload(media: Media, episode: EpisodeMetadata): MediaDataProvider<MediaData>
+}
+
 /**
  * @see MediaResolver.resolve
  */
@@ -121,7 +126,7 @@ class MediaResolutionException(
  */
 private class ChainedMediaResolver(
     private val resolvers: List<MediaResolver>
-) : MediaResolver {
+) : MediaResolver, DownloadMediaResolver {
     override fun supports(media: Media): Boolean {
         return resolvers.any { it.supports(media) }
     }
@@ -136,5 +141,12 @@ private class ChainedMediaResolver(
     override suspend fun resolve(media: Media, episode: EpisodeMetadata): MediaDataProvider<*> {
         return resolvers.firstOrNull { it.supports(media) }?.resolve(media, episode)
             ?: throw UnsupportedMediaException(media)
+    }
+
+    override suspend fun resolveForDownload(media: Media, episode: EpisodeMetadata): MediaDataProvider<*> {
+        val resolver = resolvers.firstOrNull { it.supports(media) }
+            ?: throw UnsupportedMediaException(media)
+        return (resolver as? DownloadMediaResolver)?.resolveForDownload(media, episode)
+            ?: resolver.resolve(media, episode)
     }
 }

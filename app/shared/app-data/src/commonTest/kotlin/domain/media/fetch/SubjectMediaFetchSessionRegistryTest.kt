@@ -1,0 +1,103 @@
+/*
+ * Copyright (C) 2026 OpenAni contributors.
+ * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
+ *
+ * https://github.com/open-ani/ani/blob/main/LICENSE
+ */
+
+package me.him188.ani.app.domain.media.fetch
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotSame
+import kotlin.test.assertSame
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import me.him188.ani.datasources.api.EpisodeSort
+import me.him188.ani.datasources.api.Media
+import me.him188.ani.datasources.api.source.MediaFetchRequest
+import kotlin.time.Duration.Companion.seconds
+
+class SubjectMediaFetchSessionRegistryTest {
+    @Test
+    fun `playback and download requests share the same short lived discovery snapshot`() = runTest {
+        val created = mutableListOf<FakeSession>()
+        val registry = SubjectMediaFetchSessionRegistry(
+            scope = backgroundScope,
+            createSession = { request -> FakeSession(request).also(created::add) },
+            expiry = 90.seconds,
+        )
+
+        val playbackRequest = request(episodeId = 1, traceId = "playback-trace")
+        val downloadRequest = request(episodeId = 2, traceId = "download-trace")
+        val playback = registry.get(playbackRequest)
+        val download = registry.get(downloadRequest)
+        runCurrent()
+
+        assertSame(playback, download)
+        assertEquals(1, created.size)
+        assertEquals(1, created.single().subscribers)
+
+        registry.release(playback)
+        registry.release(download)
+        registry.close()
+        runCurrent()
+        assertEquals(0, created.single().subscribers)
+    }
+
+    @Test
+    fun `explicit invalidation rebuilds the discovery snapshot`() = runTest {
+        val created = mutableListOf<FakeSession>()
+        val registry = SubjectMediaFetchSessionRegistry(
+            scope = backgroundScope,
+            createSession = { request -> FakeSession(request).also(created::add) },
+        )
+        val request = request(episodeId = 1)
+
+        val first = registry.get(request)
+        registry.invalidate(request)
+        val second = registry.get(request)
+
+        assertNotSame(first, second)
+        assertEquals(2, created.size)
+        registry.close()
+    }
+
+    private fun request(episodeId: Int, traceId: String = "trace-$episodeId") = MediaFetchRequest(
+        subjectId = "subject-1",
+        episodeId = episodeId.toString(),
+        subjectNames = listOf("葬送的芙莉蓮", "Sousou no Frieren"),
+        episodeSort = EpisodeSort(episodeId),
+        episodeName = "Episode $episodeId",
+        traceId = traceId,
+        episodes = listOf(
+            MediaFetchRequest.Episode("1", EpisodeSort(1)),
+            MediaFetchRequest.Episode("2", EpisodeSort(2)),
+        ),
+    )
+
+    private class FakeSession(
+        request: MediaFetchRequest,
+    ) : MediaFetchSession {
+        var subscribers = 0
+
+        override val request: Flow<MediaFetchRequest> = flowOf(request)
+        override val cumulativeResults: Flow<List<Media>> = flow {
+            subscribers++
+            try {
+                emit(emptyList())
+                awaitCancellation()
+            } finally {
+                subscribers--
+            }
+        }
+        override val hasCompleted: Flow<CompletedConditions> = flowOf(CompletedConditions.AllCompleted)
+        override val mediaSourceResults: List<MediaSourceFetchResult> = emptyList()
+
+        override fun setFetchRequest(request: MediaFetchRequest) = Unit
+    }
+}

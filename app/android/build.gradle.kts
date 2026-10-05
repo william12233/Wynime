@@ -59,7 +59,10 @@ android {
         }
     }
     signingConfigs {
-        kotlin.runCatching { getProperty("signing_release_storeFileFromRoot") }.getOrNull()?.let {
+        kotlin.runCatching { getProperty("signing_release_storeFileFromRoot") }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?.let {
             create("release") {
                 storeFile = rootProject.file(it)
                 storePassword = getProperty("signing_release_storePassword")
@@ -67,7 +70,10 @@ android {
                 keyPassword = getProperty("signing_release_keyPassword")
             }
         }
-        kotlin.runCatching { getProperty("signing_release_storeFile") }.getOrNull()?.let {
+        kotlin.runCatching { getProperty("signing_release_storeFile") }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?.let {
             create("release") {
                 storeFile = file(it)
                 storePassword = getProperty("signing_release_storePassword")

@@ -60,11 +60,19 @@ import me.him188.ani.app.ui.lang.media_selector_web_edit_query_action
 import me.him188.ani.app.ui.lang.media_selector_web_edit_query_prompt
 import me.him188.ani.app.ui.lang.media_selector_web_rate_limited
 import me.him188.ani.app.ui.lang.media_selector_web_waiting_captcha
+import me.him188.ani.app.ui.lang.media_source_results_challenge
+import me.him188.ani.app.ui.lang.media_source_results_episode_no_match
+import me.him188.ani.app.ui.lang.media_source_results_failed
+import me.him188.ani.app.ui.lang.media_source_results_http_error
 import me.him188.ani.app.ui.lang.media_source_results_no_match
+import me.him188.ani.app.ui.lang.media_source_results_parse_error
+import me.him188.ani.app.ui.lang.media_source_results_plugin_error
+import me.him188.ani.app.ui.lang.media_source_results_subject_no_match
 import me.him188.ani.app.ui.lang.settings_mediasource_refresh
 import me.him188.ani.app.ui.media.webCaptchaRequiredMessage
 import me.him188.ani.app.ui.mediaselect.common.SourceIcon
 import me.him188.ani.datasources.api.Media
+import me.him188.ani.source.plugin.api.SourceResultStatus
 import me.him188.ani.utils.platform.annotations.TestOnly
 import me.him188.ani.utils.platform.currentTimeMillis
 import org.jetbrains.compose.resources.stringResource
@@ -95,6 +103,7 @@ data class WebSource(
     val isCaptchaSupported: Boolean = true,
     /** 查詢已完成，但沒有找到與目前劇集相符的結果。 */
     val isNoMatch: Boolean = false,
+    val sourceStatus: SourceResultStatus? = null,
 ) {
     val isCaptchaRequired: Boolean get() = captchaRequest != null
     val captchaKind: WebCaptchaKind? get() = captchaRequest?.kind
@@ -184,7 +193,24 @@ private fun WebSourceCard(
     val minHeight = 48.dp
     val waitingCaptchaText = stringResource(Lang.media_selector_web_waiting_captcha)
     val captchaUnsupportedText = stringResource(Lang.media_selector_web_captcha_unsupported)
-    val noMatchText = stringResource(Lang.media_source_results_no_match)
+    val defaultNoMatchText = stringResource(Lang.media_source_results_no_match)
+    val noMatchText = when (source.sourceStatus) {
+        SourceResultStatus.SUBJECT_NO_MATCH -> stringResource(Lang.media_source_results_subject_no_match)
+        SourceResultStatus.EPISODE_NO_MATCH -> stringResource(Lang.media_source_results_episode_no_match)
+        else -> defaultNoMatchText
+    }
+    val sourceErrorText = when (source.sourceStatus) {
+        SourceResultStatus.TIMEOUT,
+        SourceResultStatus.NETWORK_ERROR,
+        SourceResultStatus.HTTP_ERROR,
+        -> stringResource(Lang.media_source_results_http_error)
+        SourceResultStatus.BLOCKED_BY_CHALLENGE,
+        SourceResultStatus.AUTH_REQUIRED,
+        -> stringResource(Lang.media_source_results_challenge)
+        SourceResultStatus.PARSE_ERROR -> stringResource(Lang.media_source_results_parse_error)
+        SourceResultStatus.PLUGIN_ERROR -> stringResource(Lang.media_source_results_plugin_error)
+        else -> stringResource(Lang.media_source_results_failed)
+    }
     val refreshText = stringResource(Lang.settings_mediasource_refresh)
     Row(
         modifier,
@@ -253,6 +279,15 @@ private fun WebSourceCard(
             if (source.isNoMatch) {
                 Text(
                     text = noMatchText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.minimumInteractiveComponentSize().padding(vertical = 8.dp),
+                )
+            }
+
+            if (source.isError && !source.isNoMatch) {
+                Text(
+                    text = sourceErrorText,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.minimumInteractiveComponentSize().padding(vertical = 8.dp),

@@ -53,6 +53,7 @@ import me.him188.ani.app.ui.mediaselect.selector.WebSource
 import me.him188.ani.app.ui.mediaselect.selector.WebSourceChannel
 import me.him188.ani.datasources.api.Media
 import me.him188.ani.datasources.api.source.MediaSourceKind
+import me.him188.ani.source.plugin.api.SourceResultStatus
 import me.him188.ani.utils.coroutines.flows.flowOfEmptyList
 import me.him188.ani.utils.platform.annotations.TestOnly
 
@@ -343,6 +344,13 @@ class MediaSelectorState(
                     rateLimitedUntilMillis = rateLimitedUntil,
                     isCaptchaSupported = webSessionManager.isInteractiveSupported,
                     isNoMatch = state is MediaSourceFetchState.NoMatch,
+                    sourceStatus = when (state) {
+                        is MediaSourceFetchState.NoMatch -> state.diagnostics.responseCategory
+                        is MediaSourceFetchState.Failed -> state.diagnostics?.responseCategory
+                        is MediaSourceFetchState.CaptchaRequired -> SourceResultStatus.BLOCKED_BY_CHALLENGE
+                        is MediaSourceFetchState.RateLimited -> SourceResultStatus.HTTP_ERROR
+                        else -> null
+                    },
                 )
             }
         }

@@ -26,6 +26,7 @@ import me.him188.ani.source.plugin.api.SourceTracePhase
 import me.him188.ani.utils.logging.info
 import me.him188.ani.utils.logging.logger
 import me.him188.ani.utils.platform.Uuid
+import kotlinx.coroutines.CancellationException
 
 class SourcePluginMediaResolver(
     private val registry: SourcePluginRegistry,
@@ -66,6 +67,34 @@ class SourcePluginMediaResolver(
             )
         } catch (error: SourcePluginFailure) {
             trace(traceId, reference, phase, error.status, error.message)
+            throw error
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: LinkageError) {
+            val failure = sourcePluginBoundaryFailure(
+                traceId = traceId,
+                provider = reference.pluginId,
+                entryPoint = phase.name,
+                fallbackStatus = SourceResultStatus.RESOLVE_ERROR,
+                error = error,
+                url = reference.uri,
+                retryable = false,
+            )
+            trace(traceId, reference, phase, failure.status, failure.message)
+            throw failure
+        } catch (error: ClassCastException) {
+            val failure = sourcePluginBoundaryFailure(
+                traceId = traceId,
+                provider = reference.pluginId,
+                entryPoint = phase.name,
+                fallbackStatus = SourceResultStatus.RESOLVE_ERROR,
+                error = error,
+                url = reference.uri,
+                retryable = false,
+            )
+            trace(traceId, reference, phase, failure.status, failure.message)
+            throw failure
+        } catch (error: Error) {
             throw error
         } catch (error: Throwable) {
             val failure = SourcePluginFailure(

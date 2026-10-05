@@ -39,13 +39,15 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
         val variants = searchQueryVariants(request.query)
         val searchResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (variant in variants) {
-            searchResults += runCatching {
-                dynamicSearchLinks(
-                    requestPage("$rootUrl/vodsearch/-------------.html?wd=${urlEncode(variant)}").html,
-                    variant,
-                    detailPattern,
-                )
-            }.getOrDefault(emptyList())
+            searchResults += dynamicSearchLinks(
+                requestPage(
+                    "$rootUrl/vodsearch/-------------.html?wd=${urlEncode(variant)}",
+                    traceId = request.traceId,
+                    entryPoint = request.entryPoint,
+                ).html,
+                variant,
+                detailPattern,
+            )
             if (searchResults.distinctBy { it.id }.size >= request.limit) break
         }
         val uniqueSearchResults = searchResults.distinctBy { it.id }.take(request.limit)
@@ -61,11 +63,7 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
         )
         val fallbackResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (url in fallbackUrls) {
-            val html = try {
-                requestPage(url).html
-            } catch (_: Throwable) {
-                continue
-            }
+            val html = requestPage(url, traceId = request.traceId, entryPoint = request.entryPoint).html
             for (variant in variants) {
                 fallbackResults += dynamicSearchLinks(html, variant, detailPattern)
             }
@@ -114,7 +112,7 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
 
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/Comicplay/${request.subjectId}-${request.channelId}-${request.episodeId}.html"
-        val page = requestPage(pageUrl)
+        val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
         val playerUrl = parsePlayerUrl(page.html) ?: page.finalUrl
         val decodedPlayerUrl = decodePlayerUrl(playerUrl)
         resolvedMedia(

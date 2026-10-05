@@ -37,17 +37,19 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
         val searchResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         val variants = searchQueryVariants(request.query)
         for (variant in variants) {
-            val apiResults = runCatching { searchApi(variant) }.getOrDefault(emptyList())
+            val apiResults = searchApi(variant, request.traceId, request.entryPoint)
             searchResults += apiResults
             if (apiResults.isNotEmpty()) break
 
-            val variantResults = runCatching {
-                dynamicSearchLinks(
-                    requestPage("$rootUrl/search/-------------/?wd=${urlEncode(variant)}").html,
-                    variant,
-                    Regex("(?i)/(GV[^/?#]+)/?"),
-                )
-            }.getOrDefault(emptyList())
+            val variantResults = dynamicSearchLinks(
+                requestPage(
+                    "$rootUrl/search/-------------/?wd=${urlEncode(variant)}",
+                    traceId = request.traceId,
+                    entryPoint = request.entryPoint,
+                ).html,
+                variant,
+                Regex("(?i)/(GV[^/?#]+)/?"),
+            )
             searchResults += variantResults
             // 查詢別名按優先順序嘗試；某個別名已找到結果時，後續別名不會再重複請求相同網站。
             if (variantResults.isNotEmpty()) break
@@ -76,11 +78,11 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
         // 避免每個語言別名都逐頁請求整份 sitemap 與詳情頁。
         if (variants.none { it.equals("re0", ignoreCase = true) }) return emptyList()
 
-        val sitemap = runCatching { requestPage("$rootUrl/rss/baidu.xml").html }.getOrDefault("")
+        val sitemap = requestPage("$rootUrl/rss/baidu.xml").html
         val sitemapResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (match in Regex("(?is)<loc>https?://[^<]*/(GV[^/<>]+?)/?</loc>").findAll(sitemap)) {
             val id = match.groupValues[1]
-            val detail = runCatching { requestPage("$rootUrl/$id/") }.getOrNull() ?: continue
+            val detail = requestPage("$rootUrl/$id/")
             val title = Regex("(?is)<h1[^>]*>(.*?)</h1>").find(detail.html)?.groupValues?.getOrNull(1)
                 ?.let(::cleanText)
                 ?.ifBlank { null }
@@ -93,13 +95,19 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
         return sitemapResults.distinctBy { it.id }.take(request.limit)
     }
 
-    private suspend fun searchApi(query: String): List<me.him188.ani.source.plugin.api.SourceSubject> {
+    private suspend fun searchApi(
+        query: String,
+        traceId: String,
+        entryPoint: String,
+    ): List<me.him188.ani.source.plugin.api.SourceSubject> {
         val page = requestPage(
             "$API_URL?ac=detail&wd=${urlEncode(query)}",
             headers = mapOf(
                 "Accept" to "application/json, text/plain, */*",
                 "Referer" to "$rootUrl/",
             ),
+            traceId = traceId,
+            entryPoint = entryPoint,
         )
         return jsonArrayObjects(page.html, "list")
             .mapNotNull { item ->
@@ -162,7 +170,7 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
 
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/play${request.subjectId}-${request.channelId}-${request.episodeId}/"
-        val page = requestPage(pageUrl)
+        val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
         resolvedMedia(request, page.finalUrl, extractPlayerObjectUrl(page.html) ?: page.finalUrl)
     }
 

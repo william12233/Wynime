@@ -32,13 +32,15 @@ internal class Dm1Plugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
         val results = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (variant in searchQueryVariants(request.query)) {
-            results += runCatching {
-                dynamicSearchLinks(
-                    requestPage("$rootUrl/search.html?wd=${urlEncode(variant)}").html,
-                    variant,
-                    Regex("(?i)/bangumi/(\\d+)\\.html"),
-                )
-            }.getOrDefault(emptyList())
+            results += dynamicSearchLinks(
+                requestPage(
+                    "$rootUrl/search.html?wd=${urlEncode(variant)}",
+                    traceId = request.traceId,
+                    entryPoint = request.entryPoint,
+                ).html,
+                variant,
+                Regex("(?i)/bangumi/(\\d+)\\.html"),
+            )
             if (results.distinctBy { it.id }.size >= request.limit) break
         }
         return results.distinctBy { it.id }.take(request.limit)
@@ -89,7 +91,7 @@ internal class Dm1Plugin(context: SourcePluginContext) : SitePluginBase(
 
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/watch/${request.subjectId}/${request.channelId}/${request.episodeId}.html"
-        val page = requestPage(pageUrl)
+        val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
         resolvedMedia(request, page.finalUrl, extractPlayerObjectUrl(page.html) ?: page.finalUrl)
     }
 

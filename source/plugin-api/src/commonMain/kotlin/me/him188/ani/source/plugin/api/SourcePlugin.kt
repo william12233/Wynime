@@ -97,7 +97,8 @@ enum class SourceTracePhase {
 @Serializable
 enum class SourceResultStatus {
     SUCCESS,
-    NO_MATCH,
+    SUBJECT_NO_MATCH,
+    EPISODE_NO_MATCH,
     TIMEOUT,
     NETWORK_ERROR,
     HTTP_ERROR,
@@ -139,7 +140,14 @@ data class SourceSearchRequest(
     val limit: Int = 20,
     val traceId: String = "",
     val entryPoint: String = "search",
-)
+) {
+    /** Preserves the 0.1.1 constructor and Kotlin default-argument ABI. */
+    @Deprecated("Legacy Plugin API constructor", level = DeprecationLevel.WARNING)
+    constructor(
+        query: String,
+        limit: Int = 20,
+    ) : this(query, limit, "", "search")
+}
 
 @Serializable
 data class SourceResolveRequest(
@@ -152,7 +160,18 @@ data class SourceResolveRequest(
     val pluginId: String = "",
     val traceId: String = "",
     val entryPoint: String = "resolve",
-)
+) {
+    /** Preserves the 0.1.1 constructor and Kotlin default-argument ABI. */
+    @Deprecated("Legacy Plugin API constructor", level = DeprecationLevel.WARNING)
+    constructor(
+        subjectId: String,
+        channelId: String,
+        episodeId: String,
+        episodeSort: Float? = null,
+        episodeEp: String? = null,
+        pluginId: String = "",
+    ) : this(subjectId, channelId, episodeId, episodeSort, episodeEp, pluginId, "", "resolve")
+}
 
 /** The state returned by a non-mutating source health check. */
 @Serializable
@@ -290,7 +309,16 @@ data class SourceHttpRequest(
     val body: ByteArray? = null,
     val traceId: String = "",
     val entryPoint: String = "http",
-)
+) {
+    /** Preserves the 0.1.1 constructor and Kotlin default-argument ABI. */
+    @Deprecated("Legacy Plugin API constructor", level = DeprecationLevel.WARNING)
+    constructor(
+        method: String = "GET",
+        url: String,
+        headers: Map<String, String> = emptyMap(),
+        body: ByteArray? = null,
+    ) : this(method, url, headers, body, "", "http")
+}
 
 data class SourceHttpResponse(
     val statusCode: Int,
@@ -301,6 +329,15 @@ data class SourceHttpResponse(
     val redirectCount: Int? = null,
     val contentType: String? = null,
 ) {
+    /** Preserves the 0.1.1 constructor and Kotlin default-argument ABI. */
+    @Deprecated("Legacy Plugin API constructor", level = DeprecationLevel.WARNING)
+    constructor(
+        statusCode: Int,
+        finalUrl: String,
+        headers: Map<String, String> = emptyMap(),
+        body: ByteArray = ByteArray(0),
+    ) : this(statusCode, finalUrl, headers, body, null, null, null)
+
     fun bodyAsText(): String = body.decodeToString()
 }
 

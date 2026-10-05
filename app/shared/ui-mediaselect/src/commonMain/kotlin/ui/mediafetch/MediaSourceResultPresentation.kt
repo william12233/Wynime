@@ -39,6 +39,7 @@ import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
 import me.him188.ani.datasources.api.Media
 import me.him188.ani.datasources.api.source.MediaSourceInfo
 import me.him188.ani.datasources.api.source.MediaSourceKind
+import me.him188.ani.source.plugin.api.SourceResultStatus
 import me.him188.ani.utils.coroutines.flows.flowOfEmptyList
 import me.him188.ani.utils.platform.annotations.TestOnly
 
@@ -62,6 +63,14 @@ data class MediaSourceResultPresentation(
     val isDisabled: Boolean get() = state.isDisabled
     val isFailedOrAbandoned: Boolean get() = state.isFailedOrAbandoned
     val isNoMatch: Boolean get() = state is MediaSourceFetchState.NoMatch
+    val sourceStatus: SourceResultStatus?
+        get() = when (val value = state) {
+            is MediaSourceFetchState.NoMatch -> value.diagnostics.responseCategory
+            is MediaSourceFetchState.Failed -> value.diagnostics?.responseCategory
+            is MediaSourceFetchState.CaptchaRequired -> SourceResultStatus.BLOCKED_BY_CHALLENGE
+            is MediaSourceFetchState.RateLimited -> SourceResultStatus.HTTP_ERROR
+            else -> null
+        }
     val isCaptchaRequired: Boolean get() = state.isCaptchaRequired
     val isRateLimited: Boolean get() = state.isRateLimited
     val rateLimitedUntilMillis: Long? get() = (state as? MediaSourceFetchState.RateLimited)?.retryAt

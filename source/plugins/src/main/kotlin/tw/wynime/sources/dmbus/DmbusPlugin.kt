@@ -39,14 +39,16 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
         val results = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (variant in searchQueryVariants(request.query)) {
-            results += runCatching {
-                val page = requestPage("$rootUrl/s----------.html?wd=${urlEncode(variant)}")
-                dynamicSearchLinks(
-                    page.html,
-                    "",
-                    Regex("(?i)/v/(\\d+)\\.html"),
-                )
-            }.getOrDefault(emptyList())
+            val page = requestPage(
+                "$rootUrl/s----------.html?wd=${urlEncode(variant)}",
+                traceId = request.traceId,
+                entryPoint = request.entryPoint,
+            )
+            results += dynamicSearchLinks(
+                page.html,
+                "",
+                Regex("(?i)/v/(\\d+)\\.html"),
+            )
             if (results.distinctBy { it.id }.size >= request.limit) break
         }
         return results.distinctBy { it.id }.take(request.limit)
@@ -97,7 +99,7 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
 
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/p/${request.subjectId}-${request.channelId}-${request.episodeId}.html"
-        val page = requestPage(pageUrl)
+        val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
         val iframe = Regex("(?is)<iframe[^>]+src=[\"']([^\"']+)[\"']").find(page.html)?.groupValues?.getOrNull(1)
         val iframeUrl = iframe?.let { absoluteUrl(page.finalUrl, it) }
         val directUrlAndReferer = iframeUrl?.let { url ->
@@ -137,7 +139,7 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
 
     private suspend fun resolveHhjxPlayer(iframeUrl: String): String? {
         if (!iframeUrl.contains("hhjx.hhplayer.com", ignoreCase = true)) return null
-        val playerPage = runCatching { requestPage(iframeUrl) }.getOrNull() ?: return null
+        val playerPage = requestPage(iframeUrl)
         val bootstrap = Regex(
             "(?s)window\\.__HHJX_BOOTSTRAP__\\s*=\\s*(\\{.*?\\})\\s*;",
         ).find(playerPage.html)?.groupValues?.getOrNull(1) ?: return null
@@ -145,16 +147,14 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
         val timestamp = extractJsonNumberField(bootstrap, "t") ?: return null
         val key = extractJsonStringField(bootstrap, "key") ?: return null
         val body = "{\"url\":\"$url\",\"t\":$timestamp,\"key\":\"$key\",\"client_fallback\":false}"
-        val response = runCatching {
-            requestJson(
-                url = absoluteUrl(playerPage.finalUrl, "/api/parse"),
-                body = body,
-                headers = mapOf(
-                    "Origin" to URI(playerPage.finalUrl).let { "${it.scheme}://${it.authority}" },
-                    "Referer" to playerPage.finalUrl,
-                ),
-            )
-        }.getOrNull() ?: return null
+        val response = requestJson(
+            url = absoluteUrl(playerPage.finalUrl, "/api/parse"),
+            body = body,
+            headers = mapOf(
+                "Origin" to URI(playerPage.finalUrl).let { "${it.scheme}://${it.authority}" },
+                "Referer" to playerPage.finalUrl,
+            ),
+        )
         return extractJsonStringField(response, "url")?.takeIf(::isMediaUrl)
     }
 

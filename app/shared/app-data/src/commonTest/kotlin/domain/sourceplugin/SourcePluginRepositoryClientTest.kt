@@ -74,6 +74,17 @@ class SourcePluginRepositoryClientTest {
             SourcePluginRepositoryClient(newerSchema, baseUrl = "https://repo.example").fetchIndex()
         }
 
+        val newerPluginApi = FakeSourceHttpClient(
+            mapOf(
+                "https://repo.example/index.json" to ArrayDeque(
+                    listOf(response("{\"schemaVersion\":1,\"pluginApiVersion\":3,\"plugins\":[]}")),
+                ),
+            ),
+        )
+        assertFailsWith<UnsupportedSourcePluginException> {
+            SourcePluginRepositoryClient(newerPluginApi, baseUrl = "https://repo.example").fetchIndex()
+        }
+
         val duplicate = FakeSourceHttpClient(
             mapOf(
                 "https://repo.example/index.json" to ArrayDeque(

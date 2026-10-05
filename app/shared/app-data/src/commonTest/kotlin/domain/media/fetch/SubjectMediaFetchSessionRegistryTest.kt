@@ -67,8 +67,48 @@ class SubjectMediaFetchSessionRegistryTest {
         registry.close()
     }
 
-    private fun request(episodeId: Int, traceId: String = "trace-$episodeId") = MediaFetchRequest(
-        subjectId = "subject-1",
+    @Test
+    fun `expired session is rebuilt instead of reusing an old snapshot`() = runTest {
+        val created = mutableListOf<FakeSession>()
+        var now = 0L
+        val registry = SubjectMediaFetchSessionRegistry(
+            scope = backgroundScope,
+            createSession = { request -> FakeSession(request).also(created::add) },
+            expiry = 90.seconds,
+            nowMillis = { now },
+        )
+
+        val first = registry.get(request(episodeId = 1))
+        now = 90.seconds.inWholeMilliseconds + 1
+        val second = registry.get(request(episodeId = 2))
+
+        assertNotSame(first, second)
+        assertEquals(2, created.size)
+        registry.close()
+    }
+
+    @Test
+    fun `different subjects never share a discovery snapshot`() = runTest {
+        val created = mutableListOf<FakeSession>()
+        val registry = SubjectMediaFetchSessionRegistry(
+            scope = backgroundScope,
+            createSession = { request -> FakeSession(request).also(created::add) },
+        )
+
+        val first = registry.get(request(episodeId = 1, subjectId = "subject-1"))
+        val second = registry.get(request(episodeId = 1, subjectId = "subject-2"))
+
+        assertNotSame(first, second)
+        assertEquals(2, created.size)
+        registry.close()
+    }
+
+    private fun request(
+        episodeId: Int,
+        traceId: String = "trace-$episodeId",
+        subjectId: String = "subject-1",
+    ) = MediaFetchRequest(
+        subjectId = subjectId,
         episodeId = episodeId.toString(),
         subjectNames = listOf("葬送的芙莉蓮", "Sousou no Frieren"),
         episodeSort = EpisodeSort(episodeId),

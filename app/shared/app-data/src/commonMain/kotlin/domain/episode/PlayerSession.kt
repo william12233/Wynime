@@ -189,6 +189,36 @@ class PlayerSession(
         } catch (e: CancellationException) { // 切换数据源 (含 MediaLoadCancellationException)
             _videoLoadingStateFlow.value = VideoLoadingState.Cancelled
             throw e
+        } catch (e: LinkageError) {
+            val sourceError = sourcePlaybackError(
+                media = media,
+                status = SourceResultStatus.PLUGIN_ERROR,
+                reason = e::class.simpleName,
+                retryable = false,
+            )
+            if (sourceError != null) {
+                _videoLoadingStateFlow.value = sourceError
+            } else {
+                logger.error { IllegalStateException("Plugin linkage failure while opening media", e) }
+                _videoLoadingStateFlow.value = VideoLoadingState.UnknownError(e)
+            }
+            stopPlayback()
+        } catch (e: Error) {
+            throw e
+        } catch (e: ClassCastException) {
+            val sourceError = sourcePlaybackError(
+                media = media,
+                status = SourceResultStatus.PLUGIN_ERROR,
+                reason = e::class.simpleName,
+                retryable = false,
+            )
+            if (sourceError != null) {
+                _videoLoadingStateFlow.value = sourceError
+            } else {
+                logger.error { IllegalStateException("Plugin contract type failure while opening media", e) }
+                _videoLoadingStateFlow.value = VideoLoadingState.UnknownError(e)
+            }
+            stopPlayback()
         } catch (e: PlaybackException) { // during player.setMediaData, 播放器拒绝了这个媒体
             val sourceError = sourcePlaybackError(
                 media = media,

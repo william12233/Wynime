@@ -15,7 +15,7 @@ import me.him188.ani.source.plugin.api.SourcePluginMetadata
 import me.him188.ani.source.plugin.api.SourcePluginPlatform
 
 const val SOURCE_PLUGIN_REPOSITORY_SCHEMA_VERSION = 1
-const val SOURCE_PLUGIN_API_VERSION = 1
+const val SOURCE_PLUGIN_API_VERSION = 2
 
 /** The single first-party repository configured by the host application. */
 object SourcePluginRepositoryDefaults {

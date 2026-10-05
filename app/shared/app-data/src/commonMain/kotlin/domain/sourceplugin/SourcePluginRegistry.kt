@@ -9,6 +9,7 @@
 
 package me.him188.ani.app.domain.sourceplugin
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +24,9 @@ import me.him188.ani.source.plugin.api.SourceResolveRequest
 import me.him188.ani.source.plugin.api.ResolvedMedia
 import me.him188.ani.utils.io.inSystem
 import me.him188.ani.utils.logging.error
+import me.him188.ani.utils.logging.info
 import me.him188.ani.utils.logging.logger
+import me.him188.ani.utils.logging.warn
 
 data class SourcePluginRuntimeState(
     val installed: InstalledSourcePlugin,
@@ -78,7 +81,11 @@ class SourcePluginRegistry(
     suspend fun install(entry: SourcePluginIndexEntry): InstalledSourcePlugin {
         val installed = installer.install(entry) { candidate ->
             val loadedCandidate = loadUnregistered(candidate)
-            loadedCandidate.close()
+            try {
+                validateRuntimeContract(loadedCandidate.plugin, candidate)
+            } finally {
+                loadedCandidate.close()
+            }
         }
         loadInstalled()
         return installed
@@ -135,10 +142,49 @@ class SourcePluginRegistry(
                 check(loaded.plugin.metadata.version == installed.version) {
                     "Plugin metadata version does not match ${installed.id}"
                 }
+                check(loaded.plugin.metadata.pluginApiVersion == installed.manifest.pluginApiVersion) {
+                    "Plugin metadata API ${loaded.plugin.metadata.pluginApiVersion} does not match " +
+                        "manifest API ${installed.manifest.pluginApiVersion}"
+                }
+                check(loaded.plugin.metadata.pluginApiVersion <= SOURCE_PLUGIN_API_VERSION) {
+                    "Plugin ${installed.id} requires unsupported plugin API " +
+                        loaded.plugin.metadata.pluginApiVersion
+                }
             }
         } catch (throwable: Throwable) {
             loadedPlugin.close()
             throw throwable
+        }
+    }
+
+    /**
+     * Performs a local contract smoke test after staging. Site health is observational: a
+     * timeout, HTTP error, challenge, or parser response from [checkConnection] is recorded but
+     * does not reject an otherwise loadable plugin. Linkage and contract errors do reject it.
+     */
+    private suspend fun validateRuntimeContract(
+        plugin: SourcePlugin,
+        installed: InstalledSourcePlugin,
+    ) {
+        try {
+            val health = plugin.checkConnection()
+            logger.info {
+                "Source plugin ${installed.id} runtime health: ${health.state.name}" +
+                    health.message?.let { ": $it" }.orEmpty()
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: LinkageError) {
+            throw error
+        } catch (error: ClassCastException) {
+            throw error
+        } catch (error: Error) {
+            throw error
+        } catch (error: Throwable) {
+            logger.warn(error) {
+                "Source plugin ${installed.id} runtime health check failed; keeping contract result " +
+                    "because the site may be offline"
+            }
         }
     }
 

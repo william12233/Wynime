@@ -1,0 +1,1315 @@
+pluginApiVersion=2
+format=javap-public-signatures-v1
+
+[me.him188.ani.source.plugin.api.ResolvedMedia]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.ResolvedMedia {
+  public static final me.him188.ani.source.plugin.api.ResolvedMedia$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/ResolvedMedia$Companion;
+  public me.him188.ani.source.plugin.api.ResolvedMedia(java.lang.String, java.lang.String, me.him188.ani.source.plugin.api.ResolvedMediaFormat, java.util.Map<java.lang.String, java.lang.String>, java.lang.String, kotlin.time.Instant, java.lang.String, me.him188.ani.source.plugin.api.SourceMediaRequestContext);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;)V
+
+  public me.him188.ani.source.plugin.api.ResolvedMedia(java.lang.String, java.lang.String, me.him188.ani.source.plugin.api.ResolvedMediaFormat, java.util.Map, java.lang.String, kotlin.time.Instant, java.lang.String, me.him188.ani.source.plugin.api.SourceMediaRequestContext, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getStableIdentity();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.ResolvedMediaFormat getFormat();
+    descriptor: ()Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+
+  public final java.util.Map<java.lang.String, java.lang.String> getHeaders();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.lang.String getOriginalPageUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final kotlin.time.Instant getExpiresAt();
+    descriptor: ()Lkotlin/time/Instant;
+
+  public final java.lang.String getMimeType();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceMediaRequestContext getRequestContext();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;
+
+  public final java.util.Map<java.lang.String, java.lang.String> requestHeaders();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.ResolvedMediaFormat component3();
+    descriptor: ()Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+
+  public final java.util.Map<java.lang.String, java.lang.String> component4();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final kotlin.time.Instant component6();
+    descriptor: ()Lkotlin/time/Instant;
+
+  public final java.lang.String component7();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceMediaRequestContext component8();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;
+
+  public final me.him188.ani.source.plugin.api.ResolvedMedia copy(java.lang.String, java.lang.String, me.him188.ani.source.plugin.api.ResolvedMediaFormat, java.util.Map<java.lang.String, java.lang.String>, java.lang.String, kotlin.time.Instant, java.lang.String, me.him188.ani.source.plugin.api.SourceMediaRequestContext);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;)Lme/him188/ani/source/plugin/api/ResolvedMedia;
+
+  public static me.him188.ani.source.plugin.api.ResolvedMedia copy$default(me.him188.ani.source.plugin.api.ResolvedMedia, java.lang.String, java.lang.String, me.him188.ani.source.plugin.api.ResolvedMediaFormat, java.util.Map, java.lang.String, kotlin.time.Instant, java.lang.String, me.him188.ani.source.plugin.api.SourceMediaRequestContext, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/ResolvedMedia;Ljava/lang/String;Ljava/lang/String;Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/ResolvedMedia;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.ResolvedMedia, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/ResolvedMedia;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.ResolvedMedia(int, java.lang.String, java.lang.String, me.him188.ani.source.plugin.api.ResolvedMediaFormat, java.util.Map, java.lang.String, kotlin.time.Instant, java.lang.String, me.him188.ani.source.plugin.api.SourceMediaRequestContext, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;Ljava/util/Map;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.ResolvedMediaFormat]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.ResolvedMediaFormat extends java.lang.Enum<me.him188.ani.source.plugin.api.ResolvedMediaFormat> {
+  public static final me.him188.ani.source.plugin.api.ResolvedMediaFormat$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/ResolvedMediaFormat$Companion;
+  public static final me.him188.ani.source.plugin.api.ResolvedMediaFormat HLS;
+    descriptor: Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+  public static final me.him188.ani.source.plugin.api.ResolvedMediaFormat MP4;
+    descriptor: Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+  public static final me.him188.ani.source.plugin.api.ResolvedMediaFormat WEB;
+    descriptor: Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+  public static final me.him188.ani.source.plugin.api.ResolvedMediaFormat UNKNOWN;
+    descriptor: Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+  public static me.him188.ani.source.plugin.api.ResolvedMediaFormat[] values();
+    descriptor: ()[Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+
+  public static me.him188.ani.source.plugin.api.ResolvedMediaFormat valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lme/him188/ani/source/plugin/api/ResolvedMediaFormat;
+
+  public static kotlin.enums.EnumEntries<me.him188.ani.source.plugin.api.ResolvedMediaFormat> getEntries();
+    descriptor: ()Lkotlin/enums/EnumEntries;
+
+  public static final kotlin.Lazy access$get$cachedSerializer$delegate$cp();
+    descriptor: ()Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceChannel]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceChannel {
+  public static final me.him188.ani.source.plugin.api.SourceChannel$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceChannel$Companion;
+  public me.him188.ani.source.plugin.api.SourceChannel(java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;)V
+
+  public final java.lang.String getId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getDisplayName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceChannel copy(java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceChannel;
+
+  public static me.him188.ani.source.plugin.api.SourceChannel copy$default(me.him188.ani.source.plugin.api.SourceChannel, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceChannel;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceChannel;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceChannel, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceChannel;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceChannel(int, java.lang.String, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+}
+
+[me.him188.ani.source.plugin.api.SourceChannelEpisodes]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceChannelEpisodes {
+  public static final me.him188.ani.source.plugin.api.SourceChannelEpisodes$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceChannelEpisodes$Companion;
+  public me.him188.ani.source.plugin.api.SourceChannelEpisodes(me.him188.ani.source.plugin.api.SourceChannel, java.util.List<me.him188.ani.source.plugin.api.SourceEpisode>);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceChannel;Ljava/util/List;)V
+
+  public final me.him188.ani.source.plugin.api.SourceChannel getChannel();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceChannel;
+
+  public final java.util.List<me.him188.ani.source.plugin.api.SourceEpisode> getEpisodes();
+    descriptor: ()Ljava/util/List;
+
+  public final me.him188.ani.source.plugin.api.SourceChannel component1();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceChannel;
+
+  public final java.util.List<me.him188.ani.source.plugin.api.SourceEpisode> component2();
+    descriptor: ()Ljava/util/List;
+
+  public final me.him188.ani.source.plugin.api.SourceChannelEpisodes copy(me.him188.ani.source.plugin.api.SourceChannel, java.util.List<me.him188.ani.source.plugin.api.SourceEpisode>);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceChannel;Ljava/util/List;)Lme/him188/ani/source/plugin/api/SourceChannelEpisodes;
+
+  public static me.him188.ani.source.plugin.api.SourceChannelEpisodes copy$default(me.him188.ani.source.plugin.api.SourceChannelEpisodes, me.him188.ani.source.plugin.api.SourceChannel, java.util.List, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceChannelEpisodes;Lme/him188/ani/source/plugin/api/SourceChannel;Ljava/util/List;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceChannelEpisodes;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceChannelEpisodes, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceChannelEpisodes;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceChannelEpisodes(int, me.him188.ani.source.plugin.api.SourceChannel, java.util.List, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILme/him188/ani/source/plugin/api/SourceChannel;Ljava/util/List;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceConnectionState]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceConnectionState extends java.lang.Enum<me.him188.ani.source.plugin.api.SourceConnectionState> {
+  public static final me.him188.ani.source.plugin.api.SourceConnectionState$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceConnectionState$Companion;
+  public static final me.him188.ani.source.plugin.api.SourceConnectionState CONNECTED;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceConnectionState;
+  public static final me.him188.ani.source.plugin.api.SourceConnectionState AUTH_REQUIRED;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceConnectionState;
+  public static final me.him188.ani.source.plugin.api.SourceConnectionState BLOCKED;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceConnectionState;
+  public static final me.him188.ani.source.plugin.api.SourceConnectionState FAILED;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceConnectionState;
+  public static me.him188.ani.source.plugin.api.SourceConnectionState[] values();
+    descriptor: ()[Lme/him188/ani/source/plugin/api/SourceConnectionState;
+
+  public static me.him188.ani.source.plugin.api.SourceConnectionState valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceConnectionState;
+
+  public static kotlin.enums.EnumEntries<me.him188.ani.source.plugin.api.SourceConnectionState> getEntries();
+    descriptor: ()Lkotlin/enums/EnumEntries;
+
+  public static final kotlin.Lazy access$get$cachedSerializer$delegate$cp();
+    descriptor: ()Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceConnectionStatus]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceConnectionStatus {
+  public static final me.him188.ani.source.plugin.api.SourceConnectionStatus$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceConnectionStatus$Companion;
+  public me.him188.ani.source.plugin.api.SourceConnectionStatus(me.him188.ani.source.plugin.api.SourceConnectionState, java.lang.String);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceConnectionState;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceConnectionStatus(me.him188.ani.source.plugin.api.SourceConnectionState, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceConnectionState;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final me.him188.ani.source.plugin.api.SourceConnectionState getState();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceConnectionState;
+
+  public final java.lang.String getMessage();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceConnectionState component1();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceConnectionState;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceConnectionStatus copy(me.him188.ani.source.plugin.api.SourceConnectionState, java.lang.String);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceConnectionState;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceConnectionStatus;
+
+  public static me.him188.ani.source.plugin.api.SourceConnectionStatus copy$default(me.him188.ani.source.plugin.api.SourceConnectionStatus, me.him188.ani.source.plugin.api.SourceConnectionState, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceConnectionStatus;Lme/him188/ani/source/plugin/api/SourceConnectionState;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceConnectionStatus;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceConnectionStatus, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceConnectionStatus;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceConnectionStatus(int, me.him188.ani.source.plugin.api.SourceConnectionState, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILme/him188/ani/source/plugin/api/SourceConnectionState;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceDiagnostics]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceDiagnostics {
+  public static final me.him188.ani.source.plugin.api.SourceDiagnostics$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceDiagnostics$Companion;
+  public me.him188.ani.source.plugin.api.SourceDiagnostics(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Integer, java.lang.String, java.lang.Integer, java.lang.Long, me.him188.ani.source.plugin.api.SourceResultStatus, java.lang.String, java.lang.Boolean, java.util.List<java.lang.String>, java.lang.String, java.lang.Integer, java.lang.Integer, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lme/him188/ani/source/plugin/api/SourceResultStatus;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceDiagnostics(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Integer, java.lang.String, java.lang.Integer, java.lang.Long, me.him188.ani.source.plugin.api.SourceResultStatus, java.lang.String, java.lang.Boolean, java.util.List, java.lang.String, java.lang.Integer, java.lang.Integer, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lme/him188/ani/source/plugin/api/SourceResultStatus;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getTraceId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getProvider();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getEntryPoint();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getQuery();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getDomain();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Integer getStatusCode();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.String getContentType();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Integer getRedirectCount();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.Long getElapsedMillis();
+    descriptor: ()Ljava/lang/Long;
+
+  public final me.him188.ani.source.plugin.api.SourceResultStatus getResponseCategory();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceResultStatus;
+
+  public final java.lang.String getUserAgentProfile();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Boolean getRefererPresent();
+    descriptor: ()Ljava/lang/Boolean;
+
+  public final java.util.List<java.lang.String> getCookieNames();
+    descriptor: ()Ljava/util/List;
+
+  public final java.lang.String getChallengeDetected();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Integer getParserResultCount();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.Integer getMatcherScore();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.String getFailureReason();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component6();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Integer component7();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.String component8();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Integer component9();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.Long component10();
+    descriptor: ()Ljava/lang/Long;
+
+  public final me.him188.ani.source.plugin.api.SourceResultStatus component11();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceResultStatus;
+
+  public final java.lang.String component12();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Boolean component13();
+    descriptor: ()Ljava/lang/Boolean;
+
+  public final java.util.List<java.lang.String> component14();
+    descriptor: ()Ljava/util/List;
+
+  public final java.lang.String component15();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Integer component16();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.Integer component17();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.String component18();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceDiagnostics copy(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Integer, java.lang.String, java.lang.Integer, java.lang.Long, me.him188.ani.source.plugin.api.SourceResultStatus, java.lang.String, java.lang.Boolean, java.util.List<java.lang.String>, java.lang.String, java.lang.Integer, java.lang.Integer, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lme/him188/ani/source/plugin/api/SourceResultStatus;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceDiagnostics;
+
+  public static me.him188.ani.source.plugin.api.SourceDiagnostics copy$default(me.him188.ani.source.plugin.api.SourceDiagnostics, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Integer, java.lang.String, java.lang.Integer, java.lang.Long, me.him188.ani.source.plugin.api.SourceResultStatus, java.lang.String, java.lang.Boolean, java.util.List, java.lang.String, java.lang.Integer, java.lang.Integer, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceDiagnostics;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lme/him188/ani/source/plugin/api/SourceResultStatus;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceDiagnostics;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceDiagnostics, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceDiagnostics;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceDiagnostics(int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Integer, java.lang.String, java.lang.Integer, java.lang.Long, me.him188.ani.source.plugin.api.SourceResultStatus, java.lang.String, java.lang.Boolean, java.util.List, java.lang.String, java.lang.Integer, java.lang.Integer, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lme/him188/ani/source/plugin/api/SourceResultStatus;Ljava/lang/String;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceEpisode]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceEpisode {
+  public static final me.him188.ani.source.plugin.api.SourceEpisode$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceEpisode$Companion;
+  public me.him188.ani.source.plugin.api.SourceEpisode(java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceEpisode(java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getDisplayName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Float getEpisodeSort();
+    descriptor: ()Ljava/lang/Float;
+
+  public final java.lang.String getEpisodeEp();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getPlayPageUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getResourceId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Float component3();
+    descriptor: ()Ljava/lang/Float;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component6();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceEpisode copy(java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceEpisode;
+
+  public static me.him188.ani.source.plugin.api.SourceEpisode copy$default(me.him188.ani.source.plugin.api.SourceEpisode, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceEpisode;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceEpisode;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceEpisode, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceEpisode;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceEpisode(int, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+}
+
+[me.him188.ani.source.plugin.api.SourceHttpClient]
+Compiled from "SourcePlugin.kt"
+public interface me.him188.ani.source.plugin.api.SourceHttpClient {
+  public abstract java.lang.Object execute(me.him188.ani.source.plugin.api.SourceHttpRequest, kotlin.coroutines.Continuation<? super me.him188.ani.source.plugin.api.SourceHttpResponse>);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceHttpRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+[me.him188.ani.source.plugin.api.SourceHttpRequest]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceHttpRequest {
+  public me.him188.ani.source.plugin.api.SourceHttpRequest(java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.String>, byte[], java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;[BLjava/lang/String;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceHttpRequest(java.lang.String, java.lang.String, java.util.Map, byte[], java.lang.String, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;[BLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getMethod();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Map<java.lang.String, java.lang.String> getHeaders();
+    descriptor: ()Ljava/util/Map;
+
+  public final byte[] getBody();
+    descriptor: ()[B
+
+  public final java.lang.String getTraceId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getEntryPoint();
+    descriptor: ()Ljava/lang/String;
+
+  public me.him188.ani.source.plugin.api.SourceHttpRequest(java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.String>, byte[]);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;[B)V
+
+  public me.him188.ani.source.plugin.api.SourceHttpRequest(java.lang.String, java.lang.String, java.util.Map, byte[], int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;[BILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Map<java.lang.String, java.lang.String> component3();
+    descriptor: ()Ljava/util/Map;
+
+  public final byte[] component4();
+    descriptor: ()[B
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component6();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceHttpRequest copy(java.lang.String, java.lang.String, java.util.Map<java.lang.String, java.lang.String>, byte[], java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;[BLjava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceHttpRequest;
+
+  public static me.him188.ani.source.plugin.api.SourceHttpRequest copy$default(me.him188.ani.source.plugin.api.SourceHttpRequest, java.lang.String, java.lang.String, java.util.Map, byte[], java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceHttpRequest;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;[BLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceHttpRequest;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+
+[me.him188.ani.source.plugin.api.SourceHttpResponse]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceHttpResponse {
+  public me.him188.ani.source.plugin.api.SourceHttpResponse(int, java.lang.String, java.util.Map<java.lang.String, java.lang.String>, byte[], java.lang.Long, java.lang.Integer, java.lang.String);
+    descriptor: (ILjava/lang/String;Ljava/util/Map;[BLjava/lang/Long;Ljava/lang/Integer;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceHttpResponse(int, java.lang.String, java.util.Map, byte[], java.lang.Long, java.lang.Integer, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/util/Map;[BLjava/lang/Long;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final int getStatusCode();
+    descriptor: ()I
+
+  public final java.lang.String getFinalUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Map<java.lang.String, java.lang.String> getHeaders();
+    descriptor: ()Ljava/util/Map;
+
+  public final byte[] getBody();
+    descriptor: ()[B
+
+  public final java.lang.Long getElapsedMillis();
+    descriptor: ()Ljava/lang/Long;
+
+  public final java.lang.Integer getRedirectCount();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.String getContentType();
+    descriptor: ()Ljava/lang/String;
+
+  public me.him188.ani.source.plugin.api.SourceHttpResponse(int, java.lang.String, java.util.Map<java.lang.String, java.lang.String>, byte[]);
+    descriptor: (ILjava/lang/String;Ljava/util/Map;[B)V
+
+  public me.him188.ani.source.plugin.api.SourceHttpResponse(int, java.lang.String, java.util.Map, byte[], int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/util/Map;[BILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String bodyAsText();
+    descriptor: ()Ljava/lang/String;
+
+  public final int component1();
+    descriptor: ()I
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Map<java.lang.String, java.lang.String> component3();
+    descriptor: ()Ljava/util/Map;
+
+  public final byte[] component4();
+    descriptor: ()[B
+
+  public final java.lang.Long component5();
+    descriptor: ()Ljava/lang/Long;
+
+  public final java.lang.Integer component6();
+    descriptor: ()Ljava/lang/Integer;
+
+  public final java.lang.String component7();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceHttpResponse copy(int, java.lang.String, java.util.Map<java.lang.String, java.lang.String>, byte[], java.lang.Long, java.lang.Integer, java.lang.String);
+    descriptor: (ILjava/lang/String;Ljava/util/Map;[BLjava/lang/Long;Ljava/lang/Integer;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceHttpResponse;
+
+  public static me.him188.ani.source.plugin.api.SourceHttpResponse copy$default(me.him188.ani.source.plugin.api.SourceHttpResponse, int, java.lang.String, java.util.Map, byte[], java.lang.Long, java.lang.Integer, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceHttpResponse;ILjava/lang/String;Ljava/util/Map;[BLjava/lang/Long;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceHttpResponse;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+
+[me.him188.ani.source.plugin.api.SourceMediaIdentity]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceMediaIdentity {
+  public static final me.him188.ani.source.plugin.api.SourceMediaIdentity$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceMediaIdentity$Companion;
+  public me.him188.ani.source.plugin.api.SourceMediaIdentity(java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+
+  public final java.lang.String getPluginId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getSubjectId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getChannelId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getEpisodeId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String asStableId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceMediaIdentity copy(java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceMediaIdentity;
+
+  public static me.him188.ani.source.plugin.api.SourceMediaIdentity copy$default(me.him188.ani.source.plugin.api.SourceMediaIdentity, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceMediaIdentity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceMediaIdentity;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceMediaIdentity, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceMediaIdentity;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceMediaIdentity(int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+}
+
+[me.him188.ani.source.plugin.api.SourceMediaRequestContext]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceMediaRequestContext {
+  public static final me.him188.ani.source.plugin.api.SourceMediaRequestContext$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceMediaRequestContext$Companion;
+  public me.him188.ani.source.plugin.api.SourceMediaRequestContext(java.util.Map<java.lang.String, java.lang.String>, java.util.Map<java.lang.String, java.lang.String>, java.lang.String, java.lang.String);
+    descriptor: (Ljava/util/Map;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceMediaRequestContext(java.util.Map, java.util.Map, java.lang.String, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/util/Map;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.util.Map<java.lang.String, java.lang.String> getHeaders();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.util.Map<java.lang.String, java.lang.String> getCookies();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.lang.String getReferrer();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getOrigin();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Map<java.lang.String, java.lang.String> toHeaders();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.util.Map<java.lang.String, java.lang.String> component1();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.util.Map<java.lang.String, java.lang.String> component2();
+    descriptor: ()Ljava/util/Map;
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceMediaRequestContext copy(java.util.Map<java.lang.String, java.lang.String>, java.util.Map<java.lang.String, java.lang.String>, java.lang.String, java.lang.String);
+    descriptor: (Ljava/util/Map;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;
+
+  public static me.him188.ani.source.plugin.api.SourceMediaRequestContext copy$default(me.him188.ani.source.plugin.api.SourceMediaRequestContext, java.util.Map, java.util.Map, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;Ljava/util/Map;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceMediaRequestContext, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceMediaRequestContext;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceMediaRequestContext(int, java.util.Map, java.util.Map, java.lang.String, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/util/Map;Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public me.him188.ani.source.plugin.api.SourceMediaRequestContext();
+    descriptor: ()V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourcePlugin]
+Compiled from "SourcePlugin.kt"
+public interface me.him188.ani.source.plugin.api.SourcePlugin extends java.lang.AutoCloseable {
+  public abstract me.him188.ani.source.plugin.api.SourcePluginMetadata getMetadata();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourcePluginMetadata;
+
+  public abstract java.lang.Object checkConnection(kotlin.coroutines.Continuation<? super me.him188.ani.source.plugin.api.SourceConnectionStatus>);
+    descriptor: (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public abstract java.lang.Object search(me.him188.ani.source.plugin.api.SourceSearchRequest, kotlin.coroutines.Continuation<? super java.util.List<me.him188.ani.source.plugin.api.SourceSubject>>);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSearchRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public abstract java.lang.Object getSubject(java.lang.String, kotlin.coroutines.Continuation<? super me.him188.ani.source.plugin.api.SourceSubjectDetails>);
+    descriptor: (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public abstract java.lang.Object resolve(me.him188.ani.source.plugin.api.SourceResolveRequest, kotlin.coroutines.Continuation<? super me.him188.ani.source.plugin.api.ResolvedMedia>);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceResolveRequest;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public default me.him188.ani.source.plugin.api.SourceWebResourceMatch matchWebResource(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceWebResourceMatch;
+
+  public abstract void close();
+    descriptor: ()V
+
+  public static me.him188.ani.source.plugin.api.SourceWebResourceMatch access$matchWebResource$jd(me.him188.ani.source.plugin.api.SourcePlugin, java.lang.String);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourcePlugin;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceWebResourceMatch;
+}
+
+[me.him188.ani.source.plugin.api.SourcePluginContext]
+Compiled from "SourcePlugin.kt"
+public interface me.him188.ani.source.plugin.api.SourcePluginContext {
+  public abstract java.lang.String getPluginId();
+    descriptor: ()Ljava/lang/String;
+
+  public abstract java.lang.String getHostVersion();
+    descriptor: ()Ljava/lang/String;
+
+  public abstract me.him188.ani.source.plugin.api.SourcePluginPlatform getPlatform();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourcePluginPlatform;
+
+  public abstract me.him188.ani.source.plugin.api.SourceHttpClient getHttp();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceHttpClient;
+
+  public abstract me.him188.ani.source.plugin.api.SourcePluginLogger getLogger();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourcePluginLogger;
+}
+
+[me.him188.ani.source.plugin.api.SourcePluginEntryPoint]
+Compiled from "SourcePlugin.kt"
+public interface me.him188.ani.source.plugin.api.SourcePluginEntryPoint {
+  public abstract me.him188.ani.source.plugin.api.SourcePlugin create(me.him188.ani.source.plugin.api.SourcePluginContext);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourcePluginContext;)Lme/him188/ani/source/plugin/api/SourcePlugin;
+}
+
+[me.him188.ani.source.plugin.api.SourcePluginKt]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourcePluginKt {
+  public static final me.him188.ani.source.plugin.api.SourceMediaIdentity mediaIdentity(me.him188.ani.source.plugin.api.SourceResolveRequest, java.lang.String);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceResolveRequest;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceMediaIdentity;
+}
+
+[me.him188.ani.source.plugin.api.SourcePluginLogger]
+Compiled from "SourcePlugin.kt"
+public interface me.him188.ani.source.plugin.api.SourcePluginLogger {
+  public abstract void debug(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public abstract void info(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public abstract void warn(java.lang.String, java.lang.Throwable);
+    descriptor: (Ljava/lang/String;Ljava/lang/Throwable;)V
+
+  public static void warn$default(me.him188.ani.source.plugin.api.SourcePluginLogger, java.lang.String, java.lang.Throwable, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourcePluginLogger;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+
+  public abstract void error(java.lang.String, java.lang.Throwable);
+    descriptor: (Ljava/lang/String;Ljava/lang/Throwable;)V
+
+  public static void error$default(me.him188.ani.source.plugin.api.SourcePluginLogger, java.lang.String, java.lang.Throwable, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourcePluginLogger;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+}
+
+[me.him188.ani.source.plugin.api.SourcePluginMetadata]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourcePluginMetadata {
+  public static final me.him188.ani.source.plugin.api.SourcePluginMetadata$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourcePluginMetadata$Companion;
+  public me.him188.ani.source.plugin.api.SourcePluginMetadata(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.String, java.util.Set<? extends me.him188.ani.source.plugin.api.SourcePluginPlatform>, java.util.List<java.lang.String>);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Set;Ljava/util/List;)V
+
+  public me.him188.ani.source.plugin.api.SourcePluginMetadata(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.String, java.util.Set, java.util.List, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Set;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getDisplayName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getVersion();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getWebsite();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getDescription();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getIconUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final int getPluginApiVersion();
+    descriptor: ()I
+
+  public final java.lang.String getMinHostVersion();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Set<me.him188.ani.source.plugin.api.SourcePluginPlatform> getSupportedPlatforms();
+    descriptor: ()Ljava/util/Set;
+
+  public final java.util.List<java.lang.String> getDefaultSubtitleLanguageIds();
+    descriptor: ()Ljava/util/List;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component6();
+    descriptor: ()Ljava/lang/String;
+
+  public final int component7();
+    descriptor: ()I
+
+  public final java.lang.String component8();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Set<me.him188.ani.source.plugin.api.SourcePluginPlatform> component9();
+    descriptor: ()Ljava/util/Set;
+
+  public final java.util.List<java.lang.String> component10();
+    descriptor: ()Ljava/util/List;
+
+  public final me.him188.ani.source.plugin.api.SourcePluginMetadata copy(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.String, java.util.Set<? extends me.him188.ani.source.plugin.api.SourcePluginPlatform>, java.util.List<java.lang.String>);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Set;Ljava/util/List;)Lme/him188/ani/source/plugin/api/SourcePluginMetadata;
+
+  public static me.him188.ani.source.plugin.api.SourcePluginMetadata copy$default(me.him188.ani.source.plugin.api.SourcePluginMetadata, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.String, java.util.Set, java.util.List, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourcePluginMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Set;Ljava/util/List;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourcePluginMetadata;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourcePluginMetadata, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourcePluginMetadata;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourcePluginMetadata(int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.String, java.util.Set, java.util.List, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Set;Ljava/util/List;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourcePluginPlatform]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourcePluginPlatform extends java.lang.Enum<me.him188.ani.source.plugin.api.SourcePluginPlatform> {
+  public static final me.him188.ani.source.plugin.api.SourcePluginPlatform$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourcePluginPlatform$Companion;
+  public static final me.him188.ani.source.plugin.api.SourcePluginPlatform ANDROID;
+    descriptor: Lme/him188/ani/source/plugin/api/SourcePluginPlatform;
+  public static final me.him188.ani.source.plugin.api.SourcePluginPlatform DESKTOP;
+    descriptor: Lme/him188/ani/source/plugin/api/SourcePluginPlatform;
+  public static final me.him188.ani.source.plugin.api.SourcePluginPlatform IOS;
+    descriptor: Lme/him188/ani/source/plugin/api/SourcePluginPlatform;
+  public static me.him188.ani.source.plugin.api.SourcePluginPlatform[] values();
+    descriptor: ()[Lme/him188/ani/source/plugin/api/SourcePluginPlatform;
+
+  public static me.him188.ani.source.plugin.api.SourcePluginPlatform valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourcePluginPlatform;
+
+  public static kotlin.enums.EnumEntries<me.him188.ani.source.plugin.api.SourcePluginPlatform> getEntries();
+    descriptor: ()Lkotlin/enums/EnumEntries;
+
+  public static final kotlin.Lazy access$get$cachedSerializer$delegate$cp();
+    descriptor: ()Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceResolveRequest]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceResolveRequest {
+  public static final me.him188.ani.source.plugin.api.SourceResolveRequest$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResolveRequest$Companion;
+  public me.him188.ani.source.plugin.api.SourceResolveRequest(java.lang.String, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceResolveRequest(java.lang.String, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getSubjectId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getChannelId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getEpisodeId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Float getEpisodeSort();
+    descriptor: ()Ljava/lang/Float;
+
+  public final java.lang.String getEpisodeEp();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getPluginId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getTraceId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getEntryPoint();
+    descriptor: ()Ljava/lang/String;
+
+  public me.him188.ani.source.plugin.api.SourceResolveRequest(java.lang.String, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceResolveRequest(java.lang.String, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.Float component4();
+    descriptor: ()Ljava/lang/Float;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component6();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component7();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component8();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceResolveRequest copy(java.lang.String, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceResolveRequest;
+
+  public static me.him188.ani.source.plugin.api.SourceResolveRequest copy$default(me.him188.ani.source.plugin.api.SourceResolveRequest, java.lang.String, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceResolveRequest;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceResolveRequest;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceResolveRequest, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceResolveRequest;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceResolveRequest(int, java.lang.String, java.lang.String, java.lang.String, java.lang.Float, java.lang.String, java.lang.String, java.lang.String, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+}
+
+[me.him188.ani.source.plugin.api.SourceResultStatus]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceResultStatus extends java.lang.Enum<me.him188.ani.source.plugin.api.SourceResultStatus> {
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus$Companion;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus SUCCESS;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus SUBJECT_NO_MATCH;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus EPISODE_NO_MATCH;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus TIMEOUT;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus NETWORK_ERROR;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus HTTP_ERROR;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus BLOCKED_BY_CHALLENGE;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus AUTH_REQUIRED;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus PARSE_ERROR;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus RESOLVE_ERROR;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus MEDIA_UNREACHABLE;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus PLAYBACK_ERROR;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static final me.him188.ani.source.plugin.api.SourceResultStatus PLUGIN_ERROR;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceResultStatus;
+  public static me.him188.ani.source.plugin.api.SourceResultStatus[] values();
+    descriptor: ()[Lme/him188/ani/source/plugin/api/SourceResultStatus;
+
+  public static me.him188.ani.source.plugin.api.SourceResultStatus valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceResultStatus;
+
+  public static kotlin.enums.EnumEntries<me.him188.ani.source.plugin.api.SourceResultStatus> getEntries();
+    descriptor: ()Lkotlin/enums/EnumEntries;
+
+  public static final kotlin.Lazy access$get$cachedSerializer$delegate$cp();
+    descriptor: ()Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceSearchRequest]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceSearchRequest {
+  public static final me.him188.ani.source.plugin.api.SourceSearchRequest$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceSearchRequest$Companion;
+  public me.him188.ani.source.plugin.api.SourceSearchRequest(java.lang.String, int, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceSearchRequest(java.lang.String, int, java.lang.String, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getQuery();
+    descriptor: ()Ljava/lang/String;
+
+  public final int getLimit();
+    descriptor: ()I
+
+  public final java.lang.String getTraceId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getEntryPoint();
+    descriptor: ()Ljava/lang/String;
+
+  public me.him188.ani.source.plugin.api.SourceSearchRequest(java.lang.String, int);
+    descriptor: (Ljava/lang/String;I)V
+
+  public me.him188.ani.source.plugin.api.SourceSearchRequest(java.lang.String, int, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final int component2();
+    descriptor: ()I
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceSearchRequest copy(java.lang.String, int, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceSearchRequest;
+
+  public static me.him188.ani.source.plugin.api.SourceSearchRequest copy$default(me.him188.ani.source.plugin.api.SourceSearchRequest, java.lang.String, int, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSearchRequest;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceSearchRequest;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceSearchRequest, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSearchRequest;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceSearchRequest(int, java.lang.String, int, java.lang.String, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+}
+
+[me.him188.ani.source.plugin.api.SourceSubject]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceSubject {
+  public static final me.him188.ani.source.plugin.api.SourceSubject$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceSubject$Companion;
+  public me.him188.ani.source.plugin.api.SourceSubject(java.lang.String, java.lang.String, java.util.List<java.lang.String>, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)V
+
+  public me.him188.ani.source.plugin.api.SourceSubject(java.lang.String, java.lang.String, java.util.List, java.lang.String, java.lang.String, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.lang.String getId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getTitle();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.List<java.lang.String> getAlternativeTitles();
+    descriptor: ()Ljava/util/List;
+
+  public final java.lang.String getDetailUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getCoverUrl();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.List<java.lang.String> component3();
+    descriptor: ()Ljava/util/List;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final me.him188.ani.source.plugin.api.SourceSubject copy(java.lang.String, java.lang.String, java.util.List<java.lang.String>, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceSubject;
+
+  public static me.him188.ani.source.plugin.api.SourceSubject copy$default(me.him188.ani.source.plugin.api.SourceSubject, java.lang.String, java.lang.String, java.util.List, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSubject;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceSubject;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceSubject, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSubject;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceSubject(int, java.lang.String, java.lang.String, java.util.List, java.lang.String, java.lang.String, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceSubjectDetails]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceSubjectDetails {
+  public static final me.him188.ani.source.plugin.api.SourceSubjectDetails$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceSubjectDetails$Companion;
+  public me.him188.ani.source.plugin.api.SourceSubjectDetails(me.him188.ani.source.plugin.api.SourceSubject, java.util.List<me.him188.ani.source.plugin.api.SourceChannelEpisodes>);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSubject;Ljava/util/List;)V
+
+  public final me.him188.ani.source.plugin.api.SourceSubject getSubject();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceSubject;
+
+  public final java.util.List<me.him188.ani.source.plugin.api.SourceChannelEpisodes> getChannels();
+    descriptor: ()Ljava/util/List;
+
+  public final me.him188.ani.source.plugin.api.SourceSubject component1();
+    descriptor: ()Lme/him188/ani/source/plugin/api/SourceSubject;
+
+  public final java.util.List<me.him188.ani.source.plugin.api.SourceChannelEpisodes> component2();
+    descriptor: ()Ljava/util/List;
+
+  public final me.him188.ani.source.plugin.api.SourceSubjectDetails copy(me.him188.ani.source.plugin.api.SourceSubject, java.util.List<me.him188.ani.source.plugin.api.SourceChannelEpisodes>);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSubject;Ljava/util/List;)Lme/him188/ani/source/plugin/api/SourceSubjectDetails;
+
+  public static me.him188.ani.source.plugin.api.SourceSubjectDetails copy$default(me.him188.ani.source.plugin.api.SourceSubjectDetails, me.him188.ani.source.plugin.api.SourceSubject, java.util.List, int, java.lang.Object);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSubjectDetails;Lme/him188/ani/source/plugin/api/SourceSubject;Ljava/util/List;ILjava/lang/Object;)Lme/him188/ani/source/plugin/api/SourceSubjectDetails;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final void write$Self$me_him188_ani_plugin_api(me.him188.ani.source.plugin.api.SourceSubjectDetails, kotlinx.serialization.encoding.CompositeEncoder, kotlinx.serialization.descriptors.SerialDescriptor);
+    descriptor: (Lme/him188/ani/source/plugin/api/SourceSubjectDetails;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
+
+  public me.him188.ani.source.plugin.api.SourceSubjectDetails(int, me.him188.ani.source.plugin.api.SourceSubject, java.util.List, kotlinx.serialization.internal.SerializationConstructorMarker);
+    descriptor: (ILme/him188/ani/source/plugin/api/SourceSubject;Ljava/util/List;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+
+  public static final kotlin.Lazy[] access$get$childSerializers$cp();
+    descriptor: ()[Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceTracePhase]
+Compiled from "SourcePlugin.kt"
+public final class me.him188.ani.source.plugin.api.SourceTracePhase extends java.lang.Enum<me.him188.ani.source.plugin.api.SourceTracePhase> {
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase$Companion Companion;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase$Companion;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase DISCOVERY_START;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase SEARCH_REQUEST;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase SEARCH_RESPONSE;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase MATCH_RESULT;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase SUBJECT_RESOLVE;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase EPISODE_FETCH;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase EPISODE_MATCH;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase PLAY_RESOLVE;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase FINAL_MEDIA_CHECK;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase DOWNLOAD_RESOLVE;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static final me.him188.ani.source.plugin.api.SourceTracePhase PLAYBACK_RESULT;
+    descriptor: Lme/him188/ani/source/plugin/api/SourceTracePhase;
+  public static me.him188.ani.source.plugin.api.SourceTracePhase[] values();
+    descriptor: ()[Lme/him188/ani/source/plugin/api/SourceTracePhase;
+
+  public static me.him188.ani.source.plugin.api.SourceTracePhase valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lme/him188/ani/source/plugin/api/SourceTracePhase;
+
+  public static kotlin.enums.EnumEntries<me.him188.ani.source.plugin.api.SourceTracePhase> getEntries();
+    descriptor: ()Lkotlin/enums/EnumEntries;
+
+  public static final kotlin.Lazy access$get$cachedSerializer$delegate$cp();
+    descriptor: ()Lkotlin/Lazy;
+}
+
+[me.him188.ani.source.plugin.api.SourceWebResourceMatch]
+Compiled from "SourcePlugin.kt"
+public interface me.him188.ani.source.plugin.api.SourceWebResourceMatch {
+}

@@ -1024,6 +1024,12 @@
     <string name="media_source_results_temp_enable">Tap to enable temporarily</string>
     <string name="media_source_results_failed">Query failed</string>
     <string name="media_source_results_no_match">No matching episode</string>
+    <string name="media_source_results_subject_no_match">No matching work</string>
+    <string name="media_source_results_episode_no_match">No matching episode</string>
+    <string name="media_source_results_http_error">Source website is temporarily unavailable</string>
+    <string name="media_source_results_challenge">Source verification required</string>
+    <string name="media_source_results_parse_error">Source response could not be parsed</string>
+    <string name="media_source_results_plugin_error">Source plugin error</string>
     <string name="media_source_results_click_retry">Tap to retry</string>
     <string name="media_source_results_captcha_required">Captcha required</string>
     <string name="media_source_results_click_verify">Tap to verify</string>

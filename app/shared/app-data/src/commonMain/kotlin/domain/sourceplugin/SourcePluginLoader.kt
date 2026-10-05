@@ -144,6 +144,28 @@ class SourcePluginHttpClient(
         throw error
     } catch (error: SourcePluginFailure) {
         throw error
+    } catch (error: LinkageError) {
+        throw sourcePluginBoundaryFailure(
+            traceId = pluginRequest.traceId,
+            provider = pluginId ?: "host",
+            entryPoint = pluginRequest.entryPoint,
+            fallbackStatus = SourceResultStatus.NETWORK_ERROR,
+            error = error,
+            url = pluginRequest.url,
+            retryable = false,
+        )
+    } catch (error: ClassCastException) {
+        throw sourcePluginBoundaryFailure(
+            traceId = pluginRequest.traceId,
+            provider = pluginId ?: "host",
+            entryPoint = pluginRequest.entryPoint,
+            fallbackStatus = SourceResultStatus.NETWORK_ERROR,
+            error = error,
+            url = pluginRequest.url,
+            retryable = false,
+        )
+    } catch (error: Error) {
+        throw error
     } catch (error: Throwable) {
         throw SourcePluginFailure(
             status = SourceResultStatus.NETWORK_ERROR,
@@ -205,7 +227,7 @@ class SourcePluginHttpClient(
         }
 
         pluginLogger?.info("偵測到來源網站驗證，準備使用互動網頁工作階段處理")
-        val outcome = runCatching {
+        val outcome = try {
             val request = SolveRequest(
                 mediaSourceId = pluginId.orEmpty(),
                 pageUrl = response.finalUrl.ifBlank { pluginRequest.url },
@@ -218,7 +240,31 @@ class SourcePluginHttpClient(
             } else {
                 sessionManager.solve(request, interactive = true)
             }
-        }.getOrElse { error ->
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: LinkageError) {
+            throw sourcePluginBoundaryFailure(
+                traceId = pluginRequest.traceId,
+                provider = pluginId,
+                entryPoint = pluginRequest.entryPoint,
+                fallbackStatus = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+                error = error,
+                url = pluginRequest.url,
+                retryable = false,
+            )
+        } catch (error: ClassCastException) {
+            throw sourcePluginBoundaryFailure(
+                traceId = pluginRequest.traceId,
+                provider = pluginId,
+                entryPoint = pluginRequest.entryPoint,
+                fallbackStatus = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+                error = error,
+                url = pluginRequest.url,
+                retryable = false,
+            )
+        } catch (error: Error) {
+            throw error
+        } catch (error: Throwable) {
             pluginLogger?.warn("來源網站驗證流程失敗: ${error::class.simpleName}")
             SolveOutcome.Failed(null)
         }

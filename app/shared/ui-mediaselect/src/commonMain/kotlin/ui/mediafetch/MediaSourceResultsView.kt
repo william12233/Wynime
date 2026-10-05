@@ -73,6 +73,12 @@ import me.him188.ani.app.ui.lang.media_source_results_click_verify
 import me.him188.ani.app.ui.lang.media_source_results_data_sources_count
 import me.him188.ani.app.ui.lang.media_source_results_failed
 import me.him188.ani.app.ui.lang.media_source_results_no_match
+import me.him188.ani.app.ui.lang.media_source_results_subject_no_match
+import me.him188.ani.app.ui.lang.media_source_results_episode_no_match
+import me.him188.ani.app.ui.lang.media_source_results_http_error
+import me.him188.ani.app.ui.lang.media_source_results_challenge
+import me.him188.ani.app.ui.lang.media_source_results_parse_error
+import me.him188.ani.app.ui.lang.media_source_results_plugin_error
 import me.him188.ani.app.ui.lang.media_source_results_help
 import me.him188.ani.app.ui.lang.media_source_results_searched
 import me.him188.ani.app.ui.lang.media_source_results_searching
@@ -84,6 +90,7 @@ import me.him188.ani.app.ui.lang.settings_mediasource_refresh
 import me.him188.ani.app.ui.settings.SettingsTab
 import me.him188.ani.app.ui.settings.rendering.MediaSourceIcons
 import me.him188.ani.app.ui.settings.rendering.SmallMediaSourceIcon
+import me.him188.ani.source.plugin.api.SourceResultStatus
 import me.him188.ani.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
@@ -295,13 +302,38 @@ private fun MediaSourceResultCard(
 ) {
     val temporaryEnableText = stringResource(Lang.media_source_results_temp_enable)
     val failedText = stringResource(Lang.media_source_results_failed)
-    val noMatchText = stringResource(Lang.media_source_results_no_match)
+    val defaultNoMatchText = stringResource(Lang.media_source_results_no_match)
+    val subjectNoMatchText = stringResource(Lang.media_source_results_subject_no_match)
+    val episodeNoMatchText = stringResource(Lang.media_source_results_episode_no_match)
+    val httpErrorText = stringResource(Lang.media_source_results_http_error)
+    val challengeText = stringResource(Lang.media_source_results_challenge)
+    val parseErrorText = stringResource(Lang.media_source_results_parse_error)
+    val pluginErrorText = stringResource(Lang.media_source_results_plugin_error)
     val clickRetryText = stringResource(Lang.media_source_results_click_retry)
     val captchaRequiredText = stringResource(Lang.media_source_results_captcha_required)
     val rateLimitedText = stringResource(Lang.media_source_results_rate_limited)
     val clickVerifyText = stringResource(Lang.media_source_results_click_verify)
     val successText = stringResource(Lang.media_source_results_success)
     val verifyText = stringResource(Lang.media_source_results_verify)
+    val statusText = when (source.sourceStatus) {
+        SourceResultStatus.SUBJECT_NO_MATCH -> subjectNoMatchText
+        SourceResultStatus.EPISODE_NO_MATCH -> episodeNoMatchText
+        SourceResultStatus.TIMEOUT,
+        SourceResultStatus.NETWORK_ERROR,
+        SourceResultStatus.HTTP_ERROR,
+        -> httpErrorText
+        SourceResultStatus.BLOCKED_BY_CHALLENGE,
+        SourceResultStatus.AUTH_REQUIRED,
+        -> challengeText
+        SourceResultStatus.PARSE_ERROR -> parseErrorText
+        SourceResultStatus.PLUGIN_ERROR -> pluginErrorText
+        else -> failedText
+    }
+    val noMatchText = when (source.sourceStatus) {
+        SourceResultStatus.SUBJECT_NO_MATCH -> subjectNoMatchText
+        SourceResultStatus.EPISODE_NO_MATCH -> episodeNoMatchText
+        else -> defaultNoMatchText
+    }
     if (expanded) {
         OutlinedCard(
             onClick = onClick,
@@ -354,7 +386,7 @@ private fun MediaSourceResultCard(
                             source.isFailedOrAbandoned -> {
                                 CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error) {
                                     Icon(Icons.Outlined.Close, failedText)
-                                    Text(clickRetryText)
+                                    Text("$statusText · $clickRetryText")
                                 }
                             }
 

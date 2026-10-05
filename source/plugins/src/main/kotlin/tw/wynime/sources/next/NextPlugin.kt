@@ -20,6 +20,7 @@ import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.searchQueryVariants
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -43,7 +44,11 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
     description = "稀飯動漫 Next 的 SSR 番劇與正常播放服務",
 ) {
     override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
-        val page = requestPage("$rootUrl/search?q=${urlEncode(request.query)}")
+        val page = requestPage(
+            "$rootUrl/search?q=${urlEncode(request.query)}",
+            traceId = request.traceId,
+            entryPoint = request.entryPoint,
+        )
         val variants = searchQueryVariants(request.query)
         val serverResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (variant in variants) {
@@ -53,14 +58,18 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
                 Regex("(?i)/anime/(\\d+)(?:[/?#]|$)"),
             )
         }
-        val apiConfig = try {
-            discoverPlaybackConfig(page.html)
-        } catch (_: Throwable) {
-            null
-        } ?: (PUBLIC_API_ROOT to PUBLIC_API_KEY)
+        val apiConfig = discoverPlaybackConfig(page.html) ?: (PUBLIC_API_ROOT to PUBLIC_API_KEY)
         val apiResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (variant in variants) {
-            apiResults += searchApi(apiConfig.first, apiConfig.second, page.finalUrl, variant, request.limit)
+            apiResults += searchApi(
+                apiConfig.first,
+                apiConfig.second,
+                page.finalUrl,
+                variant,
+                request.limit,
+                request.traceId,
+                request.entryPoint,
+            )
         }
         return (serverResults + apiResults)
             .distinctBy { it.id }
@@ -105,35 +114,24 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
 
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/anime/${request.subjectId}/play/${request.episodeId}?source=${urlEncode(request.channelId)}"
-        val page = requestPage(pageUrl)
+        val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
         val sourceId = sourceIdsByCode(page.html)[request.channelId]
             ?: request.channelId.toIntOrNull()
-        val apiConfig = try {
-            discoverPlaybackConfig(page.html)
-        } catch (_: Throwable) {
-            null
-        } ?: (PUBLIC_API_ROOT to PUBLIC_API_KEY)
+        val apiConfig = discoverPlaybackConfig(page.html) ?: (PUBLIC_API_ROOT to PUBLIC_API_KEY)
         val apiResult = if (sourceId != null) {
             val body = "{\"action\":\"fallback\",\"episode_id\":${request.episodeId.toInt()},\"source_id\":$sourceId}"
-            var result: String? = null
-            for (key in listOf(apiConfig.second, PUBLIC_API_KEY).distinct()) {
-                result = try {
-                    requestJson(
-                        url = "${apiConfig.first}/functions/v1/issue-web-playback",
-                        body = body,
-                        headers = mapOf(
-                            "apikey" to key,
-                            "Authorization" to "Bearer $key",
-                            "Origin" to rootUrl,
-                            "Referer" to page.finalUrl,
-                        ),
-                    )
-                } catch (_: Throwable) {
-                    null
-                }
-                if (result != null) break
-            }
-            result
+            requestJson(
+                url = "${apiConfig.first}/functions/v1/issue-web-playback",
+                body = body,
+                headers = mapOf(
+                    "apikey" to apiConfig.second,
+                    "Authorization" to "Bearer ${apiConfig.second}",
+                    "Origin" to rootUrl,
+                    "Referer" to page.finalUrl,
+                ),
+                traceId = request.traceId,
+                entryPoint = request.entryPoint,
+            )
         } else {
             null
         }
@@ -200,28 +198,23 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         referer: String,
         query: String,
         limit: Int,
+        traceId: String,
+        entryPoint: String,
     ): List<me.him188.ani.source.plugin.api.SourceSubject> {
         val body = "{\"search_term\":${jsonString(query)},\"page_number\":1,\"items_per_page\":$limit,\"sort_by\":\"created_at\",\"sort_order\":\"desc\"}"
-        val keys = listOf(discoveredKey, PUBLIC_API_KEY).distinct()
-        for ((index, key) in keys.withIndex()) {
-            val response = try {
-                requestJson(
-                    url = "$api/rest/v1/rpc/search_animes",
-                    body = body,
-                    headers = mapOf(
-                        "apikey" to key,
-                        "Authorization" to "Bearer $key",
-                        "Origin" to rootUrl,
-                        "Referer" to referer,
-                    ),
-                )
-            } catch (_: Throwable) {
-                continue
-            }
-            val parsed = parseSearchResults(response)
-            if (parsed.isNotEmpty() || index == keys.lastIndex) return parsed
-        }
-        return emptyList()
+        val response = requestJson(
+            url = "$api/rest/v1/rpc/search_animes",
+            body = body,
+            headers = mapOf(
+                "apikey" to discoveredKey,
+                "Authorization" to "Bearer $discoveredKey",
+                "Origin" to rootUrl,
+                "Referer" to referer,
+            ),
+            traceId = traceId,
+            entryPoint = entryPoint,
+        )
+        return parseSearchResults(response)
     }
 
     private fun fetchChunksConcurrently(paths: List<String>): List<Pair<String, String>> {
@@ -230,15 +223,19 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         return try {
             val tasks = paths.map { path ->
                 Callable {
-                    runCatching {
-                        path to runBlockingRequest { requestPage(absoluteUrl(rootUrl, path)).html }
-                    }.getOrNull()
+                    path to runBlockingRequest { requestPage(absoluteUrl(rootUrl, path)).html }
                 }
             }
-            executor.invokeAll(tasks, 10, TimeUnit.SECONDS)
-                .mapNotNull { future ->
-                    if (future.isCancelled) null else runCatching { future.get() }.getOrNull()
+            executor.invokeAll(tasks, 10, TimeUnit.SECONDS).map { future ->
+                if (future.isCancelled) {
+                    throw TimeoutException("Timed out while downloading Next playback configuration")
                 }
+                try {
+                    future.get()
+                } catch (error: ExecutionException) {
+                    throw error.cause ?: error
+                }
+            }
         } finally {
             executor.shutdownNow()
         }

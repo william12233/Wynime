@@ -465,6 +465,14 @@ run {
         gradleHeap = "8g",
         kotlinCompilerHeap = "6g",
     )
+    val ghUbuntuArm64Apk = ghUbuntu2404.copy(
+        name = "Ubuntu 24.04 Android arm64-v8a",
+        uploadDesktopInstallers = false,
+        extraGradleArgs = listOf(
+            "-P$ANI_ANDROID_ABIS=arm64-v8a",
+        ),
+        buildAllAndroidAbis = false,
+    )
     val ghMac15Intel = MatrixInstance(
         runner = Runner.GithubMacOS15Intel,
         uploadApk = false, // all ABIs
@@ -531,17 +539,8 @@ run {
     )
 
     releaseMatrixInstances = listOf(
-        ghWin, // win installer
-        ghWinArm64, // win ARM64 portable
-        selfMac15.copy(
-            buildAllAndroidAbis = true,
-            uploadApk = false,
-            uploadDesktopInstallers = false,
-            extraGradleArgs = selfMac15.extraGradleArgs.filterNot { it.startsWith("-P$ANI_ANDROID_ABIS=") },
-        ), // android apks
-        ghMac15AppleSilicon, // macos AArch64 installer
-        ghMac15Intel, // macos x64 portable
-        ghUbuntu2404, // linux app image + Android APKs
+        ghWin, // Windows x86_64 ZIP
+        ghUbuntuArm64Apk, // Android arm64-v8a APK
     )
 }
 
@@ -1022,7 +1021,7 @@ workflow(
                 tagName = expr { gitTag.tagExpr },
                 name = expr { gitTag.tagVersionExpr },
                 body = expr { releaseNotes.outputs["result"] },
-                draft = true,
+                draft = false,
                 prerelease_Untyped = expr { contains(gitTag.tagExpr, "'-'") },
             ),
             env = mapOf("GITHUB_TOKEN" to expr { secrets.GITHUB_TOKEN }),
@@ -1078,7 +1077,7 @@ workflow(
             ) {
                 uploadAndroidApkToCloud()
                 generateQRCodeAndUpload()
-                if (matrix.isUbuntu) {
+                if (matrix.isUbuntu && matrix.uploadDesktopInstallers) {
                     // Ubuntu `uploadDesktopInstallers` assumes `Wynime-x86_64.AppImage` is already built
                     packageDesktopAndUpload()
                 }
@@ -1623,25 +1622,13 @@ class WithMatrix(
         if (matrix.uploadApk) {
             runGradle(
                 name = "Build Android Debug APKs",
-                tasks = arrayOf("assembleDefaultDebug", "assembleTvDebug"),
-            )
-            runGradle(
-                name = "Test Android TV",
-                tasks = buildList {
-                    for (module in listOf(":app:shared:tv", ":app:shared:ui-foundation-tv", ":app:shared:ui-episode-tv", ":app:shared:ui-subject-tv")) {
-                        add("$module:testAndroidHostTest")
-                        add("--tests 'me.him188.Wynime.tv.*'")
-                    }
-                }.toTypedArray(),
+                tasks = arrayOf("assembleDefaultDebug"),
             )
         }
 
         for (arch in AndroidArch.entriesWithUniversal) {
-            val shouldUpload = if (arch == AndroidArch.UNIVERSAL) {
-                matrix.uploadApk and matrix.buildAllAndroidAbis
-            } else {
-                matrix.uploadApk
-            }
+            val shouldUpload = matrix.uploadApk &&
+                (matrix.buildAllAndroidAbis || arch == matrix.androidAbis)
             if (shouldUpload) {
                 usesWithAttempts(
                     name = "Upload Android Debug APK $arch",
@@ -1658,7 +1645,7 @@ class WithMatrix(
             runGradle(
                 name = "Build Android Release APKs",
                 `if` = expr { github.isWynimeRepository and !github.isPullRequest },
-                tasks = arrayOf("assembleDefaultRelease", "assembleTvRelease"),
+                tasks = arrayOf("assembleDefaultRelease"),
                 env = mapOf(
                     "signing_release_storeFileFromRoot" to expr { prepareSigningKey.outputs["filePath"] },
                     "signing_release_storePassword" to expr { secrets.SIGNING_RELEASE_STOREPASSWORD },
@@ -1669,25 +1656,14 @@ class WithMatrix(
         }
 
         for (arch in AndroidArch.entriesWithUniversal) {
-            val shouldUpload = if (arch == AndroidArch.UNIVERSAL) {
-                matrix.uploadApk and matrix.buildAllAndroidAbis
-            } else {
-                matrix.uploadApk
-            }
+            val shouldUpload = matrix.uploadApk &&
+                (matrix.buildAllAndroidAbis || arch == matrix.androidAbis)
             if (shouldUpload) {
                 usesWithAttempts(
                     name = "Upload Android Release APK $arch",
                     action = UploadArtifact(
                         name = "wynime-android-${arch}-release",
                         path_Untyped = "app/android/build/outputs/apk/default/release/android-default-${arch}-release.apk",
-                        overwrite = true,
-                    ),
-                )
-                usesWithAttempts(
-                    name = "Upload Android TV Release APK $arch",
-                    action = UploadArtifact(
-                        name = "wynime-android-tv-${arch}-release",
-                        path_Untyped = "app/android/build/outputs/apk/tv/release/android-tv-${arch}-release.apk",
                         overwrite = true,
                     ),
                 )
@@ -2113,11 +2089,6 @@ class WithMatrix(
                 runGradle(
                     name = "Upload Android APK for Release",
                     tasks = arrayOf(":ci-helper:uploadAndroidApk", "\"--no-configuration-cache\""),
-                    env = ciHelperSecrets,
-                )
-                runGradle(
-                    name = "Upload Android TV APK for Release",
-                    tasks = arrayOf(":ci-helper:uploadAndroidTvApk", "\"--no-configuration-cache\""),
                     env = ciHelperSecrets,
                 )
             }

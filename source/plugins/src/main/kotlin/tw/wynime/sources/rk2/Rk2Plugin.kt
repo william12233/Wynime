@@ -52,21 +52,21 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun search(request: SourceSearchRequest): List<SourceSubject> {
         val results = mutableListOf<SourceSubject>()
         for (variant in searchQueryVariants(request.query)) {
-            val pageResults: List<SourceSubject> = try {
-                val page = requestPage("$rootUrl/search?w=${urlEncode(variant)}")
-                links(page.html).mapNotNull { link ->
-                    val match = Regex("(?i)/detail/([^/?#]+)(?:\\?id=([^&#\"']+))?").find(link.href)
-                        ?: return@mapNotNull null
-                    val slug = match.groupValues[1]
-                    val currentEpisode = match.groupValues.getOrNull(2).orEmpty().ifBlank { "1" }
-                    val id = "$slug#$currentEpisode"
-                    subject(id, link.text, absoluteUrl(rootUrl, link.href))
-                }
-                    .filter { queryMatches(it.title, variant) }
-                    .toList()
-            } catch (_: Throwable) {
-                emptyList()
+            val page = requestPage(
+                "$rootUrl/search?w=${urlEncode(variant)}",
+                traceId = request.traceId,
+                entryPoint = request.entryPoint,
+            )
+            val pageResults: List<SourceSubject> = links(page.html).mapNotNull { link ->
+                val match = Regex("(?i)/detail/([^/?#]+)(?:\\?id=([^&#\"']+))?").find(link.href)
+                    ?: return@mapNotNull null
+                val slug = match.groupValues[1]
+                val currentEpisode = match.groupValues.getOrNull(2).orEmpty().ifBlank { "1" }
+                val id = "$slug#$currentEpisode"
+                subject(id, link.text, absoluteUrl(rootUrl, link.href))
             }
+                .filter { queryMatches(it.title, variant) }
+                .toList()
             results += pageResults
             if (results.distinctBy { it.id }.size >= request.limit) break
         }
@@ -121,7 +121,12 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
             "Cookie" to "curXianlu=${channel.host}",
             "User-Agent" to defaultHeaders.getValue("User-Agent"),
         )
-        val page = requestPage(pageUrl, headers = mapOf("Cookie" to "curXianlu=${channel.host}"))
+        val page = requestPage(
+            pageUrl,
+            headers = mapOf("Cookie" to "curXianlu=${channel.host}"),
+            traceId = request.traceId,
+            entryPoint = request.entryPoint,
+        )
         val mediaUrl = extractJsonStringField(page.html, "source")
             ?: Regex("(?is)loadSource\\s*\\(\\s*[\"']([^\"']+)[\"']").find(page.html)?.groupValues?.getOrNull(1)
             ?: Regex("https?://[^\"'<>\\s]+\\.m3u8(?:\\?[^\"'<>\\s]*)?").find(page.html)?.value
@@ -147,7 +152,7 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
     )
 
     private suspend fun loadChannels(): List<Rk2Channel> {
-        val script = runCatching { requestPage("$rootUrl/c.js").html }.getOrNull().orEmpty()
+        val script = requestPage("$rootUrl/c.js").html
         val hosts = Regex("(?s)\\bchannels\\s*=\\s*\\[([^]]*)]")
             .find(script)
             ?.groupValues

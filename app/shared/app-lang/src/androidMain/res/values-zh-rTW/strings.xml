@@ -1034,6 +1034,12 @@
     <string name="media_source_results_temp_enable">點擊暫時啟用</string>
     <string name="media_source_results_failed">查詢失敗</string>
     <string name="media_source_results_no_match">查無符合的劇集</string>
+    <string name="media_source_results_subject_no_match">查無符合的作品</string>
+    <string name="media_source_results_episode_no_match">查無符合的劇集</string>
+    <string name="media_source_results_http_error">來源網站暫時無法連線</string>
+    <string name="media_source_results_challenge">來源需要驗證</string>
+    <string name="media_source_results_parse_error">來源解析失敗</string>
+    <string name="media_source_results_plugin_error">來源插件發生錯誤</string>
     <string name="media_source_results_click_retry">點擊重試</string>
     <string name="media_source_results_captcha_required">需要驗證碼</string>
     <string name="media_source_results_click_verify">點擊驗證</string>

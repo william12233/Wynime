@@ -34,11 +34,13 @@ internal class DidaPlugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
         val results = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
         for (variant in didaSearchQueryVariants(request.query)) {
-            results += runCatching {
-                val page = requestPage("$rootUrl/search/-------------.html?wd=${urlEncode(variant)}")
-                dynamicSearchLinks(page.html, variant, Regex("(?i)/detail/(\\d+)\\.html"))
-                    .ifEmpty { aliasSearchLinks(page.html, variant) }
-            }.getOrDefault(emptyList())
+            val page = requestPage(
+                "$rootUrl/search/-------------.html?wd=${urlEncode(variant)}",
+                traceId = request.traceId,
+                entryPoint = request.entryPoint,
+            )
+            results += dynamicSearchLinks(page.html, variant, Regex("(?i)/detail/(\\d+)\\.html"))
+                .ifEmpty { aliasSearchLinks(page.html, variant) }
             if (results.any()) break
         }
         return results.distinctBy { it.id }.take(request.limit)
@@ -133,7 +135,7 @@ internal class DidaPlugin(context: SourcePluginContext) : SitePluginBase(
 
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/play/${request.subjectId}-${request.channelId}-${request.episodeId}.html"
-        val page = requestPage(pageUrl)
+        val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
         val rawPlayerUrl = extractPlayerObjectUrl(page.html)
         val playerUrl = if (extractJsonStringField(page.html, "from")?.equals("BBA", ignoreCase = true) == true) {
             rawPlayerUrl?.let { encodedUrl ->

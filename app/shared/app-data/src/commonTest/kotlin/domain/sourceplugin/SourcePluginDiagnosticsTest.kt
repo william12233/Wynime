@@ -10,6 +10,8 @@ package me.him188.ani.app.domain.sourceplugin
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
+import kotlinx.coroutines.CancellationException
 import me.him188.ani.source.plugin.api.SourceResultStatus
 
 class SourcePluginDiagnosticsTest {
@@ -39,5 +41,45 @@ class SourcePluginDiagnosticsTest {
         assertEquals(503, diagnostics.statusCode)
         assertEquals(SourceResultStatus.HTTP_ERROR, diagnostics.responseCategory)
         assertEquals(emptyList(), diagnostics.cookieNames)
+    }
+
+    @Test
+    fun `linkage and plugin boundary cast failures are plugin errors`() {
+        val linkage = sourcePluginBoundaryFailure(
+            traceId = "trace-linkage",
+            provider = "provider",
+            entryPoint = "SEARCH_REQUEST",
+            fallbackStatus = SourceResultStatus.PARSE_ERROR,
+            error = NoSuchMethodError("legacy constructor"),
+            url = "https://example.com/search",
+            retryable = false,
+        )
+        val contract = sourcePluginBoundaryFailure(
+            traceId = "trace-contract",
+            provider = "provider",
+            entryPoint = "SEARCH_REQUEST",
+            fallbackStatus = SourceResultStatus.PARSE_ERROR,
+            error = ClassCastException("plugin contract"),
+            url = "https://example.com/search",
+            retryable = false,
+        )
+
+        assertEquals(SourceResultStatus.PLUGIN_ERROR, linkage.status)
+        assertEquals(SourceResultStatus.PLUGIN_ERROR, contract.status)
+    }
+
+    @Test
+    fun `cancellation is never converted into source failure`() {
+        assertFailsWith<CancellationException> {
+            sourcePluginBoundaryFailure(
+                traceId = "trace-cancel",
+                provider = "provider",
+                entryPoint = "SEARCH_REQUEST",
+                fallbackStatus = SourceResultStatus.PARSE_ERROR,
+                error = CancellationException("cancelled"),
+                url = null,
+                retryable = false,
+            )
+        }
     }
 }

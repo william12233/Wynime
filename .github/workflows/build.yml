@@ -60,6 +60,12 @@ jobs:
     - id: 'step-1'
       continue-on-error: true
       run: 'rm local.properties'
+    - id: 'step-2'
+      continue-on-error: true
+      run: |
+        echo "Wynime.android.abis=x86_64" >> local.properties
+        echo "Wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+        echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
     - id: 'step-3'
       continue-on-error: true
       run: |
@@ -96,23 +102,23 @@ jobs:
       name: 'Clean and download dependencies (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
     - id: 'step-9'
       name: 'Clean and download dependencies (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-8.outcome == ''failure'' }}'
     - id: 'step-10'
       name: 'Update dev version name (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew updateDevVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew updateDevVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
     - id: 'step-11'
       name: 'Update dev version name (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew updateDevVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew updateDevVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-10.outcome == ''failure'' }}'
     - id: 'step-12'
       name: 'Prepare google-services.json'
@@ -140,34 +146,34 @@ jobs:
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
     - id: 'step-14'
       name: 'Compile Kotlin (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-13.outcome == ''failure'' }}'
     - id: 'step-15'
       name: 'Compile Kotlin Android (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
     - id: 'step-16'
       name: 'Compile Kotlin Android (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-15.outcome == ''failure'' }}'
     - id: 'step-17'
       name: 'Package Desktop (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew createReleaseDistributable "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew createReleaseDistributable "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
     - id: 'step-18'
       name: 'Package Desktop (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew createReleaseDistributable "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew createReleaseDistributable "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-17.outcome == ''failure'' }}'
     - id: 'step-19'
       name: 'Upload compose logs'
@@ -209,35 +215,35 @@ jobs:
       name: 'Check (Desktop) (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
     - id: 'step-24'
       name: 'Check (Desktop) (Attempt #2)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-23.outcome == ''failure'' }}'
     - id: 'step-25'
       name: 'Check (Desktop) (Attempt #3)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-24.outcome == ''failure'' }}'
     - id: 'step-26'
       name: 'Check (Android Host) (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew testAndroidHostTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew testAndroidHostTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
     - id: 'step-27'
       name: 'Check (Android Host) (Attempt #2)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew testAndroidHostTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew testAndroidHostTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-26.outcome == ''failure'' }}'
     - id: 'step-28'
       name: 'Check (Android Host) (Attempt #3)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew testAndroidHostTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" "-DBoost_INCLUDE_DIR=C:/vcpkg/installed/x64-windows/include" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
+      run: './gradlew testAndroidHostTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
       if: '${{ steps.step-27.outcome == ''failure'' }}'
   build_github-windows-11-arm64:
     name: 'Build (Windows 11 AArch64 (GitHub))'
@@ -253,6 +259,12 @@ jobs:
     - id: 'step-1'
       continue-on-error: true
       run: 'rm local.properties'
+    - id: 'step-2'
+      continue-on-error: true
+      run: |
+        echo "Wynime.android.abis=arm64-v8a" >> local.properties
+        echo "Wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+        echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
     - id: 'step-3'
       continue-on-error: true
       run: |
@@ -404,6 +416,23 @@ jobs:
         if-no-files-found: 'error'
         overwrite: 'true'
       if: '${{ steps.step-22.outcome == ''failure'' }}'
+    - id: 'step-24'
+      name: 'Check (Desktop) (Attempt #1)'
+      continue-on-error: true
+      timeout-minutes: 180
+      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel" "--no-configuration-cache"'
+    - id: 'step-25'
+      name: 'Check (Desktop) (Attempt #2)'
+      continue-on-error: true
+      timeout-minutes: 180
+      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel" "--no-configuration-cache"'
+      if: '${{ steps.step-24.outcome == ''failure'' }}'
+    - id: 'step-26'
+      name: 'Check (Desktop) (Attempt #3)'
+      continue-on-error: false
+      timeout-minutes: 180
+      run: './gradlew desktopTest "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel" "--no-configuration-cache"'
+      if: '${{ steps.step-25.outcome == ''failure'' }}'
     - id: 'step-27'
       name: 'Check (Android Host) (Attempt #1)'
       continue-on-error: true
@@ -449,6 +478,12 @@ jobs:
     - id: 'step-3'
       continue-on-error: true
       run: 'rm local.properties'
+    - id: 'step-4'
+      continue-on-error: true
+      run: |
+        echo "Wynime.android.abis=all" >> local.properties
+        echo "Wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+        echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
     - id: 'step-5'
       continue-on-error: true
       run: |
@@ -575,25 +610,14 @@ jobs:
       name: 'Build Android Debug APKs (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew assembleDefaultDebug assembleTvDebug "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
+      run: './gradlew assembleDefaultDebug "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
     - id: 'step-22'
       name: 'Build Android Debug APKs (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew assembleDefaultDebug assembleTvDebug "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
+      run: './gradlew assembleDefaultDebug "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
       if: '${{ steps.step-21.outcome == ''failure'' }}'
     - id: 'step-23'
-      name: 'Test Android TV (Attempt #1)'
-      continue-on-error: true
-      timeout-minutes: 180
-      run: './gradlew :app:shared:tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-foundation-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-episode-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-subject-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-24'
-      name: 'Test Android TV (Attempt #2)'
-      continue-on-error: false
-      timeout-minutes: 180
-      run: './gradlew :app:shared:tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-foundation-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-episode-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' :app:shared:ui-subject-tv:testAndroidHostTest --tests ''me.him188.Wynime.tv.*'' "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-23.outcome == ''failure'' }}'
-    - id: 'step-25'
       name: 'Upload Android Debug APK arm64-v8a (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -601,7 +625,7 @@ jobs:
         name: 'wynime-android-arm64-v8a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
         overwrite: 'true'
-    - id: 'step-26'
+    - id: 'step-24'
       name: 'Upload Android Debug APK arm64-v8a (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -609,8 +633,8 @@ jobs:
         name: 'wynime-android-arm64-v8a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-25.outcome == ''failure'' }}'
-    - id: 'step-27'
+      if: '${{ steps.step-23.outcome == ''failure'' }}'
+    - id: 'step-25'
       name: 'Upload Android Debug APK arm64-v8a (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -618,8 +642,8 @@ jobs:
         name: 'wynime-android-arm64-v8a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-26.outcome == ''failure'' }}'
-    - id: 'step-28'
+      if: '${{ steps.step-24.outcome == ''failure'' }}'
+    - id: 'step-26'
       name: 'Upload Android Debug APK x86_64 (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -627,7 +651,7 @@ jobs:
         name: 'wynime-android-x86_64-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-x86_64-debug.apk'
         overwrite: 'true'
-    - id: 'step-29'
+    - id: 'step-27'
       name: 'Upload Android Debug APK x86_64 (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -635,8 +659,8 @@ jobs:
         name: 'wynime-android-x86_64-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-x86_64-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-28.outcome == ''failure'' }}'
-    - id: 'step-30'
+      if: '${{ steps.step-26.outcome == ''failure'' }}'
+    - id: 'step-28'
       name: 'Upload Android Debug APK x86_64 (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -644,8 +668,8 @@ jobs:
         name: 'wynime-android-x86_64-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-x86_64-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-29.outcome == ''failure'' }}'
-    - id: 'step-31'
+      if: '${{ steps.step-27.outcome == ''failure'' }}'
+    - id: 'step-29'
       name: 'Upload Android Debug APK armeabi-v7a (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -653,7 +677,7 @@ jobs:
         name: 'wynime-android-armeabi-v7a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-armeabi-v7a-debug.apk'
         overwrite: 'true'
-    - id: 'step-32'
+    - id: 'step-30'
       name: 'Upload Android Debug APK armeabi-v7a (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -661,8 +685,8 @@ jobs:
         name: 'wynime-android-armeabi-v7a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-armeabi-v7a-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-31.outcome == ''failure'' }}'
-    - id: 'step-33'
+      if: '${{ steps.step-29.outcome == ''failure'' }}'
+    - id: 'step-31'
       name: 'Upload Android Debug APK armeabi-v7a (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -670,8 +694,8 @@ jobs:
         name: 'wynime-android-armeabi-v7a-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-armeabi-v7a-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-32.outcome == ''failure'' }}'
-    - id: 'step-34'
+      if: '${{ steps.step-30.outcome == ''failure'' }}'
+    - id: 'step-32'
       name: 'Upload Android Debug APK universal (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -679,7 +703,7 @@ jobs:
         name: 'wynime-android-universal-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-universal-debug.apk'
         overwrite: 'true'
-    - id: 'step-35'
+    - id: 'step-33'
       name: 'Upload Android Debug APK universal (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -687,8 +711,8 @@ jobs:
         name: 'wynime-android-universal-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-universal-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-34.outcome == ''failure'' }}'
-    - id: 'step-36'
+      if: '${{ steps.step-32.outcome == ''failure'' }}'
+    - id: 'step-34'
       name: 'Upload Android Debug APK universal (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -696,8 +720,8 @@ jobs:
         name: 'wynime-android-universal-debug'
         path: 'app/android/build/outputs/apk/default/debug/android-default-universal-debug.apk'
         overwrite: 'true'
-      if: '${{ steps.step-35.outcome == ''failure'' }}'
-    - id: 'step-37'
+      if: '${{ steps.step-33.outcome == ''failure'' }}'
+    - id: 'step-35'
       name: 'Build Android Release APKs (Attempt #1)'
       env:
         signing_release_storeFileFromRoot: '${{ steps.step-15.outputs.filePath }}'
@@ -706,9 +730,9 @@ jobs:
         signing_release_keyPassword: '${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew assembleDefaultRelease assembleTvRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
+      run: './gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
       if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-38'
+    - id: 'step-36'
       name: 'Build Android Release APKs (Attempt #2)'
       env:
         signing_release_storeFileFromRoot: '${{ steps.step-15.outputs.filePath }}'
@@ -717,9 +741,9 @@ jobs:
         signing_release_keyPassword: '${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew assembleDefaultRelease assembleTvRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-37.outcome == ''failure'' }}'
-    - id: 'step-39'
+      run: './gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
+      if: '${{ steps.step-35.outcome == ''failure'' }}'
+    - id: 'step-37'
       name: 'Upload Android Release APK arm64-v8a (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -727,7 +751,7 @@ jobs:
         name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
-    - id: 'step-40'
+    - id: 'step-38'
       name: 'Upload Android Release APK arm64-v8a (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -735,8 +759,8 @@ jobs:
         name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-39.outcome == ''failure'' }}'
-    - id: 'step-41'
+      if: '${{ steps.step-37.outcome == ''failure'' }}'
+    - id: 'step-39'
       name: 'Upload Android Release APK arm64-v8a (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -744,34 +768,8 @@ jobs:
         name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-40.outcome == ''failure'' }}'
-    - id: 'step-42'
-      name: 'Upload Android TV Release APK arm64-v8a (Attempt #1)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-arm64-v8a-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-arm64-v8a-release.apk'
-        overwrite: 'true'
-    - id: 'step-43'
-      name: 'Upload Android TV Release APK arm64-v8a (Attempt #2)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-arm64-v8a-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-arm64-v8a-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-42.outcome == ''failure'' }}'
-    - id: 'step-44'
-      name: 'Upload Android TV Release APK arm64-v8a (Attempt #3)'
-      continue-on-error: false
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-arm64-v8a-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-arm64-v8a-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-43.outcome == ''failure'' }}'
-    - id: 'step-45'
+      if: '${{ steps.step-38.outcome == ''failure'' }}'
+    - id: 'step-40'
       name: 'Upload Android Release APK x86_64 (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -779,7 +777,7 @@ jobs:
         name: 'wynime-android-x86_64-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-x86_64-release.apk'
         overwrite: 'true'
-    - id: 'step-46'
+    - id: 'step-41'
       name: 'Upload Android Release APK x86_64 (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -787,8 +785,8 @@ jobs:
         name: 'wynime-android-x86_64-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-x86_64-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-45.outcome == ''failure'' }}'
-    - id: 'step-47'
+      if: '${{ steps.step-40.outcome == ''failure'' }}'
+    - id: 'step-42'
       name: 'Upload Android Release APK x86_64 (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -796,34 +794,8 @@ jobs:
         name: 'wynime-android-x86_64-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-x86_64-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-46.outcome == ''failure'' }}'
-    - id: 'step-48'
-      name: 'Upload Android TV Release APK x86_64 (Attempt #1)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-x86_64-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-x86_64-release.apk'
-        overwrite: 'true'
-    - id: 'step-49'
-      name: 'Upload Android TV Release APK x86_64 (Attempt #2)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-x86_64-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-x86_64-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-48.outcome == ''failure'' }}'
-    - id: 'step-50'
-      name: 'Upload Android TV Release APK x86_64 (Attempt #3)'
-      continue-on-error: false
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-x86_64-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-x86_64-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-49.outcome == ''failure'' }}'
-    - id: 'step-51'
+      if: '${{ steps.step-41.outcome == ''failure'' }}'
+    - id: 'step-43'
       name: 'Upload Android Release APK armeabi-v7a (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -831,7 +803,7 @@ jobs:
         name: 'wynime-android-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-armeabi-v7a-release.apk'
         overwrite: 'true'
-    - id: 'step-52'
+    - id: 'step-44'
       name: 'Upload Android Release APK armeabi-v7a (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -839,8 +811,8 @@ jobs:
         name: 'wynime-android-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-armeabi-v7a-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-51.outcome == ''failure'' }}'
-    - id: 'step-53'
+      if: '${{ steps.step-43.outcome == ''failure'' }}'
+    - id: 'step-45'
       name: 'Upload Android Release APK armeabi-v7a (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -848,34 +820,8 @@ jobs:
         name: 'wynime-android-armeabi-v7a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-armeabi-v7a-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-52.outcome == ''failure'' }}'
-    - id: 'step-54'
-      name: 'Upload Android TV Release APK armeabi-v7a (Attempt #1)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-armeabi-v7a-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-armeabi-v7a-release.apk'
-        overwrite: 'true'
-    - id: 'step-55'
-      name: 'Upload Android TV Release APK armeabi-v7a (Attempt #2)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-armeabi-v7a-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-armeabi-v7a-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-54.outcome == ''failure'' }}'
-    - id: 'step-56'
-      name: 'Upload Android TV Release APK armeabi-v7a (Attempt #3)'
-      continue-on-error: false
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-armeabi-v7a-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-armeabi-v7a-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-55.outcome == ''failure'' }}'
-    - id: 'step-57'
+      if: '${{ steps.step-44.outcome == ''failure'' }}'
+    - id: 'step-46'
       name: 'Upload Android Release APK universal (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -883,7 +829,7 @@ jobs:
         name: 'wynime-android-universal-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-universal-release.apk'
         overwrite: 'true'
-    - id: 'step-58'
+    - id: 'step-47'
       name: 'Upload Android Release APK universal (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -891,8 +837,8 @@ jobs:
         name: 'wynime-android-universal-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-universal-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-57.outcome == ''failure'' }}'
-    - id: 'step-59'
+      if: '${{ steps.step-46.outcome == ''failure'' }}'
+    - id: 'step-48'
       name: 'Upload Android Release APK universal (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -900,55 +846,29 @@ jobs:
         name: 'wynime-android-universal-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-universal-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-58.outcome == ''failure'' }}'
-    - id: 'step-60'
-      name: 'Upload Android TV Release APK universal (Attempt #1)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-universal-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-universal-release.apk'
-        overwrite: 'true'
-    - id: 'step-61'
-      name: 'Upload Android TV Release APK universal (Attempt #2)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-universal-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-universal-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-60.outcome == ''failure'' }}'
-    - id: 'step-62'
-      name: 'Upload Android TV Release APK universal (Attempt #3)'
-      continue-on-error: false
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-tv-universal-release'
-        path: 'app/android/build/outputs/apk/tv/release/android-tv-universal-release.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-61.outcome == ''failure'' }}'
-    - id: 'step-63'
+      if: '${{ steps.step-47.outcome == ''failure'' }}'
+    - id: 'step-49'
       name: 'Install patchelf'
       run: 'sudo apt-get install -y patchelf'
-    - id: 'step-64'
+    - id: 'step-50'
       name: 'Package Desktop (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
       run: './gradlew createReleaseDistributable "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-65'
+    - id: 'step-51'
       name: 'Package Desktop (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
       run: './gradlew createReleaseDistributable "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-64.outcome == ''failure'' }}'
-    - id: 'step-66'
+      if: '${{ steps.step-50.outcome == ''failure'' }}'
+    - id: 'step-52'
       name: 'Upload compose logs'
       uses: 'actions/upload-artifact@v4'
       with:
         name: 'compose-logs-github-ubuntu-2404'
         path: 'app/desktop/build/compose/logs'
       if: '${{ always() }}'
-    - id: 'step-67'
+    - id: 'step-53'
       name: 'Build AppImage'
       run: |-
         # Download appimagetool
@@ -999,7 +919,7 @@ jobs:
         sed -i "s|^URL:.*|URL: $releaseAsset|" "$releaseAsset.zsync"
         mv "$releaseAsset" Wynime-x86_64.AppImage
         mv "$releaseAsset.zsync" Wynime-x86_64.AppImage.zsync
-    - id: 'step-68'
+    - id: 'step-54'
       name: 'Upload Linux packages (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -1010,7 +930,7 @@ jobs:
           Wynime-x86_64.AppImage.zsync
         if-no-files-found: 'error'
         overwrite: 'true'
-    - id: 'step-69'
+    - id: 'step-55'
       name: 'Upload Linux packages (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -1021,8 +941,8 @@ jobs:
           Wynime-x86_64.AppImage.zsync
         if-no-files-found: 'error'
         overwrite: 'true'
-      if: '${{ steps.step-68.outcome == ''failure'' }}'
-    - id: 'step-70'
+      if: '${{ steps.step-54.outcome == ''failure'' }}'
+    - id: 'step-56'
       name: 'Upload Linux packages (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -1033,38 +953,38 @@ jobs:
           Wynime-x86_64.AppImage.zsync
         if-no-files-found: 'error'
         overwrite: 'true'
-      if: '${{ steps.step-69.outcome == ''failure'' }}'
-    - id: 'step-71'
+      if: '${{ steps.step-55.outcome == ''failure'' }}'
+    - id: 'step-57'
       name: 'Enable KVM'
       run: |-
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
         sudo udevadm control --reload-rules
         sudo udevadm trigger --name-match=kvm
-    - id: 'step-72'
+    - id: 'step-58'
       name: 'Build Android Instrumented Tests (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
       run: './gradlew assembleAndroidDeviceTest "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-73'
+    - id: 'step-59'
       name: 'Build Android Instrumented Tests (Attempt #2)'
       continue-on-error: true
       timeout-minutes: 180
       run: './gradlew assembleAndroidDeviceTest "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-72.outcome == ''failure'' }}'
-    - id: 'step-74'
+      if: '${{ steps.step-58.outcome == ''failure'' }}'
+    - id: 'step-60'
       name: 'Build Android Instrumented Tests (Attempt #3)'
       continue-on-error: false
       timeout-minutes: 180
       run: './gradlew assembleAndroidDeviceTest "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-73.outcome == ''failure'' }}'
-    - id: 'step-75'
+      if: '${{ steps.step-59.outcome == ''failure'' }}'
+    - id: 'step-61'
       name: 'Stop Gradle daemons before emulator (api=30, arch=x86_64)'
       run: |-
         ./gradlew --stop
         pkill -f KotlinCompileDaemon || true
         free -h
         df -h .
-    - id: 'step-76'
+    - id: 'step-62'
       name: 'Android Instrumented Test (api=30, arch=x86_64)'
       uses: 'reactivecircus/android-emulator-runner@v2.35.0'
       with:
@@ -1075,7 +995,7 @@ jobs:
         ram-size: '2048M'
         emulator-boot-timeout: '1800'
         script: './gradlew connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g"; status=$?; adb logcat -d > logcat-api30-x86_64.txt || true; killall -INT crashpad_handler || true; exit $status'
-    - id: 'step-77'
+    - id: 'step-63'
       name: 'Upload Android Instrumented Test Reports (api=30, arch=x86_64)'
       uses: 'actions/upload-artifact@v4'
       with:
@@ -1087,25 +1007,25 @@ jobs:
         if-no-files-found: 'ignore'
         overwrite: 'true'
       if: 'always()'
-    - id: 'step-78'
+    - id: 'step-64'
       name: 'Uninstall emulators'
       run: |
         sdkmanager --uninstall $(sdkmanager --list | grep emulator | awk '{print $1}')
-    - id: 'step-79'
+    - id: 'step-65'
       name: 'Remove AVD'
       run: |-
         echo "Removing Emulator binaries..."
         rm -rf $ANDROID_HOME/emulator
         echo "Removing System Images..."
         rm -rf $ANDROID_HOME/system-images
-    - id: 'step-80'
+    - id: 'step-66'
       name: 'Stop Gradle daemons before emulator (api=36, arch=x86_64)'
       run: |-
         ./gradlew --stop
         pkill -f KotlinCompileDaemon || true
         free -h
         df -h .
-    - id: 'step-81'
+    - id: 'step-67'
       name: 'Android Instrumented Test (api=36, arch=x86_64)'
       uses: 'reactivecircus/android-emulator-runner@v2.35.0'
       with:
@@ -1116,7 +1036,7 @@ jobs:
         ram-size: '2048M'
         emulator-boot-timeout: '1800'
         script: './gradlew connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g"; status=$?; adb logcat -d > logcat-api36-x86_64.txt || true; killall -INT crashpad_handler || true; exit $status'
-    - id: 'step-82'
+    - id: 'step-68'
       name: 'Upload Android Instrumented Test Reports (api=36, arch=x86_64)'
       uses: 'actions/upload-artifact@v4'
       with:
@@ -1128,25 +1048,25 @@ jobs:
         if-no-files-found: 'ignore'
         overwrite: 'true'
       if: 'always()'
-    - id: 'step-83'
+    - id: 'step-69'
       name: 'Uninstall emulators'
       run: |
         sdkmanager --uninstall $(sdkmanager --list | grep emulator | awk '{print $1}')
-    - id: 'step-84'
+    - id: 'step-70'
       name: 'Remove AVD'
       run: |-
         echo "Removing Emulator binaries..."
         rm -rf $ANDROID_HOME/emulator
         echo "Removing System Images..."
         rm -rf $ANDROID_HOME/system-images
-    - id: 'step-85'
+    - id: 'step-71'
       name: 'Stop Gradle daemons before emulator (api=36, arch=x86_64, target=android-tv)'
       run: |-
         ./gradlew --stop
         pkill -f KotlinCompileDaemon || true
         free -h
         df -h .
-    - id: 'step-86'
+    - id: 'step-72'
       name: 'Android Instrumented Test (api=36, arch=x86_64, target=android-tv)'
       uses: 'reactivecircus/android-emulator-runner@v2.35.0'
       with:
@@ -1156,8 +1076,8 @@ jobs:
         profile: 'tv_1080p'
         ram-size: '2048M'
         emulator-boot-timeout: '1800'
-        script: './gradlew :app:shared:tv:connectedDeviceTest :app:shared:ui-foundation-tv:connectedDeviceTest :app:shared:ui-settings-tv:connectedDeviceTest :app:shared:ui-subject-tv:connectedDeviceTest :app:shared:ui-exploration-tv:connectedDeviceTest :app:shared:ui-onboarding-tv:connectedDeviceTest :app:shared:ui-episode-tv:connectedDeviceTest:connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g"; status=$?; adb logcat -d > logcat-api36-x86_64-android-tv.txt || true; killall -INT crashpad_handler || true; exit $status'
-    - id: 'step-87'
+        script: './gradlew :app:shared:tv:connectedDeviceTest :app:shared:ui-foundation-tv:connectedDeviceTest :app:shared:ui-settings-tv:connectedDeviceTest :app:shared:ui-subject-tv:connectedDeviceTest :app:shared:ui-exploration-tv:connectedDeviceTest :app:shared:ui-onboarding-tv:connectedDeviceTest :app:shared:ui-episode-tv:connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g"; status=$?; adb logcat -d > logcat-api36-x86_64-android-tv.txt || true; killall -INT crashpad_handler || true; exit $status'
+    - id: 'step-73'
       name: 'Upload Android Instrumented Test Reports (api=36, arch=x86_64, target=android-tv)'
       uses: 'actions/upload-artifact@v4'
       with:
@@ -1169,11 +1089,11 @@ jobs:
         if-no-files-found: 'ignore'
         overwrite: 'true'
       if: 'always()'
-    - id: 'step-88'
+    - id: 'step-74'
       name: 'Uninstall emulators'
       run: |
         sdkmanager --uninstall $(sdkmanager --list | grep emulator | awk '{print $1}')
-    - id: 'step-89'
+    - id: 'step-75'
       name: 'Remove AVD'
       run: |-
         echo "Removing Emulator binaries..."
@@ -1198,6 +1118,13 @@ jobs:
     - id: 'step-2'
       continue-on-error: true
       run: 'rm local.properties'
+    - id: 'step-3'
+      continue-on-error: true
+      run: |
+        echo "Wynime.android.abis=arm64-v8a" >> local.properties
+        echo "Wynime.enable.ios=true" >> local.properties
+        echo "Wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+        echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
     - id: 'step-4'
       continue-on-error: true
       run: |
@@ -1417,6 +1344,14 @@ jobs:
     - id: 'step-1'
       continue-on-error: true
       run: 'rm local.properties'
+    - id: 'step-2'
+      continue-on-error: true
+      run: |
+        echo "Wynime.android.abis=arm64-v8a" >> local.properties
+        echo "Wynime.enable.ios=true" >> local.properties
+        echo "Wynime.build.framework=true" >> local.properties
+        echo "Wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+        echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
     - id: 'step-3'
       continue-on-error: true
       run: |
@@ -1780,7 +1715,7 @@ jobs:
         name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
-    - id: 'step-7'
+    - id: 'step-5'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       shell: 'powershell'
@@ -1828,7 +1763,7 @@ jobs:
         name: 'wynime-windows-portable'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
-    - id: 'step-7'
+    - id: 'step-5'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       shell: 'powershell'
@@ -1913,7 +1848,7 @@ jobs:
       with:
         name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
-    - id: 'step-6'
+    - id: 'step-4'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-wynime-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
@@ -1958,7 +1893,7 @@ jobs:
       with:
         name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
-    - id: 'step-7'
+    - id: 'step-5'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-wynime-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
@@ -2003,7 +1938,7 @@ jobs:
       with:
         name: 'wynime-macos-dmg-aarch64'
       if: '${{ steps.step-3.outcome == ''failure'' }}'
-    - id: 'step-7'
+    - id: 'step-5'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       run: '"$GITHUB_WORKSPACE/ci-helper/verify/run-wynime-test-macos-aarch64.sh" "$GITHUB_WORKSPACE"/*.dmg sentry-dsn'
@@ -2043,7 +1978,7 @@ jobs:
         name: 'wynime-linux-appimage-x64'
         path: '${{ github.workspace }}/ci-helper/verify'
       if: '${{ steps.step-2.outcome == ''failure'' }}'
-    - id: 'step-5'
+    - id: 'step-4'
       name: 'Check that sentryDsn is valid'
       timeout-minutes: 5
       shell: 'bash'
@@ -2052,7 +1987,7 @@ jobs:
         chmod +x "$ANI_APPIMAGE"
         Wynime_DESKTOP_TEST_TASK="sentry-dsn" "$ANI_APPIMAGE"
       if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-6'
+    - id: 'step-5'
       name: 'Check that bundled SQLite can be loaded'
       timeout-minutes: 5
       shell: 'bash'
@@ -2060,7 +1995,7 @@ jobs:
         ANI_APPIMAGE="${{ github.workspace }}/ci-helper/verify/Wynime-x86_64.AppImage"
         chmod +x "$ANI_APPIMAGE"
         Wynime_DESKTOP_TEST_TASK="sqlite-bundled-load-test" "$ANI_APPIMAGE"
-    - id: 'step-7'
+    - id: 'step-6'
       name: 'Check that JCEF can be initialized'
       timeout-minutes: 5
       shell: 'bash'

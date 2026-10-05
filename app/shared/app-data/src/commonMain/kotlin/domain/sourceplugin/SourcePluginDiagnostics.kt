@@ -9,6 +9,7 @@
 
 package me.him188.ani.app.domain.sourceplugin
 
+import kotlinx.coroutines.CancellationException
 import me.him188.ani.source.plugin.api.SourceDiagnostics
 import me.him188.ani.source.plugin.api.SourceResultStatus
 
@@ -83,3 +84,40 @@ internal fun sourceFailureDiagnostics(
     challengeDetected = challengeDetected,
     failureReason = failureReason,
 )
+
+/**
+ * Classifies an exception crossing the executable plugin boundary.
+ *
+ * Linkage failures are contract failures, not content parsing failures. Other [Error] values are
+ * deliberately rethrown so the host does not turn process-level failures into provider results.
+ */
+internal fun sourcePluginBoundaryFailure(
+    traceId: String,
+    provider: String,
+    entryPoint: String,
+    fallbackStatus: SourceResultStatus,
+    error: Throwable,
+    url: String? = null,
+    retryable: Boolean,
+): SourcePluginFailure {
+    if (error is CancellationException) throw error
+    if (error is Error && error !is LinkageError) throw error
+    val status = if (error is LinkageError || error is ClassCastException) {
+        SourceResultStatus.PLUGIN_ERROR
+    } else {
+        fallbackStatus
+    }
+    return SourcePluginFailure(
+        status = status,
+        diagnostics = sourceFailureDiagnostics(
+            traceId = traceId,
+            provider = provider,
+            entryPoint = entryPoint,
+            status = status,
+            url = url,
+            failureReason = error::class.simpleName,
+        ),
+        retryable = retryable && status != SourceResultStatus.PLUGIN_ERROR,
+        cause = error,
+    )
+}

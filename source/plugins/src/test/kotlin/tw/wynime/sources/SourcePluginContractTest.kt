@@ -52,8 +52,8 @@ class SourcePluginContractTest {
             val plugin = entryPoint.create(FakeContext(id))
             try {
                 assertEquals(id, plugin.metadata.id)
-                assertEquals("1.0.24", plugin.metadata.version)
-                assertEquals(1, plugin.metadata.pluginApiVersion)
+                assertEquals("1.0.25", plugin.metadata.version)
+                assertEquals(2, plugin.metadata.pluginApiVersion)
                 assertEquals(website, plugin.metadata.website)
                 assertTrue(plugin.metadata.iconUrl.orEmpty().startsWith("https://"))
                 assertTrue(SourcePluginPlatform.DESKTOP in plugin.metadata.supportedPlatforms)

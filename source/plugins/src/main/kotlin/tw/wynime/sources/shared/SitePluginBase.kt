@@ -19,6 +19,7 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.Base64
+import kotlin.coroutines.cancellation.CancellationException
 
 internal data class HtmlLink(
     val href: String,
@@ -68,16 +69,29 @@ internal abstract class SitePluginBase(
                 "站點回應 HTTP ${page.statusCode}",
             )
         }
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: LinkageError) {
+        throw error
+    } catch (error: Error) {
+        throw error
     } catch (error: Throwable) {
         SourceConnectionStatus(SourceConnectionState.FAILED, error.message)
     }
 
-    protected suspend fun requestPage(url: String, headers: Map<String, String> = emptyMap()): Page {
+    protected suspend fun requestPage(
+        url: String,
+        headers: Map<String, String> = emptyMap(),
+        traceId: String = "",
+        entryPoint: String = "http",
+    ): Page {
         val response = context.http.execute(
             SourceHttpRequest(
                 method = "GET",
                 url = url,
                 headers = defaultHeaders + headers,
+                traceId = traceId,
+                entryPoint = entryPoint,
             ),
         )
         if (response.statusCode !in 200..399) {
@@ -90,6 +104,8 @@ internal abstract class SitePluginBase(
         url: String,
         body: String,
         headers: Map<String, String> = emptyMap(),
+        traceId: String = "",
+        entryPoint: String = "http",
     ): String {
         val response = context.http.execute(
             SourceHttpRequest(
@@ -97,6 +113,8 @@ internal abstract class SitePluginBase(
                 url = url,
                 headers = defaultHeaders + mapOf("Content-Type" to "application/json") + headers,
                 body = body.encodeToByteArray(),
+                traceId = traceId,
+                entryPoint = entryPoint,
             ),
         )
         if (response.statusCode !in 200..399) {
@@ -192,7 +210,11 @@ internal abstract class SitePluginBase(
 
     protected fun absoluteUrl(base: String, raw: String): String {
         val value = decodeHtmlEntities(raw.trim())
-        return runCatching { URI(base).resolve(value).toString() }.getOrElse { value }
+        return try {
+            URI(base).resolve(value).toString()
+        } catch (_: IllegalArgumentException) {
+            value
+        }
     }
 
     protected fun urlEncode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name())
@@ -484,9 +506,11 @@ internal fun decodeJsonString(value: String): String = value
 internal fun decodePlayerUrl(raw: String): String? {
     var value = raw.trim().trim('"', '\'')
     repeat(3) {
-        val decoded = runCatching { URLDecoder.decode(value.replace("+", "%2B"), Charsets.UTF_8.name()) }
-            .getOrNull()
-            ?: return@repeat
+        val decoded = try {
+            URLDecoder.decode(value.replace("+", "%2B"), Charsets.UTF_8.name())
+        } catch (_: IllegalArgumentException) {
+            return@repeat
+        }
         if (decoded == value) return@repeat
         value = decoded
     }
@@ -499,11 +523,18 @@ internal fun decodePlayerUrl(raw: String): String? {
         for (offset in 0..minOf(4, compact.lastIndex)) {
             val encoded = compact.substring(offset)
             val padded = encoded + "=".repeat((4 - encoded.length % 4) % 4)
-            val decoded = runCatching { String(Base64.getDecoder().decode(padded), Charsets.UTF_8) }.getOrNull()
-                ?: continue
+            val decoded = try {
+                String(Base64.getDecoder().decode(padded), Charsets.UTF_8)
+            } catch (_: IllegalArgumentException) {
+                continue
+            }
             extractMediaQueryUrl(decoded)?.let { return it }
             extractHttpUrl(decoded)?.let { return it }
-            val urlDecoded = runCatching { URLDecoder.decode(decoded, Charsets.UTF_8.name()) }.getOrNull()
+            val urlDecoded = try {
+                URLDecoder.decode(decoded, Charsets.UTF_8.name())
+            } catch (_: IllegalArgumentException) {
+                null
+            }
             extractMediaQueryUrl(urlDecoded.orEmpty())?.let { return it }
             extractHttpUrl(urlDecoded.orEmpty())?.let { return it }
         }
@@ -519,9 +550,11 @@ internal fun decodePlayerUrl(raw: String): String? {
 internal fun extractMediaQueryUrl(value: String): String? = Regex(
     "(?i)(?:[?&](?:url|file|src|play)=)([^&#\\\"'<>]+)",
 ).findAll(value).mapNotNull { match ->
-    val candidate = runCatching {
+    val candidate = try {
         URLDecoder.decode(match.groupValues[1].replace("+", "%2B"), Charsets.UTF_8.name())
-    }.getOrNull() ?: return@mapNotNull null
+    } catch (_: IllegalArgumentException) {
+        return@mapNotNull null
+    }
     extractHttpUrl(candidate)?.takeIf(::isMediaUrl)
 }.firstOrNull()
 
@@ -541,9 +574,9 @@ internal fun isMediaUrl(url: String): Boolean = Regex(
 
 internal fun isHttpUrl(url: String): Boolean = url.startsWith("https://") || url.startsWith("http://")
 
-internal const val PLUGIN_VERSION = "1.0.24"
-internal const val PLUGIN_API_VERSION = 1
-internal const val MIN_HOST_VERSION = "0.1"
+internal const val PLUGIN_VERSION = "1.0.25"
+internal const val PLUGIN_API_VERSION = 2
+internal const val MIN_HOST_VERSION = "0.1.3"
 internal val SUPPORTED_PLATFORMS = setOf(
     me.him188.ani.source.plugin.api.SourcePluginPlatform.DESKTOP,
     me.him188.ani.source.plugin.api.SourcePluginPlatform.ANDROID,

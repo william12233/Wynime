@@ -92,12 +92,20 @@ class SourcePluginMediaSource(
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {
-            throw parseFailure(traceId, "browse-search", keyword, error)
+            throw sourcePluginBoundaryFailure(
+                traceId = traceId,
+                provider = mediaSourceId,
+                entryPoint = "browse-search",
+                fallbackStatus = SourceResultStatus.PARSE_ERROR,
+                error = error,
+                url = keyword,
+                retryable = false,
+            )
         }
         trace(
             traceId,
             SourceTracePhase.SEARCH_RESPONSE,
-            if (subjects.isEmpty()) SourceResultStatus.NO_MATCH else SourceResultStatus.SUCCESS,
+            if (subjects.isEmpty()) SourceResultStatus.SUBJECT_NO_MATCH else SourceResultStatus.SUCCESS,
             query = keyword,
             parserResultCount = subjects.size,
         )
@@ -192,12 +200,20 @@ class SourcePluginMediaSource(
                     } catch (error: CancellationException) {
                         throw error
                     } catch (error: Throwable) {
-                        throw parseFailure(traceId, "discovery-search", name, error)
+                        throw sourcePluginBoundaryFailure(
+                            traceId = traceId,
+                            provider = mediaSourceId,
+                            entryPoint = "discovery-search",
+                            fallbackStatus = SourceResultStatus.PARSE_ERROR,
+                            error = error,
+                            url = name,
+                            retryable = false,
+                        )
                     }
                     trace(
                         traceId,
                         SourceTracePhase.SEARCH_RESPONSE,
-                        if (searchResults.isEmpty()) SourceResultStatus.NO_MATCH else SourceResultStatus.SUCCESS,
+                        if (searchResults.isEmpty()) SourceResultStatus.SUBJECT_NO_MATCH else SourceResultStatus.SUCCESS,
                         query = name,
                         parserResultCount = searchResults.size,
                     )
@@ -211,7 +227,7 @@ class SourcePluginMediaSource(
                 val diagnostics = trace(
                     traceId,
                     SourceTracePhase.MATCH_RESULT,
-                    SourceResultStatus.NO_MATCH,
+                    SourceResultStatus.SUBJECT_NO_MATCH,
                     query = names.joinToString(" | "),
                     parserResultCount = subjects.size,
                     failureReason = "no safe subject match",
@@ -244,7 +260,15 @@ class SourcePluginMediaSource(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                throw parseFailure(traceId, "episode-fetch", subject.detailUrl, error)
+                    throw sourcePluginBoundaryFailure(
+                        traceId = traceId,
+                        provider = mediaSourceId,
+                        entryPoint = "episode-fetch",
+                        fallbackStatus = SourceResultStatus.PARSE_ERROR,
+                        error = error,
+                        url = subject.detailUrl,
+                        retryable = false,
+                    )
             }
             for (channel in details.channels) {
                 for (episode in channel.episodes) {
@@ -301,7 +325,7 @@ class SourcePluginMediaSource(
                 val diagnostics = trace(
                     traceId,
                     SourceTracePhase.EPISODE_MATCH,
-                    SourceResultStatus.NO_MATCH,
+                    SourceResultStatus.EPISODE_NO_MATCH,
                     url = subject.detailUrl,
                     parserResultCount = 0,
                     failureReason = "subject detail contained no playable episodes",
@@ -329,25 +353,6 @@ class SourcePluginMediaSource(
             failureReason = failure.diagnostics.failureReason,
         )
     }
-
-    private fun parseFailure(
-        traceId: String,
-        entryPoint: String,
-        url: String?,
-        error: Throwable,
-    ): SourcePluginFailure = SourcePluginFailure(
-        status = SourceResultStatus.PARSE_ERROR,
-        diagnostics = sourceFailureDiagnostics(
-            traceId = traceId,
-            provider = mediaSourceId,
-            entryPoint = entryPoint,
-            status = SourceResultStatus.PARSE_ERROR,
-            url = url,
-            failureReason = error::class.simpleName,
-        ),
-        retryable = false,
-        cause = error,
-    )
 
     private fun trace(
         traceId: String,

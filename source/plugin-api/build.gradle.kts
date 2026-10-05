@@ -67,7 +67,7 @@ fun publicAbiSnapshotText(): String {
             appendLine(javapOutput(classpath, className))
             appendLine()
         }
-    }
+    }.trimEnd() + "\n"
 }
 
 val writePublicAbiSnapshot = tasks.register("writePublicAbiSnapshot") {

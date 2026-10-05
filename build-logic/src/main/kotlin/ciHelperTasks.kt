@@ -25,6 +25,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
@@ -369,29 +370,45 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
     @get:Input
     abstract val flavor: Property<String>
 
+    @get:Input
+    @get:Optional
+    abstract val onlyArchitectures: SetProperty<String>
+
     init {
         flavor.convention("default")
+        onlyArchitectures.convention(emptySet())
     }
 
     @TaskAction
     fun uploadApks() {
         val fullVersion = releaseFullVersion.get()
         val flavorName = flavor.get()
+        val requestedArchitectures = onlyArchitectures.get()
         val apkFiles = apkDirectory.asFileTree.files
             .filter { it.isFile && it.extension == "apk" && it.name.contains("release") }
             .sortedBy { it.name }
+            .mapNotNull { file ->
+                val artifactName = file.name.removePrefix("android-$flavorName-")
+                val releaseSuffix = when {
+                    artifactName.endsWith("-release-unsigned.apk") -> "-release-unsigned.apk"
+                    artifactName.endsWith("-release.apk") -> "-release.apk"
+                    else -> throw GradleException(
+                        "Cannot infer Android architecture from file name '${file.name}'",
+                    )
+                }
+                val arch = artifactName.removeSuffix(releaseSuffix)
+                if (requestedArchitectures.isEmpty() || arch in requestedArchitectures) {
+                    file to arch
+                } else {
+                    null
+                }
+            }
 
         if (apkFiles.isEmpty()) {
             throw GradleException("No release APKs found in ${apkDirectory.get().asFile.absolutePath}")
         }
 
-        apkFiles.forEach { file ->
-            val arch = file.name
-                .removePrefix("android-$flavorName-")
-                .removeSuffix("-release.apk")
-                .takeIf { it != file.name }
-                ?: throw GradleException("Cannot infer Android architecture from file name '${file.name}'")
-
+        apkFiles.forEach { (file, arch) ->
             uploadReleaseAsset(
                 name = when (flavorName) {
                     "tv" -> ReleaseArtifactNames.androidTvApp(fullVersion, arch)

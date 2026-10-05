@@ -33,6 +33,14 @@ val ciAwsSecretAccessKey = ciProperty("AWS_SECRET_ACCESS_KEY")
 val ciAwsBaseUrl = ciProperty("AWS_BASEURL")
 val ciAwsRegion = ciProperty("AWS_REGION")
 val ciAwsBucket = ciProperty("AWS_BUCKET")
+val ciAndroidAbis = ciProperty("Wynime.android.abis")
+    .map { value ->
+        value.split(',')
+            .map(String::trim)
+            .filter { it.isNotEmpty() && it != "all" }
+            .toSet()
+    }
+    .orElse(emptySet())
 val githubRef = ciProperty("GITHUB_REF")
 val githubSha = ciProperty("GITHUB_SHA")
 val appStoreApiKeyId = ciProperty("APPSTORE_API_KEY_ID")
@@ -56,6 +64,7 @@ fun ReleaseUploadTask.configureReleaseUploadInputs() {
 
 tasks.register("uploadAndroidApk", UploadAndroidApksTask::class) {
     configureReleaseUploadInputs()
+    onlyArchitectures.set(ciAndroidAbis)
     apkDirectory.set(project(":app:android").layout.buildDirectory.dir("outputs/apk/default/release"))
 }
 

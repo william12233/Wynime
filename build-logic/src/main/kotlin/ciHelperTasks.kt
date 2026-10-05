@@ -56,6 +56,8 @@ object ReleaseArtifactNames {
      * 只有 iOS 用它; Android 的 `android.version.code` 是固定常量, 桌面端用 `package.version`.
      *
      * CFBundleVersion 允许 1 到 3 段点分隔的非负整数, 且按段数值比较, 所以直接用三段:
+     * App 的 semver 可以是 0.x; 对 CFBundleVersion 将第一段映射为至少 1,
+     * 以保留 app 版本字串的 0.x 语意, 同时符合 Apple bundle version 规则.
      * `major.minor.(patch * 100 + meta)`.
      * - `v6.1.0-alpha01` -> `6.1.1`
      * - `v6.1.0-beta01`  -> `6.1.31`
@@ -78,8 +80,7 @@ object ReleaseArtifactNames {
         val channel = match.groupValues[4]
         val meta = match.groupValues[5].toIntOrNull()
 
-        // CFBundleVersion 要求第一段大于 0
-        require(major != null && major >= 1) { "Major version '$major' in tag '$tag' must be >= 1." }
+        require(major != null) { "Invalid major version in tag '$tag'." }
         require(minor != null) { "Invalid minor version in tag '$tag'." }
         require(patch != null && patch <= MAX_PATCH) { "Patch version '$patch' in tag '$tag' must be in 0..$MAX_PATCH." }
 
@@ -101,7 +102,8 @@ object ReleaseArtifactNames {
             else -> STABLE_META_CODE
         }
 
-        return "$major.$minor.${patch * 100 + metaCode}"
+        val bundleMajor = maxOf(1, major)
+        return "$bundleMajor.$minor.${patch * 100 + metaCode}"
     }
 
     private const val MAX_PRERELEASE_NUMBER = 29

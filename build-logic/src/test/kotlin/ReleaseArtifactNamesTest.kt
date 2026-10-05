@@ -31,6 +31,7 @@ class ReleaseArtifactNamesTest {
 
     @Test
     fun `stable release`() {
+        assertEquals("1.1.399", bundleVersion("v0.1.3"))
         assertEquals("6.1.99", bundleVersion("v6.1.0"))
         assertEquals("5.5.299", bundleVersion("v5.5.2"))
         assertEquals("6.0.1099", bundleVersion("v6.0.10"))
@@ -63,7 +64,7 @@ class ReleaseArtifactNamesTest {
     @Test
     fun `is a valid CFBundleVersion`() {
         // 1 到 3 段, 只含数字和点, 第一段大于 0, 每段不带前导零
-        for (tag in listOf("v6.1.0-alpha01", "v6.1.0-beta01", "v6.1.0", "v6.0.0", "v10.12.12", "v6.0.10-alpha05")) {
+        for (tag in listOf("v0.1.3", "v6.1.0-alpha01", "v6.1.0-beta01", "v6.1.0", "v6.0.0", "v10.12.12", "v6.0.10-alpha05")) {
             val v = bundleVersion(tag)
             assertTrue(v matches Regex("""[1-9]\d*(\.(0|[1-9]\d*)){2}"""), "$tag -> $v")
         }
@@ -94,7 +95,6 @@ class ReleaseArtifactNamesTest {
         assertFailsWith<GradleException> { bundleVersion("v6.1") }
         assertFailsWith<GradleException> { bundleVersion("v6.1.0-rc01") }
         assertFailsWith<GradleException> { bundleVersion("v6.1.0-dev") }
-        assertFailsWith<IllegalArgumentException> { bundleVersion("v0.1.0") }
         assertFailsWith<IllegalArgumentException> { bundleVersion("v6.1.0-alpha00") }
         assertFailsWith<IllegalArgumentException> { bundleVersion("v6.1.0-alpha30") }
         assertFailsWith<IllegalArgumentException> { bundleVersion("v6.1.0-beta30") }

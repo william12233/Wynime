@@ -51,7 +51,6 @@ import Secrets.FIREBASE_GA_API_SECRET
 import Secrets.FIREBASE_GA_APP_ID
 import Secrets.GITHUB_REPOSITORY
 import Secrets.GOOGLE_SERVICES_JSON
-import Secrets.OPENAI_API_KEY
 import Secrets.SENTRY_DSN
 import Secrets.SIGNING_RELEASE_KEYALIAS
 import Secrets.SIGNING_RELEASE_KEYPASSWORD
@@ -819,6 +818,9 @@ fun WorkflowBuilder.addConsistencyCheckJob(filename: String) {
         run(
             command = """cp "$originalPath" "$backupPath" """,
         )
+        run(
+            command = "chmod +x .github/workflows/${__FILE__.name}",
+        )
         // 脚本依赖偶尔在 Maven Central 解析失败; 失败会在本地仓库留下 "absent" 标记, 重试前需要清掉.
         run(
             command = """
@@ -964,26 +966,13 @@ workflow(
 
         val gitTag = getGitTag()
 
-        run(
-            name = "Install and Authenticate Codex CLI",
-            command = shell(
-                $$"""
-                  npm install -g @openai/codex@latest
-                  printenv OPENAI_API_KEY | codex login --with-api-key
-            """.trimIndent(),
-            ),
-            env = mapOf(
-                "OPENAI_API_KEY" to expr { secrets.OPENAI_API_KEY },
-            ),
-        )
-
         val releaseNotes = run(
-            name = "Generate Release Notes with Codex",
+            name = "Generate Release Notes",
             command = shell(
                 $$"""
                   set -euo pipefail
 
-                  export RELEASE_NOTES="$(ci-helper/generate-release-notes-with-codex.sh "$${expr { gitTag.tagExpr }}" "$${expr { gitTag.tagVersionExpr }}")"
+                  export RELEASE_NOTES="Wynime $${expr { gitTag.tagVersionExpr }} release."
 
                   python3 - <<'PY' > "$RUNNER_TEMP/release-body.md"
                   import os
@@ -1006,9 +995,6 @@ workflow(
             """.trimIndent(),
             ),
             env = mapOf(
-                "GITHUB_TOKEN" to expr { secrets.GITHUB_TOKEN },
-                "GH_TOKEN" to expr { secrets.GITHUB_TOKEN },
-                "OPENAI_API_KEY" to expr { secrets.OPENAI_API_KEY },
                 "GITHUB_REPOSITORY" to expr { github.repository },
                 "GIT_TAG" to expr { gitTag.tagExpr },
                 "TAG_VERSION" to expr { gitTag.tagVersionExpr },
@@ -2214,7 +2200,6 @@ object Secrets {
     val SecretsContext.ANALYTICS_KEY by SecretsContext.propertyToExprPath
 
     val SecretsContext.GOOGLE_SERVICES_JSON by SecretsContext.propertyToExprPath
-    val SecretsContext.OPENAI_API_KEY by SecretsContext.propertyToExprPath
     val SecretsContext.FIREBASE_GA_APP_ID by SecretsContext.propertyToExprPath
     val SecretsContext.FIREBASE_GA_API_SECRET by SecretsContext.propertyToExprPath
     val SecretsContext.APPSTORE_API_KEY_ID by SecretsContext.propertyToExprPath

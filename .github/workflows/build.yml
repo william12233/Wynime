@@ -36,6 +36,8 @@ jobs:
     - id: 'step-2'
       run: 'cp ".github/workflows/build.yml" ".github/workflows/build.yml-check.yml" '
     - id: 'step-3'
+      run: 'chmod +x .github/workflows/src.main.kts'
+    - id: 'step-4'
       run: |-
         for attempt in 1 2 3; do
           if .github/workflows/src.main.kts; then exit 0; fi
@@ -44,7 +46,7 @@ jobs:
           sleep 30
         done
         exit 1
-    - id: 'step-4'
+    - id: 'step-5'
       run: 'python .github/workflows/check_yaml_equivalence.py .github/workflows/build.yml .github/workflows/build.yml-check.yml'
   build_github-windows-2022:
     name: 'Build (Windows Server 2019 x86_64)'

@@ -547,7 +547,7 @@ jobs:
       env:
         BASE64_CONTENT: '${{ secrets.SIGNING_RELEASE_STOREFILE }}'
         FILE_PATH: './android_signing_key'
-      continue-on-error: true
+      continue-on-error: false
       shell: 'bash'
       run: |-
         set -euo pipefail

@@ -1506,6 +1506,7 @@ class WithMatrix(
                 fileName = "android_signing_key",
                 fileDir = ".",
                 encodedString = expr { secrets.SIGNING_RELEASE_STOREFILE },
+                continueOnError = false,
             )
         } else {
             null
@@ -1532,12 +1533,13 @@ class WithMatrix(
         fileName: String,
         fileDir: String,
         encodedString: String,
+        continueOnError: Boolean = true,
     ): CommandStep {
         val filePath = "$fileDir/$fileName"
         return run(
             name = name,
             `if` = `if`,
-            continueOnError = true,
+            continueOnError = continueOnError,
             shell = Shell.Bash,
             env = mapOf(
                 "BASE64_CONTENT" to encodedString,

@@ -390,8 +390,10 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
             .mapNotNull { file ->
                 val artifactName = file.name.removePrefix("android-$flavorName-")
                 val releaseSuffix = when {
-                    artifactName.endsWith("-release-unsigned.apk") -> "-release-unsigned.apk"
                     artifactName.endsWith("-release.apk") -> "-release.apk"
+                    artifactName.endsWith("-release-unsigned.apk") -> throw GradleException(
+                        "Refusing to publish unsigned Android release APK '${file.name}'. Configure the release signing key and rebuild.",
+                    )
                     else -> throw GradleException(
                         "Cannot infer Android architecture from file name '${file.name}'",
                     )

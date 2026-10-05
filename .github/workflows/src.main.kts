@@ -543,6 +543,43 @@ run {
     )
 }
 
+private fun validateOfficialReleaseMatrix(instances: List<MatrixInstance>) {
+    require(instances.size == 2) {
+        "Official releases must have exactly two release jobs: Windows ZIP and Android arm64-v8a APK."
+    }
+    require(instances.count { it.uploadApk } == 1) {
+        "Official releases must have exactly one Android upload job."
+    }
+    require(instances.count { it.uploadDesktopInstallers } == 1) {
+        "Official releases must have exactly one desktop upload job."
+    }
+    require(instances.none { it.uploadIpa }) {
+        "Official releases do not publish iOS artifacts."
+    }
+
+    val androidJob = instances.single { it.uploadApk }
+    require(
+        androidJob.os == OS.UBUNTU &&
+            androidJob.androidAbis == AndroidArch.ARM64_V8A &&
+            !androidJob.buildAllAndroidAbis &&
+            !androidJob.uploadDesktopInstallers,
+    ) {
+        "The official Android release job must build only arm64-v8a on Ubuntu."
+    }
+
+    val windowsJob = instances.single { it.uploadDesktopInstallers }
+    require(
+        windowsJob.os == OS.WINDOWS &&
+            windowsJob.arch == Arch.X64 &&
+            windowsJob.composeResourceTriple == "windows-x64" &&
+            !windowsJob.uploadApk,
+    ) {
+        "The official desktop release job must build only the Windows x86_64 ZIP."
+    }
+}
+
+validateOfficialReleaseMatrix(releaseMatrixInstances)
+
 
 class BuildJobOutputs : JobOutputs() {
 }
@@ -1001,6 +1038,31 @@ workflow(
             ),
         )
 
+        run(
+            name = "Validate formal release signing configuration",
+            env = mapOf(
+                "SIGNING_RELEASE_STOREFILE" to expr { secrets.SIGNING_RELEASE_STOREFILE },
+                "SIGNING_RELEASE_STOREPASSWORD" to expr { secrets.SIGNING_RELEASE_STOREPASSWORD },
+                "SIGNING_RELEASE_KEYALIAS" to expr { secrets.SIGNING_RELEASE_KEYALIAS },
+                "SIGNING_RELEASE_KEYPASSWORD" to expr { secrets.SIGNING_RELEASE_KEYPASSWORD },
+            ),
+            command = shell(
+                $$"""
+                    set -euo pipefail
+                    for variable in \
+                      SIGNING_RELEASE_STOREFILE \
+                      SIGNING_RELEASE_STOREPASSWORD \
+                      SIGNING_RELEASE_KEYALIAS \
+                      SIGNING_RELEASE_KEYPASSWORD; do
+                      if [ -z "${!variable:-}" ]; then
+                        echo "$variable is required for an official release" >&2
+                        exit 1
+                      fi
+                    done
+                """.trimIndent(),
+            ),
+        )
+
         val createRelease = uses(
             name = "Create Release",
             action = ActionGhRelease(
@@ -1051,7 +1113,7 @@ workflow(
             compileAndAssemble()
 
             prepareSigningKey?.let {
-                buildAndroidApk(it)
+                buildAndroidApk(it, releaseOnly = true)
             }
             // No Check. We've already checked in build
 
@@ -1091,8 +1153,88 @@ workflow(
         )
     }
 
-    for (matrix in matrixInstancesForRelease) {
-        addJob(matrix)
+    val releaseJobs = matrixInstancesForRelease.map(::addJob)
+
+    job(
+        id = "verify-release-assets",
+        name = "Verify official release assets",
+        needs = listOf(createRelease) + releaseJobs,
+        permissions = mapOf(
+            Permission.Contents to Mode.Read,
+        ),
+        runsOn = RunnerType.UbuntuLatest,
+    ) {
+        uses(action = Checkout())
+        uses(
+            name = "Setup Android SDK for release verification",
+            action = CustomAction(
+                actionOwner = "android-actions",
+                actionName = "setup-android",
+                actionVersion = "v3",
+                inputs = mapOf(
+                    "accept-android-sdk-licenses" to "true",
+                    "packages" to "platform-tools platforms;android-37.0 build-tools;36.0.0",
+                ),
+            ),
+        )
+
+        val gitTag = getGitTag()
+        run(
+            name = "Verify release names, APK signature, ABI, and ZIP",
+            env = mapOf(
+                "GH_TOKEN" to expr { secrets.GITHUB_TOKEN },
+                "GITHUB_REPOSITORY" to expr { github.repository },
+                "RELEASE_ID" to expr { createRelease.outputs.id },
+                "TAG_VERSION" to expr { gitTag.tagVersionExpr },
+            ),
+            command = shell(
+                $$"""
+                    set -euo pipefail
+
+                    expectedAndroid="wynime-$TAG_VERSION-arm64-v8a.apk"
+                    expectedWindows="wynime-$TAG_VERSION-windows-x86_64.zip"
+                    assetsUrl="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?per_page=100"
+                    assetsJson="$(gh api "$assetsUrl")"
+                    actualNames="$(printf '%s' "$assetsJson" | jq -r '.[].name' | sort)"
+                    expectedNames="$(printf '%s\n%s\n' "$expectedAndroid" "$expectedWindows" | sort)"
+                    assetCount="$(printf '%s\n' "$actualNames" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+                    if [ "$assetCount" -ne 2 ] || [ "$actualNames" != "$expectedNames" ]; then
+                      echo "Official release must contain exactly these two assets:" >&2
+                      printf '%s\n' "$expectedNames" >&2
+                      echo "Actual assets:" >&2
+                      printf '%s\n' "$actualNames" >&2
+                      exit 1
+                    fi
+
+                    androidId="$(printf '%s' "$assetsJson" | jq -r --arg name "$expectedAndroid" '.[] | select(.name == $name) | .id')"
+                    windowsId="$(printf '%s' "$assetsJson" | jq -r --arg name "$expectedWindows" '.[] | select(.name == $name) | .id')"
+                    test -n "$androidId"
+                    test -n "$windowsId"
+
+                    sdkRoot="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+                    test -n "$sdkRoot"
+                    apksigner="$(find "$sdkRoot/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
+                    aapt2="$(find "$sdkRoot/build-tools" -type f -name aapt2 -print | sort -V | tail -n 1)"
+                    test -n "$apksigner"
+                    test -n "$aapt2"
+
+                    apkPath="$RUNNER_TEMP/$expectedAndroid"
+                    zipPath="$RUNNER_TEMP/$expectedWindows"
+                    gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$androidId" --output "$apkPath"
+                    gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$windowsId" --output "$zipPath"
+
+                    "$apksigner" verify --verbose "$apkPath"
+                    nativeCode="$("$aapt2" dump badging "$apkPath" | sed -n 's/^native-code: //p')"
+                    printf '%s\n' "$nativeCode" | grep -Fxq "'arm64-v8a'"
+                    if printf '%s\n' "$nativeCode" | grep -Eq "'(x86_64|armeabi-v7a|x86)'"; then
+                      echo "The official APK contains an unexpected ABI: $nativeCode" >&2
+                      exit 1
+                    fi
+                    unzip -t "$zipPath" >/dev/null
+                """.trimIndent(),
+            ),
+        )
     }
 }
 /*
@@ -1606,8 +1748,11 @@ class WithMatrix(
         }
     }
 
-    fun JobBuilder<*>.buildAndroidApk(prepareSigningKey: CommandStep) {
-        if (matrix.uploadApk) {
+    fun JobBuilder<*>.buildAndroidApk(
+        prepareSigningKey: CommandStep,
+        releaseOnly: Boolean = false,
+    ) {
+        if (matrix.uploadApk && !releaseOnly) {
             runGradle(
                 name = "Build Android Debug APKs",
                 tasks = arrayOf("assembleDefaultDebug"),
@@ -1616,6 +1761,7 @@ class WithMatrix(
 
         for (arch in AndroidArch.entriesWithUniversal) {
             val shouldUpload = matrix.uploadApk &&
+                !releaseOnly &&
                 (matrix.buildAllAndroidAbis || arch == matrix.androidAbis)
             if (shouldUpload) {
                 usesWithAttempts(

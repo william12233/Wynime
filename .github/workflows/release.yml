@@ -39,8 +39,8 @@ jobs:
     name: 'Create Release'
     runs-on: 'ubuntu-latest'
     outputs:
-      uploadUrl: '${{ steps.step-4.outputs.upload_url }}'
-      id: '${{ steps.step-4.outputs.id }}'
+      uploadUrl: '${{ steps.step-5.outputs.upload_url }}'
+      id: '${{ steps.step-5.outputs.id }}'
     steps:
     - id: 'step-0'
       uses: 'actions/checkout@v4'
@@ -83,6 +83,25 @@ jobs:
         cat "$RUNNER_TEMP/release-body.md" >> "$GITHUB_OUTPUT"
         echo "EOF" >> "$GITHUB_OUTPUT"
     - id: 'step-4'
+      name: 'Validate formal release signing configuration'
+      env:
+        SIGNING_RELEASE_STOREFILE: '${{ secrets.SIGNING_RELEASE_STOREFILE }}'
+        SIGNING_RELEASE_STOREPASSWORD: '${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}'
+        SIGNING_RELEASE_KEYALIAS: '${{ secrets.SIGNING_RELEASE_KEYALIAS }}'
+        SIGNING_RELEASE_KEYPASSWORD: '${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}'
+      run: |-
+        set -euo pipefail
+        for variable in \
+          SIGNING_RELEASE_STOREFILE \
+          SIGNING_RELEASE_STOREPASSWORD \
+          SIGNING_RELEASE_KEYALIAS \
+          SIGNING_RELEASE_KEYPASSWORD; do
+          if [ -z "${!variable:-}" ]; then
+            echo "$variable is required for an official release" >&2
+            exit 1
+          fi
+        done
+    - id: 'step-5'
       name: 'Create Release'
       uses: 'softprops/action-gh-release@v1'
       with:
@@ -460,43 +479,6 @@ jobs:
       run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
       if: '${{ steps.step-21.outcome == ''failure'' }}'
     - id: 'step-23'
-      name: 'Build Android Debug APKs (Attempt #1)'
-      continue-on-error: true
-      timeout-minutes: 180
-      run: './gradlew assembleDefaultDebug "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-24'
-      name: 'Build Android Debug APKs (Attempt #2)'
-      continue-on-error: false
-      timeout-minutes: 180
-      run: './gradlew assembleDefaultDebug "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-23.outcome == ''failure'' }}'
-    - id: 'step-25'
-      name: 'Upload Android Debug APK arm64-v8a (Attempt #1)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-arm64-v8a-debug'
-        path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
-        overwrite: 'true'
-    - id: 'step-26'
-      name: 'Upload Android Debug APK arm64-v8a (Attempt #2)'
-      continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-arm64-v8a-debug'
-        path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-25.outcome == ''failure'' }}'
-    - id: 'step-27'
-      name: 'Upload Android Debug APK arm64-v8a (Attempt #3)'
-      continue-on-error: false
-      uses: 'actions/upload-artifact@v4'
-      with:
-        name: 'wynime-android-arm64-v8a-debug'
-        path: 'app/android/build/outputs/apk/default/debug/android-default-arm64-v8a-debug.apk'
-        overwrite: 'true'
-      if: '${{ steps.step-26.outcome == ''failure'' }}'
-    - id: 'step-28'
       name: 'Build Android Release APKs (Attempt #1)'
       env:
         signing_release_storeFileFromRoot: '${{ steps.step-17.outputs.filePath }}'
@@ -507,7 +489,7 @@ jobs:
       timeout-minutes: 180
       run: './gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
       if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-29'
+    - id: 'step-24'
       name: 'Build Android Release APKs (Attempt #2)'
       env:
         signing_release_storeFileFromRoot: '${{ steps.step-17.outputs.filePath }}'
@@ -517,8 +499,8 @@ jobs:
       continue-on-error: false
       timeout-minutes: 180
       run: './gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-28.outcome == ''failure'' }}'
-    - id: 'step-30'
+      if: '${{ steps.step-23.outcome == ''failure'' }}'
+    - id: 'step-25'
       name: 'Upload Android Release APK arm64-v8a (Attempt #1)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -526,7 +508,7 @@ jobs:
         name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
-    - id: 'step-31'
+    - id: 'step-26'
       name: 'Upload Android Release APK arm64-v8a (Attempt #2)'
       continue-on-error: true
       uses: 'actions/upload-artifact@v4'
@@ -534,8 +516,8 @@ jobs:
         name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-30.outcome == ''failure'' }}'
-    - id: 'step-32'
+      if: '${{ steps.step-25.outcome == ''failure'' }}'
+    - id: 'step-27'
       name: 'Upload Android Release APK arm64-v8a (Attempt #3)'
       continue-on-error: false
       uses: 'actions/upload-artifact@v4'
@@ -543,8 +525,8 @@ jobs:
         name: 'wynime-android-arm64-v8a-release'
         path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
         overwrite: 'true'
-      if: '${{ steps.step-31.outcome == ''failure'' }}'
-    - id: 'step-33'
+      if: '${{ steps.step-26.outcome == ''failure'' }}'
+    - id: 'step-28'
       name: 'Upload Android APK for Release (Attempt #1)'
       env:
         GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
@@ -567,7 +549,7 @@ jobs:
       continue-on-error: true
       timeout-minutes: 180
       run: './gradlew :ci-helper:uploadAndroidApk "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-34'
+    - id: 'step-29'
       name: 'Upload Android APK for Release (Attempt #2)'
       env:
         GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
@@ -590,4 +572,82 @@ jobs:
       continue-on-error: false
       timeout-minutes: 180
       run: './gradlew :ci-helper:uploadAndroidApk "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-33.outcome == ''failure'' }}'
+      if: '${{ steps.step-28.outcome == ''failure'' }}'
+  verify-release-assets:
+    name: 'Verify official release assets'
+    runs-on: 'ubuntu-latest'
+    permissions:
+      contents: 'read'
+    needs:
+    - 'create-release'
+    - 'release_github-windows-2022'
+    - 'release_github-ubuntu-2404'
+    steps:
+    - id: 'step-0'
+      uses: 'actions/checkout@v4'
+    - id: 'step-1'
+      name: 'Setup Android SDK for release verification'
+      uses: 'android-actions/setup-android@v3'
+      with:
+        accept-android-sdk-licenses: 'true'
+        packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
+    - id: 'step-2'
+      name: 'Get Tag'
+      uses: 'dawidd6/action-get-tag@v1'
+    - id: 'step-3'
+      uses: 'bhowell2/github-substring-action@v1.0.0'
+      with:
+        value: '${{ steps.step-2.outputs.tag }}'
+        index_of_str: 'v'
+        default_return_value: '${{ steps.step-2.outputs.tag }}'
+    - id: 'step-4'
+      name: 'Verify release names, APK signature, ABI, and ZIP'
+      env:
+        GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        GITHUB_REPOSITORY: '${{ github.repository }}'
+        RELEASE_ID: '${{ needs.create-release.outputs.id }}'
+        TAG_VERSION: '${{ steps.step-3.outputs.substring }}'
+      run: |-
+        set -euo pipefail
+
+        expectedAndroid="wynime-$TAG_VERSION-arm64-v8a.apk"
+        expectedWindows="wynime-$TAG_VERSION-windows-x86_64.zip"
+        assetsUrl="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?per_page=100"
+        assetsJson="$(gh api "$assetsUrl")"
+        actualNames="$(printf '%s' "$assetsJson" | jq -r '.[].name' | sort)"
+        expectedNames="$(printf '%s\n%s\n' "$expectedAndroid" "$expectedWindows" | sort)"
+        assetCount="$(printf '%s\n' "$actualNames" | sed '/^$/d' | wc -l | tr -d ' ')"
+
+        if [ "$assetCount" -ne 2 ] || [ "$actualNames" != "$expectedNames" ]; then
+          echo "Official release must contain exactly these two assets:" >&2
+          printf '%s\n' "$expectedNames" >&2
+          echo "Actual assets:" >&2
+          printf '%s\n' "$actualNames" >&2
+          exit 1
+        fi
+
+        androidId="$(printf '%s' "$assetsJson" | jq -r --arg name "$expectedAndroid" '.[] | select(.name == $name) | .id')"
+        windowsId="$(printf '%s' "$assetsJson" | jq -r --arg name "$expectedWindows" '.[] | select(.name == $name) | .id')"
+        test -n "$androidId"
+        test -n "$windowsId"
+
+        sdkRoot="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+        test -n "$sdkRoot"
+        apksigner="$(find "$sdkRoot/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
+        aapt2="$(find "$sdkRoot/build-tools" -type f -name aapt2 -print | sort -V | tail -n 1)"
+        test -n "$apksigner"
+        test -n "$aapt2"
+
+        apkPath="$RUNNER_TEMP/$expectedAndroid"
+        zipPath="$RUNNER_TEMP/$expectedWindows"
+        gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$androidId" --output "$apkPath"
+        gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$windowsId" --output "$zipPath"
+
+        "$apksigner" verify --verbose "$apkPath"
+        nativeCode="$("$aapt2" dump badging "$apkPath" | sed -n 's/^native-code: //p')"
+        printf '%s\n' "$nativeCode" | grep -Fxq "'arm64-v8a'"
+        if printf '%s\n' "$nativeCode" | grep -Eq "'(x86_64|armeabi-v7a|x86)'"; then
+          echo "The official APK contains an unexpected ABI: $nativeCode" >&2
+          exit 1
+        fi
+        unzip -t "$zipPath" >/dev/null

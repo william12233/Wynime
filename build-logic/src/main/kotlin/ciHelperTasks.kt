@@ -50,6 +50,10 @@ import javax.inject.Inject
 object ReleaseArtifactNames {
     private const val appName = "wynime"
 
+    const val officialAndroidArch = "arm64-v8a"
+    const val officialWindowsOs = "windows"
+    const val officialWindowsArch = "x86_64"
+
     fun fullVersionFromTag(tag: String): String = tag.removePrefix("v")
 
     /**
@@ -114,6 +118,18 @@ object ReleaseArtifactNames {
     private const val MAX_PATCH = 1_000_000 // patch * 100 + meta 必须能放进 Int, 留足余量
 
     fun androidApp(fullVersion: String, arch: String): String = "$appName-$fullVersion-$arch.apk"
+
+    fun officialReleaseAssets(fullVersion: String): Set<String> = setOf(
+        androidApp(fullVersion, officialAndroidArch),
+        desktopDistributionFile(
+            fullVersion = fullVersion,
+            osName = officialWindowsOs,
+            archName = officialWindowsArch,
+            extension = "zip",
+        ),
+    )
+
+    fun isOfficialReleaseTag(tag: String): Boolean = tag.startsWith("v")
 
     // TV APK 独立命名, 避免与手机 arch 资产冲突
     fun androidTvApp(fullVersion: String, arch: String): String = "$appName-tv-$fullVersion-$arch.apk"
@@ -374,6 +390,9 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
     @get:Optional
     abstract val onlyArchitectures: SetProperty<String>
 
+    @get:Inject
+    protected abstract val execOperations: ExecOperations
+
     init {
         flavor.convention("default")
         onlyArchitectures.convention(emptySet())
@@ -384,6 +403,16 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
         val fullVersion = releaseFullVersion.get()
         val flavorName = flavor.get()
         val requestedArchitectures = onlyArchitectures.get()
+        val officialRelease = ReleaseArtifactNames.isOfficialReleaseTag(releaseTag.get())
+        if (officialRelease) {
+            require(flavorName == "default") {
+                "Official releases publish the phone APK only; Android TV artifacts are not allowed."
+            }
+            require(requestedArchitectures == setOf(ReleaseArtifactNames.officialAndroidArch)) {
+                "Official Android releases must select only ${ReleaseArtifactNames.officialAndroidArch}. " +
+                    "Received: ${requestedArchitectures.joinToString()}"
+            }
+        }
         val apkFiles = apkDirectory.asFileTree.files
             .filter { it.isFile && it.extension == "apk" && it.name.contains("release") }
             .sortedBy { it.name }
@@ -410,7 +439,17 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
             throw GradleException("No release APKs found in ${apkDirectory.get().asFile.absolutePath}")
         }
 
+        if (officialRelease) {
+            require(apkFiles.size == 1 && apkFiles.single().second == ReleaseArtifactNames.officialAndroidArch) {
+                "Official Android releases must contain exactly one arm64-v8a release APK. " +
+                    "Found: ${apkFiles.joinToString { it.second }}"
+            }
+        }
+
         apkFiles.forEach { (file, arch) ->
+            if (officialRelease) {
+                verifyFormalReleaseSigning(file)
+            }
             uploadReleaseAsset(
                 name = when (flavorName) {
                     "tv" -> ReleaseArtifactNames.androidTvApp(fullVersion, arch)
@@ -420,6 +459,49 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
                 file = file,
             )
         }
+    }
+
+    private fun verifyFormalReleaseSigning(file: File) {
+        val apksigner = findApkSigner()
+        execOperations.exec {
+            commandLine(
+                apksigner.absolutePath,
+                "verify",
+                "--verbose",
+                file.absolutePath,
+            )
+        }
+        logger.lifecycle("Verified formal Android release signature: ${file.name}")
+    }
+
+    private fun findApkSigner(): File {
+        val executableName = if (System.getProperty("os.name").contains("Windows", ignoreCase = true)) {
+            "apksigner.bat"
+        } else {
+            "apksigner"
+        }
+
+        val sdkRoots = listOfNotNull(
+            System.getenv("ANDROID_HOME"),
+            System.getenv("ANDROID_SDK_ROOT"),
+        ).distinct()
+
+        sdkRoots.forEach { sdkRootValue ->
+            val buildToolsDirectory = File(sdkRootValue).resolve("build-tools")
+            val versions = buildToolsDirectory.listFiles()
+                ?.filter(File::isDirectory)
+                ?.sortedByDescending(File::getName)
+                .orEmpty()
+            versions.forEach { versionDirectory ->
+                val candidate = versionDirectory.resolve(executableName)
+                if (candidate.isFile) return candidate
+            }
+        }
+
+        throw GradleException(
+            "Cannot verify the formal Android release signature: apksigner was not found " +
+                "under ANDROID_HOME or ANDROID_SDK_ROOT.",
+        )
     }
 }
 
@@ -448,12 +530,23 @@ abstract class UploadDesktopInstallersTask : ReleaseUploadTask() {
     @TaskAction
     fun uploadInstallers() {
         val fullVersion = releaseFullVersion.get()
+        val officialRelease = ReleaseArtifactNames.isOfficialReleaseTag(releaseTag.get())
+
+        if (officialRelease) {
+            require(currentReleaseHostOs() == ReleaseHostOs.WINDOWS) {
+                "Official releases publish the Windows x86_64 ZIP only."
+            }
+            require(currentReleaseHostArch() == ReleaseArtifactNames.officialWindowsArch) {
+                "Official releases require a Windows x86_64 runner."
+            }
+        }
 
         when (currentReleaseHostOs()) {
             ReleaseHostOs.WINDOWS -> uploadReleaseAsset(
                 name = ReleaseArtifactNames.desktopDistributionFile(
                     fullVersion = fullVersion,
-                    osName = "windows",
+                    osName = ReleaseArtifactNames.officialWindowsOs,
+                    archName = ReleaseArtifactNames.officialWindowsArch,
                     extension = "zip",
                 ),
                 contentType = "application/x-zip",

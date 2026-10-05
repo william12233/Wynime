@@ -22,6 +22,8 @@
 6. [编写和运行测试](testing.md)
 7. [常见开发任务](common-tasks.md): 预览 Compose UI, 找到想修改的页面, 增加新页面模块
 
+正式版本發布規則請參閱：[正式發行](release.md)。
+
 ## 开发文档
 
 - [Kotlin 多平台](kmp.md)

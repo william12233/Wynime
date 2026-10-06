@@ -72,7 +72,8 @@ import kotlinx.coroutines.launch
 import me.him188.ani.app.data.models.recommend.RecommendedItemInfo
 import me.him188.ani.app.data.models.recommend.RecommendedSubjectInfo
 import me.him188.ani.app.data.models.subject.FollowedSubjectInfo
-import me.him188.ani.app.data.models.trending.TrendingSubjectInfo
+import me.him188.ani.app.ui.exploration.TodayUpdateSubjectInfo
+import me.him188.ani.app.ui.exploration.TodayUpdatesUiState
 import me.him188.ani.app.ui.foundation.navigation.BackHandler
 import me.him188.ani.tv.ui.foundation.focus.TvFocusKey
 import me.him188.ani.tv.ui.foundation.focus.TvFocusScope
@@ -87,10 +88,11 @@ internal enum class TvExplorationFocus : TvFocusKey { Details, FeedStatus }
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun TvExplorationScreen(
-    trendsPager: LazyPagingItems<TrendingSubjectInfo>,
+    todayUpdatesState: TodayUpdatesUiState,
     recommendations: LazyPagingItems<RecommendedItemInfo>,
     followed: LazyPagingItems<FollowedSubjectInfo>,
     media: TvSubjectMediaUiState,
+    onRetryTodayUpdates: () -> Unit,
     onIntent: (TvExplorationIntent) -> Unit,
     modifier: Modifier = Modifier,
     navigationRailInsets: PaddingValues = PaddingValues(0.dp),
@@ -101,17 +103,27 @@ internal fun TvExplorationScreen(
                 navigationRailInsets.calculateStartPadding(layoutDirection) - navigationRailInsets.calculateEndPadding(layoutDirection)
         val columns = ((rowWidth + TvLandscapeCardDefaults.Spacing) /
                 (TvLandscapeCardDefaults.Width + TvLandscapeCardDefaults.Spacing)).toInt().coerceAtLeast(1)
-        TvExplorationContent(trendsPager, recommendations, followed, media, onIntent, columns, navigationRailInsets)
+        TvExplorationContent(
+            todayUpdatesState,
+            recommendations,
+            followed,
+            media,
+            onRetryTodayUpdates,
+            onIntent,
+            columns,
+            navigationRailInsets,
+        )
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TvExplorationContent(
-    trendsPager: LazyPagingItems<TrendingSubjectInfo>,
+    todayUpdatesState: TodayUpdatesUiState,
     recommendations: LazyPagingItems<RecommendedItemInfo>,
     followed: LazyPagingItems<FollowedSubjectInfo>,
     media: TvSubjectMediaUiState,
+    onRetryTodayUpdates: () -> Unit,
     onIntent: (TvExplorationIntent) -> Unit,
     columns: Int,
     navigationRailInsets: PaddingValues,
@@ -137,12 +149,14 @@ private fun TvExplorationContent(
     val lifecycleState by lifecycle.currentStateFlow.collectAsState()
     val density = LocalDensity.current
     val accessibility = LocalAccessibilityManager.current
-    val carouselItems = (0 until trendsPager.itemCount)
-        .mapNotNull { trendsPager.peek(it) }.distinctBy { it.bangumiId }
+    val carouselItems = (todayUpdatesState as? TodayUpdatesUiState.Content)
+        ?.items
+        .orEmpty()
+        .distinctBy(TodayUpdateSubjectInfo::bangumiId)
     val carouselIds = carouselItems.map { it.bangumiId }
     val selectedIndex = carouselIds.indexOf(carouselId).coerceAtLeast(0)
     val featuredSubject = carouselItems.getOrNull(selectedIndex)
-        ?.let { TvHeroSubject(it.bangumiId, it.nameCn, it.imageLarge) }
+        ?.let { TvHeroSubject(it.bangumiId, it.displayName, it.imageLarge) }
     LaunchedEffect(carouselIds) { if (carouselId !in carouselIds) carouselId = carouselIds.firstOrNull() }
     LaunchedEffect(detailsFocused, carouselId, carouselIds, lifecycleState) {
         if (!detailsFocused || carouselIds.size < 2 || !lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) return@LaunchedEffect
@@ -152,10 +166,6 @@ private fun TvExplorationContent(
         delay(interval)
         carouselDirection = 1
         carouselId = nextFeaturedSubjectId(carouselIds, carouselId, 1)
-    }
-    LaunchedEffect(carouselId, trendsPager.itemCount) {
-        val index = (0 until trendsPager.itemCount).firstOrNull { trendsPager.peek(it)?.bangumiId == carouselId }
-        if (index != null) trendsPager[index]
     }
     val recommendationIndices = (0 until recommendations.itemCount)
         .filter { recommendations.peek(it) is RecommendedSubjectInfo }
@@ -333,15 +343,14 @@ private fun TvExplorationContent(
                 TvExplorationHero(
                     featuredSubject, featuredSubject?.let { media.infoCache[it.subjectId] },
                     previewSubject, previewSubject?.let { media.infoCache[it.subjectId] } ?: previewCard?.collection,
-                    previewFollowed, trendsPager.loadState.refresh,
+                    previewFollowed, todayUpdatesState,
                     expanded, expandProgress, collapsedHeight, carouselDirection, carouselIds.size, selectedIndex,
                     previewVisible = area == TvExplorationArea.ContinueWatching && !footerFocused,
                     animateProgress = area == TvExplorationArea.ContinueWatching && pageFocused &&
                         lifecycleState.isAtLeast(Lifecycle.State.RESUMED) && scrollProgress < 1f,
                     onClickDetails = {
                         if (featuredSubject != null) onIntent(TvExplorationIntent.OpenSubject(featuredSubject))
-                        else if (trendsPager.loadState.refresh is LoadState.Error) trendsPager.retry()
-                        else if (trendsPager.loadState.refresh is LoadState.NotLoading) trendsPager.refresh()
+                        else onRetryTodayUpdates()
                     },
                     onButtonFocusChanged = {
                         detailsFocused = it

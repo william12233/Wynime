@@ -27,6 +27,7 @@ import me.him188.ani.app.data.network.AniSubjectRelationIndexService
 import me.him188.ani.app.data.network.AniSubjectSearchService
 import me.him188.ani.app.data.network.AnimeScheduleService
 import me.him188.ani.app.data.network.BangumiApiProvider
+import me.him188.ani.app.data.network.BangumiCalendarRepository
 import me.him188.ani.app.data.network.BangumiExploreDataSource
 import me.him188.ani.app.data.network.BangumiScheduleService
 import me.him188.ani.app.data.network.WynimeCloudClient
@@ -277,7 +278,12 @@ private fun KoinApplication.otherModules(
     }
 
     single<AnimeScheduleService> { AnimeScheduleService() }
-    single<BangumiScheduleService> { BangumiScheduleService(get()) }
+    single<BangumiScheduleService> {
+        BangumiScheduleService(
+            dataSource = get(),
+            calendarRepository = get<BangumiCalendarRepository>(),
+        )
+    }
     // TV 横版 backdrop / 分集剧照; 未配置 ani.tmdb.api.token 时自动关闭
     single<BangumiSummaryService> { BangumiSummaryService(get()) }
 

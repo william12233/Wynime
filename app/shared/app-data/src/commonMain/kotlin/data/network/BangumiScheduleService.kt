@@ -47,10 +47,11 @@ class BangumiScheduleService(
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
     private val clock: Clock = Clock.System,
     private val cacheDuration: Duration = 30.minutes,
+    private val calendarRepository: BangumiCalendarRepository =
+        BangumiCalendarRepository(dataSource, ioDispatcher, clock, cacheDuration),
 ) {
     private val cacheMutex = Mutex()
     private val episodeSemaphore = Semaphore(MAX_EPISODE_REQUESTS)
-    private var cachedCalendar: CachedCalendar? = null
     private val episodeCache = mutableMapOf<Int, CachedEpisodes>()
 
     suspend fun getRecentAiringSchedules(
@@ -84,23 +85,12 @@ class BangumiScheduleService(
     }
 
     private suspend fun getCalendarEntries(forceRefresh: Boolean): List<BangumiCalendarEntry> {
-        val now = clock.now()
-        if (!forceRefresh) {
-            cacheMutex.withLock {
-                cachedCalendar
-                    ?.takeIf { now - it.cachedAt < cacheDuration }
-                    ?.entries
-                    ?.let { return it }
-            }
-        }
-
         val entries = try {
-            dataSource.getCalendar()
+            calendarRepository.getCalendarDays(forceRefresh).flatMap { it.items }
         } catch (e: Throwable) {
             throw wrapRequestException("calendar", e)
         }
         cacheMutex.withLock {
-            cachedCalendar = CachedCalendar(entries = entries, cachedAt = clock.now())
             if (forceRefresh) episodeCache.clear()
         }
         return entries
@@ -140,11 +130,6 @@ class BangumiScheduleService(
         }
         return RepositoryException.wrapOrThrowCancellation(throwable)
     }
-
-    private data class CachedCalendar(
-        val entries: List<BangumiCalendarEntry>,
-        val cachedAt: Instant,
-    )
 
     private data class CachedEpisodes(
         val episodes: List<BangumiExploreEpisode>,

@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import me.him188.ani.app.data.models.recommend.RecommendedItemInfo
@@ -63,7 +65,6 @@ import me.him188.ani.app.data.models.subject.FollowedSubjectInfo
 import me.him188.ani.app.data.models.subject.TestFollowedSubjectInfos
 import me.him188.ani.app.data.models.subject.subjectInfo
 import me.him188.ani.app.data.models.subject.toNavPlaceholder
-import me.him188.ani.app.data.models.trending.TrendingSubjectInfo
 import me.him188.ani.app.navigation.LocalNavigator
 import me.him188.ani.app.navigation.SubjectDetailPlaceholder
 import me.him188.ani.app.ui.adaptive.AniTopAppBar
@@ -74,8 +75,8 @@ import me.him188.ani.app.ui.exploration.followed.FollowedSubjectsDefaults
 import me.him188.ani.app.ui.exploration.followed.FollowedSubjectsLazyRow
 import me.him188.ani.app.ui.exploration.recommend.RecommendationDefaults
 import me.him188.ani.app.ui.exploration.recommend.recommendationItems
-import me.him188.ani.app.ui.exploration.trends.TestTrendingSubjectInfos
-import me.him188.ani.app.ui.exploration.trends.TrendingSubjectsCarousel
+import me.him188.ani.app.ui.exploration.today.TestTodayUpdateSubjectInfos
+import me.him188.ani.app.ui.exploration.today.TodayUpdatesCarousel
 import me.him188.ani.app.ui.foundation.HorizontalScrollControlState
 import me.him188.ani.app.ui.foundation.LocalPlatform
 import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
@@ -101,9 +102,8 @@ import me.him188.ani.app.ui.lang.exploration_schedule
 import me.him188.ani.app.ui.lang.exploration_search
 import me.him188.ani.app.ui.lang.exploration_settings
 import me.him188.ani.app.ui.lang.exploration_title
-import me.him188.ani.app.ui.lang.exploration_trending
+import me.him188.ani.app.ui.lang.exploration_today_updates
 import me.him188.ani.app.ui.search.createTestPager
-import me.him188.ani.app.ui.search.isLoadingFirstPageOrRefreshing
 import me.him188.ani.app.ui.search.rememberLoadErrorState
 import me.him188.ani.app.ui.user.SelfInfoUiState
 import me.him188.ani.app.ui.user.TestSelfInfoUiState
@@ -120,7 +120,8 @@ import org.jetbrains.compose.resources.stringResource
  */
 @Stable
 class ExplorationPageState(
-    val trendingSubjectInfoFlow: Flow<PagingData<TrendingSubjectInfo>>,
+    val todayUpdatesState: StateFlow<TodayUpdatesUiState>,
+    private val onRetryTodayUpdates: () -> Unit,
     val followedSubjectsPager: Flow<PagingData<FollowedSubjectInfo>>,
     val recommendationPager: Flow<PagingData<RecommendedItemInfo>>,
     val horizontalScrollTipFlow: Flow<Boolean>,
@@ -133,6 +134,10 @@ class ExplorationPageState(
 
     fun setDisableHorizontalScrollTip() {
         onSetDisableHorizontalScrollTip()
+    }
+
+    fun retryTodayUpdates() {
+        onRetryTodayUpdates()
     }
 }
 
@@ -205,12 +210,12 @@ fun ExplorationScreen(
         val scope = rememberCoroutineScope()
         val horizontalScrollTip = stringResource(Lang.exploration_horizontal_scroll_tip)
 
-        val trendingSubjectInfoPager = state.trendingSubjectInfoFlow.collectAsLazyPagingItemsWithLifecycle()
-        val trendingSubjectsCarouselState = rememberCarouselState(initialItem = 0) {
-            if (trendingSubjectInfoPager.isLoadingFirstPageOrRefreshing) {
-                8
-            } else {
-                trendingSubjectInfoPager.itemCount
+        val todayUpdatesState by state.todayUpdatesState.collectAsState()
+        val todayUpdatesCarouselState = rememberCarouselState(initialItem = 0) {
+            when (val current = todayUpdatesState) {
+                TodayUpdatesUiState.InitialLoading -> 8
+                is TodayUpdatesUiState.Content -> current.items.size
+                is TodayUpdatesUiState.Error -> 0
             }
         }
         val recommendationPager = state.recommendationPager.collectAsLazyPagingItemsWithLifecycle()
@@ -237,7 +242,7 @@ fun ExplorationScreen(
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     NavTitleHeader(
-                        title = { Text(stringResource(Lang.exploration_trending), softWrap = false) },
+                        title = { Text(stringResource(Lang.exploration_today_updates), softWrap = false) },
                         trailingActions = {
                             TextButton(
                                 { navigator.navigateSchedule() },
@@ -254,10 +259,10 @@ fun ExplorationScreen(
                     val carouselItemSize = CarouselItemDefaults.itemSize()
                     HorizontalScrollControlScaffoldOnDesktop(
                         rememberHorizontalScrollControlState(
-                            trendingSubjectsCarouselState,
+                            todayUpdatesCarouselState,
                             onClickScroll = { direction ->
                                 scope.launch {
-                                    trendingSubjectsCarouselState.animateScrollBy(
+                                    todayUpdatesCarouselState.animateScrollBy(
                                         with<Density, Float>(density) { (carouselItemSize.preferredWidth * 2).toPx() } *
                                                 if (direction == HorizontalScrollControlState.Direction.BACKWARD) -1 else 1,
                                     )
@@ -269,24 +274,27 @@ fun ExplorationScreen(
                             },
                         ),
                     ) {
-                        TrendingSubjectsCarousel(
-                            trendingSubjectInfoPager,
+                        TodayUpdatesCarousel(
+                            items = (todayUpdatesState as? TodayUpdatesUiState.Content)?.items.orEmpty(),
+                            isInitialLoading = todayUpdatesState is TodayUpdatesUiState.InitialLoading,
+                            error = (todayUpdatesState as? TodayUpdatesUiState.Error)?.error,
+                            onRetry = state::retryTodayUpdates,
                             onClick = {
                                 Analytics.recordEvent(SubjectEnter) {
-                                    put("source", "home_trending")
+                                    put("source", "home_today_updates")
                                     put("subject_id", it.bangumiId)
                                 }
                                 navigator.navigateSubjectDetails(
                                     subjectId = it.bangumiId,
                                     placeholder = SubjectDetailPlaceholder(
                                         id = it.bangumiId,
-                                        name = it.nameCn,
+                                        name = it.displayName,
                                         coverUrl = it.imageLarge,
                                     ),
                                 )
                             },
                             contentPadding = PaddingValues(vertical = 8.dp),
-                            carouselState = trendingSubjectsCarouselState,
+                            carouselState = todayUpdatesCarouselState,
                         )
                     }
 
@@ -389,7 +397,8 @@ private fun PreviewExplorationPage() {
         ExplorationScreen(
             remember {
                 ExplorationPageState(
-                    trendingSubjectInfoFlow = createTestPager(TestTrendingSubjectInfos),
+                    todayUpdatesState = MutableStateFlow(TodayUpdatesUiState.Content(TestTodayUpdateSubjectInfos)),
+                    onRetryTodayUpdates = {},
                     followedSubjectsPager = createTestPager(TestFollowedSubjectInfos),
                     recommendationPager = createTestPager(TestRecommendedItemInfos),
                     horizontalScrollTipFlow = flowOf(false),

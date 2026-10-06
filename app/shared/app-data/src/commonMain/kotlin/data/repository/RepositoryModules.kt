@@ -11,6 +11,7 @@ package me.him188.ani.app.data.repository
 
 import kotlinx.coroutines.flow.map
 import me.him188.ani.app.data.network.AutoSkipRepository
+import me.him188.ani.app.data.network.BangumiCalendarRepository
 import me.him188.ani.app.data.network.RecommendationRepository
 import me.him188.ani.app.data.network.TrendsRepository
 import me.him188.ani.app.data.persistent.dataStores
@@ -194,6 +195,7 @@ fun KoinApplication.repositoryModules(
         )
     }
 
+    single<BangumiCalendarRepository> { BangumiCalendarRepository(dataSource = get()) }
     single<TrendsRepository> { TrendsRepository(dataSource = get()) }
 
     single<RecommendationRepository> {
@@ -201,6 +203,7 @@ fun KoinApplication.repositoryModules(
             dataSource = get(),
             trendsRepository = get(),
             settingsRepository = get(),
+            calendarRepository = get(),
         )
     }
 

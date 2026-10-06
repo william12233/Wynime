@@ -36,7 +36,8 @@ class RecommendationRepository(
     private val dataSource: BangumiExploreDataSource,
     private val trendsRepository: TrendsRepository,
     private val settingsRepository: SettingsRepository,
-    private val ioDispatcher: CoroutineContext = Dispatchers.IO_
+    private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
+    private val calendarRepository: BangumiCalendarRepository = BangumiCalendarRepository(dataSource),
 ) : Repository() {
     fun recommendedSubjectsPager(): Flow<PagingData<RecommendedItemInfo>> {
         return Pager(defaultPagingConfig, initialKey = 0) {
@@ -70,7 +71,7 @@ class RecommendationRepository(
     private suspend fun loadRecommendations(): List<BangumiRecommendationCandidate> {
         val trending = trendsRepository.getTrendsInfo().subjects
         val calendar = try {
-            dataSource.getCalendar()
+            calendarRepository.getCalendarDays().flatMap { it.items }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
             logger.error(e) {

@@ -9,12 +9,11 @@
 
 package me.him188.ani.app.data.network
 
-import androidx.paging.Pager
-import androidx.paging.PagingData
-import androidx.paging.PagingSource
-import androidx.paging.PagingState
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -22,17 +21,14 @@ import me.him188.ani.app.data.models.trending.TrendingSubjectInfo
 import me.him188.ani.app.data.models.trending.TrendsInfo
 import me.him188.ani.app.data.repository.Repository
 import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.runWrappingExceptionAsLoadResult
 import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-/** Loads the public Bangumi trending feed used by the exploration page. */
+/** Loads the bounded public Bangumi trending candidate set used by recommendations. */
 class TrendsRepository(
     private val dataSource: BangumiExploreDataSource,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
@@ -40,83 +36,57 @@ class TrendsRepository(
     private val cacheDuration: Duration = 10.minutes,
 ) : Repository() {
     private val cacheMutex = Mutex()
+    private val requestScope = CoroutineScope(SupervisorJob() + ioDispatcher)
     private var cachedFirstPage: CachedTrendingPage? = null
+    private var inFlightFirstPage: CompletableDeferred<BangumiTrendingPage>? = null
 
     suspend fun getTrendsInfo(forceRefresh: Boolean = false): TrendsInfo {
-        return loadPage(limit = FIRST_PAGE_SIZE, offset = 0, forceRefresh = forceRefresh).toTrendsInfo()
+        return loadFirstPage(forceRefresh).toTrendsInfo()
     }
 
-    fun trendsInfoPager(): Flow<PagingData<TrendsInfo>> {
-        logger.info { "Creating Bangumi trending pager." }
-        return Pager(defaultPagingConfig) {
-            BangumiTrendingPagingSource()
-        }.flow
-    }
-
-    private suspend fun loadPage(limit: Int, offset: Int, forceRefresh: Boolean): BangumiTrendingPage {
-        val requestedLimit = limit.coerceIn(1, MAX_PAGE_SIZE)
-        val now = clock.now()
-        if (offset == 0 && !forceRefresh) {
-            cacheMutex.withLock {
-                cachedFirstPage?.takeIf { now - it.cachedAt < cacheDuration }
+    private suspend fun loadFirstPage(forceRefresh: Boolean): BangumiTrendingPage {
+        val request = cacheMutex.withLock {
+            val now = clock.now()
+            if (!forceRefresh) {
+                cachedFirstPage
+                    ?.takeIf { now - it.cachedAt < cacheDuration }
                     ?.page
-                    ?.takeIf { it.subjects.size >= requestedLimit || it.subjects.size >= it.total }
-                    ?.let { return it.copy(subjects = it.subjects.take(requestedLimit)) }
+                    ?.let { return@withLock TrendingRequest.completed(it) }
             }
+
+            inFlightFirstPage?.let { return@withLock TrendingRequest(it, started = false) }
+
+            val deferred = CompletableDeferred<BangumiTrendingPage>()
+            inFlightFirstPage = deferred
+            TrendingRequest(deferred, started = true)
         }
 
-        val page = try {
-            withContext(ioDispatcher) {
-                dataSource.getTrendingSubjects(
-                    limit = if (offset == 0) maxOf(requestedLimit, FIRST_PAGE_SIZE) else requestedLimit,
-                    offset = offset,
-                )
-            }
-        } catch (e: Throwable) {
-            throw RepositoryException.wrapOrThrowCancellation(e)
-        }
-        if (offset == 0) {
-            cacheMutex.withLock {
-                cachedFirstPage = CachedTrendingPage(page = page, cachedAt = now)
-            }
-        }
-        return page
-    }
-
-    private inner class BangumiTrendingPagingSource : PagingSource<Int, TrendsInfo>() {
-        private var firstLoad = true
-
-        override fun getRefreshKey(state: PagingState<Int, TrendsInfo>): Int? = state.anchorPosition
-
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, TrendsInfo> {
-            val offset = params.key ?: 0
-            logger.info {
-                "Loading Bangumi trending page: offset=$offset, requestedSize=${params.loadSize}, firstLoad=$firstLoad."
-            }
-            return runWrappingExceptionAsLoadResult {
-                val page = loadPage(
-                    limit = params.loadSize,
-                    offset = offset,
-                    forceRefresh = firstLoad && offset == 0,
-                )
-                firstLoad = false
-                logger.info {
-                    "Loaded Bangumi trending page: offset=$offset, subjects=${page.subjects.size}, total=${page.total}."
-                }
-                val nextOffset = offset + page.subjects.size
-                LoadResult.Page(
-                    data = listOf(page.toTrendsInfo()),
-                    prevKey = if (offset == 0) null else (offset - params.loadSize).coerceAtLeast(0),
-                    nextKey = if (page.subjects.isEmpty() || nextOffset >= page.total) null else nextOffset,
-                )
-            }.also {
-                if (it is LoadResult.Error) {
-                    logger.error(it.throwable) {
-                        "Failed to load Bangumi trending subjects (operation=trending subjects, endpoint=/p1/trending/subjects)."
+        if (request.started) {
+            requestScope.launch {
+                try {
+                    val page = withContext(ioDispatcher) {
+                        dataSource.getTrendingSubjects(limit = FIRST_PAGE_SIZE, offset = 0)
                     }
+                    cacheMutex.withLock {
+                        cachedFirstPage = CachedTrendingPage(page = page, cachedAt = clock.now())
+                        if (inFlightFirstPage === request.deferred) inFlightFirstPage = null
+                    }
+                    request.deferred.complete(page)
+                } catch (throwable: Throwable) {
+                    val error = try {
+                        RepositoryException.wrapOrThrowCancellation(throwable)
+                    } catch (cancelled: Throwable) {
+                        cancelled
+                    }
+                    cacheMutex.withLock {
+                        if (inFlightFirstPage === request.deferred) inFlightFirstPage = null
+                    }
+                    request.deferred.completeExceptionally(error)
                 }
             }
         }
+
+        return request.deferred.await()
     }
 
     private data class CachedTrendingPage(
@@ -124,9 +94,20 @@ class TrendsRepository(
         val cachedAt: Instant,
     )
 
+    private data class TrendingRequest(
+        val deferred: CompletableDeferred<BangumiTrendingPage>,
+        val started: Boolean,
+    ) {
+        companion object {
+            fun completed(page: BangumiTrendingPage) = TrendingRequest(
+                deferred = CompletableDeferred<BangumiTrendingPage>().apply { complete(page) },
+                started = false,
+            )
+        }
+    }
+
     private companion object {
         const val FIRST_PAGE_SIZE = 50
-        const val MAX_PAGE_SIZE = 100
     }
 }
 

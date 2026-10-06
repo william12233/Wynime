@@ -9,8 +9,11 @@
 
 package me.him188.ani.app.data.network
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -45,8 +48,35 @@ class BangumiExploreFeedTest {
         val second = repository.getTrendsInfo()
 
         assertEquals(1, source.trendingRequests)
+        assertEquals(listOf(50 to 0), source.trendingRequestParameters)
         assertEquals("Original title", first.subjects.single().nameCn)
         assertEquals(first, second)
+    }
+
+    @Test
+    fun `calendar repository caches force refreshes and shares in flight request`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val source = FakeExploreDataSource(
+            calendar = listOf(BangumiCalendarEntry(100, "Original", "中文", "")),
+            calendarGate = gate,
+        )
+        val repository = BangumiCalendarRepository(
+            dataSource = source,
+            ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
+
+        val first = backgroundScope.async { repository.getCalendarDays() }
+        source.calendarStarted.await()
+        val second = backgroundScope.async { repository.getCalendarDays() }
+        gate.complete(Unit)
+
+        assertEquals(first.await(), second.await())
+        assertEquals(1, source.calendarRequests)
+        assertEquals(source.calendarDays, repository.getCalendarDays())
+        assertEquals(1, source.calendarRequests)
+
+        repository.getCalendarDays(forceRefresh = true)
+        assertEquals(2, source.calendarRequests)
     }
 
     @Test
@@ -190,20 +220,27 @@ class BangumiExploreFeedTest {
         private val calendar: List<BangumiCalendarEntry> = emptyList(),
         private val episodes: Map<Int, List<BangumiExploreEpisode>> = emptyMap(),
         private val calendarFailure: Throwable? = null,
+        private val calendarGate: CompletableDeferred<Unit>? = null,
     ) : BangumiExploreDataSource {
         var trendingRequests = 0
+        val trendingRequestParameters = mutableListOf<Pair<Int, Int>>()
         var calendarRequests = 0
         var episodeRequests = 0
+        val calendarStarted = CompletableDeferred<Unit>()
+        val calendarDays = listOf(BangumiCalendarDay(weekdayId = 1, items = calendar))
 
         override suspend fun getTrendingSubjects(limit: Int, offset: Int): BangumiTrendingPage {
             trendingRequests++
+            trendingRequestParameters += limit to offset
             return trending
         }
 
-        override suspend fun getCalendar(): List<BangumiCalendarEntry> {
+        override suspend fun getCalendarDays(): List<BangumiCalendarDay> {
             calendarRequests++
+            calendarStarted.complete(Unit)
+            calendarGate?.await()
             calendarFailure?.let { throw it }
-            return calendar
+            return calendarDays
         }
 
         override suspend fun getEpisodes(subjectId: Int): List<BangumiExploreEpisode> {

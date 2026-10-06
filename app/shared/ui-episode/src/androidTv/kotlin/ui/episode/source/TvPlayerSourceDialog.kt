@@ -428,7 +428,10 @@ private fun rememberSourceStatusText(group: TvSourceGroup): String = when (val s
         }
         stringResource(Lang.media_selector_web_rate_limited, remaining)
     }
-    is MediaSourceFetchState.Failed, is MediaSourceFetchState.Abandoned -> stringResource(Lang.media_source_results_failed)
+    is MediaSourceFetchState.Failed,
+    is MediaSourceFetchState.NoMatch,
+    is MediaSourceFetchState.Abandoned,
+    -> stringResource(Lang.media_source_results_failed)
     is MediaSourceFetchState.Succeed -> if (group.items.isEmpty()) stringResource(Lang.media_selector_no_resources) else stringResource(Lang.media_selector_result_count, group.items.size)
 }
 

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
@@ -87,9 +88,11 @@ import me.him188.ani.app.data.models.subject.Tag
 import me.him188.ani.app.data.models.subject.TestSubjectAiringInfos
 import me.him188.ani.app.data.models.subject.TestSubjectCollections
 import me.him188.ani.app.data.models.subject.createTestFollowedSubjectInfo
-import me.him188.ani.app.data.models.trending.TrendingSubjectInfo
 import me.him188.ani.app.tools.LocalTimeFormatter
 import me.him188.ani.app.tools.TimeFormatter
+import me.him188.ani.app.domain.foundation.LoadError
+import me.him188.ani.app.ui.exploration.TodayUpdateSubjectInfo
+import me.him188.ani.app.ui.exploration.TodayUpdatesUiState
 import me.him188.ani.app.ui.foundation.LocalSketch
 import me.him188.ani.app.ui.framework.AniComposeUiTest
 import me.him188.ani.app.ui.framework.assertScreenshot
@@ -164,11 +167,12 @@ class TvExplorationUiTest {
         onIntent: (TvExplorationIntent) -> Unit = {},
         followedFlow: Flow<PagingData<FollowedSubjectInfo>>? = null,
         recommendationFlow: Flow<PagingData<RecommendedItemInfo>>? = null,
-        trendingFlow: Flow<PagingData<TrendingSubjectInfo>>? = null,
+        todayUpdatesFlow: Flow<TodayUpdatesUiState>? = null,
+        onRetryTodayUpdates: () -> Unit = {},
         visible: () -> Boolean = { true },
         lifecycleOwner: LifecycleOwner? = null,
         fontScale: Float = 1f,
-        trendingCount: Int = 3,
+        todayUpdatesCount: Int = 3,
         collectionTransform: (SubjectCollectionInfo) -> SubjectCollectionInfo = { it },
         poster: Boolean = true,
         shellPadding: PaddingValues = PaddingValues(start = 48.dp),
@@ -186,7 +190,13 @@ class TvExplorationUiTest {
         val focusMemory = TvFocusMemory()
         val previousLocale = LocaleList.getDefault()
         LocaleList.setDefault(LocaleList(Locale.forLanguageTag("zh-CN")))
-        val trends = trendingFlow ?: flowOf(completedPage((1..trendingCount).map { TrendingSubjectInfo(it, titles[(it - 1) % titles.size], image) }))
+        val todayUpdates = todayUpdatesFlow ?: flowOf(
+            TodayUpdatesUiState.Content(
+                (1..todayUpdatesCount).map {
+                    TodayUpdateSubjectInfo(it, titles[(it - 1) % titles.size], titles[(it - 1) % titles.size], image)
+                },
+            ),
+        )
         val recs = recommendationFlow ?: flowOf(
             completedPage<RecommendedItemInfo>(
                 (21..44).map {
@@ -209,7 +219,7 @@ class TvExplorationUiTest {
                 AniTvTheme {
                     val saved = rememberSaveableStateHolder()
                     // The route uses VM-owned presenters that survive a details push/pop.
-                    val trendingItems = trends.collectAsLazyPagingItems()
+                    val todayUpdatesState by todayUpdates.collectAsState()
                     val recommendationItems = recs.collectAsLazyPagingItems()
                     val followedItems = follows.collectAsLazyPagingItems()
                     Box(
@@ -219,7 +229,12 @@ class TvExplorationUiTest {
                         if (visible()) saved.SaveableStateProvider("exploration") {
                             CompositionLocalProvider(LocalTvFocusMemory provides focusMemory) {
                                 TvExplorationScreen(
-                                    trendingItems, recommendationItems, followedItems, media, onIntent,
+                                    todayUpdatesState = todayUpdatesState,
+                                    recommendations = recommendationItems,
+                                    followed = followedItems,
+                                    media = media,
+                                    onRetryTodayUpdates = onRetryTodayUpdates,
+                                    onIntent = onIntent,
                                     navigationRailInsets = navigationRailInsets,
                                 )
                             }
@@ -234,18 +249,42 @@ class TvExplorationUiTest {
 
     @Test
     fun heroLoadingDoesNotBlockReadyShelvesOrStealTheirFocus() = runAniComposeUiTest {
-        val trends = MutableStateFlow(loadingPage<TrendingSubjectInfo>())
-        mount(trendingFlow = trends, poster = false)
+        val todayUpdates = MutableStateFlow<TodayUpdatesUiState>(TodayUpdatesUiState.InitialLoading)
+        mount(todayUpdatesFlow = todayUpdates, poster = false)
         onNodeWithTag("tv-exploration-hero-loading").assertExists()
         capture("hero-loading-ready-shelves")
         key(Key.DirectionDown)
         awaitFocus("tv-exploration-followed-11")
-        runOnIdle { trends.value = completedPage(listOf(TrendingSubjectInfo(1, titles.first(), ""))) }
+        runOnIdle {
+            todayUpdates.value = TodayUpdatesUiState.Content(
+                listOf(TodayUpdateSubjectInfo(1, titles.first(), titles.first(), "")),
+            )
+        }
         settle()
         onNodeWithTag("tv-exploration-followed-11").assertIsFocused()
         key(Key.DirectionUp)
         awaitFocus("tv-exploration-details")
         onNodeWithTag("tv-exploration-hero-loading").assertDoesNotExist()
+    }
+
+    @Test
+    fun heroErrorAndEmptyStateStopLoadingAndKeepRetryAction() = runAniComposeUiTest {
+        val todayUpdates = MutableStateFlow<TodayUpdatesUiState>(TodayUpdatesUiState.Error(LoadError.NetworkError))
+        var retries = 0
+        mount(
+            todayUpdatesFlow = todayUpdates,
+            onRetryTodayUpdates = { retries++ },
+            poster = false,
+        )
+        onNodeWithTag("tv-exploration-hero-loading").assertDoesNotExist()
+        onNodeWithTag("tv-exploration-details").performSemanticsAction(SemanticsActions.OnClick)
+        runOnIdle { assertEquals(1, retries) }
+
+        runOnIdle { todayUpdates.value = TodayUpdatesUiState.Content(emptyList()) }
+        settle()
+        onNodeWithTag("tv-exploration-hero-loading").assertDoesNotExist()
+        onNodeWithTag("tv-exploration-details").performSemanticsAction(SemanticsActions.OnClick)
+        runOnIdle { assertEquals(2, retries) }
     }
 
     @Test
@@ -378,7 +417,6 @@ class TvExplorationUiTest {
         assertTrue(glowProgress() > .99f)
         assertTrue(abs(bounds("tv-exploration-rec-21").top / px - 120f) < 6f)
         assertTrue(bounds("tv-exploration-rec-25").top > bounds("tv-exploration-rec-21").bottom)
-        onNodeWithTag("tv-exploration-row-trending").assertDoesNotExist()
         assertEquals(fixedBackdrop, bounds("tv-exploration-backdrop"))
         capture("03-ordinary-row")
         key(Key.DirectionUp)
@@ -802,8 +840,8 @@ class TvExplorationUiTest {
     }
 
     @Test
-    fun carouselIncludesEveryTrendingItemAndCentersSelectedIndicator() = runAniComposeUiTest {
-        mount(trendingCount = 9)
+    fun carouselIncludesEveryTodayUpdateAndCentersSelectedIndicator() = runAniComposeUiTest {
+        mount(todayUpdatesCount = 9)
         val viewport = bounds("tv-exploration-indicators")
         onNodeWithTag("tv-exploration-indicators").assertWidthIsEqualTo(72.dp)
         for (index in 1..8) {
@@ -817,7 +855,7 @@ class TvExplorationUiTest {
             val visible = dots.count { onNodeWithTag(it.config[SemanticsProperties.TestTag]).isDisplayed() }
             assertTrue(visible <= 5, "Indicators at $index, viewport=$viewport: " + dots.joinToString { "${it.config[SemanticsProperties.TestTag]}=${it.boundsInRoot}" })
         }
-        capture("19-all-trending")
+        capture("19-all-today-updates")
         key(Key.DirectionRight)
         settle(550)
         onNodeWithTag("tv-exploration-dot-0").assertIsSelected()
@@ -842,34 +880,6 @@ class TvExplorationUiTest {
         awaitFocus("tv-exploration-details")
         settle(550)
         onNodeWithTag("tv-exploration-dot-1").assertIsSelected()
-    }
-
-    @Test
-    fun carouselLoadsSubsequentTrendingPages() = runAniComposeUiTest {
-        val loadedPages = mutableListOf<Int>()
-        val intents = mutableListOf<TvExplorationIntent>()
-        val pager = Pager(PagingConfig(pageSize = 3, initialLoadSize = 3, prefetchDistance = 1, enablePlaceholders = false)) {
-            object : PagingSource<Int, TrendingSubjectInfo>() {
-                override fun getRefreshKey(state: PagingState<Int, TrendingSubjectInfo>): Int? = null
-                override suspend fun load(params: LoadParams<Int>): LoadResult<Int, TrendingSubjectInfo> {
-                    val start = params.key ?: 0
-                    loadedPages += start
-                    return LoadResult.Page(
-                        (start + 1..start + 3).map { TrendingSubjectInfo(it, titles[(it - 1) % titles.size], "") },
-                        prevKey = null, nextKey = (start + 3).takeIf { it < 9 },
-                    )
-                }
-            }
-        }
-        mount(trendingFlow = pager.flow, onIntent = { intents += it })
-        for (index in 1..8) {
-            key(Key.DirectionRight)
-            settle(600)
-            onNodeWithTag("tv-exploration-dot-$index").assertIsSelected()
-        }
-        key(Key.DirectionCenter)
-        assertEquals(listOf(0, 3, 6), loadedPages)
-        assertEquals(9, intents.filterIsInstance<TvExplorationIntent.OpenSubject>().last().subject.subjectId)
     }
 
     @Test

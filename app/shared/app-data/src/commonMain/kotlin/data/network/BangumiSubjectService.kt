@@ -8,6 +8,7 @@
 package me.him188.ani.app.data.network
 
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,10 @@ import me.him188.ani.app.data.models.subject.PersonType
 import me.him188.ani.app.data.models.subject.RelatedCharacterInfo
 import me.him188.ani.app.data.models.subject.RelatedPersonInfo
 import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
+import me.him188.ani.app.data.repository.RepositoryAuthorizationException
+import me.him188.ani.app.data.repository.RepositoryException
+import me.him188.ani.app.data.repository.RepositoryRateLimitedException
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.client.models.AniCollectionType
 import me.him188.ani.client.models.AniEpisodeCollection
 import me.him188.ani.client.models.AniEpisodeCollectionType
@@ -113,28 +118,62 @@ class BangumiSubjectService(
     override suspend fun patchSubjectCollection(
         subjectId: Int,
         payload: AniUpdateSubjectCollectionRequest,
-    ) {
-        check(bangumiApi.hasAccessToken()) { "Bangumi access token is required" }
-        val selfRating = payload.selfRating
-        bangumiApi.request {
-            patchUserCollection(
-                subjectId = subjectId,
-                bangumiUserSubjectCollectionModifyPayload = BangumiUserSubjectCollectionModifyPayload(
-                    type = payload.collectionType?.toBangumiCollectionType(),
-                    rate = selfRating?.score,
-                    comment = selfRating?.comment,
-                    private = selfRating?.isPrivate,
-                    tags = selfRating?.tags,
-                ),
-            )
+    ) = withContext(ioDispatcher) {
+        try {
+            if (!bangumiApi.hasAccessToken()) {
+                throw RepositoryAuthorizationException("Bangumi access token is required")
+            }
+            val selfRating = payload.selfRating
+            bangumiApi.request {
+                postUserCollection(
+                    subjectId = subjectId,
+                    bangumiUserSubjectCollectionModifyPayload = BangumiUserSubjectCollectionModifyPayload(
+                        type = payload.collectionType?.toBangumiCollectionType(),
+                        rate = selfRating?.score,
+                        comment = selfRating?.comment,
+                        private = selfRating?.isPrivate,
+                        tags = selfRating?.tags,
+                    ),
+                )
+            }
+            subjectCountStatsRestarter.restart()
+        } catch (throwable: Throwable) {
+            throw wrapBangumiCollectionException(throwable)
         }
-        subjectCountStatsRestarter.restart()
     }
 
-    override suspend fun deleteSubjectCollection(subjectId: Int) {
-        check(bangumiApi.hasAccessToken()) { "Bangumi access token is required" }
-        bangumiApi.deleteUserCollection(subjectId)
-        subjectCountStatsRestarter.restart()
+    override suspend fun deleteSubjectCollection(subjectId: Int) = withContext(ioDispatcher) {
+        try {
+            if (!bangumiApi.hasAccessToken()) {
+                throw RepositoryAuthorizationException("Bangumi access token is required")
+            }
+            bangumiApi.deleteUserCollection(subjectId)
+            subjectCountStatsRestarter.restart()
+        } catch (throwable: Throwable) {
+            throw wrapBangumiCollectionException(throwable)
+        }
+    }
+
+    private fun wrapBangumiCollectionException(throwable: Throwable): RepositoryException {
+        if (throwable is RepositoryException) return throwable
+        if (throwable is ClientRequestException) {
+            return when (throwable.response.status) {
+                HttpStatusCode.Unauthorized,
+                HttpStatusCode.Forbidden,
+                -> RepositoryAuthorizationException(throwable.response.status.description, throwable)
+
+                HttpStatusCode.TooManyRequests -> RepositoryRateLimitedException(
+                    throwable.response.status.description,
+                    throwable,
+                )
+
+                else -> RepositoryRequestError(
+                    localizedMessage = "Bangumi collection request failed (HTTP ${throwable.response.status.value}).",
+                    cause = throwable,
+                )
+            }
+        }
+        return RepositoryException.wrapOrThrowCancellation(throwable)
     }
 
     override suspend fun getSubjectRecommendations(

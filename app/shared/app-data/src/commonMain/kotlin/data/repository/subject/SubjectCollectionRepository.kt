@@ -633,7 +633,13 @@ class SubjectCollectionRepositoryImpl(
     ) {
         withContext(defaultDispatcher) {
             subjectService.patchSubjectCollection(subjectId, payload)
-            subjectCollectionDao.updateType(subjectId, payload.collectionType.toUnifiedCollectionType())
+            if (subjectCollectionDao.findById(subjectId).first() == null) {
+                // The POST already created the remote collection. Hydrate only after success so the
+                // local row contains the complete subject data required by collection flows.
+                refetchSubjectCollection(subjectId)
+            } else {
+                subjectCollectionDao.updateType(subjectId, payload.collectionType.toUnifiedCollectionType())
+            }
         }
     }
 

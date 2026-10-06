@@ -35,7 +35,7 @@ class TvExplorationViewModel(
     koin: Koin,
     private val collectionRepository: SubjectCollectionRepository,
 ) : ExplorationPageViewModel(koin) {
-    // Keep the presented pages across route changes, like the shared trending pager.
+    // Keep the presented pages across route changes so the saved viewport remains stable.
     // Recreating an empty presenter briefly removes the first row and shifts the saved viewport.
     val recommendations = explorationPageState.recommendationPager.launchAsLazyPagingItemsIn(backgroundScope)
     val followed = explorationPageState.followedSubjectsPager.launchAsLazyPagingItemsIn(backgroundScope)

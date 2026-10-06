@@ -10,6 +10,7 @@
 package me.him188.ani.app.data.network
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
 import io.ktor.client.request.delete
 import io.ktor.client.request.header
@@ -25,6 +26,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import me.him188.ani.app.data.repository.RepositoryAuthorizationException
+import me.him188.ani.app.data.repository.RepositoryRateLimitedException
+import me.him188.ani.app.data.repository.RepositoryRequestError
+import me.him188.ani.app.data.repository.RepositoryServiceUnavailableException
 import me.him188.ani.app.data.repository.user.AccessTokenSession
 import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.datasources.bangumi.apis.DefaultApi
@@ -96,10 +101,13 @@ class BangumiApiProvider(
         }.toBangumiTrendingPage()
     }
 
-    override suspend fun getCalendar(): List<BangumiCalendarEntry> {
+    override suspend fun getCalendarDays(): List<BangumiCalendarDay> {
         val endpoint = "$BANGUMI_API_BASE_URL/calendar"
-        return getJson<List<RawCalendarDay>>(endpoint, "calendar") { }.flatMap { day ->
-            day.items.mapNotNull { item -> item.toBangumiCalendarEntry() }
+        return getJson<List<RawCalendarDay>>(endpoint, "calendar") { }.map { day ->
+            BangumiCalendarDay(
+                weekdayId = day.weekday?.id ?: 0,
+                items = day.items.mapNotNull { item -> item.toBangumiCalendarEntry() },
+            )
         }
     }
 
@@ -153,12 +161,26 @@ class BangumiApiProvider(
     suspend fun deleteUserCollection(subjectId: Int) {
         withHttpClient { httpClient ->
             val response = httpClient.delete("$BANGUMI_API_BASE_URL/v0/users/-/collections/$subjectId") {
+                expectSuccess = false
                 currentAccessToken()?.let { token ->
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             }
-            check(response.status.isSuccess() || response.status == HttpStatusCode.NotFound) {
-                "Bangumi collection delete failed: ${response.status}"
+            if (!response.status.isSuccess() && response.status != HttpStatusCode.NotFound) {
+                throw when {
+                    response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden ->
+                        RepositoryAuthorizationException(response.status.description)
+
+                    response.status == HttpStatusCode.TooManyRequests ->
+                        RepositoryRateLimitedException(response.status.description)
+
+                    response.status.value >= 500 ->
+                        RepositoryServiceUnavailableException(response.status.description)
+
+                    else -> RepositoryRequestError(
+                        localizedMessage = "Bangumi collection delete failed (HTTP ${response.status.value}).",
+                    )
+                }
             }
         }
     }
@@ -274,7 +296,13 @@ private data class RawRating(
 
 @Serializable
 private data class RawCalendarDay(
+    @SerialName("weekday") val weekday: RawCalendarWeekday? = null,
     @SerialName("items") val items: List<RawCalendarSubject> = emptyList(),
+)
+
+@Serializable
+private data class RawCalendarWeekday(
+    @SerialName("id") val id: Int? = null,
 )
 
 @Serializable
@@ -333,7 +361,7 @@ private fun RawCalendarSubject.toBangumiCalendarEntry(): BangumiCalendarEntry? {
             ?: images?.medium
             ?: images?.small
             .orEmpty(),
-        type = type ?: 2,
+        type = type ?: 0,
         nsfw = nsfw,
         airDate = airDate?.toLocalDateOrNull(),
     )

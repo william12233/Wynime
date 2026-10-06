@@ -463,7 +463,7 @@
     <string name="exploration_title">探索</string>
     <string name="exploration_settings">设置</string>
     <string name="exploration_search">搜索</string>
-    <string name="exploration_trending">最高热度</string>
+    <string name="exploration_today_updates">今日更新</string>
     <string name="exploration_schedule">新番时间表</string>
     <string name="exploration_schedule_view_details">查看详情</string>
     <string name="exploration_schedule_episode">第 %1$s 话</string>

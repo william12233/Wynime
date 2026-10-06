@@ -105,6 +105,9 @@ class SubjectCollectionRepositoryInvalidateTest {
          */
         val serverSubjects = mutableMapOf<Int, AniSubjectCollection>()
 
+        val patchedSubjectIds = mutableListOf<Int>()
+        val deletedSubjectIds = mutableListOf<Int>()
+
         /**
          * [getSubjectCollection] 对这些 id 抛出异常 (模拟网络失败). 若设置了 [gate], 在放行之后才抛出.
          */
@@ -184,10 +187,13 @@ class SubjectCollectionRepositoryInvalidateTest {
         override fun subjectCollectionById(subjectId: Int): Flow<AniSubjectCollection?> =
             throw UnsupportedOperationException()
 
-        override suspend fun patchSubjectCollection(subjectId: Int, payload: AniUpdateSubjectCollectionRequest) =
-            throw UnsupportedOperationException()
+        override suspend fun patchSubjectCollection(subjectId: Int, payload: AniUpdateSubjectCollectionRequest) {
+            patchedSubjectIds += subjectId
+        }
 
-        override suspend fun deleteSubjectCollection(subjectId: Int) = throw UnsupportedOperationException()
+        override suspend fun deleteSubjectCollection(subjectId: Int) {
+            deletedSubjectIds += subjectId
+        }
 
         override suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<AniSubjectRecommendation> =
             throw UnsupportedOperationException()
@@ -696,6 +702,44 @@ class SubjectCollectionRepositoryInvalidateTest {
 
         assertEquals(0, dao.lastFetched(null))
         assertNull(dao.findById(1).first())
+    }
+
+    // endregion
+
+    // region 收藏狀態寫入
+
+    @Test
+    fun `COL-01 existing local row updates collection type without refetch`() = runRepositoryTest {
+        dao.upsert(subject(1, currentTimeMillis(), type = UnifiedCollectionType.WISH))
+
+        repository.setSubjectCollectionTypeOrDelete(1, UnifiedCollectionType.DOING)
+
+        assertEquals(UnifiedCollectionType.DOING, assertNotNull(dao.findById(1).first()).collectionType)
+        assertEquals(listOf(1), service.patchedSubjectIds)
+        assertTrue(service.fetchedSubjectIds.isEmpty())
+    }
+
+    @Test
+    fun `COL-02 successful first collection hydrates a missing local row`() = runRepositoryTest {
+        service.serverSubjects[2] = serverSubject(2, type = AniCollectionType.DOING, episodeIds = listOf(201))
+
+        repository.setSubjectCollectionTypeOrDelete(2, UnifiedCollectionType.DOING)
+
+        val cached = assertNotNull(dao.findById(2).first())
+        assertEquals(UnifiedCollectionType.DOING, cached.collectionType)
+        assertEquals(listOf(201), database.episodeCollection().listIdBySubjectId(2).first())
+        assertEquals(listOf(2), service.patchedSubjectIds)
+        assertEquals(listOf(2), service.fetchedSubjectIds)
+    }
+
+    @Test
+    fun `COL-03 delete removes local row after remote delete`() = runRepositoryTest {
+        dao.upsert(subject(3, currentTimeMillis(), type = UnifiedCollectionType.DROPPED))
+
+        repository.setSubjectCollectionTypeOrDelete(3, null)
+
+        assertNull(dao.findById(3).first())
+        assertEquals(listOf(3), service.deletedSubjectIds)
     }
 
     // endregion

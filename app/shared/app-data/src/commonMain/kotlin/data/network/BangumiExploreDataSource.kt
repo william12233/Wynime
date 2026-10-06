@@ -20,7 +20,7 @@ import kotlinx.datetime.LocalDate
 interface BangumiExploreDataSource {
     suspend fun getTrendingSubjects(limit: Int, offset: Int): BangumiTrendingPage
 
-    suspend fun getCalendar(): List<BangumiCalendarEntry>
+    suspend fun getCalendarDays(): List<BangumiCalendarDay>
 
     suspend fun getEpisodes(subjectId: Int): List<BangumiExploreEpisode>
 
@@ -30,6 +30,11 @@ interface BangumiExploreDataSource {
 data class BangumiTrendingPage(
     val subjects: List<BangumiExploreSubject>,
     val total: Int,
+)
+
+data class BangumiCalendarDay(
+    val weekdayId: Int,
+    val items: List<BangumiCalendarEntry>,
 )
 
 data class BangumiExploreSubject(

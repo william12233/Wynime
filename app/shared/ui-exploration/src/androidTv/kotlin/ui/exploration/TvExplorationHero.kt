@@ -61,9 +61,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.paging.LoadState
 import me.him188.ani.app.data.models.subject.FollowedSubjectInfo
 import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
+import me.him188.ani.app.ui.exploration.TodayUpdatesUiState
 import me.him188.ani.app.ui.lang.Lang
 import me.him188.ani.app.ui.lang.exploration_load_failed
 import me.him188.ani.app.ui.lang.exploration_loading
@@ -87,7 +87,7 @@ internal fun TvExplorationHero(
     preview: TvHeroSubject?,
     previewInfo: SubjectCollectionInfo?,
     followedSubject: FollowedSubjectInfo?,
-    loadState: LoadState,
+    todayUpdatesState: TodayUpdatesUiState,
     expanded: Boolean,
     expandProgress: Float,
     collapsedHeight: Dp,
@@ -104,11 +104,11 @@ internal fun TvExplorationHero(
     val featuredHeight = collapsedHeight + TvExplorationDefaults.HeroFeaturedExtraSpace
     val progress = expandProgress.coerceIn(0f, 1f)
     val interaction = remember { MutableInteractionSource() }
-    val loading = featured == null && loadState is LoadState.Loading
+    val loading = featured == null && todayUpdatesState is TodayUpdatesUiState.InitialLoading
     var focused by remember { mutableStateOf(false) }
     val actionText = stringResource(
         if (featured != null) Lang.tv_exploration_more_details
-        else if (loadState is LoadState.Loading) Lang.exploration_loading
+        else if (todayUpdatesState is TodayUpdatesUiState.InitialLoading) Lang.exploration_loading
         else Lang.settings_mediasource_retry,
     )
     BoxWithConstraints(modifier.fillMaxWidth().height(collapsedHeight + TvExplorationDefaults.HeroFeaturedExtraSpace * progress)
@@ -140,10 +140,10 @@ internal fun TvExplorationHero(
                         } else {
                             TvDetailsTitle(
                                 collection?.subjectInfo?.displayName ?: subject?.title ?: stringResource(
-                                    when (loadState) {
-                                        is LoadState.Loading -> Lang.exploration_loading
-                                        is LoadState.Error -> Lang.exploration_load_failed
-                                        else -> Lang.subject_details_empty
+                                    when (todayUpdatesState) {
+                                        TodayUpdatesUiState.InitialLoading -> Lang.exploration_loading
+                                        is TodayUpdatesUiState.Error -> Lang.exploration_load_failed
+                                        is TodayUpdatesUiState.Content -> Lang.subject_details_empty
                                     },
                                 ),
                                 Modifier.fillMaxWidth().testTag("tv-exploration-featured-title"),

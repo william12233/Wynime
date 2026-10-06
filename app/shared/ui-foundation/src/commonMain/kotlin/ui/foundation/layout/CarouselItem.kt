@@ -51,7 +51,7 @@ private val carouselBrush = Brush.verticalGradient(
  *
  * @see CarouselItemDefaults.itemSize
  */
-@Composable // Preview: PreviewTrendingSubjectsCarousel
+@Composable // Preview: PreviewTodayUpdatesCarousel
 fun CarouselItemScope.CarouselItem(
     label: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -79,7 +79,7 @@ fun CarouselItemScope.CarouselItem(
  *
  * @see CarouselItemDefaults.itemSize
  */
-@Composable // Preview: PreviewTrendingSubjectsCarousel
+@Composable // Preview: PreviewTodayUpdatesCarousel
 fun BasicCarouselItem(
     label: @Composable () -> Unit,
     modifier: Modifier = Modifier,

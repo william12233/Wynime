@@ -262,37 +262,30 @@ class SubjectCollectionRepositoryImpl(
     private val getEpisodeTypeFiltersUseCase: GetEpisodeTypeFiltersUseCase,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
     private val cacheExpiry: Duration = 1.hours,
+    private val trackingMetadataRepository: BangumiTrackingMetadataRepository? = null,
+    private val trackingSyncEnqueuer: BangumiTrackingSyncEnqueuer? = null,
+    private val trackingSyncSettingsStore: BangumiTrackingSyncSettingsStore? = null,
 ) : SubjectCollectionRepository(defaultDispatcher) {
     private val bangumiFullSyncMutex = Mutex()
     private val bangumiFullSyncState = MutableStateFlow<BangumiSyncState?>(null)
 
     override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts?> {
-        return (subjectService.subjectCollectionCountsFlow() as Flow<SubjectCollectionCounts?>)
-            .restartOnNewLogin(sessionManager)
-            .retry(2) { e ->
-                RepositoryException.shouldRetry(e)
-            }
-            .catch {
-                logger.error("Failed to get subject collection counts", it)
-                emit(null)
-            }
-            .flowOn(defaultDispatcher)
-//        return combine(
-//            subjectCollectionDao.countCollected(UnifiedCollectionType.WISH),
-//            subjectCollectionDao.countCollected(UnifiedCollectionType.DOING),
-//            subjectCollectionDao.countCollected(UnifiedCollectionType.DONE),
-//            subjectCollectionDao.countCollected(UnifiedCollectionType.ON_HOLD),
-//            subjectCollectionDao.countCollected(UnifiedCollectionType.DROPPED),
-//        ) { wish, doing, done, onHold, dropped ->
-//            SubjectCollectionCounts(
-//                wish = wish,
-//                doing = doing,
-//                done = done,
-//                onHold = onHold,
-//                dropped = dropped,
-//                total = wish + doing + done + onHold + dropped,
-//            )
-//        }
+        return combine(
+            subjectCollectionDao.countCollected(UnifiedCollectionType.WISH),
+            subjectCollectionDao.countCollected(UnifiedCollectionType.DOING),
+            subjectCollectionDao.countCollected(UnifiedCollectionType.DONE),
+            subjectCollectionDao.countCollected(UnifiedCollectionType.ON_HOLD),
+            subjectCollectionDao.countCollected(UnifiedCollectionType.DROPPED),
+        ) { wish, doing, done, onHold, dropped ->
+            SubjectCollectionCounts(
+                wish = wish,
+                doing = doing,
+                done = done,
+                onHold = onHold,
+                dropped = dropped,
+                total = wish + doing + done + onHold + dropped,
+            )
+        }.flowOn(defaultDispatcher)
     }
 
     private fun SubjectCollectionEntity.isExpired(): Boolean {
@@ -342,6 +335,25 @@ class SubjectCollectionRepositoryImpl(
         val subject = subjectService.getSubjectCollection(subjectId) ?: return null
         val lastFetched = currentTimeMillis()
         val subjectEntity = subject.toEntity(lastFetched = lastFetched)
+        val tombstone = trackingMetadataRepository?.find(subjectId)
+        if (tombstone?.localDeletedAt != null && subjectEntity.lastUpdated <= tombstone.localDeletedAt) {
+            val protectedEntity = subjectCollectionDao.findById(subjectId).first()
+                ?.copy(
+                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                    lastUpdated = maxOf(tombstone.localDeletedAt, subjectEntity.lastUpdated),
+                    lastFetched = lastFetched,
+                )
+                ?: subjectEntity.copy(
+                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                    lastUpdated = tombstone.localDeletedAt,
+                )
+            subjectCollectionDao.upsert(protectedEntity)
+            saveEpisodeEntities(subjectId, subject.episodes, lastFetched)
+            return subject
+        }
+        if (tombstone?.localDeletedAt != null && subjectEntity.lastUpdated > tombstone.localDeletedAt) {
+            trackingMetadataRepository.clearTombstone(subjectId, subjectEntity.lastUpdated)
+        }
         val episodeEntities = subject.episodes.map {
             it.toEntity1(subjectId, lastFetched = lastFetched)
         }
@@ -357,6 +369,18 @@ class SubjectCollectionRepositoryImpl(
             episodeCollectionDao.deleteAllByEpisodeIds(subjectId, oldIds)
         }
         return subject
+    }
+
+    private suspend fun saveEpisodeEntities(
+        subjectId: Int,
+        episodes: List<AniEpisodeCollection>,
+        lastFetched: Long,
+    ) {
+        val episodeEntities = episodes.map { it.toEntity1(subjectId, lastFetched = lastFetched) }
+        val oldIds = episodeCollectionDao.listIdBySubjectId(subjectId).first().toMutableList()
+        episodeCollectionDao.upsert(episodeEntities)
+        for (newEntity in episodeEntities) oldIds.remove(newEntity.episodeId)
+        if (oldIds.isNotEmpty()) episodeCollectionDao.deleteAllByEpisodeIds(subjectId, oldIds)
     }
 
     override fun mostRecentlyUpdatedSubjectCollectionsFlow(
@@ -483,7 +507,26 @@ class SubjectCollectionRepositoryImpl(
         items: List<AniSubjectCollection>,
         lastFetched: Long,
     ) {
-        subjectCollectionDao.upsert(items.map { it.toEntity(lastFetched = lastFetched) })
+        val entities = ArrayList<SubjectCollectionEntity>(items.size)
+        for (item in items) {
+            val entity = item.toEntity(lastFetched = lastFetched)
+            val tombstone = trackingMetadataRepository?.find(entity.subjectId)
+            if (tombstone?.localDeletedAt != null && entity.lastUpdated <= tombstone.localDeletedAt) {
+                // Collection refreshes can still return a remote row that the user cancelled
+                // locally. Keep the detail cache, but never let that stale remote row re-enter
+                // collection lists.
+                entities += entity.copy(
+                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                    lastUpdated = tombstone.localDeletedAt,
+                )
+            } else {
+                if (tombstone?.localDeletedAt != null) {
+                    trackingMetadataRepository.clearTombstone(entity.subjectId, entity.lastUpdated)
+                }
+                entities += entity
+            }
+        }
+        subjectCollectionDao.upsert(entities)
 
         // 必须先插入好条目信息, 否则插入 episode 会 foreign key constraint failed
         episodeCollectionDao.upsert(
@@ -589,14 +632,39 @@ class SubjectCollectionRepositoryImpl(
         type: UnifiedCollectionType?,
     ) {
         return withContext(defaultDispatcher) {
-            sessionManager.checkAccessBangumiApiNow()
+            val now = currentTimeMillis()
             if (type == null || type == UnifiedCollectionType.NOT_COLLECTED) {
-                deleteSubjectCollection(subjectId)
-            } else {
-                patchSubjectCollection(
-                    subjectId,
-                    AniUpdateSubjectCollectionRequest(collectionType = type.toAniSubjectCollectionType()),
+                // Bangumi has no public DELETE collection endpoint. Keep the subject row so the
+                // detail flow updates immediately, and persist a tombstone before any refresh.
+                subjectCollectionDao.updateType(
+                    subjectId = subjectId,
+                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                    lastUpdated = now,
+                    lastFetched = now,
                 )
+                trackingMetadataRepository?.markLocalDeletion(subjectId, now)
+            } else {
+                val updated = subjectCollectionDao.updateType(
+                    subjectId = subjectId,
+                    collectionType = type,
+                    lastUpdated = now,
+                    lastFetched = now,
+                )
+                if (updated == 0) {
+                    // A missing detail cache is hydrated only when necessary; the local mutation
+                    // is still recorded before the optional network-backed hydration completes.
+                    refetchSubjectCollection(subjectId)
+                    subjectCollectionDao.updateType(
+                        subjectId = subjectId,
+                        collectionType = type,
+                        lastUpdated = now,
+                        lastFetched = now,
+                    )
+                }
+                trackingMetadataRepository?.markLocalChange(subjectId, type, now)
+            }
+            if (trackingSyncSettingsStore?.flow?.first()?.autoSyncTracking == true) {
+                trackingSyncEnqueuer?.enqueueLocalChange(subjectId)
             }
         }
     }
@@ -627,29 +695,6 @@ class SubjectCollectionRepositoryImpl(
         return subjectCollectionDao.subjectNamesCnByCollectionType(types).flowOn(defaultDispatcher)
     }
 
-    private suspend fun patchSubjectCollection(
-        subjectId: Int,
-        payload: AniUpdateSubjectCollectionRequest,
-    ) {
-        withContext(defaultDispatcher) {
-            subjectService.patchSubjectCollection(subjectId, payload)
-            if (subjectCollectionDao.findById(subjectId).first() == null) {
-                // The POST already created the remote collection. Hydrate only after success so the
-                // local row contains the complete subject data required by collection flows.
-                refetchSubjectCollection(subjectId)
-            } else {
-                subjectCollectionDao.updateType(subjectId, payload.collectionType.toUnifiedCollectionType())
-            }
-        }
-    }
-
-    private suspend fun deleteSubjectCollection(subjectId: Int) {
-        withContext(defaultDispatcher) {
-            subjectService.deleteSubjectCollection(subjectId)
-            subjectCollectionDao.delete(subjectId)
-        }
-    }
-
     override suspend fun performBangumiFullSync() {
         try {
             withContext(defaultDispatcher) {
@@ -657,7 +702,7 @@ class SubjectCollectionRepositoryImpl(
                     sessionManager.checkAccessBangumiApiNow()
                     bangumiFullSyncState.value = BangumiSyncState.Preparing
                     val syncStartedAt = currentTimeMillis()
-                    val pageSize = 30
+                    val pageSize = 100
                     val remoteCollections = ArrayList<AniSubjectCollection>()
 
                     for (type in FULL_SYNC_COLLECTION_TYPES) {
@@ -675,9 +720,7 @@ class SubjectCollectionRepositoryImpl(
                         }
                     }
 
-                    val existing = subjectCollectionDao
-                        .filterMostRecentUpdated(FULL_SYNC_COLLECTION_TYPES, Int.MAX_VALUE)
-                        .first()
+                    val existing = subjectCollectionDao.listAll()
                         .associateBy { it.subjectId }
                     val remoteById = remoteCollections.distinctBy { it.id }.associateBy { it.id.toInt() }
                     val protectedLocalIds = existing.values
@@ -685,7 +728,11 @@ class SubjectCollectionRepositoryImpl(
                         .filter { it.subjectId !in remoteById && it.lastUpdated > syncStartedAt }
                         .map { it.subjectId }
                         .toSet()
-                    val staleIds = existing.keys - remoteById.keys - protectedLocalIds
+                    val tombstoneIds = existing.values.asSequence()
+                        .filter { it.collectionType == UnifiedCollectionType.NOT_COLLECTED }
+                        .map { it.subjectId }
+                        .toSet()
+                    val staleIds = existing.keys - remoteById.keys - protectedLocalIds - tombstoneIds
                     if (staleIds.isNotEmpty()) {
                         subjectCollectionDao.deleteByIds(staleIds.toList())
                     }
@@ -696,6 +743,19 @@ class SubjectCollectionRepositoryImpl(
                     for ((subjectId, remote) in remoteById) {
                         val remoteEntity = remote.toEntity(lastFetched)
                         val local = existing[subjectId]
+                        val tombstone = trackingMetadataRepository?.find(subjectId)
+                        if (tombstone?.localDeletedAt != null && remoteEntity.lastUpdated <= tombstone.localDeletedAt) {
+                            subjectCollectionDao.updateType(
+                                subjectId = subjectId,
+                                collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                                lastUpdated = tombstone.localDeletedAt,
+                                lastFetched = lastFetched,
+                            )
+                            continue
+                        }
+                        if (tombstone?.localDeletedAt != null) {
+                            trackingMetadataRepository.clearTombstone(subjectId, remoteEntity.lastUpdated)
+                        }
                         // Bangumi updatedAt 是收藏狀態的版本時間；較舊的回應不可覆蓋較新的本機狀態。
                         if (local != null &&
                             remoteEntity.lastUpdated > 0L &&
@@ -747,8 +807,21 @@ class SubjectCollectionRepositoryImpl(
                                 return@withPermit
                             }
                             if (fetched == null || fetched.collectionType == null) {
-                                // 服务端已无收藏 (条目不存在或未收藏): 删除本地行, 剧集缓存有 ON DELETE CASCADE 随之删除
-                                subjectCollectionDao.delete(subjectId)
+                                val tombstone = trackingMetadataRepository?.find(subjectId)
+                                if (tombstone?.localDeletedAt != null) {
+                                    // A local cancellation remains visible to the detail flow even
+                                    // when Bangumi still returns no collection for the subject.
+                                    subjectCollectionDao.updateType(
+                                        subjectId = subjectId,
+                                        collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                                        lastUpdated = tombstone.localDeletedAt,
+                                        lastFetched = currentTimeMillis(),
+                                    )
+                                } else {
+                                    // A normal remote absence keeps the historical invalidation
+                                    // behaviour and removes the cache row with its episode cache.
+                                    subjectCollectionDao.delete(subjectId)
+                                }
                             }
                         }
                     }

@@ -142,18 +142,6 @@ class BangumiSubjectService(
         }
     }
 
-    override suspend fun deleteSubjectCollection(subjectId: Int) = withContext(ioDispatcher) {
-        try {
-            if (!bangumiApi.hasAccessToken()) {
-                throw RepositoryAuthorizationException("Bangumi access token is required")
-            }
-            bangumiApi.deleteUserCollection(subjectId)
-            subjectCountStatsRestarter.restart()
-        } catch (throwable: Throwable) {
-            throw wrapBangumiCollectionException(throwable)
-        }
-    }
-
     private fun wrapBangumiCollectionException(throwable: Throwable): RepositoryException {
         if (throwable is RepositoryException) return throwable
         if (throwable is ClientRequestException) {

@@ -20,6 +20,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import me.him188.ani.app.data.network.protocol.ReleaseClass
 import me.him188.ani.app.platform.WynimeBrand
+import me.him188.ani.app.tools.update.UpdatePackageDescriptor
 import me.him188.ani.app.platform.currentAniBuildConfig
 import me.him188.ani.utils.ktor.ScopedHttpClient
 import me.him188.ani.utils.platform.Arch
@@ -72,12 +73,18 @@ class UpdateChecker(
                 if (version <= current) return@mapNotNull null
 
                 val assetNames = assetNamesFor(version.displayName, platform)
-                val urls = assetNames.mapNotNull { expected ->
+                val assets = assetNames.mapNotNull { expected ->
                     release.assets.firstOrNull { it.name == expected }
-                        ?.browserDownloadUrl
-                        ?.takeIf(String::isNotBlank)
+                        ?.let { asset ->
+                            asset.browserDownloadUrl.takeIf(String::isNotBlank)?.let { url -> asset.name to url }
+                        }
                 }
-                if (urls.isEmpty()) return@mapNotNull null
+                if (assets.isEmpty()) return@mapNotNull null
+                val (assetName, assetUrl) = assets.first()
+                val abi = assetName
+                    .removePrefix("wynime-${version.displayName}-")
+                    .removeSuffix(".apk")
+                    .takeIf { assetName.endsWith(".apk") }
 
                 NewVersion(
                     name = version.displayName,
@@ -88,8 +95,14 @@ class UpdateChecker(
                             changes = release.body.orEmpty(),
                         ),
                     ),
-                    downloadUrlAlternatives = urls,
+                    downloadUrlAlternatives = assets.map { it.second },
                     publishedAt = release.publishedAt.orEmpty(),
+                    packageDescriptor = UpdatePackageDescriptor(
+                        version = version.displayName,
+                        filename = assetName,
+                        downloadUrl = assetUrl,
+                        abi = abi,
+                    ),
                 ) to version
             }
             .maxWithOrNull(compareBy<Pair<NewVersion, ReleaseVersion>> { it.second }.thenBy { it.first.publishedAt })

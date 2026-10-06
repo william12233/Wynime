@@ -51,6 +51,7 @@ import me.him188.ani.app.data.repository.episode.AnimeScheduleRepository
 import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
 import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.app.data.repository.user.TokenSave
+import me.him188.ani.app.data.persistent.createTestPreferencesDataStore
 import me.him188.ani.app.domain.session.SessionEvent
 import me.him188.ani.app.domain.session.SessionState
 import me.him188.ani.app.domain.session.SessionStateProvider
@@ -191,10 +192,6 @@ class SubjectCollectionRepositoryInvalidateTest {
             patchedSubjectIds += subjectId
         }
 
-        override suspend fun deleteSubjectCollection(subjectId: Int) {
-            deletedSubjectIds += subjectId
-        }
-
         override suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<AniSubjectRecommendation> =
             throw UnsupportedOperationException()
 
@@ -234,17 +231,28 @@ class SubjectCollectionRepositoryInvalidateTest {
         val database: AniDatabase,
         val service: FakeSubjectService,
         val repository: SubjectCollectionRepository,
+        val enqueuedSubjectIds: MutableList<Int>,
     ) {
         val dao: SubjectCollectionDao get() = database.subjectCollection()
     }
 
-    private fun runRepositoryTest(block: suspend Fixture.() -> Unit) = runBlocking {
+    private fun runRepositoryTest(
+        autoSync: Boolean = false,
+        block: suspend Fixture.() -> Unit,
+    ) = runBlocking {
         val database = createTestAniDatabase()
         try {
             val service = FakeSubjectService()
             val episodeService = unusedEpisodeService
             val animeScheduleRepository = AnimeScheduleRepository(AnimeScheduleService(UnusedScheduleApi))
             val getEpisodeTypeFiltersUseCase = GetEpisodeTypeFiltersUseCase { flowOf(EpisodeType.entries) }
+            val trackingSettingsStore = BangumiTrackingSyncSettingsStore(createTestPreferencesDataStore())
+            if (autoSync) trackingSettingsStore.setAutoSyncTracking(true)
+            val enqueuedSubjectIds = mutableListOf<Int>()
+            val trackingMetadataRepository = BangumiTrackingMetadataRepository(
+                dao = database.bangumiTrackingMetadataDao(),
+                tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+            )
             lateinit var repository: SubjectCollectionRepositoryImpl
             val episodeCollectionRepository = EpisodeCollectionRepository(
                 subjectDao = database.subjectCollection(),
@@ -265,8 +273,15 @@ class SubjectCollectionRepositoryInvalidateTest {
                 sessionManager = FakeSessionStateProvider(),
                 nsfwModeSettingsFlow = flowOf(NsfwMode.DISPLAY),
                 getEpisodeTypeFiltersUseCase = getEpisodeTypeFiltersUseCase,
+                trackingMetadataRepository = trackingMetadataRepository,
+                trackingSyncEnqueuer = object : BangumiTrackingSyncEnqueuer {
+                    override fun enqueueLocalChange(subjectId: Int) {
+                        enqueuedSubjectIds += subjectId
+                    }
+                },
+                trackingSyncSettingsStore = trackingSettingsStore,
             )
-            Fixture(database, service, repository).block()
+            Fixture(database, service, repository, enqueuedSubjectIds).block()
         } finally {
             database.close()
         }
@@ -715,8 +730,9 @@ class SubjectCollectionRepositoryInvalidateTest {
         repository.setSubjectCollectionTypeOrDelete(1, UnifiedCollectionType.DOING)
 
         assertEquals(UnifiedCollectionType.DOING, assertNotNull(dao.findById(1).first()).collectionType)
-        assertEquals(listOf(1), service.patchedSubjectIds)
+        assertTrue(service.patchedSubjectIds.isEmpty(), "local tracking must not make a remote request when auto sync is disabled")
         assertTrue(service.fetchedSubjectIds.isEmpty())
+        assertTrue(enqueuedSubjectIds.isEmpty())
     }
 
     @Test
@@ -728,18 +744,68 @@ class SubjectCollectionRepositoryInvalidateTest {
         val cached = assertNotNull(dao.findById(2).first())
         assertEquals(UnifiedCollectionType.DOING, cached.collectionType)
         assertEquals(listOf(201), database.episodeCollection().listIdBySubjectId(2).first())
-        assertEquals(listOf(2), service.patchedSubjectIds)
+        assertTrue(service.patchedSubjectIds.isEmpty(), "local tracking must not make a remote request when auto sync is disabled")
         assertEquals(listOf(2), service.fetchedSubjectIds)
     }
 
     @Test
-    fun `COL-03 delete removes local row after remote delete`() = runRepositoryTest {
+    fun `COL-03 cancel keeps local row as NOT_COLLECTED without remote delete`() = runRepositoryTest {
         dao.upsert(subject(3, currentTimeMillis(), type = UnifiedCollectionType.DROPPED))
 
         repository.setSubjectCollectionTypeOrDelete(3, null)
 
-        assertNull(dao.findById(3).first())
-        assertEquals(listOf(3), service.deletedSubjectIds)
+        assertEquals(UnifiedCollectionType.NOT_COLLECTED, assertNotNull(dao.findById(3).first()).collectionType)
+        assertTrue(service.deletedSubjectIds.isEmpty())
+        assertTrue(service.patchedSubjectIds.isEmpty())
+    }
+
+    @Test
+    fun `COL-04 cancel persists account scoped tombstone and refetch cannot resurrect collection`() = runRepositoryTest {
+        dao.upsert(subject(4, currentTimeMillis(), type = UnifiedCollectionType.DOING))
+        service.serverSubjects[4] = serverSubject(4, type = AniCollectionType.DOING)
+
+        repository.setSubjectCollectionTypeOrDelete(4, null)
+
+        val tombstone = assertNotNull(
+            database.bangumiTrackingMetadataDao().find(BangumiTrackingMetadataRepository.GUEST_ACCOUNT_KEY, 4),
+        )
+        assertNotNull(tombstone.localDeletedAt)
+        assertEquals(UnifiedCollectionType.NOT_COLLECTED, assertNotNull(dao.findById(4).first()).collectionType)
+
+        repository.invalidateCache(listOf(4))
+
+        assertEquals(UnifiedCollectionType.NOT_COLLECTED, assertNotNull(dao.findById(4).first()).collectionType)
+        assertTrue(service.deletedSubjectIds.isEmpty())
+        assertTrue(service.patchedSubjectIds.isEmpty())
+    }
+
+    @Test
+    fun `COL-05 reopening collection clears tombstone and makes it visible again`() = runRepositoryTest {
+        dao.upsert(subject(5, currentTimeMillis(), type = UnifiedCollectionType.DOING))
+
+        repository.setSubjectCollectionTypeOrDelete(5, null)
+        assertNotNull(
+            database.bangumiTrackingMetadataDao().find(BangumiTrackingMetadataRepository.GUEST_ACCOUNT_KEY, 5)
+                ?.localDeletedAt,
+        )
+
+        repository.setSubjectCollectionTypeOrDelete(5, UnifiedCollectionType.WISH)
+
+        assertEquals(UnifiedCollectionType.WISH, assertNotNull(dao.findById(5).first()).collectionType)
+        assertNull(
+            database.bangumiTrackingMetadataDao().find(BangumiTrackingMetadataRepository.GUEST_ACCOUNT_KEY, 5)
+                ?.localDeletedAt,
+        )
+    }
+
+    @Test
+    fun `COL-06 auto sync enqueues after local state is committed`() = runRepositoryTest(autoSync = true) {
+        dao.upsert(subject(6, currentTimeMillis(), type = UnifiedCollectionType.WISH))
+
+        repository.setSubjectCollectionTypeOrDelete(6, UnifiedCollectionType.DONE)
+
+        assertEquals(UnifiedCollectionType.DONE, assertNotNull(dao.findById(6).first()).collectionType)
+        assertEquals(listOf(6), enqueuedSubjectIds)
     }
 
     // endregion

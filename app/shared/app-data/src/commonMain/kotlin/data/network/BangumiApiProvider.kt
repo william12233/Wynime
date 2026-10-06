@@ -10,15 +10,10 @@
 package me.him188.ani.app.data.network
 
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
-import io.ktor.client.request.delete
-import io.ktor.client.request.header
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.flow.first
@@ -26,14 +21,11 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import me.him188.ani.app.data.repository.RepositoryAuthorizationException
-import me.him188.ani.app.data.repository.RepositoryRateLimitedException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.data.repository.RepositoryServiceUnavailableException
 import me.him188.ani.app.data.repository.user.AccessTokenSession
 import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.datasources.bangumi.apis.DefaultApi
 import me.him188.ani.datasources.bangumi.infrastructure.HttpResponse
+import me.him188.ani.datasources.bangumi.models.BangumiUser
 import me.him188.ani.datasources.bangumi.models.BangumiSubjectType
 import me.him188.ani.datasources.bangumi.next.apis.EpisodeBangumiNextApi
 import me.him188.ani.datasources.bangumi.next.apis.SubjectBangumiNextApi
@@ -62,8 +54,12 @@ class BangumiApiProvider(
      * 單筆或修改端點，不能用來列出整個收藏清單。
      */
     suspend fun currentUsername(): String? {
+        return currentUser()?.username
+    }
+
+    suspend fun currentUser(): BangumiUser? {
         if (!hasAccessToken()) return null
-        return request { getMyself() }.username
+        return request { getMyself() }
     }
 
     suspend fun <T : Any> request(block: suspend DefaultApi.() -> HttpResponse<T>): T {
@@ -156,33 +152,6 @@ class BangumiApiProvider(
             offset += data.size
         }
         return result
-    }
-
-    suspend fun deleteUserCollection(subjectId: Int) {
-        withHttpClient { httpClient ->
-            val response = httpClient.delete("$BANGUMI_API_BASE_URL/v0/users/-/collections/$subjectId") {
-                expectSuccess = false
-                currentAccessToken()?.let { token ->
-                    header(HttpHeaders.Authorization, "Bearer $token")
-                }
-            }
-            if (!response.status.isSuccess() && response.status != HttpStatusCode.NotFound) {
-                throw when {
-                    response.status == HttpStatusCode.Unauthorized || response.status == HttpStatusCode.Forbidden ->
-                        RepositoryAuthorizationException(response.status.description)
-
-                    response.status == HttpStatusCode.TooManyRequests ->
-                        RepositoryRateLimitedException(response.status.description)
-
-                    response.status.value >= 500 ->
-                        RepositoryServiceUnavailableException(response.status.description)
-
-                    else -> RepositoryRequestError(
-                        localizedMessage = "Bangumi collection delete failed (HTTP ${response.status.value}).",
-                    )
-                }
-            }
-        }
     }
 
     private suspend fun <T> withApi(block: suspend DefaultApi.() -> T): T {

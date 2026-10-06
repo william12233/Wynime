@@ -148,12 +148,13 @@ interface SubjectCollectionDao {
     @Transaction
     suspend fun upsert(item: List<SubjectCollectionEntity>)
 
-    @Query("""UPDATE subject_collection SET collectionType = :collectionType, lastUpdated = :lastUpdated WHERE subjectId = :subjectId""")
+    @Query("""UPDATE subject_collection SET collectionType = :collectionType, lastUpdated = :lastUpdated, lastFetched = :lastFetched WHERE subjectId = :subjectId""")
     suspend fun updateType(
         subjectId: Int,
         collectionType: UnifiedCollectionType,
         lastUpdated: Long = currentTimeMillis(),
-    )
+        lastFetched: Long = currentTimeMillis(),
+    ): Int
 
     @Query("""DELETE FROM subject_collection WHERE subjectId = :subjectId""")
     suspend fun delete(subjectId: Int)
@@ -174,7 +175,8 @@ interface SubjectCollectionDao {
     @Query("""DELETE FROM subject_collection WHERE collectionType = :type""")
     suspend fun deleteAll(type: UnifiedCollectionType)
 
-    @Query("""DELETE FROM subject_collection""")
+    /** Removes tracked cache rows while retaining local cancellation tombstone rows. */
+    @Query("""DELETE FROM subject_collection WHERE collectionType != 'NOT_COLLECTED'""")
     suspend fun deleteAll()
 
     /**
@@ -189,6 +191,7 @@ interface SubjectCollectionDao {
         """
     SELECT * FROM subject_collection 
     WHERE collectionType IS NOT NULL 
+    AND collectionType != 'NOT_COLLECTED'
     AND (collectionType IN (:collectionTypes))
     ORDER BY lastUpdated DESC
     LIMIT :limit
@@ -205,6 +208,7 @@ interface SubjectCollectionDao {
         """
     SELECT * FROM subject_collection 
     WHERE collectionType IS NOT NULL 
+    AND collectionType != 'NOT_COLLECTED'
     ORDER BY lastUpdated DESC
     LIMIT :limit
     OFFSET :offset
@@ -224,7 +228,7 @@ interface SubjectCollectionDao {
     @Query(
         """
         select * from subject_collection 
-        where (collectionType is NOT NULL AND (:collectionType IS NULL OR collectionType = :collectionType))
+        where (collectionType is NOT NULL AND collectionType != 'NOT_COLLECTED' AND (:collectionType IS NULL OR collectionType = :collectionType))
         AND (:includeNsfw OR NOT nsfw)
         order by lastUpdated DESC, subjectId DESC
         """,
@@ -241,6 +245,9 @@ interface SubjectCollectionDao {
     @Query("""SELECT * FROM subject_collection WHERE subjectId IN (:subjectIds)""")
     fun filterByIds(subjectIds: IntArray): Flow<List<SubjectCollectionEntity>>
 
+    @Query("SELECT * FROM subject_collection")
+    suspend fun listAll(): List<SubjectCollectionEntity>
+
     @Query(
         """
         SELECT sc.subjectId FROM subject_collection sc WHERE NOT EXISTS (
@@ -248,6 +255,7 @@ interface SubjectCollectionDao {
             WHERE (ec.subjectId = sc.subjectId) 
                 AND (CAST(unixepoch('now', 'subsecond') * 1000 AS int) - ec.lastFetched > :cacheExpiry)
         )
+        AND sc.collectionType != 'NOT_COLLECTED'
         """,
     )
     fun subjectIdsWithValidEpisodeCollection(cacheExpiry: Long = 1.hours.inWholeMilliseconds): Flow<List<Int>>
@@ -255,7 +263,7 @@ interface SubjectCollectionDao {
     @Query(
         """
         SELECT lastFetched FROM subject_collection 
-        WHERE (:type IS NULL) OR (collectionType = :type)
+        WHERE collectionType != 'NOT_COLLECTED' AND ((:type IS NULL) OR (collectionType = :type))
         ORDER BY lastFetched DESC LIMIT 1
         """,
     )
@@ -277,7 +285,7 @@ interface SubjectCollectionDao {
     /**
      * 只包含保存在数据库的, 可能不完整
      */
-    @Query("""SELECT COUNT(*) FROM subject_collection WHERE (collectionType is NOT NULL AND (:collectionType IS NULL OR collectionType = :collectionType))""")
+    @Query("""SELECT COUNT(*) FROM subject_collection WHERE (collectionType is NOT NULL AND collectionType != 'NOT_COLLECTED' AND (:collectionType IS NULL OR collectionType = :collectionType))""")
     fun countCollected(collectionType: UnifiedCollectionType?): Flow<Int>
 
     @Query("""UPDATE subject_collection SET cachedStaffUpdated = :time, cachedCharactersUpdated = :time WHERE subjectId = :subjectId""")
@@ -287,6 +295,7 @@ interface SubjectCollectionDao {
         """
         SELECT sc.subjectId FROM subject_collection sc
         WHERE collectionType IS NOT NULL
+        AND collectionType != 'NOT_COLLECTED'
         AND (collectionType IN (:collectionTypes))
         """,
     )
@@ -296,6 +305,7 @@ interface SubjectCollectionDao {
         """
         SELECT sc.nameCn FROM subject_collection sc
         WHERE collectionType IS NOT NULL
+        AND collectionType != 'NOT_COLLECTED'
         AND (collectionType IN (:collectionTypes))
         """,
     )

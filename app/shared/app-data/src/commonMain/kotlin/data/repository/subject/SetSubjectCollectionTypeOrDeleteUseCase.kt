@@ -9,8 +9,6 @@
 
 package me.him188.ani.app.data.repository.subject
 
-import kotlinx.coroutines.flow.first
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
 import me.him188.ani.datasources.api.topic.UnifiedCollectionType
 
 interface SetSubjectCollectionTypeOrDeleteUseCase {
@@ -19,12 +17,8 @@ interface SetSubjectCollectionTypeOrDeleteUseCase {
 
 class SetSubjectCollectionTypeOrDeleteUseCaseImpl(
     private val subjectRepository: SubjectCollectionRepository,
-    private val episodeRepository: EpisodeCollectionRepository,
 ) : SetSubjectCollectionTypeOrDeleteUseCase {
     override suspend fun invoke(subjectId: Int, collectionType: UnifiedCollectionType?) {
         subjectRepository.setSubjectCollectionTypeOrDelete(subjectId, collectionType)
-        if (collectionType != UnifiedCollectionType.DOING) {
-            episodeRepository.subjectEpisodeCollectionInfosFlow(subjectId).first()
-        }
     }
 }

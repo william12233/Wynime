@@ -34,6 +34,12 @@ import me.him188.ani.app.data.repository.subject.DefaultSubjectRelationsReposito
 import me.him188.ani.app.data.repository.subject.FollowedSubjectsRepository
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepositoryImpl
+import me.him188.ani.app.data.repository.subject.BangumiTrackingMetadataRepository
+import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncEnqueuer
+import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncApi
+import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncApiImpl
+import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncRepository
+import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettingsStore
 import me.him188.ani.app.data.repository.subject.SubjectRelationGraphRepository
 import me.him188.ani.app.data.repository.subject.SubjectRelationsRepository
 import me.him188.ani.app.data.repository.subject.SubjectSearchCompletionRepository
@@ -96,8 +102,38 @@ fun KoinApplication.repositoryModules(
             sessionManager = get(),
             nsfwModeSettingsFlow = settingsRepository.uiSettings.flow.map { it.searchSettings.nsfwMode },
             getEpisodeTypeFiltersUseCase = get(),
+            trackingMetadataRepository = get(),
+            trackingSyncEnqueuer = get<BangumiTrackingSyncEnqueuer>(),
+            trackingSyncSettingsStore = get(),
         )
     }
+
+    single<BangumiTrackingSyncSettingsStore> {
+        BangumiTrackingSyncSettingsStore(getContext().dataStores.preferencesStore)
+    }
+
+    single<BangumiTrackingSyncApi> { BangumiTrackingSyncApiImpl(get()) }
+
+    single {
+        BangumiTrackingMetadataRepository(
+            dao = database.bangumiTrackingMetadataDao(),
+            tokenRepository = get(),
+            accountBindingStore = get(),
+        )
+    }
+
+    single<BangumiTrackingSyncRepository> {
+        BangumiTrackingSyncRepository(
+            subjectCollectionDao = database.subjectCollection(),
+            metadataDao = database.bangumiTrackingMetadataDao(),
+            metadataRepository = get(),
+            subjectService = get(),
+            bangumiApi = get(),
+            settingsStore = get(),
+        )
+    }
+
+    single<BangumiTrackingSyncEnqueuer> { get<BangumiTrackingSyncRepository>() }
 
     single<FollowedSubjectsRepository> {
         FollowedSubjectsRepository(

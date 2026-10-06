@@ -55,4 +55,47 @@ class UpdateInstallationRunnerTest {
         runner.dismissFailure()
         assertEquals(UpdateInstallationState.Idle, runner.state.value)
     }
+
+    @Test
+    fun `permission request is waiting and never reported as success`() = runTest {
+        val runner = UpdateInstallationRunner(
+            object : UpdateInstaller {
+                override fun install(file: SystemPath, context: Context): InstallationResult =
+                    InstallationResult.RequiresInstallPermission
+
+                override suspend fun install(
+                    file: SystemPath,
+                    packageUrls: List<String>,
+                    context: Context,
+                ): InstallationResult = InstallationResult.RequiresInstallPermission
+            },
+        )
+
+        runner.install(Path("update.apk").inSystem, emptyList(), object : Context() {})
+
+        assertEquals(UpdateInstallationState.WaitingForPermission, runner.state.value)
+        runner.returnToDownloaded()
+        assertEquals(UpdateInstallationState.Idle, runner.state.value)
+    }
+
+    @Test
+    fun `installer exception becomes failed`() = runTest {
+        val runner = UpdateInstallationRunner(
+            object : UpdateInstaller {
+                override fun install(file: SystemPath, context: Context): InstallationResult = error("boom")
+
+                override suspend fun install(
+                    file: SystemPath,
+                    packageUrls: List<String>,
+                    context: Context,
+                ): InstallationResult = error("boom")
+            },
+        )
+
+        runner.install(Path("update.apk").inSystem, emptyList(), object : Context() {})
+
+        val state = assertIs<UpdateInstallationState.Failed>(runner.state.value)
+        assertEquals(InstallationFailureReason.FAILED_TO_COPY, state.result.reason)
+        assertEquals("boom", state.result.message)
+    }
 }

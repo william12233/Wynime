@@ -69,6 +69,7 @@ fun createDefaultHttpClient(
             Json {
                 ignoreUnknownKeys = true
                 isLenient = true
+                explicitNulls = false
             },
         )
         register(ContentType.Text.Html, xmlConverter)

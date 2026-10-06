@@ -62,6 +62,9 @@ interface FileDownloader {
     val progress: Flow<Float>
     val state: StateFlow<FileDownloaderState>
 
+    /** Publishes a verified file as the current download without starting another request. */
+    fun reuse(file: SystemPath, url: String, checked: Boolean = true): Boolean = false
+
     /**
      * 开始在后台从 [alternativeUrls]（顺序）下载文件到 [saveDir] 并验证:
      * - 如果目标文件已存在且校验通过，则跳过下载
@@ -121,6 +124,13 @@ class DefaultFileDownloader(
 
     private val _progress = MutableStateFlow(0f)
     override val progress: Flow<Float> get() = _progress
+
+    override fun reuse(file: SystemPath, url: String, checked: Boolean): Boolean {
+        if (!file.exists() || file.length() <= 0) return false
+        state.value = FileDownloaderState.Succeed(url, file, checked)
+        _progress.value = 1f
+        return true
+    }
 
     @OptIn(ExperimentalStdlibApi::class)
     override suspend fun download(

@@ -28,6 +28,7 @@ import me.him188.ani.app.domain.foundation.LoadError
 import me.him188.ani.app.domain.foundation.get
 import me.him188.ani.app.domain.update.UpdateManager
 import me.him188.ani.app.platform.ContextMP
+import me.him188.ani.app.platform.WynimeBrand
 import me.him188.ani.app.platform.currentAniBuildConfig
 import me.him188.ani.app.tools.MonoTasker
 import me.him188.ani.app.tools.update.DefaultFileDownloader
@@ -36,9 +37,11 @@ import me.him188.ani.app.tools.update.InstallationResult
 import me.him188.ani.app.tools.update.UpdateInstallationRunner
 import me.him188.ani.app.tools.update.UpdateInstallationState
 import me.him188.ani.app.tools.update.UpdateInstaller
+import me.him188.ani.app.tools.update.UpdatePackageDescriptor
 import me.him188.ani.app.ui.foundation.AbstractViewModel
 import me.him188.ani.utils.io.createDirectories
 import me.him188.ani.utils.io.inSystem
+import me.him188.ani.utils.io.resolve
 import me.him188.ani.utils.logging.info
 import me.him188.ani.utils.logging.warn
 import me.him188.ani.utils.platform.annotations.TestOnly
@@ -91,6 +94,8 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
             lastCheckTime.value == 0L -> AppUpdateState.ClickToCheck
             latestVersion == null -> AppUpdateState.AlreadyUpToDate
             installationState is UpdateInstallationState.Installing -> AppUpdateState.Installing(latestVersion)
+            installationState is UpdateInstallationState.WaitingForPermission ->
+                AppUpdateState.WaitingForPermission(latestVersion)
             else -> {
                 when (fileDownloaderStats.state) {
                     FileDownloaderState.Idle -> AppUpdateState.HasUpdate(latestVersion)
@@ -179,7 +184,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
         }
     }
 
-    fun startDownload(ver: NewVersion, uriHandler: UriHandler?) {
+    fun startDownload(ver: NewVersion, uriHandler: UriHandler?, context: ContextMP? = null) {
         downloadTasker.launch {
             val settings = updateSettings.first()
             if (!settings.inAppDownload) {
@@ -187,11 +192,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                     logger.warn { "uriHandler is null, cannot navigate to browser (may happen for auto check)" }
                     return@launch
                 }
-                ver.downloadUrlAlternatives.firstOrNull()?.let {
-                    uriHandler.openUri(it)
-                } ?: run {
-                    logger.warn { "No download URL found, ignoring" }
-                }
+                uriHandler.openUri(WynimeBrand.githubReleaseTagPrefix + ver.name)
                 return@launch
             }
 
@@ -208,16 +209,27 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                 updateManager.deleteStaleInstallers(keepFilenames)
                 dir.createDirectories()
             }
+            val descriptor = ver.packageDescriptor
+            if (context != null && descriptor != null) {
+                val existing = dir.resolve(descriptor.filename)
+                if (updateInstaller.isValidDownloadedPackage(existing, descriptor, context)) {
+                    fileDownloader.reuse(existing, descriptor.downloadUrl)
+                    return@launch
+                }
+            }
             fileDownloader.download(
                 alternativeUrls = preparationUrls,
-                filenameProvider = { it.substringAfterLast("/", "") },
+                filenameProvider = { url ->
+                    if (descriptor?.downloadUrl == url) descriptor.filename
+                    else url.substringAfterLast("/", "")
+                },
                 saveDir = dir,
             )
         }
     }
 
-    fun restartDownload(uriHandler: UriHandler) {
-        latestVersionFlow.value?.let { startDownload(it, uriHandler) }
+    fun restartDownload(uriHandler: UriHandler, context: ContextMP? = null) {
+        latestVersionFlow.value?.let { startDownload(it, uriHandler, context) }
     }
 
     fun install(context: ContextMP) {
@@ -228,6 +240,39 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                 file = state.file,
                 packageUrls = state.version.downloadUrlAlternatives,
                 context = context,
+                packageDescriptor = state.version.packageDescriptor,
+            )
+        }
+    }
+
+    /** Called when the activity returns from Android's unknown-sources settings page. */
+    fun onAppResumed(context: ContextMP) {
+        val waitingForPermission = installationRunner.state.value is UpdateInstallationState.WaitingForPermission
+        val pending = updateInstaller.pendingInstallation(context)
+        if (!waitingForPermission && pending == null) return
+        if (!updateInstaller.isInstallPermissionGranted(context)) {
+            if (waitingForPermission) installationRunner.returnToDownloaded()
+            return
+        }
+        val currentVersion = latestVersionFlow.value
+        val file = (fileDownloaderPresenter.flow.value.state as? FileDownloaderState.Succeed)?.file
+            ?: pending?.file
+            ?: return
+        val version = currentVersion ?: pending?.descriptor?.let { descriptor ->
+            NewVersion(
+                name = descriptor.version,
+                changelogs = emptyList(),
+                downloadUrlAlternatives = listOf(descriptor.downloadUrl),
+                publishedAt = "",
+                packageDescriptor = descriptor,
+            )
+        } ?: return
+        installationTasker.launch(Dispatchers.Main) {
+            installationRunner.install(
+                file = file,
+                packageUrls = version.downloadUrlAlternatives,
+                context = context,
+                packageDescriptor = pending?.descriptor ?: version.packageDescriptor,
             )
         }
     }
@@ -264,6 +309,7 @@ data class AppUpdatePresentation(
         is AppUpdateState.Downloading -> true
         is AppUpdateState.HasUpdate -> false
         is AppUpdateState.Installing -> true
+        is AppUpdateState.WaitingForPermission -> true
     }
     val downloadError = (state as? AppUpdateState.DownloadFailed)?.throwable?.let { LoadError.fromException(it) }
 
@@ -290,6 +336,7 @@ class NewVersion(
      */
     val downloadUrlAlternatives: List<String>,
     val publishedAt: String,
+    val packageDescriptor: UpdatePackageDescriptor? = null,
 ) {
     val majorChanges = changelogs.asSequence().flatMap { changelog ->
         changelog.changes.lineSequence()

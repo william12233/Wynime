@@ -73,5 +73,9 @@ sealed interface AppUpdateState {
     @Immutable
     data class Installing(override val version: NewVersion) : HasNewVersion
 
+    /** Android has opened the permission settings page for this already downloaded APK. */
+    @Immutable
+    data class WaitingForPermission(override val version: NewVersion) : HasNewVersion
+
     companion object
 }

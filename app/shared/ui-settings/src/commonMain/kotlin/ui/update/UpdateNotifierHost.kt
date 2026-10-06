@@ -40,6 +40,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import me.him188.ani.app.platform.LocalContext
@@ -66,11 +68,15 @@ fun BoxScope.UpdateNotifier(
     val presentation by viewModel.presentationFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onAppResumed(context)
+    }
+
     UpdateNotifier(
         presentation = presentation,
         onStartUpdateClick = {
             presentation.newVersion?.let {
-                viewModel.startDownload(it, uriHandler)
+                viewModel.startDownload(it, uriHandler, context)
             }
         },
         onInstallClick = {
@@ -80,7 +86,7 @@ fun BoxScope.UpdateNotifier(
             viewModel.cancelDownload()
         },
         onRetryClick = {
-            viewModel.restartDownload(uriHandler)
+            viewModel.restartDownload(uriHandler, context)
         },
         snackbarHostState = snackbarHostState,
         layoutKind = layoutKind,

@@ -113,6 +113,8 @@ import me.him188.ani.app.ui.lang.login_change_email
 import me.him188.ani.app.ui.lang.settings_account_profile_upload_avatar
 import me.him188.ani.app.ui.lang.settings_account_profile_uploading_avatar
 import me.him188.ani.app.ui.lang.settings_account_profile_user_id
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_description
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_title
 import me.him188.ani.app.ui.lang.subject_collection_cancel
 import me.him188.ani.app.ui.search.LoadErrorCard
 import me.him188.ani.app.ui.search.LoadErrorCardLayout
@@ -170,6 +172,12 @@ fun SettingsScope.ProfileGroup(
                 icon = { Image(Icons.Default.BangumiNext, contentDescription = "Bangumi") },
                 onClick = if (isLoggedIn) null else { { onNavigateToOAuth(OAuthPlatform.BANGUMI) } },
                 modifier = Modifier.testTag("bangumi-account"),
+            )
+            TextItem(
+                title = { Text(stringResource(Lang.settings_account_tracking_sync_title)) },
+                description = { Text(stringResource(Lang.settings_account_tracking_sync_description)) },
+                onClick = onNavigateToBangumiSync,
+                modifier = Modifier.testTag("bangumi-tracking-sync-entry"),
             )
             if (isLoggedIn) {
                 TextItem(

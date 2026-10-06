@@ -182,6 +182,11 @@ object TestTasks {
                         exitProcess(0)
                     }
 
+                    InstallationResult.RequiresInstallPermission -> {
+                        logger.error { "Install permission is required before installing update" }
+                        exitProcess(1)
+                    }
+
                     is InstallationResult.Failed -> {
                         logger.error { "Failed to install update: $installationResult" }
                         exitProcess(1)

@@ -55,6 +55,34 @@ interface UpdateInstaller {
     fun install(file: SystemPath, context: ContextMP): InstallationResult
 
     /**
+     * Installs a package whose exact release asset is known. Platforms that can validate the
+     * package before launching their installer should override this overload.
+     */
+    fun install(
+        file: SystemPath,
+        context: ContextMP,
+        packageDescriptor: UpdatePackageDescriptor?,
+    ): InstallationResult = install(file, context)
+
+    /** Returns whether the platform-specific installation permission is currently available. */
+    fun isInstallPermissionGranted(context: ContextMP): Boolean = true
+
+    /** Returns a persisted installation request, if the platform keeps one across resume. */
+    fun pendingInstallation(): PendingInstallation? = null
+
+    /** Context-aware variant used when the platform needs an application context to restore state. */
+    fun pendingInstallation(context: ContextMP): PendingInstallation? = pendingInstallation()
+
+    fun clearPendingInstallation() = Unit
+
+    /** Validates an already downloaded package for safe reuse. */
+    fun isValidDownloadedPackage(
+        file: SystemPath,
+        packageDescriptor: UpdatePackageDescriptor,
+        context: ContextMP,
+    ): Boolean = false
+
+    /**
      * 使用版本 API 返回的原始安装包地址执行安装.
      *
      * 默认平台仍安装已经下载到 [file] 的完整安装包.
@@ -64,11 +92,19 @@ interface UpdateInstaller {
         packageUrls: List<String>,
         context: ContextMP,
     ): InstallationResult = install(file, context)
+
+    suspend fun install(
+        file: SystemPath,
+        packageUrls: List<String>,
+        context: ContextMP,
+        packageDescriptor: UpdatePackageDescriptor?,
+    ): InstallationResult = install(file, packageUrls, context)
 }
 
 sealed class UpdateInstallationState {
     data object Idle : UpdateInstallationState()
     data object Installing : UpdateInstallationState()
+    data object WaitingForPermission : UpdateInstallationState()
     data object Succeed : UpdateInstallationState()
     data class Failed(val result: InstallationResult.Failed) : UpdateInstallationState()
     data class Cancelled(val cause: CancellationException) : UpdateInstallationState()
@@ -84,11 +120,13 @@ class UpdateInstallationRunner(
         file: SystemPath,
         packageUrls: List<String>,
         context: ContextMP,
+        packageDescriptor: UpdatePackageDescriptor? = null,
     ) {
         _state.value = UpdateInstallationState.Installing
         try {
-            _state.value = when (val result = installer.install(file, packageUrls, context)) {
+            _state.value = when (val result = installer.install(file, packageUrls, context, packageDescriptor)) {
                 InstallationResult.Succeed -> UpdateInstallationState.Succeed
+                InstallationResult.RequiresInstallPermission -> UpdateInstallationState.WaitingForPermission
                 is InstallationResult.Failed -> UpdateInstallationState.Failed(result)
             }
         } catch (e: CancellationException) {
@@ -104,6 +142,17 @@ class UpdateInstallationRunner(
         }
     }
 
+    /** Leaves a permission-waiting state without claiming that installation succeeded. */
+    fun returnToDownloaded() {
+        _state.update { state ->
+            if (state is UpdateInstallationState.WaitingForPermission) {
+                UpdateInstallationState.Idle
+            } else {
+                state
+            }
+        }
+    }
+
     fun dismissFailure() {
         _state.update { state ->
             if (state is UpdateInstallationState.Failed) UpdateInstallationState.Idle else state
@@ -113,6 +162,9 @@ class UpdateInstallationRunner(
 
 sealed class InstallationResult {
     data object Succeed : InstallationResult() // 实际上可能不会返回, 因为安装成功会重启
+
+    /** The APK is valid, but Android still needs the user to grant install-from-this-source. */
+    data object RequiresInstallPermission : InstallationResult()
 
     /**
      * 安装失败, 附带失败原因. UI 会展示这个失败原因
@@ -131,4 +183,13 @@ enum class InstallationFailureReason {
 
     FAILED_TO_MOUNT_DMG,
     FAILED_TO_COPY,
+    FILE_NOT_FOUND,
+    INVALID_APK,
+    PACKAGE_MISMATCH,
+    VERSION_MISMATCH,
+    ABI_MISMATCH,
+    FILE_PROVIDER_FAILED,
+    NO_INSTALLER_ACTIVITY,
+    START_ACTIVITY_FAILED,
+    INSTALL_PERMISSION_REQUEST_FAILED,
 }

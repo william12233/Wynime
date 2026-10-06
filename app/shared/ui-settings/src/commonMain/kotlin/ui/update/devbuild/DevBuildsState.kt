@@ -25,6 +25,7 @@ import kotlinx.coroutines.withContext
 import me.him188.ani.app.platform.ContextMP
 import me.him188.ani.app.tools.MonoTasker
 import me.him188.ani.app.tools.update.InstallationResult
+import me.him188.ani.app.tools.update.InstallationFailureReason
 import me.him188.ani.app.tools.update.UpdateInstaller
 import me.him188.ani.utils.coroutines.IO_
 import me.him188.ani.utils.io.SystemPath
@@ -284,6 +285,16 @@ class DevBuildsState(
                     _installState.value = when (result) {
                         // 桌面端此时进程即将退出; Android 已拉起系统安装器
                         InstallationResult.Succeed -> DevBuildInstallState.Idle
+                        InstallationResult.RequiresInstallPermission -> DevBuildInstallState.Failed(
+                            target,
+                            DevBuildInstallFailure.Installer(
+                                InstallationResult.Failed(
+                                    InstallationFailureReason.INSTALL_PERMISSION_REQUEST_FAILED,
+                                    "Installation permission is required",
+                                ),
+                            ),
+                            file,
+                        )
                         is InstallationResult.Failed -> DevBuildInstallState.Failed(
                             target,
                             DevBuildInstallFailure.Installer(result),

@@ -94,34 +94,6 @@ class BangumiSubjectServiceCollectionTest {
     }
 
     @Test
-    fun `delete collection uses DELETE`() = runBlocking {
-        val fixture = fixture(status = HttpStatusCode.NoContent)
-        try {
-            fixture.service.deleteSubjectCollection(789)
-
-            val request = fixture.requests.single()
-            assertEquals(HttpMethod.Delete, request.method)
-            assertEquals("/v0/users/-/collections/789", request.url.encodedPath)
-        } finally {
-            fixture.close()
-        }
-    }
-
-    @Test
-    fun `delete an already absent collection treats NOT_FOUND as success`() = runBlocking {
-        val fixture = fixture(status = HttpStatusCode.NotFound)
-        try {
-            fixture.service.deleteSubjectCollection(789)
-
-            val request = fixture.requests.single()
-            assertEquals(HttpMethod.Delete, request.method)
-            assertEquals("/v0/users/-/collections/789", request.url.encodedPath)
-        } finally {
-            fixture.close()
-        }
-    }
-
-    @Test
     fun `collection errors keep authorization rate request and network categories`() = runBlocking {
         assertFailsWith<RepositoryAuthorizationException> {
             requestWithStatus(HttpStatusCode.Unauthorized)

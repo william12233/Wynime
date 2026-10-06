@@ -222,6 +222,36 @@ class AniDatabaseMigrationTest {
     }
 
     @Test
+    fun `MIG-09 v29到v30建立account scoped Bangumi tracking metadata`() {
+        val helper = createHelper()
+        helper.createDatabase(29).use { connection ->
+            assertFalse(connection.tableNames().contains("bangumi_tracking_metadata"))
+            assertFalse(connection.tableNames().contains("bangumi_tracking_account"))
+        }
+        helper.runMigrationsAndValidate(30, emptyList()).use { connection ->
+            assertContains(connection.tableNames(), "bangumi_tracking_metadata")
+            assertContains(connection.tableNames(), "bangumi_tracking_account")
+            assertEquals(
+                setOf(
+                    "accountKey",
+                    "subjectId",
+                    "localDeletedAt",
+                    "lastLocalModifiedAt",
+                    "lastSyncedAt",
+                    "remoteUpdatedAt",
+                    "pendingType",
+                    "pendingError",
+                ),
+                connection.columnNames("bangumi_tracking_metadata"),
+            )
+            assertEquals(
+                setOf("accountKey", "userId", "username", "lastSuccessfulSyncAt", "localCount", "remoteCount"),
+                connection.columnNames("bangumi_tracking_account"),
+            )
+        }
+    }
+
+    @Test
     fun `MIG-04 缺失手动19-20迁移时从v16迁移到v21失败`() {
         val helper = createHelper()
         helper.createDatabase(16).use {}

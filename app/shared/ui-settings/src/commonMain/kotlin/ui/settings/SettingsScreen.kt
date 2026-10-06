@@ -145,7 +145,9 @@ import me.him188.ani.app.ui.lang.settings_tab_settings_backup
 import me.him188.ani.app.ui.lang.settings_tab_storage
 import me.him188.ani.app.ui.lang.settings_tab_theme
 import me.him188.ani.app.ui.lang.settings_tab_update
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_title
 import me.him188.ani.app.ui.settings.account.ProfileGroup
+import me.him188.ani.app.ui.settings.account.BangumiTrackingSyncScreen
 import me.him188.ani.app.ui.settings.account.SelfInfoBanner
 import me.him188.ani.app.ui.settings.framework.components.SettingsScope
 import me.him188.ani.app.ui.settings.tabs.AniHelperDestination
@@ -236,6 +238,7 @@ fun SettingsScreen(
                 navigator.navigateBack(BackNavigationBehavior.PopUntilScaffoldValueChange)
             }
         },
+        onNavigateToBangumiLogin = { onNavigateToOAuth(OAuthPlatform.BANGUMI) },
         navItems = {
             val selfInfoState by vm.selfInfoFlow.collectAsStateWithLifecycle()
             val bannerChecked by remember {
@@ -330,7 +333,9 @@ fun SettingsScreen(
                         when (currentTab) {
                             SettingsTab.PROFILE -> ProfileGroup(
                                 onNavigateToEmail = onNavigateToEmailLogin,
-                                onNavigateToBangumiSync = {},
+                                onNavigateToBangumiSync = {
+                                    navigateTo(DetailPaneRoutes.BangumiSync)
+                                },
                                 onNavigateToOAuth = onNavigateToOAuth,
                                 onNavigateToGithubAccount = {},
                                 onNavigateToQrLogin = onNavigateToQrLogin,
@@ -389,6 +394,7 @@ internal fun SettingsPageLayout(
     onSelectedTab: (SettingsTab) -> Unit,
     onClickBackOnListPage: () -> Unit,
     onClickBackOnDetailPage: () -> Unit,
+    onNavigateToBangumiLogin: () -> Unit = {},
     navItems: @Composable (SettingsDrawerScope.() -> Unit),
     tabContent: @Composable SettingsDetailPaneScope.(currentTab: SettingsTab?) -> Unit, // inside Column verticalScroll
     detailPaneBottomBar: @Composable BoxScope.(currentTab: SettingsTab?, windowInsets: WindowInsets) -> Unit =
@@ -782,6 +788,34 @@ internal fun SettingsPageLayout(
                             }
                         }
                     }
+                    entry<DetailPaneRoutes.BangumiSync> {
+                        DetailPaneRoute(
+                            topAppBar = {
+                                AniTopAppBar(
+                                    title = {
+                                        AniTopAppBarDefaults.Title(
+                                            stringResource(Lang.settings_account_tracking_sync_title),
+                                        )
+                                    },
+                                    navigationIcon = {
+                                        BackNavigationIconButton(navigateUp)
+                                    },
+                                    colors = topAppBarColors,
+                                    windowInsets = topAppBarWindowInsets,
+                                    size = topAppBarSize,
+                                    scrollBehavior = detailPaneTopAppBarScrollBehavior,
+                                )
+                            },
+                            detailPaneTopAppBarScrollBehavior,
+                        ) {
+                            RouteContent {
+                                BangumiTrackingSyncScreen(
+                                    onNavigateToLogin = onNavigateToBangumiLogin,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
+                    }
                     },
                 )
             }
@@ -909,6 +943,9 @@ sealed class DetailPaneRoutes : NavKey {
 
     @Serializable
     data object DevBuilds : DetailPaneRoutes()
+
+    @Serializable
+    data object BangumiSync : DetailPaneRoutes()
 }
 
 private val DetailPaneBackStackSaver: Saver<SnapshotStateList<DetailPaneRoutes>, Any> = listSaver(
@@ -925,6 +962,7 @@ private val DetailPaneBackStackSaver: Saver<SnapshotStateList<DetailPaneRoutes>,
                     "Developers" -> DetailPaneRoutes.Developers
                     "BuildInfo" -> DetailPaneRoutes.BuildInfo
                     "DevBuilds" -> DetailPaneRoutes.DevBuilds
+                    "BangumiSync" -> DetailPaneRoutes.BangumiSync
                     else -> DetailPaneRoutes.Main
                 }
             }.toMutableStateList()

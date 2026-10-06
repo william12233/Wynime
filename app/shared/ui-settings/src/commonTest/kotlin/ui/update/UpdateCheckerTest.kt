@@ -61,6 +61,27 @@ class UpdateCheckerTest {
     }
 
     @Test
+    fun `android asset selection preserves the exact ABI filename`() = runTest {
+        val assets = listOf(
+            Arch.ARMV8A to "arm64-v8a",
+            Arch.ARMV7A to "armeabi-v7a",
+            Arch.X86_64 to "x86_64",
+        )
+        for ((arch, abi) in assets) {
+            val version = "0.2"
+            val filename = "wynime-$version-$abi.apk"
+            val result = checker(
+                """[{"tag_name":"$version","assets":[{"name":"$filename","browser_download_url":"https://example.invalid/$filename"}]}]""",
+                Platform.Android(arch),
+            ).checkLatestVersion(ReleaseClass.STABLE, currentVersion = "0.1")
+
+            assertEquals(filename, result?.packageDescriptor?.filename)
+            assertEquals(abi, result?.packageDescriptor?.abi)
+            assertEquals("https://example.invalid/$filename", result?.packageDescriptor?.downloadUrl)
+        }
+    }
+
+    @Test
     fun `non-success response and malformed JSON are treated as no update`() = runTest {
         val notFound = checker("{}", Platform.Windows(Arch.X86_64), HttpStatusCode.NotFound)
         assertNull(notFound.checkLatestVersion(ReleaseClass.STABLE, currentVersion = "0.1"))

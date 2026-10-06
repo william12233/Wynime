@@ -77,7 +77,6 @@ interface SubjectService {
     fun subjectCollectionById(subjectId: Int): Flow<AniSubjectCollection?>
 
     suspend fun patchSubjectCollection(subjectId: Int, payload: AniUpdateSubjectCollectionRequest)
-    suspend fun deleteSubjectCollection(subjectId: Int)
 
     suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<AniSubjectRecommendation>
 
@@ -101,17 +100,6 @@ data class BatchSubjectCollection(
      */
     val collection: BangumiUserSubjectCollection?,
 )
-
-suspend inline fun SubjectService.setSubjectCollectionTypeOrDelete(
-    subjectId: Int,
-    type: AniCollectionType?
-) {
-    return if (type == null) {
-        deleteSubjectCollection(subjectId)
-    } else {
-        patchSubjectCollection(subjectId, AniUpdateSubjectCollectionRequest(collectionType = type))
-    }
-}
 
 class RemoteSubjectService(
     private val subjectApi: ApiInvoker<SubjectsAniApi>,
@@ -209,14 +197,6 @@ class RemoteSubjectService(
                 limit = limit,
             ).body()
         }
-    }
-
-    override suspend fun deleteSubjectCollection(subjectId: Int) {
-        sessionManager.checkAccessAniApiNow()
-        subjectApi {
-            this.deleteSubjectCollection(subjectId.toLong()).body()
-        }
-        subjectCountStatsRestarter.restart()
     }
 
     override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts> {

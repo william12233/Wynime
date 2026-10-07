@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download
+package com.wynime.app.ui.download
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,68 +64,65 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.ui.adaptive.AniListDetailPaneScaffold
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.AniTopAppBarDefaults
-import me.him188.ani.app.ui.adaptive.PaneScope
-import me.him188.ani.app.ui.download.components.DownloadFilterAndSortBar
-import me.him188.ani.app.ui.download.components.DownloadItem
-import me.him188.ani.app.ui.download.components.DownloadOverallStats
-import me.him188.ani.app.ui.download.components.DownloadRow
-import me.him188.ani.app.ui.download.components.DownloadSelectionFloatingToolbar
-import me.him188.ani.app.ui.download.components.DownloadSelectionState
-import me.him188.ani.app.ui.download.components.SubjectDownloadGroup
-import me.him188.ani.app.ui.download.components.SubjectDownloadGroupCard
-import me.him188.ani.app.ui.download.components.TestCacheGroupSates
-import me.him188.ani.app.ui.download.components.createTestMediaStats
-import me.him188.ani.app.ui.download.components.rememberDownloadFilterAndSortState
-import me.him188.ani.app.ui.download.components.rememberDownloadSelectionState
-import me.him188.ani.app.ui.download.subject.SubjectDownloadsDetailPane
-import me.him188.ani.app.ui.download.subject.SubjectDownloadsHeader
-import me.him188.ani.app.ui.download.subject.SubjectDownloadsSummaryRow
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.paneHorizontalPadding
-import me.him188.ani.app.ui.foundation.layout.plus
-import me.him188.ani.app.ui.foundation.navigation.BackHandler
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.foundation.rememberCurrentTopAppBarContainerColor
-import me.him188.ani.app.ui.foundation.session.SelfAvatar
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.theme.appChromeHazeSource
-import me.him188.ani.app.ui.foundation.widgets.BackNavigationIconButton
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_episode_pause_download
-import me.him188.ani.app.ui.lang.cache_episode_resume_download
-import me.him188.ani.app.ui.lang.cache_management_delete_cache_confirmation
-import me.him188.ani.app.ui.lang.cache_management_delete_cache_title
-import me.him188.ani.app.ui.lang.cache_management_enter_selection_mode
-import me.him188.ani.app.ui.lang.cache_management_exit_selection
-import me.him188.ani.app.ui.lang.cache_management_invalid_cache_info
-import me.him188.ani.app.ui.lang.cache_management_more_info
-import me.him188.ani.app.ui.lang.cache_management_play
-import me.him188.ani.app.ui.lang.cache_management_select_all
-import me.him188.ani.app.ui.lang.cache_management_select_item_for_details
-import me.him188.ani.app.ui.lang.cache_management_selected_count
-import me.him188.ani.app.ui.lang.cache_management_selection_downloading_count
-import me.him188.ani.app.ui.lang.cache_management_selection_summary
-import me.him188.ani.app.ui.lang.cache_management_streaming_not_supported
-import me.him188.ani.app.ui.lang.cache_subject_cancel
-import me.him188.ani.app.ui.lang.cache_subject_delete
-import me.him188.ani.app.ui.lang.downloads_operation_failed
-import me.him188.ani.app.ui.lang.main_screen_page_cache_management
-import me.him188.ani.app.ui.user.SelfInfoUiState
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.ui.adaptive.WynimeListDetailPaneScaffold
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.WynimeTopAppBarDefaults
+import com.wynime.app.ui.adaptive.PaneScope
+import com.wynime.app.ui.download.components.DownloadFilterAndSortBar
+import com.wynime.app.ui.download.components.DownloadItem
+import com.wynime.app.ui.download.components.DownloadOverallStats
+import com.wynime.app.ui.download.components.DownloadRow
+import com.wynime.app.ui.download.components.DownloadSelectionFloatingToolbar
+import com.wynime.app.ui.download.components.DownloadSelectionState
+import com.wynime.app.ui.download.components.SubjectDownloadGroup
+import com.wynime.app.ui.download.components.SubjectDownloadGroupCard
+import com.wynime.app.ui.download.components.TestCacheGroupSates
+import com.wynime.app.ui.download.components.createTestMediaStats
+import com.wynime.app.ui.download.components.rememberDownloadFilterAndSortState
+import com.wynime.app.ui.download.components.rememberDownloadSelectionState
+import com.wynime.app.ui.download.subject.SubjectDownloadsDetailPane
+import com.wynime.app.ui.download.subject.SubjectDownloadsHeader
+import com.wynime.app.ui.download.subject.SubjectDownloadsSummaryRow
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.paneHorizontalPadding
+import com.wynime.app.ui.foundation.layout.plus
+import com.wynime.app.ui.foundation.navigation.BackHandler
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.foundation.rememberCurrentTopAppBarContainerColor
+import com.wynime.app.ui.foundation.session.SelfAvatar
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.theme.appChromeHazeSource
+import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_episode_pause_download
+import com.wynime.app.ui.lang.cache_episode_resume_download
+import com.wynime.app.ui.lang.cache_management_delete_cache_confirmation
+import com.wynime.app.ui.lang.cache_management_delete_cache_title
+import com.wynime.app.ui.lang.cache_management_enter_selection_mode
+import com.wynime.app.ui.lang.cache_management_exit_selection
+import com.wynime.app.ui.lang.cache_management_invalid_cache_info
+import com.wynime.app.ui.lang.cache_management_more_info
+import com.wynime.app.ui.lang.cache_management_play
+import com.wynime.app.ui.lang.cache_management_select_all
+import com.wynime.app.ui.lang.cache_management_select_item_for_details
+import com.wynime.app.ui.lang.cache_management_selected_count
+import com.wynime.app.ui.lang.cache_management_selection_downloading_count
+import com.wynime.app.ui.lang.cache_management_selection_summary
+import com.wynime.app.ui.lang.cache_management_streaming_not_supported
+import com.wynime.app.ui.lang.cache_subject_cancel
+import com.wynime.app.ui.lang.cache_subject_delete
+import com.wynime.app.ui.lang.downloads_operation_failed
+import com.wynime.app.ui.lang.main_screen_page_cache_management
+import com.wynime.app.ui.user.SelfInfoUiState
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 全局缓存管理页面状态
- */
 @Immutable
 data class DownloadManagementUiState(
     val overallStats: MediaStats,
@@ -152,15 +140,6 @@ data class DownloadManagementUiState(
     }
 }
 
-/**
- * 全局缓存管理页面.
- *
- * 手机布局: 按条目分组的卡片列表, 点击卡片由 list-detail scaffold 全屏展示详情栏 (顶栏变为返回 + 条目名).
- * 宽屏布局 (≥840dp): 左栏为分组卡片, 右栏为选中条目的完整缓存内容 (含未缓存剧集).
- * 宽屏显示详情后缩小窗口会自然退化为手机的详情栏形态, 返回键可回到列表.
- *
- * 设计稿: [Figma](https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=1655-6587)
- */
 @Composable
 fun DownloadManagementScreen(
     vm: DownloadManagementViewModel,
@@ -170,7 +149,7 @@ fun DownloadManagementScreen(
     onNavigateCacheDetail: (cacheId: String) -> Unit,
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     val failedOperations by vm.operationFailures.collectAsStateWithLifecycle()
@@ -194,14 +173,14 @@ fun DownloadManagementScreen(
         navigationIcon = navigationIcon,
         windowInsets = windowInsets,
         detailPaneContent = { group, selectionState ->
-            // 详情栏展示的条目由 ViewModel 持有, 切换条目时上一条目的状态与选源会话随之关闭.
+
             LaunchedEffect(group?.subjectId) { vm.selectSubject(group?.subjectId, group?.subjectName) }
             val presenter by vm.subjectPresenter.collectAsStateWithLifecycle()
             if (group == null) {
                 EmptyDetailPanePlaceholder(Modifier.fillMaxSize())
             } else {
                 SubjectDownloadsDetailPane(
-                    // 切换条目后实例要到下一帧才就绪, 期间显示加载态而不是旧条目或空占位.
+
                     presenter = presenter?.takeIf { it.subjectId == group.subjectId },
                     loadingTitle = group.subjectName,
                     selectionState = selectionState,
@@ -227,10 +206,10 @@ fun DownloadManagementScreen(
     onClickLogin: () -> Unit,
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
     detailPaneContent: (@Composable PaneScope.(group: SubjectDownloadGroup?, selectionState: DownloadSelectionState) -> Unit)? = null,
 ) {
-    val appBarColors = AniThemeDefaults.topAppBarColors()
+    val appBarColors = WynimeThemeDefaults.topAppBarColors()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     val listState = rememberLazyListState()
@@ -239,23 +218,17 @@ fun DownloadManagementScreen(
 
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
 
-    // 设计稿: 筛选先过滤剧集再重组分组.
     val filteredGroups = cacheFilterState.applyFilterAndSortGrouped(state.groups)
     val selectionEntries = remember(filteredGroups) { filteredGroups.flatMap { it.entries } }
 
-    // region selection
     var pendingDeleteEntries by remember { mutableStateOf<List<DownloadItem>?>(null) }
 
-    // 当前选中的 entries
     val selectedEntries = remember(selectionEntries, selectionState.selectedIds) {
         selectionEntries.filter { it.id in selectionState.selectedIds }
     }
-    // 当前选中的 entries 数量
+
     val selectionCount = selectionState.selectedIds.size
 
-    // 当缓存列表或筛选条件变化并且在编辑模式时, 需要确保 selectedIds 只能是当前可见的 entries,
-    // 否则顶栏计数会包含被筛选隐藏 (无法反选) 的项, 而批量操作又不会作用于它们.
-    // 列表尚未加载时 (为空) 跳过, 避免清空刚恢复的选择状态.
     LaunchedEffect(selectionEntries, selectionState.inSelection, state.isLoading) {
         if (selectionState.inSelection && !state.isLoading) {
             val validIds = selectionEntries.mapTo(hashSetOf()) { it.id }
@@ -265,14 +238,11 @@ fun DownloadManagementScreen(
         }
     }
 
-    // 单栏布局且正在显示详情栏 (手机点击卡片进入, 或宽屏显示详情后缩小窗口).
-    // 此时顶栏切换为 "返回 + 条目名", 详情内容使用手机样式.
     val isSinglePaneDetailVisible = navigator.scaffoldValue.let { value ->
         value[ListDetailPaneScaffoldRole.List] != PaneAdaptedValue.Expanded &&
                 value[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Expanded
     }
 
-    // 当前正在浏览的 cache group
     var currentViewingGroupKey by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(state.groups, state.isLoading) {
         if (state.isLoading) return@LaunchedEffect
@@ -286,19 +256,17 @@ fun DownloadManagementScreen(
         state.groups.firstOrNull { it.key == currentViewingGroupKey }
     }
 
-    // 全选的作用范围: 单栏详情下仅为当前条目的缓存, 否则为全部可见缓存.
     val selectAllScopeEntries = if (isSinglePaneDetailVisible) {
         currentViewingGroup?.entries.orEmpty()
     } else {
         selectionEntries
     }
-    // 是否已经全选
+
     val allSelected = remember(selectAllScopeEntries, selectionState.selectedIds) {
         selectAllScopeEntries.isNotEmpty() &&
                 selectAllScopeEntries.all { it.id in selectionState.selectedIds }
     }
 
-    // 确认删除的对话框
     pendingDeleteEntries?.let { entries ->
         DeleteActionDialog(
             onDismiss = { pendingDeleteEntries = null },
@@ -311,7 +279,6 @@ fun DownloadManagementScreen(
             },
         )
     }
-    // endregion
 
     val tasker = rememberAsyncHandler()
 
@@ -339,14 +306,14 @@ fun DownloadManagementScreen(
                 onClickLogin = onClickLogin,
                 navigationIcon = navigationIcon,
                 appBarColors = appBarColors,
-                windowInsets = AniWindowInsets.forTopAppBarWithoutDesktopTitle(),
+                windowInsets = WynimeWindowInsets.forTopAppBarWithoutDesktopTitle(),
                 scrollBehavior = scrollBehavior,
                 detailPaneTitle = if (isSinglePaneDetailVisible) currentViewingGroup?.subjectName else null,
                 onNavigateBackFromDetail = { tasker.launch { navigator.navigateBack() } },
             )
         },
         bottomBar = {
-            AniAnimatedVisibility(selectionState.inSelection) {
+            WynimeAnimatedVisibility(selectionState.inSelection) {
                 DownloadSelectionFloatingToolbar(
                     resumeEnabled = selectedEntries.none { it.isBusy } && selectedEntries.any { !it.isFinished && it.isPaused },
                     pauseEnabled = selectedEntries.none { it.isBusy } && selectedEntries.any { !it.isFinished && !it.isPaused && !it.isFailed },
@@ -362,24 +329,24 @@ fun DownloadManagementScreen(
                 )
             }
         },
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { paddingValues ->
         val layoutDirection = LocalLayoutDirection.current
-        // bottom padding 作为列表的 contentPadding, 让内容可以滚动到毛玻璃导航栏下方.
+
         val listBottomPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding())
         val windowSizeClass = currentWindowAdaptiveInfo1().windowSizeClass
         val paneExtraPadding = windowSizeClass.paneHorizontalPadding
-        AniListDetailPaneScaffold(
-            // 毛玻璃 app chrome 的模糊来源.
+        WynimeListDetailPaneScaffold(
+
             modifier = Modifier
-                .appChromeHazeSource(backgroundColor = AniThemeDefaults.pageContentBackgroundColor)
+                .appChromeHazeSource(backgroundColor = WynimeThemeDefaults.pageContentBackgroundColor)
                 .padding(
                     start = paddingValues.calculateStartPadding(layoutDirection),
                     top = paddingValues.calculateTopPadding(),
                     end = paddingValues.calculateEndPadding(layoutDirection),
                 )
-                // 设计稿: 超大屏时整体限宽.
+
                 .fillMaxWidth()
                 .wrapContentWidth()
                 .widthIn(max = 1200.dp),
@@ -400,7 +367,7 @@ fun DownloadManagementScreen(
                     paneExtraPadding = paneExtraPadding,
                     highlightSelectedGroupKey = if (isSinglePane) null else currentViewingGroupKey,
                     onClickGroup = { group ->
-                        // 单栏 (手机) 下 scaffold 会以前进导航方式全屏展示详情栏, 并支持返回.
+
                         currentViewingGroupKey = group.key
                         tasker.launch {
                             navigator.navigateTo(ListDetailPaneScaffoldRole.Detail)
@@ -420,7 +387,7 @@ fun DownloadManagementScreen(
                         .paneContentPadding(extraStart = (-16).dp, extraEnd = (-16).dp)
                         .paneWindowInsetsPadding()
                         .padding(listBottomPadding)
-                        // 单栏时详情栏全屏展示, 滚动需要驱动共享的顶栏.
+
                         .then(
                             if (isSinglePane) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier,
                         )
@@ -443,37 +410,29 @@ fun DownloadManagementScreen(
                     }
                 }
             },
-            // 底部间距由 listBottomPadding 应用, 此处仅应用水平间距.
+
             contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal),
             useSharedTransition = false,
             listPanePreferredWidth = preferredListPaneWidth(),
-            // 默认的 min 为 412.dp (≥1200dp 时), 会顶掉 400.dp 的 preferred 宽度.
+
             minListPaneWidth = preferredListPaneWidth(),
         )
 
-        // 选择模式下导航返回应该退出选择模式.
-        // 注意: 必须在 AniListDetailPaneScaffold 之后注册, 才能优先于 scaffold 的返回 (详情->列表) 处理.
         BackHandler(selectionState.inSelection) { selectionState.clear() }
     }
 }
 
-/**
- * 设计稿: 超大屏 (1600dp+) 时左栏固定 400dp.
- */
 @Composable
 private fun preferredListPaneWidth(): Dp {
     val windowSizeClass = currentWindowAdaptiveInfo1().windowSizeClass
     return when {
         windowSizeClass.isWidthAtLeastBreakpoint(1600) -> 400.dp
-        windowSizeClass.isWidthAtLeastBreakpoint(1200) -> 412.dp // Large, M3 spec
-        windowSizeClass.isWidthAtLeastBreakpoint(840) -> 360.dp // Expanded, M3 spec
-        else -> (((windowSizeClass.minWidthDp - 24 * 3).toFloat() / 2).dp).coerceAtLeast(360.dp) // M3 spec
+        windowSizeClass.isWidthAtLeastBreakpoint(1200) -> 412.dp
+        windowSizeClass.isWidthAtLeastBreakpoint(840) -> 360.dp
+        else -> (((windowSizeClass.minWidthDp - 24 * 3).toFloat() / 2).dp).coerceAtLeast(360.dp)
     }
 }
 
-/**
- * 列表栏: 总体统计 + 筛选栏 + 按条目分组的卡片.
- */
 @Composable
 private fun PaneScope.DownloadGroupCardsList(
     state: DownloadManagementUiState,
@@ -481,7 +440,7 @@ private fun PaneScope.DownloadGroupCardsList(
     selectionEntries: List<DownloadItem>,
     selectedEntries: List<DownloadItem>,
     selectionState: DownloadSelectionState,
-    cacheFilterState: me.him188.ani.app.ui.download.components.DownloadFilterAndSortState,
+    cacheFilterState: com.wynime.app.ui.download.components.DownloadFilterAndSortState,
     appBarColors: TopAppBarColors,
     scrollBehavior: TopAppBarScrollBehavior,
     listState: LazyListState,
@@ -549,7 +508,7 @@ private fun PaneScope.DownloadGroupCardsList(
                         onClickGroup(group)
                     }
                 },
-                // 设计稿: 手机上卡片通栏 (内部自带 16dp padding); 宽屏列表栏卡片距 pane 边 8dp.
+
                 modifier = if (isSinglePane) {
                     Modifier.fillMaxWidth()
                 } else {
@@ -562,9 +521,6 @@ private fun PaneScope.DownloadGroupCardsList(
     }
 }
 
-/**
- * 无状态版本的详情栏内容, 供测试与预览使用: 仅展示已缓存的剧集, 不包含追加缓存.
- */
 @Composable
 private fun DefaultDownloadGroupDetailPane(
     group: SubjectDownloadGroup?,
@@ -575,7 +531,7 @@ private fun DefaultDownloadGroupDetailPane(
     onDelete: (DownloadItem) -> Unit,
     onViewDetail: (DownloadItem) -> Unit,
     modifier: Modifier = Modifier,
-    // 单栏 (手机) 时: 头部为汇总行 (条目名显示在顶栏), 行通栏无圆角无间距.
+
     singlePane: Boolean = false,
 ) {
     if (group == null) {
@@ -591,7 +547,7 @@ private fun DefaultDownloadGroupDetailPane(
     val rowShape = if (singlePane) RectangleShape else MaterialTheme.shapes.medium
     LazyColumn(
         modifier,
-        // 设计稿: 宽屏详情栏头部距卡片顶部 16dp, 行间距 8dp; 手机上行连续排列.
+
         contentPadding = if (singlePane) PaddingValues(0.dp) else PaddingValues(top = 16.dp),
         verticalArrangement = if (singlePane) Arrangement.Top else Arrangement.spacedBy(8.dp),
     ) {
@@ -662,13 +618,13 @@ private fun DownloadManagementTopBar(
     appBarColors: TopAppBarColors,
     windowInsets: WindowInsets,
     scrollBehavior: TopAppBarScrollBehavior?,
-    // 单栏布局显示详情栏时, 顶栏变为 "返回 + 条目名" (与条目缓存页一致); 多选模式优先.
+
     detailPaneTitle: String? = null,
     onNavigateBackFromDetail: () -> Unit = {},
 ) {
     if (!selectionMode && detailPaneTitle != null) {
-        AniTopAppBar(
-            title = { AniTopAppBarDefaults.Title(detailPaneTitle) },
+        WynimeTopAppBar(
+            title = { WynimeTopAppBarDefaults.Title(detailPaneTitle) },
             navigationIcon = { BackNavigationIconButton(onNavigateBackFromDetail) },
             avatar = { },
             colors = appBarColors,
@@ -681,8 +637,8 @@ private fun DownloadManagementTopBar(
         val selectedCountText = stringResource(Lang.cache_management_selected_count, selectionCount)
         val exitSelectionText = stringResource(Lang.cache_management_exit_selection)
         val selectAllText = stringResource(Lang.cache_management_select_all)
-        AniTopAppBar(
-            title = { AniTopAppBarDefaults.Title(selectedCountText) },
+        WynimeTopAppBar(
+            title = { WynimeTopAppBarDefaults.Title(selectedCountText) },
             navigationIcon = {
                 IconButton(onClick = onExitSelection) { Icon(Icons.Rounded.Close, exitSelectionText) }
             },
@@ -703,8 +659,8 @@ private fun DownloadManagementTopBar(
             scrollBehavior = scrollBehavior,
         )
     } else {
-        AniTopAppBar(
-            title = { AniTopAppBarDefaults.Title(stringResource(Lang.main_screen_page_cache_management)) },
+        WynimeTopAppBar(
+            title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.main_screen_page_cache_management)) },
             navigationIcon = navigationIcon,
             actions = {
                 val enterSelectionModeText = stringResource(Lang.cache_management_enter_selection_mode)
@@ -731,9 +687,6 @@ private fun DownloadManagementTopBar(
     }
 }
 
-/**
- * 多选模式下代替总体统计的选择摘要: "已选 n 项 · 共 x GB · 含 n 个下载中".
- */
 @Composable
 private fun DownloadSelectionSummary(
     selectedEntries: List<DownloadItem>,

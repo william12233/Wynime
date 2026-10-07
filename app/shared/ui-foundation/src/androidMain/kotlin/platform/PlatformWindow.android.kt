@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform
+package com.wynime.app.platform
 
 import android.app.Activity
 import android.content.ComponentCallbacks
@@ -24,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-
 
 actual class PlatformWindow(
     initialDeviceOrientation: DeviceOrientation,
@@ -47,9 +37,7 @@ actual class PlatformWindow(
         @Suppress("DEPRECATION")
         val isFullscreenNow = when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
-                // 只有在导航栏和状态栏都隐藏的时候才认为是无修饰全屏 (undecorated fullscreen)
-                // 有些系统 (例如 MIUI) 在开启全面屏手势后, 会隐藏导航栏并且设置 visible = false
-                // 我们不管包含在 systemBars 里的 systemOverlays 和 captionBar, 这两个东西的实现在各个系统都不一样
+
                 !insets.isVisible(WindowInsets.Type.statusBars()) &&
                         !insets.isVisible(WindowInsets.Type.navigationBars())
             }
@@ -75,7 +63,7 @@ actual class PlatformWindow(
     internal fun register(context: Context) {
         val activity = context.findActivity()
         val decorView = activity?.window?.decorView
-        //register window inset listener
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             decorView?.setOnApplyWindowInsetsListener(insetListener)
         } else if (decorView != null) {
@@ -86,7 +74,6 @@ actual class PlatformWindow(
             }
         }
 
-        //register resource change listener
         context.registerComponentCallbacks(configurationListener)
     }
 

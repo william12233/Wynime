@@ -1,6 +1,6 @@
 grammar BBCode;
 
-//options { tokenVocab=BBCodeLexer; }
+                                     
 
 file: section EOF;
 
@@ -53,7 +53,7 @@ img: ('[img' | '[IMG') ']' content=plain+ ('[/img]' | '[/IMG]');
 
 attribute_value: quoted=QUOTED | unquoted=TEXT;
 
-// Lexer
+        
 
 NUMBER: [0-9]+ ;
 
@@ -61,13 +61,13 @@ QUOTED
    : '"' TEXT '"'
    ;
 
-// Not quoted
+             
 TEXT: ~[[\]()]+ ;
 
-//fragment ESC
-//   : '\\' (["\\/bfnrt])
-//   ;
-//
-//fragment SAFECODEPOINT
-//   : ~ ["\\\u0000-\u001F]
-//   ;
+              
+                         
+      
+  
+                        
+                           
+

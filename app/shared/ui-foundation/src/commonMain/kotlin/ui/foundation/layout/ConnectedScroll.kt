@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.layout
+package com.wynime.app.ui.foundation.layout
 
 import androidx.compose.foundation.gestures.FlingBehavior
 import androidx.compose.foundation.gestures.ScrollableDefaults
@@ -29,16 +20,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Velocity
-import me.him188.ani.app.ui.foundation.interaction.nestedScrollWorkaround
+import com.wynime.app.ui.foundation.interaction.nestedScrollWorkaround
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
-/**
- * 提供 [ConnectedScrollState.nestedScrollConnection], 将其添加到 [Modifier.nestedScroll] 中,
- * 即可让 [Modifier.connectedScrollContainer] 优先处理滚动事件.
- *
- * Compose nested scroll 对鼠标有 bug, 要同时使用 [Modifier.nestedScrollWorkaround].
- */
 @Composable
 fun rememberConnectedScrollState(
     flingBehavior: FlingBehavior = ScrollableDefaults.flingBehavior(),
@@ -59,45 +44,17 @@ class ConnectedScrollState(
         val new = (scrolledOffset + available).coerceIn(-containerHeight.toFloat(), 0f)
         scrolledOffset = new
         new - previous
-//        if (available < 0) {
-//            // 手指往上, 首先让 header 隐藏
-//            //
-//            //                   y
-//            // |---------------| 0
-//            // |    TopAppBar  |
-//            // |  图片    标题  |  -containerHeight
-//            // |               |
-//            // |    收藏数据    |  scrolledOffset
-//            // |     TAB       |
-//            // |  LazyColumn   |
-//            // |---------------|
-//
-//
-//            return@ScrollableState scrollScope.scrollBy(available)
-//        }
-//        0f
+
     }
 
-    /**
-     * 最大能滑动的高度
-     * 仅在第一个 measurement pass 后更新
-     */
     var containerHeight by mutableIntStateOf(initialContainerHeight)
         internal set
 
-    /**
-     * 当前已经滚动了的距离
-     */
-    // 范围为 -scrollableHeight ~ 0
     var scrolledOffset by mutableFloatStateOf(initialScrolledOffset)
         internal set
 
-    /**
-     * 是否已经滚动到最顶部了 (不能再动了)
-     */
-    // is stuck
     val isScrolledTop by derivedStateOf {
-        if (containerHeight == 0) { // not yet measured
+        if (containerHeight == 0) {
             return@derivedStateOf false
         }
         scrolledOffset.toInt() == -containerHeight
@@ -116,27 +73,23 @@ class ConnectedScrollState(
         }
 
         override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-            if (available.y > 0) { // 手指往下
+            if (available.y > 0) {
                 scrollableState.scroll {
                     with(flingBehavior) {
-                        performFling(available.y) // 让 headers 也跟着往下
+                        performFling(available.y)
                     }
                 }
             }
             return super.onPostFling(consumed, available)
         }
 
-        /**
-         * 注意, 因为 Compose 有 bug, [onPreScroll] 和 [onPostScroll] 实际上都不会在用鼠标滚轮滑动时调用
-         */
         override fun onPostScroll(
             consumed: Offset,
             available: Offset,
             source: NestedScrollSource
         ): Offset {
             if (available.y > 0) {
-                // 手指往下, 让 header 显示
-                // scrollableOffset 是负的
+
                 return Offset(0f, scrollableState.dispatchRawDelta(available.y))
             }
             return super.onPostScroll(consumed, available, source)
@@ -159,9 +112,6 @@ class ConnectedScrollState(
     }
 }
 
-/**
- * 当 [ConnectedScrollState.nestedScrollConnection] 滚动时, 调整此 composable 的位置.
- */
 fun Modifier.connectedScrollContainer(state: ConnectedScrollState): Modifier {
     return layout { measurable, constraints ->
         val placeable = measurable.measure(constraints)
@@ -174,17 +124,10 @@ fun Modifier.connectedScrollContainer(state: ConnectedScrollState): Modifier {
     }
 }
 
-/**
- * 将该 composable 的高度作为可滚动的高度.
- */
 fun Modifier.connectedScrollTarget(state: ConnectedScrollState): Modifier {
     return onSizeChanged { state.containerHeight = it.height }
 }
 
-
-/**
- * 同时应用 [connectedScrollContainer] 和 [connectedScrollTarget]
- */
 fun Modifier.connectedScroll(state: ConnectedScrollState): Modifier {
     return connectedScrollContainer(state).connectedScrollTarget(state)
 }

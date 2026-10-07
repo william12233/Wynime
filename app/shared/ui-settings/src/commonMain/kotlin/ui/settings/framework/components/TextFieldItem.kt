@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.framework.components
+package com.wynime.app.ui.settings.framework.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,19 +36,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.effects.defaultFocus
-import me.him188.ani.app.ui.foundation.effects.onKey
-import me.him188.ani.app.ui.foundation.text.ProvideTextStyleContentColor
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_cancel
-import me.him188.ani.app.ui.settings.SettingsTab
+import com.wynime.app.ui.foundation.effects.defaultFocus
+import com.wynime.app.ui.foundation.effects.onKey
+import com.wynime.app.ui.foundation.text.ProvideTextStyleContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_cancel
+import com.wynime.app.ui.settings.SettingsTab
 import org.jetbrains.compose.resources.stringResource
 
-
-/**
- * @param sanitizeValue 每当用户输入时调用, 可以清除首尾空格等
- * @param onValueChangeCompleted 当用户点击对话框的 "确认" 时调用
- */
 @SettingsDsl
 @Composable
 fun SettingsScope.TextFieldItem(
@@ -69,20 +55,17 @@ fun SettingsScope.TextFieldItem(
     placeholder: @Composable (() -> Unit)? = null,
     onValueChangeCompleted: (value: String) -> Unit = {},
     inverseTitleDescription: Boolean = false,
-    isErrorProvider: (value: String) -> Boolean = { false }, // calculated in a derivedState
+    isErrorProvider: (value: String) -> Boolean = { false },
     sanitizeValue: (value: String) -> String = { it },
     textFieldDescription: @Composable ((value: String) -> Unit)? = description,
     exposedItem: @Composable (value: String) -> Unit = { Text(it) },
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    // When [visualTransformation] is masking (e.g. password), rendering a
-    // show/hide eye icon next to the input lets the user peek at what they
-    // typed without losing the default-masked posture.
+
     showVisibilityToggle: Boolean = false,
     extra: @Composable ColumnScope.(editingValue: MutableState<String>) -> Unit = {}
 ) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
 
-    // 保存了的值
     val valueText = @Composable {
         if (placeholder != null && value.isEmpty()) {
             placeholder()
@@ -124,7 +107,7 @@ fun SettingsScope.TextFieldItem(
         )
 
         if (showDialog) {
-            // 正在编辑的值
+
             val editingValueState = rememberSaveable(value) {
                 mutableStateOf(value)
             }
@@ -193,10 +176,6 @@ fun SettingsScope.TextFieldItem(
     }
 }
 
-
-/**
- * [TextFieldItem] 使用
- */
 @Composable
 internal fun SettingsScope.TextFieldDialog(
     onDismissRequest: () -> Unit,

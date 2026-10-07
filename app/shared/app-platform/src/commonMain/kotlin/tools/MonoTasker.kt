@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.tools
+package com.wynime.app.tools
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisallowComposableCalls
@@ -32,55 +23,32 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-/**
- * Note: This function is not thread safe. For thread-safe variant, you may consider `SingleTaskExecutor`.
- */
 @Stable
 interface MonoTasker {
     val isRunning: StateFlow<Boolean>
 
-    /**
-     * Note: This function is not thread safe.
-     */
     fun launch(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     ): Job
 
-    /**
-     * Note: This function is not thread safe.
-     */
     fun <R> async(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> R,
     ): Deferred<R>
 
-    /**
-     * 等待上一个任务完成后再执行
-     *
-     * Note: This function is not thread safe.
-     */
     fun launchNext(
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit
     )
 
-    /**
-     * Note: This function is not thread safe.
-     */
     fun cancel(cause: CancellationException? = null)
 
-    /**
-     * Note: This function is not thread safe.
-     */
     suspend fun cancelAndJoin()
 
-    /**
-     * Note: This function is not thread safe.
-     */
     suspend fun join()
 }
 
@@ -153,7 +121,7 @@ fun MonoTasker(
     }
 
     override fun cancel(cause: CancellationException?) {
-        job?.cancel(cause) // use completion handler to set _isRunning to false
+        job?.cancel(cause)
     }
 
     override suspend fun cancelAndJoin() {
@@ -168,7 +136,6 @@ fun MonoTasker(
     }
 }
 
-// ui (composition) scope
 @Composable
 inline fun rememberUiMonoTasker(
     crossinline getContext: @DisallowComposableCalls () -> CoroutineContext = { EmptyCoroutineContext }
@@ -185,9 +152,9 @@ private fun <T> Flow<T>.produceState(
 ): State<T> {
     val state = mutableStateOf(initialValue)
     scope.launch(coroutineContext + Dispatchers.Main) {
-        flowOn(Dispatchers.Default) // compute in background
+        flowOn(Dispatchers.Default)
             .collect {
-                // update state in main
+
                 state.value = it
             }
     }

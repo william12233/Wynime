@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.platform.collections
+package com.wynime.utils.platform.collections
 
 import kotlin.test.*
 
@@ -36,7 +27,7 @@ class IntPriorityQueueTest {
         values.forEach { pq.add(it) }
 
         assertEquals(6, pq.size)
-        // Since it's a min-heap, polling should give us elements in ascending order
+
         val sortedValues = values.sorted()
         for (expected in sortedValues) {
             assertEquals(expected, pq.poll())
@@ -49,7 +40,7 @@ class IntPriorityQueueTest {
         val pq = IntPriorityQueue()
         pq.add(10)
         assertEquals(10, pq.peek())
-        assertEquals(10, pq.peek()) // Peek again, still 10
+        assertEquals(10, pq.peek())
         assertEquals(1, pq.size, "Size should not change after peek")
     }
 
@@ -76,7 +67,6 @@ class IntPriorityQueueTest {
         pq.add(15)
         pq.add(4)
 
-        // Now we have: 3, 4, 7, 10, 15 in the heap
         val sorted = listOf(3, 4, 7, 10, 15)
         for (x in sorted) {
             assertEquals(x, pq.poll())

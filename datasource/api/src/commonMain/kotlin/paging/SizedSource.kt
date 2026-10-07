@@ -1,4 +1,4 @@
-package me.him188.ani.datasources.api.paging
+package com.wynime.datasources.api.paging
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -10,22 +10,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 
-/**
- * A [Flow] that [totalSize] may be known in advance.
- *
- * @see PageBasedPagedSource
- */
 interface SizedSource<out T> {
-    /**
-     * 全部搜索结果, 以 [Flow] 形式提供, 惰性请求.
-     */
+
     val results: Flow<T>
 
     val finished: Flow<Boolean>
 
-    /**
-     * 总共的结果数量. 该数量不一定提供.
-     */
     val totalSize: Flow<Int?>
 }
 
@@ -63,11 +53,6 @@ inline fun <T> SizedSource<T>.filter(crossinline predicate: suspend (T) -> Boole
     }
 }
 
-/**
- * Merge multiple [SizedSource] into one.
- *
- * [Results][SizedSource.results] are be merged in the [Flow.merge] flavor.
- */
 fun <T> Iterable<SizedSource<T>>.merge(): SizedSource<T> {
     return object : SizedSource<T> {
         override val results: Flow<T> = this@merge.map { it.results }.merge()
@@ -84,7 +69,6 @@ fun <T> Iterable<SizedSource<T>>.merge(): SizedSource<T> {
         }
     }
 }
-
 
 suspend inline fun SizedSource<*>.awaitFinished() {
     this.finished.filter { it }.first()

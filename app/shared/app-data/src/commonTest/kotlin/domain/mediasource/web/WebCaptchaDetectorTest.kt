@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web
+package com.wynime.app.domain.mediasource.web
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -87,8 +78,7 @@ class WebCaptchaDetectorTest {
 
     @Test
     fun `does not flag captcha mention without structural evidence`() {
-        // 检测器已收紧: 图片验证码必须有 输入框 + 提交按钮 + 验证码图片 三件套,
-        // 仅提到 captcha 字样的正常页面不再误报 (旧实现问题 5).
+
         assertNull(
             WebCaptchaDetector.detect(
                 "https://example.com/search",
@@ -209,8 +199,5 @@ class WebCaptchaDetectorTest {
             ),
         )
     }
-
-
-
 
 }

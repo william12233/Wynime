@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.sections
+package com.wynime.app.ui.subject.details.sections
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,34 +35,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
-import me.him188.ani.app.tools.formatDateTime
-import me.him188.ani.app.ui.comment.CommentReportState
-import me.him188.ani.app.ui.comment.CommentState
-import me.him188.ani.app.ui.comment.UIComment
-import me.him188.ani.app.ui.comment.UIRichText
-import me.him188.ani.app.ui.foundation.avatar.AvatarImage
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBar
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBarPadding
-import me.him188.ani.app.ui.foundation.layout.rememberConnectedScrollState
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_details_hot_reviews
-import me.him188.ani.app.ui.lang.subject_details_reviews_count
-import me.him188.ani.app.ui.lang.subject_details_tab_comments
-import me.him188.ani.app.ui.lang.subject_details_view_all
-import me.him188.ani.app.ui.lang.subject_details_write_review
-import me.him188.ani.app.ui.rating.FiveRatingStars
-import me.him188.ani.app.ui.richtext.UIRichElement
-import me.him188.ani.app.ui.subject.details.components.SubjectCommentColumn
-import me.him188.ani.app.ui.subject.details.components.SubjectDetailsDefaults
+import com.wynime.app.tools.formatDateTime
+import com.wynime.app.ui.comment.CommentReportState
+import com.wynime.app.ui.comment.CommentState
+import com.wynime.app.ui.comment.UIComment
+import com.wynime.app.ui.comment.UIRichText
+import com.wynime.app.ui.foundation.avatar.AvatarImage
+import com.wynime.app.ui.foundation.layout.desktopTitleBar
+import com.wynime.app.ui.foundation.layout.desktopTitleBarPadding
+import com.wynime.app.ui.foundation.layout.rememberConnectedScrollState
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_details_hot_reviews
+import com.wynime.app.ui.lang.subject_details_reviews_count
+import com.wynime.app.ui.lang.subject_details_tab_comments
+import com.wynime.app.ui.lang.subject_details_view_all
+import com.wynime.app.ui.lang.subject_details_write_review
+import com.wynime.app.ui.rating.FiveRatingStars
+import com.wynime.app.ui.richtext.UIRichElement
+import com.wynime.app.ui.subject.details.components.SubjectCommentColumn
+import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults
 import org.jetbrains.compose.resources.stringResource
 
-/** 预览条数 (对齐定稿: 双栏"评价"与三栏"热门评价"均展示 2 条). */
 private const val PREVIEW_COMMENT_COUNT = 2
 
-/**
- * 双栏中栏末尾的"评价"预览 (对齐定稿 1505:335 底部): 标题行 + 2 张并排评论卡, "查看全部"打开完整评论流.
- * 中栏过窄 (窄双栏) 时两卡改为上下堆叠.
- */
 @Composable
 fun ReviewsPreviewSection(
     comments: LazyPagingItems<UIComment>,
@@ -124,9 +110,6 @@ private fun ReviewPreviewCard(comment: UIComment, onClick: () -> Unit, modifier:
     }
 }
 
-/**
- * 三栏右栏"热门评价"卡内容 (对齐定稿 1515:336): 标题行 (计数入口) + 2 条紧凑评论, 分隔线间隔.
- */
 @Composable
 fun HotReviewsCardContent(
     comments: LazyPagingItems<UIComment>,
@@ -158,16 +141,12 @@ fun HotReviewsCardContent(
     }
 }
 
-/** 全量评论入口文案: 总数已知时 `1,204 条`, 未知 (加载中) 时回退 `查看全部`, 保证入口始终存在. */
 @Composable
 private fun reviewsCountLabel(totalCount: Int?): String =
     totalCount?.takeIf { it > 0 }
         ?.let { stringResource(Lang.subject_details_reviews_count, remember(it) { groupThousands(it) }) }
         ?: stringResource(Lang.subject_details_view_all)
 
-/**
- * 单条评论预览: `头像 名字 (时间) ★★★★☆` + 正文摘要 (纯文本, 截断).
- */
 @Composable
 private fun ReviewPreviewItem(
     comment: UIComment,
@@ -214,7 +193,6 @@ private fun ReviewPreviewItem(
     }
 }
 
-/** 提取富文本中的纯文本用于单行/两行预览; 图片/贴纸/引用跳过. */
 internal fun UIRichText.toPlainText(): String =
     elements.asSequence()
         .filterIsInstance<UIRichElement.AnnotatedText>()
@@ -223,10 +201,6 @@ internal fun UIRichText.toPlainText(): String =
         .joinToString("") { it.content }
         .trim()
 
-/**
- * 完整评论流 sheet: 桌面 (双栏/三栏) 没有"评价" tab, 从评价预览/热门评价卡进入.
- * 复用手机"评价" tab 的 [SubjectCommentColumn], 头部提供"写评价"入口.
- */
 @Composable
 fun SubjectCommentsSheet(
     state: CommentState,

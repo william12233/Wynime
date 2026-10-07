@@ -1,24 +1,15 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import android.content.Context
 import dalvik.system.DexClassLoader
 import java.io.File
 import java.security.MessageDigest
 import java.util.zip.ZipFile
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.app.platform.Context as AppContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.absolutePath
+import com.wynime.app.platform.Context as AppContext
 
 actual fun createSourcePluginLoader(context: AppContext): SourcePluginLoader = AndroidSourcePluginLoader(context)
 

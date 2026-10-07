@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.person
+package com.wynime.app.ui.subject.person
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -17,29 +8,26 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import kotlinx.coroutines.CoroutineScope
-import me.him188.ani.app.data.models.UserInfo
-import me.him188.ani.app.data.models.person.PersonCommentTarget
-import me.him188.ani.app.domain.comment.CommentContext
-import me.him188.ani.app.domain.comment.CommentSendResult
-import me.him188.ani.app.ui.comment.CommentEditorState
-import me.him188.ani.app.ui.comment.CommentItemTestTags
-import me.him188.ani.app.ui.comment.CommentReportState
-import me.him188.ani.app.ui.comment.UIComment
-import me.him188.ani.app.ui.comment.UICommentSource
-import me.him188.ani.app.ui.comment.UIRichText
-import me.him188.ani.app.ui.comment.createTestCommentState
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.richtext.UIRichElement
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.UserInfo
+import com.wynime.app.data.models.person.PersonCommentTarget
+import com.wynime.app.domain.comment.CommentContext
+import com.wynime.app.domain.comment.CommentSendResult
+import com.wynime.app.ui.comment.CommentEditorState
+import com.wynime.app.ui.comment.CommentItemTestTags
+import com.wynime.app.ui.comment.CommentReportState
+import com.wynime.app.ui.comment.UIComment
+import com.wynime.app.ui.comment.UICommentSource
+import com.wynime.app.ui.comment.UIRichText
+import com.wynime.app.ui.comment.createTestCommentState
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.richtext.UIRichElement
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/**
- * 人物评论 sheet 的交互: "写评论" 与点击 Ani 评论回复都把编辑器指向正确的目标; Bangumi 评论只读.
- */
 @OptIn(TestOnly::class)
 class PersonCommentsSheetTest {
     private val target = PersonCommentTarget.Person(42)
@@ -76,8 +64,8 @@ class PersonCommentsSheetTest {
     }
 
     @Test
-    fun `write comment button starts a new comment for the target`() = runAniComposeUiTest {
-        val state = setSheet(listOf(aniComment(), bangumiComment()))
+    fun `write comment button starts a new comment for the target`() = runWynimeComposeUiTest {
+        val state = setSheet(listOf(wynimeComment(), bangumiComment()))
 
         onNodeWithTag(PersonCommentsSheetTestTags.WriteComment).performClick()
         waitForIdle()
@@ -86,8 +74,8 @@ class PersonCommentsSheetTest {
     }
 
     @Test
-    fun `clicking an ani comment starts a reply to it`() = runAniComposeUiTest {
-        val state = setSheet(listOf(aniComment(), bangumiComment()))
+    fun `clicking an ani comment starts a reply to it`() = runWynimeComposeUiTest {
+        val state = setSheet(listOf(wynimeComment(), bangumiComment()))
         assertNull(state().editorState.currentSendTarget)
 
         onNodeWithText(ANI_CONTENT, substring = true).performClick()
@@ -97,10 +85,9 @@ class PersonCommentsSheetTest {
     }
 
     @Test
-    fun `bangumi comments are read-only`() = runAniComposeUiTest {
+    fun `bangumi comments are read-only`() = runWynimeComposeUiTest {
         val state = setSheet(listOf(bangumiComment()))
 
-        // 只读: 没有点赞/贴纸等操作行, 点击正文也不会进入回复
         onAllNodesWithTag(CommentItemTestTags.Actions).assertCountEquals(0)
         onNodeWithText(BANGUMI_CONTENT, substring = true).performClick()
         waitForIdle()
@@ -108,7 +95,7 @@ class PersonCommentsSheetTest {
         assertNull(state().editorState.currentSendTarget)
     }
 
-    private fun aniComment() = UIComment(
+    private fun wynimeComment() = UIComment(
         id = 1,
         stableId = "ani:ani-uuid",
         author = UserInfo(id = "user-1", username = null, nickname = "Ani 用户"),
@@ -118,7 +105,7 @@ class PersonCommentsSheetTest {
         briefReplies = emptyList(),
         replyCount = 0,
         rating = null,
-        source = UICommentSource.ANI,
+        source = UICommentSource.WYNIME,
         sourceCommentId = "ani-uuid",
         canReply = true,
         rawContent = ANI_CONTENT,

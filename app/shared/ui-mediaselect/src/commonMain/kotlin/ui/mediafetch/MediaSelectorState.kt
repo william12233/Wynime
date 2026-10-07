@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -30,39 +21,38 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchResult
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.app.domain.media.fetch.isFailedOrAbandoned
-import me.him188.ani.app.domain.media.fetch.isWorking
-import me.him188.ani.app.domain.media.selector.DefaultMediaSelector
-import me.him188.ani.app.domain.media.selector.MaybeExcludedMedia
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason
-import me.him188.ani.app.domain.media.selector.MediaPreferenceItem
-import me.him188.ani.app.domain.media.selector.MediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorContext
-import me.him188.ani.app.domain.media.selector.isPerfectMatch
-import me.him188.ani.app.domain.mediasource.web.captcha.SolveOutcome
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
-import me.him188.ani.app.domain.mediasource.web.captcha.createTestWebSessionManager
-import me.him188.ani.app.domain.usecase.GlobalKoin
-import me.him188.ani.app.ui.foundation.rememberBackgroundScope
-import me.him188.ani.app.ui.mediaselect.selector.WebSource
-import me.him188.ani.app.ui.mediaselect.selector.WebSourceChannel
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.source.plugin.api.SourceResultStatus
-import me.him188.ani.utils.coroutines.flows.flowOfEmptyList
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.fetch.MediaSourceFetchResult
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.domain.media.fetch.isFailedOrAbandoned
+import com.wynime.app.domain.media.fetch.isWorking
+import com.wynime.app.domain.media.selector.DefaultMediaSelector
+import com.wynime.app.domain.media.selector.MaybeExcludedMedia
+import com.wynime.app.domain.media.selector.MediaExclusionReason
+import com.wynime.app.domain.media.selector.MediaPreferenceItem
+import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.app.domain.media.selector.MediaSelectorContext
+import com.wynime.app.domain.media.selector.isPerfectMatch
+import com.wynime.app.domain.mediasource.web.captcha.SolveOutcome
+import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
+import com.wynime.app.domain.mediasource.web.captcha.createTestWebSessionManager
+import com.wynime.app.domain.usecase.GlobalKoin
+import com.wynime.app.ui.foundation.rememberBackgroundScope
+import com.wynime.app.ui.mediaselect.selector.WebSource
+import com.wynime.app.ui.mediaselect.selector.WebSourceChannel
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.source.plugin.api.SourceResultStatus
+import com.wynime.utils.coroutines.flows.flowOfEmptyList
+import com.wynime.utils.platform.annotations.TestOnly
 
-// todo: shit
 @Composable
 fun rememberMediaSelectorState(
     mediaSourceInfoProvider: MediaSourceInfoProvider,
     filteredResults: Flow<List<MediaSourceFetchResult>>,
-    mediaSelector: () -> MediaSelector,// lambda remembered
+    mediaSelector: () -> MediaSelector,
 ): MediaSelectorState {
     val scope = rememberBackgroundScope()
     val webSessionManager = remember { GlobalKoin.get<WebSessionManager>() }
@@ -81,9 +71,6 @@ fun rememberMediaSelectorState(
     }
 }
 
-/**
- * @param backgroundScope only used for flow stateIn (with SharingStarted.WhileSubscribed)
- */
 @Stable
 class MediaPreferenceItemState<T : Any>(
     @PublishedApi internal val item: MediaPreferenceItem<T>,
@@ -112,16 +99,10 @@ class MediaPreferenceItemState<T : Any>(
         Presentation.placeholder(),
     )
 
-    /**
-     * 用户选择
-     */
     suspend fun prefer(value: T) {
         item.prefer(value)
     }
 
-    /**
-     * 删除已有的选择
-     */
     suspend fun removePreference() {
         item.removePreference()
     }
@@ -135,10 +116,6 @@ suspend fun <T : Any> MediaPreferenceItemState<T>.preferOrRemove(value: T?) {
     }
 }
 
-
-/**
- * Wraps [MediaSelector] to provide states for UI.
- */
 @Stable
 class MediaSelectorState(
     private val mediaSelector: MediaSelector,
@@ -159,7 +136,7 @@ class MediaSelectorState(
         val resolution: MediaPreferenceItemState.Presentation<String>,
         val subtitleLanguageId: MediaPreferenceItemState.Presentation<String>,
         val mediaSource: MediaPreferenceItemState.Presentation<String>,
-        // New MS
+
         val webSources: List<WebSource>,
         val selectedWebSource: WebSource?,
         val selectedWebSourceChannel: WebSourceChannel?,
@@ -169,10 +146,6 @@ class MediaSelectorState(
     private val groupStates: SnapshotStateMap<MediaGroupId, MediaGroupState> = SnapshotStateMap()
     private val resolvingCaptchaInstanceIds = MutableStateFlow<Set<String>>(emptySet())
 
-    /**
-     * 供詳細模式顯示每個資料來源的查詢狀態。來源結果和媒體候選分開呈現，
-     * 這樣即使某個來源目前沒有可顯示的線路，使用者仍能看到查詢失敗、驗證或載入狀態。
-     */
     val sourceResultsPresentationFlow = MediaSourceResultListPresenter(
         resultListFlow = mediaSourceFetchResults,
         preferredWebMediaSourceIdFlow = preferredWebMediaSource,
@@ -198,7 +171,7 @@ class MediaSelectorState(
     val mediaSource: MediaPreferenceItemState<String> =
         MediaPreferenceItemState(mediaSelector.mediaSourceId, backgroundScope)
 
-    val presentationFlow = me.him188.ani.utils.coroutines.flows.combine(
+    val presentationFlow = com.wynime.utils.coroutines.flows.combine(
         mediaSelector.filteredCandidates,
         mediaSelector.preferredCandidates,
         mediaSelector.selected,
@@ -208,11 +181,10 @@ class MediaSelectorState(
         mediaSource.presentationFlow,
         createWebSourcesFlow(),
     ) { filteredCandidates, preferredCandidates, selected, alliance, resolution, subtitleLanguageId, mediaSource, webSources ->
-        // 属于其他集的资源不展示, 否则每集都会看到整季的资源.
+
         val visibleCandidates = filteredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
         val visiblePreferred = preferredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
-        // 詳細模式依照原版把偏好篩選後的資源分為「包含」和「排除」；
-        // 簡單模式只顯示可用的來源線路，排除項不會混入播放入口。
+
         val (groupsExcluded, groupsIncluded) = MediaGrouper.buildGroups(visiblePreferred).partition { it.isExcluded }
         Presentation(
             visibleCandidates,
@@ -242,23 +214,20 @@ class MediaSelectorState(
     )
 
     private fun createWebSourcesFlow(): Flow<List<WebSource>> {
-        // 第一次 collect 时不 delay, 尽快 emit, 否则 UI 会一直是 placeholder.
-        // 见 createWebSourceFlow 里的注释.
+
         var isFirstCollect = true
 
         val sortedResultsFlow = mediaSourceFetchResults.flatMapLatest { results ->
             if (results.isEmpty()) return@flatMapLatest flowOfEmptyList()
 
-            // 按顺序排序
-            val sorted = results.filter { it.kind == MediaSourceKind.WEB } // 只使用 WEB
+            val sorted = results.filter { it.kind == MediaSourceKind.WEB }
 
-            // 监控状态, 把错误的放到最后
             combine(results.map { it.state }) { states ->
                 sorted.sortedBy {
                     val state = states.getOrNull(results.indexOf(it))
-                        ?: return@sortedBy 0 // should not happen. Just defensive
+                        ?: return@sortedBy 0
                     if (state is MediaSourceFetchState.Failed) {
-                        1 // 错误的放后面
+                        1
                     } else {
                         -1
                     }
@@ -275,8 +244,6 @@ class MediaSelectorState(
         }.flatMapLatest { (sources, allMediaList, resolvingCaptchaInstanceIds) ->
             val showWebSources = sources.map { source ->
 
-                // 只把目前可用的資源放進簡單模式。`filteredCandidates` 同時包含
-                // 被排除的候選；那些候選只供詳細模式顯示排除原因，不能變成播放線路。
                 val myMediaList = visibleSourceMedia(allMediaList, source.mediaSourceId).asSequence()
 
                 createWebSourceFlow(
@@ -306,7 +273,7 @@ class MediaSelectorState(
         delayToOvercomeCacheIssue: Boolean,
         resolvingCaptchaInstanceIds: Set<String>,
     ) = source.state.combine(preferredWebMediaSource) { a, b -> a to b }.map { (state, preferred) ->
-        // 每条线路一个芯片: 同一线路的多个资源取排序靠前的一个.
+
         val channels = myMediaList.distinctBy { it.properties.alliance }.map { media ->
             WebSourceChannel(media.properties.alliance, original = media)
         }.toList()
@@ -315,18 +282,16 @@ class MediaSelectorState(
 
         when {
             state is MediaSourceFetchState.Disabled -> {
-                // 禁用的数据源一直排除.
+
                 null
             }
 
             channels.isEmpty() && state is MediaSourceFetchState.Succeed -> {
-                // MediaSelector 的 filteredCandidates 有 cache, 而 MediaSourceFetchResult.state 没有.
-                // 当 state 为 Succeed 后, 我们可能仍然看到的是旧的 filteredCandidates, 导致 channels 为 empty.
-                // 这里延迟一下可以非常轻易地解决问题.
+
                 if (delayToOvercomeCacheIssue) {
                     delay(1000)
                 }
-                null // 查询成功, 0 条, 隐藏
+                null
             }
 
             else -> {
@@ -356,9 +321,6 @@ class MediaSelectorState(
         }
     }
 
-    /**
-     * @see MediaSelector.select
-     */
     fun select(candidate: Media) {
         backgroundScope.launch {
             mediaSelector.select(candidate)
@@ -387,11 +349,6 @@ class MediaSelectorState(
     }
 }
 
-/**
- * Returns the resources that may be exposed as simple-mode channels for one source.
- * Excluded candidates remain available to detailed mode, but cannot become playback
- * choices in the compact source list.
- */
 internal fun visibleSourceMedia(
     candidates: List<MaybeExcludedMedia>,
     mediaSourceId: String,
@@ -411,10 +368,6 @@ class MediaGroupState(
 ) {
     var selectedItem: Media? by mutableStateOf(null)
 }
-
-///////////////////////////////////////////////////////////////////////////
-// Testing
-///////////////////////////////////////////////////////////////////////////
 
 @Composable
 @TestOnly

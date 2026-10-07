@@ -1,4 +1,4 @@
-package me.him188.ani.utils.io
+package com.wynime.utils.io
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,8 +37,7 @@ class ObscureTest {
 
     @Test
     fun `obscure is non-deterministic across IVs`() {
-        // Same plaintext under random IVs must produce distinct ciphertexts —
-        // otherwise the IV is being reused and the obfuscation collapses.
+
         val plain = "same-input"
         val a = obscure(plain)
         val b = obscure(plain)
@@ -55,19 +54,17 @@ class ObscureTest {
 
     @Test
     fun `tryReveal returns null for legacy plaintext`() {
-        // Migration path: anything without the magic prefix is left to the
-        // caller to interpret as plaintext.
+
         assertNull(tryReveal("not-obscured"))
-        assertNull(tryReveal("ob1")) // close but no colon
+        assertNull(tryReveal("ob1"))
         assertNull(tryReveal("password123"))
     }
 
     @Test
     fun `tryReveal throws on prefixed but malformed payload`() {
-        // A genuine corruption (someone chopped the IV) must NOT be silently
-        // returned as plaintext — the caller would otherwise persist garbage.
+
         assertFails { tryReveal("$MAGIC_PREFIX!!!not-base64!!!") }
-        assertFails { tryReveal("${MAGIC_PREFIX}aGk") } // base64 of "hi" — too short for IV
+        assertFails { tryReveal("${MAGIC_PREFIX}aGk") }
     }
 
     @Test

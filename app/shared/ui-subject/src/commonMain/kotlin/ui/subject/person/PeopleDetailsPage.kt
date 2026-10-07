@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.person
+package com.wynime.app.ui.subject.person
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -54,41 +45,38 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import dev.chrisbanes.haze.rememberHazeState
-import me.him188.ani.app.data.models.person.CharacterDetailsInfo
-import me.him188.ani.app.data.models.person.CharacterSubjectInfo
-import me.him188.ani.app.data.models.person.InfoboxRowInfo
-import me.him188.ani.app.data.models.person.PersonCastInfo
-import me.him188.ani.app.data.models.person.PersonDetailsInfo
-import me.him188.ani.app.data.models.person.PersonWorkInfo
-import me.him188.ani.app.data.models.subject.nameCn
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.ImageViewer
-import me.him188.ani.app.ui.foundation.ImageViewerHandler
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.rememberImageViewerHandler
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.theme.LocalAppChromeHazeState
-import me.him188.ani.app.ui.foundation.theme.appChromeFrostedGlass
-import me.him188.ani.app.ui.foundation.theme.appChromeHazeSource
-import me.him188.ani.app.ui.foundation.theme.isAppChromeFrostedGlassActive
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.person_details_basic_info
-import me.him188.ani.app.ui.lang.person_details_casts
-import me.him188.ani.app.ui.lang.person_details_character_subjects
-import me.him188.ani.app.ui.lang.person_details_voice_actors
-import me.him188.ani.app.ui.lang.person_details_works
-import me.him188.ani.app.ui.lang.subject_details_summary
-import me.him188.ani.app.ui.subject.details.components.PersonCard
-import me.him188.ani.app.ui.subject.details.layout.SubjectDetailsLayoutParams
-import me.him188.ani.app.ui.subject.details.sections.SectionHeader
-import me.him188.ani.app.ui.subject.details.sections.SubjectSummarySection
-import me.him188.ani.app.ui.subject.details.sections.ViewAllSheet
+import com.wynime.app.data.models.person.CharacterDetailsInfo
+import com.wynime.app.data.models.person.CharacterSubjectInfo
+import com.wynime.app.data.models.person.InfoboxRowInfo
+import com.wynime.app.data.models.person.PersonCastInfo
+import com.wynime.app.data.models.person.PersonDetailsInfo
+import com.wynime.app.data.models.person.PersonWorkInfo
+import com.wynime.app.data.models.subject.nameCn
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.ImageViewer
+import com.wynime.app.ui.foundation.ImageViewerHandler
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.rememberImageViewerHandler
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.theme.LocalAppChromeHazeState
+import com.wynime.app.ui.foundation.theme.appChromeFrostedGlass
+import com.wynime.app.ui.foundation.theme.appChromeHazeSource
+import com.wynime.app.ui.foundation.theme.isAppChromeFrostedGlassActive
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.person_details_basic_info
+import com.wynime.app.ui.lang.person_details_casts
+import com.wynime.app.ui.lang.person_details_character_subjects
+import com.wynime.app.ui.lang.person_details_voice_actors
+import com.wynime.app.ui.lang.person_details_works
+import com.wynime.app.ui.lang.subject_details_summary
+import com.wynime.app.ui.subject.details.components.PersonCard
+import com.wynime.app.ui.subject.details.layout.SubjectDetailsLayoutParams
+import com.wynime.app.ui.subject.details.sections.SectionHeader
+import com.wynime.app.ui.subject.details.sections.SubjectSummarySection
+import com.wynime.app.ui.subject.details.sections.ViewAllSheet
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 人物 (声优/制作人员) 详情页. 布局断点与条目详情一致 (Compact 单栏 / Medium 双栏 / Expanded 三栏).
- */
 @Composable
 fun PersonDetailsScreen(
     vm: PersonDetailsViewModel,
@@ -128,9 +116,6 @@ fun PersonDetailsScreen(
     )
 }
 
-/**
- * 角色详情页. 布局同 [PersonDetailsScreen].
- */
 @Composable
 fun CharacterDetailsScreen(
     vm: CharacterDetailsViewModel,
@@ -169,16 +154,6 @@ fun CharacterDetailsScreen(
     )
 }
 
-/**
- * 人物/角色详情页共用的自适应骨架:
- * - Compact: 单栏 (由 [compactContent] 渲染, 含头部行);
- * - Medium: 左栏 (图片 + 基本信息) + 中栏 (标题/简介/横滑条/评论预览);
- * - Expanded: 评论卡移到右栏.
- *
- * 整页一起滚动, 与条目详情多栏布局一致.
- *
- * 页面级 [ImageViewer] 覆盖整个骨架, 供多栏左栏图片与单栏头部行图片 (经 [compactContent] 参数传入) 点击放大.
- */
 @Composable
 private fun PeopleDetailsScaffold(
     topBarTitle: String,
@@ -201,11 +176,10 @@ private fun PeopleDetailsScaffold(
         val layoutParams = SubjectDetailsLayoutParams.calculate(maxWidth)
         val scrollState = rememberScrollState()
         val density = LocalDensity.current
-        // 页内标题滚出可视区后切换到粘性标题栏 (M3), 与条目详情多栏一致.
-        // 单栏的名字在头部行 (110x147 图片右侧垂直居中), 多栏在中栏标题块首行.
+
         val titleScrollOutHeight =
             if (layoutParams.isMultiColumn) MULTI_COLUMN_TITLE_HEIGHT else COMPACT_HEADER_TITLE_HEIGHT
-        // 单栏: 透明 top bar 已占据顶部空间, 内容直接贴其下方 (与条目详情单栏一致); 不再额外加顶距.
+
         val contentTopPadding = if (layoutParams.isMultiColumn) layoutParams.contentTopPadding else 0.dp
         val stickyTopBarVisible by remember(scrollState, density, layoutParams) {
             derivedStateOf {
@@ -214,24 +188,23 @@ private fun PeopleDetailsScaffold(
             }
         }
         val topAppBarWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
-        val backgroundColor = AniThemeDefaults.pageContentBackgroundColor
-        val stickyTopBarColor = AniThemeDefaults.navigationContainerColor
+        val backgroundColor = WynimeThemeDefaults.pageContentBackgroundColor
+        val stickyTopBarColor = WynimeThemeDefaults.navigationContainerColor
 
-        // 本页自带一个独立的毛玻璃作用域: 粘性顶栏模糊其下方滚过的内容.
         CompositionLocalProvider(LocalAppChromeHazeState provides rememberHazeState()) {
             val frostedGlassActive = isAppChromeFrostedGlassActive()
             Scaffold(
                 topBar = {
                     Box {
-                        // 透明背景的, 总是显示
+
                         TopAppBar(
                             title = {},
                             navigationIcon = navigationIcon,
-                            colors = AniThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent),
+                            colors = WynimeThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent),
                             windowInsets = topAppBarWindowInsets,
                         )
-                        // 有背景和标题的, 仅在页内标题滚出后显示
-                        AniAnimatedVisibility(stickyTopBarVisible && topBarTitle.isNotBlank()) {
+
+                        WynimeAnimatedVisibility(stickyTopBarVisible && topBarTitle.isNotBlank()) {
                             TopAppBar(
                                 title = {
                                     Text(topBarTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -242,9 +215,9 @@ private fun PeopleDetailsScaffold(
                                 ),
                                 navigationIcon = navigationIcon,
                                 colors = if (frostedGlassActive) {
-                                    AniThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent)
+                                    WynimeThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent)
                                 } else {
-                                    AniThemeDefaults.topAppBarColors(containerColor = stickyTopBarColor)
+                                    WynimeThemeDefaults.topAppBarColors(containerColor = stickyTopBarColor)
                                 },
                                 windowInsets = topAppBarWindowInsets,
                             )
@@ -259,9 +232,9 @@ private fun PeopleDetailsScaffold(
                     Column(
                         Modifier
                             .fillMaxSize()
-                            // 毛玻璃粘性顶栏的模糊来源.
+
                             .appChromeHazeSource(backgroundColor = backgroundColor)
-                            // top padding 放在滚动内容内, 让内容可以滚动到顶栏下方 (与条目详情单栏一致).
+
                             .padding(
                                 start = padding.calculateStartPadding(layoutDirection),
                                 end = padding.calculateEndPadding(layoutDirection),
@@ -281,7 +254,7 @@ private fun PeopleDetailsScaffold(
                     Row(
                         Modifier
                             .fillMaxSize()
-                            // 毛玻璃粘性顶栏的模糊来源 (多栏内容不延伸到顶栏下方, 采样到页面背景).
+
                             .appChromeHazeSource(backgroundColor = backgroundColor)
                             .padding(padding)
                             .verticalScroll(scrollState)
@@ -293,12 +266,12 @@ private fun PeopleDetailsScaffold(
                             ),
                         horizontalArrangement = Arrangement.spacedBy(layoutParams.columnSpacing),
                     ) {
-                        // 左栏: 图片 + 基本信息
+
                         Column(
                             Modifier.width(layoutParams.sidebarWidth),
                             verticalArrangement = Arrangement.spacedBy(layoutParams.sidebarItemSpacing),
                         ) {
-                            // 定稿: 固定宽度, 高按原图比例自适应 (加载前用 340:482 占位)
+
                             var coverAspect by remember(sidebarImageUrl) { mutableStateOf(340f / 482f) }
                             val onClickSidebarImage = imageViewer.viewImageOrNull(sidebarImageUrl)
                             Box(
@@ -338,7 +311,6 @@ private fun PeopleDetailsScaffold(
                             }
                         }
 
-                        // 中栏
                         Column(
                             Modifier.weight(1f).widthIn(max = 840.dp),
                             verticalArrangement = Arrangement.spacedBy(layoutParams.sectionSpacing),
@@ -353,7 +325,6 @@ private fun PeopleDetailsScaffold(
                             }
                         }
 
-                        // 右栏 (仅三栏): 评论卡
                         if (layoutParams.showRail) {
                             Surface(
                                 Modifier.width(layoutParams.railWidth),
@@ -363,9 +334,7 @@ private fun PeopleDetailsScaffold(
                                 PersonCommentsSection(
                                     comments.commentState,
                                     onShowAll = { showAllComments = true },
-                                    // 对齐修正后的设计稿 rail 卡 (视觉: 标题字形距顶 ~21, 距侧 20):
-                                    // 标题行自带 ~17dp 顶空 (TextButton min 40dp 居中 + 行框留白, 截图实测),
-                                    // 故 top=4; 左右 20 / 下 18 与设计稿一致.
+
                                     Modifier.padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 18.dp),
                                 )
                             }
@@ -375,34 +344,24 @@ private fun PeopleDetailsScaffold(
             }
         }
 
-        // 页面级大图查看器, 覆盖整个骨架 (含顶栏).
         ImageViewer(imageViewer) { imageViewer.clear() }
 
-        // 评论区宿主 (举报弹层/失败提示/全量评论 sheet). 单栏由 compactContent 里的内容列自带, 这里只在多栏挂.
         if (layoutParams.isMultiColumn) {
             PeopleCommentsHost(comments, showAllComments, onDismissAllComments = { showAllComments = false })
         }
     }
 }
 
-/**
- * 图片 URL 非空且提供了查看器时, 返回打开该图片的点击回调; 否则返回 `null` (图片不可点击).
- */
 private fun ImageViewerHandler?.viewImageOrNull(imageUrl: String?): (() -> Unit)? {
     val handler = this ?: return null
     val url = imageUrl?.takeIf { it.isNotBlank() } ?: return null
     return { handler.viewImage(url) }
 }
 
-/** 单栏头部行里名字的大致底部位置 (110x147 图片右侧垂直居中), 用于估算标题滚出的时机. */
 private val COMPACT_HEADER_TITLE_HEIGHT = 96.dp
 
-/** 多栏中栏标题块首行 (headlineMedium) 约一行的高度. */
 private val MULTI_COLUMN_TITLE_HEIGHT = 40.dp
 
-/**
- * 人物详情单栏内容列 (Compact 页与侧边预览共用). 不含滚动.
- */
 @Composable
 internal fun PersonDetailsContentColumn(
     details: PersonDetailsInfo?,
@@ -441,7 +400,6 @@ internal fun PersonDetailsContentColumn(
     PeopleCommentsHost(comments, showAllComments, onDismissAllComments = { showAllComments = false })
 }
 
-/** 人物详情的两个横滑条: 出演角色 / 参与作品 (+ 各自的查看全部 sheet). */
 @Composable
 private fun PersonStrips(
     casts: LazyPagingItems<PersonCastInfo>,
@@ -509,9 +467,6 @@ private fun PersonStrips(
     }
 }
 
-/**
- * 角色详情单栏内容列 (Compact 页与侧边预览共用). 不含滚动.
- */
 @Composable
 internal fun CharacterDetailsContentColumn(
     details: CharacterDetailsInfo?,
@@ -549,7 +504,6 @@ internal fun CharacterDetailsContentColumn(
     PeopleCommentsHost(comments, showAllComments, onDismissAllComments = { showAllComments = false })
 }
 
-/** 角色详情的两个横滑条: 声优 / 出演作品 (+ 查看全部 sheet). */
 @Composable
 private fun CharacterStrips(
     details: CharacterDetailsInfo?,

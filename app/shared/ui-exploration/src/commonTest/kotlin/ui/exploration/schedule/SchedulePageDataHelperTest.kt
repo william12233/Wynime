@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.schedule
+package com.wynime.app.ui.exploration.schedule
 
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -15,22 +6,18 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
-import me.him188.ani.app.data.models.subject.LightEpisodeInfo
-import me.him188.ani.app.data.models.subject.LightSubjectInfo
-import me.him188.ani.app.domain.episode.EpisodeWithAiringTime
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.UTC9
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.data.models.subject.LightEpisodeInfo
+import com.wynime.app.data.models.subject.LightSubjectInfo
+import com.wynime.app.domain.episode.EpisodeWithAiringTime
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.UTC9
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
-/**
- * 覆盖 [SchedulePageDataHelper.toColumnItems] 对时间未定项目的处理, [EpisodeWithAiringTime.toPresentation] 对 `timeKnown` 的映射,
- * 以及 [ScheduleItemDefaults.renderTime] 对 `null` 时间 (时间未定文本由调用方传入) 的渲染.
- */
 class SchedulePageDataHelperTest {
     private fun item(
         id: Int,
@@ -61,8 +48,6 @@ class SchedulePageDataHelperTest {
         (it as? AiringScheduleColumnItem.Data)?.showTime
     }
 
-    // region toColumnItems
-
     @Test
     fun `timed items sorted by time and unknown-time items appended after them`() {
         val items = listOf(
@@ -74,7 +59,6 @@ class SchedulePageDataHelperTest {
         )
         val columns = SchedulePageDataHelper.toColumnItems(items, addIndicator = false, currentTime = LocalTime(12, 0))
 
-        // 已知时间按时间升序; 时间未定的保持输入顺序追加在最后
         assertEquals(listOf(3, 5, 2, 1, 4), columns.subjectIds())
     }
 
@@ -87,7 +71,6 @@ class SchedulePageDataHelperTest {
         )
         val columns = SchedulePageDataHelper.toColumnItems(items, addIndicator = true, currentTime = LocalTime(23, 59))
 
-        // 指示器在所有已知时间的项目之后, 但仍在时间未定的项目之前
         assertEquals(listOf(2, 3, null, 1), columns.subjectIds())
     }
 
@@ -118,7 +101,7 @@ class SchedulePageDataHelperTest {
         val columns = SchedulePageDataHelper.toColumnItems(items, addIndicator = false, currentTime = LocalTime(0, 0))
 
         assertEquals(listOf(2, 3, 1, 4, 5), columns.subjectIds())
-        // 同一时刻只有第一个显示时间; 时间未定组只有第一个显示 "时间未定"
+
         assertEquals(listOf(true, false, true, false, false), columns.showTimes())
     }
 
@@ -140,7 +123,6 @@ class SchedulePageDataHelperTest {
         )
         val columns = SchedulePageDataHelper.toColumnItems(items, addIndicator = false, currentTime = LocalTime(0, 0))
 
-        // 稳定排序: 服务端给出的顺序 (按 subjectId, sort) 在同一时刻内保留
         assertEquals(listOf(3, 1, 2), columns.subjectIds())
         assertEquals(listOf(true, true, false), columns.showTimes())
     }
@@ -152,10 +134,6 @@ class SchedulePageDataHelperTest {
 
         assertEquals(emptyList(), SchedulePageDataHelper.toColumnItems(emptyList(), addIndicator = false, LocalTime(10, 0)))
     }
-
-    // endregion
-
-    // region toPresentation
 
     private fun episodeWithAiringTime(airingTime: LocalDateTime, timeZone: TimeZone, timeKnown: Boolean) =
         EpisodeWithAiringTime(
@@ -189,7 +167,7 @@ class SchedulePageDataHelperTest {
     @Test
     fun `toPresentation drops the time but keeps the day when timeKnown is false`() {
         val timeZone = TimeZone.of("Asia/Shanghai")
-        // 服务端对时间未定的剧集给出该日期在客户端时区的 00:00
+
         val presentation = episodeWithAiringTime(LocalDateTime(2026, 9, 4, 0, 0), timeZone, timeKnown = false)
             .toPresentation(timeZone)
 
@@ -206,10 +184,6 @@ class SchedulePageDataHelperTest {
         assertEquals(DayOfWeek.FRIDAY, presentation.dayOfWeek)
     }
 
-    // endregion
-
-    // region renderTime
-
     @Test
     fun `renderTime renders a known time`() {
         assertEquals("09:05", ScheduleItemDefaults.renderTime(null, LocalTime(9, 5)))
@@ -218,7 +192,7 @@ class SchedulePageDataHelperTest {
 
     @Test
     fun `renderTime renders unknown time with the given text`() {
-        // 文本来自字符串资源 (Lang.exploration_schedule_time_unknown), 由 composable 传入
+
         assertEquals("时间未定", ScheduleItemDefaults.renderTime(null, null, timeUnknownText = "时间未定"))
         assertEquals("Time TBA", ScheduleItemDefaults.renderTime(null, null, timeUnknownText = "Time TBA"))
         assertEquals("1/2\n时间未定", ScheduleItemDefaults.renderTime(LocalDate(2026, 1, 2), null, timeUnknownText = "时间未定"))
@@ -233,5 +207,4 @@ class SchedulePageDataHelperTest {
         )
     }
 
-    // endregion
 }

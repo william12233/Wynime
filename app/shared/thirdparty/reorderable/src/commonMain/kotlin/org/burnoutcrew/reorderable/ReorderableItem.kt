@@ -1,11 +1,3 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
 package org.burnoutcrew.reorderable
 
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -61,7 +53,6 @@ fun LazyGridItemScope.ReorderableItem(
     content,
 )
 
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LazyStaggeredGridItemScope.ReorderableItem(
@@ -80,12 +71,6 @@ fun LazyStaggeredGridItemScope.ReorderableItem(
     content,
 )
 
-/**
- * XXX LazyGridItemScope.Modifier.animateItemPlacement is missing from LazyStaggeredGridItemScope
- * XXX Replace this when added to the compose library.
- *
- * @param animationSpec a finite animation that will be used to animate the item placement.
- */
 @ExperimentalFoundationApi
 fun Modifier.animateDraggeableItemPlacement(
     animationSpec: FiniteAnimationSpec<IntOffset> = spring(

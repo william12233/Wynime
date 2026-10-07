@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.sections
+package com.wynime.app.ui.subject.details.sections
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
@@ -50,42 +41,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.GraphicEq
-import me.him188.ani.app.ui.foundation.LocalEpisodeProgressSettings
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.LongClickProgressFill
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_details_next_page
-import me.him188.ani.app.ui.lang.subject_details_prev_page
-import me.him188.ani.app.ui.lang.subject_episode_mark_watched
-import me.him188.ani.app.ui.lang.subject_episode_unwatch
-import me.him188.ani.app.ui.subject.details.components.EpisodePaging
-import me.him188.ani.app.ui.subject.episode.list.EpisodeCellLabel
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListItem
-import me.him188.ani.app.ui.subject.episode.list.EpisodeStillBackground
-import me.him188.ani.app.ui.subject.episode.list.EpisodePlayProgressBar
-import me.him188.ani.app.ui.subject.episode.list.EpisodeStillDefaults
-import me.him188.ani.app.ui.subject.episode.list.EpisodeWatchedBadge
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.ui.foundation.LocalEpisodeProgressSettings
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.LongClickProgressFill
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_details_next_page
+import com.wynime.app.ui.lang.subject_details_prev_page
+import com.wynime.app.ui.lang.subject_episode_mark_watched
+import com.wynime.app.ui.lang.subject_episode_unwatch
+import com.wynime.app.ui.subject.details.components.EpisodePaging
+import com.wynime.app.ui.subject.episode.list.EpisodeCellLabel
+import com.wynime.app.ui.subject.episode.list.EpisodeListItem
+import com.wynime.app.ui.subject.episode.list.EpisodeStillBackground
+import com.wynime.app.ui.subject.episode.list.EpisodePlayProgressBar
+import com.wynime.app.ui.subject.episode.list.EpisodeStillDefaults
+import com.wynime.app.ui.subject.episode.list.EpisodeWatchedBadge
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 单个剧集网格单元 (对应 Figma `EpisodeGridItem`).
- *
- * 着色规则见 `docs/subject-details-rewrite/01-decision-algorithms.md` §3:
- * - 容器: 播放中→primaryContainer, 已看(DONE/DROPPED)→surfaceContainerLow, 未看→surfaceContainerHigh
- * - 集号: 播放中→primary, 已看→onSurfaceVariant@60%, 未看→onSurface(LocalContentColor)
- * - 集名: 已看→onSurfaceVariant@60%, 未看→onSurfaceVariant
- *
- * 布局: 集号与集名并排成一行 ([EpisodeCellLabel]) 贴在单元格左下角, 上方留给剧照画面; 无图时同样的位置, 混合覆盖的一排单元格文字对齐.
- *
- * 观看状态:
- * - 已看完 (DONE): 右上角「已看完」角标 ([EpisodeWatchedBadge]), 点击它与长按单元格一样触发 [onLongClick] 取消已看
- * - 未看完但有播放记录 ([EpisodeListItem.playProgress] 非空): 底边显示上次播放进度 ([EpisodePlayProgressBar])
- * - 从未播放: 不显示角标与进度条
- *
- * 有剧照 ([EpisodeListItem.imageMedium] 非空且 [showImage]) 时剧照铺满单元格作背景 ([EpisodeStillBackground]),
- * 剧照亮度不随观看状态变化, 文字改用深色配色前景 ([EpisodeStillDefaults], 集名→85%), 播放中用 primary 描边与蒙层表示; 单元格尺寸与无图时一致.
- */
 @Composable
 fun EpisodeGridCell(
     item: EpisodeListItem,
@@ -101,7 +74,7 @@ fun EpisodeGridCell(
     val playProgress = item.playProgress
     val interactionSource = remember { MutableInteractionSource() }
     val still = item.imageMedium?.takeIf { showImage }
-    // 播放中且有剧照时的描边宽度, 进度条按它内缩
+
     val stillBorder = if (still != null && isPlaying) 2.dp else 0.dp
     val containerColor = when {
         isPlaying -> MaterialTheme.colorScheme.primaryContainer
@@ -184,7 +157,7 @@ fun EpisodeGridCell(
                 EpisodePlayProgressBar(
                     progress = playProgress,
                     onStill = still != null,
-                    // 播放中的有图卡片有 primary 描边, 进度条缩到描边内侧, 不被盖住
+
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(start = stillBorder, end = stillBorder, bottom = stillBorder),
@@ -194,13 +167,6 @@ fun EpisodeGridCell(
     }
 }
 
-/**
- * 桌面 (双栏/三栏) 选集网格: 每页最多 2 行, 每行列数随列宽动态计算.
- * 初始页为含 [currentEpisodeId] 的页.
- *
- * [header] 的 `pager` 参数为分页控件: 超过一页时非 null (定稿: 分页控件替代 header 集数文案),
- * 不足一页时为 null, 调用方应回退显示集数文案.
- */
 @Composable
 fun PagedEpisodesGrid(
     episodes: List<EpisodeListItem>,
@@ -244,7 +210,7 @@ fun PagedEpisodesGrid(
                 },
             )
             val pageItems = episodes.subList(range.first.coerceIn(0, episodes.size), (range.last + 1).coerceIn(0, episodes.size))
-            // 竖向按行排布, 每行 columns 个
+
             for (row in pageItems.chunked(columns)) {
                 Row(
                     Modifier.fillMaxWidth(),
@@ -260,7 +226,7 @@ fun PagedEpisodesGrid(
                             showImage = showImages,
                         )
                     }
-                    // 补齐末行空位, 保持等宽
+
                     repeat(columns - row.size) {
                         Box(Modifier.weight(1f))
                     }
@@ -305,11 +271,6 @@ private fun EpisodePager(
     }
 }
 
-/**
- * 手机 (compact) 选集: LazyRow 横滑不分页, 自动滚至当前集.
- *
- * 单元 128×72 (16:9), 与 TMDB 剧照比例一致, 裁切最少.
- */
 @Composable
 fun EpisodesRow(
     episodes: List<EpisodeListItem>,

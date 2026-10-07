@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.search
+package com.wynime.app.ui.exploration.search
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
@@ -44,19 +35,19 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.tools.MonoTasker
-import me.him188.ani.app.ui.adaptive.AdaptiveSearchBar
-import me.him188.ani.app.ui.foundation.interaction.onEnterKeyEvent
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.navigation.BackHandler
-import me.him188.ani.utils.analytics.Analytics
-import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.SearchStart
-import me.him188.ani.utils.analytics.recordEvent
+import com.wynime.app.tools.MonoTasker
+import com.wynime.app.ui.adaptive.AdaptiveSearchBar
+import com.wynime.app.ui.foundation.interaction.onEnterKeyEvent
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.navigation.BackHandler
+import com.wynime.utils.analytics.Analytics
+import com.wynime.utils.analytics.AnalyticsEvent.Companion.SearchStart
+import com.wynime.utils.analytics.recordEvent
 
 @Stable
 class SuggestionSearchBarState(
-    historyPager: Flow<PagingData<String>>, // must be distinct
-    suggestionsPager: Flow<PagingData<String>>, // must be distinct
+    historyPager: Flow<PagingData<String>>,
+    suggestionsPager: Flow<PagingData<String>>,
     private val clearSearch: () -> Unit,
     private val onRemoveHistory: suspend (text: String) -> Unit,
     queryFlow: Flow<String>,
@@ -65,7 +56,7 @@ class SuggestionSearchBarState(
     private val tagsProvider: () -> List<String> = { emptyList() },
     backgroundScope: CoroutineScope,
 ) {
-    // 不能直接采用 presentation.query, 因为编辑框内容需要在 UI 线程即使处理用户输入, 不能切换到后台运行, 否则 PC 上IME 输入可能有问题
+
     var editingQuery: String by mutableStateOf("")
         private set
 
@@ -147,7 +138,7 @@ fun SuggestionSearchBar(
     state: SuggestionSearchBarState,
     modifier: Modifier = Modifier,
     inputFieldModifier: Modifier = Modifier,
-    windowInsets: WindowInsets = AniWindowInsets.forSearchBar(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forSearchBar(),
     placeholder: @Composable (() -> Unit)? = null,
 ) {
     BackHandler(state.expanded) {

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -19,18 +10,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.download.DownloadEpisodeOption
-import me.him188.ani.app.domain.media.download.DownloadEpisodeOption.Availability
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.downloads_episode_picker_downloaded
-import me.him188.ani.app.ui.lang.downloads_episode_picker_line
-import me.him188.ani.app.ui.lang.downloads_episode_picker_selected_count
-import me.him188.ani.app.ui.lang.downloads_episode_picker_unmatched
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.download.DownloadEpisodeOption
+import com.wynime.app.domain.media.download.DownloadEpisodeOption.Availability
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.downloads_episode_picker_downloaded
+import com.wynime.app.ui.lang.downloads_episode_picker_line
+import com.wynime.app.ui.lang.downloads_episode_picker_selected_count
+import com.wynime.app.ui.lang.downloads_episode_picker_unmatched
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.getString
 
 @OptIn(TestOnly::class)
@@ -46,7 +37,7 @@ class DownloadEpisodePickerTest {
     private fun selectedCount(count: Int) = runBlocking { getString(Lang.downloads_episode_picker_selected_count, count) }
 
     @Test
-    fun `defaults to the current episode onwards and confirms the toggled selection`() = runAniComposeUiTest {
+    fun `defaults to the current episode onwards and confirms the toggled selection`() = runWynimeComposeUiTest {
         var confirmed: Set<Int>? = null
         setContent {
             ProvideCompositionLocalsForPreview {
@@ -72,7 +63,7 @@ class DownloadEpisodePickerTest {
     }
 
     @Test
-    fun `all selects every available episode and empty selection disables confirm`() = runAniComposeUiTest {
+    fun `all selects every available episode and empty selection disables confirm`() = runWynimeComposeUiTest {
         var back = false
         setContent {
             ProvideCompositionLocalsForPreview {

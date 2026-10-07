@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode
+package com.wynime.app.ui.subject.episode
 
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -53,122 +44,119 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.MediaCacheProgressInfo
-import me.him188.ani.app.domain.media.player.staticMediaCacheProgressState
-import me.him188.ani.app.domain.player.VideoLoadingState
-import me.him188.ani.app.tools.rememberUiMonoTasker
-import me.him188.ani.app.ui.episode.share.MediaShareData
-import me.him188.ani.app.ui.foundation.LocalIsPreviewing
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.TextWithBorder
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.effects.cursorVisibility
-import me.him188.ani.app.ui.foundation.icons.AniIcons
-import me.him188.ani.app.ui.foundation.icons.Forward80
-import me.him188.ani.app.ui.foundation.icons.Forward85
-import me.him188.ani.app.ui.foundation.icons.Forward90
-import me.him188.ani.app.ui.foundation.icons.RightPanelClose
-import me.him188.ani.app.ui.foundation.icons.RightPanelOpen
-import me.him188.ani.app.ui.foundation.icons.SubtitleGear
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.input.LocalActiveInputSource
-import me.him188.ani.app.ui.foundation.interaction.WindowDragArea
-import me.him188.ani.app.ui.foundation.rememberDebugSettingsViewModel
-import me.him188.ani.app.ui.foundation.theme.AniTheme
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.always_on_top
-import me.him188.ani.app.ui.lang.subject_episode_cache
-import me.him188.ani.app.ui.lang.subject_episode_collapse_sidebar
-import me.him188.ani.app.ui.lang.subject_episode_expand_sidebar
-import me.him188.ani.app.ui.lang.subject_episode_external_links
-import me.him188.ani.app.ui.lang.subject_episode_fast_forward_seconds
-import me.him188.ani.app.ui.lang.subject_episode_more_options
-import me.him188.ani.app.ui.lang.subject_episode_preview_mode
-import me.him188.ani.app.ui.lang.subject_episode_select_media_source
-import me.him188.ani.app.ui.lang.video_player_stats_title_hide
-import me.him188.ani.app.ui.lang.video_player_stats_title_show
-import me.him188.ani.app.ui.lang.video_player_video_enhancement
-import me.him188.ani.app.ui.mediafetch.rememberTestMediaSelectorState
-import me.him188.ani.app.ui.mediafetch.request.TestMediaFetchRequest
-import me.him188.ani.app.ui.subject.episode.details.components.ShareEpisodeDropdown
-import me.him188.ani.app.ui.subject.episode.details.components.VideoEnhancementDropdown
-import me.him188.ani.app.ui.subject.episode.video.DEFAULT_OP_ED_SKIP_DURATION
-import me.him188.ani.app.ui.subject.episode.video.components.EpisodeVideoSideSheetPage
-import me.him188.ani.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
-import me.him188.ani.app.ui.subject.episode.video.components.FloatingFullscreenSwitchButton
-import me.him188.ani.app.ui.subject.episode.video.components.SideSheets
-import me.him188.ani.app.ui.subject.episode.video.components.rememberStatusBarHeightAsState
-import me.him188.ani.app.ui.subject.episode.video.loading.EpisodeVideoLoadingIndicator
-import me.him188.ani.app.ui.subject.episode.video.sidesheet.EpisodeSelectorSheet
-import me.him188.ani.app.ui.subject.episode.video.sidesheet.MediaSelectorSheet
-import me.him188.ani.app.ui.subject.episode.video.sidesheet.rememberTestEpisodeSelectorState
-import me.him188.ani.app.ui.subject.episode.video.topbar.EpisodePlayerTitle
-import me.him188.ani.app.videoplayer.ui.ControllerVisibility
-import me.him188.ani.app.videoplayer.ui.MutablePlayerFullscreenState
-import me.him188.ani.app.videoplayer.ui.NoOpVideoAspectRatio
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerFullscreenState
-import me.him188.ani.app.videoplayer.ui.PlayerStatsOverlay
-import me.him188.ani.app.videoplayer.ui.VideoAspectRatioControllerState
-import me.him188.ani.app.videoplayer.ui.VideoPlayer
-import me.him188.ani.app.videoplayer.ui.VideoScaffold
-import me.him188.ani.app.videoplayer.ui.VideoSideSheetsController
-import me.him188.ani.app.videoplayer.ui.gesture.GestureFamily
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState
-import me.him188.ani.app.videoplayer.ui.gesture.GestureLock
-import me.him188.ani.app.videoplayer.ui.gesture.LevelController
-import me.him188.ani.app.videoplayer.ui.gesture.LockableVideoGestureHost
-import me.him188.ani.app.videoplayer.ui.gesture.NoOpLevelController
-import me.him188.ani.app.videoplayer.ui.gesture.ScreenshotButton
-import me.him188.ani.app.videoplayer.ui.gesture.SwipeSeekerConfig
-import me.him188.ani.app.videoplayer.ui.gesture.gestureFamilyOf
-import me.him188.ani.app.videoplayer.ui.gesture.hasPointerDevice
-import me.him188.ani.app.videoplayer.ui.gesture.mouseFamily
-import me.him188.ani.app.videoplayer.ui.gesture.rememberGestureIndicatorState
-import me.him188.ani.app.videoplayer.ui.gesture.rememberSwipeSeekerState
-import me.him188.ani.app.videoplayer.ui.hasPageAsState
-import me.him188.ani.app.videoplayer.ui.progress.AudioSwitcher
-import me.him188.ani.app.videoplayer.ui.progress.MediaProgressFramePreviewState
-import me.him188.ani.app.videoplayer.ui.progress.MediaProgressIndicatorText
-import me.him188.ani.app.videoplayer.ui.progress.MediaProgressSliderDefaults
-import me.him188.ani.app.videoplayer.ui.progress.PlayerControllerBar
-import me.him188.ani.app.videoplayer.ui.progress.PlayerControllerDefaults
-import me.him188.ani.app.videoplayer.ui.progress.PlayerControllerDefaults.SpeedSwitcher
-import me.him188.ani.app.videoplayer.ui.progress.PlayerControllerDefaults.VideoAspectRatioSelector
-import me.him188.ani.app.videoplayer.ui.progress.PlayerProgressSliderState
-import me.him188.ani.app.videoplayer.ui.progress.ProgressSliderCenteredPreviewFrame
-import me.him188.ani.app.videoplayer.ui.progress.SubtitleSwitcher
-import me.him188.ani.app.videoplayer.ui.progress.TouchSeekState
-import me.him188.ani.app.videoplayer.ui.progress.rememberMediaProgressSliderState
-import me.him188.ani.app.videoplayer.ui.rememberAlwaysOnRequester
-import me.him188.ani.app.videoplayer.ui.rememberPlayerStatsState
-import me.him188.ani.app.videoplayer.ui.rememberVideoControllerState
-import me.him188.ani.app.videoplayer.ui.rememberVideoSideSheetsController
-import me.him188.ani.app.videoplayer.ui.top.PlayerTopBar
-import me.him188.ani.app.videoplayer.ui.top.SystemTime
-import me.him188.ani.app.videoplayer.videoenhancement.VideoEnhancementController
-import me.him188.ani.app.videoplayer.videoenhancement.VideoEnhancementMode
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.isAndroid
-import me.him188.ani.utils.platform.isDesktop
-import me.him188.ani.utils.platform.isMobile
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.MediaCacheProgressInfo
+import com.wynime.app.domain.media.player.staticMediaCacheProgressState
+import com.wynime.app.domain.player.VideoLoadingState
+import com.wynime.app.tools.rememberUiMonoTasker
+import com.wynime.app.ui.episode.share.MediaShareData
+import com.wynime.app.ui.foundation.LocalIsPreviewing
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.TextWithBorder
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.effects.cursorVisibility
+import com.wynime.app.ui.foundation.icons.WynimeIcons
+import com.wynime.app.ui.foundation.icons.Forward80
+import com.wynime.app.ui.foundation.icons.Forward85
+import com.wynime.app.ui.foundation.icons.Forward90
+import com.wynime.app.ui.foundation.icons.RightPanelClose
+import com.wynime.app.ui.foundation.icons.RightPanelOpen
+import com.wynime.app.ui.foundation.icons.SubtitleGear
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.input.LocalActiveInputSource
+import com.wynime.app.ui.foundation.interaction.WindowDragArea
+import com.wynime.app.ui.foundation.rememberDebugSettingsViewModel
+import com.wynime.app.ui.foundation.theme.WynimeTheme
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.always_on_top
+import com.wynime.app.ui.lang.subject_episode_cache
+import com.wynime.app.ui.lang.subject_episode_collapse_sidebar
+import com.wynime.app.ui.lang.subject_episode_expand_sidebar
+import com.wynime.app.ui.lang.subject_episode_external_links
+import com.wynime.app.ui.lang.subject_episode_fast_forward_seconds
+import com.wynime.app.ui.lang.subject_episode_more_options
+import com.wynime.app.ui.lang.subject_episode_preview_mode
+import com.wynime.app.ui.lang.subject_episode_select_media_source
+import com.wynime.app.ui.lang.video_player_stats_title_hide
+import com.wynime.app.ui.lang.video_player_stats_title_show
+import com.wynime.app.ui.lang.video_player_video_enhancement
+import com.wynime.app.ui.mediafetch.rememberTestMediaSelectorState
+import com.wynime.app.ui.mediafetch.request.TestMediaFetchRequest
+import com.wynime.app.ui.subject.episode.details.components.ShareEpisodeDropdown
+import com.wynime.app.ui.subject.episode.details.components.VideoEnhancementDropdown
+import com.wynime.app.ui.subject.episode.video.DEFAULT_OP_ED_SKIP_DURATION
+import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheetPage
+import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
+import com.wynime.app.ui.subject.episode.video.components.FloatingFullscreenSwitchButton
+import com.wynime.app.ui.subject.episode.video.components.SideSheets
+import com.wynime.app.ui.subject.episode.video.components.rememberStatusBarHeightAsState
+import com.wynime.app.ui.subject.episode.video.loading.EpisodeVideoLoadingIndicator
+import com.wynime.app.ui.subject.episode.video.sidesheet.EpisodeSelectorSheet
+import com.wynime.app.ui.subject.episode.video.sidesheet.MediaSelectorSheet
+import com.wynime.app.ui.subject.episode.video.sidesheet.rememberTestEpisodeSelectorState
+import com.wynime.app.ui.subject.episode.video.topbar.EpisodePlayerTitle
+import com.wynime.app.videoplayer.ui.ControllerVisibility
+import com.wynime.app.videoplayer.ui.MutablePlayerFullscreenState
+import com.wynime.app.videoplayer.ui.NoOpVideoAspectRatio
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.videoplayer.ui.PlayerControllerState
+import com.wynime.app.videoplayer.ui.PlayerFullscreenState
+import com.wynime.app.videoplayer.ui.PlayerStatsOverlay
+import com.wynime.app.videoplayer.ui.VideoAspectRatioControllerState
+import com.wynime.app.videoplayer.ui.VideoPlayer
+import com.wynime.app.videoplayer.ui.VideoScaffold
+import com.wynime.app.videoplayer.ui.VideoSideSheetsController
+import com.wynime.app.videoplayer.ui.gesture.GestureFamily
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState
+import com.wynime.app.videoplayer.ui.gesture.GestureLock
+import com.wynime.app.videoplayer.ui.gesture.LevelController
+import com.wynime.app.videoplayer.ui.gesture.LockableVideoGestureHost
+import com.wynime.app.videoplayer.ui.gesture.NoOpLevelController
+import com.wynime.app.videoplayer.ui.gesture.ScreenshotButton
+import com.wynime.app.videoplayer.ui.gesture.SwipeSeekerConfig
+import com.wynime.app.videoplayer.ui.gesture.gestureFamilyOf
+import com.wynime.app.videoplayer.ui.gesture.hasPointerDevice
+import com.wynime.app.videoplayer.ui.gesture.mouseFamily
+import com.wynime.app.videoplayer.ui.gesture.rememberGestureIndicatorState
+import com.wynime.app.videoplayer.ui.gesture.rememberSwipeSeekerState
+import com.wynime.app.videoplayer.ui.hasPageAsState
+import com.wynime.app.videoplayer.ui.progress.AudioSwitcher
+import com.wynime.app.videoplayer.ui.progress.MediaProgressFramePreviewState
+import com.wynime.app.videoplayer.ui.progress.MediaProgressIndicatorText
+import com.wynime.app.videoplayer.ui.progress.MediaProgressSliderDefaults
+import com.wynime.app.videoplayer.ui.progress.PlayerControllerBar
+import com.wynime.app.videoplayer.ui.progress.PlayerControllerDefaults
+import com.wynime.app.videoplayer.ui.progress.PlayerControllerDefaults.SpeedSwitcher
+import com.wynime.app.videoplayer.ui.progress.PlayerControllerDefaults.VideoAspectRatioSelector
+import com.wynime.app.videoplayer.ui.progress.PlayerProgressSliderState
+import com.wynime.app.videoplayer.ui.progress.ProgressSliderCenteredPreviewFrame
+import com.wynime.app.videoplayer.ui.progress.SubtitleSwitcher
+import com.wynime.app.videoplayer.ui.progress.TouchSeekState
+import com.wynime.app.videoplayer.ui.progress.rememberMediaProgressSliderState
+import com.wynime.app.videoplayer.ui.rememberAlwaysOnRequester
+import com.wynime.app.videoplayer.ui.rememberPlayerStatsState
+import com.wynime.app.videoplayer.ui.rememberVideoControllerState
+import com.wynime.app.videoplayer.ui.rememberVideoSideSheetsController
+import com.wynime.app.videoplayer.ui.top.PlayerTopBar
+import com.wynime.app.videoplayer.ui.top.SystemTime
+import com.wynime.app.videoplayer.videoenhancement.VideoEnhancementController
+import com.wynime.app.videoplayer.videoenhancement.VideoEnhancementMode
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.isAndroid
+import com.wynime.utils.platform.isDesktop
+import com.wynime.utils.platform.isMobile
 import org.jetbrains.compose.resources.stringResource
 import org.openani.mediamp.MediampPlayer
 import org.openani.mediamp.features.audioTracks
 import org.openani.mediamp.features.subtitleTracks
-import org.openani.mediamp.test.TestMediampPlayer
 import org.openani.mediamp.togglePlayWhenReady
 import kotlin.time.Duration
 
@@ -181,13 +169,8 @@ internal const val TAG_COLLAPSE_SIDEBAR = "collapseSidebar"
 internal const val TAG_MEDIA_SELECTOR_SHEET = "MediaSelectorSheet"
 internal const val TAG_EPISODE_SELECTOR_SHEET = "EpisodeSelectorSheet"
 
-/**
- * 剧集详情页面顶部的视频控件.
- * @param title 仅在全屏时显示的标题
- * @param fullscreenState 全屏状态与全屏请求. 控制栏按钮、双击、F 键、上下滑手势全部走它
- */
 @Composable
-internal fun EpisodeVideoImpl(
+fun EpisodeVideoImpl(
     playerState: MediampPlayer,
     expanded: Boolean,
     hasNextEpisode: Boolean,
@@ -228,14 +211,14 @@ internal fun EpisodeVideoImpl(
     fastForwardSpeed: Float = 3f,
     contentWindowInsets: WindowInsets = WindowInsets(0.dp),
 ) {
-    // Don't rememberSavable. 刻意让每次切换都是隐藏的
+
     var isLocked by remember { mutableStateOf(false) }
     var showPlayerStats by remember { mutableStateOf(false) }
     val playerStats by rememberPlayerStatsState(playerState)
     val sheetsController = rememberVideoSideSheetsController<EpisodeVideoSideSheetPage>()
     val anySideSheetVisible by sheetsController.hasPageAsState()
     val previewModeText = stringResource(Lang.subject_episode_preview_mode)
-    // auto hide cursor
+
     val videoInteractionSource = remember { MutableInteractionSource() }
     val isVideoHovered by videoInteractionSource.collectIsHoveredAsState()
     val showCursor by remember(playerControllerState) {
@@ -253,7 +236,7 @@ internal fun EpisodeVideoImpl(
         swipeSeekerConfig = swipeSeekerConfig,
     )
 
-    AniTheme(darkModeOverride = DarkMode.DARK) {
+    WynimeTheme(darkModeOverride = DarkMode.DARK) {
         val progressSliderColors = MediaProgressSliderDefaults.colors()
         VideoScaffold(
             expanded = expanded,
@@ -292,8 +275,7 @@ internal fun EpisodeVideoImpl(
                                 onToggleAlwaysOnTop = onToggleAlwaysOnTop,
                             )
                         },
-                        // VideoScaffold already applies top/horizontal insets around the top bar.
-                        // Passing the same insets into TopAppBar duplicates the status-bar padding on iOS portrait.
+
                         windowInsets = WindowInsets(0.dp),
                     )
                 }
@@ -307,7 +289,7 @@ internal fun EpisodeVideoImpl(
                 if (LocalIsPreviewing.current) {
                     Text(previewModeText)
                 } else {
-                    // Save the status bar height to offset the video player
+
                     val statusBarHeight by rememberStatusBarHeightAsState()
 
                     VideoPlayer(
@@ -381,7 +363,7 @@ internal fun EpisodeVideoImpl(
                     EpisodeVideoLoadingIndicator(
                         playerState,
                         videoLoadingState,
-                        optimizeForFullscreen = expanded, // TODO: 这对 PC 其实可能不太好
+                        optimizeForFullscreen = expanded,
                     )
                     val debugViewModel = rememberDebugSettingsViewModel()
                     @OptIn(TestOnly::class)
@@ -440,7 +422,7 @@ internal fun EpisodeVideoImpl(
                             )
                         }
                         val audioLevelController = audioController as? MediampAudioLevelController
-                        // 用「有没有鼠标」而不是「此刻在用鼠标」: 后者会让这个常驻控件随输入方式反复显隐.
+
                         val hasMouse = hasPointerDevice(
                             LocalPlatform.current,
                             LocalActiveInputSource.current.hasSeenMouse,
@@ -533,13 +515,6 @@ internal fun EpisodeVideoImpl(
     }
 }
 
-/**
- * 将进度条的通用触摸状态机接入播放器 UI：拖动期间保留 inline progress slider，
- * 手指向上滑过取消阈值时持续显示取消提示。
- *
- * 状态始终存在，是否响应触摸由 [MediaProgressSlider] 按本次指针事件判断，避免输入设备切换后的
- * 第一次拖动仍受组合期 [GestureFamily] 影响。
- */
 @Composable
 private fun rememberPlayerTouchSeekState(
     controllerState: PlayerControllerState,
@@ -548,7 +523,7 @@ private fun rememberPlayerTouchSeekState(
 ): TouchSeekState {
     val density = LocalDensity.current
     return remember(controllerState, indicatorState, swipeSeekerConfig, density) {
-        // 同一 TouchSeekState 生命周期内，每次请求都由固定 requester 和 indicator ticket 撤销。
+
         val controllerRequester = Any()
         var indicatorTicket: Int? = null
         fun stopCancellationIndicator() {
@@ -560,19 +535,17 @@ private fun rememberPlayerTouchSeekState(
             density = density,
             onStateChanged = { state ->
                 when (state) {
-                    // 手势结束：恢复控制器的正常显隐，并关闭可能存在的取消提示。
+
                     TouchSeekState.State.Idle -> {
                         controllerState.cancelRequestInlineProgressSlider(controllerRequester)
                         stopCancellationIndicator()
                     }
 
-                    // 正常拖动：保留 bottom bar 内正在接收触摸事件的原进度条。
                     TouchSeekState.State.Seeking -> {
                         controllerState.setRequestInlineProgressSlider(controllerRequester)
                         stopCancellationIndicator()
                     }
 
-                    // 进入取消区域：进度条保持原位，只将中央指示器切换为取消提示。
                     TouchSeekState.State.Cancelling -> {
                         indicatorTicket = indicatorState.startSeekCancellation()
                     }
@@ -634,9 +607,9 @@ private fun EpisodeVideoTopBarActions(
 
     IconButton({ onClickSkipOpEd(playerState.currentPositionMillis.value) }) {
         val icon = when (skipDurationSeconds) {
-            85L -> AniIcons.Forward85
-            90L -> AniIcons.Forward90
-            else -> AniIcons.Forward80
+            85L -> WynimeIcons.Forward85
+            90L -> WynimeIcons.Forward90
+            else -> WynimeIcons.Forward80
         }
         Icon(icon, fastForwardSecondsText)
     }
@@ -766,9 +739,9 @@ private fun EpisodeVideoTopBarActions(
             Modifier.testTag(TAG_COLLAPSE_SIDEBAR),
         ) {
             if (sidebarVisible) {
-                Icon(AniIcons.RightPanelClose, contentDescription = collapseSidebarText)
+                Icon(WynimeIcons.RightPanelClose, contentDescription = collapseSidebarText)
             } else {
-                Icon(AniIcons.RightPanelOpen, contentDescription = expandSidebarText)
+                Icon(WynimeIcons.RightPanelOpen, contentDescription = expandSidebarText)
             }
         }
     }
@@ -777,127 +750,3 @@ private fun EpisodeVideoTopBarActions(
 @Stable
 object EpisodeVideoDefaults
 
-@PreviewLightDark
-@Preview(name = "Landscape Fullscreen", device = "spec:width=1280dp,height=800dp,dpi=240")
-@Composable
-private fun PreviewVideoScaffoldFullscreen() {
-    PreviewVideoScaffoldImpl(expanded = true)
-}
-
-@PreviewLightDark
-@Preview(name = "Portrait", heightDp = 300)
-@Composable
-private fun PreviewVideoScaffold() {
-    PreviewVideoScaffoldImpl(expanded = false)
-}
-
-@PreviewLightDark
-@Preview(name = "Detached Slider Fullscreen", device = "spec:width=1280dp,height=800dp,dpi=240")
-@Composable
-private fun PreviewDetachedSliderFullscreen() {
-    PreviewVideoScaffoldImpl(expanded = true, controllerVisibility = ControllerVisibility.DetachedSliderOnly)
-}
-
-@PreviewLightDark
-@Preview(name = "Detached Slider", heightDp = 300)
-@Composable
-private fun PreviewDetachedSlider() {
-    PreviewVideoScaffoldImpl(expanded = false, controllerVisibility = ControllerVisibility.DetachedSliderOnly)
-}
-
-@OptIn(TestOnly::class)
-@Composable
-private fun PreviewVideoScaffoldImpl(
-    expanded: Boolean,
-    controllerVisibility: ControllerVisibility = ControllerVisibility.Visible
-) = ProvideCompositionLocalsForPreview {
-    val scope = rememberCoroutineScope()
-    val playerState = remember {
-        TestMediampPlayer(scope.coroutineContext)
-    }
-
-    val controllerState = rememberVideoControllerState(initialVisibility = controllerVisibility)
-
-    val progressSliderState = rememberMediaProgressSliderState(
-        playerState,
-        onPreview = {
-            // not yet supported
-        },
-        onPreviewFinished = {
-            playerState.seekTo(it)
-        },
-    )
-    val videoScaffoldConfig = VideoScaffoldConfig.Default
-    val fullscreenState = remember(expanded) { MutablePlayerFullscreenState(expanded) }
-    val cacheProgressInfoFlow = staticMediaCacheProgressState(ChunkState.NONE).flow
-    EpisodeVideoImpl(
-        playerState = playerState,
-        expanded = expanded,
-        hasNextEpisode = true,
-        onClickNextEpisode = {},
-        playerControllerState = controllerState,
-        onClickSkipOpEd = { playerState.skip(DEFAULT_OP_ED_SKIP_DURATION.inWholeMilliseconds) },
-        title = {
-            EpisodePlayerTitle(
-                "28",
-                "因为下次再见的时候就会很难为情",
-                "葬送的芙莉莲",
-            )
-        },
-        videoLoadingStateFlow = MutableStateFlow(VideoLoadingState.Succeed),
-        fullscreenState = fullscreenState,
-        onClickScreenshot = {},
-        detachedProgressSlider = {
-            PlayerControllerDefaults.MediaProgressSlider(
-                progressSliderState,
-                cacheProgressInfoFlow = cacheProgressInfoFlow,
-                enabled = false,
-            )
-        },
-        sidebarVisible = true,
-        onToggleSidebar = {},
-        progressSliderState = progressSliderState,
-        cacheProgressInfoFlow = cacheProgressInfoFlow,
-        audioController = NoOpLevelController,
-        brightnessController = NoOpLevelController,
-        playbackSpeedControllerState = null,
-        videoAspectRatioControllerState = remember {
-            VideoAspectRatioControllerState(NoOpVideoAspectRatio, scope)
-        },
-        leftBottomTips = {
-            PlayerControllerDefaults.LeftBottomTips(
-                onClick = {},
-                modifier = Modifier.padding(if (expanded) 16.dp else 8.dp),
-            )
-        },
-        fullscreenSwitchButton = {
-            EpisodeVideoDefaults.FloatingFullscreenSwitchButton(
-                videoScaffoldConfig.fullscreenSwitchMode,
-                fullscreenState,
-            )
-        },
-        sideSheets = { sheetsController ->
-            EpisodeVideoDefaults.SideSheets(
-                sheetsController,
-                controllerState,
-                mediaSelectorPage = {
-                    EpisodeVideoSideSheets.MediaSelectorSheet(
-                        mediaSelectorState = rememberTestMediaSelectorState(),
-                        fetchRequest = TestMediaFetchRequest,
-                        onFetchRequestChange = {},
-                        onDismissRequest = { goBack() },
-                        onRestartSource = {},
-                    )
-                },
-                episodeSelectorPage = {
-                    EpisodeVideoSideSheets.EpisodeSelectorSheet(
-                        state = rememberTestEpisodeSelectorState(),
-                        onDismissRequest = { goBack() },
-                    )
-                },
-            )
-        },
-        shareData = MediaShareData.from(null, null),
-        onClickCache = {},
-    )
-}

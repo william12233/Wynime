@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.settings.framework.components
+package com.wynime.app.ui.settings.framework.components
 
 import androidx.annotation.UiThread
 import androidx.compose.foundation.clickable
@@ -36,9 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_cancel
-import me.him188.ani.app.ui.lang.settings_confirm
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_cancel
+import com.wynime.app.ui.lang.settings_confirm
 import org.jetbrains.compose.resources.stringResource
 
 @Stable
@@ -92,15 +92,6 @@ private fun <T> rememberSingleSelectionState(
     }
 }
 
-/**
- * 单选对话框，不同于 [DropdownItem]，此对话框将详细解释各个选项的功能
- *
- * @param description 选项的副标题描述，或者为当前选择的值
- * @param listItem 选择对话框中列表的项
- * @param icon 选项图标
- * @param dialogIcon 对话框顶部图标
- * @param onSelectItem 在选择某个选项后进行的处理，若返回 `false` 将回退之上一个选项。
- */
 @SettingsDsl
 @Composable
 fun <T> SettingsScope.SingleSelectionItem(

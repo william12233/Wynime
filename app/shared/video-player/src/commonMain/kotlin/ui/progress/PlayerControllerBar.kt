@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.progress
+package com.wynime.app.videoplayer.ui.progress
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -81,31 +72,31 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.domain.media.player.MediaCacheProgressInfo
-import me.him188.ani.app.ui.foundation.SteppedSlider
-import me.him188.ani.app.ui.foundation.dialogs.PlatformPopupProperties
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.theme.AniTheme
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.video_player_cancel
-import me.him188.ani.app.ui.lang.video_player_mute
-import me.him188.ani.app.ui.lang.video_player_next_episode
-import me.him188.ani.app.ui.lang.video_player_pause
-import me.him188.ani.app.ui.lang.video_player_play
-import me.him188.ani.app.ui.lang.video_player_select_episode
-import me.him188.ani.app.ui.lang.video_player_skip_op_ed
-import me.him188.ani.app.ui.lang.video_player_speed
-import me.him188.ani.app.ui.lang.video_player_volume
-import me.him188.ani.app.utils.formatSpeedValue
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerFullscreenState
-import me.him188.ani.app.videoplayer.ui.VideoAspectRatioControllerState
-import me.him188.ani.app.videoplayer.ui.keepLayoutWhenHidden
-import me.him188.ani.app.videoplayer.ui.renderAspectRatioMode
-import me.him188.ani.app.videoplayer.ui.toggle
-import me.him188.ani.app.videoplayer.ui.top.needWorkaroundForFocusManager
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.domain.media.player.MediaCacheProgressInfo
+import com.wynime.app.ui.foundation.SteppedSlider
+import com.wynime.app.ui.foundation.dialogs.PlatformPopupProperties
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.theme.WynimeTheme
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.video_player_cancel
+import com.wynime.app.ui.lang.video_player_mute
+import com.wynime.app.ui.lang.video_player_next_episode
+import com.wynime.app.ui.lang.video_player_pause
+import com.wynime.app.ui.lang.video_player_play
+import com.wynime.app.ui.lang.video_player_select_episode
+import com.wynime.app.ui.lang.video_player_skip_op_ed
+import com.wynime.app.ui.lang.video_player_speed
+import com.wynime.app.ui.lang.video_player_volume
+import com.wynime.app.utils.formatSpeedValue
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.videoplayer.ui.PlayerControllerState
+import com.wynime.app.videoplayer.ui.PlayerFullscreenState
+import com.wynime.app.videoplayer.ui.VideoAspectRatioControllerState
+import com.wynime.app.videoplayer.ui.keepLayoutWhenHidden
+import com.wynime.app.videoplayer.ui.renderAspectRatioMode
+import com.wynime.app.videoplayer.ui.toggle
+import com.wynime.app.videoplayer.ui.top.needWorkaroundForFocusManager
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
@@ -121,9 +112,7 @@ const val TAG_FULL_SCREEN_BUTTON = "FullScreenButton"
 
 @Stable
 object PlayerControllerDefaults {
-    /**
-     * To pause/play
-     */
+
     @Composable
     fun PlaybackIcon(
         isPlaying: () -> Boolean,
@@ -290,18 +279,13 @@ object PlayerControllerDefaults {
         }
     }
 
-    /**
-     * To enter/exit fullscreen.
-     *
-     * 图标方向和点击行为都取自同一个 [fullscreenState], 不可能对不上.
-     */
     @Composable
     fun FullscreenIcon(
         fullscreenState: PlayerFullscreenState,
         modifier: Modifier = Modifier,
     ) {
         val isFullscreen = fullscreenState.isFullscreen
-        val focusManager by rememberUpdatedState(LocalFocusManager.current) // workaround for #288
+        val focusManager by rememberUpdatedState(LocalFocusManager.current)
         IconButton(
             onClick = remember(fullscreenState) { { fullscreenState.toggle() } },
             modifier.ifThen(needWorkaroundForFocusManager) {
@@ -320,12 +304,6 @@ object PlayerControllerDefaults {
         }
     }
 
-    /**
-     * 当前倍速入口与 Slider 弹层.
-     *
-     * 入口始终显示规范化后的当前值 (固定两位小数); 弹层只有一条水平 Slider,
-     * 拖动期间实时预览, 松手后提交最终值.
-     */
     @Composable
     fun SpeedSwitcher(
         state: PlaybackSpeedControllerState,
@@ -403,7 +381,7 @@ object PlayerControllerDefaults {
             onDismissRequest = onDismissRequest,
             properties = PlatformPopupProperties(focusable = true, clippingEnabled = false),
         ) {
-            AniTheme(darkModeOverride = DarkMode.DARK) {
+            WynimeTheme(darkModeOverride = DarkMode.DARK) {
                 Surface(
                     modifier = Modifier
                         .testTag(TAG_SPEED_SWITCHER_DROPDOWN_MENU)
@@ -434,15 +412,6 @@ object PlayerControllerDefaults {
         }
     }
 
-    /**
-     * 把弹层放在锚点上方并水平居中, 整体限制在窗口内; 上方放不下时放到锚点下方.
-     *
-     * Material 的 tooltip 定位不做水平限制: 全屏播放时倍速按钮靠近屏幕边缘, 居中的弹层会伸进刘海对侧的
-     * safe area, 离物理边缘只剩十几 dp, 滑块拖到末端时数值气泡还会被屏幕边缘裁掉.
-     *
-     * 这里的 [PopupPositionProvider.calculatePosition] 收到的窗口尺寸和锚点坐标在 iOS 和桌面端已经扣掉了
-     * 系统栏 (Popup 的 `usePlatformInsets`), 所以限制在窗口内就等于限制在 safe area 内, 不需要再读 insets.
-     */
     @Composable
     private fun rememberAboveAnchorWithinWindowPositionProvider(spacing: Dp): PopupPositionProvider {
         val spacingPx = with(LocalDensity.current) { spacing.roundToPx() }
@@ -463,10 +432,6 @@ object PlayerControllerDefaults {
             }
         }
     }
-
-    /**
-     * Video aspect ratio selector
-     */
 
     @Composable
     fun VideoAspectRatioSelector(
@@ -490,9 +455,6 @@ object PlayerControllerDefaults {
         )
     }
 
-    /**
-     * @param optionsProvider The options to choose from. Note that when the value changes, it will not reflect in the UI.
-     */
     @Composable
     fun <T> OptionsSwitcher(
         value: T,
@@ -582,7 +544,7 @@ object PlayerControllerDefaults {
         onClick: () -> Unit,
         modifier: Modifier = Modifier
     ) {
-        AniTheme(darkModeOverride = DarkMode.DARK) {
+        WynimeTheme(darkModeOverride = DarkMode.DARK) {
             Surface(
                 modifier = modifier,
                 shape = CircleShape,
@@ -605,20 +567,6 @@ object PlayerControllerDefaults {
     }
 }
 
-/**
- * The controller bar of a video player. Usually at the bottom of the screen (the video player).
- *
- * See [PlayerControllerDefaults] for components.
- *
- * @param startActions [PlayerControllerDefaults.PlaybackIcon]
- * @param progressIndicator [MediaProgressIndicatorText]
- * @param progressSlider [MediaProgressSlider]
- * @param endActions [PlayerControllerDefaults.FullscreenIcon]
- * @param expanded Whether the controller bar is expanded.
- * If `true`, the [progressIndicator] and [progressSlider] will be shown on a separate row above.
- * If `false`, the entire bar will be only one row.
- * @param sliderOnly Whether to keep only [progressSlider] visible without replacing its composition.
- */
 @Composable
 fun PlayerControllerBar(
     startActions: @Composable RowScope.() -> Unit,
@@ -631,7 +579,7 @@ fun PlayerControllerBar(
 ) {
     Column(
         modifier
-            .clickable(remember { MutableInteractionSource() }, null, onClick = {}) // Consume touch event
+            .clickable(remember { MutableInteractionSource() }, null, onClick = {})
             .padding(
                 horizontal = if (expanded) 8.dp else 4.dp,
                 vertical = if (expanded) 4.dp else 2.dp,
@@ -662,7 +610,7 @@ fun PlayerControllerBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(if (expanded) 8.dp else 4.dp),
         ) {
-            // 播放 / 暂停按钮
+
             Row(
                 Modifier.keepLayoutWhenHidden(sliderOnly),
                 verticalAlignment = Alignment.CenterVertically,

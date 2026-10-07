@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.httpdownloader
+package com.wynime.utils.httpdownloader
 
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
@@ -19,110 +10,45 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
-/**
- * Interface for downloading HTTP media files, including HLS (m3u8) streams and regular media files (.mp4, .mkv, etc.).
- *
- * This interface handles:
- * - Management of multiple concurrent downloads
- * - Progress reporting via Flow for all downloads
- * - Pause/resume/cancel functionality for individual downloads
- * - Support for both HLS streams and regular media files using HTTP range requests
- */
 interface HttpDownloader : AutoCloseable {
-    /**
-     * Flow of progress updates for all downloads.
-     */
+
     val progressFlow: Flow<DownloadProgress>
 
-    /**
-     * Gets a flow of progress updates for a specific download.
-     */
     fun getProgressFlow(downloadId: DownloadId): Flow<DownloadProgress>
 
-    /**
-     * Flow that emits the entire list of known download states.
-     * These states remain until removed internally (e.g. upon close).
-     */
     val downloadStatesFlow: Flow<List<DownloadState>>
 
-    /**
-     * Initialize this downloader. Should be called before starting downloads.
-     *
-     * This may load any persisted download states, but does NOT resume downloads.
-     * You may need to call [resume] for each download [getActiveDownloadIds] to resume them.
-     */
     suspend fun init()
 
-    /**
-     * Starts a new download and returns its initial download state.
-     *
-     * @param parentDirectory absolute path
-     */
     suspend fun download(
         url: String,
         options: DownloadOptions = DownloadOptions(),
     ): DownloadId
 
-    /**
-     * Starts a new download with a specific ID.
-     *
-     * @return initial download state if the download job is newly created,
-     *  or the snapshot state of the download job if job with [downloadId] already exists.
-     */
     suspend fun downloadWithId(
         downloadId: DownloadId,
         url: String,
         options: DownloadOptions = DownloadOptions(),
     ): DownloadState?
 
-    /**
-     * Resumes a previously paused or failed download by ID.
-     */
     suspend fun resume(downloadId: DownloadId): Boolean
 
-    /**
-     * Gets all currently active download IDs.
-     */
     suspend fun getActiveDownloadIds(): List<DownloadId>
 
-    /**
-     * Pauses a specific download.
-     */
     suspend fun pause(downloadId: DownloadId): Boolean
 
-    /**
-     * Pauses all active downloads.
-     */
     suspend fun pauseAll(): List<DownloadId>
 
-    /**
-     * Cancels a specific download.
-     */
     suspend fun cancel(downloadId: DownloadId): Boolean
 
-    /**
-     * Cancels all active downloads.
-     */
     suspend fun cancelAll()
 
-    /**
-     * Removes a download, including any cached files owned by the downloader.
-     */
     suspend fun remove(downloadId: DownloadId): Boolean
 
-    /**
-     * Gets the current state of a download by ID.
-     */
     suspend fun getState(downloadId: DownloadId): DownloadState?
 
-    /**
-     * Gets states of all known downloads.
-     */
     suspend fun getAllStates(): List<DownloadState>
 
-    /**
-     * Closes and releases all resources used by this downloader.
-     */
     override fun close()
 }
 
@@ -152,20 +78,16 @@ data class DownloadProgress(
     val totalSegments: Int,
     val downloadedSegments: Int,
     val downloadedBytes: Long,
-    val totalBytes: Long, // -1 for unknown
+    val totalBytes: Long,
     val status: DownloadStatus,
     val error: DownloadError? = null,
-    /**
-     * 分片或密钥下载最近一次失败的重试信息. 只在内存中保留, 分片成功或任务停止后为 `null`.
-     */
+
     val lastSegmentFailure: SegmentFailure? = null,
 )
 
 @Serializable
 data class SegmentFailure(
-    /**
-     * 失败的分片序号, 下载 HLS 密钥失败时为 `null`.
-     */
+
     val segmentIndex: Int?,
     val attempt: Int,
     val maxAttempts: Int,
@@ -191,7 +113,7 @@ enum class DownloadStatus {
         Index(value = ["downloadId"], unique = true),
     ],
 )
-@Serializable // saved in data store
+@Serializable
 data class DownloadState(
     @field:TypeConverters(DownloadIdConverter::class)
     val downloadId: DownloadId,
@@ -220,11 +142,6 @@ data class DownloadState(
 enum class MediaType {
     M3U8, MP4, MKV;
 
-    /**
-     * The file extension for the output file of this media type.
-     *
-     * M3U8 segments are remuxed into a single MP4 file.
-     */
     val outputFileExtension: String
         get() = when (this) {
             M3U8 -> ".mp4"

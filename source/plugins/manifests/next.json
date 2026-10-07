@@ -1,1 +1,27 @@
-{"id":"next","name":"Xifan Next","version":"1.0.25","pluginApiVersion":2,"minHostVersion":"0.1.3","entryClass":"tw.wynime.sources.next.NextEntryPoint","website":"https://next.xifanacg.com/","icon":"https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico","description":"Xifan Next 動畫來源；依當前頁面公開設定動態取得播放資料並保留頁面回退。","platforms":["desktop","android"],"artifacts":{"desktop":{"url":"artifacts/source-next.jar","sha256":"dd53dc004ec618074cbe6844fbf664fee7f761cf62a81c171e13deb76621e995","format":"jar"},"android":{"url":"artifacts/source-next-android.jar","sha256":"1ea1e333aa960153ccf1bc3290ed78e58803c0f2827710802d51bf5a3df6953c","format":"jar"}}}
+{
+  "id": "next",
+  "name": "Xifan Next",
+  "version": "1.0.26",
+  "pluginApiVersion": 3,
+  "minHostVersion": "0.1.3",
+  "entryClass": "tw.wynime.sources.next.NextEntryPoint",
+  "website": "https://next.xifanacg.com/",
+  "icon": "https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico",
+  "description": "Xifan Next 動畫來源；依當前頁面公開設定動態取得播放資料並保留頁面回退。",
+  "platforms": [
+    "desktop",
+    "android"
+  ],
+  "artifacts": {
+    "desktop": {
+      "url": "artifacts/source-next.jar",
+      "sha256": "decef068a845fac89b9f8b5d03802585a3b6b12cdd319e49f2332fe044b6373f",
+      "format": "jar"
+    },
+    "android": {
+      "url": "artifacts/source-next-android.jar",
+      "sha256": "75f57b5cc090937d17b73b2d3985302dfeb0c40ec13a79366aca21d464080252",
+      "format": "jar"
+    }
+  }
+}

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.schedule
+package com.wynime.app.ui.exploration.schedule
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,28 +30,16 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.format.char
 import kotlinx.datetime.number
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.layout.paddingIfNotEmpty
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_schedule_episode
-import me.him188.ani.app.ui.lang.exploration_schedule_episode_ep_and_sort
-import me.him188.ani.app.ui.lang.exploration_schedule_time_unknown
-import me.him188.ani.app.ui.lang.exploration_schedule_view_details
-import me.him188.ani.datasources.api.EpisodeSort
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.layout.paddingIfNotEmpty
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_schedule_episode
+import com.wynime.app.ui.lang.exploration_schedule_episode_ep_and_sort
+import com.wynime.app.ui.lang.exploration_schedule_time_unknown
+import com.wynime.app.ui.lang.exploration_schedule_view_details
+import com.wynime.datasources.api.EpisodeSort
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 新番时间表的一个项目.
- *
- * @param subjectTitle 条目的标题, [ScheduleItemDefaults.SubjectTitle]
- * @param episode 剧集的序号以及名称, [ScheduleItemDefaults.Episode]
- * @param leadingImage 条目的封面, [AsyncImage]
- * @param time 时间, 例如 "12:00", [ScheduleItemDefaults.Time]
- *
- * @see ScheduleItemDefaults
- *
- * [Design](https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=349-10249&t=hBPSAEVlsmuEWPJt-0)
- */
 @Composable
 fun ScheduleItem(
     onClick: () -> Unit,
@@ -72,22 +51,6 @@ fun ScheduleItem(
     modifier: Modifier = Modifier,
     colors: ListItemColors = ListItemDefaults.colors(),
 ) {
-//    ListItem(
-//        headlineContent = subjectTitle,
-//        supportingContent = episode,
-//        leadingContent = {
-//            Box(Modifier.size(56.dp)) {
-//                leadingImage()
-//            }
-//        },
-//        trailingContent = {
-//            ProvideTextStyle(MaterialTheme.typography.labelMedium) {
-//                time()
-//            }
-//        },
-//        colors = colors,
-//        modifier = modifier,
-//    )
 
     Column {
         Row(Modifier.paddingIfNotEmpty(horizontal = 16.dp).paddingIfNotEmpty(top = 8.dp)) {
@@ -115,9 +78,6 @@ fun ScheduleItem(
 
 }
 
-/**
- * Material3 DividerWithSubhead.
- */
 @Composable
 fun HorizontalDividerWithSubhead(
     modifier: Modifier = Modifier,
@@ -180,9 +140,6 @@ object ScheduleItemDefaults {
         )
     }
 
-    /**
-     * @param time 放送时刻, `null` 表示时间未定, 显示 [Lang.exploration_schedule_time_unknown].
-     */
     @Composable
     fun Time(
         time: LocalTime?,
@@ -205,17 +162,11 @@ object ScheduleItemDefaults {
         minute()
     }
 
-    /**
-     * 渲染已知的放送时刻, 例如 "12:00"; [futureStartDate] 不为 `null` 时在上一行加上日期, 例如 "1/2\n12:00".
-     */
     fun renderTime(
         futureStartDate: LocalDate?,
         time: LocalTime,
     ): String = withFutureStartDate(futureStartDate, timeFormatter.format(time))
 
-    /**
-     * @param time 放送时刻, `null` 表示时间未定, 渲染为 [timeUnknownText] (由 composable 传入 [Lang.exploration_schedule_time_unknown]).
-     */
     fun renderTime(
         futureStartDate: LocalDate?,
         time: LocalTime?,

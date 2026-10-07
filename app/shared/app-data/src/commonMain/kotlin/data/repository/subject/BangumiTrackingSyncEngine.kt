@@ -1,13 +1,6 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
+package com.wynime.app.data.repository.subject
 
-package me.him188.ani.app.data.repository.subject
-
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 
 enum class BangumiTrackingConflictPolicy {
     LOCAL_FIRST,
@@ -52,10 +45,6 @@ data class BangumiTrackingSyncPlan(
     val conflict: Boolean,
 )
 
-/**
- * Pure conflict resolution for subject collection types. It deliberately has no network or
- * database dependency so every policy can be tested with deterministic timestamps.
- */
 object BangumiTrackingSyncEngine {
     fun plan(
         policy: BangumiTrackingConflictPolicy,
@@ -135,8 +124,7 @@ object BangumiTrackingSyncEngine {
             return if (localChangedAfterBaseline) {
                 BangumiTrackingSyncAction.UpsertRemote(local.type)
             } else {
-                // A collection that was present in the baseline and disappeared remotely has no
-                // remote timestamp. The baseline is the evidence that Bangumi won this change.
+
                 BangumiTrackingSyncAction.MarkLocalUntracked
             }
         }
@@ -146,8 +134,7 @@ object BangumiTrackingSyncEngine {
         return when {
             local.lastUpdated > remote.updatedAt -> BangumiTrackingSyncAction.UpsertRemote(local.type)
             local.lastUpdated < remote.updatedAt -> BangumiTrackingSyncAction.ApplyRemote(remote.type)
-            // Equal timestamps cannot establish a winner. Preserve the conflict instead of
-            // overwriting either side, including when no baseline exists.
+
             else -> BangumiTrackingSyncAction.Conflict
         }
     }

@@ -1,34 +1,24 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.network
+package com.wynime.app.ui.settings.tabs.network
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import me.him188.ani.app.domain.media.fetch.MediaFetcher
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
-import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceSave
-import me.him188.ani.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
-import me.him188.ani.datasources.api.source.FactoryId
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.datasources.api.source.MediaSourceFactory
-import me.him188.ani.datasources.api.source.TestHttpMediaSource
-import me.him188.ani.utils.platform.annotations.TestOnly
-
+import com.wynime.app.domain.media.fetch.MediaFetcher
+import com.wynime.app.domain.media.fetch.MediaSourceManager
+import com.wynime.app.domain.media.selector.MediaSelectorSourceTiers
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.app.domain.mediasource.instance.MediaSourceSave
+import com.wynime.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
+import com.wynime.datasources.api.source.FactoryId
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.datasources.api.source.MediaSourceFactory
+import com.wynime.datasources.api.source.TestHttpMediaSource
+import com.wynime.utils.platform.annotations.TestOnly
 
 @TestOnly
 fun createTestMediaSourceInstance(
-    instanceId: String, // uuid, to be persisted
+    instanceId: String,
     factoryId: FactoryId,
     isEnabled: Boolean,
     config: MediaSourceConfig,
@@ -40,29 +30,6 @@ fun createTestMediaSourceInstance(
     config = config,
     source = source,
 )
-
-//@OptIn(TestOnly::class)
-//@Preview
-//@Composable
-//private fun PreviewNetworkPreferenceTab() {
-//    ProvideCompositionLocalsForPreview(
-//        module = {
-//            single<MediaSourceManager> {
-//                createTestMediaSourceManager()
-//            }
-//        },
-//    ) {
-//        val vm = viewModel { NetworkSettingsViewModel() }
-//        SideEffect {
-//            val testers = vm.mediaSourceTesters.testers
-//            if (testers.size < 3) return@SideEffect
-//            testers.first().result = ConnectionTestResult.SUCCESS
-//            testers.drop(1).first().result = ConnectionTestResult.FAILED
-//            testers.drop(2).first().result = ConnectionTestResult.NOT_ENABLED
-//        }
-//        NetworkSettingsTab()
-//    }
-//}
 
 @TestOnly
 fun createTestMediaSourceManager() = object : MediaSourceManager {

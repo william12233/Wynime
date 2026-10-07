@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.animation
+package com.wynime.app.ui.foundation.animation
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.getValue
@@ -13,7 +13,7 @@ fun Modifier.animateEnable(enabled: Boolean): Modifier = composed(
         properties["enabled"] = enabled
     },
 ) {
-    // Animate alpha value based on the enabled state
+
     val alpha by animateFloatAsState(targetValue = if (enabled) 1f else 0.38f)
     this.alpha(alpha)
 }

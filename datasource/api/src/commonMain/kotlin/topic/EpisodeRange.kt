@@ -1,50 +1,27 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.datasources.api.topic
 
-package me.him188.ani.datasources.api.topic
+import kotlinx.serialization.SerialName
 
 import kotlinx.serialization.Serializable
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.EpisodeRange.Combined
-import me.him188.ani.datasources.api.topic.EpisodeRange.Companion.combined
-import me.him188.ani.datasources.api.topic.EpisodeRange.Companion.unknownSeason
-import me.him188.ani.datasources.api.topic.EpisodeRange.Range
-import me.him188.ani.datasources.api.topic.EpisodeRange.Season
-import me.him188.ani.datasources.api.topic.EpisodeRange.Single
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.EpisodeRange.Combined
+import com.wynime.datasources.api.topic.EpisodeRange.Companion.combined
+import com.wynime.datasources.api.topic.EpisodeRange.Companion.unknownSeason
+import com.wynime.datasources.api.topic.EpisodeRange.Range
+import com.wynime.datasources.api.topic.EpisodeRange.Season
+import com.wynime.datasources.api.topic.EpisodeRange.Single
 import kotlin.jvm.JvmName
 
-/**
- * 剧集范围:
- * - [Single] 单个剧集
- * - [Range] 一段连续剧集范围
- * - [Combined] 多个 [EpisodeRange] 的组合, 不连续
- * - [Season] 一整季的剧集, 但是不知道具体包含哪些集数, 也可能不知道具体是哪一季
- *
- * @see EpisodeSort
- */
 @Serializable
 sealed class EpisodeRange {
-    /**
-     * 是否知道具体集数
-     */
+
     open val isKnown: Boolean get() = true
 
-    /**
-     * 已知的集数列表. 若未知 (例如 [unknownSeason]), 则返回空序列.
-     */
     abstract val knownSorts: Sequence<EpisodeSort>
 
-    /**
-     * 是否肯定为空.
-     */
     abstract fun isEmpty(): Boolean
 
+    @SerialName("me.him188.ani.datasources.api.topic.EpisodeRange.Empty")
     @Serializable
     internal data object Empty : EpisodeRange() {
         override val knownSorts: Sequence<EpisodeSort>
@@ -55,6 +32,7 @@ sealed class EpisodeRange {
         override fun toString(): String = "EpisodeRange(empty)"
     }
 
+    @SerialName("me.him188.ani.datasources.api.topic.EpisodeRange.Single")
     @Serializable
     internal class Single(
         val value: EpisodeSort,
@@ -78,6 +56,7 @@ sealed class EpisodeRange {
         }
     }
 
+    @SerialName("me.him188.ani.datasources.api.topic.EpisodeRange.Range")
     @Serializable
     internal class Range(
         val start: EpisodeSort,
@@ -126,9 +105,7 @@ sealed class EpisodeRange {
         }
     }
 
-    /**
-     * @see combined
-     */
+    @SerialName("me.him188.ani.datasources.api.topic.EpisodeRange.Combined")
     @Serializable
     class Combined internal constructor(
         val first: EpisodeRange,
@@ -185,14 +162,10 @@ sealed class EpisodeRange {
         }
     }
 
-    /**
-     * 季度全集, 但是不知道具体包含哪些集数
-     */
+    @SerialName("me.him188.ani.datasources.api.topic.EpisodeRange.Season")
     @Serializable
     data class Season(
-        /**
-         * 第几季
-         */
+
         val rawNumber: Int,
     ) : EpisodeRange() {
         val numberOrZero: Int get() = if (rawNumber == -1) 0 else rawNumber
@@ -207,37 +180,18 @@ sealed class EpisodeRange {
     companion object {
         fun empty(): EpisodeRange = Empty
 
-        /**
-         * 单个剧集
-         */
         fun single(raw: EpisodeSort): EpisodeRange = Single(raw)
 
-        /**
-         * 单个剧集
-         */
         fun single(raw: String): EpisodeRange = Single(EpisodeSort(raw))
 
-        /**
-         * 从 [start] 到 [end] (包含) 的连续剧集范围.
-         */
         fun range(start: EpisodeSort, end: EpisodeSort): EpisodeRange = Range(start, end)
 
-        /**
-         * 从 [start] 到 [end] (包含) 的连续剧集范围.
-         */
         fun range(start: String, end: String) = range(EpisodeSort(start), EpisodeSort(end))
 
-        /**
-         * 从 [start] 到 [end] (包含) 的连续剧集范围.
-         */
         fun range(start: Int, end: Int) = range(EpisodeSort(start), EpisodeSort(end))
 
-        /**
-         * 将多个 [EpisodeRange] 合并.
-         * @see EpisodeRange.plus
-         */
         fun combined(first: EpisodeRange, second: EpisodeRange): EpisodeRange {
-            // Perform some easy optimizations
+
             if (first is Empty && second is Empty) return Empty
             if (first is Empty) return second
             if (second is Empty) return first
@@ -245,51 +199,26 @@ sealed class EpisodeRange {
             return Combined(first, second)
         }
 
-        /**
-         * 一系列剧集
-         */
         fun range(episodes: Iterable<EpisodeSort>): EpisodeRange =
             combined(episodes.map { single(it) })
 
-        /**
-         * 将多个 [EpisodeRange] 合并.
-         */
         fun combined(list: Iterable<EpisodeRange>): EpisodeRange =
             list.reduceOrNull { acc, episodeRange -> combined(acc, episodeRange) }
                 ?: Empty
 
-        /**
-         * 一个不知道具体集数的季度全集.
-         */
         fun season(number: Int): Season = Season(number)
 
-        /**
-         * 一个不知道具体集数的季度全集. 当 `number` 为 null 时, 表示未知季度.
-         */
         @JvmName("seasonNullable")
         fun season(number: Int?): Season = Season(number ?: -1)
 
-        /**
-         * 一个不确定是第几季, 也不确定其中包含多少集数的季度全集.
-         */
         fun unknownSeason(): Season = Season(-1)
     }
 }
 
-/**
- * 合并两个 [EpisodeRange].
- */
 operator fun EpisodeRange.plus(other: EpisodeRange): EpisodeRange = EpisodeRange.combined(this, other)
 
-/**
- * 判断 [expected] 是否在 [this] 范围内.
- */
 operator fun EpisodeRange.contains(expected: EpisodeSort): Boolean = contains(expected, allowSeason = true)
 
-/**
- * 判断 [expected] 是否在 [this] 范围内.
- * @param allowSeason 为 `true` 时, 将 [EpisodeRange.unknownSeason] 判定为包含.
- */
 fun EpisodeRange.contains(
     expected: EpisodeSort,
     allowSeason: Boolean = true,
@@ -297,22 +226,19 @@ fun EpisodeRange.contains(
 ): Boolean {
     if (allowSeason && this is Season) return true
     if (knownSorts.any { it == expected }) {
-        // exact match
+
         return true
     }
     if (allowSpecial && expected is EpisodeSort.Special) {
         val expectedNumber = expected.number
         return knownSorts.any {
-            val number = it.number // This property has custom getter, so cache it
+            val number = it.number
             number != null && number == expectedNumber
         }
     }
     return false
 }
 
-/**
- * 是否为单一剧集. 季度全集不算.
- */
 fun EpisodeRange.isSingleEpisode(): Boolean {
     return when (this) {
         is Single -> true
@@ -322,10 +248,6 @@ fun EpisodeRange.isSingleEpisode(): Boolean {
     }
 }
 
-/**
- * 是否包含季度全集 [EpisodeRange.Season].
- * 注意, 如果 [this] 为 [EpisodeRange.Range], 即使范围为 `1..12`, 该函数也会返回 `false`.
- */
 fun EpisodeRange.hasSeason(): Boolean = when (this) {
     is Season -> true
     is Combined -> first.hasSeason() || second.hasSeason()
@@ -339,7 +261,6 @@ data class Alliance(
     val id: String,
     val name: String,
 )
-
 
 private fun <T> Sequence<T>.sequenceEquals(other: Sequence<T>): Boolean {
     val iterator = iterator()

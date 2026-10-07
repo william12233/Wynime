@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.tools
+package com.wynime.app.tools
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,15 +13,9 @@ val LocalTimeFormatter = androidx.compose.runtime.compositionLocalOf<TimeFormatt
     error("No TimeFormatter provided")
 }
 
-/**
- * @see TimeFormatter
- * @see LocalTimeFormatter
- *
- * @param showTime 当距今比较远时, 是否展示时间
- */
 @Composable
 fun formatDateTime(
-    timestamp: Long, // millis
+    timestamp: Long,
     showTime: Boolean = true,
 ): String {
     val formatter by rememberUpdatedState(LocalTimeFormatter.current)
@@ -53,12 +38,9 @@ fun formatDateTime(
     }
 }
 
-/**
- * @see WeekFormatter
- */
 @Composable
 fun formatDateAsWeek(
-    timestamp: Long, // millis
+    timestamp: Long,
     showTime: Boolean = true,
 ): String {
     return remember(timestamp, showTime) {

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -45,25 +36,21 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.him188.ani.app.ui.foundation.dialogs.PlatformPopupProperties
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.media_selector_filter_alliance
-import me.him188.ani.app.ui.lang.media_selector_filter_clear
-import me.him188.ani.app.ui.lang.media_selector_filter_expand
-import me.him188.ani.app.ui.lang.media_selector_filter_resolution
-import me.him188.ani.app.ui.lang.media_selector_filter_selected
-import me.him188.ani.app.ui.lang.media_selector_filter_subtitle
-import me.him188.ani.app.ui.media.rememberMediaDetailsStrings
-import me.him188.ani.app.ui.media.renderSubtitleLanguage
+import com.wynime.app.ui.foundation.dialogs.PlatformPopupProperties
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.media_selector_filter_alliance
+import com.wynime.app.ui.lang.media_selector_filter_clear
+import com.wynime.app.ui.lang.media_selector_filter_expand
+import com.wynime.app.ui.lang.media_selector_filter_resolution
+import com.wynime.app.ui.lang.media_selector_filter_selected
+import com.wynime.app.ui.lang.media_selector_filter_subtitle
+import com.wynime.app.ui.media.rememberMediaDetailsStrings
+import com.wynime.app.ui.media.renderSubtitleLanguage
 import org.jetbrains.compose.resources.stringResource
-
 
 private inline val minWidth get() = 60.dp
 private inline val maxWidth get() = 120.dp
 
-/**
- * 筛选
- */
 @Composable
 fun MediaSelectorFilters(
     resolution: MediaPreferenceItemState<String>,
@@ -133,11 +120,6 @@ private fun MediaSelectorFilterChipText(text: String, modifier: Modifier = Modif
     )
 }
 
-/**
- * @param selected 选中的值, 为 null 时表示未选中
- * @param name 未被选中时显示
- * @param label 选中时显示
- */
 @Composable
 private fun <T : Any> MediaSelectorFilterChip(
     selected: T?,
@@ -179,7 +161,7 @@ private fun <T : Any> MediaSelectorFilterChip(
                 } else {
                     Box(contentAlignment = Alignment.Center) {
                         Box(
-                            Modifier.alpha(if (selectedState == null) 1f else 0f), // 总是占位
+                            Modifier.alpha(if (selectedState == null) 1f else 0f),
                         ) {
                             name()
                         }
@@ -205,7 +187,7 @@ private fun <T : Any> MediaSelectorFilterChip(
             modifier = modifier.heightIn(min = 40.dp),
             border = InputChipDefaults.inputChipBorder(
                 enabled = true, chipSelected,
-                // M3 spec is outlineVariant, but we use outline for prominent visual
+
                 borderColor = MaterialTheme.colorScheme.outline,
             ),
         )

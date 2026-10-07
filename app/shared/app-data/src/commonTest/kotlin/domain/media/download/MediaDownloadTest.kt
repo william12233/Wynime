@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.download
+package com.wynime.app.domain.media.download
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,9 +15,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
 
 class MediaDownloadTest {
     private fun TestScope.download(
@@ -34,9 +25,6 @@ class MediaDownloadTest {
         storage: DownloadTestStorage = DownloadTestStorage(),
     ): MediaDownload = MediaDownload(cache, storage, backgroundScope)
 
-    /**
-     * 推进一个快照采样周期.
-     */
     private fun TestScope.tick() {
         advanceTimeBy(1.seconds)
         runCurrent()
@@ -138,17 +126,14 @@ class MediaDownloadTest {
         assertNull(initial.operation)
         assertFalse(initial.isBusy)
 
-        // 可播放性的变化不经采样, 立即反映.
         cache.canPlay.value = false
         runCurrent()
         assertFalse(received.last().canPlay)
 
-        // 进度经采样, 在下一个采样周期反映.
         cache.fileStats.value = MediaCache.FileStats(totalSize = 100.bytes, downloadedBytes = 50.bytes)
         tick()
         assertEquals(cache.fileStats.value.downloadProgress, received.last().progress)
 
-        // 操作与状态的变化立即反映.
         assertTrue(download.claim(DownloadOperation.Pause))
         runCurrent()
         received.last().let {
@@ -182,7 +167,6 @@ class MediaDownloadTest {
         }
         assertEquals(1, cache.attempts)
 
-        // 最后一个订阅者离开 5 秒后共享停止, 再有订阅者时重新收集上游.
         collector.cancel()
         advanceTimeBy(6.seconds)
         runCurrent()
@@ -208,7 +192,7 @@ class MediaDownloadTest {
         assertEquals(1, cache.fileStats.subscriptionCount.value)
         var replayed: DownloadSnapshot? = null
         launch(start = CoroutineStart.UNDISPATCHED) { replayed = download.snapshot.first() }
-        // 重放缓存直接提供最近的快照, 无需等待上游.
+
         assertEquals(first, replayed)
         assertFalse(subscriptions.drop(1).contains(0), "upstream must not restart: $subscriptions")
 

@@ -1,17 +1,8 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -27,9 +18,6 @@ import kotlin.concurrent.thread
 
 internal actual val PlatformHlsProxyServerFactory: HlsProxyServerFactory = HlsProxyServerFactory { JvmHlsProxyServer() }
 
-/**
- * 基于 [ServerSocket] 的实现, 每个连接一个线程.
- */
 internal class JvmHlsProxyServer : HlsProxyServer {
     private val closed = AtomicBoolean(false)
     private val serverSocket = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
@@ -63,9 +51,9 @@ internal class JvmHlsProxyServer : HlsProxyServer {
                 try {
                     runBlocking { handler.handle(request, OutputStreamSink(output)) }
                 } catch (e: SocketException) {
-                    // 播放器提前断开 (如 seek), 属正常情况
+
                 } catch (e: Throwable) {
-                    // 不能让异常逃出连接线程: 在 Android 上未捕获的异常会直接让应用崩溃
+
                     logger.warn(e) { "Failed to serve HLS proxy request ${request.path}" }
                 }
                 runCatching { output.flush() }

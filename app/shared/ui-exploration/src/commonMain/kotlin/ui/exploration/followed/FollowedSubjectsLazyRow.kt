@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(TestOnly::class)
 
-package me.him188.ani.app.ui.exploration.followed
+package com.wynime.app.ui.exploration.followed
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,46 +37,45 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.subject.FollowedSubjectInfo
-import me.him188.ani.app.data.models.subject.TestFollowedSubjectInfos
-import me.him188.ani.app.data.models.subject.listCoverUrl
-import me.him188.ani.app.data.models.subject.hasNewEpisodeToPlay
-import me.him188.ani.app.data.models.subject.preferredDisplayName
-import me.him188.ani.app.data.models.subject.subjectInfo
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.BasicCarouselItem
-import me.him188.ani.app.ui.foundation.layout.CarouselItemDefaults
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastExpanded
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.minimumHairlineSize
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.app.ui.foundation.widgets.NsfwMask
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_followed_collect_as_to_show_here
-import me.him188.ani.app.ui.lang.subject_collection_doing
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.ui.search.LoadErrorCardLayout
-import me.him188.ani.app.ui.search.LoadErrorCardRole
-import me.him188.ani.app.ui.search.isFinishedAndEmpty
-import me.him188.ani.app.ui.search.isLoadingFirstPage
-import me.him188.ani.app.ui.search.rememberLoadErrorState
-import me.him188.ani.app.ui.search.rememberTestLazyPagingItems
-import me.him188.ani.app.ui.subject.SubjectProgressState
-import me.him188.ani.app.ui.subject.rememberSubjectStatusStrings
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.subject.FollowedSubjectInfo
+import com.wynime.app.data.models.subject.TestFollowedSubjectInfos
+import com.wynime.app.data.models.subject.listCoverUrl
+import com.wynime.app.data.models.subject.hasNewEpisodeToPlay
+import com.wynime.app.data.models.subject.preferredDisplayName
+import com.wynime.app.data.models.subject.subjectInfo
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.BasicCarouselItem
+import com.wynime.app.ui.foundation.layout.CarouselItemDefaults
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastExpanded
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.layout.minimumHairlineSize
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.app.ui.foundation.widgets.NsfwMask
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_followed_collect_as_to_show_here
+import com.wynime.app.ui.lang.subject_collection_doing
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.search.LoadErrorCardLayout
+import com.wynime.app.ui.search.LoadErrorCardRole
+import com.wynime.app.ui.search.isFinishedAndEmpty
+import com.wynime.app.ui.search.isLoadingFirstPage
+import com.wynime.app.ui.search.rememberLoadErrorState
+import com.wynime.app.ui.search.rememberTestLazyPagingItems
+import com.wynime.app.ui.subject.SubjectProgressState
+import com.wynime.app.ui.subject.rememberSubjectStatusStrings
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
-// https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=62-4581&node-type=frame&t=Evw0PwXZHXQNgEm3-0
 @Composable
 fun FollowedSubjectsLazyRow(
-    items: LazyPagingItems<FollowedSubjectInfo>, // null means placeholder
-//    items: List<FollowedSubjectInfo?>, // null means placeholder
+    items: LazyPagingItems<FollowedSubjectInfo>,
+
     onClick: (FollowedSubjectInfo) -> Unit,
     onPlay: (FollowedSubjectInfo) -> Unit,
     modifier: Modifier = Modifier,
@@ -103,14 +93,10 @@ fun FollowedSubjectsLazyRow(
         horizontalArrangement = layoutParameters.horizontalArrangement,
         verticalAlignment = verticalAlignment,
     ) {
-//        itemsIndexed(
-//            items,
-//            key = { index, item -> item?.subjectInfo?.subjectId ?: -index },
-//            contentType = { _, item -> item?.subjectProgressInfo?.hasNewEpisodeToPlay == true },
-//        ) { _, item ->
+
         when {
             items.isLoadingFirstPage -> {
-                // placeholders
+
                 items(8) {
                     FollowedSubjectItem(
                         null,
@@ -159,7 +145,7 @@ fun FollowedSubjectsLazyRow(
             val item = items[index]
             var subjectNsfwType: NsfwMode by rememberSaveable(item) {
                 mutableStateOf(
-                    item?.nsfwMode ?: NsfwMode.DISPLAY, // null 表示 placeholder, 不应该 blur
+                    item?.nsfwMode ?: NsfwMode.DISPLAY,
                 )
             }
 
@@ -182,7 +168,7 @@ fun FollowedSubjectsLazyRow(
 
 @Composable
 private fun FollowedSubjectItem(
-    item: FollowedSubjectInfo?, // null for placeholder
+    item: FollowedSubjectInfo?,
     onClick: () -> Unit,
     onPlay: () -> Unit,
     imageSize: DpSize,

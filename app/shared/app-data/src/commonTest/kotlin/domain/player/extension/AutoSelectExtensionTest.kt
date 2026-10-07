@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(UnsafeEpisodeSessionApi::class)
 
-package me.him188.ani.app.domain.player.extension
+package com.wynime.app.domain.player.extension
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -23,25 +14,25 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.episode.EpisodeFetchSelectPlayState
-import me.him188.ani.app.domain.episode.EpisodePlayerTestSuite
-import me.him188.ani.app.domain.episode.UnsafeEpisodeSessionApi
-import me.him188.ani.app.domain.episode.mediaFetchSessionFlow
-import me.him188.ani.app.domain.episode.mediaSelectorFlow
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.domain.media.resolver.TestUniversalMediaResolver
-import me.him188.ani.app.domain.media.selector.MediaSelectorAutoSelectUseCase
-import me.him188.ani.app.domain.media.selector.MediaSelectorAutoSelectUseCaseImpl
-import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.mediasource.GetMediaSelectorSourceTiersUseCase
-import me.him188.ani.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
-import me.him188.ani.app.domain.settings.GetMediaSelectorSettingsFlowUseCase
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.utils.coroutines.childScope
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
+import com.wynime.app.domain.episode.EpisodePlayerTestSuite
+import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
+import com.wynime.app.domain.episode.mediaFetchSessionFlow
+import com.wynime.app.domain.episode.mediaSelectorFlow
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.media.resolver.TestUniversalMediaResolver
+import com.wynime.app.domain.media.selector.MediaSelectorAutoSelectUseCase
+import com.wynime.app.domain.media.selector.MediaSelectorAutoSelectUseCaseImpl
+import com.wynime.app.domain.media.selector.MediaSelectorSourceTiers
+import com.wynime.app.domain.mediasource.GetMediaSelectorSourceTiersUseCase
+import com.wynime.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
+import com.wynime.app.domain.settings.GetMediaSelectorSettingsFlowUseCase
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.utils.coroutines.childScope
 import org.openani.mediamp.source.UriMediaData
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -94,10 +85,8 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
             GetPreferredWebMediaSourceUseCase { preferredWebMediaSource }
         }
 
-        // set null by default
         preferredWebMediaSource.value = null
         config(testScope, suite)
-
 
         val state = suite.createState(
             listOf(
@@ -122,9 +111,8 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
 
         val myMedia = suite.mediaSelectorTestBuilder.createMedia("web1")
         web1.complete(listOf(myMedia))
-        advanceUntilIdle() // Performs auto select
+        advanceUntilIdle()
 
-        // Check result.
         state.assertSelected(myMedia, suite)
 
         testScope.cancel()
@@ -151,10 +139,9 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         val myMedia = suite.mediaSelectorTestBuilder.createMedia("web1", alliance = "alliance2")
         cached.complete(listOf(cachedMedia))
         web1.complete(listOf(myMedia))
-        advanceUntilIdle() // Performs auto select
+        advanceUntilIdle()
 
-        // Check result.
-        state.assertSelected(myMedia, suite) // "cached" is WEB
+        state.assertSelected(myMedia, suite)
 
         testScope.cancel()
     }
@@ -180,14 +167,12 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         val myMedia = suite.mediaSelectorTestBuilder.createMedia("web1", alliance = "alliance2")
         cached.complete(listOf(cachedMedia))
         web1.complete(listOf(myMedia))
-        advanceUntilIdle() // Performs auto select
+        advanceUntilIdle()
 
-        // Check result.
-        state.assertSelected(cachedMedia, suite) // "cached" is LocalCache, must be selected
+        state.assertSelected(cachedMedia, suite)
 
         testScope.cancel()
     }
-
 
     @Test
     fun `select preferred web source - control group`() = runTest {
@@ -199,7 +184,6 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         }
         val (testScope, suite, state) = context
 
-        // NOTE: No preferred source is set (GetPreferredWebMediaSourceUseCase returns null by default)
         initializeTest(suite)
         startMediaFetcher(state, testScope)
 
@@ -207,9 +191,8 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         val media2 = suite.mediaSelectorTestBuilder.createMedia("web2", kind = MediaSourceKind.WEB)
         web1.complete(listOf(media1))
         web2.complete(listOf(media2))
-        advanceUntilIdle() // Performs auto select
+        advanceUntilIdle()
 
-        // Check result: should fall back to default selection (first available)
         state.assertSelected(media1, suite)
 
         testScope.cancel()
@@ -222,7 +205,7 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         val context = createCase { _, suite ->
             web1 = suite.mediaSelectorTestBuilder.delayedMediaSource("web1", kind = MediaSourceKind.WEB)
             web2 = suite.mediaSelectorTestBuilder.delayedMediaSource("web2", kind = MediaSourceKind.WEB)
-            preferredWebMediaSource.value = "web2" // Set preferred source
+            preferredWebMediaSource.value = "web2"
         }
         val (testScope, suite, state) = context
 
@@ -233,9 +216,8 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         val media2 = suite.mediaSelectorTestBuilder.createMedia("web2", kind = MediaSourceKind.WEB)
         web1.complete(listOf(media1))
         web2.complete(listOf(media2))
-        advanceUntilIdle() // Performs auto select
+        advanceUntilIdle()
 
-        // Check result: should select from the preferred source "web2"
         state.assertSelected(media2, suite)
 
         testScope.cancel()
@@ -250,8 +232,8 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         if (expected == null) {
             assertEquals(null, suite.player.mediaData.first())
         } else {
-            assertIs<UriMediaData>(suite.player.mediaData.filterNotNull().first()) // Player is playing
-            assertEquals(0, suite.player.currentPositionMillis.value) // State is reset
+            assertIs<UriMediaData>(suite.player.mediaData.filterNotNull().first())
+            assertEquals(0, suite.player.currentPositionMillis.value)
         }
     }
 
@@ -259,7 +241,7 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         state: EpisodeFetchSelectPlayState,
         testScope: CoroutineScope
     ) {
-        // MediaFetcher is lazy. We perform fetching in testScope (i.e. foreground). `advanceUntilIdle` will wait for the fetching to complete.
+
         state.mediaFetchSessionFlow.filterNotNull().flatMapLatest { it.cumulativeResults }.launchIn(testScope)
     }
 
@@ -272,7 +254,6 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         this@AutoSelectExtensionTest.mediaSelectorSettings.value = mediaSelectorSettings
         suite.mediaSelectorTestBuilder.savedUserPreference.value = preference
 
-        // Initialize
         advanceUntilIdle()
         assertEquals(null, suite.player.mediaData.first())
     }

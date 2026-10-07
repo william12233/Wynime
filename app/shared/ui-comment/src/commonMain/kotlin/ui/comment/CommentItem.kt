@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
@@ -76,21 +67,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.launch
-import me.him188.ani.app.tools.formatDateTime
-import me.him188.ani.app.ui.foundation.LocalIsPreviewing
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.comment_add_emoji
-import me.him188.ani.app.ui.lang.comment_copied
-import me.him188.ani.app.ui.lang.comment_dislike
-import me.him188.ani.app.ui.lang.comment_expand_replies
-import me.him188.ani.app.ui.lang.comment_like
-import me.him188.ani.app.ui.lang.comment_more_actions
-import me.him188.ani.app.ui.rating.FiveRatingStars
-import me.him188.ani.app.ui.richtext.RichText
-import me.him188.ani.app.ui.richtext.RichTextDefaults
-import me.him188.ani.app.ui.richtext.UIRichElement
+import com.wynime.app.tools.formatDateTime
+import com.wynime.app.ui.foundation.LocalIsPreviewing
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.comment_add_emoji
+import com.wynime.app.ui.lang.comment_copied
+import com.wynime.app.ui.lang.comment_dislike
+import com.wynime.app.ui.lang.comment_expand_replies
+import com.wynime.app.ui.lang.comment_like
+import com.wynime.app.ui.lang.comment_more_actions
+import com.wynime.app.ui.rating.FiveRatingStars
+import com.wynime.app.ui.richtext.RichText
+import com.wynime.app.ui.richtext.RichTextDefaults
+import com.wynime.app.ui.richtext.UIRichElement
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -103,45 +94,16 @@ object CommentItemTestTags {
     const val RepliesBlock = "CommentItem:replies"
 }
 
-/**
- * 上下文菜单的回调. 均可为 `null` 表示隐藏对应菜单项.
- *
- * 「复制内容」由组件内部实现, 不需要外部处理.
- */
 @Immutable
 class CommentMenuHandlers(
-    /**
-     * 在来源平台打开原评论. 仅 [UICommentSource.BANGUMI] 来源的评论应传入非 `null` 值.
-     */
+
     val onOpenOriginal: ((UIComment) -> Unit)? = null,
-    /**
-     * 拉黑评论作者 (本地屏蔽).
-     */
+
     val onBlockAuthor: ((UIComment) -> Unit)? = null,
-    /**
-     * 举报评论.
-     */
+
     val onReport: ((UIComment) -> Unit)? = null,
 )
 
-/**
- * 统一评论条目, 对应 Figma 设计 "CommentItem".
- *
- * 布局结构 (从上到下): 头行 (作者名 + 可选评分星) / 正文 / 贴纸回应行 / 简要回复块 / 底行 (时间 + 操作按钮组).
- *
- * 交互能力按 [UIComment.source] 决定:
- * - [UICommentSource.ANI]: 显示操作按钮组 (点赞/点踩/贴纸/更多), 点击整条评论回复.
- * - [UICommentSource.BANGUMI]: 只读, 无操作行, 时间带 "· Bangumi" 后缀, 长按或右键唤出菜单.
- *
- * @param comment 要展示的评论. 若使用 [CommentState], 传入 [CommentState.withOverlay] 的结果.
- * @param showRating 是否在头行右侧显示评分星 (条目评价).
- * @param reactionsClipped 贴纸行是否为列表模式 (最多一行, 溢出渐隐). 在独立 thread 页应传 `false` 以自动换行.
- * @param onClickReply 点击评论主体回复. 仅当评论可回复 ([UIComment.canReply]) 时生效.
- * @param onExpandReplies 点击 "展开 N 条回复". `null` 时回落到 [onClickReply].
- * @param onToggleVote 点击点赞/点踩按钮, 参数为按下的按钮. `null` 时隐藏投票按钮.
- * @param onToggleReaction 贴纸回应 (点击已有贴纸或从选择器中选择). `null` 时隐藏贴纸按钮并禁用贴纸点击.
- * @param menu 上下文菜单回调. `null` 时不显示菜单入口.
- */
 @Composable
 fun CommentItem(
     comment: UIComment,
@@ -157,7 +119,7 @@ fun CommentItem(
     menu: CommentMenuHandlers? = null,
     contentPadding: PaddingValues = CommentItemDefaults.ContentPadding,
 ) {
-    val isAni = comment.source == UICommentSource.ANI
+    val isAni = comment.source == UICommentSource.WYNIME
     val replyable = isAni && comment.canReply && onClickReply != null
     val showActions = isAni && (onToggleVote != null || onToggleReaction != null || menu != null)
 
@@ -228,7 +190,7 @@ fun CommentItem(
                 val scaledContent = remember(comment.content) {
                     comment.content.withDefaultFontSize(CommentItemDefaults.ContentFontSize)
                 }
-                // 允许划选复制正文. 长按选择文本会优先于长按唤出菜单, 菜单仍可通过正文以外的区域长按或右键唤出.
+
                 SelectionContainer {
                     RichText(
                         elements = scaledContent.elements,
@@ -258,7 +220,7 @@ fun CommentItem(
                         totalReplyCount = comment.replyCount,
                         onClickUrl = onClickUrl,
                         modifier = Modifier.testTag(CommentItemTestTags.RepliesBlock),
-                        // 回落到 onClickReply 时沿用 replyable 守卫, 避免只读评论 (如 Bangumi 源) 的回复块可点
+
                         onClickExpand = (onExpandReplies ?: onClickReply?.takeIf { replyable })?.let { handler ->
                             { handler(comment) }
                         },
@@ -353,7 +315,7 @@ fun CommentItem(
         )
 
         if (menu != null) {
-            // 长按/右键唤出的菜单, 锚定在头像右侧
+
             Box(Modifier.align(Alignment.TopStart).padding(start = 48.dp)) {
                 CommentContextMenu(
                     expanded = showPressMenu,
@@ -369,12 +331,6 @@ fun CommentItem(
     }
 }
 
-/**
- * [CommentItem] 的纯布局版本, 所有内容都由 slot 提供, 方便测试与预览.
- *
- * 结构对应 Figma "CommentItem": 头像 36dp 在左, 右侧主列从上到下为
- * 头行 ([title] + [titleTrailing]) / [content] / [reactions] / [replies] / 底行 ([timestamp] + [actions]).
- */
 @Composable
 fun CommentItemLayout(
     avatar: @Composable () -> Unit,
@@ -447,14 +403,8 @@ fun CommentItemLayout(
 object CommentItemDefaults {
     val ContentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
 
-    /**
-     * 正文默认字号 (M3 body/medium). BBCode 中显式指定的字号会按比例缩放.
-     */
     const val ContentFontSize: Float = 14f
 
-    /**
-     * 简要回复块字号 (M3 body/small).
-     */
     const val ReplyFontSize: Float = 12f
 
     val ActionButtonHeight = 28.dp
@@ -462,11 +412,6 @@ object CommentItemDefaults {
     val StickerChipHeight = 24.dp
     val StickerSize = 16.dp
 
-    /**
-     * 贴纸 chip, 对应 Figma "StickerChip".
-     *
-     * 未贴: 透明底 + outlineVariant 描边; 已贴: secondaryContainer 实底无描边.
-     */
     @Composable
     fun StickerChip(
         reaction: UICommentReaction,
@@ -529,12 +474,6 @@ object CommentItemDefaults {
         }
     }
 
-    /**
-     * 贴纸回应行, 对应 Figma "ReactionsBar". 仅在已有人贴过贴纸时展示.
-     *
-     * @param onClickItem 点击贴纸 toggle 跟贴/取消. `null` 表示只读.
-     * @param clipped 列表模式: 最多一行占满, 溢出隐藏 + 右缘渐隐. `false` 时自动换行 (thread 页).
-     */
     @Composable
     fun ReactionsRow(
         reactions: List<UICommentReaction>,
@@ -550,7 +489,7 @@ object CommentItemDefaults {
                     modifier
                         .fillMaxWidth()
                         .then(
-                            // 渐隐要画在视口坐标系, 因此必须在 horizontalScroll 之前
+
                             if (scrollState.maxValue > 0) {
                                 Modifier
                                     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
@@ -595,11 +534,6 @@ object CommentItemDefaults {
         }
     }
 
-    /**
-     * 操作行按钮容器, 对应 Figma "CommentActionButton": 高 28 圆角 14, 无底无框.
-     *
-     * @param active 自己是否已点过 (点赞/点踩). Active 时图标染 primary, 文本保持灰色.
-     */
     @Composable
     fun ActionButton(
         onClick: () -> Unit,
@@ -626,9 +560,6 @@ object CommentItemDefaults {
         }
     }
 
-    /**
-     * 点赞按钮: 图标 + 计数. 计数为 0 时不显示数字; 计数恒为灰色, 不随 [active] 变色.
-     */
     @Composable
     fun LikeButton(
         count: Int,
@@ -653,9 +584,6 @@ object CommentItemDefaults {
         }
     }
 
-    /**
-     * 仅图标的操作按钮 (点踩 / 贴纸 / 更多).
-     */
     @Composable
     fun IconActionButton(
         icon: ImageVector,
@@ -673,10 +601,6 @@ object CommentItemDefaults {
         }
     }
 
-    /**
-     * 简要回复块, 对应 Figma "reply": surfaceContainerHigh 圆角 10, 每条回复一行
-     * "作者名 内容", 底部为 "展开 N 条回复".
-     */
     @Composable
     fun RepliesBlock(
         replies: List<UIComment>,
@@ -733,9 +657,6 @@ object CommentItemDefaults {
     }
 }
 
-/**
- * 将默认字号的文本缩放到 [target], BBCode 显式指定的字号按同比例缩放.
- */
 internal fun UIRichText.withDefaultFontSize(target: Float): UIRichText {
     val factor = target / RichTextDefaults.FontSize
     if (factor == 1f) return this
@@ -755,9 +676,6 @@ private fun UIRichElement.scaleFontSize(factor: Float): UIRichElement = when (th
     else -> this
 }
 
-/**
- * 在回复内容前加上加粗的作者名, 并限制为最多两行.
- */
 private fun UIRichText.prependAuthorName(name: String): UIRichText {
     val nameElement = UIRichElement.Annotated.Text(
         content = "$name ",

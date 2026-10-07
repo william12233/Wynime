@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.settings
+package com.wynime.app.domain.settings
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,24 +7,21 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.trace.ErrorReport
-import me.him188.ani.datasources.bangumi.BangumiClientImpl
-import me.him188.ani.utils.analytics.Analytics
-import me.him188.ani.utils.analytics.AnalyticsEvent
-import me.him188.ani.utils.coroutines.flows.FlowRestarter
-import me.him188.ani.utils.coroutines.flows.FlowRunning
-import me.him188.ani.utils.coroutines.flows.restartable
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.trace.ErrorReport
+import com.wynime.datasources.bangumi.BangumiClientImpl
+import com.wynime.utils.analytics.Analytics
+import com.wynime.utils.analytics.AnalyticsEvent
+import com.wynime.utils.coroutines.flows.FlowRestarter
+import com.wynime.utils.coroutines.flows.FlowRunning
+import com.wynime.utils.coroutines.flows.restartable
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @OptIn(ExperimentalAtomicApi::class)
 private val isFirstTestResult = AtomicBoolean(true)
 
-/**
- * You should call [testRunnerLoop] to start the test runner loop and make functionality.
- */
 class ProxyTester(
     clientProvider: HttpClientProvider,
     flowScope: CoroutineScope,
@@ -78,24 +66,23 @@ class ProxyTester(
 
 @OptIn(ExperimentalAtomicApi::class)
 private fun checkResultAndReport(results: ServiceConnectionTester.Results) {
-    if (results.anyFailed() && results.allCompleted() // 有失败的测试
-        && isFirstTestResult.compareAndSet(expectedValue = true, newValue = false) // 只上报一次
+    if (results.anyFailed() && results.allCompleted()
+        && isFirstTestResult.compareAndSet(expectedValue = true, newValue = false)
     ) {
-        // 上报未知错误
+
         for ((service, state) in results.idToStateMap) {
             if (state is ServiceConnectionTester.TestState.Error) {
-                // unknown error, report
+
                 ErrorReport.captureException(
                     ServiceTestUnknownErrorException(
                         message = "Service '$service' test failed with unknown exception",
                         cause = state.e,
                     ),
                 )
-                break // 只上报第一个
+                break
             }
         }
 
-        // 上报网络检查失败
         reportNetworkCheckFailed(results)
     }
 }
@@ -117,6 +104,5 @@ private fun stateToString(state: ServiceConnectionTester.TestState): String = wh
     ServiceConnectionTester.TestState.Testing -> "testing"
 }
 
-// Named exception for better error reporting
 private class ServiceTestUnknownErrorException(override val message: String?, override val cause: Throwable?) :
     Exception()

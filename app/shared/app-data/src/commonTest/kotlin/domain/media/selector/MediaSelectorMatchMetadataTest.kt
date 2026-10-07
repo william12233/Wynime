@@ -1,25 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.flow.first
-import me.him188.ani.app.domain.media.selector.MatchMetadata.EpisodeMatchKind
-import me.him188.ani.app.domain.media.selector.MatchMetadata.SubjectMatchKind
-import me.him188.ani.app.domain.media.selector.testFramework.SimpleMediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.addSimpleMediaSelectorTest
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.runDynamicTests
+import com.wynime.app.domain.media.selector.MatchMetadata.EpisodeMatchKind
+import com.wynime.app.domain.media.selector.MatchMetadata.SubjectMatchKind
+import com.wynime.app.domain.media.selector.testFramework.SimpleMediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.addSimpleMediaSelectorTest
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.runDynamicTests
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
@@ -142,10 +133,6 @@ class MediaSelectorMatchMetadataTest {
     }
 }
 
-
-/**
- * DSL for verifying the [MatchMetadata] of included media.
- */
 class MatchMetadataApi(
     private val suite: SimpleMediaSelectorTestSuite,
 ) {
@@ -177,7 +164,7 @@ class MatchMetadataApi(
     @OptIn(UnsafeOriginalMediaAccess::class)
     suspend fun checkAll() {
         if (checks.isEmpty()) return
-        // 条目级候选不按当前剧集筛选, 不匹配当前剧集的资源也带有 MatchMetadata (episodeMatchKind = NONE).
+
         val allIncluded = suite.selector.subjectCandidates.first().filterIsInstance<MaybeExcludedMedia.Included>()
         checks.forEach { check ->
             val found = allIncluded.firstOrNull { included ->
@@ -202,16 +189,14 @@ class MatchMetadataApi(
 }
 
 private data class MatchCheck(
-    // Target info:
+
     val mediaId: String,
     val mediaSubjectName: String,
     val episodeRange: EpisodeRange,
 
-    // Assertions:
     val expectedSubjectMatchKind: MatchMetadata.SubjectMatchKind,
     val expectedEpisodeMatchKind: MatchMetadata.EpisodeMatchKind,
 )
-
 
 suspend inline fun SimpleMediaSelectorTestSuite.checkMatchMetadata(block: MatchMetadataApi.() -> Unit) {
     return MatchMetadataApi(this).apply(block).checkAll()

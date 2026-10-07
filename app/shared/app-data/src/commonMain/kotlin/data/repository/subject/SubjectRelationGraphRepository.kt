@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -16,23 +7,23 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.models.subject.SubjectRelation
-import me.him188.ani.app.data.models.subject.SubjectRelationGraph
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphBranch
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphMainNode
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphPlatform
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphSubject
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
-import me.him188.ani.app.data.network.BangumiApiProvider
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.client.models.AniSubjectRelationGraph
-import me.him188.ani.client.models.AniSubjectRelationGraphNode
-import me.him188.ani.client.models.AniSubjectRelationGraphNodeRole
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiSubject
-import me.him188.ani.datasources.bangumi.models.BangumiV0SubjectRelation
+import com.wynime.app.data.models.subject.SubjectRelation
+import com.wynime.app.data.models.subject.SubjectRelationGraph
+import com.wynime.app.data.models.subject.SubjectRelationGraphBranch
+import com.wynime.app.data.models.subject.SubjectRelationGraphMainNode
+import com.wynime.app.data.models.subject.SubjectRelationGraphPlatform
+import com.wynime.app.data.models.subject.SubjectRelationGraphSubject
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
+import com.wynime.app.data.network.BangumiApiProvider
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.models.SubjectRelationGraphDto
+import com.wynime.models.SubjectRelationGraphNodeDto
+import com.wynime.models.SubjectRelationGraphNodeRoleDto
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.bangumi.models.BangumiSubject
+import com.wynime.datasources.bangumi.models.BangumiV0SubjectRelation
 import kotlin.coroutines.CoroutineContext
 
 class SubjectRelationGraphRepository(
@@ -40,12 +31,7 @@ class SubjectRelationGraphRepository(
     private val subjectCollectionDao: SubjectCollectionDao,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
 ) : Repository(defaultDispatcher) {
-    /**
-     * 获取 [subjectId] 所在系列的关系图. 图的结构由服务器计算, 只请求一次.
-     *
-     * 本地缓存只包含用户打开过或在收藏列表中加载过的条目, 无法区分 "未收藏" 和 "未缓存", 因此收藏状态以服务器随图返回的为基础,
-     * 本地缓存中有记录的条目以本地为准, 并随收藏变化更新.
-     */
+
     fun subjectRelationGraphFlow(subjectId: Int): Flow<SubjectRelationGraph> = flow {
         val graph = try {
             withContext(defaultDispatcher) {
@@ -56,7 +42,7 @@ class SubjectRelationGraphRepository(
         } catch (e: Exception) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }
-        // 本地记录消失说明用户在此期间取消了收藏, 此时不能回退到服务器在请求时返回的状态
+
         val seenLocally = mutableSetOf<Int>()
         emitAll(
             subjectCollectionDao.filterByIds(graph.subjectIds.toIntArray()).map { collections ->
@@ -170,13 +156,10 @@ private fun String.toSubjectRelation(): SubjectRelation? = when (lowercase()) {
     else -> null
 }
 
-/**
- * @param collectionTypes 覆盖服务器返回的收藏状态. 不在其中的条目使用服务器返回的.
- */
-internal fun AniSubjectRelationGraph.toSubjectRelationGraph(
+internal fun SubjectRelationGraphDto.toSubjectRelationGraph(
     collectionTypes: Map<Int, UnifiedCollectionType>,
 ): SubjectRelationGraph {
-    fun AniSubjectRelationGraphNode.toSubject() = SubjectRelationGraphSubject(
+    fun SubjectRelationGraphNodeDto.toSubject() = SubjectRelationGraphSubject(
         subjectId = id.toInt(),
         name = name,
         nameCn = nameCn,
@@ -194,15 +177,15 @@ internal fun AniSubjectRelationGraph.toSubjectRelationGraph(
     )
 
     val nodesById = nodes.associateBy { it.id }
-    // 服务器保证 nodes 中的分支已按挂载点和放送日期排序
-    val sideNodes = nodes.filter { it.role == AniSubjectRelationGraphNodeRole.SIDE }.groupBy { it.attachTo }
+
+    val sideNodes = nodes.filter { it.role == SubjectRelationGraphNodeRoleDto.SIDE }.groupBy { it.attachTo }
 
     return SubjectRelationGraph(
         subjectId = subjectId.toInt(),
         mainline = mainline.mapNotNull { nodesById[it] }.map { node ->
             SubjectRelationGraphMainNode(
                 subject = node.toSubject(),
-                isMinor = node.role != AniSubjectRelationGraphNodeRole.MAIN,
+                isMinor = node.role != SubjectRelationGraphNodeRoleDto.MAIN,
                 branches = sideNodes[node.id].orEmpty().map { branch ->
                     SubjectRelationGraphBranch(
                         subject = branch.toSubject(),

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.selectorworkflow
+package com.wynime.utils.selectorworkflow
 
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
@@ -16,20 +7,14 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import me.him188.ani.utils.selectorworkflow.draw.WorkflowLayout
-import me.him188.ani.utils.selectorworkflow.draw.WorkflowMetrics
-import me.him188.ani.utils.selectorworkflow.draw.drawSelectorWorkflow
-import me.him188.ani.utils.selectorworkflow.draw.workflowPaletteOf
+import com.wynime.utils.selectorworkflow.draw.WorkflowLayout
+import com.wynime.utils.selectorworkflow.draw.WorkflowMetrics
+import com.wynime.utils.selectorworkflow.draw.drawSelectorWorkflow
+import com.wynime.utils.selectorworkflow.draw.workflowPaletteOf
 import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 
-/**
- * 真的把每一帧画一遍.
- *
- * 不比对像素 —— 那种断言一改动效就红, 维护不起. 这里盯的是三件事:
- * 画得出来 (不抛异常)、画出了东西 (不是一整块底色)、每个阶段都有内容.
- */
 class WorkflowRenderTest {
 
     private val palette = workflowPaletteOf(
@@ -93,7 +78,7 @@ class WorkflowRenderTest {
                         priorityWait = if (prio) kotlin.time.Duration.parse("5s") else null,
                         resolveOutcomes = outcomes,
                     )
-                    // 顺带把高亮框也画上: 开着哪几个特性就亮哪几块
+
                     val config = base.copy(
                         selection = base.selection.copy(demoBothPriorityPaths = prio),
                         cachedQuery = cached,
@@ -116,7 +101,7 @@ class WorkflowRenderTest {
             resolveOutcomes = listOf(ResolveOutcome.Hit, ResolveOutcome.Timeout, ResolveOutcome.HitAfterFallback),
         )
         val timeline = config.buildTimeline()
-        // 每一拍都抽一帧: 搜源中、选定后、请求刷完、超时、换候选之后
+
         val samples = listOf(0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 0.9f)
         samples.forEach { fraction ->
             val image = render(timeline, timeline.duration * fraction.toDouble())
@@ -141,7 +126,7 @@ class WorkflowRenderTest {
     }
 
     private companion object {
-        /** 只画了个底色的话大概只有个位数种颜色; 真画出东西来抗锯齿会带出成百上千种. */
+
         const val MIN_COLORS = 40
     }
 }

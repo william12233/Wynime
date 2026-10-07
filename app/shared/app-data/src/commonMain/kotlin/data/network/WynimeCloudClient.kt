@@ -1,14 +1,7 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.data.network
 
-package me.him188.ani.app.data.network
-
+import com.wynime.cloud.apis.DefaultApi
+import com.wynime.cloud.models.CollectionRemoval
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.bearerAuth
@@ -20,16 +13,22 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.ktor.UnsafeScopedHttpClientApi
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.ktor.UnsafeScopedHttpClientApi
 
-/**
- * Wynime Cloud 的最小 client。Worker 以 hash 索引短期 session/ticket，Bangumi grant
- * 只透過加密 response 回到本機，再交給現有 token store；播放紀錄則以複合身份 upsert。
- */
 class WynimeCloudClient(
     private val client: ScopedHttpClient,
 ) {
+    suspend fun createCollectionRemoval(sessionToken: String, subjectId: Int): CollectionRemoval = use { http ->
+        DefaultApi(BASE_URL, http).apply { setBearerToken(sessionToken) }
+            .createCollectionRemoval(subjectId).body()
+    }
+
+    suspend fun confirmCollectionRemoval(sessionToken: String, subjectId: Int): CollectionRemoval = use { http ->
+        DefaultApi(BASE_URL, http).apply { setBearerToken(sessionToken) }
+            .confirmCollectionRemoval(subjectId).body()
+    }
+
     suspend fun startBangumiOAuth(
         state: String,
         mode: String,
@@ -46,9 +45,6 @@ class WynimeCloudClient(
         }.body<WynimeOAuthStartResponse>().url
     }
 
-    /**
-     * 返回 null 表示授权尚未完成。Worker 使用 425 表示可重试的 pending 状态。
-     */
     suspend fun pollBangumiOAuthTicket(state: String): String? = try {
         use { httpClient ->
             httpClient.get("$BASE_URL/api/v1/oauth/bangumi/result") {

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.sections
+package com.wynime.app.ui.subject.details.sections
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,27 +31,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.ui.foundation.OutlinedTag
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_details_air_date
-import me.him188.ani.app.ui.lang.subject_details_air_date_format
-import me.him188.ani.app.ui.lang.subject_details_aliases
-import me.him188.ani.app.ui.lang.subject_details_info
-import me.him188.ani.app.ui.lang.subject_details_manage_cache
-import me.him188.ani.app.ui.lang.subject_relation_graph_entry
-import me.him188.ani.app.ui.lang.subject_details_show_less
-import me.him188.ani.app.ui.lang.subject_details_show_more
-import me.him188.ani.app.ui.lang.subject_details_total_episodes
-import me.him188.ani.datasources.api.PackedDate
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.ui.foundation.OutlinedTag
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_details_air_date
+import com.wynime.app.ui.lang.subject_details_air_date_format
+import com.wynime.app.ui.lang.subject_details_aliases
+import com.wynime.app.ui.lang.subject_details_info
+import com.wynime.app.ui.lang.subject_details_manage_cache
+import com.wynime.app.ui.lang.subject_relation_graph_entry
+import com.wynime.app.ui.lang.subject_details_show_less
+import com.wynime.app.ui.lang.subject_details_show_more
+import com.wynime.app.ui.lang.subject_details_total_episodes
+import com.wynime.datasources.api.PackedDate
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 区块标题行: 标题 (titleMedium) + 右侧任意 [action] 内容 (对齐 Figma `SectionHeader`).
- *
- * 常见 action 为 [SectionHeaderActionButton]; 选集区块在此槽位放分页控件/集数文案.
- */
 @Composable
 fun SectionHeader(
     title: String,
@@ -80,7 +66,6 @@ fun SectionHeader(
     }
 }
 
-/** 便捷重载: 右侧为 "label ›" 文本按钮 (对齐 Figma `SectionHeader` 链接变体). */
 @Composable
 fun SectionHeader(
     title: String,
@@ -95,7 +80,6 @@ fun SectionHeader(
     }
 }
 
-/** 区块标题行右侧的 "content ›" 文本按钮. */
 @Composable
 fun SectionHeaderActionButton(
     onClick: () -> Unit,
@@ -111,9 +95,6 @@ fun SectionHeaderActionButton(
     }
 }
 
-/**
- * 关联条目区块标题行的 "关系图" 入口, 打开条目所在系列的关系图.
- */
 @Composable
 fun SectionHeaderRelationGraphButton(
     onClick: () -> Unit,
@@ -129,11 +110,6 @@ fun SectionHeaderRelationGraphButton(
     }
 }
 
-/**
- * 选集区块标题行的 "↓ 缓存管理" 入口 (对齐 Figma `SectionHeader + Actions` 的缓存管理入口).
- *
- * [showLabel] 为 false 时只显示图标: 手机与窄双栏的 header 放不下文字标签 (会挤压标题).
- */
 @Composable
 fun SectionHeaderCacheButton(
     onClick: () -> Unit,
@@ -160,9 +136,6 @@ fun SectionHeaderCacheButton(
     }
 }
 
-/**
- * 简介区块: 默认 5 行折叠, 溢出时显示右对齐的 "显示更多/收起".
- */
 @Composable
 fun SubjectSummarySection(
     summary: String,
@@ -195,10 +168,6 @@ fun SubjectSummarySection(
 
 private const val ALWAYS_SHOW_TAGS_COUNT = 8
 
-/**
- * 标签区块 (对齐定稿: 全部 outline 样式). 折叠规则见 01 §6: ≤6 全显;
- * 否则热门(count>100)满 8 条则取热门, 不足则 take(8); 仅当总数 > 8 时显示展开/收起.
- */
 @Composable
 fun SubjectTagsSection(
     tags: List<Tag>,
@@ -239,13 +208,6 @@ fun SubjectTagsSection(
     }
 }
 
-/**
- * 作品信息表. 键值对左右排布, 键固定宽 [labelWidth].
- *
- * 注意: 数据源限制 —— 平台/原作/动画制作/放送星期 需要 infobox/recurrence 数据, 当前 [SubjectInfo]
- * 未直接提供; 已提供的字段 ([SubjectInfo.airDate]/[mainEpisodeCount]/[SubjectInfo.aliases]) 先行展示.
- * 后续可扩充数据层再补全其余行 (放送星期 key `subject_details_air_weekday` 已备好).
- */
 @Composable
 fun SubjectInfoTable(
     info: SubjectInfo,

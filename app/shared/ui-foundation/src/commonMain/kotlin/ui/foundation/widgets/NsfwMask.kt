@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,16 +23,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.ui.foundation.effects.blurEffect
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_nsfw_hidden
-import me.him188.ani.app.ui.lang.foundation_nsfw_temporary_display
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.ui.foundation.effects.blurEffect
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_nsfw_hidden
+import com.wynime.app.ui.lang.foundation_nsfw_temporary_display
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * Nsfw 模糊遮罩加提示. 点击可以临时展示.
- */
 @Composable
 fun NsfwMask(
     mode: NsfwMode,
@@ -65,7 +53,7 @@ fun NsfwMask(
                 }
                 Box(
                     Modifier.matchParentSize().clickable(interactionSource = null, indication = null, onClick = {}),
-                ) // 阻止传播点击事件
+                )
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -82,7 +70,7 @@ fun NsfwMask(
             }
 
             NsfwMode.HIDE -> {
-                Spacer(Modifier.height(Dp.Hairline)) // 有一个最小高度, 防止 lazy column bug
+                Spacer(Modifier.height(Dp.Hairline))
             }
 
             NsfwMode.DISPLAY -> {

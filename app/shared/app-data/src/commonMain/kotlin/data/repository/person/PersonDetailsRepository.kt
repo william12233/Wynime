@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.person
+package com.wynime.app.data.repository.person
 
 import androidx.paging.Pager
 import androidx.paging.PagingData
@@ -18,34 +9,30 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
-import me.him188.ani.app.data.models.person.CharacterDetailsInfo
-import me.him188.ani.app.data.models.person.CharacterSubjectInfo
-import me.him188.ani.app.data.models.person.InfoboxRowInfo
-import me.him188.ani.app.data.models.person.PersonCastInfo
-import me.him188.ani.app.data.models.person.PersonDetailsInfo
-import me.him188.ani.app.data.models.person.PersonSubjectSummary
-import me.him188.ani.app.data.models.person.PersonWorkInfo
-import me.him188.ani.app.data.models.subject.CharacterInfo
-import me.him188.ani.app.data.models.subject.CharacterRole
-import me.him188.ani.app.data.models.subject.PersonCareer
-import me.him188.ani.app.data.models.subject.PersonInfo
-import me.him188.ani.app.data.models.subject.PersonPosition
-import me.him188.ani.app.data.models.subject.PersonType
-import me.him188.ani.app.data.network.BangumiApiProvider
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.datasources.bangumi.models.BangumiCharacterPerson
-import me.him188.ani.datasources.bangumi.models.BangumiCharacterDetail
-import me.him188.ani.datasources.bangumi.models.BangumiPerson
-import me.him188.ani.datasources.bangumi.models.BangumiPersonCareer
-import me.him188.ani.datasources.bangumi.models.BangumiPersonCharacter
-import me.him188.ani.datasources.bangumi.models.BangumiPersonDetail
-import me.him188.ani.datasources.bangumi.models.BangumiV0RelatedSubject
+import com.wynime.app.data.models.person.CharacterDetailsInfo
+import com.wynime.app.data.models.person.CharacterSubjectInfo
+import com.wynime.app.data.models.person.InfoboxRowInfo
+import com.wynime.app.data.models.person.PersonCastInfo
+import com.wynime.app.data.models.person.PersonDetailsInfo
+import com.wynime.app.data.models.person.PersonSubjectSummary
+import com.wynime.app.data.models.person.PersonWorkInfo
+import com.wynime.app.data.models.subject.CharacterInfo
+import com.wynime.app.data.models.subject.CharacterRole
+import com.wynime.app.data.models.subject.PersonCareer
+import com.wynime.app.data.models.subject.PersonInfo
+import com.wynime.app.data.models.subject.PersonPosition
+import com.wynime.app.data.models.subject.PersonType
+import com.wynime.app.data.network.BangumiApiProvider
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.datasources.bangumi.models.BangumiCharacterPerson
+import com.wynime.datasources.bangumi.models.BangumiCharacterDetail
+import com.wynime.datasources.bangumi.models.BangumiPerson
+import com.wynime.datasources.bangumi.models.BangumiPersonCareer
+import com.wynime.datasources.bangumi.models.BangumiPersonCharacter
+import com.wynime.datasources.bangumi.models.BangumiPersonDetail
+import com.wynime.datasources.bangumi.models.BangumiV0RelatedSubject
 
-/**
- * 人物 (聲優/製作人員) 與角色詳情頁資料倉庫，資料直接來自官方 Bangumi API。
- * 评论见 [PersonCommentRepository].
- */
 class PersonDetailsRepository(
     private val bangumiApi: BangumiApiProvider,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
@@ -160,7 +147,7 @@ class PersonDetailsRepository(
 
         override suspend fun load(params: LoadParams<Int>): LoadResult<Int, T> = withContext(defaultDispatcher) {
             val offset = params.key ?: 0
-            // 服务端 limit 上限为 100
+
             val limit = params.loadSize.coerceIn(1, 100)
             try {
                 val page = fetch(offset, limit)

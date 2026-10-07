@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -17,20 +8,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchResult
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.app.domain.media.selector.DefaultMediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorContext
-import me.him188.ani.app.domain.mediasource.web.PageExpectation
-import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
-import me.him188.ani.app.domain.mediasource.web.captcha.createTestWebSessionManager
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.fetch.MediaSourceFetchResult
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.domain.media.selector.DefaultMediaSelector
+import com.wynime.app.domain.media.selector.MediaSelectorContext
+import com.wynime.app.domain.mediasource.web.PageExpectation
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.app.domain.mediasource.web.captcha.createTestWebSessionManager
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -87,7 +78,6 @@ class MediaSelectorCaptchaStateTest {
             val presentation = state.presentationFlow.first { !it.isPlaceholder }
             val source = presentation.webSources.single()
 
-            // 限流不是验证码: 不显示 "处理验证码" 动作, 只显示倒计时
             assertFalse(source.isCaptchaRequired)
             assertTrue(source.isRateLimited)
             assertEquals(retryAt, source.rateLimitedUntilMillis)

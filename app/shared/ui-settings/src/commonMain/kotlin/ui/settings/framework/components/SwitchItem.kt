@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.framework.components
+package com.wynime.app.ui.settings.framework.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.Switch
@@ -17,12 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
-import me.him188.ani.app.ui.settings.SettingsTab
+import com.wynime.app.ui.settings.SettingsTab
 
-
-/**
- * A switch item that only the switch is interactable.
- */
 @SettingsDsl
 @Composable
 fun SettingsScope.SwitchItem(
@@ -37,18 +24,9 @@ fun SettingsScope.SwitchItem(
         supportingContent = description,
         trailingContent = switch,
     )
-//    Item(modifier) {
-//        Row(verticalAlignment = Alignment.CenterVertically) {
-//            ItemHeader(title, description, Modifier.weight(1f).padding(end = 16.dp))
-//            switch()
-//        }
-//    }
+
 }
 
-
-/**
- * A switch item that the entire item is clickable.
- */
 @SettingsDsl
 @Composable
 fun SettingsScope.SwitchItem(
@@ -63,9 +41,6 @@ fun SettingsScope.SwitchItem(
     )
 }
 
-/**
- * A switch item that the entire item is clickable.
- */
 @SettingsDsl
 @Composable
 fun SettingsScope.SwitchItem(

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.session
+package com.wynime.app.ui.foundation.session
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -35,20 +26,20 @@ import androidx.compose.ui.unit.DpSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.repository.user.UserRepository
-import me.him188.ani.app.navigation.AniNavigator
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.tools.rememberUiMonoTasker
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.avatar.AvatarImage
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.login_sign_in
-import me.him188.ani.app.ui.lang.playback_history_title
-import me.him188.ani.app.ui.lang.settings_account_confirm_logout
-import me.him188.ani.app.ui.lang.settings_account_logout
-import me.him188.ani.app.ui.lang.settings_account_settings
-import me.him188.ani.app.ui.lang.subject_collection_cancel
-import me.him188.ani.app.ui.user.SelfInfoUiState
+import com.wynime.app.data.repository.user.UserRepository
+import com.wynime.app.navigation.WynimeNavigator
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.tools.rememberUiMonoTasker
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.avatar.AvatarImage
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.login_sign_in
+import com.wynime.app.ui.lang.playback_history_title
+import com.wynime.app.ui.lang.settings_account_confirm_logout
+import com.wynime.app.ui.lang.settings_account_logout
+import com.wynime.app.ui.lang.settings_account_settings
+import com.wynime.app.ui.lang.subject_collection_cancel
+import com.wynime.app.ui.user.SelfInfoUiState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -57,7 +48,7 @@ import kotlin.coroutines.CoroutineContext
 @Composable
 fun SelfAvatar(
     state: SelfInfoUiState,
-    size: DpSize, // = DpSize(48.dp, 48.dp)
+    size: DpSize,
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -72,7 +63,7 @@ fun SelfAvatar(
 
     if (state.isLoading) {
         AvatarSurface {
-            // 加载中时展示 placeholder
+
             AvatarImage(
                 url = state.selfInfo?.avatarUrl,
                 Modifier.size(size).clip(CircleShape).placeholder(state.selfInfo == null),
@@ -102,7 +93,7 @@ interface SelfAvatarActionHandler {
 }
 
 private class DefaultSelfAvatarActionHandler(
-    private val navigator: AniNavigator,
+    private val navigator: WynimeNavigator,
     private val dispatcher: CoroutineContext = Dispatchers.Default,
 ) : SelfAvatarActionHandler, KoinComponent {
     private val userRepo: UserRepository by inject()

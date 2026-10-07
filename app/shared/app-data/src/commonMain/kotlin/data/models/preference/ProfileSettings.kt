@@ -1,4 +1,4 @@
-package me.him188.ani.app.data.models.preference
+package com.wynime.app.data.models.preference
 
 import kotlinx.serialization.Serializable
 

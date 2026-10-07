@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.layout
+package com.wynime.app.ui.subject.details.layout
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,42 +23,36 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
-import me.him188.ani.app.data.models.subject.RelatedSubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_details_episodes
-import me.him188.ani.app.ui.lang.subject_details_info
-import me.him188.ani.app.ui.lang.subject_details_related_subjects
-import me.him188.ani.app.ui.lang.subject_details_summary
-import me.him188.ani.app.ui.lang.subject_details_view_all
-import me.him188.ani.app.ui.subject.AiringLabel
-import me.him188.ani.app.ui.subject.details.components.RelatedSubjectCard
-import me.him188.ani.app.ui.subject.details.components.RelatedSubjectsLazyRow
-import me.him188.ani.app.ui.subject.details.components.rememberNavigateToRelatedSubject
-import me.him188.ani.app.ui.subject.details.components.rememberNavigateToRelationGraph
-import me.him188.ani.app.ui.subject.details.sections.CharactersSection
-import me.him188.ani.app.ui.subject.details.sections.EpisodesRow
-import me.him188.ani.app.ui.subject.details.sections.SectionHeader
-import me.him188.ani.app.ui.subject.details.sections.SectionHeaderActionButton
-import me.him188.ani.app.ui.subject.details.sections.SectionHeaderCacheButton
-import me.him188.ani.app.ui.subject.details.sections.SectionHeaderRelationGraphButton
-import me.him188.ani.app.ui.subject.details.sections.StaffSection
-import me.him188.ani.app.ui.subject.details.sections.SubjectInfoTable
-import me.him188.ani.app.ui.subject.details.sections.SubjectSummarySection
-import me.him188.ani.app.ui.subject.details.sections.SubjectTagsSection
-import me.him188.ani.app.ui.subject.details.sections.ViewAllSheet
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsState
-import me.him188.ani.app.ui.subject.details.state.rememberAiringLabelState
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListItem
+import com.wynime.app.data.models.subject.RelatedSubjectInfo
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_details_episodes
+import com.wynime.app.ui.lang.subject_details_info
+import com.wynime.app.ui.lang.subject_details_related_subjects
+import com.wynime.app.ui.lang.subject_details_summary
+import com.wynime.app.ui.lang.subject_details_view_all
+import com.wynime.app.ui.subject.AiringLabel
+import com.wynime.app.ui.subject.details.components.RelatedSubjectCard
+import com.wynime.app.ui.subject.details.components.RelatedSubjectsLazyRow
+import com.wynime.app.ui.subject.details.components.rememberNavigateToRelatedSubject
+import com.wynime.app.ui.subject.details.components.rememberNavigateToRelationGraph
+import com.wynime.app.ui.subject.details.sections.CharactersSection
+import com.wynime.app.ui.subject.details.sections.EpisodesRow
+import com.wynime.app.ui.subject.details.sections.SectionHeader
+import com.wynime.app.ui.subject.details.sections.SectionHeaderActionButton
+import com.wynime.app.ui.subject.details.sections.SectionHeaderCacheButton
+import com.wynime.app.ui.subject.details.sections.SectionHeaderRelationGraphButton
+import com.wynime.app.ui.subject.details.sections.StaffSection
+import com.wynime.app.ui.subject.details.sections.SubjectInfoTable
+import com.wynime.app.ui.subject.details.sections.SubjectSummarySection
+import com.wynime.app.ui.subject.details.sections.SubjectTagsSection
+import com.wynime.app.ui.subject.details.sections.ViewAllSheet
+import com.wynime.app.ui.subject.details.state.SubjectDetailsState
+import com.wynime.app.ui.subject.details.state.rememberAiringLabelState
+import com.wynime.app.ui.subject.episode.list.EpisodeListItem
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 手机 (Compact) "详情" Tab 的新内容区.
- *
- * 复用现有 Header + TabRow(用户要求手机 header 不动), 仅本 tab 内容为重写实现.
- * 区块顺序对齐 Figma 定稿手机详情 (1515:334): 选集 / 简介 / 标签 / 作品信息 / 角色 / 制作人员 / 关联作品.
- */
 @Composable
 internal fun CompactDetailsTabContent(
     state: SubjectDetailsState,
@@ -103,9 +88,7 @@ internal fun CompactDetailsTabContent(
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        // 选集 (横滑, 不分页); header 链接 "全 N 话 · 已完结 ›" 打开完整选集列表 (定稿 1610:1003).
-        // item 恒定存在 (剧集异步加载时为空): 若按条件插入, 加载完成后该 item 会出现在
-        // LazyColumn 锚点 ("summary") 上方, 列表无法滚回顶部看到它 (真机复现).
+
         item("episodes") {
             if (episodes.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -133,7 +116,6 @@ internal fun CompactDetailsTabContent(
             }
         }
 
-        // 简介 (手机端带区块标题, 定稿 1515:334; 桌面中栏无标题)
         if (info.summary.isNotBlank()) {
             item("summary") {
                 Column(
@@ -146,12 +128,10 @@ internal fun CompactDetailsTabContent(
             }
         }
 
-        // 标签
         item("tags") {
             SubjectTagsSection(info.tags, onClickTag, horizontalPaddingModifier)
         }
 
-        // 作品信息
         item("info") {
             Column(
                 horizontalPaddingModifier.fillMaxWidth(),
@@ -162,7 +142,6 @@ internal fun CompactDetailsTabContent(
             }
         }
 
-        // 角色 (横向头像条, 边到边滚动; 手机为 Small 卡: 头像 56, 间距 0)
         item("characters") {
             CharactersSection(
                 exposedCharacters,
@@ -174,7 +153,6 @@ internal fun CompactDetailsTabContent(
             )
         }
 
-        // 制作人员 (3 列网格)
         item("staff") {
             StaffSection(
                 exposedStaff,
@@ -185,7 +163,6 @@ internal fun CompactDetailsTabContent(
             )
         }
 
-        // 关联作品 (横滑; "查看全部" -> 封面网格 sheet)
         if (related.itemCount > 0) {
             item("related") {
                 RelatedSubjectsCompactSection(

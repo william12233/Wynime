@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.settings.framework.components
+package com.wynime.app.ui.settings.framework.components
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -33,9 +33,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_cancel
-import me.him188.ani.app.ui.lang.settings_media_source_save_button
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_cancel
+import com.wynime.app.ui.lang.settings_media_source_save_button
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorder
 import org.burnoutcrew.reorderable.detectReorderAfterLongPress
@@ -49,12 +49,6 @@ class SelectableItem<T>(
     val selected: Boolean
 )
 
-/**
- * 支持弹出对话框让用户排序.
- *
- * @param exposed 未展开时显示在项目右侧的标签, 来表示当前的排序
- * @param key 用于区分每个项目的唯一键, 必须快速且稳定
- */
 @SettingsDsl
 @Composable
 fun <T> SettingsScope.SorterItem(
@@ -118,7 +112,7 @@ fun <T> SettingsScope.SorterItem(
                                         Row(
                                             modifier = Modifier
                                                 .shadow(elevation.value)
-                                                .background(Color.Transparent) // match card background
+                                                .background(Color.Transparent)
                                                 .fillMaxWidth(),
                                             verticalAlignment = Alignment.CenterVertically,
                                         ) {

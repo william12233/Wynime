@@ -1,38 +1,12 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 plugins {
-    id("ani.kmp-library")
+    id("wynime.kmp-library")
     alias(libs.plugins.kotlin.plugin.serialization)
 
-    // alias(libs.plugins.kotlinx.atomicfu)
-}
-
-// 声明桶与可解析配置分离, 每个 configuration 只承担一种角色.
-val mediampFfmpegAppleRuntime = configurations.dependencyScope("mediampFfmpegAppleRuntime")
-val mediampFfmpegAppleRuntimePath = configurations.resolvable("mediampFfmpegAppleRuntimePath") {
-    extendsFrom(mediampFfmpegAppleRuntime.get())
-    isTransitive = false
-}
-
-val mediampVersion = libs.versions.mediamp.get()
-val mediampFfmpegIOSRuntime = libs.mediamp.ffmpeg.runtime.ios.xcframework.get()
-
-val mediampFfmpegAppleRuntimeDirectory = layout.buildDirectory.dir("mediamp-ffmpeg/apple-runtime")
-val extractMediampFfmpegAppleRuntime = tasks.register<ExtractAppleXcframeworkTask>("extractMediampFfmpegAppleRuntime") {
-    archives.from(mediampFfmpegAppleRuntimePath)
-    outputDirectory.set(mediampFfmpegAppleRuntimeDirectory)
 }
 
 kotlin {
     android {
-        namespace = "me.him188.ani.utils.http.downloader"
+        namespace = "com.wynime.utils.http.downloader"
         packaging {
             resources {
                 pickFirsts.add("META-INF/AL2.0")
@@ -55,7 +29,7 @@ kotlin {
         implementation(libs.kotlinx.collections.immutable)
     }
     sourceSets.desktopMain.dependencies {
-//        runtimeOnly(libs.slf4j.simple)
+
     }
     sourceSets.commonTest.dependencies {
         implementation(libs.turbine)
@@ -68,15 +42,8 @@ kotlin {
 dependencies {
     when (val triple = getOsTriple()) {
         "windows-x64" -> desktopTestRuntimeOnly(libs.mediamp.ffmpeg.runtime.windows.x64)
-        "linux-x64" -> desktopTestRuntimeOnly(libs.mediamp.ffmpeg.runtime.linux.x64)
-        "macos-x64" -> desktopTestRuntimeOnly(libs.mediamp.ffmpeg.runtime.macos.x64)
-        "macos-arm64" -> desktopTestRuntimeOnly(libs.mediamp.ffmpeg.runtime.macos.arm64)
-        "windows-arm64" -> desktopTestRuntimeOnly(libs.mediamp.ffmpeg.runtime.windows.arm64)
-        else -> throw UnsupportedOperationException("Unknown os: $triple")
-    }
 
-    add(
-        mediampFfmpegAppleRuntime.name,
-        "${mediampFfmpegIOSRuntime.group}:${mediampFfmpegIOSRuntime.name}:$mediampVersion@zip",
-    )
+        "windows-arm64" -> desktopTestRuntimeOnly(libs.mediamp.ffmpeg.runtime.windows.arm64)
+        else -> {}
+    }
 }

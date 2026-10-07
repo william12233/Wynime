@@ -1,31 +1,21 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.state
+package com.wynime.app.ui.subject.details.state
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import me.him188.ani.app.data.models.subject.TestSelfRatingInfo
-import me.him188.ani.app.data.models.subject.TestSubjectCollections
-import me.him188.ani.app.data.models.subject.TestSubjectInfo
-import me.him188.ani.app.ui.comment.createTestCommentState
-import me.him188.ani.app.ui.search.createTestPager
-import me.him188.ani.app.ui.subject.details.TestRelatedSubjects
-import me.him188.ani.app.ui.subject.details.TestSubjectCharacterList
-import me.him188.ani.app.data.models.subject.TestSubjectProgressInfos
-import me.him188.ani.app.ui.subject.TestSubjectAiringInfo
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListUiState
-import me.him188.ani.app.ui.rating.TestEditableRatingUiState
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
-
+import com.wynime.app.data.models.subject.TestSelfRatingInfo
+import com.wynime.app.data.models.subject.TestSubjectCollections
+import com.wynime.app.data.models.subject.TestSubjectInfo
+import com.wynime.app.ui.comment.createTestCommentState
+import com.wynime.app.ui.search.createTestPager
+import com.wynime.app.ui.subject.details.TestRelatedSubjects
+import com.wynime.app.ui.subject.details.TestSubjectCharacterList
+import com.wynime.app.data.models.subject.TestSubjectProgressInfos
+import com.wynime.app.ui.subject.TestSubjectAiringInfo
+import com.wynime.app.ui.subject.episode.list.EpisodeListUiState
+import com.wynime.app.ui.rating.TestEditableRatingUiState
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 
 @TestOnly
 fun createTestSubjectDetailsState(

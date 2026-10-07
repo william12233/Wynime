@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.media.source
+package com.wynime.app.ui.settings.tabs.media.source
 
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.CancellationException
@@ -18,12 +9,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.sourceplugin.SourcePluginIndexEntry
-import me.him188.ani.app.domain.sourceplugin.SourcePluginRepositoryCache
-import me.him188.ani.app.domain.sourceplugin.SourcePluginRegistry
-import me.him188.ani.app.domain.sourceplugin.SourcePluginRepositoryClient
+import com.wynime.app.domain.sourceplugin.SourcePluginIndexEntry
+import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryCache
+import com.wynime.app.domain.sourceplugin.SourcePluginRegistry
+import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryClient
+import com.wynime.app.domain.sourceplugin.SOURCE_PLUGIN_API_VERSION
+import com.wynime.app.domain.sourceplugin.compareSourcePluginVersions
 
-/** State and actions for the first-party executable source-plugin store. */
 class SourcePluginStoreState(
     private val repositoryClient: SourcePluginRepositoryClient,
     private val registry: SourcePluginRegistry,
@@ -52,19 +44,21 @@ class SourcePluginStoreState(
             _isRefreshing.value = true
             _error.value = null
             try {
+                val bundled = registry.bundledEntries()
+                _available.value = bundled
                 val cached = repositoryCache.data.first()
-                cached.index?.plugins?.let { _available.value = it }
+                cached.index?.takeIf { it.pluginApiVersion == SOURCE_PLUGIN_API_VERSION }?.plugins?.let {
+                    _available.value = mergeEntries(bundled, it)
+                }
                 val result = repositoryClient.fetchIndex(cached)
-                _available.value = result.index.plugins
+                _available.value = mergeEntries(bundled, result.index.plugins)
                 repositoryCache.updateData {
                     SourcePluginRepositoryCache(etag = result.etag, index = result.index)
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                if (_available.value.isEmpty()) {
-                    _error.value = e.message ?: e::class.simpleName ?: "Unknown error"
-                }
+                _error.value = e.message ?: e::class.simpleName ?: "Unknown error"
             } finally {
                 _isRefreshing.value = false
             }
@@ -85,6 +79,13 @@ class SourcePluginStoreState(
 
     fun clearError() {
         _error.value = null
+    }
+
+    private fun mergeEntries(
+        bundled: List<SourcePluginIndexEntry>,
+        remote: List<SourcePluginIndexEntry>,
+    ): List<SourcePluginIndexEntry> = (bundled + remote).groupBy { it.id }.values.map { entries ->
+        entries.maxWith { left, right -> compareSourcePluginVersions(left.version, right.version) }
     }
 
     private fun runPluginOperation(pluginId: String, operation: suspend () -> Unit): Job = scope.launch {

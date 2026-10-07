@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(TestOnly::class)
 
-package me.him188.ani.app.ui.exploration.search
+package com.wynime.app.ui.exploration.search
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -79,29 +70,29 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.domain.search.SearchSort
-import me.him188.ani.app.ui.adaptive.AdaptiveSearchBar
-import me.him188.ani.app.ui.adaptive.AniListDetailPaneScaffold
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.PaneScope
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.interaction.onEnterKeyEvent
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.paneVerticalPadding
-import me.him188.ani.app.ui.foundation.layout.plus
-import me.him188.ani.app.ui.foundation.navigation.BackHandler
-import me.him188.ani.app.ui.foundation.preview.PreviewSizeClasses
-import me.him188.ani.app.ui.foundation.widgets.BackNavigationIconButton
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_search
-import me.him188.ani.app.ui.lang.exploration_search_back_to_top
-import me.him188.ani.app.ui.search.TestSearchState
-import me.him188.ani.app.ui.search.collectItemsWithLifecycle
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.isDesktop
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.domain.search.SearchSort
+import com.wynime.app.ui.adaptive.AdaptiveSearchBar
+import com.wynime.app.ui.adaptive.WynimeListDetailPaneScaffold
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.PaneScope
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.interaction.onEnterKeyEvent
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.paneVerticalPadding
+import com.wynime.app.ui.foundation.layout.plus
+import com.wynime.app.ui.foundation.navigation.BackHandler
+import com.wynime.app.ui.foundation.preview.PreviewSizeClasses
+import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_search
+import com.wynime.app.ui.lang.exploration_search_back_to_top
+import com.wynime.app.ui.search.TestSearchState
+import com.wynime.app.ui.search.collectItemsWithLifecycle
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.isDesktop
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -113,7 +104,7 @@ fun SearchPage(
     modifier: Modifier = Modifier,
     navigator: ThreePaneScaffoldNavigator<*> = rememberListDetailPaneScaffoldNavigator(),
     gridState: LazyGridState = rememberLazyGridState(),
-    contentWindowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    contentWindowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
     navigationIcon: @Composable () -> Unit = {},
 ) {
     val searchText = stringResource(Lang.exploration_search)
@@ -234,7 +225,7 @@ fun SearchPage(
                                         onSelect = { season ->
                                             onIntent(SearchPageIntent.ChangeSeason(season))
                                         },
-                                        // 季度从属于年份: 未选年份时禁用.
+
                                         enabled = state.query.year != null,
                                     )
                                 },
@@ -331,7 +322,7 @@ private fun SearchPageSearchBar(
     onExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     inputFieldModifier: Modifier = Modifier,
-    windowInsets: WindowInsets = AniWindowInsets.forSearchBar(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forSearchBar(),
     placeholder: @Composable (() -> Unit)? = null,
 ) {
     var debouncedEditingQuery by remember { mutableStateOf(editingQuery) }
@@ -465,9 +456,6 @@ private fun SearchPageSearchBar(
     }
 }
 
-/**
- * @param searchBar contentPadding: 页面的左右 24.dp 边距
- */
 @Composable
 internal fun SearchPageListDetailScaffold(
     navigator: ThreePaneScaffoldNavigator<*>,
@@ -478,7 +466,7 @@ internal fun SearchPageListDetailScaffold(
     navigateToTopButton: @Composable PaneScope.() -> Unit,
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
-    contentWindowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    contentWindowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     val coroutineScope = rememberCoroutineScope()
     val searchText = stringResource(Lang.exploration_search)
@@ -489,10 +477,10 @@ internal fun SearchPageListDetailScaffold(
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     }
 
-    AniListDetailPaneScaffold(
+    WynimeListDetailPaneScaffold(
         navigator = navigator,
         listPaneTopAppBar = {
-            AniTopAppBar(
+            WynimeTopAppBar(
                 title = { Text(searchText) },
                 modifier = Modifier.fillMaxWidth(),
                 navigationIcon = {
@@ -575,9 +563,6 @@ fun PreviewSearchPageEmptyResult() = ProvideCompositionLocalsForPreview {
     )
 }
 
-/**
- * @sample me.him188.ani.app.ui.search.PreviewLoadErrorCard
- */
 @OptIn(TestOnly::class)
 @Composable
 @PreviewSizeClasses

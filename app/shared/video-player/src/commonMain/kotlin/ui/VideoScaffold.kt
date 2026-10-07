@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui
+package com.wynime.app.videoplayer.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -48,55 +39,26 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBar
-import me.him188.ani.app.ui.foundation.theme.slightlyWeaken
-import me.him188.ani.app.videoplayer.ui.gesture.PlayerGestureHost
-import me.him188.ani.app.videoplayer.ui.progress.PlayerControllerBar
-import me.him188.ani.app.videoplayer.ui.top.PlayerTopBar
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.layout.desktopTitleBar
+import com.wynime.app.ui.foundation.theme.slightlyWeaken
+import com.wynime.app.videoplayer.ui.gesture.PlayerGestureHost
+import com.wynime.app.videoplayer.ui.progress.PlayerControllerBar
+import com.wynime.app.videoplayer.ui.top.PlayerTopBar
 
-/**
- * [VideoScaffold] 提供给 [VideoScaffold.rhsSheet] 的 window insets, 即传给框架的 `contentWindowInsets`.
- *
- * 侧边栏和其他控件不同: 它的背景要一直铺到屏幕边缘, 盖住系统栏和屏幕圆角, 只让里面的内容避开这些区域.
- * 如果框架像对待其他控件那样在外层加边距, 侧边栏就会悬浮在离屏幕边缘一段距离的地方, 四周露出视频.
- */
 val LocalVideoScaffoldSheetWindowInsets = compositionLocalOf<WindowInsets> { WindowInsets(0) }
 
-/**
- * 视频播放器框架, 可以自定义组合控制器等部分.
- *
- * 视频播放器框架由以下层级组成, 由上至下:
- *
- * - 悬浮消息: [floatingMessage], 例如正在缓冲
- * - 控制器: [topBar], [rhsBar] 和 [bottomBar]
- * - 手势: [gestureHost]
- * - 视频: [video]
- * - 右侧侧边栏: [rhsSheet]
- *
- * @param topBar [PlayerTopBar]
- * @param video [VideoPlayer]. video 不会接受到点击事件.
- * @param gestureHost 手势区域, 例如快进/快退, 音量调节等. See [PlayerGestureHost]
- * @param floatingMessage 悬浮消息, 例如正在缓冲. 将会对齐到中央
- * @param framePreviewOverlay 位于整个播放器区域正中央的叠层, 不应用系统窗口边距.
- * @param rhsBar 右侧控制栏, 锁定手势等.
- * @param rhsSheet 右侧侧边栏. 框架不为它应用 [contentWindowInsets], 而是通过 [LocalVideoScaffoldSheetWindowInsets] 提供给它.
- * @param bottomBar [PlayerControllerBar]
- * @param expanded 当前是否处于全屏模式. 全屏时此框架会 [Modifier.fillMaxSize], 否则会限制为一个 16:9 的框.
- */
 @Composable
 fun VideoScaffold(
     expanded: Boolean,
     modifier: Modifier = Modifier,
-    contentWindowInsets: WindowInsets = WindowInsets.safeContent, // TODO: 目前只对部分元素有效
+    contentWindowInsets: WindowInsets = WindowInsets.safeContent,
     maintainAspectRatio: Boolean = !expanded,
     controllerState: PlayerControllerState,
     gestureLocked: Boolean = false,
     topBar: @Composable RowScope.() -> Unit = {},
-    /**
-     * @see VideoPlayer
-     */
+
     video: @Composable BoxScope.() -> Unit = {},
     gestureHost: @Composable BoxWithConstraintsScope.() -> Unit = {},
     floatingMessage: @Composable BoxScope.() -> Unit = {},
@@ -116,32 +78,31 @@ fun VideoScaffold(
         .withGestureLocked(gestureLocked)
         .withExpanded(expanded)
 
-    val enterTransition = LocalAniMotionScheme.current.animatedVisibility.standardEnter
-    val exitTransition = LocalAniMotionScheme.current.animatedVisibility.standardExit
+    val enterTransition = LocalWynimeMotionScheme.current.animatedVisibility.standardEnter
+    val exitTransition = LocalWynimeMotionScheme.current.animatedVisibility.standardExit
     BoxWithConstraints(
         modifier.then(if (expanded) Modifier.fillMaxHeight() else Modifier.fillMaxWidth()),
         contentAlignment = Alignment.Center,
-    ) { // 16:9 box
+    ) {
         Box(
             Modifier
                 .then(
                     if (!maintainAspectRatio) {
                         Modifier.fillMaxSize()
                     } else {
-                        Modifier.fillMaxWidth().height(maxWidth * 9 / 16) // 16:9 box
+                        Modifier.fillMaxWidth().height(maxWidth * 9 / 16)
                     },
                 ),
         ) {
             Box(
                 Modifier
                     .background(Color.Transparent)
-                    .matchParentSize(), // no window insets for video
+                    .matchParentSize(),
             ) {
                 video()
-                Box(Modifier.matchParentSize()) // 防止点击事件传播到 video 里
+                Box(Modifier.matchParentSize())
             }
 
-            // 控制手势
             BoxWithConstraints(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
                 gestureHost()
             }
@@ -157,8 +118,8 @@ fun VideoScaffold(
 
             Box(Modifier) {
                 Column(Modifier.fillMaxSize().background(Color.Transparent)) {
-                    // 顶部控制栏: 返回键, 标题, 设置
-                    me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility(
+
+                    com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility(
                         visible = controllerVisibility.topBar || inlineSliderOnly,
                         enter = enterTransition,
                         exit = exitTransition,
@@ -183,7 +144,7 @@ fun VideoScaffold(
                                     .hoverToRequestAlwaysOn(alwaysOnRequester)
                                     .fillMaxWidth(),
                             ) {
-                                //force skip layout hit test for windows
+
                                 val desktopTitleBarInsets = WindowInsets.desktopTitleBar.only(WindowInsetsSides.Top)
                                 Spacer(
                                     modifier = Modifier.fillMaxWidth()
@@ -220,8 +181,8 @@ fun VideoScaffold(
                     Box(Modifier.weight(1f, fill = true).fillMaxWidth())
 
                     Column {
-                        // 底部控制栏: 播放/暂停, 进度条, 切换全屏
-                        AniAnimatedVisibility(
+
+                        WynimeAnimatedVisibility(
                             visible = controllerVisibility.bottomBar,
                             enter = enterTransition,
                             exit = exitTransition,
@@ -234,7 +195,7 @@ fun VideoScaffold(
                                         awaitEachGesture {
                                             val event = awaitPointerEvent()
                                             if (event.changes.all { it.pressed }) {
-                                                //点击 bottom bar 里的按钮时 请求 always on
+
                                                 alwaysOnRequester.request()
                                             }
                                             var releaseEvent = awaitPointerEvent()
@@ -266,7 +227,7 @@ fun VideoScaffold(
                             }
 
                         }
-                        AniAnimatedVisibility(
+                        WynimeAnimatedVisibility(
                             visible = controllerVisibility.detachedSlider,
                             enter = enterTransition,
                             exit = exitTransition,
@@ -280,7 +241,7 @@ fun VideoScaffold(
                         }
                     }
                 }
-                AniAnimatedVisibility(
+                WynimeAnimatedVisibility(
                     controllerVisibility.floatingBottomEnd && !expanded,
                     Modifier.align(Alignment.BottomEnd),
                     enter = enterTransition,
@@ -307,7 +268,7 @@ fun VideoScaffold(
                         Modifier.padding(end = 16.dp).align(Alignment.CenterEnd),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        AniAnimatedVisibility(
+                        WynimeAnimatedVisibility(
                             visible = controllerVisibility.rhsBar,
                             enter = enterTransition,
                             exit = exitTransition,
@@ -315,8 +276,7 @@ fun VideoScaffold(
                             rhsButtons()
                         }
 
-                        // Separate from controllers, to fix position when controllers are/aren't hidden
-                        AniAnimatedVisibility(
+                        WynimeAnimatedVisibility(
                             visible = controllerVisibility.gestureLock,
                             enter = enterTransition,
                             exit = exitTransition,
@@ -338,7 +298,7 @@ fun VideoScaffold(
                     }
                 }
             }
-            // 悬浮消息, 例如正在缓冲
+
             Box(
                 Modifier.matchParentSize().windowInsetsPadding(contentWindowInsets),
                 contentAlignment = Alignment.Center,
@@ -349,15 +309,14 @@ fun VideoScaffold(
                     }
                 }
             }
-            // FramePreview popup for compact layout
+
             Box(
                 Modifier.matchParentSize(),
                 contentAlignment = Alignment.Center,
             ) {
                 framePreviewOverlay()
             }
-            // 右侧 sheet. 不在这里加边距: 侧边栏的背景要延伸到屏幕边缘, 只有内容避开系统栏和圆角,
-            // 所以把 insets 交给它自己处理, 见 [LocalVideoScaffoldSheetWindowInsets].
+
             Box(Modifier.matchParentSize()) {
                 CompositionLocalProvider(LocalVideoScaffoldSheetWindowInsets provides contentWindowInsets) {
                     rhsSheet()
@@ -379,7 +338,6 @@ internal fun Modifier.keepLayoutWhenHidden(hidden: Boolean): Modifier {
             }
         }
 }
-
 
 @Stable
 private fun ControllerVisibility.withGestureLocked(gestureLocked: Boolean): ControllerVisibility {

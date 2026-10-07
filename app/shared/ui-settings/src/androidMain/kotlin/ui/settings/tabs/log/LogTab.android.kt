@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.log
+package com.wynime.app.ui.settings.tabs.log
 
 import android.content.Context
 import android.content.Intent
@@ -22,16 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.launch
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_log_copy_today_log_content
-import me.him188.ani.app.ui.lang.settings_log_share_file
-import me.him188.ani.app.ui.lang.settings_log_share_today_log_file
-import me.him188.ani.buildconfig.AndroidBuildConfig
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_log_copy_today_log_content
+import com.wynime.app.ui.lang.settings_log_share_file
+import com.wynime.app.ui.lang.settings_log_share_today_log_file
+import com.wynime.buildconfig.AndroidBuildConfig
 import org.jetbrains.compose.resources.stringResource
 import java.io.File
-
 
 @Composable
 internal actual fun ColumnScope.PlatformLoggingItems(listItemColors: ListItemColors) {
@@ -46,7 +36,7 @@ internal actual fun ColumnScope.PlatformLoggingItems(listItemColors: ListItemCol
         headlineContent = { Text(shareTodayLogFileText) },
         Modifier.clickable {
             val shareIntent = Intent(Intent.ACTION_SEND)
-            shareIntent.setType("text/plain") // Set appropriate MIME type
+            shareIntent.setType("text/plain")
             shareIntent.putExtra(
                 Intent.EXTRA_STREAM,
                 FileProvider.getUriForFile(
@@ -72,9 +62,8 @@ internal actual fun ColumnScope.PlatformLoggingItems(listItemColors: ListItemCol
     )
 }
 
-// Used also in AniApplication
 fun Context.getLogsDir(): File {
-    // /data/data/0/me.him188.ani/files/logs/
+
     val logs = applicationContext.filesDir.resolve("logs")
     if (!logs.exists()) {
         logs.mkdirs()

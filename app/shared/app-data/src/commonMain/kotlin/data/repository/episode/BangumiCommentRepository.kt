@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.episode
+package com.wynime.app.data.repository.episode
 
 import androidx.compose.ui.util.packInts
 import androidx.paging.LoadType
@@ -22,17 +13,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.models.UserInfo
-import me.him188.ani.app.data.models.comment.CommentVoteValue
-import me.him188.ani.app.data.models.episode.EpisodeComment
-import me.him188.ani.app.data.models.episode.EpisodeCommentSource
-import me.him188.ani.app.data.models.subject.SubjectReview
-import me.him188.ani.app.data.models.subject.SubjectReviewSource
-import me.him188.ani.app.data.network.BangumiCommentService
-import me.him188.ani.app.data.persistent.database.dao.SubjectReviewDao
-import me.him188.ani.app.data.persistent.database.entity.SubjectReviewEntity
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
+import com.wynime.app.data.models.UserInfo
+import com.wynime.app.data.models.comment.CommentVoteValue
+import com.wynime.app.data.models.episode.EpisodeComment
+import com.wynime.app.data.models.episode.EpisodeCommentSource
+import com.wynime.app.data.models.subject.SubjectReview
+import com.wynime.app.data.models.subject.SubjectReviewSource
+import com.wynime.app.data.network.BangumiCommentService
+import com.wynime.app.data.persistent.database.dao.SubjectReviewDao
+import com.wynime.app.data.persistent.database.entity.SubjectReviewEntity
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
 
 class BangumiCommentRepository(
     private val commentService: BangumiCommentService,
@@ -48,10 +39,6 @@ class BangumiCommentRepository(
         ).flow
     }
 
-    /**
-     * 对条目评价投票 (点赞/点踩). [vote] 为 `null` 表示取消投票.
-     * 只支持 [SubjectReviewSource.ANI] 来源的评价, [reviewId] 为服务端评价 ID.
-     */
     suspend fun voteSubjectReview(subjectId: Int, reviewId: String, vote: CommentVoteValue?) {
         commentService.voteSubjectReview(subjectId, reviewId, vote)
     }
@@ -72,8 +59,6 @@ class BangumiCommentRepository(
                         nextKey = null,
                     )
 
-                // The merged review endpoint returns offset + page size + 1 while more pages exist.
-                // That sentinel is a lower bound, not an exact review count.
                 onTotalCount(subjectReviews.total.takeUnless { subjectReviews.hasMore })
                 LoadResult.Page(
                     data = subjectReviews.page,

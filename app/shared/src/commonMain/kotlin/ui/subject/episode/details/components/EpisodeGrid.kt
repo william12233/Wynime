@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.details.components
+package com.wynime.app.ui.subject.episode.details.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
@@ -42,31 +33,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.preferredDisplayName
-import me.him188.ani.app.domain.media.cache.EpisodeCacheStatus
-import me.him188.ani.app.ui.foundation.LocalEpisodeProgressSettings
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.LongClickProgressFill
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.icons.PlayingIcon
-import me.him188.ani.app.ui.foundation.layout.plus
-import me.him188.ani.app.ui.subject.episode.details.EpisodeCarouselState
-import me.him188.ani.app.ui.subject.episode.list.EpisodeCellLabel
-import me.him188.ani.app.ui.subject.episode.list.EpisodeStillBackground
-import me.him188.ani.app.ui.subject.episode.list.EpisodePlayProgressBar
-import me.him188.ani.app.ui.subject.episode.list.EpisodeStillDefaults
-import me.him188.ani.app.ui.subject.episode.list.EpisodeWatchedBadge
-import me.him188.ani.app.ui.subject.episode.details.PreviewEpisodeCollections
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.api.topic.isDoneOrDropped
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.preferredDisplayName
+import com.wynime.app.domain.media.cache.EpisodeCacheStatus
+import com.wynime.app.ui.foundation.LocalEpisodeProgressSettings
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.LongClickProgressFill
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.icons.PlayingIcon
+import com.wynime.app.ui.foundation.layout.plus
+import com.wynime.app.ui.subject.episode.details.EpisodeCarouselState
+import com.wynime.app.ui.subject.episode.list.EpisodeCellLabel
+import com.wynime.app.ui.subject.episode.list.EpisodeStillBackground
+import com.wynime.app.ui.subject.episode.list.EpisodePlayProgressBar
+import com.wynime.app.ui.subject.episode.list.EpisodeStillDefaults
+import com.wynime.app.ui.subject.episode.list.EpisodeWatchedBadge
+import com.wynime.app.ui.subject.episode.details.PreviewEpisodeCollections
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
+import com.wynime.utils.platform.annotations.TestOnly
 
-/**
- * 剧集网格组件，以两列网格布局显示剧集列表。
- *
- * 支持自动滚动到当前播放的剧集。
- */
 @Composable
 fun EpisodeGrid(
     episodeCarouselState: EpisodeCarouselState,
@@ -76,18 +62,18 @@ fun EpisodeGrid(
     showImages: Boolean = LocalEpisodeProgressSettings.current.showEpisodeImages,
 ) {
     val gridState = rememberLazyGridState()
-    
+
     LaunchedEffect(isVisible) {
         if (isVisible) {
-            val playingIndex = episodeCarouselState.episodes.indexOfFirst { 
-                episodeCarouselState.isPlaying(it) 
+            val playingIndex = episodeCarouselState.episodes.indexOfFirst {
+                episodeCarouselState.isPlaying(it)
             }
             if (playingIndex >= 0) {
                 gridState.animateScrollToItem(playingIndex)
             }
         }
     }
-    
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 144.dp),
         state = gridState,
@@ -142,32 +128,6 @@ private fun PreviewEpisodeGrid() = ProvideCompositionLocalsForPreview {
     }
 }
 
-/**
- * 剧集网格项组件，用于网格布局中的单个剧集显示。
- * 
- * 与EpisodeCard布局相同，但宽度随网格列宽伸展。
- * 支持与其他剧集组件相同的状态显示和交互行为。
- * 
- * @param episode 剧集收藏信息，包含剧集详情和收藏状态
- * @param isPlaying 是否为当前播放的剧集
- * @param onClick 点击回调，通常用于切换到该剧集
- * @param onLongClick 长按回调，通常用于快速标记观看状态
- * @param modifier 修饰符
- * 
- * ## 视觉状态
- * - **正在播放**：主色容器背景，显示播放图标，主色文字
- * - **已观看**：半透明背景，淡化文字颜色
- * - **未观看**：正常背景和文字颜色
- * 
- * - **有剧照** (且 [showImage])：剧照作背景 ([EpisodeStillBackground])，亮度不随观看状态变化，文字改用深色配色前景 ([EpisodeStillDefaults])，播放中用 primary 描边表示
- * - **已看完** (DONE)：右上角「已看完」角标 ([EpisodeWatchedBadge])，点击与长按一样触发 [onLongClick] 取消已看
- * - **未看完但有播放记录** ([playProgress] 非空)：底边显示上次播放进度 ([EpisodePlayProgressBar])
- * 
- * ## 布局特性
- * - **固定高度**：80dp，适合网格布局
- * - **单行文字**：编号和标题并排一行 ([EpisodeCellLabel]) 贴在左下角，上方留给剧照画面
- * - **文字截断**：标题过长时显示省略号
- */
 @Composable
 private fun EpisodeGridItem(
     episode: EpisodeCollectionInfo,
@@ -182,7 +142,7 @@ private fun EpisodeGridItem(
     val isDone = episode.collectionType == UnifiedCollectionType.DONE
     val interactionSource = remember { MutableInteractionSource() }
     val still = episode.episodeInfo.imageMedium?.takeIf { showImage }
-    // 播放中且有剧照时的描边宽度, 进度条按它内缩
+
     val stillBorder = if (still != null && isPlaying) 2.dp else 0.dp
     val sortColor = when {
         still != null -> EpisodeStillDefaults.contentColor
@@ -255,7 +215,7 @@ private fun EpisodeGridItem(
                 EpisodePlayProgressBar(
                     progress = playProgress,
                     onStill = still != null,
-                    // 播放中的有图卡片有 primary 描边, 进度条缩到描边内侧, 不被盖住
+
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(start = stillBorder, end = stillBorder, bottom = stillBorder),

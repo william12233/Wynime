@@ -1,4 +1,4 @@
-package me.him188.ani.test
+package com.wynime.test
 
 expect fun Any.readTestResourceAsString(path: String): String
 expect fun Any.readTestResourceAsByteArray(path: String): ByteArray

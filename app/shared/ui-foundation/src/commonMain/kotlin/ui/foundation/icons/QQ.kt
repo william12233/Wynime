@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.icons
+package com.wynime.app.ui.foundation.icons
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType
@@ -10,10 +10,9 @@ import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-
 private var _QqRoundedOutline: ImageVector? = null
 
-public val AniIcons.QqRoundedOutline: ImageVector
+public val WynimeIcons.QqRoundedOutline: ImageVector
     get() {
         if (_QqRoundedOutline != null) {
             return _QqRoundedOutline!!

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -32,19 +23,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.download.DeleteActionDialog
-import me.him188.ani.app.ui.download.components.DownloadItem
-import me.him188.ani.app.ui.download.components.DownloadSelectionFloatingToolbar
-import me.him188.ani.app.ui.download.components.DownloadSelectionState
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.navigation.BackHandler
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_deselect_all
-import me.him188.ani.app.ui.lang.cache_management_exit_selection
-import me.him188.ani.app.ui.lang.cache_management_select_all_action
-import me.him188.ani.app.ui.lang.cache_management_selected_count
-import me.him188.ani.app.ui.mediafetch.MediaSourceInfoProvider
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.download.DeleteActionDialog
+import com.wynime.app.ui.download.components.DownloadItem
+import com.wynime.app.ui.download.components.DownloadSelectionFloatingToolbar
+import com.wynime.app.ui.download.components.DownloadSelectionState
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.navigation.BackHandler
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_deselect_all
+import com.wynime.app.ui.lang.cache_management_exit_selection
+import com.wynime.app.ui.lang.cache_management_select_all_action
+import com.wynime.app.ui.lang.cache_management_selected_count
+import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -56,7 +47,7 @@ fun SubjectDownloadsPage(
     onPlay: (DownloadItem) -> Unit,
     onViewDetail: ((DownloadItem) -> Unit)?,
     modifier: Modifier = Modifier,
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
     navigationIcon: @Composable () -> Unit = {},
 ) {
     val selected = state.downloads.filter { it.id in selection.selectedIds }
@@ -84,7 +75,7 @@ fun SubjectDownloadsPage(
         modifier = modifier,
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         topBar = {
-            AniTopAppBar(
+            WynimeTopAppBar(
                 title = {
                     Text(
                         if (selection.inSelection) stringResource(Lang.cache_management_selected_count, selected.size)

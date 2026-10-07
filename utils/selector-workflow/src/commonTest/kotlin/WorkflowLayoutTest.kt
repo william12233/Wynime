@@ -1,32 +1,18 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.utils.selectorworkflow
 
-package me.him188.ani.utils.selectorworkflow
-
-import me.him188.ani.utils.selectorworkflow.draw.WorkflowLayout
-import me.him188.ani.utils.selectorworkflow.draw.WorkflowMetrics
+import com.wynime.utils.selectorworkflow.draw.WorkflowLayout
+import com.wynime.utils.selectorworkflow.draw.WorkflowMetrics
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * 几何全部由配置推出来 —— 这些用例盯的就是"改配置画面自动跟着排", 不是盯某个具体数值.
- */
 class WorkflowLayoutTest {
 
     private val metrics = WorkflowMetrics.Default
 
     private fun layoutOf(config: SelectorWorkflowConfig) = WorkflowLayout.of(config, metrics)
-
-    // ------------------------------------------------------------------ 高亮框
 
     @Test
     fun `each highlight box wraps the thing it points at`() {
@@ -46,7 +32,7 @@ class WorkflowLayoutTest {
             assertTrue(sources.contains(c), "第 $i 个源节点没被罩住")
             assertTrue(c.x - metrics.haloRadius > sources.left, "第 $i 个源的光环探出框外了")
         }
-        // 连线一路画到容器边上, 框还得再越过去一截 —— 它是 overlay, 交叉过去无所谓
+
         assertTrue(sources.right > layout.container.left, "框该越过结果容器的边线")
         layout.linkSegments.forEach { (from, to) ->
             assertTrue(from.x >= sources.left && to.x <= sources.right, "连线没被完全罩住")
@@ -56,7 +42,7 @@ class WorkflowLayoutTest {
 
     @Test
     fun `no highlight box escapes the canvas`() {
-        // 框画在内容外面, highlightInset 比 outerPadding 大就会被画布裁掉
+
         listOf(
             SelectorWorkflowPresets.threeSources(),
             SelectorWorkflowPresets.threeSources(priorityWait = 5.seconds),
@@ -74,7 +60,7 @@ class WorkflowLayoutTest {
 
     @Test
     fun `a highlight box is concentric with what it wraps`() {
-        // 圆角要跟着外扩量一起长, 两条弧才是同心的
+
         val layout = layoutOf(SelectorWorkflowPresets.threeSources())
         assertEquals(
             metrics.containerRadius + metrics.highlightInset,
@@ -86,7 +72,7 @@ class WorkflowLayoutTest {
             layout.highlight(HighlightRegion.Resolve).cornerRadius,
             1e-3f,
         )
-        // 第一步没有被罩者, 圆角是自由的 —— 照同一个公式算会圆得不成样子
+
         assertTrue(
             layout.highlight(HighlightRegion.Sources).cornerRadius <
                     layout.highlight(HighlightRegion.Results).cornerRadius,
@@ -123,7 +109,7 @@ class WorkflowLayoutTest {
 
     @Test
     fun `source links land on the straight part of the container edge`() {
-        // 源很多时, 首尾两个节点会超出容器的竖直范围; 连线终点必须夹到直边上, 不能落在圆角里
+
         val config = SelectorWorkflowConfig(
             sources = List(7) { SourceSpec("源 $it", (it + 1).seconds, resultCount = 1, candidates = setOf(0)) },
             resolve = ResolveSpec(budget = 30.seconds),
@@ -176,7 +162,7 @@ class WorkflowLayoutTest {
             list.right - overlay.right, overlay.top - list.top, 0.01f,
             "浮层离右缘和离顶缘该一样远 —— 它贴的是右上角",
         )
-        // 表在左、读数在右, 两个都在浮层里
+
         val o = layout.interceptOverlay(3.4f)
         assertTrue(o.clockCenter.x - metrics.clockRadius >= overlay.left - 0.01f, "表该在浮层里")
         assertTrue(o.readoutAnchor.x >= o.clockCenter.x + metrics.clockRadius, "读数该在表的右边")
@@ -188,8 +174,8 @@ class WorkflowLayoutTest {
     @Test
     fun `the overlay width follows the readout of this frame`() {
         val layout = layoutOf(SelectorWorkflowPresets.threeSources())
-        val short = layout.interceptOverlay(9.9f)    // "9.9s"
-        val long = layout.interceptOverlay(10.0f)    // "10.0s" —— 多一位
+        val short = layout.interceptOverlay(9.9f)
+        val long = layout.interceptOverlay(10.0f)
         assertTrue(long.readoutWidth > short.readoutWidth, "读数多一位, 浮层该变宽")
         assertEquals(
             long.readoutWidth - short.readoutWidth,
@@ -201,13 +187,13 @@ class WorkflowLayoutTest {
             short.bounds.right, long.bounds.right, 0.01f,
             "浮层贴的是右上角, 变宽只往左长",
         )
-        // 位数一样就一样宽 —— 不会因为数字不同抖动
+
         assertEquals(layout.interceptOverlay(1.1f).bounds, layout.interceptOverlay(8.7f).bounds)
     }
 
     @Test
     fun `the overlay does not depend on the configured budget`() {
-        // 宽度只看这一帧显示什么, 与配的秒数无关
+
         val a = layoutOf(SelectorWorkflowPresets.threeSources(interceptBudget = 8.seconds))
         val b = layoutOf(SelectorWorkflowPresets.threeSources(interceptBudget = 120.seconds))
         assertEquals(a.interceptOverlay(3.4f).bounds, b.interceptOverlay(3.4f).bounds)
@@ -222,7 +208,7 @@ class WorkflowLayoutTest {
         val last = layout.rowCenterY(config.resolve.visibleRows - 1)
         assertTrue(first - metrics.rowHeight / 2 >= layout.listViewport.top - 0.01f, "第一行探出可视区顶部")
         assertTrue(last + metrics.rowHeight / 2 <= layout.listViewport.bottom + 0.01f, "最后一行探出可视区底部")
-        // 行距恒定
+
         val gaps = (1 until config.resolve.requestCount).map { layout.rowCenterY(it) - layout.rowCenterY(it - 1) }
         assertTrue(gaps.all { abs(it - metrics.rowHeight) < 0.001f })
     }

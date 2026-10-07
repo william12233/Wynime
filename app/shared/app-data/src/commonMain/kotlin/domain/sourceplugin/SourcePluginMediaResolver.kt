@@ -1,31 +1,22 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.sourceplugin
 
-package me.him188.ani.app.domain.sourceplugin
-
-import me.him188.ani.app.domain.media.player.data.MediaDataProvider
-import me.him188.ani.app.domain.media.resolver.DownloadMediaResolver
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.app.domain.media.resolver.HttpStreamingMediaDataProvider
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.domain.media.resolver.UnsupportedMediaException
-import me.him188.ani.app.domain.media.resolver.toMediampMediaExtraFiles
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.source.plugin.api.ResolvedMediaFormat
-import me.him188.ani.source.plugin.api.SourceResultStatus
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceTracePhase
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.platform.Uuid
+import com.wynime.app.domain.media.player.data.MediaDataProvider
+import com.wynime.app.domain.media.resolver.DownloadMediaResolver
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.app.domain.media.resolver.HttpStreamingMediaDataProvider
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.media.resolver.UnsupportedMediaException
+import com.wynime.app.domain.media.resolver.toMediampMediaExtraFiles
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.source.plugin.api.ResolvedMediaFormat
+import com.wynime.source.plugin.api.SourceResultStatus
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceTracePhase
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.platform.Uuid
 import kotlinx.coroutines.CancellationException
 
 class SourcePluginMediaResolver(

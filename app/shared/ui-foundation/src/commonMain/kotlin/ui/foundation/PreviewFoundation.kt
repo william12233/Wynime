@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -21,41 +12,35 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.data.models.preference.ThemeSettings
-import me.him188.ani.app.navigation.AniNavigator
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.navigation.MainScreenPage
-import me.him188.ani.app.navigation.NavRoutes
-import me.him188.ani.app.navigation.NoopBrowserNavigator
-import me.him188.ani.app.navigation.rememberAniBackStack
-import me.him188.ani.app.platform.navigation.LocalBrowserNavigator
-import me.him188.ani.app.tools.LocalTimeFormatter
-import me.him188.ani.app.tools.TimeFormatter
-import me.him188.ani.app.ui.foundation.animation.ProvideAniMotionCompositionLocals
-import me.him188.ani.app.ui.foundation.navigation.LocalOnBackPressedDispatcherOwner
-import me.him188.ani.app.ui.foundation.navigation.OnBackPressedDispatcher
-import me.him188.ani.app.ui.foundation.navigation.OnBackPressedDispatcherOwner
-import me.him188.ani.app.ui.foundation.theme.AniTheme
-import me.him188.ani.app.ui.foundation.theme.LocalThemeSettings
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.NoOpToaster
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.data.models.preference.ThemeSettings
+import com.wynime.app.navigation.WynimeNavigator
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.navigation.MainScreenPage
+import com.wynime.app.navigation.NavRoutes
+import com.wynime.app.navigation.NoopBrowserNavigator
+import com.wynime.app.navigation.rememberWynimeBackStack
+import com.wynime.app.platform.navigation.LocalBrowserNavigator
+import com.wynime.app.tools.LocalTimeFormatter
+import com.wynime.app.tools.TimeFormatter
+import com.wynime.app.ui.foundation.animation.ProvideWynimeMotionCompositionLocals
+import com.wynime.app.ui.foundation.navigation.LocalOnBackPressedDispatcherOwner
+import com.wynime.app.ui.foundation.navigation.OnBackPressedDispatcher
+import com.wynime.app.ui.foundation.navigation.OnBackPressedDispatcherOwner
+import com.wynime.app.ui.foundation.theme.WynimeTheme
+import com.wynime.app.ui.foundation.theme.LocalThemeSettings
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.NoOpToaster
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.imageResource
 
-/**
- * 只提供最基础的组件. 不启动 Koin, 也就不支持 viewmodel.
- *
- * @since 3.10
- */
-// @TestOnly // 这里就不标记了, 名字已经足够明显了
 @OptIn(TestOnly::class)
 @Composable
 inline fun ProvideCompositionLocalsForPreview(
     darkMode: DarkMode = DarkMode.AUTO,
     crossinline content: @Composable () -> Unit,
 ) {
-    val aniNavigator = remember { AniNavigator() }
+    val wynimeNavigator = remember { WynimeNavigator() }
     val previewImage = imageResource(Res.drawable.a)
     val viewModelStoreOwner = remember {
         object : ViewModelStoreOwner {
@@ -69,9 +54,9 @@ inline fun ProvideCompositionLocalsForPreview(
     }
     CompositionLocalProvider(
         LocalIsPreviewing provides true,
-        LocalNavigator providesDefault aniNavigator,
+        LocalNavigator providesDefault wynimeNavigator,
         LocalToaster providesDefault NoOpToaster,
-        LocalSketch provides rememberAniPreviewSketch(BitmapPainter(previewImage)),
+        LocalSketch provides rememberWynimePreviewSketch(BitmapPainter(previewImage)),
         LocalImageViewerHandler providesDefault rememberImageViewerHandler(),
         LocalTimeFormatter providesDefault remember { TimeFormatter() },
         LocalOnBackPressedDispatcherOwner provides remember {
@@ -92,10 +77,10 @@ inline fun ProvideCompositionLocalsForPreview(
         },
         LocalBrowserNavigator providesDefault NoopBrowserNavigator,
     ) {
-        aniNavigator.setBackStack(rememberAniBackStack(NavRoutes.Main(MainScreenPage.Exploration)))
+        wynimeNavigator.setBackStack(rememberWynimeBackStack(NavRoutes.Main(MainScreenPage.Exploration)))
         ProvidePlatformCompositionLocalsForPreview {
-            AniTheme(darkModeOverride = darkMode) {
-                ProvideAniMotionCompositionLocals {
+            WynimeTheme(darkModeOverride = darkMode) {
+                ProvideWynimeMotionCompositionLocals {
                     content()
                 }
             }
@@ -119,8 +104,6 @@ internal expect inline fun ProvidePlatformCompositionLocalsForPreview(
     crossinline content: @Composable () -> Unit
 )
 
-
-// kept for developer convenience, remove in 4.8.0.
 @Composable
 @Deprecated(
     "Replaced with ProvideCompositionLocalsForPreview",
@@ -132,10 +115,6 @@ inline fun ProvideFoundationCompositionLocalsForPreview(
     crossinline content: @Composable () -> Unit,
 ) = ProvideCompositionLocalsForPreview(darkMode, content)
 
-
-/**
- * 用于 UI test. 固定主题颜色.
- */
 @TestOnly
 @Composable
 fun ProvideFoundationCompositionLocalsForTest(

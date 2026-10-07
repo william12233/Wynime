@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.components
+package com.wynime.app.ui.subject.details.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,41 +31,39 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.subject.ContinueWatchingStatus
-import me.him188.ani.app.data.models.subject.SubjectAiringInfo
-import me.him188.ani.app.data.models.subject.SubjectAiringKind
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectProgressInfo
-import me.him188.ani.app.data.models.subject.TestCoverImage
-import me.him188.ani.app.data.models.subject.TestSubjectInfo
-import me.him188.ani.app.data.models.subject.preferredDisplayName
-import me.him188.ani.app.ui.foundation.AniImageLoadSuccess
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.paddingIfNotEmpty
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.app.ui.rating.EditableRating
-import me.him188.ani.app.ui.rating.EditableRatingActions
-import me.him188.ani.app.ui.rating.TestEditableRatingUiState
-import me.him188.ani.app.ui.subject.AiringLabelState
-import me.him188.ani.app.ui.subject.TestSubjectAiringInfo
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
-import me.him188.ani.app.ui.subject.collection.components.rememberTestEditableSubjectCollectionTypeState
-import me.him188.ani.app.ui.subject.collection.progress.rememberTestSubjectProgressState
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.ContinueWatchingStatus
+import com.wynime.app.data.models.subject.SubjectAiringInfo
+import com.wynime.app.data.models.subject.SubjectAiringKind
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectProgressInfo
+import com.wynime.app.data.models.subject.TestCoverImage
+import com.wynime.app.data.models.subject.TestSubjectInfo
+import com.wynime.app.data.models.subject.preferredDisplayName
+import com.wynime.app.ui.foundation.WynimeImageLoadSuccess
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.layout.paddingIfNotEmpty
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.app.ui.rating.EditableRating
+import com.wynime.app.ui.rating.EditableRatingActions
+import com.wynime.app.ui.rating.TestEditableRatingUiState
+import com.wynime.app.ui.subject.AiringLabelState
+import com.wynime.app.ui.subject.TestSubjectAiringInfo
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
+import com.wynime.app.ui.subject.collection.components.rememberTestEditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.collection.progress.rememberTestSubjectProgressState
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.PackedDate
+import com.wynime.utils.platform.annotations.TestOnly
 
 const val COVER_WIDTH_TO_HEIGHT_RATIO = 849 / 1200f
 
-/** 条目封面图的 test tag, 供 UI 测试定位点击放大入口. */
 const val SUBJECT_COVER_IMAGE_TEST_TAG = "SubjectCoverImage"
 
-// 图片和标题
 @Composable
 internal fun SubjectDetailsHeader(
     info: SubjectInfo?,
@@ -84,7 +73,7 @@ internal fun SubjectDetailsHeader(
     collectionAction: @Composable () -> Unit,
     selectEpisodeButton: @Composable BoxScope.() -> Unit,
     rating: @Composable () -> Unit,
-    onCoverImageSuccess: (AniImageLoadSuccess) -> Unit = {},
+    onCoverImageSuccess: (WynimeImageLoadSuccess) -> Unit = {},
     modifier: Modifier = Modifier,
     onClickCover: (() -> Unit)? = null,
 ) {
@@ -97,12 +86,7 @@ internal fun SubjectDetailsHeader(
             title = {
                 Text(
                     primaryTitle,
-                    /*Modifier.useSharedTransitionScope { modifier, animatedVisibilityScope ->
-                        modifier.sharedElement(
-                            rememberSharedContentState(SharedTransitionKeys.subjectTitle(info.subjectId)),
-                            animatedVisibilityScope,
-                        )
-                    },*/
+
                 )
             },
             seasonTags = {
@@ -133,8 +117,6 @@ internal fun SubjectDetailsHeader(
     }
 }
 
-
-// 适合手机, 窄
 @Composable
 fun SubjectDetailsHeaderCompact(
     coverImageUrl: String?,
@@ -145,7 +127,7 @@ fun SubjectDetailsHeaderCompact(
     collectionAction: @Composable () -> Unit,
     selectEpisodeButton: @Composable BoxScope.() -> Unit,
     rating: @Composable () -> Unit,
-    onSuccess: (AniImageLoadSuccess) -> Unit,
+    onSuccess: (WynimeImageLoadSuccess) -> Unit,
     modifier: Modifier = Modifier,
     onClickCover: (() -> Unit)? = null,
 ) {
@@ -176,7 +158,7 @@ fun SubjectDetailsHeaderCompact(
                     .padding(horizontal = 12.dp),
             ) {
                 Column(
-                    Modifier.fillMaxWidth(), // required by Rating
+                    Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     var showSubtitle by remember { mutableStateOf(false) }
@@ -234,7 +216,7 @@ fun SubjectDetailsHeaderWide(
     collectionAction: @Composable () -> Unit,
     selectEpisodeButton: @Composable BoxScope.() -> Unit,
     rating: @Composable () -> Unit,
-    onCoverImageSuccess: (AniImageLoadSuccess) -> Unit,
+    onCoverImageSuccess: (WynimeImageLoadSuccess) -> Unit,
     modifier: Modifier = Modifier,
     onClickCover: (() -> Unit)? = null,
 ) {
@@ -287,7 +269,7 @@ fun SubjectDetailsHeaderWide(
                             seasonTags()
                         }
                     }
-                    Spacer(Modifier.weight(1f)) // spacedBy applies
+                    Spacer(Modifier.weight(1f))
                     Row(Modifier) {
                         rating()
                     }

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.datasources.jellyfin
+package com.wynime.datasources.jellyfin
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -24,12 +15,12 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.source.MatchKind
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.source.MatchKind
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -1859,7 +1850,7 @@ class BaseJellyfinMediaSourceTest {
         ).results.toList()
 
         assertEquals("right-episode", result.single().media.mediaId)
-        // 季的 Bangumi 条目 ID 匹配, 该季的剧集都精确属于本条目.
+
         assertEquals(MatchKind.EXACT, result.single().kind)
         assertFalse(requests.any { it.url.parameters["parentId"] == "wrong-season" })
     }

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.engine
+package com.wynime.app.domain.media.cache.engine
 
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.CoroutineScope
@@ -23,44 +14,44 @@ import kotlinx.io.Buffer
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.writeString
-import me.him188.ani.app.data.persistent.database.dao.HttpCacheDownloadStateDao
-import me.him188.ani.app.domain.media.cache.DownloaderStatus
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.download.averageRate
-import me.him188.ani.app.domain.media.resolver.DownloadMediaResolver
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.tools.Progress
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.MediaCacheProperties
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.httpdownloader.DownloadId
-import me.him188.ani.utils.httpdownloader.DownloadOptions
-import me.him188.ani.utils.httpdownloader.DownloadProgress
-import me.him188.ani.utils.httpdownloader.DownloadState
-import me.him188.ani.utils.httpdownloader.DownloadStatus
-import me.him188.ani.utils.httpdownloader.HttpDownloader
-import me.him188.ani.utils.httpdownloader.MediaType
-import me.him188.ani.utils.io.DigestAlgorithm
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.actualSize
-import me.him188.ani.utils.io.delete
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.exists
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.readAndDigest
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.data.persistent.database.dao.HttpCacheDownloadStateDao
+import com.wynime.app.domain.media.cache.DownloaderStatus
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.download.averageRate
+import com.wynime.app.domain.media.resolver.DownloadMediaResolver
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.tools.Progress
+import com.wynime.app.tools.toProgress
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.MediaCacheProperties
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.httpdownloader.DownloadId
+import com.wynime.utils.httpdownloader.DownloadOptions
+import com.wynime.utils.httpdownloader.DownloadProgress
+import com.wynime.utils.httpdownloader.DownloadState
+import com.wynime.utils.httpdownloader.DownloadStatus
+import com.wynime.utils.httpdownloader.HttpDownloader
+import com.wynime.utils.httpdownloader.MediaType
+import com.wynime.utils.io.DigestAlgorithm
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.actualSize
+import com.wynime.utils.io.delete
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.exists
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.readAndDigest
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import org.openani.mediamp.source.SeekableInputMediaData
 import org.openani.mediamp.source.UriMediaData
 import kotlin.coroutines.CoroutineContext
@@ -93,10 +84,10 @@ class HttpMediaCacheEngine(
     }
 
     override fun supports(media: Media): Boolean {
-        // Check that the media is not already cached
+
         when (media) {
             is CachedMedia -> return false
-            is DefaultMedia -> {} // for smart cast
+            is DefaultMedia -> {}
         }
 
         return when (media.download) {
@@ -111,7 +102,6 @@ class HttpMediaCacheEngine(
         }
     }
 
-
     @Composable
     override fun ComposeContent(): Unit = mediaResolver.ComposeContent()
 
@@ -125,10 +115,9 @@ class HttpMediaCacheEngine(
         logger.info { "Restarting cache '${origin.mediaId}'" }
         val downloadId = restoredHttpDownloadId(origin, metadata)
 
-        // 注意, getState 一般不会返回 null, 除非 downloader 的 persistent datastore 出问题了 (例如文件损坏).
         if (downloader.getState(downloadId) != null) {
-            downloader.resume(downloadId) // ignore result.
-            // Task already exists
+            downloader.resume(downloadId)
+
             logger.info { "Resumed download $downloadId" }
             return HttpMediaCache(origin, downloadId, metadata)
         }
@@ -160,7 +149,7 @@ class HttpMediaCacheEngine(
             ?: mediaResolver.resolve(origin, episodeMetadata)
         when (val mediaData = mediaDataProvider.open(CoroutineScope(parentContext))) {
             is SeekableInputMediaData -> {
-                // This should not happen.
+
                 throw UnsupportedOperationException("SeekableInputMediaData is not supported")
             }
 
@@ -181,9 +170,6 @@ class HttpMediaCacheEngine(
         }
     }
 
-    /**
-     * 新建任务的标识, 由 mediaId, subjectId 与 episodeId 共同决定.
-     */
     private fun httpDownloadId(media: Media, metadata: MediaCacheMetadata): DownloadId {
         val identity = listOf(media.mediaId, metadata.subjectId, metadata.episodeId)
             .joinToString("") { "${it.length}:$it" }
@@ -191,9 +177,6 @@ class HttpMediaCacheEngine(
         return DownloadId("http-v2-$digest")
     }
 
-    /**
-     * 恢复记录时的任务标识: 优先 [httpDownloadId]; downloader 与 [dao] 中都没有时回退到 [toSafeDownloadId], 以匹配旧记录.
-     */
     private suspend fun restoredHttpDownloadId(media: Media, metadata: MediaCacheMetadata): DownloadId {
         val current = httpDownloadId(media, metadata)
         if (downloader.getState(current) != null || dao.getById(current) != null) return current
@@ -202,7 +185,6 @@ class HttpMediaCacheEngine(
 
     override suspend fun deleteUnusedCaches(all: List<MediaCache>) {
         if (!(SystemFileSystem.exists(saveDir))) return
-
 
         val allowedAbsolute = buildSet {
             for (mediaCache in all.filterIsInstance<HttpMediaCache>()) {
@@ -373,9 +355,6 @@ class HttpMediaCacheEngine(
         dao.deleteById(state.downloadId)
     }
 
-    /**
-     * 仅由 mediaId 派生的旧标识, 只用于 [restoredHttpDownloadId] 的回退匹配.
-     */
     private fun Media.toSafeDownloadId(): DownloadId {
         return DownloadId(mediaId.replace(PATH_AFFECTING_CHARS_REGEX, "-"))
     }

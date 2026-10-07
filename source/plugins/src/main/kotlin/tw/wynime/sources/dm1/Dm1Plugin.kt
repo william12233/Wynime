@@ -1,14 +1,14 @@
 package tw.wynime.sources.dm1
 
-import me.him188.ani.source.plugin.api.SourceChannel
-import me.him188.ani.source.plugin.api.SourceChannelEpisodes
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.SourceChannel
+import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractPlayerObjectUrl
@@ -29,8 +29,8 @@ internal class Dm1Plugin(context: SourcePluginContext) : SitePluginBase(
     iconUrl = "https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png",
     description = "稀飯動漫公開分集來源",
 ) {
-    override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
-        val results = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+    override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {
+        val results = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (variant in searchQueryVariants(request.query)) {
             results += dynamicSearchLinks(
                 requestPage(
@@ -52,7 +52,7 @@ internal class Dm1Plugin(context: SourcePluginContext) : SitePluginBase(
             page.title.substringBefore("-").substringBefore("_"),
         ).ifBlank { subjectId }
         val subject = subject(subjectId, title, page.finalUrl)
-        val groups = linkedMapOf<String, MutableList<me.him188.ani.source.plugin.api.SourceEpisode>>()
+        val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
         links(page.html).forEach { link ->
             val match = Regex("(?i)/watch/(\\d+)/(\\d+)/(\\d+)\\.html").find(link.href) ?: return@forEach
             if (match.groupValues[1] != subjectId) return@forEach

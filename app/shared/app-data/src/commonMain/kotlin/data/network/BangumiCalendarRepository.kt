@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.network
+package com.wynime.app.data.network
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -15,17 +8,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.utils.coroutines.IO_
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.utils.coroutines.IO_
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-/** Shared bounded cache for Bangumi's weekly calendar response. */
 class BangumiCalendarRepository(
     private val dataSource: BangumiExploreDataSource,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,

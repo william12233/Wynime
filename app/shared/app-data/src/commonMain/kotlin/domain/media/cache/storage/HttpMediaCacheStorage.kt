@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.storage
+package com.wynime.app.domain.media.cache.storage
 
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.Dispatchers
@@ -18,16 +9,16 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.persistent.database.dao.HttpCacheDownloadStateDao
-import me.him188.ani.app.domain.media.cache.DownloaderStatus
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngine
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.logging.error
+import com.wynime.app.data.persistent.database.dao.HttpCacheDownloadStateDao
+import com.wynime.app.domain.media.cache.DownloaderStatus
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.logging.error
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -39,9 +30,7 @@ class HttpMediaCacheStorage(
     private val displayName: String,
     parentCoroutineContext: CoroutineContext = EmptyCoroutineContext,
 ) : AbstractDataStoreMediaCacheStorage(mediaSourceId, store, httpEngine, displayName, parentCoroutineContext) {
-    /**
-     * Locks access to mutable operations.
-     */
+
     private val lock = Mutex()
 
     override suspend fun restorePersistedCaches() {

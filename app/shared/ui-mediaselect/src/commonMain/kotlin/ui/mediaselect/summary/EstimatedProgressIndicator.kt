@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediaselect.summary
+package com.wynime.app.ui.mediaselect.summary
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
@@ -28,12 +19,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import me.him188.ani.utils.coroutines.SingleTaskExecutor
+import com.wynime.utils.coroutines.SingleTaskExecutor
 
-/**
- * @param initialProgress 初始进度. 此值的变更不会反应到 [EstimatedProgressIndicatorState] 中, 也就是说只有第一个值会被使用.
- * @param initialVisible 初始是否可见. 此值的变更不会反应到 [EstimatedProgressIndicatorState] 中, 也就是说只有第一个值会被使用.
- */
 @Composable
 fun rememberEstimatedProgressIndicatorState(
     initialProgress: Float = 0f,
@@ -60,16 +47,13 @@ class EstimatedProgressIndicatorState private constructor(
     private var velocity by mutableFloatStateOf(0f)
     private val singleTaskExecutor = SingleTaskExecutor()
 
-    /**
-     * Animate the progress from 0 to 0.99f
-     */
     suspend fun animateWithoutFinish(
         durationMillis: Int,
     ) {
         coroutineScope {
             if (heightScale < 1f) {
                 launch {
-                    // animate height expand
+
                     animate(
                         initialValue = heightScale,
                         targetValue = 1f,
@@ -80,7 +64,6 @@ class EstimatedProgressIndicatorState private constructor(
                 }
             }
 
-            // animate progress
             animate(
                 initialValue = progress,
                 targetValue = 0.99f,
@@ -93,16 +76,11 @@ class EstimatedProgressIndicatorState private constructor(
         }
     }
 
-    /**
-     * Animate the progress to 1.0f
-     */
     suspend fun finish() {
         if (progress >= 1f) {
             return
         }
-        // no animate progress
 
-        // animate height collapse
         animate(
             initialValue = this.heightScale,
             targetValue = 0f,

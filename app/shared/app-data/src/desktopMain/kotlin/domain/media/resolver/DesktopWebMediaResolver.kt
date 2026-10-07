@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.resolver
+package com.wynime.app.domain.media.resolver
 
 import io.ktor.http.Cookie
 import io.ktor.http.Url
@@ -22,26 +13,26 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
-import me.him188.ani.app.data.models.preference.ProxyConfig
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.media.player.data.MediaDataProvider
-import me.him188.ani.app.domain.media.resolver.WebViewVideoExtractor.Instruction
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
-import me.him188.ani.app.domain.settings.ProxyProvider
-import me.him188.ani.app.platform.AniCefApp
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.platform.DesktopContext
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
-import me.him188.ani.datasources.api.matcher.WebVideoMatcher
-import me.him188.ani.datasources.api.matcher.WebVideoMatcherContext
-import me.him188.ani.datasources.api.matcher.WebViewConfig
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.data.models.preference.ProxyConfig
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.media.player.data.MediaDataProvider
+import com.wynime.app.domain.media.resolver.WebViewVideoExtractor.Instruction
+import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
+import com.wynime.app.domain.settings.ProxyProvider
+import com.wynime.app.platform.WynimeCefApp
+import com.wynime.app.platform.Context
+import com.wynime.app.platform.DesktopContext
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
+import com.wynime.datasources.api.matcher.WebVideoMatcher
+import com.wynime.datasources.api.matcher.WebVideoMatcherContext
+import com.wynime.datasources.api.matcher.WebViewConfig
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import org.cef.CefSettings
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
@@ -56,9 +47,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * 用 WebView 加载网站, 拦截 WebView 加载资源, 用各数据源提供的 [WebVideoMatcher]
- */
 class DesktopWebMediaResolver(
     private val context: DesktopContext,
     private val matcherLoader: MediaSourceWebVideoMatcherLoader,
@@ -88,7 +76,6 @@ class DesktopWebMediaResolver(
                 matcher.patchConfig(acc)
             }
             logger.info { "Final config: $webViewConfig" }
-
 
             val context = WebVideoMatcherContext(media)
             fun match(url: String): WebVideoMatcher.MatchResult? {
@@ -154,17 +141,17 @@ class CefVideoExtractor(
         val deferred = CompletableDeferred<WebResource>()
 
         try {
-            val createdClient = AniCefApp.suspendCoroutineOnCefContext {
-                AniCefApp.createClient()
+            val createdClient = WynimeCefApp.suspendCoroutineOnCefContext {
+                WynimeCefApp.createClient()
             } ?: kotlin.run {
-                logger.warn { "AniCefApp isn't initialized yet." }
+                logger.warn { "WynimeCefApp isn't initialized yet." }
                 return@withContext null
             }
             client = createdClient
 
-            val createdBrowser = AniCefApp.suspendCoroutineOnCefContext {
+            val createdBrowser = WynimeCefApp.suspendCoroutineOnCefContext {
                 val lastUrl = object {
-                    // browser.url is not updated immediately, so we need to keep track of the current url.
+
                     var value: String? by atomic(null)
                 }
                 createdClient.createBrowser(
@@ -186,9 +173,6 @@ class CefVideoExtractor(
                                 return super.onBeforeResourceLoad(browser, frame, request)
                             }
 
-                            /**
-                             * @return `true` to intercept
-                             */
                             private fun handleUrl(
                                 request: CefRequest,
                                 browser: CefBrowser
@@ -204,11 +188,11 @@ class CefVideoExtractor(
                                     }
 
                                     Instruction.LoadPage -> {
-                                        if (browser.url == url || lastUrl.value == url) return false // don't recurse
+                                        if (browser.url == url || lastUrl.value == url) return false
                                         logger.info { "CEF loading nested page: $url, lastUrl=${lastUrl.value}" }
                                         lastUrl.value = url
                                         val escapedUrl = json.encodeToString(String.serializer(), url)
-                                        AniCefApp.runOnCefContext {
+                                        WynimeCefApp.runOnCefContext {
                                             browser.executeJavaScript("window.location.href=$escapedUrl;", "", 1)
                                         }
                                         return true
@@ -221,7 +205,7 @@ class CefVideoExtractor(
             }
             browser = createdBrowser
 
-            AniCefApp.suspendCoroutineOnCefContext {
+            WynimeCefApp.suspendCoroutineOnCefContext {
                 createdBrowser.setCloseAllowed()
                 createdClient.addDisplayHandler(
                     object : CefDisplayHandlerAdapter() {
@@ -238,7 +222,6 @@ class CefVideoExtractor(
                     },
                 )
 
-                // set cookie
                 val cookieManager = CefCookieManager.getGlobalManager()
                 val url = Url(pageUrl)
                 for (cookie in config.cookies) {
@@ -247,7 +230,7 @@ class CefVideoExtractor(
                 }
 
                 logger.info { "Fetching $pageUrl" }
-                // start browser immediately
+
                 createdBrowser.createImmediately()
             }
 
@@ -264,7 +247,7 @@ class CefVideoExtractor(
             null
         } finally {
             withContext(NonCancellable) {
-                AniCefApp.closeBrowserAndDisposeClient(browser, client)
+                WynimeCefApp.closeBrowserAndDisposeClient(browser, client)
             }
             logger.info { "CEF client is disposed." }
         }

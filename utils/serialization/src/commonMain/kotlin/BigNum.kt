@@ -1,14 +1,10 @@
-package me.him188.ani.utils.serialization
+package com.wynime.utils.serialization
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-/**
- * 尽量防止丢精度的数字类型
- * @see BigNumAsDoubleStringSerializer
- */
 abstract class BigNum : Number() {
     abstract override fun toString(): String
     abstract fun isNegative(): Boolean
@@ -94,9 +90,6 @@ internal class BigNumByFloat(
     override fun toShort(): Short = value.toInt().toShort()
 }
 
-/**
- * 当做 string 读; 写为 double
- */
 object BigNumAsDoubleStringSerializer : KSerializer<BigNum> {
     override val descriptor = Double.serializer().descriptor
 

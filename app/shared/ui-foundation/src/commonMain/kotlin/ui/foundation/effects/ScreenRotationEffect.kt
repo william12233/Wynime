@@ -1,10 +1,10 @@
-package me.him188.ani.app.ui.foundation.effects
+package com.wynime.app.ui.foundation.effects
 
 import androidx.compose.runtime.Composable
 
 @Composable
 fun ScreenRotationEffect(onChange: (isLandscape: Boolean) -> Unit) =
-    ScreenRotationEffectImpl(onChange) // workaround for IDE completion bug
+    ScreenRotationEffectImpl(onChange)
 
 @Composable
 expect fun ScreenRotationEffectImpl(onChange: (isLandscape: Boolean) -> Unit)

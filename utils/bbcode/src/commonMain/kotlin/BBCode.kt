@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.bbcode
+package com.wynime.utils.bbcode
 
 import org.antlr.v4.kotlinruntime.CharStreams
 import org.antlr.v4.kotlinruntime.CommonTokenStream
@@ -21,7 +12,7 @@ data class RichText(
 object BBCode {
     fun parse(text: String): RichText {
         val lexer = BBCodeLexer(CharStreams.fromString(text))
-        lexer.removeErrorListeners() // it prints to stderr
+        lexer.removeErrorListeners()
         val file = BBCodeParser(CommonTokenStream(lexer)).run {
             removeErrorListeners()
             file()
@@ -62,7 +53,7 @@ private class ElementBuilder(
     }
 
     private fun popContext() {
-        // Caused by: java.lang.NoSuchMethodError: No interface method removeLast()Ljava/lang/Object; in class Ljava/util/List; or its super classes (declaration of 'java.util.List' appears in /apex/com.android.art/javalib/core-oj.jar)
+
         if (contexts.isEmpty()) throw NoSuchElementException("List is empty.") else contexts.removeAt(contexts.lastIndex)
     }
 

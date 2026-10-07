@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.top
+package com.wynime.app.videoplayer.ui.top
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -30,14 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.navigation.LocalBackDispatcher
-import me.him188.ani.utils.platform.isDesktop
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.navigation.LocalBackDispatcher
+import com.wynime.utils.platform.isDesktop
 
-/**
- * 播放器顶部导航栏
- */
 @Composable
 fun PlayerTopBar(
     modifier: Modifier = Modifier,
@@ -59,7 +47,7 @@ fun PlayerTopBar(
         navigationIcon = {
             val back = LocalBackDispatcher.current
             CompositionLocalProvider(LocalContentColor provides color) {
-                val focusManager by rememberUpdatedState(LocalFocusManager.current) // workaround for #288
+                val focusManager by rememberUpdatedState(LocalFocusManager.current)
                 IconButton(
                     onClick = { back.onBackPressed() },
                     Modifier.ifThen(needWorkaroundForFocusManager) {
@@ -86,7 +74,6 @@ fun PlayerTopBar(
     )
 }
 
-// See #288
 val needWorkaroundForFocusManager: Boolean
     @Composable
     get() = LocalPlatform.current.isDesktop()

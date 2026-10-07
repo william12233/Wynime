@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.progress
+package com.wynime.app.videoplayer.ui.progress
 
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -16,16 +7,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onNodeWithTag
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.videoplayer.ui.NoOpPlaybackSpeedController
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.videoplayer.ui.NoOpPlaybackSpeedController
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class MediaProgressIndicatorTextUiTest {
     @Test
-    fun `switching back to one times speed restores compact layout width`() = runAniComposeUiTest {
+    fun `switching back to one times speed restores compact layout width`() = runWynimeComposeUiTest {
         val progressState = PlayerProgressSliderState(
             currentPositionMillis = { 0L },
             totalDurationMillis = { 100_000L },
@@ -63,7 +54,7 @@ class MediaProgressIndicatorTextUiTest {
     }
 
     @Test
-    fun `preview started before player initialization observes initialized duration and speed`() = runAniComposeUiTest {
+    fun `preview started before player initialization observes initialized duration and speed`() = runWynimeComposeUiTest {
         val durationMillis = mutableLongStateOf(0L)
         val state = PlayerProgressSliderState(
             currentPositionMillis = { 0L },

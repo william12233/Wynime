@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.theme
+package com.wynime.app.ui.settings.tabs.theme
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
@@ -43,10 +34,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.materialkolor.hct.Hct
 import com.materialkolor.ktx.toHct
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.theme.themeColorOptions
-
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.theme.themeColorOptions
 
 @Composable
 fun ColorButton(
@@ -124,8 +114,8 @@ fun ColorButton(
 fun PreviewColorButton() {
     ProvideCompositionLocalsForPreview {
         FlowRow {
-            var currentColor by remember { mutableStateOf(AniThemeDefaults.themeColorOptions[0]) }
-            AniThemeDefaults.themeColorOptions.forEach {
+            var currentColor by remember { mutableStateOf(WynimeThemeDefaults.themeColorOptions[0]) }
+            WynimeThemeDefaults.themeColorOptions.forEach {
                 ColorButton(
                     onClick = { currentColor = it },
                     baseColor = it,

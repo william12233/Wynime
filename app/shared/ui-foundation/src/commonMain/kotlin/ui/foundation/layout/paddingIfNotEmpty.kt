@@ -1,6 +1,6 @@
 @file:Suppress("NOTHING_TO_INLINE")
 
-package me.him188.ani.app.ui.foundation.layout
+package com.wynime.app.ui.foundation.layout
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -10,10 +10,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-
-/**
- * 如果所应用到的 composable 的高度和宽度都大于 `0`, 则给它添加 padding, 否则不添加.
- */
 fun Modifier.paddingIfNotEmpty(
     paddingValues: PaddingValues,
 ): Modifier = layout { measurable, constraints ->

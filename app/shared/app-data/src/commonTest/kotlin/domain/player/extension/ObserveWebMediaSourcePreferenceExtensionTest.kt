@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(UnsafeEpisodeSessionApi::class)
 
-package me.him188.ani.app.domain.player.extension
+package com.wynime.app.domain.player.extension
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -25,25 +16,22 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import me.him188.ani.app.domain.episode.EpisodeFetchSelectPlayState
-import me.him188.ani.app.domain.episode.EpisodePlayerTestSuite
-import me.him188.ani.app.domain.episode.UnsafeEpisodeSessionApi
-import me.him188.ani.app.domain.episode.mediaFetchSessionFlow
-import me.him188.ani.app.domain.episode.mediaSelectorFlow
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.domain.media.resolver.TestUniversalMediaResolver
-import me.him188.ani.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
-import me.him188.ani.app.domain.mediasource.SetPreferredWebMediaSourceUseCase
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.utils.coroutines.childScope
+import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
+import com.wynime.app.domain.episode.EpisodePlayerTestSuite
+import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
+import com.wynime.app.domain.episode.mediaFetchSessionFlow
+import com.wynime.app.domain.episode.mediaSelectorFlow
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.media.resolver.TestUniversalMediaResolver
+import com.wynime.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
+import com.wynime.app.domain.mediasource.SetPreferredWebMediaSourceUseCase
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.utils.coroutines.childScope
 import kotlin.contracts.contract
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/**
- * @see ObserveWebMediaSourcePreferenceExtension
- */
 class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest() {
     private val preferredWebMediaSource = MutableStateFlow<String?>(null)
     private val setPreferenceCalls = mutableListOf<Pair<Int, String>>()
@@ -81,7 +69,6 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
             }
         }
 
-        // Reset state
         preferredWebMediaSource.value = null
         setPreferenceCalls.clear()
 
@@ -100,7 +87,7 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
         state: EpisodeFetchSelectPlayState,
         testScope: CoroutineScope
     ) {
-        // MediaFetcher is lazy. We perform fetching in testScope (i.e. foreground). `advanceUntilIdle` will wait for the fetching to complete.
+
         state.mediaFetchSessionFlow.filterNotNull().flatMapLatest { it.cumulativeResults }.launchIn(testScope)
     }
 
@@ -117,11 +104,9 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
         web1.complete(listOf(media))
         advanceUntilIdle()
 
-        // Select the web media
         state.mediaSelectorFlow.filterNotNull().first().select(media)
         advanceUntilIdle()
 
-        // Verify preference was set
         assertEquals(1, setPreferenceCalls.size)
         assertEquals(subjectId to "web1", setPreferenceCalls.first())
 
@@ -135,7 +120,6 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
             web1 = suite.mediaSelectorTestBuilder.delayedMediaSource("web1", kind = MediaSourceKind.WEB)
         }
 
-        // Pre-set the preference
         preferredWebMediaSource.value = "web1"
 
         startMediaFetcher(state, testScope)
@@ -144,11 +128,9 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
         web1.complete(listOf(media))
         advanceUntilIdle()
 
-        // Select the web media
         state.mediaSelectorFlow.filterNotNull().first().select(media)
         advanceUntilIdle()
 
-        // Preference should not be updated since it's already the same
         assertEquals(0, setPreferenceCalls.size)
 
         testScope.cancel()
@@ -161,7 +143,6 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
             web2 = suite.mediaSelectorTestBuilder.delayedMediaSource("web2", kind = MediaSourceKind.WEB)
         }
 
-        // Pre-set the preference to a different source
         preferredWebMediaSource.value = "web1"
 
         startMediaFetcher(state, testScope)
@@ -170,11 +151,9 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
         web2.complete(listOf(media))
         advanceUntilIdle()
 
-        // Select the different web media
         state.mediaSelectorFlow.filterNotNull().first().select(media)
         advanceUntilIdle()
 
-        // Preference should be updated to the new source
         assertEquals(1, setPreferenceCalls.size)
         assertEquals(subjectId to "web2", setPreferenceCalls.first())
 
@@ -191,7 +170,6 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
         }
         val (testScope, suite, state) = context
 
-        // Pre-set the preference
         preferredWebMediaSource.value = "web1"
         setPreferenceCalls.add(subjectId to "web1")
 
@@ -199,18 +177,15 @@ class ObserveWebMediaSourcePreferenceExtensionTest : AbstractPlayerExtensionTest
         web1.completeExceptionally(IllegalStateException("constant failure"))
         advanceUntilIdle()
 
-        // Source web1 failed, so preference should be removed
         assertEquals(0, setPreferenceCalls.size)
 
         val media = suite.mediaSelectorTestBuilder.createMedia("web2", kind = MediaSourceKind.WEB)
         web2.complete(listOf(media))
         advanceUntilIdle()
 
-        // Select the different web media
         state.mediaSelectorFlow.filterNotNull().first().select(media)
         advanceUntilIdle()
 
-        // Preference should be updated to the new source
         assertEquals(1, setPreferenceCalls.size)
         assertEquals(subjectId to "web2", setPreferenceCalls.first())
 

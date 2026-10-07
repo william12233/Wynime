@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.gesture
+package com.wynime.app.videoplayer.ui.gesture
 
 import androidx.annotation.UiThread
 import androidx.compose.animation.core.Spring
@@ -77,37 +68,37 @@ import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import me.him188.ani.app.tools.rememberUiMonoTasker
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.effects.onPointerEventMultiplatform
-import me.him188.ani.app.ui.foundation.ifNotNullThen
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.input.LocalActiveInputSource
-import me.him188.ani.app.ui.foundation.input.asGesturePointerType
-import me.him188.ani.app.ui.foundation.input.trackActiveInputSource
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.video_player_release_to_cancel
-import me.him188.ani.app.utils.fixToString
-import me.him188.ani.app.utils.formatSpeedValue
-import me.him188.ani.app.videoplayer.ui.ControllerVisibility
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerFullscreenState
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.BRIGHTNESS
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.FAST_BACKWARD
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.FAST_FORWARD
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.PAUSED_ONCE
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.PLAYBACK_SPEED
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.RESUMED_ONCE
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.SEEKING
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicatorState.State.VOLUME
-import me.him188.ani.app.videoplayer.ui.gesture.SwipeSeekerState.Companion.swipeToSeek
-import me.him188.ani.app.videoplayer.ui.playerFocusHost
-import me.him188.ani.app.videoplayer.ui.progress.PlayerProgressSliderState
-import me.him188.ani.app.videoplayer.ui.toggle
-import me.him188.ani.utils.platform.Platform
-import me.him188.ani.utils.platform.isDesktop
+import com.wynime.app.tools.rememberUiMonoTasker
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.effects.onPointerEventMultiplatform
+import com.wynime.app.ui.foundation.ifNotNullThen
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.input.LocalActiveInputSource
+import com.wynime.app.ui.foundation.input.asGesturePointerType
+import com.wynime.app.ui.foundation.input.trackActiveInputSource
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.video_player_release_to_cancel
+import com.wynime.app.utils.fixToString
+import com.wynime.app.utils.formatSpeedValue
+import com.wynime.app.videoplayer.ui.ControllerVisibility
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.videoplayer.ui.PlayerControllerState
+import com.wynime.app.videoplayer.ui.PlayerFullscreenState
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.BRIGHTNESS
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.FAST_BACKWARD
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.FAST_FORWARD
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.PAUSED_ONCE
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.PLAYBACK_SPEED
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.RESUMED_ONCE
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.SEEKING
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicatorState.State.VOLUME
+import com.wynime.app.videoplayer.ui.gesture.SwipeSeekerState.Companion.swipeToSeek
+import com.wynime.app.videoplayer.ui.playerFocusHost
+import com.wynime.app.videoplayer.ui.progress.PlayerProgressSliderState
+import com.wynime.app.videoplayer.ui.toggle
+import com.wynime.utils.platform.Platform
+import com.wynime.utils.platform.isDesktop
 import org.jetbrains.compose.resources.stringResource
 import org.openani.mediamp.MediampPlayer
 import org.openani.mediamp.features.AudioLevelController
@@ -166,7 +157,7 @@ class GestureIndicatorState {
             visible = true
             action()
         } finally {
-            if (this.counter == ticket && // no one changed the state after us
+            if (this.counter == ticket &&
                 this.state == state
             ) {
                 visible = false
@@ -241,9 +232,6 @@ class GestureIndicatorState {
         stopShow(ticket)
     }
 
-    /**
-     * @param speed 长按期间使用的播放速度, 会显示在指示器上.
-     */
     @UiThread
     fun startFastForward(speed: Float): Int {
         startShow(FAST_FORWARD, setup = { playbackSpeed = speed })
@@ -294,11 +282,6 @@ internal fun gestureIndicatorPresentation(
     )
 }
 
-/**
- * 展示当前快进/快退秒数的指示器.
- *
- * `<< 00:00` / `>> 00:00`
- */
 @Composable
 fun GestureIndicator(
     state: GestureIndicatorState,
@@ -308,23 +291,21 @@ fun GestureIndicator(
     val colors = MaterialTheme.colorScheme
     val activeSwipeSeekerState = swipeSeekerState?.takeIf { it.isSeeking }
     val presentation = gestureIndicatorPresentation(state, activeSwipeSeekerState)
-    // 淡出期间 presentation 为 null。滑动 seek 的指示器只由 swipeSeekerState 驱动,
-    // GestureIndicatorState.state 全程为 null；不保留最后一帧的话，松手后会淡出一个空 Surface。
-    // 在组合结束后才写入, 避免组合被丢弃时留下脏值; 淡出期间读到的是上一帧提交的快照。
+
     val retainedPresentation = remember { mutableStateOf<GestureIndicatorPresentation?>(null) }
     if (presentation != null) {
         SideEffect { retainedPresentation.value = presentation }
     }
-    // presentation 非 null 时不读 retainedPresentation, 因此快进过程中不会因保留帧写入而多一次重组。
+
     val currentPresentation = presentation ?: retainedPresentation.value
 
-    AniAnimatedVisibility(
+    WynimeAnimatedVisibility(
         visible = presentation != null,
         enter = fadeIn(spring(stiffness = Spring.StiffnessMedium)),
         exit = fadeOut(tween(durationMillis = 500)),
         label = "SeekPositionIndicator",
     ) {
-        currentPresentation ?: return@AniAnimatedVisibility
+        currentPresentation ?: return@WynimeAnimatedVisibility
         Surface(
             Modifier.alpha(0.8f),
             color = colors.surface,
@@ -341,10 +322,9 @@ fun GestureIndicator(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    // Used by volume and brightness
+
                     val progressIndicator: @Composable () -> Unit = remember(state, colors) {
-                        // This remember is needed because Compose does not remember lambdas
-                        // and can cause performance problem in this fast-changing composable.
+
                         {
                             LinearProgressIndicator(
                                 progress = { state.progressValue },
@@ -429,20 +409,13 @@ fun GestureIndicator(
     }
 }
 
-/** 平台默认的手势约定, 仅作为 [gestureFamilyOf] 的回退值. */
 @Stable
 val Platform.mouseFamily: GestureFamily
     get() = when (this) {
         is Platform.Desktop -> GestureFamily.MOUSE
-        is Platform.Android, is Platform.Ios -> GestureFamily.TOUCH
+        is Platform.Android -> GestureFamily.TOUCH
     }
 
-/**
- * 由最近一次使用的指针设备决定手势约定, 尚未收到指针事件时回退到 [fallback].
- *
- * 纯触摸设备只会产生触摸事件、纯键鼠设备只会产生鼠标事件, 两者行为与改动前一致;
- * 只有混合设备才会在两套约定之间切换.
- */
 @Stable
 fun gestureFamilyOf(activeInputSource: PointerType, fallback: GestureFamily): GestureFamily =
     when (activeInputSource.asGesturePointerType()) {
@@ -451,21 +424,10 @@ fun gestureFamilyOf(activeInputSource: PointerType, fallback: GestureFamily): Ge
         else -> fallback
     }
 
-/**
- * 这台设备有没有鼠标. 常驻 UI 应该用它而不是 [GestureFamily] —— 后者跟着当前输入方式走,
- * 会让控件在用户切换手指/鼠标时反复显隐.
- */
 @Stable
 fun hasPointerDevice(platform: Platform, hasSeenMouse: Boolean): Boolean =
     hasSeenMouse || platform.isDesktop()
 
-/**
- * 一套点击/双击约定. 滑动类手势的挂载也由它决定 (见 [PlayerGestureHost] 中的 swipeGesturesEnabled):
- * 拖动必须靠 enabled 门控, 不能在事件里按指针类型消费位移, 否则会取消同一区域的点击判定.
- *
- * 长按不走 family, 而是按本次手势 down 事件的 [PointerType] 过滤 (见 [longPressFastSkip]) ——
- * 它不消费任何事件, 因此不会干扰点击, 也就不需要等 family 提交.
- */
 @Immutable
 enum class GestureFamily(
     val clickToPauseResume: Boolean,
@@ -493,10 +455,6 @@ enum class GestureFamily(
 val VIDEO_GESTURE_MOUSE_MOVE_SHOW_CONTROLLER_DURATION = 3.seconds
 val VIDEO_GESTURE_TOUCH_SHOW_CONTROLLER_DURATION = 3.seconds
 
-/**
- * 将屏幕横滑 seek 的状态迁移映射到控制器显隐和进度预览。
- * [SwipeSeekerState] 负责识别手势，本类只响应开始、取消状态变化和结束事件。
- */
 private class SwipeSeekInteraction(
     private val controllerState: PlayerControllerState,
     private val seekerState: SwipeSeekerState,
@@ -572,7 +530,7 @@ fun PlayerGestureHost(
     progressSliderState: PlayerProgressSliderState,
     indicatorState: GestureIndicatorState,
     fastSkipState: FastSkipState?,
-    playerState: MediampPlayer, // TODO: remove playerState from VideoGestureHost
+    playerState: MediampPlayer,
     enableSwipeToSeek: Boolean,
     audioController: LevelController,
     brightnessController: LevelController,
@@ -591,13 +549,6 @@ fun PlayerGestureHost(
 
     val inputSourceState = LocalActiveInputSource.current
 
-    // 滑动类手势只属于触摸约定, 用组合期的 [family] 门控挂载, 而不是在事件里按指针类型消费位移:
-    // 消费会让 combinedClickable 的点击判定被取消, 鼠标按下后漂移一个像素就点不动播放器.
-    //
-    // 鼠标按下前必然先 hover, family 那时已经切到 MOUSE, 门控对鼠标一定及时. 触摸没有 hover,
-    // 类型要到 down 才知道, 而 Compose 在 down 时就为该 pointer 固定了命中路径, 之后挂载的
-    // draggable 收不到本次手势的后续事件 —— 从鼠标切到手指的第一次滑动只能切换 family (且会被
-    // 判成一次点击), 抬手再滑才进入 seek. 这是门控换来的代价.
     val swipeGesturesEnabled = family == GestureFamily.TOUCH
     BoxWithConstraints(Modifier.trackActiveInputSource(inputSourceState)) {
         Row(
@@ -615,8 +566,7 @@ fun PlayerGestureHost(
 
         val indicatorTasker = rememberUiMonoTasker()
         val audioLevelController = playerState.features[AudioLevelController]
-        // 平台问题而非输入方式问题: 桌面没有系统级 AudioManager, 音量由 mediamp 提供.
-        // 用 GestureFamily 判断会让混合设备上键盘音量键的作用目标随输入方式跳变.
+
         val useMediaAudioController = LocalPlatform.current.isDesktop()
         val playerFocusState = controllerState.focusState
 
@@ -679,10 +629,8 @@ fun PlayerGestureHost(
             }
         }
 
-        // 与上面的 Move handler 配套. 同样用「这台设备有没有鼠标」而不是「此刻在用鼠标」:
-        // 后者会让隐藏时序随输入方式跳变, 手指点一下就把鼠标模式下的自动隐藏关掉.
         if (hasPointerDevice(LocalPlatform.current, inputSourceState.hasSeenMouse)) {
-            // 没有人请求 alwaysOn 时自动隐藏控制器
+
             LaunchedEffect(controllerState) {
                 snapshotFlow { controllerState.alwaysOn }.collectLatest { alwaysOn ->
                     if (alwaysOn) return@collectLatest
@@ -703,7 +651,7 @@ fun PlayerGestureHost(
                     indication = null,
                     onClick = remember(family, playerFocusState, inputSourceState) {
                         {
-                            // 按本次事件的指针类型解析, 组合期算好的 family 会慢一拍
+
                             val tapFamily = gestureFamilyOf(inputSourceState.latest, family)
                             if (tapFamily.clickToPauseResume) {
                                 onTogglePauseResumeState()
@@ -741,7 +689,7 @@ fun PlayerGestureHost(
                     swipeToSeek(
                         seekerState,
                         Orientation.Horizontal,
-                        //调节音量/亮度时禁用水平seek
+
                         enabled = swipeGesturesEnabled && !adjustingVolumeOrBrightness,
                         onDragStarted = {
                             swipeSeekInteraction.onStarted()
@@ -761,8 +709,7 @@ fun PlayerGestureHost(
                         playerFocusState.requestPlayerFocus()
                     }
                 }
-                // 始终挂载, 再按本次事件过滤. 否则触摸后的第一次 Mouse Move 只会切换 family,
-                // 要等第二次 Move 才能显示控制器.
+
                 .onPointerEventMultiplatform(PointerEventType.Move) { event ->
                     if (event.changes.firstOrNull()?.type == PointerType.Mouse) {
                         controllerState.toggleFullVisible(true)
@@ -772,7 +719,7 @@ fun PlayerGestureHost(
                         }
                     }
                 }
-                // 滚轮只可能来自鼠标, 无需 family 门控; 接了鼠标的 Android 平板同样受益
+
                 .ifThen(audioLevelController != null) {
                     if (audioLevelController == null) return@ifThen this
                     onPointerEventMultiplatform(PointerEventType.Scroll) { event ->
@@ -787,25 +734,22 @@ fun PlayerGestureHost(
                         }
                     }
                 }
-                // Do not remove this as redundant with combinedClickable. Its focus target uses
-                // Focusability.SystemDefined, which is not focusable while Android is in touch input mode.
-                // This always-focusable child is the fallback that keeps hardware shortcuts working.
+
                 .focusable()
                 .fillMaxSize(),
         ) {
             Row(
-                // 桌面上是零 inset, 无条件挂载可避免混合设备上随 family 增删 padding 造成布局跳变
+
                 Modifier.matchParentSize()
                     .systemGesturesPadding()
-                    // 由 down 事件的类型过滤而非 family 门控: 按下不提交 family, 门控会漏掉每次长按
+
                     .ifNotNullThen(fastSkipState) {
                         longPressFastSkip(it, SkipDirection.FORWARD, requiredPointerType = PointerType.Touch)
                     },
             ) {
                 Box(
                     Modifier
-                        // 挂载看能力 (桌面没有 BrightnessManager, 传进来是 NoOp), 是否响应看 enabled;
-                        // 分开之后切换输入方式后的第一次滑动不会因为修饰符尚未挂上而丢失
+
                         .ifThen(brightnessController !== NoOpLevelController) {
                             swipeLevelControlWithIndicator(
                                 brightnessController,
@@ -828,7 +772,7 @@ fun PlayerGestureHost(
                         .swipeToFullscreen(
                             enabled = swipeGesturesEnabled && !seekerState.isSeeking && !adjustingVolumeOrBrightness &&
                                     !adjustingForwardOrBackward,
-                            // request 幂等, 已在目标状态时是 no-op, 不需要在这里判断当前状态
+
                             onEnterFullscreen = { fullscreenState.request(true) },
                             onExitFullscreen = { fullscreenState.request(false) },
                         )
@@ -858,7 +802,7 @@ fun PlayerGestureHost(
         }
 
         if (family.clickToToggleController && isFullscreen) {
-            // 状态栏区域响应点击手势
+
             Box(
                 Modifier.fillMaxWidth()
                     .windowInsetsTopHeight(WindowInsets.systemGestures)

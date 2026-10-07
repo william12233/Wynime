@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.storage
+package com.wynime.app.domain.media.cache.storage
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,86 +9,46 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.engine.DummyMediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngineKey
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.domain.media.fetch.MediaFetcher
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.paging.SinglePagePagedSource
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.source.ConnectionStatus
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.source.matchesSubject
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.datasources.api.topic.flowOfFileSizeZero
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.engine.DummyMediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngineKey
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.fetch.MediaFetcher
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.paging.SinglePagePagedSource
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.source.ConnectionStatus
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.source.matchesSubject
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.datasources.api.topic.flowOfFileSizeZero
 
-/**
- * 表示一个媒体缓存的存储空间, 例如一个本地目录.
- *
- * ## Identity
- *
- * [MediaCacheStorage] and [MediaSource] use the same ID system and,
- * there can be a [MediaSource] with the same ID as this [MediaCacheStorage].
- *
- * By having a [MediaSource] with the same ID,
- * a [MediaCacheStorage] can participate in the [MediaFetcher.newSession] process (and usually it should).
- */
 interface MediaCacheStorage : AutoCloseable {
-    /**
-     * ID of this media source.
-     */
+
     val mediaSourceId: String
 
-    /**
-     * 此空间的 [MediaSource]. 调用 [MediaSource.fetch] 则可从此空间中查询缓存, 作为 [Media].
-     */
     val cacheMediaSource: MediaSource
 
     val engine: MediaCacheEngine
 
-    /**
-     * 此存储的总体统计
-     */
     val stats: Flow<MediaStats>
 
-    /**
-     * A flow that subscribes on all the caches in the storage.
-     *
-     * Note that to retrieve [Media] (more specifically, [CachedMedia]) from the cache storage, you might want to use [cacheMediaSource].
-     */
     val listFlow: Flow<List<MediaCache>>
 
-    /**
-     * 重新加载那些上次 APP 运行时保存在本地的缓存.
-     *
-     * 通常在 APP 启动时调用.
-     */
     suspend fun restorePersistedCaches()
 
-    /**
-     * Finds the existing cache for the media or adds the media to the cache (queue).
-     *
-     * When this function returns, A new [MediaSource] can then be listed by [listFlow].
-     *
-     * Caching is made asynchronously. This function might only adds a job to the queue and does not guarantee when the cache will be done.
-     *
-     * This function returns only if the cache configuration is persisted.
-     *
-     * @param metadata The request to fetch the media.
-     */
     suspend fun cache(
         media: Media,
         metadata: MediaCacheMetadata,
@@ -105,37 +56,21 @@ interface MediaCacheStorage : AutoCloseable {
         resume: Boolean = true,
     ): MediaCache
 
-    /**
-     * Delete the cache if it exists.
-     * @return `true` if a cache was deleted, `false` if there wasn't such a cache.
-     */
     suspend fun delete(cache: MediaCache): Boolean =
         deleteFirst { it == cache }
 
-    /**
-     * Delete the cache if it exists.
-     * @return `true` if a cache was deleted, `false` if there wasn't such a cache.
-     */
     suspend fun deleteFirst(predicate: (MediaCache) -> Boolean): Boolean
 }
 
-/**
- * 持久化的媒体缓存数据, 用于在 APP 重启后恢复缓存.
- */
 @Serializable
 data class MediaCacheSave(
     val origin: Media,
     val metadata: MediaCacheMetadata,
-    /**
-     * 创建此缓存的的引擎 key.
-     */
+
     val engine: MediaCacheEngineKey,
 ) {
 }
 
-/**
- * 所有缓存项目的大小总和
- */
 val MediaCacheStorage.totalSize: Flow<FileSize>
     get() = listFlow.flatMapLatest { caches ->
         if (caches.isEmpty()) {
@@ -146,33 +81,16 @@ val MediaCacheStorage.totalSize: Flow<FileSize>
         }
     }
 
-/**
- * Number of caches in this storage.
- */
 val MediaCacheStorage.count: Flow<Int>
     get() = listFlow.map { it.size }
 
 suspend inline fun MediaCacheStorage.contains(cache: MediaCache): Boolean =
     listFlow.first().any { it === cache }
 
-/**
- * Provide base directory of [MediaCacheEngine].
- *
- * All [MediaCacheEngine]s should create their caches in this directory.
- *
- * 读取和写入缓存的目录的操作使用此目录, 不要读取 SettingsRepository 保存的目录.
- * 只有修改缓存目录和迁移可以从 SettingsRepository 中读取.
- */
 interface MediaSaveDirProvider {
     val saveDir: String
 }
 
-/**
- * 将 [MediaCacheStorage] 作为 [MediaSource], 这样可以被 [MediaFetcher] 搜索到以播放.
- *
- * 查询以条目为单位: 返回本条目的全部缓存记录, 每条记录的剧集范围收窄为该记录的那一集
- * (一条记录只对应一个文件), 并以剧集 ID 区分同一合集资源的多条记录. 属于其他集的记录由 `MediaSelector` 排除.
- */
 class MediaCacheStorageSource(
     private val storage: MediaCacheStorage,
     private val displayName: String,
@@ -210,7 +128,6 @@ class MediaCacheStorageSource(
         isSpecial = true,
     )
 }
-
 
 class TestMediaCacheStorage : MediaCacheStorage {
     override val mediaSourceId: String

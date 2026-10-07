@@ -1,37 +1,28 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.engine
+package com.wynime.app.domain.media.cache.engine
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.files.Path
-import me.him188.ani.app.data.persistent.database.dao.HttpCacheDownloadStateDao
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.player.data.MediaDataProvider
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.domain.media.resolver.TestUniversalMediaResolver
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.httpdownloader.DownloadId
-import me.him188.ani.utils.httpdownloader.DownloadOptions
-import me.him188.ani.utils.httpdownloader.DownloadProgress
-import me.him188.ani.utils.httpdownloader.DownloadState
-import me.him188.ani.utils.httpdownloader.DownloadStatus
-import me.him188.ani.utils.httpdownloader.HttpDownloader
-import me.him188.ani.utils.httpdownloader.MediaType
+import com.wynime.app.data.persistent.database.dao.HttpCacheDownloadStateDao
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.player.data.MediaDataProvider
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.media.resolver.TestUniversalMediaResolver
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.httpdownloader.DownloadId
+import com.wynime.utils.httpdownloader.DownloadOptions
+import com.wynime.utils.httpdownloader.DownloadProgress
+import com.wynime.utils.httpdownloader.DownloadState
+import com.wynime.utils.httpdownloader.DownloadStatus
+import com.wynime.utils.httpdownloader.HttpDownloader
+import com.wynime.utils.httpdownloader.MediaType
 import org.openani.mediamp.source.MediaExtraFiles
 import org.openani.mediamp.source.UriMediaData
 import kotlin.test.Test
@@ -39,10 +30,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
-/**
- * 验证 [HttpMediaCacheEngine] 为 HTTP 任务分配的标识: 同一资源的不同剧集拥有各自的任务与输出文件,
- * 恢复记录时优先匹配含剧集信息的标识, 其次匹配仅由 mediaId 派生的标识.
- */
 class HttpDownloadIdentityTest {
     @Test
     fun `season episodes create different HTTP files and deleting one keeps the other`() = runTest {
@@ -98,7 +85,7 @@ class HttpDownloadIdentityTest {
         val metadata = testMetadata(1)
         engine.createCache(media, metadata, testEpisodeMetadata(1), backgroundScope.coroutineContext)
         val currentId = downloader.states.keys.single()
-        // 仅 dao 保留记录, downloader 丢失任务时, 按含剧集信息的标识重建任务.
+
         downloader.persistedOnly += currentId
         val restored = engine.restore(media, metadata, backgroundScope.coroutineContext)
         assertTrue(restored != null)
@@ -168,16 +155,12 @@ class HttpDownloadIdentityTest {
     )
 }
 
-/**
- * 以内存记录模拟 downloader. [persistedOnly] 中的任务只在 dao 中可见, 用于模拟 downloader 丢失任务而持久化记录仍在的情况.
- */
 private class FakeDownloader : HttpDownloader {
     val states = mutableMapOf<DownloadId, DownloadState>()
     val resumed = mutableListOf<DownloadId>()
     val recreated = mutableListOf<DownloadId>()
     val persistedOnly = mutableSetOf<DownloadId>()
 
-    /** dao 视角下的全部记录, 包含 downloader 已丢失但仍持久化的任务. */
     val persisted: Map<DownloadId, DownloadState> get() = states
 
     override val progressFlow: Flow<DownloadProgress> = flowOf()

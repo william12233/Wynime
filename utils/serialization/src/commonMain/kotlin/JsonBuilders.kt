@@ -1,4 +1,4 @@
-package me.him188.ani.utils.serialization
+package com.wynime.utils.serialization
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject

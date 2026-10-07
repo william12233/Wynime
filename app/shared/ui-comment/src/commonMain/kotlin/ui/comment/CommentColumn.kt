@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,20 +33,17 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import kotlinx.coroutines.flow.distinctUntilChanged
-import me.him188.ani.app.ui.foundation.interaction.nestedScrollWorkaround
-import me.him188.ani.app.ui.foundation.layout.ConnectedScrollState
-import me.him188.ani.app.ui.foundation.theme.stronglyWeaken
-import me.him188.ani.app.ui.foundation.thenNotNull
-import me.him188.ani.app.ui.foundation.widgets.PullToRefreshBox
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.ui.search.SearchResultLazyVerticalGrid
-import me.him188.ani.app.ui.search.isFinishedAndEmpty
-import me.him188.ani.app.ui.search.isLoadingFirstPageOrRefreshing
-import me.him188.ani.app.ui.search.isLoadingNextPage
+import com.wynime.app.ui.foundation.interaction.nestedScrollWorkaround
+import com.wynime.app.ui.foundation.layout.ConnectedScrollState
+import com.wynime.app.ui.foundation.theme.stronglyWeaken
+import com.wynime.app.ui.foundation.thenNotNull
+import com.wynime.app.ui.foundation.widgets.PullToRefreshBox
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.search.SearchResultLazyVerticalGrid
+import com.wynime.app.ui.search.isFinishedAndEmpty
+import com.wynime.app.ui.search.isLoadingFirstPageOrRefreshing
+import com.wynime.app.ui.search.isLoadingNextPage
 
-/**
- * 在 Paging 刷新完成时调用 [CommentState.clearStaleOverlays], 使乐观覆盖不会永久遮住服务端刷新后的数据.
- */
 @Composable
 fun CommentOverlayCleanupEffect(state: CommentState, items: LazyPagingItems<UIComment>) {
     key(state) {
@@ -63,7 +51,6 @@ fun CommentOverlayCleanupEffect(state: CommentState, items: LazyPagingItems<UICo
     }
 }
 
-/** Allows MVI screens to dispatch refresh completion without receiving a mutable [CommentState]. */
 @Composable
 fun CommentOverlayCleanupEffect(items: LazyPagingItems<UIComment>, onRefreshCompleted: () -> Unit) {
     val currentOnRefreshCompleted by rememberUpdatedState(onRefreshCompleted)
@@ -78,11 +65,6 @@ fun CommentOverlayCleanupEffect(items: LazyPagingItems<UIComment>, onRefreshComp
     }
 }
 
-/**
- * @param pullToRefreshEnabled 是否启用下拉刷新. 当此列表位于会优先消费向下滚动的容器中时
- * (例如 [me.him188.ani.app.ui.foundation.layout.NestedScrollableColumn] 的 header 未完全展开),
- * 应传 `false`, 否则下拉刷新会先于容器消费掉下拉手势.
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CommentColumn(
@@ -135,13 +117,13 @@ fun CommentColumn(
                 LoadErrorCard(
                     error = it,
                     onRetry = { items.retry() },
-                    modifier = Modifier.fillMaxWidth(), // noop
+                    modifier = Modifier.fillMaxWidth(),
                 )
             },
             modifier = listContentModifier,
             contentPadding = contentPadding,
             cells = GridCells.Fixed(1),
-            showLoadingIndicatorInFirstPage = false, // Use PTR instead
+            showLoadingIndicatorInFirstPage = false,
             state = state,
         ) {
             item("spacer header") { Spacer(Modifier.height(1.dp)) }

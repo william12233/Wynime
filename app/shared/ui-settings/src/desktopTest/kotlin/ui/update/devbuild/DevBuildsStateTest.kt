@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update.devbuild
+package com.wynime.app.ui.update.devbuild
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.respond
@@ -18,18 +9,18 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.tools.update.InstallationFailureReason
-import me.him188.ani.app.tools.update.InstallationResult
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.list
-import me.him188.ani.utils.io.name
-import me.him188.ani.utils.io.readBytes
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.toFile
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.tools.update.InstallationFailureReason
+import com.wynime.app.tools.update.InstallationResult
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.list
+import com.wynime.utils.io.name
+import com.wynime.utils.io.readBytes
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.toFile
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -41,9 +32,7 @@ import kotlin.test.assertTrue
 
 @OptIn(TestOnly::class)
 class DevBuildsStateTest {
-    private val macosSpec = DevBuildPackageSpec(listOf("wynime-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG)
     private val windowsSpec = DevBuildPackageSpec(listOf("wynime-windows-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP)
-    private val linuxSpec = DevBuildPackageSpec(listOf("wynime-linux-appimage-x64"), DevBuildPackageKind.LINUX_APPIMAGE)
     private val androidSpec = DevBuildPackageSpec(
         listOf("wynime-android-arm64-v8a-release", "wynime-android-universal-release"),
         DevBuildPackageKind.ANDROID_APK,
@@ -98,8 +87,8 @@ class DevBuildsStateTest {
     @Test
     fun `refresh merges commits, build status and the platform artifact`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
-            val state = createState(client, macosSpec, FakeInstaller(), saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes())
+            val state = createState(client, androidSpec, FakeInstaller(), saveDir)
             assertEquals(DevBuildListState.Idle, state.listState.value)
 
             val commits = state.loadCommits()
@@ -120,7 +109,7 @@ class DevBuildsStateTest {
     fun `refresh failure is exposed and a later refresh recovers`() = runTest {
         withTempDir { saveDir ->
             var fail = true
-            val healthy = fullGitHubMockHandler("wynime-macos-dmg-aarch64", zipBytes())
+            val healthy = fullGitHubMockHandler("wynime-android-arm64-v8a-release", zipBytes())
             val client = gitHubMockClient { request ->
                 if (fail) {
                     respond(
@@ -132,7 +121,7 @@ class DevBuildsStateTest {
                     healthy(request)
                 }
             }
-            val state = createState(client, macosSpec, FakeInstaller(), saveDir)
+            val state = createState(client, androidSpec, FakeInstaller(), saveDir)
             state.refresh()
             state.joinTasks()
             val failed = assertIs<DevBuildListState.Failed>(state.listState.value)
@@ -148,8 +137,8 @@ class DevBuildsStateTest {
     fun `install requires a github token`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
-            val state = createState(client, macosSpec, installer, saveDir, token = " ")
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes())
+            val state = createState(client, androidSpec, installer, saveDir, token = " ")
             val commit = state.loadCommits()[0]
 
             state.install(commit, testContext)
@@ -169,7 +158,7 @@ class DevBuildsStateTest {
     fun `install ignores commits without a package`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val state = createState(fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes()), macosSpec, installer, saveDir)
+            val state = createState(fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes()), androidSpec, installer, saveDir)
             val commit = state.loadCommits()[1]
             state.install(commit, testContext)
             state.joinTasks()
@@ -179,12 +168,12 @@ class DevBuildsStateTest {
     }
 
     @Test
-    fun `install downloads the artifact, extracts the dmg and calls the installer`() = runTest {
+    fun `install downloads the artifact, extracts the apk and calls the installer`() = runTest {
         withTempDir { saveDir ->
-            val dmg = ByteArray(2048) { (it % 7).toByte() }
+            val apk = ByteArray(2048) { (it % 7).toByte() }
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime-4.12.0.dmg" to dmg))
-            val state = createState(client, macosSpec, installer, saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes("Wynime-4.12.0.apk" to apk))
+            val state = createState(client, androidSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
             state.install(commit, testContext)
@@ -192,10 +181,10 @@ class DevBuildsStateTest {
 
             assertEquals(DevBuildInstallState.Idle, state.installState.value)
             val installed = installer.installed.single()
-            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.dmg"), installed)
-            assertContentEquals(dmg, installed.readBytes())
-            // artifact zip 已删除, 目录里只剩安装包
-            assertEquals(listOf("wynime-main-aaaaaaaa.dmg"), saveDir.list().map { it.name })
+            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.apk"), installed)
+            assertContentEquals(apk, installed.readBytes())
+
+            assertEquals(listOf("wynime-main-aaaaaaaa.apk"), saveDir.list().map { it.name })
         }
     }
 
@@ -218,38 +207,11 @@ class DevBuildsStateTest {
     }
 
     @Test
-    fun `linux appimage waits for manual installation`() = runTest {
-        withTempDir { saveDir ->
-            val installer = FakeInstaller()
-            val client = fullGitHubMockClient(
-                "wynime-linux-appimage-x64",
-                zipBytes("Wynime-x86_64.AppImage.zsync" to byteArrayOf(0), "Wynime-x86_64.AppImage" to byteArrayOf(7)),
-            )
-            val state = createState(client, linuxSpec, installer, saveDir)
-            val commit = state.loadCommits()[0]
-
-            state.install(commit, testContext)
-            state.joinTasks()
-
-            val ready = assertIs<DevBuildInstallState.ReadyForManualInstall>(state.installState.value)
-            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.AppImage"), ready.file)
-            assertContentEquals(byteArrayOf(7), ready.file.readBytes())
-            assertTrue(ready.file.toFile().canExecute())
-            assertTrue(installer.installed.isEmpty())
-
-            state.revealPackage(ready.file, testContext)
-            assertEquals(listOf(ready.file), installer.revealed)
-            state.dismissInstallResult()
-            assertEquals(DevBuildInstallState.Idle, state.installState.value)
-        }
-    }
-
-    @Test
     fun `missing package in the artifact is reported`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("readme.txt" to byteArrayOf(1)))
-            val state = createState(client, macosSpec, installer, saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes("readme.txt" to byteArrayOf(1)))
+            val state = createState(client, androidSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
             state.install(commit, testContext)
@@ -266,8 +228,8 @@ class DevBuildsStateTest {
         withTempDir { saveDir ->
             val result = InstallationResult.Failed(InstallationFailureReason.FAILED_TO_MOUNT_DMG, "boom")
             val installer = FakeInstaller(result)
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime.dmg" to byteArrayOf(1)))
-            val state = createState(client, macosSpec, installer, saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes("wynime.apk" to byteArrayOf(1)))
+            val state = createState(client, androidSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
             state.install(commit, testContext)
@@ -275,7 +237,7 @@ class DevBuildsStateTest {
 
             val failed = assertIs<DevBuildInstallState.Failed>(state.installState.value)
             assertEquals(DevBuildInstallFailure.Installer(result), failed.failure)
-            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.dmg"), failed.file)
+            assertEquals(saveDir.resolve("wynime-main-aaaaaaaa.apk"), failed.file)
         }
     }
 
@@ -283,8 +245,8 @@ class DevBuildsStateTest {
     fun `network failure during download is reported without a file`() = runTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes(), expectedToken = "other")
-            val state = createState(client, macosSpec, installer, saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes(), expectedToken = "other")
+            val state = createState(client, androidSpec, installer, saveDir)
             val commit = state.loadCommits()[0]
 
             state.install(commit, testContext)
@@ -300,8 +262,8 @@ class DevBuildsStateTest {
     @Test
     fun `lookup resolves a commit link to its latest build and artifact`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
-            val state = createState(client, macosSpec, FakeInstaller(), saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes())
+            val state = createState(client, androidSpec, FakeInstaller(), saveDir)
             assertEquals(DevBuildLookupState.Idle, state.lookupState.value)
 
             val result = state.lookupCommit("https://github.com/william12233/Wynime/commit/$SHA_A")
@@ -312,7 +274,6 @@ class DevBuildsStateTest {
             assertEquals(DevBuildStatus.SUCCESS, result.commit.build?.status)
             assertEquals(10, result.commit.artifact?.id)
 
-            // 短 sha 也可以; 没有安装包的 commit 仍然显示构建状态
             val second = state.lookupCommit(SHA_B.take(8))
             assertEquals(SHA_B, second.commit.sha)
             assertEquals(DevBuildStatus.IN_PROGRESS, second.commit.build?.status)
@@ -326,8 +287,8 @@ class DevBuildsStateTest {
     @Test
     fun `lookup resolves a pull request to its head commit`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
-            val state = createState(client, macosSpec, FakeInstaller(), saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes())
+            val state = createState(client, androidSpec, FakeInstaller(), saveDir)
 
             val result = state.lookupCommit("https://github.com/william12233/Wynime/pull/42/files")
             val pr = assertNotNull(result.pullRequest)
@@ -370,7 +331,7 @@ class DevBuildsStateTest {
                            "workflow_run": {"id": 500, "head_sha": "$forkSha"}},
                           {"id": 52, "name": "wynime-android-arm64-v8a-debug", "size_in_bytes": 3, "archive_download_url": "u52", "expired": false,
                            "workflow_run": {"id": 500, "head_sha": "$forkSha"}},
-                          {"id": 53, "name": "wynime-macos-dmg-aarch64", "size_in_bytes": 4, "archive_download_url": "u53", "expired": false,
+                          {"id": 53, "name": "wynime-windows-portable", "size_in_bytes": 4, "archive_download_url": "u53", "expired": false,
                            "workflow_run": {"id": 500, "head_sha": "$forkSha"}}
                         ]}""",
                     )
@@ -391,8 +352,8 @@ class DevBuildsStateTest {
     @Test
     fun `lookup resolves workflow run and artifact links`() = runTest {
         withTempDir { saveDir ->
-            val client = fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes())
-            val state = createState(client, macosSpec, FakeInstaller(), saveDir)
+            val client = fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes())
+            val state = createState(client, androidSpec, FakeInstaller(), saveDir)
 
             val run = state.lookupCommit("https://github.com/william12233/Wynime/actions/runs/100/job/1")
             assertEquals(SHA_A, run.commit.sha)
@@ -405,12 +366,11 @@ class DevBuildsStateTest {
             assertEquals(200, artifact.commit.build?.id)
             assertEquals(10, artifact.commit.artifact?.id)
 
-            // 其他平台的 artifact
             val windows = createState(client, windowsSpec, FakeInstaller(), saveDir)
             val mismatch = assertIs<DevBuildLookupFailure.ArtifactNotForPlatform>(
                 windows.lookupFailure("https://api.github.com/repos/william12233/Wynime/actions/artifacts/10/zip"),
             )
-            assertEquals("wynime-macos-dmg-aarch64", mismatch.artifactName)
+            assertEquals("wynime-android-arm64-v8a-release", mismatch.artifactName)
         }
     }
 
@@ -418,11 +378,11 @@ class DevBuildsStateTest {
     fun `package links are accepted only with the platform extension`() = runTest {
         withTempDir { saveDir ->
             val client = gitHubMockClient { error("no requests expected: ${it.url}") }
-            val state = createState(client, macosSpec, FakeInstaller(), saveDir)
+            val state = createState(client, androidSpec, FakeInstaller(), saveDir)
 
-            val url = "https://github.com/william12233/Wynime/releases/download/v4.12.0/wynime-4.12.0-macos-aarch64.dmg"
+            val url = "https://github.com/william12233/Wynime/releases/download/v4.12.0/wynime-4.12.0-arm64-v8a.apk"
             val resolved = assertIs<DevBuildLookupState.Resolved>(state.lookupAndJoin(url))
-            assertEquals(DevBuildLookupResult.Package(url, "wynime-4.12.0-macos-aarch64.dmg"), resolved.result)
+            assertEquals(DevBuildLookupResult.Package(url, "wynime-4.12.0-arm64-v8a.apk"), resolved.result)
 
             val unsupported = assertIs<DevBuildLookupFailure.UnsupportedPackage>(
                 state.lookupFailure("https://example.com/wynime-windows.zip"),
@@ -439,7 +399,7 @@ class DevBuildsStateTest {
     @Test
     fun `installPackage downloads the package following redirects without a token`() = runTest {
         withTempDir { saveDir ->
-            val dmg = ByteArray(1024) { (it % 5).toByte() }
+            val apk = ByteArray(1024) { (it % 5).toByte() }
             val installer = FakeInstaller()
             val requests = mutableListOf<HttpRequestData>()
             val client = gitHubMockClient { request ->
@@ -452,24 +412,24 @@ class DevBuildsStateTest {
                     )
 
                     "objects.example.com" -> respond(
-                        dmg,
+                        apk,
                         HttpStatusCode.OK,
-                        headersOf(HttpHeaders.ContentLength, dmg.size.toString()),
+                        headersOf(HttpHeaders.ContentLength, apk.size.toString()),
                     )
 
                     else -> error("Unexpected request: ${request.url}")
                 }
             }
-            val state = createState(client, macosSpec, installer, saveDir, token = "")
-            val url = "https://github.com/william12233/Wynime/releases/download/v4.12.0/wynime-4.12.0-macos-aarch64.dmg"
+            val state = createState(client, androidSpec, installer, saveDir, token = "")
+            val url = "https://github.com/william12233/Wynime/releases/download/v4.12.0/wynime-4.12.0-arm64-v8a.apk"
 
-            state.installPackage(url, "wynime-4.12.0-macos-aarch64.dmg", testContext)
+            state.installPackage(url, "wynime-4.12.0-arm64-v8a.apk", testContext)
             state.joinTasks()
 
             assertEquals(DevBuildInstallState.Idle, state.installState.value)
             val installed = installer.installed.single()
-            assertEquals(saveDir.resolve("wynime-4.12.0-macos-aarch64.dmg"), installed)
-            assertContentEquals(dmg, installed.readBytes())
+            assertEquals(saveDir.resolve("wynime-4.12.0-arm64-v8a.apk"), installed)
+            assertContentEquals(apk, installed.readBytes())
             assertEquals(listOf("github.com", "objects.example.com"), requests.map { it.url.host })
             assertTrue(requests.all { it.headers[HttpHeaders.Authorization] == null })
         }
@@ -480,14 +440,14 @@ class DevBuildsStateTest {
         withTempDir { saveDir ->
             val installer = FakeInstaller()
             val client = gitHubMockClient { respondJson("""{"message": "gone"}""", HttpStatusCode.NotFound) }
-            val state = createState(client, macosSpec, installer, saveDir)
-            val url = "https://example.com/ani.dmg"
+            val state = createState(client, androidSpec, installer, saveDir)
+            val url = "https://example.com/ani.apk"
 
-            state.installPackage(url, "ani.dmg", testContext)
+            state.installPackage(url, "wynime.apk", testContext)
             state.joinTasks()
 
             val failed = assertIs<DevBuildInstallState.Failed>(state.installState.value)
-            assertEquals(DevBuildInstallTarget(url, "ani.dmg", url), failed.target)
+            assertEquals(DevBuildInstallTarget(url, "wynime.apk", url), failed.target)
             assertIs<DevBuildInstallFailure.Error>(failed.failure)
             assertTrue(installer.installed.isEmpty())
         }

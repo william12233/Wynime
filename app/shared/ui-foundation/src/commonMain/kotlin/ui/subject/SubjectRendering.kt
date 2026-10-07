@@ -1,20 +1,11 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject
+package com.wynime.app.ui.subject
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_rendering_season_year_month
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.seasonMonth
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_rendering_season_year_month
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.seasonMonth
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.selectorworkflow
+package com.wynime.utils.selectorworkflow
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,12 +37,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlin.time.Duration
 
-/**
- * 调试用的 playground: 动画 + 四个开关 + 一条播放控制.
- *
- * 这些开关和最终要放进「设置 → 观看偏好 → 高级设置」的是同一套语义, 但这里是独立的、只影响这个动画的
- * 演示开关 —— 真接进设置页时它们会换成读写用户设置的版本.
- */
 @Composable
 fun SelectorWorkflowPlayground(
     modifier: Modifier = Modifier,
@@ -73,8 +58,6 @@ fun SelectorWorkflowPlayground(
         }
 
         TransportBar(viewModel)
-
-        // ---- 四种动画路径的开关 ----
 
         WorkflowSwitchRow(
             title = "数据源查询缓存",
@@ -125,9 +108,6 @@ fun SelectorWorkflowPlayground(
     }
 }
 
-/**
- * 一行设置. 与设计稿一致: 左边标题 + 说明, 右边可选的秒数输入框, 最右边开关.
- */
 @Composable
 private fun WorkflowSwitchRow(
     title: String,
@@ -160,9 +140,6 @@ private fun WorkflowSwitchRow(
     }
 }
 
-/**
- * 秒数输入框. 输进非法值时保留输入内容但不往下提交, 免得动画一边打字一边重编译.
- */
 @Composable
 private fun SecondsField(
     seconds: Int,
@@ -186,10 +163,6 @@ private fun SecondsField(
     )
 }
 
-/**
- * playground 专用: 播放 / 暂停 / 重来 + 进度条 + 当前这一拍的名字.
- * 真接进设置页时不会有这一条.
- */
 @Composable
 private fun TransportBar(
     viewModel: SelectorWorkflowViewModel,
@@ -240,7 +213,7 @@ private const val DEFAULT_BUDGET_SECONDS = 8
 @Preview
 @Composable
 private fun PreviewSelectorWorkflowPlayground() {
-    // 静态预览不会跑 LaunchedEffect, 播放位置停在 0 会是一张空画. 先拨到一个有内容的时刻.
+
     val viewModel = remember {
         SelectorWorkflowViewModel().apply { player.seekToFraction(PREVIEW_FRACTION) }
     }
@@ -254,7 +227,7 @@ private const val PREVIEW_FRACTION = 0.42f
 @Preview
 @Composable
 private fun PreviewSelectorWorkflowFrames() {
-    // 定格看几个关键时刻, 不用等动画跑到那里
+
     val config = remember {
         SelectorWorkflowPresets.threeSources(
             mode = SelectMode.Eager,

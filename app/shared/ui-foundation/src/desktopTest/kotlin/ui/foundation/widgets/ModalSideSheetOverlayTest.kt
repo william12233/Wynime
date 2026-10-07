@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,14 +8,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ModalSideSheetOverlayTest {
     @Test
-    fun `overlay fills the whole window instead of the sheet`() = runAniComposeUiTest {
+    fun `overlay fills the whole window instead of the sheet`() = runWynimeComposeUiTest {
         setContent {
             ModalSideSheet(
                 onDismiss = {},

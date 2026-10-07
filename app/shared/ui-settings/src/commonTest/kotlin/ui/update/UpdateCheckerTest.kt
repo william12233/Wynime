@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -16,10 +7,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.network.protocol.ReleaseClass
-import me.him188.ani.utils.ktor.asScopedHttpClient
-import me.him188.ani.utils.platform.Arch
-import me.him188.ani.utils.platform.Platform
+import com.wynime.app.data.network.protocol.ReleaseClass
+import com.wynime.utils.ktor.asScopedHttpClient
+import com.wynime.utils.platform.Arch
+import com.wynime.utils.platform.Platform
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

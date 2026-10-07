@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.annotation.UiThread
 import androidx.compose.runtime.Composable
@@ -43,127 +34,29 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.tools.MonoTasker
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.tools.MonoTasker
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * A scope that provides a background scope for launching background jobs.
- *
- * [HasBackgroundScope] also provides various helper functions for flows.
- *
- * ## Creating a background scope
- *
- * It is recommended to use the constructor-like function [BackgroundScope] to create a background scope.
- *
- * A special use case is [AbstractViewModel], which implements the [HasBackgroundScope] interface manually
- * to comply with Android lifecycle management.
- *
- * ## Example Usage
- *
- * A recommended usage is to use it in globally maintained class that implements [HasBackgroundScope]:
- * ```
- * class SessionManagerImpl : HasBackgroundScope by BackgroundScope() {
- * }
- * ```
- *
- * SessionManager is a singleton, and injected into other objects.
- * A background scope can be beneficial for the SessionManager implementation to launch background jobs.
- *
- * ## Hiding BackgroundScope in public API
- *
- * It is recommended to only use [HasBackgroundScope] in internal implementations,
- * so that public users of your API does not see the background scope and can't misuse it - launching a job in a scope that they don't control is bad.
- */
 @Stable
 interface HasBackgroundScope {
-    /**
-     * The background scope for launching background jobs.
-     *
-     * It must have a [SupervisorJob], to control structural concurrency.
-     * A [CoroutineExceptionHandler] is also installed to prevent app crashing.
-     */
+
     val backgroundScope: CoroutineScope
 
-    /**
-     * Converts a _cold_ [Flow] into a _hot_ [SharedFlow] that is started in the **background scope**.
-     *
-     * ## No UI actions in flow operations
-     *
-     * Since the flow is started in the background scope, you must not perform any UI actions in the flow operations.
-     * All UI actions will fail with an exception.
-     *
-     * ## Lazy Sharing
-     *
-     * By default, sharing is started **only when** the first subscriber appears, immediately stops when the last
-     * subscriber disappears (by default), keeping the replay cache forever (by default).
-     *
-     * If there is no subscriber, the flow will not be collected. As such, the returned flow does not immediately have a value.
-     *
-     * @see Flow.shareIn
-     */
     fun <T> Flow<T>.shareInBackground(
         started: SharingStarted = SharingStarted.WhileSubscribed(5.seconds),
         replay: Int = 1,
     ): SharedFlow<T> = shareIn(backgroundScope, started, replay)
 
-    /**
-     * Converts a _cold_ [Flow] into a _hot_ [StateFlow] that is started in the background scope.
-     *
-     * ## No UI actions in flow operations
-     *
-     * Since the flow is started in the background scope, you must not perform any UI actions in the flow operations.
-     * All UI actions will fail with an exception.
-     *
-     * ## Lazy Sharing
-     *
-     * By default, sharing is started **only when** the first subscriber appears, immediately stops when the last
-     * subscriber disappears (by default), keeping the replay cache forever (by default).
-     *
-     * If there is no subscriber, the flow will not be collected. As such,
-     * the [StateFlow.value] of the returned [StateFlow] will keeps being [initialValue], unless there is a subscriber.
-     *
-     * ## `StateFlow.first` is not a subscriber
-     *
-     * Calling `StateFlow.first` is not considered a subscriber. So you will always get the `initialValue` when calling `first`,
-     * unless the flow is being collected.
-     *
-     * @see Flow.stateIn
-     */
     fun <T> Flow<T>.stateInBackground(
         initialValue: T,
         started: SharingStarted = SharingStarted.WhileSubscribed(5.seconds),
     ): StateFlow<T> = stateIn(backgroundScope, started, initialValue)
 
-    /**
-     * Converts a _cold_ [Flow] into a _hot_ [StateFlow] that is started in the **background scope**.
-     *
-     * The returned [StateFlow] initially has a `null` [StateFlow.value].
-     *
-     * ## No UI actions in flow operations
-     *
-     * Since the flow is started in the background scope, you must not perform any UI actions in the flow operations.
-     * All UI actions will fail with an exception.
-     *
-     * ## Lazy Sharing
-     *
-     * By default, sharing is started **only when** the first subscriber appears, immediately stops when the last
-     * subscriber disappears (by default), keeping the replay cache forever (by default).
-     *
-     * If there is no subscriber, the flow will not be collected. As such,
-     * the [StateFlow.value] of the returned [StateFlow] will keeps being [initialValue], unless there is a subscriber.
-     *
-     * ## `StateFlow.first` is not a subscriber
-     *
-     * Calling `StateFlow.first` is not considered a subscriber. So you will always get the `initialValue` when calling `first`,
-     * unless the flow is being collected.
-     *
-     * @see Flow.stateIn
-     */
     fun <T> Flow<T>.stateInBackground(
         started: SharingStarted = SharingStarted.WhileSubscribed(5.seconds),
     ): StateFlow<T?> = stateIn(backgroundScope, started, null)
@@ -175,92 +68,77 @@ interface HasBackgroundScope {
             else -> null
         }
 
-    /**
-     * Collects the flow on the main thread into a [State].
-     */
     fun <T> Flow<T>.produceState(
         initialValue: T,
         coroutineContext: CoroutineContext = EmptyCoroutineContext,
     ): State<T> {
         val state = mutableStateOf(valueOrNull ?: initialValue)
         launchInBackground(coroutineContext) {
-            flowOn(Dispatchers.Default) // compute in background
+            flowOn(Dispatchers.Default)
                 .collect { value ->
-                    withContext(Dispatchers.Main) { // ensure a dispatch happens
+                    withContext(Dispatchers.Main) {
                         state.value = value
                     }
-                } // update state in main
+                }
         }
         return state
     }
 
-    /**
-     * Collects the flow on the main thread into a [State].
-     */
     fun Flow<Float>.produceState(
         initialValue: Float,
         coroutineContext: CoroutineContext = EmptyCoroutineContext,
     ): FloatState {
         val state = mutableFloatStateOf(this.valueOrNull ?: initialValue)
         launchInBackground(coroutineContext) {
-            flowOn(Dispatchers.Default) // compute in background
+            flowOn(Dispatchers.Default)
                 .collect {
-                    withContext(Dispatchers.Main) { // ensure a dispatch happens
+                    withContext(Dispatchers.Main) {
                         state.value = it
                     }
-                } // update state in main
+                }
         }
         return state
     }
 
-    /**
-     * Collects the flow on the main thread into a [State].
-     */
     fun Flow<Int>.produceState(
         initialValue: Int,
         coroutineContext: CoroutineContext = EmptyCoroutineContext,
     ): IntState {
         val state = mutableIntStateOf(this.valueOrNull ?: initialValue)
         launchInBackground(coroutineContext) {
-            flowOn(Dispatchers.Default) // compute in background
+            flowOn(Dispatchers.Default)
                 .collect {
-                    withContext(Dispatchers.Main) { // ensure a dispatch happens
+                    withContext(Dispatchers.Main) {
                         state.value = it
                     }
-                } // update state in main
+                }
         }
         return state
     }
 
-    /**
-     * Collects the flow on the main thread into a [State].
-     */
     fun Flow<Long>.produceState(
         initialValue: Long,
         coroutineContext: CoroutineContext = EmptyCoroutineContext,
     ): LongState {
         val state = mutableLongStateOf(this.valueOrNull ?: initialValue)
         launchInBackground(coroutineContext) {
-            flowOn(Dispatchers.Default) // compute in background
+            flowOn(Dispatchers.Default)
                 .collect {
-                    withContext(Dispatchers.Main) { // ensure a dispatch happens
+                    withContext(Dispatchers.Main) {
                         state.value = it
                     }
-                } // update state in main
+                }
         }
         return state
     }
 
-    /**
-     * Collects the flow on the main thread into a [State].
-     */
     fun <T> StateFlow<T>.produceState(
         initialValue: T = this.value,
         coroutineContext: CoroutineContext = EmptyCoroutineContext,
     ): State<T> {
         val state = mutableStateOf(initialValue)
         launchInBackground(coroutineContext) {
-            // no need for flowOn as it's SharedFlow
+
             collect {
                 withContext(Dispatchers.Main) {
                     state.value = it
@@ -271,25 +149,11 @@ interface HasBackgroundScope {
     }
 }
 
-/**
- * Creates a new background scope.
- *
- * Note that this functions it not intended to be used in-place.
- * Doing `BackgroundScope().backgroundScope.launch { }` is an error - it effectively leaks the coroutine into an unmanaged scope.
- *
- * @param parentCoroutineContext parent coroutine context to pass in the background scope.
- * If the parent context has a [Job], the scope will use it as a parent job.
- *
- * @see HasBackgroundScope
- */
 @Suppress("FunctionName")
 fun BackgroundScope(
     parentCoroutineContext: CoroutineContext = EmptyCoroutineContext
 ): HasBackgroundScope = SimpleBackgroundScope(parentCoroutineContext)
 
-/**
- * @param coroutineContext 变化不会反应到返回的 [HasBackgroundScope].
- */
 @Composable
 inline fun rememberBackgroundScope(
     crossinline coroutineContext: @DisallowComposableCalls () -> CoroutineContext = { EmptyCoroutineContext }
@@ -311,7 +175,7 @@ internal class RememberedBackgroundScope(
     }
 
     private val creationStacktrace =
-        if (currentAniBuildConfig.isDebug) Throwable("Stacktrace for background scope creation") else null
+        if (currentWynimeBuildConfig.isDebug) Throwable("Stacktrace for background scope creation") else null
 
     override val backgroundScope: CoroutineScope =
         CoroutineScope(
@@ -348,7 +212,6 @@ fun <V : HasBackgroundScope> V.launchInBackgroundAnimated(
     }
 }
 
-
 fun <T> CoroutineScope.deferFlow(value: suspend () -> T): MutableStateFlow<T?> {
     val flow = MutableStateFlow<T?>(null)
     launch {
@@ -357,12 +220,6 @@ fun <T> CoroutineScope.deferFlow(value: suspend () -> T): MutableStateFlow<T?> {
     return flow
 }
 
-
-/**
- * Launches a new coroutine job in the background scope.
- *
- * Note that UI jobs are not allowed in this scope. To launch a UI job, use [launchInMain].
- */
 fun <V : HasBackgroundScope> V.launchInBackground(
     start: CoroutineStart = CoroutineStart.DEFAULT,
     block: suspend V.() -> Unit,
@@ -372,12 +229,6 @@ fun <V : HasBackgroundScope> V.launchInBackground(
     }
 }
 
-
-/**
- * Launches a new coroutine job in the background scope.
- *
- * Note that UI jobs are not allowed in this scope. To launch a UI job, use [launchInMain].
- */
 fun <V : HasBackgroundScope> V.launchInBackground(
     context: CoroutineContext = EmptyCoroutineContext,
     start: CoroutineStart = CoroutineStart.DEFAULT,
@@ -388,12 +239,6 @@ fun <V : HasBackgroundScope> V.launchInBackground(
     }
 }
 
-/**
- * Launches a new coroutine job in the UI scope.
- *
- * Note that you must not perform any costly operations in this scope, as this will block the UI.
- * To perform costly computation, use [launchInBackground].
- */
 fun <V : HasBackgroundScope> V.launchInMain(
     context: CoroutineContext = EmptyCoroutineContext,
     start: CoroutineStart = CoroutineStart.DEFAULT,
@@ -404,9 +249,6 @@ fun <V : HasBackgroundScope> V.launchInMain(
     }
 }
 
-/**
- * Collects the flow on the main thread into a [State].
- */
 fun <T> Flow<T>.produceState(
     initialValue: T,
     scope: CoroutineScope,
@@ -414,18 +256,15 @@ fun <T> Flow<T>.produceState(
 ): State<T> {
     val state = mutableStateOf(initialValue)
     scope.launch(coroutineContext + Dispatchers.Main) {
-        flowOn(Dispatchers.Default) // compute in background
+        flowOn(Dispatchers.Default)
             .collect {
-                // update state in main
+
                 state.value = it
             }
     }
     return state
 }
 
-/**
- * Collects the flow on the main thread into a [State].
- */
 fun Flow<Float>.produceState(
     initialValue: Float,
     scope: CoroutineScope,
@@ -433,18 +272,15 @@ fun Flow<Float>.produceState(
 ): FloatState {
     val state = mutableFloatStateOf(initialValue)
     scope.launch(coroutineContext + Dispatchers.Main) {
-        flowOn(Dispatchers.Default) // compute in background
+        flowOn(Dispatchers.Default)
             .collect {
-                // update state in main
+
                 state.value = it
             }
     }
     return state
 }
 
-/**
- * Collects the flow on the main thread into a [State].
- */
 fun Flow<Int>.produceState(
     initialValue: Int,
     scope: CoroutineScope,
@@ -452,18 +288,15 @@ fun Flow<Int>.produceState(
 ): IntState {
     val state = mutableIntStateOf(initialValue)
     scope.launch(coroutineContext + Dispatchers.Main) {
-        flowOn(Dispatchers.Default) // compute in background
+        flowOn(Dispatchers.Default)
             .collect {
-                // update state in main
+
                 state.value = it
             }
     }
     return state
 }
 
-/**
- * Collects the flow on the main thread into a [State].
- */
 fun Flow<Long>.produceState(
     initialValue: Long,
     scope: CoroutineScope,
@@ -471,18 +304,15 @@ fun Flow<Long>.produceState(
 ): LongState {
     val state = mutableLongStateOf(initialValue)
     scope.launch(coroutineContext + Dispatchers.Main) {
-        flowOn(Dispatchers.Default) // compute in background
+        flowOn(Dispatchers.Default)
             .collect {
-                // update state in main
+
                 state.value = it
             }
     }
     return state
 }
 
-/**
- * Collects the flow on the main thread into a [State].
- */
 fun <T> StateFlow<T>.produceState(
     initialValue: T = this.value,
     scope: CoroutineScope,
@@ -491,7 +321,7 @@ fun <T> StateFlow<T>.produceState(
     val state = mutableStateOf(initialValue)
     scope.launch(coroutineContext + Dispatchers.Main) {
         collect {
-            // update state in main
+
             state.value = it
         }
     }

@@ -1,35 +1,21 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.desktop
+package com.wynime.app.desktop
 
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
-import me.him188.ani.app.data.persistent.database.BundledSqliteInterpositionGuard
-import me.him188.ani.app.data.persistent.database.SqliteGlobalScopeProbe
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.platform.AniCefApp
-import me.him188.ani.app.platform.DesktopContext
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.tools.update.DefaultFileDownloader
-import me.him188.ani.app.tools.update.InstallationResult
-import me.him188.ani.app.tools.update.UpdateInstaller
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.toKtPath
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.platform.Platform
-import me.him188.ani.utils.platform.currentPlatformDesktop
-import me.him188.ani.utils.platform.isLinux
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.ScopedHttpClientUserAgent
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.platform.WynimeCefApp
+import com.wynime.app.platform.DesktopContext
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.tools.update.DefaultFileDownloader
+import com.wynime.app.tools.update.InstallationResult
+import com.wynime.app.tools.update.UpdateInstaller
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.toKtPath
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import org.koin.core.context.GlobalContext
 import org.koin.mp.KoinPlatform
 import org.openani.mediamp.ffmpeg.FFmpegKit
@@ -63,7 +49,7 @@ object TestTasks {
             }
 
             "sentry-dsn" -> {
-                if (currentAniBuildConfig.sentryDsn.isBlank()) {
+                if (currentWynimeBuildConfig.sentryDsn.isBlank()) {
                     logger.error { "sentryDsn is empty" }
                     exitProcess(1)
                 }
@@ -87,72 +73,28 @@ object TestTasks {
         check(result.isSuccess) { "FFmpeg smoke test failed: $result" }
     }
 
-    // Asserts that JCEF can reach the INITIALIZED state under the same X11-fallback path
-    // that the AppImage's CI verify job exercises (xvfb-run with XDG_SESSION_TYPE=wayland),
-    // which is the Wayland session that crashes Chromium's default display backend (#3359).
     private fun checkJcef(context: DesktopContext) {
         runBlocking {
-            AniCefApp.initialize(
+            WynimeCefApp.initialize(
                 logDir = context.logsDir,
                 cacheDir = context.cacheDir.resolve("jcef-cache"),
             )
         }
         logger.info { "JCEF initialization check succeeded." }
-        AniCefApp.disposeBlocking()
+        WynimeCefApp.disposeBlocking()
     }
 
     private fun checkBundledSqlite() {
         BundledSQLiteDriver().open(":memory:").use { }
 
-        // On Linux the driver loading successfully is not enough: #3188 and #3213 both crashed
-        // *after* a successful load, once a second sqlite build got into the process. Runs against
-        // the packaged AppImage after full startup, so JCEF/NSS and Koin have had their chance to
-        // break the ordering — which a unit test JVM cannot reproduce.
-        // See BundledSqliteInterpositionGuard for the two ordering constraints.
-        if (currentPlatformDesktop().isLinux()) {
-            val images = BundledSqliteInterpositionGuard.mappedSqliteJniImages()
-            check(images.size == 1) {
-                "expected exactly one libsqliteJni image in the process, got $images"
-            }
-            check(images.single().endsWith(BundledSqliteInterpositionGuard.LIB_FILE_NAME)) {
-                "the mapped libsqliteJni is not the guard's copy: ${images.single()}"
-            }
-            logger.info { "Bundled SQLite check: single image ${images.single()}" }
-
-            checkBundledSqliteOwnsGlobalScope()
-        }
     }
 
-    /**
-     * Constraint 2 of [BundledSqliteInterpositionGuard]: the bundled sqlite must own the global
-     * scope, so that the system libsqlite3 cannot take the symbols over when CEF loads NSS later.
-     *
-     * This task exits the process long before JCEF initialization, so rather than reordering
-     * startup — every other verify task dispatches from the same point and would inherit a JCEF
-     * dependency — it publishes the system sqlite into the global scope itself, which is the only
-     * part of NSS that matters here.
-     */
-    private fun checkBundledSqliteOwnsGlobalScope() {
-        check(SqliteGlobalScopeProbe.loadSystemSqliteIntoGlobalScope()) {
-            "system libsqlite3 is not installed on this machine, so global scope ownership " +
-                    "cannot be verified; the check would pass vacuously"
-        }
-        val owner = SqliteGlobalScopeProbe.globalSqliteSymbolOwner()
-        check(owner != null && owner.endsWith(BundledSqliteInterpositionGuard.LIB_FILE_NAME)) {
-            "sqlite3_initialize resolves to $owner in the global scope, not the bundled library; " +
-                    "the guard ran too late and the system libsqlite3 has taken the symbols over"
-        }
-        logger.info { "Bundled SQLite check: global scope owned by $owner" }
-    }
-
-    // https://github.com/william12233/Wynime/releases/download/0.1/wynime-0.1-macos-aarch64.dmg
-    // https://github.com/william12233/Wynime/releases/download/0.1/wynime-0.1-windows-x86_64.zip
     private fun downloadUpdateAndInstall(args: List<String>, context: DesktopContext): Nothing {
         val url = args[0]
 
         val result = runBlocking {
             logger.info { "Downloading update from $url" }
-            DefaultFileDownloader(clientProvider.get(ScopedHttpClientUserAgent.ANI)).download(
+            DefaultFileDownloader(clientProvider.get(ScopedHttpClientUserAgent.WYNIME)).download(
                 listOf(url),
                 saveDir = File(".").toKtPath().inSystem,
             ).also {
@@ -160,25 +102,12 @@ object TestTasks {
             } ?: error("Download failed")
         }
 
-        when (currentPlatformDesktop()) {
-            is Platform.Linux -> {
-                // not supported
-                exitProcess(0)
-            }
-
-            is Platform.MacOS -> {
-                check(result.path.toString().endsWith(".dmg")) { "Not a dmg file: $result" }
-                // no auto update so OK
-                exitProcess(0)
-            }
-
-            is Platform.Windows -> {
                 logger.info { "Performing install" }
                 val updateInstaller = KoinPlatform.getKoin().get<UpdateInstaller>()
                 val installationResult = updateInstaller.install(result, context)
                 when (installationResult) {
                     InstallationResult.Succeed -> {
-                        // OK
+
                         exitProcess(0)
                     }
 
@@ -192,8 +121,7 @@ object TestTasks {
                         exitProcess(1)
                     }
                 }
-            }
-        }
+
     }
 
 }

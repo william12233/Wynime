@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.avatar
+package com.wynime.app.ui.foundation.avatar
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color

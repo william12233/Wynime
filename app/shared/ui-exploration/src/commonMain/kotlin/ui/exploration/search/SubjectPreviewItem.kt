@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.search
+package com.wynime.app.ui.exploration.search
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,29 +11,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.subject.CanonicalTagKind
-import me.him188.ani.app.data.models.subject.RatingCounts
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.SubjectAiringInfo
-import me.him188.ani.app.data.models.subject.SubjectAiringKind
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.kind
-import me.him188.ani.app.data.models.subject.nameCnOrName
-import me.him188.ani.app.data.models.subject.nameOrNameCn
-import me.him188.ani.app.data.network.LightRelatedCharacterInfo
-import me.him188.ani.app.data.network.LightRelatedPersonInfo
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.paneVerticalPadding
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_search_staff_prefix
-import me.him188.ani.app.ui.lang.subject_airing_total_episodes_completed
-import me.him188.ani.app.ui.lang.subject_airing_total_episodes_scheduled
-import me.him188.ani.app.ui.rating.RatingText
-import me.him188.ani.app.ui.subject.getSubjectSeasonText
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.subject.CanonicalTagKind
+import com.wynime.app.data.models.subject.RatingCounts
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.SubjectAiringInfo
+import com.wynime.app.data.models.subject.SubjectAiringKind
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.kind
+import com.wynime.app.data.models.subject.nameCnOrName
+import com.wynime.app.data.models.subject.nameOrNameCn
+import com.wynime.app.data.network.LightRelatedCharacterInfo
+import com.wynime.app.data.network.LightRelatedPersonInfo
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.paneVerticalPadding
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_search_staff_prefix
+import com.wynime.app.ui.lang.subject_airing_total_episodes_completed
+import com.wynime.app.ui.lang.subject_airing_total_episodes_scheduled
+import com.wynime.app.ui.rating.RatingText
+import com.wynime.app.ui.subject.getSubjectSeasonText
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.getString
 
 @Immutable
@@ -55,21 +46,15 @@ class SubjectPreviewItemInfo(
     val actors: String?,
     val rating: RatingInfo,
     val nsfw: Boolean,
-    /**
-     * 此条目的 NSFW 显示状态
-     */
+
     val nsfwMode: NsfwMode,
-    /**
-     * 隐藏此条目. 用于 workaround bangumi 搜出来不满足条件的条目
-     */
+
     val hide: Boolean = false,
-    /** 条目原名 (通常为日文), 供"显示原名"设置开启时使用; 默认与 [title] 相同. */
+
     val originalTitle: String = title,
 ) {
     companion object {
-        /**
-         * @param nsfwModeSettings 用户设置的 NSFW 显示模式
-         */
+
         suspend fun compute(
             subjectInfo: SubjectInfo,
             mainEpisodeCount: Int,
@@ -124,25 +109,7 @@ class SubjectPreviewItemInfo(
                     }
                 }
             }
-//            val actors = characters?.takeIf { it.isNotEmpty() }?.let {
-//                buildString {
-//                    append("配音:  ")
-//
-//                    val mainCharacters = characters.asSequence()
-//                        .filter { it.role == CharacterRole.MAIN }
-//                    val nonMainCharacters = characters.asSequence()
-//                        .filter { it.role != CharacterRole.MAIN }
-//
-//                    append(
-//                        (mainCharacters + nonMainCharacters)
-//                            .take(3)
-//                            // mostSignificantCharacters
-//                            .flatMap { it.actor }
-//                            .map { it.name }
-//                            .joinToString(" · "),
-//                    )
-//                }
-//            }
+
             val actors = null
 
             return SubjectPreviewItemInfo(
@@ -246,12 +213,11 @@ fun SubjectPreviewItem(
             RatingText(info.rating)
         },
         actions = {
-//            SubjectItemDefaults.ActionPlay(onPlay)
+
         },
         modifier,
     )
 }
-
 
 @OptIn(TestOnly::class)
 @Composable

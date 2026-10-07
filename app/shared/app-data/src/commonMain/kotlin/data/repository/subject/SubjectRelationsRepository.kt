@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -18,28 +9,28 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.models.subject.CharacterInfo
-import me.him188.ani.app.data.models.subject.PersonInfo
-import me.him188.ani.app.data.models.subject.RelatedCharacterInfo
-import me.him188.ani.app.data.models.subject.RelatedPersonInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.SubjectSeriesInfo
-import me.him188.ani.app.data.network.AniSubjectRelationIndexService
-import me.him188.ani.app.data.network.BatchSubjectRelations
-import me.him188.ani.app.data.network.SubjectService
-import me.him188.ani.app.data.persistent.database.dao.RelatedCharacterView
-import me.him188.ani.app.data.persistent.database.dao.RelatedPersonView
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
-import me.him188.ani.app.data.persistent.database.dao.SubjectRelationsDao
-import me.him188.ani.app.data.persistent.database.entity.CharacterActorEntity
-import me.him188.ani.app.data.persistent.database.entity.CharacterEntity
-import me.him188.ani.app.data.persistent.database.entity.PersonEntity
-import me.him188.ani.app.data.persistent.database.entity.SubjectCharacterRelationEntity
-import me.him188.ani.app.data.persistent.database.entity.SubjectPersonRelationEntity
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryServiceUnavailableException
-import me.him188.ani.utils.platform.collections.mapToIntArray
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.data.models.subject.CharacterInfo
+import com.wynime.app.data.models.subject.PersonInfo
+import com.wynime.app.data.models.subject.RelatedCharacterInfo
+import com.wynime.app.data.models.subject.RelatedPersonInfo
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.SubjectSeriesInfo
+import com.wynime.app.data.network.WynimeSubjectRelationIndexService
+import com.wynime.app.data.network.BatchSubjectRelations
+import com.wynime.app.data.network.SubjectService
+import com.wynime.app.data.persistent.database.dao.RelatedCharacterView
+import com.wynime.app.data.persistent.database.dao.RelatedPersonView
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
+import com.wynime.app.data.persistent.database.dao.SubjectRelationsDao
+import com.wynime.app.data.persistent.database.entity.CharacterActorEntity
+import com.wynime.app.data.persistent.database.entity.CharacterEntity
+import com.wynime.app.data.persistent.database.entity.PersonEntity
+import com.wynime.app.data.persistent.database.entity.SubjectCharacterRelationEntity
+import com.wynime.app.data.persistent.database.entity.SubjectPersonRelationEntity
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryServiceUnavailableException
+import com.wynime.utils.platform.collections.mapToIntArray
+import com.wynime.utils.platform.currentTimeMillis
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -49,19 +40,11 @@ import kotlin.time.Duration.Companion.milliseconds
 sealed class SubjectRelationsRepository(
     defaultDispatcher: CoroutineContext = Dispatchers.Default
 ) : Repository(defaultDispatcher) {
-    /**
-     * 获取指定条目的所有续集 ID 列表, 包含正片和 SP 等特殊剧集. (仅包含 Anime 类型)
-     */
+
     abstract fun subjectSequelSubjectIdsFlow(subjectId: Int): Flow<List<Int>>
 
-    /**
-     * 获取指定条目的所有续集列表, 包含正片和 SP 等特殊剧集. (仅包含 Anime 类型)
-     */
     abstract fun subjectSequelSubjectsFlow(subjectId: Int): Flow<List<SubjectCollectionInfo>>
 
-    /**
-     * 获取指定条目的所有续集的名称列表, 包含正片和 SP 等特殊剧集, 并排除 [subjectId] 的名称. (仅包含 Anime 类型)
-     */
     abstract fun subjectSeriesInfoFlow(subjectId: Int): Flow<SubjectSeriesInfo>
 
     abstract fun subjectRelatedPersonsFlow(subjectId: Int): Flow<List<RelatedPersonInfo>>
@@ -73,27 +56,27 @@ class DefaultSubjectRelationsRepository(
     private val subjectRelationsDao: SubjectRelationsDao,
     private val subjectService: SubjectService,
     private val subjectCollectionRepository: SubjectCollectionRepository,
-    private val aniSubjectRelationIndexService: AniSubjectRelationIndexService,
+    private val wynimeSubjectRelationIndexService: WynimeSubjectRelationIndexService,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
     private val autoRefreshPeriod: Duration = 1.hours,
-    // 角色与制作人员几乎不变, 过期时间不宜太短: 该接口曾占服务端出站流量的一半以上.
+
     private val cacheExpiry: Duration = 3.days,
 ) : SubjectRelationsRepository(defaultDispatcher) {
     override fun subjectSequelSubjectIdsFlow(subjectId: Int): Flow<List<Int>> = flow {
         emit(
             kotlinx.coroutines.withTimeoutOrNull(10_000) {
-                // 这服务极快, 不会超时. 10 秒还没完, 只能是服务器重启了一下, 正在构造索引
-                aniSubjectRelationIndexService.getSubjectRelationIndex(subjectId).sequelSubjects
+
+                wynimeSubjectRelationIndexService.getSubjectRelationIndex(subjectId).sequelSubjects
             }
                 ?: throw RepositoryServiceUnavailableException("Failed to fetch subject sequel subjects for $subjectId due to timeout"),
         )
-    }.flowOn(defaultDispatcher) // no auto refresh
+    }.flowOn(defaultDispatcher)
 
     override fun subjectSequelSubjectsFlow(subjectId: Int): Flow<List<SubjectCollectionInfo>> {
-        // no auto refresh
+
         return subjectSequelSubjectIdsFlow(subjectId)
             .flatMapLatest { list ->
-                if (list.isEmpty()) { // combine(emptyList()) 不会 emit
+                if (list.isEmpty()) {
                     return@flatMapLatest flowOf(emptyList())
                 }
                 combine(
@@ -108,7 +91,7 @@ class DefaultSubjectRelationsRepository(
 
     override fun subjectSeriesInfoFlow(subjectId: Int): Flow<SubjectSeriesInfo> = flow {
         emit(
-            aniSubjectRelationIndexService.getSubjectRelationIndex(subjectId),
+            wynimeSubjectRelationIndexService.getSubjectRelationIndex(subjectId),
         )
     }.combine(subjectCollectionRepository.subjectCollectionFlow(subjectId)) { relations, requestingSubject ->
         combine(
@@ -123,20 +106,6 @@ class DefaultSubjectRelationsRepository(
     }.flatMapLatest {
         it
     }.flowOn(defaultDispatcher)
-
-//    override fun subjectSequelSubjectNamesFlow(subjectId: Int): Flow<Set<String>> {
-//        return subjectSequelSubjectsFlow(subjectId)
-//            .combine(subjectCollectionRepository.subjectCollectionFlow(subjectId)) { list, requestingSubject ->
-//                list.flatMapTo(mutableSetOf()) { it.subjectInfo.allNames }.apply {
-//                    removeAll { sequelName ->
-//                        // 如果续集名称存在于当前名称中, 则删除, 否则可能导致过滤掉当前季度的条目
-//                        requestingSubject.subjectInfo.allNames.any { it.contains(sequelName, ignoreCase = true) }
-//                    }
-//                }
-//            }.onEach {
-//                logger.info { "subjectSequelSubjectNamesFlow($subjectId): " + it.joinToString() }
-//            }.flowOn(defaultDispatcher)
-//    }
 
     override fun subjectRelatedPersonsFlow(subjectId: Int): Flow<List<RelatedPersonInfo>> {
         return subjectCollectionRepository.subjectCollectionFlow(subjectId)
@@ -199,8 +168,6 @@ class DefaultSubjectRelationsRepository(
         subjectRelationsDao.upsertCharacters(batch.relatedCharacterInfoList.map { it.character.toEntity() })
         subjectRelationsDao.upsertCharacterActors(batch.characterActorRelations().toList())
 
-        // 必须先插入前三个, 再插入 relations, 否则会 violate foreign key constraint
-
         subjectRelationsDao.upsertSubjectPersonRelations(
             batch.relatedPersonInfoList.map { it.toRelationEntity(subjectId) },
         )
@@ -254,7 +221,6 @@ private fun PersonEntity.toPersonInfo(): PersonInfo {
         nameCn = nameCn,
     )
 }
-
 
 private fun BatchSubjectRelations.characterActorRelations() =
     relatedCharacterInfoList.asSequence().flatMap { relatedCharacterInfo ->

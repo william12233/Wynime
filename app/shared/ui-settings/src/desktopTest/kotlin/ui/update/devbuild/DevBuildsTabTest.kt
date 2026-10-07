@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update.devbuild
+package com.wynime.app.ui.update.devbuild
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
@@ -29,29 +20,26 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.framework.AniComposeUiTest
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.resolve
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.framework.WynimeComposeUiTest
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.resolve
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DevBuildsTabTest {
-    private val spec = DevBuildPackageSpec(listOf("wynime-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG)
+    private val spec = DevBuildPackageSpec(listOf("wynime-android-arm64-v8a-release"), DevBuildPackageKind.ANDROID_APK)
 
     private data class Fixture(val saveDir: SystemPath, val installer: FakeInstaller)
 
-    /**
-     * 在 [block] 中显示页面, 结束后回收临时目录和后台协程.
-     */
     private fun withTab(
         client: HttpClient,
-        block: AniComposeUiTest.(Fixture) -> Unit,
-    ) = runAniComposeUiTest {
+        block: WynimeComposeUiTest.(Fixture) -> Unit,
+    ) = runWynimeComposeUiTest {
         val dir = SystemPaths.createTempDirectory("dev-builds-tab-test")
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         try {
@@ -86,9 +74,9 @@ class DevBuildsTabTest {
 
     @Test
     fun `lists commits and installs the selected one after confirmation`() = withTab(
-        fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime-4.12.0.dmg" to byteArrayOf(1))),
+        fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes("Wynime-4.12.0.apk" to byteArrayOf(1))),
     ) { (saveDir, installer) ->
-        // 列表由后台线程更新, waitForIdle 不能保证已经重组, 直接等待节点出现
+
         waitUntil(timeoutMillis = 10_000) {
             onAllNodesWithTag(DevBuildsTestTags.COMMIT_PREFIX + SHA_A).fetchSemanticsNodes().isNotEmpty()
         }
@@ -108,12 +96,12 @@ class DevBuildsTabTest {
         onNodeWithTag(DevBuildsTestTags.CONFIRM_BUTTON).assertIsDisplayed().performClick()
 
         waitUntil(timeoutMillis = 10_000) { installer.installed.isNotEmpty() }
-        assertEquals(listOf(saveDir.resolve("wynime-main-aaaaaaaa.dmg")), installer.installed)
+        assertEquals(listOf(saveDir.resolve("wynime-main-aaaaaaaa.apk")), installer.installed)
     }
 
     @Test
     fun `looks up a pasted commit link and installs it from the result card`() = withTab(
-        fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes("Wynime-4.12.0.dmg" to byteArrayOf(1))),
+        fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes("Wynime-4.12.0.apk" to byteArrayOf(1))),
     ) { (saveDir, installer) ->
         onNodeWithTag(DevBuildsTestTags.LOOKUP_BUTTON).assertIsNotEnabled()
         onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("https://github.com/william12233/Wynime/commit/$SHA_A")
@@ -129,12 +117,12 @@ class DevBuildsTabTest {
         onNodeWithTag(DevBuildsTestTags.CONFIRM_BUTTON).assertIsDisplayed().performClick()
 
         waitUntil(timeoutMillis = 10_000) { installer.installed.isNotEmpty() }
-        assertEquals(listOf(saveDir.resolve("wynime-main-aaaaaaaa.dmg")), installer.installed)
+        assertEquals(listOf(saveDir.resolve("wynime-main-aaaaaaaa.apk")), installer.installed)
     }
 
     @Test
     fun `shows an error for unrecognized input and clears it`() = withTab(
-        fullGitHubMockClient("wynime-macos-dmg-aarch64", zipBytes()),
+        fullGitHubMockClient("wynime-android-arm64-v8a-release", zipBytes()),
     ) {
         onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("what is this")
         onNodeWithTag(DevBuildsTestTags.LOOKUP_BUTTON).performClick()
@@ -151,11 +139,11 @@ class DevBuildsTabTest {
         gitHubMockClient { request ->
             when (request.url.host) {
                 "example.com" -> respond(byteArrayOf(9), HttpStatusCode.OK, headersOf(HttpHeaders.ContentLength, "1"))
-                else -> fullGitHubMockHandler("wynime-macos-dmg-aarch64", zipBytes())(request)
+                else -> fullGitHubMockHandler("wynime-android-arm64-v8a-release", zipBytes())(request)
             }
         },
     ) { (saveDir, installer) ->
-        onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("https://example.com/dl/Wynime-dev.dmg")
+        onNodeWithTag(DevBuildsTestTags.LOOKUP_FIELD).performTextInput("https://example.com/dl/Wynime-dev.apk")
         onNodeWithTag(DevBuildsTestTags.LOOKUP_BUTTON).performClick()
         waitUntil(timeoutMillis = 10_000) {
             onAllNodesWithTag(DevBuildsTestTags.PACKAGE_ROW).fetchSemanticsNodes().isNotEmpty()
@@ -165,6 +153,6 @@ class DevBuildsTabTest {
         onNodeWithTag(DevBuildsTestTags.CONFIRM_BUTTON).assertIsDisplayed().performClick()
 
         waitUntil(timeoutMillis = 10_000) { installer.installed.isNotEmpty() }
-        assertEquals(listOf(saveDir.resolve("Wynime-dev.dmg")), installer.installed)
+        assertEquals(listOf(saveDir.resolve("Wynime-dev.apk")), installer.installed)
     }
 }

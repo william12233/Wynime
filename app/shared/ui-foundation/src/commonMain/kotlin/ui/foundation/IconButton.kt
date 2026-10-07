@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.background
@@ -31,7 +31,7 @@ fun IconButton(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     indication: Indication? = ripple(
         bounded = false,
-        radius = 20.dp, /* IconButtonTokens.StateLayerSize / 2 */
+        radius = 20.dp,
     ),
     content: @Composable () -> Unit
 ) {
@@ -39,7 +39,7 @@ fun IconButton(
     Box(
         modifier = modifier
             .minimumInteractiveComponentSize()
-            .size(40.dp/* IconButtonTokens.StateLayerSize */)
+            .size(40.dp                                     )
             .clip(CircleShape)
             .background(color = Color.Transparent)
             .clickable(

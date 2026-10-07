@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.about
+package com.wynime.app.ui.settings.tabs.about
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -41,41 +32,38 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.him188.ani.app.platform.AniBuildConfig
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_about_version
-import me.him188.ani.app.ui.lang.settings_build_info_branch
-import me.him188.ani.app.ui.lang.settings_build_info_build_type
-import me.him188.ani.app.ui.lang.settings_build_info_commit
-import me.him188.ani.app.ui.lang.settings_build_info_commit_time
-import me.him188.ani.app.ui.lang.settings_build_info_copied
-import me.him188.ani.app.ui.lang.settings_build_info_copy_all
-import me.him188.ani.app.ui.lang.settings_build_info_distro_channel
-import me.him188.ani.app.ui.lang.settings_build_info_open_commit
-import me.him188.ani.app.ui.lang.settings_build_info_platform
-import me.him188.ani.app.ui.lang.settings_build_info_unknown
-import me.him188.ani.app.ui.settings.tabs.AniHelperDestination
-import me.him188.ani.utils.platform.Platform
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.currentPlatform
+import com.wynime.app.platform.WynimeBuildConfig
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_about_version
+import com.wynime.app.ui.lang.settings_build_info_branch
+import com.wynime.app.ui.lang.settings_build_info_build_type
+import com.wynime.app.ui.lang.settings_build_info_commit
+import com.wynime.app.ui.lang.settings_build_info_commit_time
+import com.wynime.app.ui.lang.settings_build_info_copied
+import com.wynime.app.ui.lang.settings_build_info_copy_all
+import com.wynime.app.ui.lang.settings_build_info_distro_channel
+import com.wynime.app.ui.lang.settings_build_info_open_commit
+import com.wynime.app.ui.lang.settings_build_info_platform
+import com.wynime.app.ui.lang.settings_build_info_unknown
+import com.wynime.app.ui.settings.tabs.WynimeHelperDestination
+import com.wynime.utils.platform.Platform
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.currentPlatform
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * "关于 > 构建信息" 页展示的内容. 全部在构建时确定, 见 `AniBuildConfig` 和 build-logic 的 `git.kt`.
- */
 @Immutable
 data class BuildInfo(
     val versionName: String,
-    /** 空表示构建时无法获取. */
+
     val gitBranch: String,
-    /** 完整 sha. 空表示构建时无法获取. */
+
     val gitCommitSha: String,
-    /** ISO-8601. 空表示构建时无法获取. */
+
     val gitCommitTime: String,
     val distroChannel: String,
     val isDebug: Boolean,
@@ -83,16 +71,15 @@ data class BuildInfo(
 ) {
     val gitCommitShortSha: String get() = gitCommitSha.take(SHORT_SHA_LENGTH)
 
-    /** GitHub 上这个 commit 的页面. 没有 sha 时为 `null`. */
     val gitCommitUrl: String?
-        get() = gitCommitSha.takeIf { it.isNotBlank() }?.let { "${AniHelperDestination.GITHUB_HOME}/commit/$it" }
+        get() = gitCommitSha.takeIf { it.isNotBlank() }?.let { "${WynimeHelperDestination.GITHUB_HOME}/commit/$it" }
 
     companion object {
-        /** 与 CI 写进版本号的 sha 长度一致 (`4.12.0-main-28ec14ac`). */
+
         const val SHORT_SHA_LENGTH = 8
 
         fun current(
-            buildConfig: AniBuildConfig = currentAniBuildConfig,
+            buildConfig: WynimeBuildConfig = currentWynimeBuildConfig,
             platform: Platform = currentPlatform(),
         ): BuildInfo = BuildInfo(
             versionName = buildConfig.versionName,
@@ -106,9 +93,6 @@ data class BuildInfo(
     }
 }
 
-/**
- * 详细构建信息. 每一行点击复制该项, 底部按钮复制全部, 方便贴到 issue 里.
- */
 @Composable
 fun BuildInfoTab(
     info: BuildInfo,
@@ -128,7 +112,6 @@ fun BuildInfoTab(
     val labelDistroChannel = stringResource(Lang.settings_build_info_distro_channel)
     val labelPlatform = stringResource(Lang.settings_build_info_platform)
 
-    // 顺序就是复制全部时的顺序
     val rows = listOf(
         labelVersion to info.versionName,
         labelBranch to info.gitBranch.ifBlank { unknown },
@@ -156,7 +139,7 @@ fun BuildInfoTab(
                 supportingContent = {
                     Text(
                         value,
-                        // sha 和时间用等宽字体, 一眼能对上
+
                         fontFamily = if (isCommit || label == labelCommitTime) FontFamily.Monospace else null,
                     )
                 },

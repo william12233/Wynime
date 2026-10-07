@@ -1,41 +1,33 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-package me.him188.ani.app.ui.settings.tabs.about
+package com.wynime.app.ui.settings.tabs.about
 
-import me.him188.ani.app.ui.foundation.a
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_developers_bangumi_upstream
-import me.him188.ani.app.ui.lang.settings_developers_contributor
-import me.him188.ani.app.ui.lang.settings_developers_daily_maintenance
-import me.him188.ani.app.ui.lang.settings_developers_icon_drawing
-import me.him188.ani.app.ui.lang.settings_developers_ml_research
-import me.him188.ani.app.ui.lang.settings_developers_organization
-import me.him188.ani.app.ui.lang.settings_developers_project_initiator
-import me.him188.ani.app.ui.lang.settings_developers_server_development
-import me.him188.ani.app.ui.lang.settings_developers_website_development
-import me.him188.ani.app.ui.settings.Res
-import me.him188.ani.app.ui.settings.generalk1ng
-import me.him188.ani.app.ui.settings.grahamzen
-import me.him188.ani.app.ui.settings.him188
-import me.him188.ani.app.ui.settings.jerryz233
-import me.him188.ani.app.ui.settings.misakatat
-import me.him188.ani.app.ui.settings.nekoouo
-import me.him188.ani.app.ui.settings.nick
-import me.him188.ani.app.ui.settings.nier4ever
-import me.him188.ani.app.ui.settings.nihildigit
-import me.him188.ani.app.ui.settings.rdlwicked
-import me.him188.ani.app.ui.settings.sanlorng
-import me.him188.ani.app.ui.settings.stageguard
-import me.him188.ani.app.ui.settings.woleoz
+import com.wynime.app.ui.foundation.a
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_developers_bangumi_upstream
+import com.wynime.app.ui.lang.settings_developers_contributor
+import com.wynime.app.ui.lang.settings_developers_daily_maintenance
+import com.wynime.app.ui.lang.settings_developers_icon_drawing
+import com.wynime.app.ui.lang.settings_developers_ml_research
+import com.wynime.app.ui.lang.settings_developers_organization
+import com.wynime.app.ui.lang.settings_developers_project_initiator
+import com.wynime.app.ui.lang.settings_developers_server_development
+import com.wynime.app.ui.lang.settings_developers_website_development
+import com.wynime.app.ui.settings.Res
+import com.wynime.app.ui.settings.generalk1ng
+import com.wynime.app.ui.settings.grahamzen
+import com.wynime.app.ui.settings.him188
+import com.wynime.app.ui.settings.jerryz233
+import com.wynime.app.ui.settings.misakatat
+import com.wynime.app.ui.settings.nekoouo
+import com.wynime.app.ui.settings.nick
+import com.wynime.app.ui.settings.nier4ever
+import com.wynime.app.ui.settings.nihildigit
+import com.wynime.app.ui.settings.rdlwicked
+import com.wynime.app.ui.settings.sanlorng
+import com.wynime.app.ui.settings.stageguard
+import com.wynime.app.ui.settings.woleoz
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
-import me.him188.ani.app.ui.foundation.Res as FoundationRes
+import com.wynime.app.ui.foundation.Res as FoundationRes
 
 data class DeveloperCredit(
     val name: String,
@@ -44,7 +36,6 @@ data class DeveloperCredit(
     val avatar: DrawableResource,
 )
 
-/** Contributors and their responsibilities shared by all settings presentations. */
 val developerCredits = listOf(
     DeveloperCredit(
         "Him188",

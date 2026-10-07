@@ -1,12 +1,3 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalog
@@ -65,7 +56,7 @@ val testOptInAnnotations = arrayOf(
     "kotlin.io.path.ExperimentalPathApi",
     "kotlinx.coroutines.ExperimentalCoroutinesApi",
     "kotlinx.serialization.ExperimentalSerializationApi",
-    "me.him188.ani.utils.platform.annotations.TestOnly",
+    "com.wynime.utils.platform.annotations.TestOnly",
     "androidx.compose.ui.test.ExperimentalTestApi",
 )
 
@@ -90,8 +81,6 @@ val optInAnnotations = arrayOf(
     "kotlin.time.ExperimentalTime",
 )
 
-// ContextParameters is stable since Kotlin 2.4 and no longer needs a language feature flag.
-
 fun Project.configureKotlinOptIns() {
     val sourceSets = kotlinSourceSets ?: return
     sourceSets.configureEach {
@@ -106,7 +95,7 @@ fun Project.configureKotlinOptIns() {
     options.apply {
         languageVersion.set(kotlinVersion)
     }
-    // ksp task extends KotlinCompile
+
     project.tasks.withType(KotlinCompile::class.java).configureEach {
         @Suppress("MISSING_DEPENDENCY_SUPERCLASS_IN_TYPE_ARGUMENT")
         compilerOptions.languageVersion.set(kotlinVersion)
@@ -151,8 +140,6 @@ fun Project.configureJvmTarget() {
     logger.info("JVM target for project ${this.path} is: $ver")
     val target = JvmTarget.fromTarget(ver.toString())
 
-    // 我也不知道到底设置谁就够了, 反正全都设置了
-
     tasks.withType(KotlinJvmCompile::class.java).configureEach {
         compilerOptions.jvmTarget.set(target)
     }
@@ -182,9 +169,8 @@ fun Project.configureJvmTarget() {
         }
     }
 
-    // 配置期读一次, 避免每个 compilation 回调里重复读 local.properties.
     val renderInternalDiagnosticNames =
-        getLocalProperty("ani.kotlin.render-internal-diagnostic-names")?.toBooleanStrict() == true
+        getLocalProperty("wynime.kotlin.render-internal-diagnostic-names")?.toBooleanStrict() == true
 
     withKotlinTargets {
         it.compilations.configureEach {
@@ -214,17 +200,8 @@ fun Project.configureJvmTarget() {
     }
 }
 
-/**
- * 占用一台 Android 设备的凭据, 见 [runConnectedDeviceTestsExclusively].
- */
 abstract class ConnectedDeviceTestLock : BuildService<BuildServiceParameters.None>
 
-/**
- * 让所有模块的 instrumented test 任务 (`connected*Test`) 逐个运行.
- *
- * 各模块的测试共用同一台设备. Gradle 会并行执行不同项目的任务 (启用 configuration cache 后默认如此),
- * 多个测试 APK 同时运行时, 各自的 Activity 会互相抢占窗口焦点, 依赖焦点的 UI 测试因此失败.
- */
 fun Project.runConnectedDeviceTestsExclusively() {
     val lock = gradle.sharedServices.registerIfAbsent("connectedDeviceTestLock", ConnectedDeviceTestLock::class.java) {
         maxParallelUsages.set(1)
@@ -243,16 +220,12 @@ fun Project.configureEncoding() {
 fun Project.configureKotlinTestSettings() {
     tasks.withType(Test::class).configureEach {
         useJUnitPlatform()
-        // CI 只有构建日志可看: 失败时要能直接看到断言消息, 而不只是异常类型与行号.
+
         testLogging {
             exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
         }
     }
 
-    // 本项目的 JVM 测试统一使用 JUnit 5, 下面给各测试源集显式声明了 kotlin-test-junit5.
-    // AGP 的 KMP 插件对 Android device test 固定请求 kotlin-test 的 JUnit 4 实现 (kotlin-test-junit).
-    // 两者提供同一个 capability, 同时出现在一个 classpath 时依赖解析会失败.
-    // device test 由 android-junit5 按 JUnit 5 运行, 因此冲突时选 kotlin-test-junit5.
     configurations.configureEach {
         resolutionStrategy.capabilitiesResolution
             .withCapability("org.jetbrains.kotlin:kotlin-test-framework-impl") {
@@ -270,7 +243,6 @@ fun Project.configureKotlinTestSettings() {
         if (this !is KotlinJvmTarget) return@configureEach
         testRuns.configureEach { executionTask.configure { useJUnitPlatform() } }
 
-        // 从 target 侧驱动, 免去从源集名字反推 target.
         val targetName = name
         kotlinSourceSets?.matching { it.name == "${targetName}Test" }
             ?.configureEach { configureJvmTest(b) }
@@ -289,13 +261,10 @@ fun Project.configureKotlinTestSettings() {
         isKotlinMpp -> {
             val sourceSets = kotlinSourceSets ?: return
 
-            // 三个源集都要拿到 JVM 测试依赖, 少了 androidTest 会丢掉整套 junit5.
-            // 用 live filtered collection 注册, 源集何时创建都能命中, 因此不需要 afterEvaluate.
             sourceSets.matching {
                 it.name == "androidTest" || it.name == "androidHostTest" || it.name == "androidDeviceTest"
             }.configureEach { configureJvmTest(b) }
 
-            // runner 只加在叶子源集上.
             sourceSets.matching { it.name == "androidHostTest" || it.name == "androidDeviceTest" }
                 .configureEach {
                     dependencies {
@@ -314,10 +283,6 @@ fun Project.configureKotlinTestSettings() {
     }
 }
 
-/**
- * 给 Compose + Android KMP Library 自动加上 ui-tooling.
- * androidRuntimeClasspath 要等 android target 声明后才存在, 所以用 matching{} 延迟注册.
- */
 fun Project.configureComposePreviewToolingDependency() {
     val notation = versionCatalogLibs().getLibrary("compose-ui-tooling")
     val reason =
@@ -334,20 +299,15 @@ fun KotlinSourceSet.configureJvmTest(because: String) {
     dependencies {
         implementation(kotlin("test-junit5"))?.because(because)
 
-        // also see above for androidInstrumentedTest
         implementation(libs.getLibrary("junit5-jupiter-api"))?.because(because)
         runtimeOnly(libs.getLibrary("junit5-jupiter-engine"))?.because(because)
 
-        // TODO: if we need to run junit4 tests (especially ui tests), add this.
-//        runtimeOnly("junit:junit:4.13.2")?.because(because)
-//        runtimeOnly("org.junit.vintage:junit-vintage-engine:${JUNIT_VERSION}")?.because(because)
     }
 }
 
-
 fun Project.withKotlinTargets(fn: (KotlinTarget) -> Unit) {
     extensions.findByType(KotlinTargetsContainer::class.java)?.let { kotlinExtension ->
-        // find all compilations given sourceSet belongs to
+
         kotlinExtension.targets
             .configureEach {
                 fn(this)

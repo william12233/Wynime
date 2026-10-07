@@ -1,13 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.settings
 
-package me.him188.ani.app.ui.settings
+import kotlinx.serialization.SerialName
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
@@ -96,102 +89,96 @@ import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import me.him188.ani.app.domain.session.auth.OAuthPlatform
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.navigation.rememberAsyncBrowserNavigator
-import me.him188.ani.app.ui.adaptive.AniListDetailPaneScaffold
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.AniTopAppBarDefaults
-import me.him188.ani.app.ui.adaptive.ListDetailLayoutParameters
-import me.him188.ani.app.ui.adaptive.PaneScope
-import me.him188.ani.app.ui.adaptive.TopAppBarSize
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.animation.NavigationMotionScheme
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastExpanded
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.paneVerticalPadding
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.theme.LocalAppChromeHazeState
-import me.him188.ani.app.ui.foundation.theme.appChromeHazeSource
-import me.him188.ani.app.ui.foundation.theme.isAppChromeFrostedGlassActive
-import me.him188.ani.app.ui.foundation.widgets.BackNavigationIconButton
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.acknowledgements
-import me.him188.ani.app.ui.lang.developer_list
-import me.him188.ani.app.ui.lang.settings_about_build_info
-import me.him188.ani.app.ui.lang.settings
-import me.him188.ani.app.ui.lang.settings_acknowledgements_oss_licenses
-import me.him188.ani.app.ui.lang.settings_category_app_ui
-import me.him188.ani.app.ui.lang.settings_category_data_playback
-import me.him188.ani.app.ui.lang.settings_category_network_storage
-import me.him188.ani.app.ui.lang.settings_category_others
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds
-import me.him188.ani.app.ui.lang.settings_debug_mode_enabled
-import me.him188.ani.app.ui.lang.settings_tab_about
-import me.him188.ani.app.ui.lang.settings_tab_account
-import me.him188.ani.app.ui.lang.settings_tab_appearance
-import me.him188.ani.app.ui.lang.settings_tab_debug
-import me.him188.ani.app.ui.lang.settings_tab_log
-import me.him188.ani.app.ui.lang.settings_tab_media_selector
-import me.him188.ani.app.ui.lang.settings_tab_media_source
-import me.him188.ani.app.ui.lang.settings_tab_player
-import me.him188.ani.app.ui.lang.settings_tab_proxy
-import me.him188.ani.app.ui.lang.settings_tab_settings_backup
-import me.him188.ani.app.ui.lang.settings_tab_storage
-import me.him188.ani.app.ui.lang.settings_tab_theme
-import me.him188.ani.app.ui.lang.settings_tab_update
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_title
-import me.him188.ani.app.ui.settings.account.ProfileGroup
-import me.him188.ani.app.ui.settings.account.BangumiTrackingSyncScreen
-import me.him188.ani.app.ui.settings.account.SelfInfoBanner
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.tabs.AniHelperDestination
-import me.him188.ani.app.ui.settings.tabs.DebugTab
-import me.him188.ani.app.ui.settings.tabs.about.AboutTab
-import me.him188.ani.app.ui.settings.tabs.about.AcknowledgementsTab
-import me.him188.ani.app.ui.settings.tabs.about.BuildInfo
-import me.him188.ani.app.ui.settings.tabs.about.BuildInfoTab
-import me.him188.ani.app.ui.settings.tabs.about.DevelopersTab
-import me.him188.ani.app.ui.settings.tabs.about.OpenSourceLibrariesTab
-import me.him188.ani.app.ui.settings.tabs.app.AppearanceGroup
-import me.him188.ani.app.ui.settings.tabs.app.PlayerGroup
-import me.him188.ani.app.ui.settings.tabs.app.SoftwareUpdateGroup
-import me.him188.ani.app.ui.settings.tabs.log.LogTab
-import me.him188.ani.app.ui.settings.tabs.media.BackupSettings
-import me.him188.ani.app.ui.settings.tabs.media.CacheDirectoryGroup
-import me.him188.ani.app.ui.settings.tabs.media.MediaSelectionGroup
-import me.him188.ani.app.ui.settings.tabs.media.source.SourcePluginStoreTab
-import me.him188.ani.app.ui.settings.tabs.network.ConfigureProxyGroup
-import me.him188.ani.app.ui.settings.tabs.theme.ThemeGroup
-import me.him188.ani.app.ui.update.devbuild.DevBuildsTab
-import me.him188.ani.utils.platform.hasScrollingBug
+import com.wynime.app.domain.session.auth.OAuthPlatform
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.navigation.rememberAsyncBrowserNavigator
+import com.wynime.app.ui.adaptive.WynimeListDetailPaneScaffold
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.WynimeTopAppBarDefaults
+import com.wynime.app.ui.adaptive.ListDetailLayoutParameters
+import com.wynime.app.ui.adaptive.PaneScope
+import com.wynime.app.ui.adaptive.TopAppBarSize
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.animation.NavigationMotionScheme
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastExpanded
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.paneVerticalPadding
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.theme.LocalAppChromeHazeState
+import com.wynime.app.ui.foundation.theme.appChromeHazeSource
+import com.wynime.app.ui.foundation.theme.isAppChromeFrostedGlassActive
+import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.acknowledgements
+import com.wynime.app.ui.lang.developer_list
+import com.wynime.app.ui.lang.settings_about_build_info
+import com.wynime.app.ui.lang.settings
+import com.wynime.app.ui.lang.settings_acknowledgements_oss_licenses
+import com.wynime.app.ui.lang.settings_category_app_ui
+import com.wynime.app.ui.lang.settings_category_data_playback
+import com.wynime.app.ui.lang.settings_category_network_storage
+import com.wynime.app.ui.lang.settings_category_others
+import com.wynime.app.ui.lang.settings_debug_dev_builds
+import com.wynime.app.ui.lang.settings_debug_mode_enabled
+import com.wynime.app.ui.lang.settings_tab_about
+import com.wynime.app.ui.lang.settings_tab_account
+import com.wynime.app.ui.lang.settings_tab_appearance
+import com.wynime.app.ui.lang.settings_tab_debug
+import com.wynime.app.ui.lang.settings_tab_log
+import com.wynime.app.ui.lang.settings_tab_media_selector
+import com.wynime.app.ui.lang.settings_tab_media_source
+import com.wynime.app.ui.lang.settings_tab_player
+import com.wynime.app.ui.lang.settings_tab_proxy
+import com.wynime.app.ui.lang.settings_tab_settings_backup
+import com.wynime.app.ui.lang.settings_tab_storage
+import com.wynime.app.ui.lang.settings_tab_theme
+import com.wynime.app.ui.lang.settings_tab_update
+import com.wynime.app.ui.lang.settings_account_tracking_sync_title
+import com.wynime.app.ui.settings.account.ProfileGroup
+import com.wynime.app.ui.settings.account.BangumiTrackingSyncScreen
+import com.wynime.app.ui.settings.account.SelfInfoBanner
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.tabs.WynimeHelperDestination
+import com.wynime.app.ui.settings.tabs.DebugTab
+import com.wynime.app.ui.settings.tabs.about.AboutTab
+import com.wynime.app.ui.settings.tabs.about.AcknowledgementsTab
+import com.wynime.app.ui.settings.tabs.about.BuildInfo
+import com.wynime.app.ui.settings.tabs.about.BuildInfoTab
+import com.wynime.app.ui.settings.tabs.about.DevelopersTab
+import com.wynime.app.ui.settings.tabs.about.OpenSourceLibrariesTab
+import com.wynime.app.ui.settings.tabs.app.AppearanceGroup
+import com.wynime.app.ui.settings.tabs.app.PlayerGroup
+import com.wynime.app.ui.settings.tabs.app.SoftwareUpdateGroup
+import com.wynime.app.ui.settings.tabs.log.LogTab
+import com.wynime.app.ui.settings.tabs.media.BackupSettings
+import com.wynime.app.ui.settings.tabs.media.CacheDirectoryGroup
+import com.wynime.app.ui.settings.tabs.media.MediaSelectionGroup
+import com.wynime.app.ui.settings.tabs.media.source.SourcePluginStoreTab
+import com.wynime.app.ui.settings.tabs.network.ConfigureProxyGroup
+import com.wynime.app.ui.settings.tabs.theme.ThemeGroup
+import com.wynime.app.ui.update.devbuild.DevBuildsTab
+import com.wynime.utils.platform.hasScrollingBug
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * @see getName 查看名称
- */
-typealias SettingsTab = me.him188.ani.app.navigation.SettingsTab
+typealias SettingsTab = com.wynime.app.navigation.SettingsTab
 
 @Composable
 fun SettingsScreen(
     vm: SettingsViewModel,
-    onNavigateToEmailLogin: () -> Unit,
+    onNavigateToBangumiLogin: () -> Unit,
     onNavigateToOAuth: (OAuthPlatform) -> Unit,
     loadOpenSourceLibrariesJsons: suspend () -> List<ByteArray>,
     modifier: Modifier = Modifier,
     initialTab: SettingsTab? = null,
-    windowInsets: WindowInsets = AniWindowInsets.forColumnPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forColumnPageContent(),
     navigationIcon: @Composable () -> Unit = {},
-    /**
-     * 前往扫码登录其他设备. 为 `null` (当前平台不能扫码) 时不显示入口
-     */
-    onNavigateToQrLogin: (() -> Unit)? = null,
+
 ) {
     val navigator: ThreePaneScaffoldNavigator<Nothing?> = rememberListDetailPaneScaffoldNavigator(
         initialDestinationHistory = buildList {
@@ -223,7 +210,7 @@ fun SettingsScreen(
 
     SettingsPageLayout(
         navigator,
-        // TODO: 2025/2/14 We should have a SettingsNavController or so to control the tab state
+
         { lastSelectedTab },
         onSelectedTab = { tab ->
             navigateToTab(tab)
@@ -250,7 +237,7 @@ fun SettingsScreen(
                 selfInfoState,
                 checked = bannerChecked,
                 { navigateToTab(SettingsTab.PROFILE) },
-                onNavigateToEmailLogin,
+                onNavigateToBangumiLogin,
                 Modifier.fillMaxWidth(),
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             )
@@ -266,7 +253,7 @@ fun SettingsScreen(
 
             Title(stringResource(Lang.settings_category_network_storage))
             Item(SettingsTab.PROXY)
-//            Item(SettingsTab.CACHE)
+
             Item(SettingsTab.STORAGE)
 
             Title(stringResource(Lang.settings_category_others))
@@ -300,12 +287,12 @@ fun SettingsScreen(
                         onClickReleaseNotes = {
                             browserNavigator.openBrowser(
                                 context,
-                                AniHelperDestination.RELEASE_PREFIX + vm.aboutTabInfo.version,
+                                WynimeHelperDestination.RELEASE_PREFIX + vm.aboutTabInfo.version,
                             )
                         },
-                        onClickWebsite = { browserNavigator.openBrowser(context, AniHelperDestination.ANI_WEBSITE) },
-                        onClickFeedback = { browserNavigator.openBrowser(context, AniHelperDestination.ISSUE_TRACKER) },
-                        onClickSource = { browserNavigator.openBrowser(context, AniHelperDestination.GITHUB_HOME) },
+                        onClickWebsite = { browserNavigator.openBrowser(context, WynimeHelperDestination.ANI_WEBSITE) },
+                        onClickFeedback = { browserNavigator.openBrowser(context, WynimeHelperDestination.ISSUE_TRACKER) },
+                        onClickSource = { browserNavigator.openBrowser(context, WynimeHelperDestination.GITHUB_HOME) },
                         onClickDevelopers = {
                             navigateTo(DetailPaneRoutes.Developers)
                         },
@@ -316,7 +303,7 @@ fun SettingsScreen(
                     )
 
                     SettingsTab.LOG -> LogTab(
-                        onClickFeedback = { browserNavigator.openBrowser(context, AniHelperDestination.ISSUE_TRACKER) },
+                        onClickFeedback = { browserNavigator.openBrowser(context, WynimeHelperDestination.ISSUE_TRACKER) },
                     )
 
                     SettingsTab.DEBUG -> DebugTab(
@@ -332,13 +319,10 @@ fun SettingsScreen(
                     ) {
                         when (currentTab) {
                             SettingsTab.PROFILE -> ProfileGroup(
-                                onNavigateToEmail = onNavigateToEmailLogin,
                                 onNavigateToBangumiSync = {
                                     navigateTo(DetailPaneRoutes.BangumiSync)
                                 },
                                 onNavigateToOAuth = onNavigateToOAuth,
-                                onNavigateToGithubAccount = {},
-                                onNavigateToQrLogin = onNavigateToQrLogin,
                             )
 
                             SettingsTab.APPEARANCE -> AppearanceGroup(vm.uiSettings)
@@ -362,10 +346,9 @@ fun SettingsScreen(
                                 onStartProxyTestLoop = { vm.startProxyTesterLoop() },
                             )
 
-//                            SettingsTab.CACHE -> AutoCacheGroup(vm.mediaCacheSettingsState)
                             SettingsTab.STORAGE -> CacheDirectoryGroup(vm.cacheDirectoryGroupState)
                             SettingsTab.SETTINGS_BACKUP -> BackupSettings(vm.cacheDirectoryGroupState)
-                            SettingsTab.ABOUT -> {} // see above
+                            SettingsTab.ABOUT -> {}
                             SettingsTab.DEBUG -> {}
                             SettingsTab.LOG -> {}
                             null -> {}
@@ -396,12 +379,12 @@ internal fun SettingsPageLayout(
     onClickBackOnDetailPage: () -> Unit,
     onNavigateToBangumiLogin: () -> Unit = {},
     navItems: @Composable (SettingsDrawerScope.() -> Unit),
-    tabContent: @Composable SettingsDetailPaneScope.(currentTab: SettingsTab?) -> Unit, // inside Column verticalScroll
+    tabContent: @Composable SettingsDetailPaneScope.(currentTab: SettingsTab?) -> Unit,
     detailPaneBottomBar: @Composable BoxScope.(currentTab: SettingsTab?, windowInsets: WindowInsets) -> Unit =
         { _, _ -> },
     modifier: Modifier = Modifier,
-    contentWindowInsets: WindowInsets = AniWindowInsets.forColumnPageContent(),
-    containerColor: Color = AniThemeDefaults.pageContentBackgroundColor,
+    contentWindowInsets: WindowInsets = WynimeWindowInsets.forColumnPageContent(),
+    containerColor: Color = WynimeThemeDefaults.pageContentBackgroundColor,
     layoutParameters: ListDetailLayoutParameters = ListDetailLayoutParameters.calculate(navigator.scaffoldDirective),
     navigationIcon: @Composable () -> Unit = {},
     loadOpenSourceLibrariesJsons: suspend () -> List<ByteArray>,
@@ -411,15 +394,14 @@ internal fun SettingsPageLayout(
     @Stable
     fun SettingsTab?.orDefault(): SettingsTab? {
         return if (layoutParametersState.preferSinglePane) {
-            // 单页模式, 自动选择传入的 tab
+
             this
         } else {
-            // 双页模式, 默认选择第一个 tab, 以免右边很空
+
             this ?: SettingsTab.Default
         }
     }
 
-    // 毛玻璃模式下顶栏覆盖在内容上方并保持常驻, 以便展示模糊效果.
     val frostedGlassActive = isAppChromeFrostedGlassActive()
 
     val listPaneTopAppBarScrollBehavior = if (LocalPlatform.current.hasScrollingBug()) {
@@ -446,8 +428,8 @@ internal fun SettingsPageLayout(
         }
     }
     val listPaneTopAppBar: @Composable PaneScope.() -> Unit = {
-        AniTopAppBar(
-            title = { AniTopAppBarDefaults.Title(stringResource(Lang.settings)) },
+        WynimeTopAppBar(
+            title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.settings)) },
             navigationIcon = {
                 if (navigator.canNavigateBack()) {
                     BackNavigationIconButton(
@@ -475,9 +457,9 @@ internal fun SettingsPageLayout(
             size = topAppBarSize,
         )
     }
-    AniListDetailPaneScaffold(
+    WynimeListDetailPaneScaffold(
         navigator,
-        // 毛玻璃模式下顶栏由 listPaneContent 内部覆盖绘制.
+
         listPaneTopAppBar = if (frostedGlassActive) null else listPaneTopAppBar,
         listPaneContent = paneScope@{
             var listTopAppBarHeight by remember { mutableStateOf(0) }
@@ -508,16 +490,14 @@ internal fun SettingsPageLayout(
                         }
                     }
 
-
                     val verticalPadding = currentWindowAdaptiveInfo1().windowSizeClass.paneVerticalPadding
 
-                    // 毛玻璃顶栏覆盖在内容上方时, 在滚动内容顶部留出顶栏的空间.
                     if (frostedGlassActive) {
-                        Spacer(Modifier.height(with(LocalDensity.current) { listTopAppBarHeight.toDp() })) // scrollable
+                        Spacer(Modifier.height(with(LocalDensity.current) { listTopAppBarHeight.toDp() }))
                     }
-                    Spacer(Modifier.height(verticalPadding - 8.dp)) // scrollable
+                    Spacer(Modifier.height(verticalPadding - 8.dp))
                     navItems(scope)
-                    Spacer(Modifier.height(verticalPadding)) // scrollable
+                    Spacer(Modifier.height(verticalPadding))
                 }
             }
 
@@ -526,7 +506,7 @@ internal fun SettingsPageLayout(
                     Box(
                         Modifier
                             .fillMaxSize()
-                            // 顶栏覆盖在内容上, 这里代替 scaffold 消耗顶栏的 insets.
+
                             .consumeWindowInsets(paneContentWindowInsets.only(WindowInsetsSides.Top))
                             .appChromeHazeSource(backgroundColor = containerColor),
                     ) {
@@ -540,17 +520,17 @@ internal fun SettingsPageLayout(
                 drawerSheet()
             }
         },
-        // empty because our detailPaneContent already has it
+
         detailPane = {
             AnimatedContent(
                 currentTab(),
                 Modifier.fillMaxSize(),
-                transitionSpec = LocalAniMotionScheme.current.animatedContent.topLevel,
+                transitionSpec = LocalWynimeMotionScheme.current.animatedContent.topLevel,
             ) { navigationTab ->
                 val navMotionScheme = NavigationMotionScheme.current
                 val topAppBarWindowInsets =
                     paneContentWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-                val topAppBarColors = AniThemeDefaults.topAppBarColors(
+                val topAppBarColors = WynimeThemeDefaults.topAppBarColors(
                     containerColor = if (isSinglePane) {
                         containerColor
                     } else {
@@ -560,7 +540,7 @@ internal fun SettingsPageLayout(
                 val detailPaneBackStack = rememberSaveable(saver = DetailPaneBackStackSaver) {
                     mutableStateListOf<DetailPaneRoutes>(DetailPaneRoutes.Main)
                 }
-                // 栈底的 Main 不能被弹出, 空栈会让 NavDisplay 抛异常
+
                 val navigateUp: () -> Unit = {
                     if (detailPaneBackStack.size > 1) {
                         detailPaneBackStack.removeAt(detailPaneBackStack.lastIndex)
@@ -576,7 +556,7 @@ internal fun SettingsPageLayout(
                     val scope = remember(paneScope, detailPaneBackStack) {
                         object : SettingsDetailPaneScope, PaneScope by paneScope {
                             override fun navigateTo(route: DetailPaneRoutes) {
-                                // 同一个页面重复入栈会让栈里出现相同的 key, NavDisplay 不允许
+
                                 if (detailPaneBackStack.lastOrNull() != route) {
                                     detailPaneBackStack.add(route)
                                 }
@@ -599,7 +579,7 @@ internal fun SettingsPageLayout(
                             .wrapContentWidth()
                             .widthIn(max = 1000.dp),
                     ) {
-                        // 毛玻璃顶栏覆盖在内容上方时, 在滚动内容顶部留出顶栏的空间
+
                         val topAppBarUnderlapHeight = LocalSettingsTopAppBarUnderlapHeight.current
                         if (topAppBarUnderlapHeight > 0) {
                             Spacer(Modifier.height(with(LocalDensity.current) { topAppBarUnderlapHeight.toDp() }))
@@ -607,10 +587,9 @@ internal fun SettingsPageLayout(
 
                         scope.content()
 
-                        // 滚动容器底部留出安全区域
                         Spacer(
                             Modifier.windowInsetsBottomHeight(
-                                AniWindowInsets.safeDrawing,
+                                WynimeWindowInsets.safeDrawing,
                             ),
                         )
                     }
@@ -638,9 +617,9 @@ internal fun SettingsPageLayout(
                         DetailPaneRoute(
                             topAppBar = {
                                 tab?.let {
-                                    AniTopAppBar(
+                                    WynimeTopAppBar(
                                         title = {
-                                            AniTopAppBarDefaults.Title(getName(it))
+                                            WynimeTopAppBarDefaults.Title(getName(it))
                                         },
                                         navigationIcon = {
                                             if (listDetailLayoutParameters.preferSinglePane) {
@@ -673,8 +652,8 @@ internal fun SettingsPageLayout(
                     entry<DetailPaneRoutes.Acknowledgements> {
                         DetailPaneRoute(
                             topAppBar = {
-                                AniTopAppBar(
-                                    title = { AniTopAppBarDefaults.Title(stringResource(Lang.acknowledgements)) },
+                                WynimeTopAppBar(
+                                    title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.acknowledgements)) },
                                     navigationIcon = {
                                         BackNavigationIconButton(navigateUp)
                                     },
@@ -699,9 +678,9 @@ internal fun SettingsPageLayout(
                     entry<DetailPaneRoutes.OpenSourceLicenses> {
                         DetailPaneRoute(
                             topAppBar = {
-                                AniTopAppBar(
+                                WynimeTopAppBar(
                                     title = {
-                                        AniTopAppBarDefaults.Title(
+                                        WynimeTopAppBarDefaults.Title(
                                             stringResource(Lang.settings_acknowledgements_oss_licenses),
                                         )
                                     },
@@ -716,7 +695,7 @@ internal fun SettingsPageLayout(
                             },
                             detailPaneTopAppBarScrollBehavior,
                         ) {
-                            // LibrariesContainer 自带 LazyColumn, 不能套在 verticalScroll 里
+
                             RouteContent(scrollable = false) {
                                 OpenSourceLibrariesTab(
                                     loadOpenSourceLibrariesJsons,
@@ -728,8 +707,8 @@ internal fun SettingsPageLayout(
                     entry<DetailPaneRoutes.Developers> {
                         DetailPaneRoute(
                             topAppBar = {
-                                AniTopAppBar(
-                                    title = { AniTopAppBarDefaults.Title(stringResource(Lang.developer_list)) },
+                                WynimeTopAppBar(
+                                    title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.developer_list)) },
                                     navigationIcon = {
                                         BackNavigationIconButton(navigateUp)
                                     },
@@ -749,8 +728,8 @@ internal fun SettingsPageLayout(
                     entry<DetailPaneRoutes.BuildInfo> {
                         DetailPaneRoute(
                             topAppBar = {
-                                AniTopAppBar(
-                                    title = { AniTopAppBarDefaults.Title(stringResource(Lang.settings_about_build_info)) },
+                                WynimeTopAppBar(
+                                    title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.settings_about_build_info)) },
                                     navigationIcon = {
                                         BackNavigationIconButton(navigateUp)
                                     },
@@ -770,8 +749,8 @@ internal fun SettingsPageLayout(
                     entry<DetailPaneRoutes.DevBuilds> {
                         DetailPaneRoute(
                             topAppBar = {
-                                AniTopAppBar(
-                                    title = { AniTopAppBarDefaults.Title(stringResource(Lang.settings_debug_dev_builds)) },
+                                WynimeTopAppBar(
+                                    title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.settings_debug_dev_builds)) },
                                     navigationIcon = {
                                         BackNavigationIconButton(navigateUp)
                                     },
@@ -791,9 +770,9 @@ internal fun SettingsPageLayout(
                     entry<DetailPaneRoutes.BangumiSync> {
                         DetailPaneRoute(
                             topAppBar = {
-                                AniTopAppBar(
+                                WynimeTopAppBar(
                                     title = {
-                                        AniTopAppBarDefaults.Title(
+                                        WynimeTopAppBarDefaults.Title(
                                             stringResource(Lang.settings_account_tracking_sync_title),
                                         )
                                     },
@@ -826,9 +805,6 @@ internal fun SettingsPageLayout(
     )
 }
 
-/**
- * 设置页自带一个独立的毛玻璃作用域: 启用毛玻璃时, 顶栏模糊其下方滚动的内容.
- */
 @Composable
 private fun SettingsPageSurface(containerColor: Color, content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalAppChromeHazeState provides rememberHazeState()) {
@@ -836,23 +812,13 @@ private fun SettingsPageSurface(containerColor: Color, content: @Composable () -
     }
 }
 
-/**
- * 毛玻璃顶栏覆盖在 pane 内容上方时, 滚动内容需要在顶部留出的空间 (px).
- *
- * 不启用毛玻璃时为 0.
- */
 private val LocalSettingsTopAppBarUnderlapHeight = compositionLocalOf { 0 }
 
 @Stable
 interface SettingsDetailPaneScope : PaneScope {
-    /**
-     * 在详情页内部导航到 [route]. 如果它已经在栈顶则不做任何操作.
-     */
+
     fun navigateTo(route: DetailPaneRoutes)
 
-    /**
-     * 返回详情页内部的上一页. 已经在 [DetailPaneRoutes.Main] 时不做任何操作.
-     */
     fun navigateUp()
 }
 
@@ -865,15 +831,14 @@ private fun PaneScope.DetailPaneRoute(
     tabContent: @Composable (PaneScope.() -> Unit),
 ) {
     if (isAppChromeFrostedGlassActive()) {
-        // 毛玻璃: 顶栏覆盖在内容上方, 内容从顶栏下方滚过并被模糊.
-        // 内容通过 LocalSettingsTopAppBarUnderlapHeight 在滚动内容顶部留出顶栏的空间.
+
         var topAppBarHeight by remember { mutableStateOf(0) }
         Box(modifier) {
             Box(
                 Modifier
                     .fillMaxSize()
                     .consumeWindowInsets(paneContentWindowInsets.only(WindowInsetsSides.Top))
-                    .appChromeHazeSource(backgroundColor = AniThemeDefaults.pageContentBackgroundColor),
+                    .appChromeHazeSource(backgroundColor = WynimeThemeDefaults.pageContentBackgroundColor),
             ) {
                 Column(
                     Modifier
@@ -921,29 +886,33 @@ private fun PaneScope.DetailPaneRoute(
     }
 }
 
-/**
- * 设置详情页内部的导航目标. 栈底总是 [Main].
- */
 @Serializable
 sealed class DetailPaneRoutes : NavKey {
+    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.Main")
     @Serializable
     data object Main : DetailPaneRoutes()
 
+    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.Acknowledgements")
     @Serializable
     data object Acknowledgements : DetailPaneRoutes()
 
+    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.OpenSourceLicenses")
     @Serializable
     data object OpenSourceLicenses : DetailPaneRoutes()
 
+    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.Developers")
     @Serializable
     data object Developers : DetailPaneRoutes()
 
+    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.BuildInfo")
     @Serializable
     data object BuildInfo : DetailPaneRoutes()
 
+    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.DevBuilds")
     @Serializable
     data object DevBuilds : DetailPaneRoutes()
 
+    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.BangumiSync")
     @Serializable
     data object BangumiSync : DetailPaneRoutes()
 }
@@ -951,7 +920,7 @@ sealed class DetailPaneRoutes : NavKey {
 private val DetailPaneBackStackSaver: Saver<SnapshotStateList<DetailPaneRoutes>, Any> = listSaver(
     save = { stack -> stack.map { it::class.simpleName ?: "Main" } },
     restore = { saved ->
-        // 空栈会让 NavDisplay 抛异常, 此时放弃恢复
+
         if (saved.isEmpty()) {
             null
         } else {
@@ -998,7 +967,7 @@ private fun getIcon(tab: SettingsTab): ImageVector {
         SettingsTab.MEDIA_SOURCE -> Icons.Outlined.Subscriptions
         SettingsTab.MEDIA_SELECTOR -> Icons.Outlined.FilterList
         SettingsTab.PROXY -> Icons.Outlined.VpnKey
-//        SettingsTab.CACHE -> Icons.Rounded.Download // Icons.Outlined.Download 太 sharp 了
+
         SettingsTab.STORAGE -> Icons.Outlined.Storage
         SettingsTab.SETTINGS_BACKUP -> Icons.Outlined.Settings
         SettingsTab.ABOUT -> Icons.Outlined.Info
@@ -1018,7 +987,7 @@ private fun getName(tab: SettingsTab): String {
         SettingsTab.MEDIA_SOURCE -> stringResource(Lang.settings_tab_media_source)
         SettingsTab.MEDIA_SELECTOR -> stringResource(Lang.settings_tab_media_selector)
         SettingsTab.PROXY -> stringResource(Lang.settings_tab_proxy)
-//        SettingsTab.CACHE -> stringResource(Lang.settings_tab_cache)
+
         SettingsTab.STORAGE -> stringResource(Lang.settings_tab_storage)
         SettingsTab.SETTINGS_BACKUP -> stringResource(Lang.settings_tab_settings_backup)
         SettingsTab.LOG -> stringResource(Lang.settings_tab_log)
@@ -1028,7 +997,6 @@ private fun getName(tab: SettingsTab): String {
     }
 }
 
-// a lot of call-sites, don't make it internal
 @Composable
 fun SettingsTab(
     modifier: Modifier = Modifier,

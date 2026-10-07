@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("NOTHING_TO_INLINE", "KotlinRedundantDiagnosticSuppress", "unused")
 
-package me.him188.ani.datasources.api
+package com.wynime.datasources.api
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
@@ -17,7 +8,7 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.Serializable
-import me.him188.ani.datasources.api.PackedDate.Companion.Invalid
+import com.wynime.datasources.api.PackedDate.Companion.Invalid
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.jvm.JvmField
@@ -27,48 +18,26 @@ import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * 一个日期, 支持年月日. 支持表示无效状态 [Invalid].
- */
 @JvmInline
 @Serializable
 value class PackedDate(
-    /**
-     * 高 16 位为年, 中 8 位为月, 低 8 位为日
-     */
-    @JvmField val packed: Int // room access it
+
+    @JvmField val packed: Int
 ) : Comparable<PackedDate> {
     inline val isValid: Boolean get() = packed != Int.MAX_VALUE
     inline val isInvalid: Boolean get() = packed == Int.MAX_VALUE
 
-    /**
-     * 获取年份, `0..9999`. 当无效 [Invalid] 时返回 0.
-     */
     inline val year: Int get() = if (isValid) DatePacker.unpack1(packed) else 0
 
-    /**
-     * 获取原始月份信息, `1..12`. 当无效 [Invalid] 时返回 0.
-     */
     inline val month: Int get() = if (isValid) DatePacker.unpack2(packed) else 0
 
-    /**
-     * 获取日期, `0..31`. 当无效 [Invalid] 时返回 0.
-     */
     inline val day: Int get() = if (isValid) DatePacker.unpack3(packed) else 0
 
     companion object {
-        /**
-         * 表示一个无效时间.
-         */
+
         @JvmStatic
         val Invalid = PackedDate(Int.MAX_VALUE)
 
-
-        /**
-         * @param date `2024-05-18`. 允许的日期范围为 `0000-01-01` 到 `9999-12-31`. 仅检查时间格式, 不检查时间合法性.
-         * 因此 2 月 31 日也被视为是正确的.
-         * @return 当 [date] 格式不正确时返回 [Invalid]
-         */
         fun parseFromDate(date: String): PackedDate {
             val split = date.split("-")
             if (split.size < 3) return Invalid
@@ -82,7 +51,7 @@ value class PackedDate(
         private val UTC8 = TimeZone.of("UTC+8")
 
         fun now(): PackedDate {
-            val timeZone = UTC8 // bangumi 是固定 UTC+8
+            val timeZone = UTC8
             val calendar = Clock.System.now().toLocalDateTime(timeZone)
 
             val year = calendar.year
@@ -92,7 +61,7 @@ value class PackedDate(
         }
     }
 
-    override fun compareTo(other: PackedDate): Int = packed.compareTo(other.packed) // trivial!
+    override fun compareTo(other: PackedDate): Int = packed.compareTo(other.packed)
 
     override fun toString(): String {
         return if (isInvalid) "Invalid" else "$year-$month-$day"
@@ -110,7 +79,7 @@ fun PackedDate.toStringExcludingSameYear(): String = when {
 fun PackedDate.toLocalDateOrNull(): LocalDate? {
     if (isInvalid) return null
     return try {
-        LocalDate(year, month, day) // May throw IAE
+        LocalDate(year, month, day)
     } catch (e: IllegalArgumentException) {
         null
     }
@@ -123,16 +92,6 @@ inline fun PackedDate.ifInvalid(block: () -> PackedDate): PackedDate {
     return if (isInvalid) block() else this
 }
 
-//private val UTC8 = kotlinx.datetime.TimeZone.of("UTC+8")
-
-//@Stable
-//fun PackedDate.toEpochMillis(): Long {
-//    return LocalDate(year, month, day).atStartOfDayIn(UTC8).toEpochMilliseconds()
-//}
-
-/**
- * 获取月份所在季度的第一个月, `1, 4, 7, 10`.
- */
 inline val PackedDate.seasonMonth: Int
     get() = when (month) {
         12, in 1..2 -> 1
@@ -142,9 +101,6 @@ inline val PackedDate.seasonMonth: Int
         else -> 0
     }
 
-/**
- * 计算两个日期的间隔. 当任一日期无效时返回 [Duration.INFINITE].
- */
 operator fun PackedDate.minus(other: PackedDate): Duration {
     if (this.isInvalid || other.isInvalid) return Duration.INFINITE
 
@@ -164,16 +120,16 @@ inline fun PackedDate(
 ): PackedDate = if (year in 0..9999 && month in 1..12 && day in 1..31) {
     PackedDate(DatePacker.pack(year, month, day))
 } else {
-    Invalid // invalid
+    Invalid
 }
 
 @Suppress("NOTHING_TO_INLINE")
 @PublishedApi
 internal object DatePacker {
     inline fun pack(
-        val1: Int, // short
-        val2: Int, // byte
-        val3: Int, // byte
+        val1: Int,
+        val2: Int,
+        val3: Int,
     ): Int {
         return val1.shl(16) or val2.shl(8) or val3
     }

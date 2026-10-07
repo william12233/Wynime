@@ -1,16 +1,7 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.media.hls
 
-package me.him188.ani.app.domain.media.hls
-
-import me.him188.ani.utils.httpdownloader.m3u.DefaultM3u8Parser
-import me.him188.ani.utils.httpdownloader.m3u.M3u8Playlist
+import com.wynime.utils.httpdownloader.m3u.DefaultM3u8Parser
+import com.wynime.utils.httpdownloader.m3u.M3u8Playlist
 
 object HlsManifestFilter {
     fun filter(content: String, baseUrl: String = "http://127.0.0.1/playlist.m3u8"): HlsManifestFilterResult {

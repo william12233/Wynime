@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.Orientation
@@ -40,15 +31,15 @@ import androidx.compose.ui.unit.dp
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
-import me.him188.ani.app.ui.foundation.input.ActiveInputSourceState
-import me.him188.ani.app.ui.foundation.input.LocalActiveInputSource
-import me.him188.ani.app.ui.foundation.input.trackActiveInputSource
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
+import com.wynime.app.ui.foundation.input.ActiveInputSourceState
+import com.wynime.app.ui.foundation.input.LocalActiveInputSource
+import com.wynime.app.ui.foundation.input.trackActiveInputSource
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
 
 @OptIn(ExperimentalMaterial3Api::class)
 class PullToRefreshInputTest {
     @Test
-    fun `touchOnly ignores mouse wheel overscroll but accepts touch pull`() = runAniComposeUiTest {
+    fun `touchOnly ignores mouse wheel overscroll but accepts touch pull`() = runWynimeComposeUiTest {
         val inputSource = ActiveInputSourceState()
         lateinit var pullState: PullToRefreshState
         var refreshes by mutableIntStateOf(0)
@@ -101,7 +92,7 @@ class PullToRefreshInputTest {
     }
 
     @Test
-    fun `touchOnly keeps normal mouse scrolling`() = runAniComposeUiTest {
+    fun `touchOnly keeps normal mouse scrolling`() = runWynimeComposeUiTest {
         val inputSource = ActiveInputSourceState()
         lateinit var scrollState: ScrollState
 
@@ -139,7 +130,7 @@ class PullToRefreshInputTest {
     }
 
     @Test
-    fun `touchOnly does not block nested mouse drag`() = runAniComposeUiTest {
+    fun `touchOnly does not block nested mouse drag`() = runWynimeComposeUiTest {
         val inputSource = ActiveInputSourceState()
         var dragged by mutableFloatStateOf(0f)
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models
+package com.wynime.app.data.models
 
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
@@ -20,13 +11,10 @@ import kotlin.jvm.JvmInline
 
 sealed interface ApiFailure {
     data object Unauthorized : ApiFailure
-    data object NetworkError : ApiFailure // IOException
-    data object ServiceUnavailable : ApiFailure // 500..599
+    data object NetworkError : ApiFailure
+    data object ServiceUnavailable : ApiFailure
 }
 
-/**
- * 用于需要授权的 HTTP 请求, 将已知错误解析为 [ApiFailure].
- */
 @JvmInline
 value class ApiResponse<out T> private constructor(
     private val value: Any?,
@@ -66,19 +54,6 @@ fun <T> ApiResponse.Companion.unauthorized(): ApiResponse<T> = failure(ApiFailur
 fun <T> ApiResponse.Companion.networkError(): ApiResponse<T> = failure(ApiFailure.NetworkError)
 fun <T> ApiResponse.Companion.serviceUnavailable(): ApiResponse<T> = failure(ApiFailure.ServiceUnavailable)
 
-/**
- * 执行一个请求 [block], 并把它的结果封装为 [ApiResponse].
- *
- * 执行请求时抛出的已知类型异常将会被转换为 [ApiResponse.failure]. [block] 只能抛出已知异常类型或 [CancellationException].
- *
- * 已知类型包含:
- * - [HttpStatusCode.Unauthorized] or [HttpStatusCode.Forbidden] -> [ApiFailure.Unauthorized]
- * - [ServerResponseException] -> [ApiFailure.ServiceUnavailable]
- * - [IOException] -> [ApiFailure.NetworkError]
- *
- * 为了支持 cancellation, [CancellationException] 会原封不动地抛出.
- * 其他异常将会被是作为 bug, 会被封装为 [IllegalStateException] 后抛出. [Error] 会被原封不动地抛出.
- */
 inline fun <T> runApiRequest(block: () -> T): ApiResponse<T> {
     try {
         return ApiResponse.success(block())
@@ -98,11 +73,8 @@ inline fun <T> runApiRequest(block: () -> T): ApiResponse<T> {
     }
 }
 
-/**
- * @see me.him188.ani.app.data.models.runApiRequest
- */
 inline fun <R, T> R.runApiRequest(block: R.() -> T): ApiResponse<T> =
-    me.him188.ani.app.data.models.runApiRequest { block() }
+    com.wynime.app.data.models.runApiRequest { block() }
 
 inline fun <T, R> ApiResponse<T>.map(transform: (T) -> R): ApiResponse<R> {
     contract { callsInPlace(transform, InvocationKind.AT_MOST_ONCE) }
@@ -138,7 +110,7 @@ inline fun <T, R> ApiResponse<T>.fold(
 
     @Suppress("UNCHECKED_CAST")
     return when {
-        isSuccess -> onSuccess(getOrNull() as T) // T can be null
+        isSuccess -> onSuccess(getOrNull() as T)
         else -> onKnownFailure(failureOrNull()!!)
     }
 }
@@ -152,7 +124,7 @@ inline fun <T, R> ApiResponse<T>.flatMap(
 
     @Suppress("UNCHECKED_CAST")
     return when {
-        isSuccess -> onSuccess(getOrNull() as T) // T can be null
-        else -> this as ApiResponse<R> // does not contain a T so it's safe to cast
+        isSuccess -> onSuccess(getOrNull() as T)
+        else -> this as ApiResponse<R>
     }
 }

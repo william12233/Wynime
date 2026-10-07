@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 
-package me.him188.ani.app.platform.window
+package com.wynime.app.platform.window
 
 import androidx.compose.foundation.AbstractClickableNode
 import androidx.compose.runtime.Composable
@@ -26,25 +17,11 @@ import androidx.compose.ui.scene.LocalComposeSceneContext
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.util.fastForEachReversed
 
-/**
- * 提供 [ComposeScene] 的点击测试.
- *
- * 使用 [rememberLayoutHitTestOwner] 获取当前平台的 [LayoutHitTestOwner].
- */
 sealed interface LayoutHitTestOwner {
-    /**
-     * 测试这个坐标是否有 Compose 中的可**点击** (clickable), 可**复合点击** (combined clickable),
-     * 可**选择** (selectable) 和 可**开关** (toggleable) 的节点视图.
-     *
-     * @return 如果返回 true, 则表示这个坐标有可点击的节点.
-     * 点击这个坐标将会触发对应的 Compose 视图的点击事件.
-     */
+
     fun hitTest(x: Float, y: Float): Boolean
 }
 
-/**
- * 获取当前 [ComposeScene] 的 [LayoutHitTestOwner].
- */
 @OptIn(InternalComposeUiApi::class)
 @Composable
 fun rememberLayoutHitTestOwner(): LayoutHitTestOwner? {
@@ -64,9 +41,6 @@ fun rememberLayoutHitTestOwner(): LayoutHitTestOwner? {
     }
 }
 
-/*
-* reflect implementation for compose 1.8
- */
 private abstract class ReflectLayoutHitTestOwner : LayoutHitTestOwner {
     @OptIn(InternalComposeUiApi::class)
     val classLoader = ComposeScene::class.java.classLoader!!
@@ -75,13 +49,13 @@ private abstract class ReflectLayoutHitTestOwner : LayoutHitTestOwner {
         x: Float,
         y: Float,
     ): Boolean {
-        // result type is List<Modifier.Node> (compose 1.8)
+
         val result = HitTestResult()
         owner.root.hitTest(Offset(x, y), result, PointerType.Mouse, true)
-        // pointer input modifier node detection for Material 3 components
+
         for (index in result.lastIndex downTo result.lastIndex - 1) {
             val node = result.getOrNull(index) ?: return false
-            // SelectableNode, ClickableNode, CombinedClickableNode, ToggleableNode, TriStateToggleableNode
+
             if (node is AbstractClickableNode) {
                 return true
             }
@@ -152,21 +126,13 @@ private class CanvasLayersLayoutHitTestOwner(
                 trySetAccessible()
             }
 
-    /*private val layerIsInBoundMethod =
-        layerClass
-            .declaredMethods
-            .first { it.name.startsWith("isInBounds") }
-            .apply {
-                trySetAccessible()
-            }*/
-
     override fun hitTest(
         x: Float,
         y: Float,
     ): Boolean {
         layersCopyCacheRef.withCopy {
             it.fastForEachReversed { layer ->
-                // if (layerIsInBoundMethod.invoke(layer, packFloats(x, y)) == true) {
+
                 if ((layer as ComposeSceneLayer?)?.boundsInWindow?.contains(Offset(x, y).round()) == true) {
                     return (layerOwnerField.get(layer) as RootNodeOwner).layoutNodeHitTest(x, y)
                 } else if (layer == focusedLayerField.get(scene)) {

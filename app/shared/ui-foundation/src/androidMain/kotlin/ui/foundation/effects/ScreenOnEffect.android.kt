@@ -1,15 +1,10 @@
-package me.him188.ani.app.ui.foundation.effects
+package com.wynime.app.ui.foundation.effects
 
 import android.app.Activity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import me.him188.ani.app.platform.LocalContext
+import com.wynime.app.platform.LocalContext
 
-/**
- * Composes an effect that keeps the screen on.
- *
- * When the composable gets removed from the view hierarchy, the screen will be allowed to turn off again.
- */
 @Composable
 actual fun ScreenOnEffectImpl() {
     val activity =

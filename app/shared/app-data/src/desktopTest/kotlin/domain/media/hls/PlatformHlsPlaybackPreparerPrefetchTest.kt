@@ -1,23 +1,14 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import me.him188.ani.app.domain.foundation.DefaultHttpClientProvider
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.prefetch.MediaTimeRange
-import me.him188.ani.app.domain.settings.NoProxyProvider
+import com.wynime.app.domain.foundation.DefaultHttpClientProvider
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.prefetch.MediaTimeRange
+import com.wynime.app.domain.settings.NoProxyProvider
 import org.openani.mediamp.source.UriMediaData
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -40,11 +31,10 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class PlatformHlsPlaybackPreparerPrefetchTest {
-    /** 代理在真实线程上工作, 等待时不能用 runTest 的虚拟时间. */
+
     private suspend fun <T> awaitReal(block: suspend () -> T): T =
         withContext(Dispatchers.Default) { withTimeout(10_000) { block() } }
 
-    // 4 个 10 秒分片的点播列表, 没有广告
     private val plainManifest = buildString {
         appendLine("#EXTM3U")
         appendLine("#EXT-X-VERSION:3")
@@ -136,11 +126,10 @@ class PlatformHlsPlaybackPreparerPrefetchTest {
         val result = preparer.prepare(UriMediaData("${server.baseUrl}/v/index.m3u8"), HlsPlaybackOptions(proxySegments = true))
         try {
             val session = assertNotNull(result.session)
-            // 播放器先拉一次播放列表, 代理才知道时间轴
+
             val localManifest = URI(result.data.uri).toURL().readText()
             val segmentUris = localManifest.lineSequence().filter { it.isNotBlank() && !it.startsWith("#") }.toList()
 
-            // [15s, 25s) 覆盖 seg1 [10,20) 和 seg2 [20,30)
             session.setPrefetchRange(MediaTimeRange(15_000, 25_000))
             val done = awaitReal {
                 session.prefetchProgress.first { list -> list.size == 2 && list.all { it.state == ChunkState.DONE } }
@@ -151,11 +140,9 @@ class PlatformHlsPlaybackPreparerPrefetchTest {
             assertEquals(0, server.requestCount("/v/seg0.ts"))
             assertEquals(0, server.requestCount("/v/seg3.ts"))
 
-            // 播放器再请求预缓存过的分片时直接命中缓存, 不再访问远端
             assertContentEquals(segmentBytes(1), URI(segmentUris[1]).toURL().readBytes())
             assertEquals(1, server.requestCount("/v/seg1.ts"))
 
-            // 取消预缓存后进度清空
             session.setPrefetchRange(null)
             assertTrue(awaitReal { session.prefetchProgress.first { it.isEmpty() } }.isEmpty())
         } finally {
@@ -191,9 +178,6 @@ class PlatformHlsPlaybackPreparerPrefetchTest {
         }
     }
 
-    /**
-     * 按路径返回固定内容的最小 HTTP 服务, 记录每个路径的请求次数和 Referer.
-     */
     private class SegmentServer(
         private val contentByPath: Map<String, ByteArray>,
     ) : AutoCloseable {

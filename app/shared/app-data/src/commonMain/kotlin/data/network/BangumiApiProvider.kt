@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.network
+package com.wynime.app.data.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -21,38 +12,26 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import me.him188.ani.app.data.repository.user.AccessTokenSession
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.datasources.bangumi.apis.DefaultApi
-import me.him188.ani.datasources.bangumi.infrastructure.HttpResponse
-import me.him188.ani.datasources.bangumi.models.BangumiUser
-import me.him188.ani.datasources.bangumi.models.BangumiSubjectType
-import me.him188.ani.datasources.bangumi.next.apis.EpisodeBangumiNextApi
-import me.him188.ani.datasources.bangumi.next.apis.SubjectBangumiNextApi
-import me.him188.ani.datasources.bangumi.next.infrastructure.HttpResponse as NextHttpResponse
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.ktor.UnsafeScopedHttpClientApi
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.data.repository.user.AccessTokenSession
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.datasources.bangumi.apis.DefaultApi
+import com.wynime.datasources.bangumi.infrastructure.HttpResponse
+import com.wynime.datasources.bangumi.models.BangumiUser
+import com.wynime.datasources.bangumi.models.BangumiSubjectType
+import com.wynime.datasources.bangumi.next.apis.EpisodeBangumiNextApi
+import com.wynime.datasources.bangumi.next.apis.SubjectBangumiNextApi
+import com.wynime.datasources.bangumi.next.infrastructure.HttpResponse as NextHttpResponse
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.ktor.UnsafeScopedHttpClientApi
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 
-/**
- * 官方 Bangumi API 的單一入口。
- *
- * 產生的 client 只在一次 request 期間借用 HTTP client，不把 platform client 或 token 帶出作用域。
- * 公開資料以匿名請求為主；需要帳號的 endpoint 會自動使用本機保存的 Bangumi access token。
- */
 class BangumiApiProvider(
     private val client: ScopedHttpClient,
     private val tokenRepository: TokenRepository,
 ) : BangumiExploreDataSource {
     suspend fun hasAccessToken(): Boolean = currentAccessToken() != null
 
-    /**
-     * 取得目前 access token 對應的 Bangumi 使用者名稱。
-     *
-     * `/v0/users/{username}/collections` 需要真實 username；`-` 只適用於部分目前使用者的
-     * 單筆或修改端點，不能用來列出整個收藏清單。
-     */
     suspend fun currentUsername(): String? {
         return currentUser()?.username
     }

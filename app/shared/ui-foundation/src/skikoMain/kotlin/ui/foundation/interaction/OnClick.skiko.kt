@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.interaction
+package com.wynime.app.ui.foundation.interaction
 
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.PointerMatcher
@@ -26,9 +26,6 @@ actual fun Modifier.onClickEx(
     ).indication(interactionSource, indication)
 }
 
-/**
- * 仅在 PC 有效. 鼠标右键单击.
- */
 actual fun Modifier.onRightClickIfSupported(
     interactionSource: MutableInteractionSource,
     enabled: Boolean,

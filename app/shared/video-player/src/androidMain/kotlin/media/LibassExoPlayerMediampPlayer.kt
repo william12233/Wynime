@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.media
+package com.wynime.app.videoplayer.media
 
 import android.content.Context
 import android.net.Uri
@@ -52,20 +43,6 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.milliseconds
 
-/**
- * Adds libass parsing and rendering to MediaMP's ExoPlayer backend.
- *
- * The v2 backend exposes a media source interceptor hook (`docs/playback-state-v2.md` §11)
- * invoked on the main dispatcher during each open, after the default media source is built and
- * before ExoPlayer prepares it. [LibassMediaSourcePipeline] is installed as that interceptor and
- * replaces the default source with one using libass's Matroska extractor and subtitle parser, so
- * MediaMP remains the sole owner of playback state and no source is ever swapped behind its back.
- *
- * For [SeekableInputMediaData], the backend opens the session's [SeekableInput] eagerly during
- * the open, before the interceptor runs, and the `createInput` contract allows only one open
- * input at a time. [setMediaData] therefore wraps the data in [TrackingSeekableInputMediaData]
- * so the interceptor can route playback reads through that already-open input.
- */
 @OptIn(InternalForInheritanceMediampApi::class)
 @AndroidxOptIn(UnstableApi::class)
 class LibassExoPlayerMediampPlayer private constructor(
@@ -73,10 +50,7 @@ class LibassExoPlayerMediampPlayer private constructor(
     private val pipeline: LibassMediaSourcePipeline,
     internal val exoMediampPlayer: ExoPlayerMediampPlayer,
 ) : MediampPlayer by exoMediampPlayer {
-    /**
-     * @param configurePlayerBuilder 在 [ExoPlayer.Builder] 构建前调用, 用于自定义原生播放器 (如缓冲策略).
-     *   见 [ExoPlayerMediampPlayer] 的同名参数.
-     */
+
     constructor(
         context: Context,
         parentCoroutineContext: CoroutineContext,
@@ -114,8 +88,7 @@ class LibassExoPlayerMediampPlayer private constructor(
         assHandler.init(exoPlayer)
         backgroundScope.launch(Dispatchers.Main.immediate) {
             while (isActive) {
-                // AssRenderer normally supplies this timestamp. MediaMP owns the ExoPlayer
-                // builder, so drive the overlay from the same playback clock here instead.
+
                 assHandler.videoTime = exoPlayer.currentPosition * 1_000
                 delay(16.milliseconds)
             }
@@ -123,8 +96,7 @@ class LibassExoPlayerMediampPlayer private constructor(
     }
 
     override suspend fun setMediaData(data: MediaData, playWhenReady: Boolean, startPositionMillis: Long) {
-        // Wrap so the interceptor can reuse the SeekableInput the backend opens for the
-        // session; see TrackingSeekableInputMediaData.
+
         val playerData = if (data is SeekableInputMediaData) {
             TrackingSeekableInputMediaData(data)
         } else {
@@ -133,10 +105,6 @@ class LibassExoPlayerMediampPlayer private constructor(
         exoMediampPlayer.setMediaData(playerData, playWhenReady, startPositionMillis)
     }
 
-    /**
-     * Unwraps [TrackingSeekableInputMediaData] so consumers observe the exact [MediaData]
-     * instance they loaded (for example, checks in `CacheProgressProvider`).
-     */
     override val mediaData: StateFlow<MediaData?> = object : StateFlow<MediaData?> {
         override val value: MediaData? get() = exoMediampPlayer.mediaData.value.unwrapTracking()
         override val replayCache: List<MediaData?> get() = listOf(value)
@@ -148,18 +116,15 @@ class LibassExoPlayerMediampPlayer private constructor(
 
     override fun seekTo(positionMillis: Long) {
         exoMediampPlayer.seekTo(positionMillis)
-        // ExoPlayer applies a seek asynchronously. Update libass immediately as well so the
-        // paused overlay does not retain the subtitle from the previous playback position.
+
         val positionUs = positionMillis * 1_000
         assHandler.videoTime = positionUs
-        // AssHandler throttles clock callbacks while video is playing. A paused seek only
-        // produces one distinct timestamp, so request that frame explicitly as well.
+
         assHandler.videoTimeCallback?.invoke(positionUs)
     }
 
     override fun skip(deltaMillis: Long) {
-        // The interface default would delegate to the backend's seekTo (bypassing the override
-        // above via class delegation), skipping the libass clock refresh; route it explicitly.
+
         seekTo(currentPositionMillis.value + deltaMillis)
     }
 
@@ -173,13 +138,6 @@ class LibassExoPlayerMediampPlayer private constructor(
     }
 }
 
-/**
- * Builds libass-enabled media sources. Installed as the backend's media source interceptor
- * (`docs/playback-state-v2.md` §11): invoked on the main dispatcher during each open, after
- * [ExoPlayerMediampPlayer] built the default source (and, for non-`file://`
- * [SeekableInputMediaData], eagerly opened the session's [SeekableInput]), and before ExoPlayer
- * prepares it.
- */
 @AndroidxOptIn(UnstableApi::class)
 private class LibassMediaSourcePipeline(
     private val context: Context,
@@ -206,12 +164,7 @@ private class LibassMediaSourcePipeline(
                 if (data.uri.startsWith("file://")) {
                     DefaultDataSource.Factory(context)
                 } else {
-                    // ExoPlayerMediampPlayer.openImpl opened the session's SeekableInput before
-                    // invoking this interceptor and registered it as a session resource (the
-                    // state machine closes it when the session ends). The createInput contract
-                    // allows only one open input at a time, so reuse that input rather than
-                    // opening another. If the wrapper or its input is missing (unexpected),
-                    // fall back to the backend's default source.
+
                     val tracking = data as? TrackingSeekableInputMediaData ?: return null
                     val primaryInput = tracking.primaryInput ?: return null
                     RoutingDataSourceFactory(
@@ -230,7 +183,7 @@ private class LibassMediaSourcePipeline(
             .setSubtitleConfigurations(
                 data.extraFiles.subtitles.mapIndexed { index, subtitle ->
                     MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.uri)).apply {
-                        setId("animeko-external-subtitle-$index")
+                        setId("wynime-external-subtitle-$index")
                         subtitle.label?.let(::setLabel)
                         subtitle.mimeType?.let(::setMimeType)
                         subtitle.language?.let(::setLanguage)
@@ -261,15 +214,6 @@ private class LibassMediaSourcePipeline(
 private fun MediaData?.unwrapTracking(): MediaData? =
     (this as? TrackingSeekableInputMediaData)?.source ?: this
 
-/**
- * Captures the first [SeekableInput] created from [source] — the one
- * [ExoPlayerMediampPlayer.openImpl] opens for the session before the media source interceptor
- * runs — so [LibassMediaSourcePipeline] can route playback reads through it.
- *
- * Ownership: the captured input belongs to the backend session ([ExoPlayerMediampPlayer]'s
- * state machine closes it when the session ends); neither this class nor [VideoDataDataSource]
- * closes it.
- */
 @OptIn(ExperimentalMediampApi::class)
 private class TrackingSeekableInputMediaData(
     val source: SeekableInputMediaData,
@@ -358,7 +302,7 @@ class LibassExoPlayerMediampPlayerFactory(
             parentCoroutineContext,
             audioTimeStretch,
             configurePlayerBuilder = { builder ->
-                builder.setLoadControl(aniExoPlayerLoadControl())
+                builder.setLoadControl(wynimeExoPlayerLoadControl())
             },
         )
     }

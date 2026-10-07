@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs
+package com.wynime.app.ui.settings.tabs
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,41 +9,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.DebugSettings
-import me.him188.ani.app.data.repository.user.AccessTokenSession
-import me.him188.ani.app.data.repository.user.UserRepository
-import me.him188.ani.app.domain.session.SessionManager
-import me.him188.ani.app.domain.usecase.GlobalKoin
-import me.him188.ani.app.platform.MeteredNetworkDetector
-import me.him188.ani.app.tools.update.UpdateInstaller
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_debug_copied
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_install_commit
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_install_commit_description
-import me.him188.ani.app.ui.lang.settings_debug_episodes
-import me.him188.ani.app.ui.lang.settings_debug_get_ani_token
-import me.him188.ani.app.ui.lang.settings_debug_install_package
-import me.him188.ani.app.ui.lang.settings_debug_install_package_on_drop
-import me.him188.ani.app.ui.lang.settings_debug_install_package_on_drop_description
-import me.him188.ani.app.ui.lang.settings_debug_logged_out
-import me.him188.ani.app.ui.lang.settings_debug_logout
-import me.him188.ani.app.ui.lang.settings_debug_metered_network
-import me.him188.ani.app.ui.lang.settings_debug_mode
-import me.him188.ani.app.ui.lang.settings_debug_mode_description
-import me.him188.ani.app.ui.lang.settings_debug_others
-import me.him188.ani.app.ui.lang.settings_debug_show_all_episodes
-import me.him188.ani.app.ui.lang.settings_debug_show_all_episodes_description
-import me.him188.ani.app.ui.lang.settings_debug_status
-import me.him188.ani.app.ui.settings.SettingsTab
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.app.ui.settings.framework.components.SwitchItem
-import me.him188.ani.app.ui.settings.framework.components.TextItem
-import me.him188.ani.app.ui.update.devbuild.DevBuildPackageSpec
-import me.him188.ani.utils.platform.isDesktop
+import com.wynime.app.data.models.preference.DebugSettings
+import com.wynime.app.data.repository.user.AccessTokenSession
+import com.wynime.app.data.repository.user.UserRepository
+import com.wynime.app.domain.session.SessionManager
+import com.wynime.app.domain.usecase.GlobalKoin
+import com.wynime.app.platform.MeteredNetworkDetector
+import com.wynime.app.tools.update.UpdateInstaller
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_debug_copied
+import com.wynime.app.ui.lang.settings_debug_dev_builds
+import com.wynime.app.ui.lang.settings_debug_dev_builds_install_commit
+import com.wynime.app.ui.lang.settings_debug_dev_builds_install_commit_description
+import com.wynime.app.ui.lang.settings_debug_episodes
+import com.wynime.app.ui.lang.settings_debug_get_ani_token
+import com.wynime.app.ui.lang.settings_debug_install_package
+import com.wynime.app.ui.lang.settings_debug_install_package_on_drop
+import com.wynime.app.ui.lang.settings_debug_install_package_on_drop_description
+import com.wynime.app.ui.lang.settings_debug_logged_out
+import com.wynime.app.ui.lang.settings_debug_logout
+import com.wynime.app.ui.lang.settings_debug_metered_network
+import com.wynime.app.ui.lang.settings_debug_mode
+import com.wynime.app.ui.lang.settings_debug_mode_description
+import com.wynime.app.ui.lang.settings_debug_others
+import com.wynime.app.ui.lang.settings_debug_show_all_episodes
+import com.wynime.app.ui.lang.settings_debug_show_all_episodes_description
+import com.wynime.app.ui.lang.settings_debug_status
+import com.wynime.app.ui.settings.SettingsTab
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.app.ui.settings.framework.components.SwitchItem
+import com.wynime.app.ui.settings.framework.components.TextItem
+import com.wynime.app.ui.update.devbuild.DevBuildPackageSpec
+import com.wynime.utils.platform.isDesktop
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.mp.KoinPlatform
@@ -150,7 +141,7 @@ fun DebugTab(
                 onClick = {
                     scope.launch {
                         val value =
-                            (GlobalKoin.get<SessionManager>().sessionFlow.value as? AccessTokenSession)?.tokens?.aniAccessToken
+                            (GlobalKoin.get<SessionManager>().sessionFlow.value as? AccessTokenSession)?.tokens?.legacyServiceAccessToken
                         toaster.toast(getString(Lang.settings_debug_copied, value.toString()))
                         clipboard.setClipEntryText(value.toString())
                     }

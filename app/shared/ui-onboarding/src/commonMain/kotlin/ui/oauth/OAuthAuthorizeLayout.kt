@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.oauth
+package com.wynime.app.ui.oauth
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -53,25 +44,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.domain.session.auth.OAuthPlatform
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.animation.AniMotionScheme
-import me.him188.ani.app.ui.foundation.animation.AnimatedVisibilityMotionScheme
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.icons.OAuthPlatformIcon
-import me.him188.ani.app.ui.foundation.widgets.HeroIcon
-import me.him188.ani.app.ui.lang.*
-import me.him188.ani.app.ui.search.renderLoadErrorMessage
-import me.him188.ani.app.ui.settings.SettingsTab
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.framework.components.TextItem
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.domain.session.auth.OAuthPlatform
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.animation.WynimeMotionScheme
+import com.wynime.app.ui.foundation.animation.AnimatedVisibilityMotionScheme
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.icons.OAuthPlatformIcon
+import com.wynime.app.ui.foundation.widgets.HeroIcon
+import com.wynime.app.ui.lang.*
+import com.wynime.app.ui.search.renderLoadErrorMessage
+import com.wynime.app.ui.settings.SettingsTab
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.TextItem
 import org.jetbrains.compose.resources.*
 
 sealed interface AuthState {
-    data class LoggedInAni(val bound: Boolean) : Idle
+    data class LoggedInBangumi(val bound: Boolean) : Idle
 
-    data object NoAniAccount : Idle
+    data object NoBangumiAccount : Idle
 
     sealed interface Idle : AuthState
 
@@ -92,7 +83,7 @@ fun OAuthAuthorizeLayout(
     modifier: Modifier = Modifier,
 ) {
     SettingsTab(modifier) {
-        val motionScheme = LocalAniMotionScheme.current
+        val motionScheme = LocalWynimeMotionScheme.current
         Column(
             modifier,
             verticalArrangement = Arrangement.spacedBy(SettingsScope.itemVerticalSpacing),
@@ -144,7 +135,6 @@ fun OAuthAuthorizeLayout(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AuthorizeButton(
@@ -158,10 +148,10 @@ private fun AuthorizeButton(
         {
             AnimatedContent(
                 targetState = authorizeState,
-                transitionSpec = LocalAniMotionScheme.current.animatedContent.standard,
+                transitionSpec = LocalWynimeMotionScheme.current.animatedContent.standard,
             ) {
                 when (it) {
-                    is AuthState.LoggedInAni -> {
+                    is AuthState.LoggedInBangumi -> {
                         Text(stringResource(Lang.oauth_bind_account, platform.displayName))
                     }
 
@@ -211,10 +201,10 @@ private fun AuthorizeButton(
                 shape = if (awaitingResult) SplitButtonDefaults.leadingButtonShapesFor(48.dp).shape else ButtonDefaults.shape,
             )
         }
-        AniAnimatedVisibility(
+        WynimeAnimatedVisibility(
             visible = awaitingResult,
-            enter = LocalAniMotionScheme.current.animatedVisibility.rowEnter,
-            exit = LocalAniMotionScheme.current.animatedVisibility.rowExit,
+            enter = LocalWynimeMotionScheme.current.animatedVisibility.rowEnter,
+            exit = LocalWynimeMotionScheme.current.animatedVisibility.rowExit,
         ) {
             FilledTonalButton(
                 onClick = onClickCancel,
@@ -229,7 +219,7 @@ private fun AuthorizeButton(
 private fun AuthorizeStateText(
     authorizeState: AuthState,
     modifier: Modifier = Modifier,
-    animatedVisibilityMotionScheme: AnimatedVisibilityMotionScheme = LocalAniMotionScheme.current.animatedVisibility,
+    animatedVisibilityMotionScheme: AnimatedVisibilityMotionScheme = LocalWynimeMotionScheme.current.animatedVisibility,
 ) {
 
     AnimatedVisibility(
@@ -301,11 +291,9 @@ private fun RenderHelpOptionContent(
                 Text(stringResource(Lang.oauth_bangumi_help_wrong_captcha_content))
             }
 
-
             HelpOption.CANT_RECEIVE_REGISTER_EMAIL -> {
                 Text(stringResource(Lang.oauth_bangumi_help_cant_receive_email_content))
             }
-
 
             HelpOption.REGISTER_ACTIVATION_FAILED -> {
                 Text(stringResource(Lang.oauth_bangumi_help_activation_failed_content))
@@ -352,12 +340,12 @@ private fun SettingsScope.AuthorizeHelpQA(
                     content = { RenderHelpOptionContent(option, contactActions) },
                     expanded = currentSelected == option,
                     showDivider = index != HelpOption.entries.lastIndex,
-                    onClick = { 
+                    onClick = {
                         val wasExpanded = currentSelected == option
                         currentSelected = if (wasExpanded) null else option
                         if (!wasExpanded) {
                             scope.launch {
-                                // 帮助栏展开自动下拉以展示内容
+
                                 delay(100)
                                 scrollState.animateScrollBy(300f)
                             }
@@ -377,7 +365,7 @@ fun SettingsScope.ExpandableHelpItem(
     showDivider: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    motionScheme: AniMotionScheme = LocalAniMotionScheme.current,
+    motionScheme: WynimeMotionScheme = LocalWynimeMotionScheme.current,
 ) {
     Column(modifier) {
         TextItem(

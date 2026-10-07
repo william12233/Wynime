@@ -1,40 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-// Generated from /Users/stageguard/Projects/animeko/utils/bbcode/BBCode.g4 by ANTLR 4.13.1
-package me.him188.ani.utils.bbcode
+package com.wynime.utils.bbcode
 
 import com.strumenta.antlrkotlin.runtime.JsName
-import org.antlr.v4.kotlinruntime.NoViableAltException
-import org.antlr.v4.kotlinruntime.Parser
-import org.antlr.v4.kotlinruntime.ParserRuleContext
-import org.antlr.v4.kotlinruntime.RecognitionException
-import org.antlr.v4.kotlinruntime.RuleContext
-import org.antlr.v4.kotlinruntime.RuntimeMetaData
-import org.antlr.v4.kotlinruntime.Token
-import org.antlr.v4.kotlinruntime.TokenStream
-import org.antlr.v4.kotlinruntime.Vocabulary
-import org.antlr.v4.kotlinruntime.VocabularyImpl
-import org.antlr.v4.kotlinruntime.atn.ATN
+import org.antlr.v4.kotlinruntime.*
+import org.antlr.v4.kotlinruntime.atn.*
 import org.antlr.v4.kotlinruntime.atn.ATN.Companion.INVALID_ALT_NUMBER
-import org.antlr.v4.kotlinruntime.atn.ATNDeserializer
-import org.antlr.v4.kotlinruntime.atn.ParserATNSimulator
-import org.antlr.v4.kotlinruntime.atn.PredictionContextCache
-import org.antlr.v4.kotlinruntime.dfa.DFA
-import org.antlr.v4.kotlinruntime.tree.ParseTreeListener
-import org.antlr.v4.kotlinruntime.tree.ParseTreeVisitor
-import org.antlr.v4.kotlinruntime.tree.TerminalNode
+import org.antlr.v4.kotlinruntime.dfa.*
+import org.antlr.v4.kotlinruntime.misc.*
+import org.antlr.v4.kotlinruntime.tree.*
 import kotlin.jvm.JvmField
 
 @Suppress(
-    // This is required as we are using a custom JsName alias that is not recognized by the IDE.
-    // No name clashes will happen tho.
+
     "JS_NAME_CLASH",
     "UNUSED_VARIABLE",
     "ClassName",
@@ -243,9 +219,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
     override val serializedATN: String =
         SERIALIZED_ATN
 
-    /* Named actions */
-
-    /* Funcs */
     public open class FileContext : ParserRuleContext {
         override val ruleIndex: Int = Rules.File
 
@@ -275,7 +248,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun file(): FileContext {
         var _localctx = FileContext(context, state)
@@ -334,7 +306,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun section(): SectionContext {
         var _localctx = SectionContext(context, state)
@@ -417,7 +388,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun element(): ElementContext {
         var _localctx = ElementContext(context, state)
         var _token: Token?
@@ -430,92 +400,92 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             errorHandler.sync(this)
 
             when (_input.LA(1)) {
-                Tokens.T__7, Tokens.T__8 -> /*LL1AltBlock*/ {
+                Tokens.T__7, Tokens.T__8 ->                 {
                     enterOuterAlt(_localctx, 1)
                     this.state = 52
                     b()
 
-                }Tokens.T__11, Tokens.T__12 -> /*LL1AltBlock*/ {
+                }Tokens.T__11, Tokens.T__12 ->                 {
                     enterOuterAlt(_localctx, 2)
                     this.state = 53
                     i()
 
-                }Tokens.T__15, Tokens.T__16 -> /*LL1AltBlock*/ {
+                }Tokens.T__15, Tokens.T__16 ->                 {
                     enterOuterAlt(_localctx, 3)
                     this.state = 54
                     u()
 
-                }Tokens.T__19, Tokens.T__20 -> /*LL1AltBlock*/ {
+                }Tokens.T__19, Tokens.T__20 ->                 {
                     enterOuterAlt(_localctx, 4)
                     this.state = 55
                     s()
 
-                }Tokens.T__23, Tokens.T__24 -> /*LL1AltBlock*/ {
+                }Tokens.T__23, Tokens.T__24 ->                 {
                     enterOuterAlt(_localctx, 5)
                     this.state = 56
                     code()
 
-                }Tokens.T__73, Tokens.T__74 -> /*LL1AltBlock*/ {
+                }Tokens.T__73, Tokens.T__74 ->                 {
                     enterOuterAlt(_localctx, 6)
                     this.state = 57
                     url()
 
-                }Tokens.T__77, Tokens.T__78 -> /*LL1AltBlock*/ {
+                }Tokens.T__77, Tokens.T__78 ->                 {
                     enterOuterAlt(_localctx, 7)
                     this.state = 58
                     url_named()
 
-                }Tokens.T__79, Tokens.T__80 -> /*LL1AltBlock*/ {
+                }Tokens.T__79, Tokens.T__80 ->                 {
                     enterOuterAlt(_localctx, 8)
                     this.state = 59
                     img()
 
-                }Tokens.T__31, Tokens.T__32 -> /*LL1AltBlock*/ {
+                }Tokens.T__31, Tokens.T__32 ->                 {
                     enterOuterAlt(_localctx, 9)
                     this.state = 60
                     quote()
 
-                }Tokens.T__35, Tokens.T__36 -> /*LL1AltBlock*/ {
+                }Tokens.T__35, Tokens.T__36 ->                 {
                     enterOuterAlt(_localctx, 10)
                     this.state = 61
                     size()
 
-                }Tokens.T__39, Tokens.T__40 -> /*LL1AltBlock*/ {
+                }Tokens.T__39, Tokens.T__40 ->                 {
                     enterOuterAlt(_localctx, 11)
                     this.state = 62
                     color()
 
-                }Tokens.T__27, Tokens.T__28 -> /*LL1AltBlock*/ {
+                }Tokens.T__27, Tokens.T__28 ->                 {
                     enterOuterAlt(_localctx, 12)
                     this.state = 63
                     mask()
 
-                }Tokens.T__43, Tokens.T__44 -> /*LL1AltBlock*/ {
+                }Tokens.T__43, Tokens.T__44 ->                 {
                     enterOuterAlt(_localctx, 13)
                     this.state = 64
                     center()
 
-                }Tokens.T__47, Tokens.T__48 -> /*LL1AltBlock*/ {
+                }Tokens.T__47, Tokens.T__48 ->                 {
                     enterOuterAlt(_localctx, 14)
                     this.state = 65
                     left()
 
-                }Tokens.T__51, Tokens.T__52 -> /*LL1AltBlock*/ {
+                }Tokens.T__51, Tokens.T__52 ->                 {
                     enterOuterAlt(_localctx, 15)
                     this.state = 66
                     right()
 
-                }Tokens.T__55, Tokens.T__56 -> /*LL1AltBlock*/ {
+                }Tokens.T__55, Tokens.T__56 ->                 {
                     enterOuterAlt(_localctx, 16)
                     this.state = 67
                     bgm_sticker()
 
-                }Tokens.T__57, Tokens.T__58, Tokens.T__59, Tokens.T__60, Tokens.T__61, Tokens.T__62, Tokens.T__63, Tokens.T__64, Tokens.T__65, Tokens.T__66, Tokens.T__67, Tokens.T__68, Tokens.T__69, Tokens.T__70, Tokens.T__71, Tokens.T__72 -> /*LL1AltBlock*/ {
+                }Tokens.T__57, Tokens.T__58, Tokens.T__59, Tokens.T__60, Tokens.T__61, Tokens.T__62, Tokens.T__63, Tokens.T__64, Tokens.T__65, Tokens.T__66, Tokens.T__67, Tokens.T__68, Tokens.T__69, Tokens.T__70, Tokens.T__71, Tokens.T__72 ->                 {
                     enterOuterAlt(_localctx, 17)
                     this.state = 68
                     text_stiker()
 
-                }Tokens.T__0, Tokens.T__1, Tokens.T__2, Tokens.T__3, Tokens.T__4, Tokens.T__5, Tokens.T__6, Tokens.NUMBER, Tokens.TEXT -> /*LL1AltBlock*/ {
+                }Tokens.T__0, Tokens.T__1, Tokens.T__2, Tokens.T__3, Tokens.T__4, Tokens.T__5, Tokens.T__6, Tokens.NUMBER, Tokens.TEXT ->                 {
                     enterOuterAlt(_localctx, 18)
                     this.state = 69
                     plain()
@@ -567,7 +537,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun plain(): PlainContext {
         var _localctx = PlainContext(context, state)
@@ -651,7 +620,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun b(): BContext {
         var _localctx = BContext(context, state)
@@ -744,7 +712,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun i(): IContext {
         var _localctx = IContext(context, state)
         var _token: Token?
@@ -835,7 +802,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun u(): UContext {
         var _localctx = UContext(context, state)
@@ -928,7 +894,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun s(): SContext {
         var _localctx = SContext(context, state)
         var _token: Token?
@@ -1019,7 +984,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun code(): CodeContext {
         var _localctx = CodeContext(context, state)
@@ -1112,7 +1076,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun mask(): MaskContext {
         var _localctx = MaskContext(context, state)
         var _token: Token?
@@ -1203,7 +1166,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun quote(): QuoteContext {
         var _localctx = QuoteContext(context, state)
@@ -1297,7 +1259,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun size(): SizeContext {
         var _localctx = SizeContext(context, state)
@@ -1410,7 +1371,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun color(): ColorContext {
         var _localctx = ColorContext(context, state)
         var _token: Token?
@@ -1520,7 +1480,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun center(): CenterContext {
         var _localctx = CenterContext(context, state)
         var _token: Token?
@@ -1611,7 +1570,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun left(): LeftContext {
         var _localctx = LeftContext(context, state)
@@ -1704,7 +1662,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun right(): RightContext {
         var _localctx = RightContext(context, state)
         var _token: Token?
@@ -1796,7 +1753,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun bgm_sticker(): Bgm_stickerContext {
         var _localctx = Bgm_stickerContext(context, state)
         var _token: Token?
@@ -1844,7 +1800,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
     public open class Text_stikerContext : ParserRuleContext {
         override val ruleIndex: Int = Rules.Text_stiker
 
-
         public constructor(parent: ParserRuleContext?, invokingState: Int) : super(parent, invokingState) {
         }
 
@@ -1868,7 +1823,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun text_stiker(): Text_stikerContext {
         var _localctx = Text_stikerContext(context, state)
@@ -1936,7 +1890,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun url(): UrlContext {
         var _localctx = UrlContext(context, state)
@@ -2030,7 +1983,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             }
         }
     }
-
 
     public fun url_named(): Url_namedContext {
         var _localctx = Url_namedContext(context, state)
@@ -2131,7 +2083,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun img(): ImgContext {
         var _localctx = ImgContext(context, state)
         var _token: Token?
@@ -2231,7 +2182,6 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
         }
     }
 
-
     public fun attribute_value(): Attribute_valueContext {
         var _localctx = Attribute_valueContext(context, state)
         var _token: Token?
@@ -2244,13 +2194,13 @@ public open class BBCodeParser(input: TokenStream) : Parser(input) {
             errorHandler.sync(this)
 
             when (_input.LA(1)) {
-                Tokens.QUOTED -> /*LL1AltBlock*/ {
+                Tokens.QUOTED ->                 {
                     enterOuterAlt(_localctx, 1)
                     this.state = 182
                     _token = match(Tokens.QUOTED)
                     _localctx.quoted = _token
 
-                }Tokens.TEXT -> /*LL1AltBlock*/ {
+                }Tokens.TEXT ->                 {
                     enterOuterAlt(_localctx, 2)
                     this.state = 183
                     _token = match(Tokens.TEXT)

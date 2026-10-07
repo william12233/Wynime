@@ -1,12 +1,3 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 import org.gradle.process.ExecOperations
 import java.io.ByteArrayOutputStream
 import java.net.URI
@@ -15,26 +6,10 @@ import java.util.Base64
 import javax.inject.Inject
 
 plugins {
-    id("ani.base")
+    id("wynime.base")
     `java-library`
 }
 
-// AndroidX sqlite-bundled-jvm 没有发布 Windows ARM64 native 库 (2.6.1 ~ 2.7.0 均无), WoA64 上
-// BundledSQLiteDriver 会抛 "Cannot find a suitable SQLite binary for windows 11 | aarch64".
-//
-// 此模块在 Windows ARM64 主机上用 MSVC 编译出 sqliteJni.dll, 打成只含资源的 jar, 由 app-data 以
-// runtimeOnly 引入. AndroidX 的 NativeLibraryLoader 通过 classloader 查找该资源, 所以只要它在
-// runtime classpath 上就能解析, gradlew run / desktopTest / 打包 / 发版走同一条加载路径.
-//
-// 源码取自 SQLite 官方 amalgamation 和 androidx.sqlite 的 sqlite_bindings.cpp, 两者都以 sha256
-// 钉死, 编译宏与 AndroidX 官方构建一致. 需要 Visual Studio 的 "C++ ARM64 build tools" 组件.
-//
-// AndroidX 官方发布 windows_arm64 后, 删除本目录、settings 中的模块注册和 app-data 那处 runtimeOnly 即可.
-
-// JNI binding 取自 androidx.sqlite 2.6.1; androidx 不给 library 版本打 tag, 所以用该文件在
-// 2.6.1 发版时点的 commit. 运行时实际解析到的版本由 Room 的传递依赖决定 (目前是 2.6.2),
-// 与这里未必一致 —— JNI 这层在补丁版本间是稳定的, 实测 2.6.1 的 binding 在 2.6.2 上工作正常.
-// 若日后升级 androidx.sqlite 后出现加载或行为异常, 把下面三个值换成新版本对应的 commit.
 val bindingSqliteVersion = "2.6.1"
 val bindingCommit = "ce10e55447f4e0fd21a9001d0589a6e1e7a5a8d7"
 val bindingSha256 = "4C535DFF9D2E30E8B0B5203455167020E102185E22F3056A27DA0B1AB71D3897"
@@ -44,20 +19,10 @@ val sqliteAmalgamationVersion = "3500100"
 val sqliteAmalgamationYear = "2025"
 val sqliteAmalgamationSha256 = "41716B44AC8777188C4C3F1F370F01C9CB9E3B6428EB5C981D086C35DE2D9D3F"
 
-// 判断的是构建主机: 这里是原生编译, 无法从 x64 交叉构建, 所以其他平台上本模块只产出空 jar (无人依赖).
 val isWindowsArm64Host = getOs() == Os.Windows && getArch() == Arch.AARCH64
 
-/**
- * 同一份文件的一个下载来源. [base64Encoded] 用于 googlesource 的 `?format=TEXT` 接口, 它返回 base64 编码的内容.
- */
 data class DownloadSource(val url: String, val base64Encoded: Boolean = false) : java.io.Serializable
 
-/**
- * 从 [sources] 之一下载同一份文件并校验 sha256.
- *
- * 来源按顺序尝试, 一轮全部失败才退避重试, 因此单个来源的临时故障会立刻换到下一个来源.
- * 校验失败说明内容不对而不是网络问题, 直接失败, 不再尝试其他来源.
- */
 abstract class DownloadAndVerify : DefaultTask() {
     @get:Input
     abstract val sources: ListProperty<DownloadSource>
@@ -110,9 +75,6 @@ abstract class DownloadAndVerify : DefaultTask() {
     }
 }
 
-/**
- * 用 MSVC 的 arm64 工具链把 amalgamation 和 JNI binding 编译成 `sqliteJni.dll`.
- */
 abstract class CompileSqliteJni @Inject constructor(
     private val execOperations: ExecOperations,
 ) : DefaultTask() {
@@ -155,7 +117,6 @@ abstract class CompileSqliteJni @Inject constructor(
         val sqliteObj = objDir.resolve("sqlite3.obj")
         val bindingObj = objDir.resolve("sqlite_bindings.obj")
 
-        // 与 AndroidX 官方构建保持一致的编译宏
         val defines = listOf(
             "HAVE_USLEEP=1",
             "SQLITE_DEFAULT_AUTOVACUUM=1",
@@ -181,8 +142,6 @@ abstract class CompileSqliteJni @Inject constructor(
             "SQLITE_THREADSAFE=2",
         ).joinToString(" ") { "/D$it" }
 
-        // /Brepro 让产物可复现, /MT 静态链接 CRT 以免依赖目标机器的 VC++ 运行库.
-        // 命令写进 .cmd 再执行: 直接传给 cmd.exe /c 的话, 命令串里的引号会被 Windows 的参数规则拆散.
         val script = objDir.resolve("build-sqlite-jni.cmd")
         script.writeText(
             listOf(
@@ -253,7 +212,7 @@ val downloadSqliteAmalgamation = tasks.register<DownloadAndVerify>("downloadSqli
 val unzipSqliteAmalgamation = tasks.register<Sync>("unzipSqliteAmalgamation") {
     description = "Unpacks the SQLite amalgamation source archive"
     from(zipTree(downloadSqliteAmalgamation.flatMap { it.target })) {
-        // 去掉压缩包里的顶层 sqlite-amalgamation-<version>/ 目录
+
         eachFile { relativePath = RelativePath(true, *relativePath.segments.drop(1).toTypedArray()) }
         includeEmptyDirs = false
     }
@@ -263,8 +222,7 @@ val unzipSqliteAmalgamation = tasks.register<Sync>("unzipSqliteAmalgamation") {
 val downloadSqliteBinding = tasks.register<DownloadAndVerify>("downloadSqliteBinding") {
     description = "Downloads sqlite_bindings.cpp of androidx.sqlite $bindingSqliteVersion"
     val path = "sqlite/sqlite-bundled/src/jvmAndroidMain/jni/sqlite_bindings.cpp"
-    // GitHub 上的 androidx/androidx 是 AOSP frameworks/support 的镜像, 与 googlesource 共用 commit, 内容以 sha256 钉死.
-    // 先用它: CI 跑在 GitHub 托管的 runner 上, 而 googlesource 会对这些 runner 的出口持续返回 503.
+
     sources = listOf(
         DownloadSource("https://raw.githubusercontent.com/androidx/androidx/$bindingCommit/$path"),
         DownloadSource(
@@ -276,7 +234,6 @@ val downloadSqliteBinding = tasks.register<DownloadAndVerify>("downloadSqliteBin
     target = layout.buildDirectory.file("sqlite-woa64/sqlite_bindings.cpp")
 }
 
-// 只在 Windows ARM64 主机上注册编译任务并接进 jar: 其他平台既编不出来, 也没有人依赖这个 jar.
 if (isWindowsArm64Host) {
     val compileSqliteJni = tasks.register<CompileSqliteJni>("compileSqliteJni") {
         description = "Builds natives/windows_arm64/sqliteJni.dll for androidx.sqlite $bindingSqliteVersion"

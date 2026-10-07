@@ -23,7 +23,7 @@
     "BANGUMI_API_BASE_URL": "https://api.bgm.tv",
     "APP_LINK_REDIRECT_URI": "https://wynime-bangumi-broker.wzhou785.workers.dev/app/oauth-complete",
     "CUSTOM_SCHEME_REDIRECT_URI": "ani://bangumi-oauth-callback",
-    "ANDROID_APP_PACKAGES": "com.wynime.app,com.wynime.app.tv",
+    "ANDROID_APP_PACKAGES": "com.wynime.app",
     "ANDROID_APP_SHA256_CERT_FINGERPRINTS": "57:F2:6D:84:A3:3C:10:A7:3B:42:9E:95:20:D7:2A:93:65:4E:90:AE:1F:E8:29:8D:47:9E:E3:42:D6:38:33:BD"
   }
 }

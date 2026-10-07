@@ -1,4 +1,4 @@
-package me.him188.ani.utils.platform.annotations
+package com.wynime.utils.platform.annotations
 
 @RequiresOptIn(
     level = RequiresOptIn.Level.ERROR,

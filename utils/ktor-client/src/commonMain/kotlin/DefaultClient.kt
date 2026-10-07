@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.ktor
+package com.wynime.utils.ktor
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -29,22 +20,18 @@ import io.ktor.serialization.ContentConverter
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
-import me.him188.ani.utils.ktor.HttpLogger.logHttp
-import me.him188.ani.utils.logging.Logger
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.utils.ktor.HttpLogger.logHttp
+import com.wynime.utils.logging.Logger
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlin.time.measureTimedValue
 
-// 根据不同平台，选择相应的 HttpClientEngine
 expect fun getPlatformKtorEngine(): HttpClientEngineFactory<*>
 
-/**
- * Note: 尽可能使用 `HttpClientProvider` 来共享 [HttpClient] 实例. 因为每个实例都潜在地会有一个线程池.
- */
 fun createDefaultHttpClient(
     clientConfig: HttpClientConfig<*>.() -> Unit = {},
 ): HttpClient = HttpClient(getPlatformKtorEngine()) {
@@ -52,7 +39,7 @@ fun createDefaultHttpClient(
         maxRetries = 1
         delayMillis { 1000 }
         retryIf { cause, response ->
-            // 只重试网络异常
+
             cause is IOException
         }
     }
@@ -80,7 +67,7 @@ fun createDefaultHttpClient(
         checkHttpMethod = false
         allowHttpsDowngrade = true
     }
-    expectSuccess = true // All clients actually expect success by default in clientConfig, so we move them here
+    expectSuccess = true
     clientConfig()
 }
 
@@ -112,7 +99,7 @@ object HttpLogger {
         duration: Duration,
     ) {
         when {
-            // 刻意没记录 exception, 因为外面应该会处理
+
             responseStatus.isFailure -> {
                 if (responseStatus.exceptionOrNull() is CancellationException) {
                     warn { buildHttpRequestLog(method, url, isAuthorized, responseStatus, duration) }
@@ -149,7 +136,7 @@ object HttpLogger {
 
             responseStatus.fold(
                 onSuccess = {
-                    append(it.toString()) // "404 Not Found"
+                    append(it.toString())
                 },
                 onFailure = {
                     when (it) {
@@ -165,6 +152,5 @@ object HttpLogger {
         }
     }
 }
-
 
 internal expect fun getXmlConverter(): ContentConverter

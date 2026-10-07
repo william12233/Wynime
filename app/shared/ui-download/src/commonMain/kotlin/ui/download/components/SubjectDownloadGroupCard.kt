@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.components
+package com.wynime.app.ui.download.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.combinedClickable
@@ -37,20 +28,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_finished_count
-import me.him188.ani.datasources.api.topic.FileSize
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_finished_count
+import com.wynime.datasources.api.topic.FileSize
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 条目分组卡片: 封面 + 标题 + "15/28 已完成 · 12.4 GB" + 下载速度 + 进度条 + chevron.
- *
- * 用于全局缓存管理页的手机布局和宽屏双栏布局的列表栏.
- * 多选模式下行首显示复选框 (选中该条目的全部缓存).
- *
- * 设计稿: [Figma](https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=1655-6587)
- */
 @Composable
 fun SubjectDownloadGroupCard(
     group: SubjectDownloadGroup,
@@ -61,9 +44,9 @@ fun SubjectDownloadGroupCard(
     onLongClick: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    // 设计稿: 手机上点击卡片会跳转页面, 显示 chevron; 宽屏双栏在右侧展示详情, 不显示.
+
     showChevron: Boolean = true,
-    // 设计稿: 手机上卡片通栏无圆角, 宽屏列表栏为圆角卡片.
+
     shape: Shape = MaterialTheme.shapes.large,
 ) {
     val containerColor by animateColorAsState(

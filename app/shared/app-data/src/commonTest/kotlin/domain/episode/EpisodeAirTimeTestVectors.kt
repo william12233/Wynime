@@ -1,17 +1,10 @@
-// GENERATED FILE. Do not edit by hand.
-// Source: cases.json (real bangumi-data + Bangumi episode data, collected 2026-09-04).
-// An identical copy lives in both ani-api-server and animeko; regenerate both when changing it.
-package me.him188.ani.app.domain.episode
+package com.wynime.app.domain.episode
 
 @Suppress("MaxLineLength", "LongMethod")
 object EpisodeAirTimeTestVectors {
     const val WINDOW_UPPER_HOURS: Int = 30
     const val WINDOW_LOWER_HOURS: Int = 0
 
-    /**
-     * One episode. [expected] is the ISO-8601 UTC instant `resolveEpisodeAirTime` must return, `null` for unknown.
-     * [expectedIsExact] is `true` when [expected] is a recurrence slot, `false` when it is the day-precision fallback.
-     */
     data class Case(
         val id: String,
         val kind: String,
@@ -36,10 +29,8 @@ object EpisodeAirTimeTestVectors {
 
     data class ScheduleEpisode(val sort: String, val type: Int, val airDate: String)
 
-    /** Expected entries for one calendar date, ordered by airingTime then episode sort. */
     data class ScheduleExpectedDate(val date: String, val sorts: List<String>, val timeKnown: List<Boolean>)
 
-    /** Whole-subject scenario for the server schedule builder: `today` and `timeZone` are the request parameters. */
     data class ScheduleCase(
         val id: String,
         val why: String,

@@ -1,17 +1,8 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.foundation.DefaultHttpClientProvider
-import me.him188.ani.app.domain.settings.NoProxyProvider
+import com.wynime.app.domain.foundation.DefaultHttpClientProvider
+import com.wynime.app.domain.settings.NoProxyProvider
 import org.openani.mediamp.source.UriMediaData
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -29,7 +20,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
-/** 这些测试只关心广告过滤, 分片不经代理. */
 private suspend fun PlatformHlsPlaybackPreparer.prepare(data: UriMediaData): HlsPlaybackPreparerResult =
     prepare(data, HlsPlaybackOptions(filterSegments = true))
 

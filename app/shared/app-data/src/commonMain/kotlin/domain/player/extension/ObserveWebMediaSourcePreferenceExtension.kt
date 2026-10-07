@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.player.extension
+package com.wynime.app.domain.player.extension
 
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
@@ -18,20 +9,17 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.episode.EpisodeSession
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchResult
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.app.domain.media.selector.eventHandling
-import me.him188.ani.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
-import me.him188.ani.app.domain.mediasource.SetPreferredWebMediaSourceUseCase
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.domain.episode.EpisodeSession
+import com.wynime.app.domain.media.fetch.MediaSourceFetchResult
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.domain.media.selector.eventHandling
+import com.wynime.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
+import com.wynime.app.domain.mediasource.SetPreferredWebMediaSourceUseCase
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import org.koin.core.Koin
 
-/**
- * 监听用户偏好的 Web 源变更
- */
 class ObserveWebMediaSourcePreferenceExtension(
     private val context: PlayerExtensionContext,
     koin: Koin
@@ -49,7 +37,7 @@ class ObserveWebMediaSourcePreferenceExtension(
             context.sessionFlow.flatMapLatest { it.fetchSelectFlow }.collectLatest { bundle ->
                 if (bundle == null) return@collectLatest
                 coroutineScope {
-                    // 监听用户喜欢的 Web 源变更, 增加偏好
+
                     launch {
                         bundle.mediaSelector.eventHandling.preferWebMediaSource { event ->
                             if (event.subjectId != context.subjectId) return@preferWebMediaSource
@@ -61,10 +49,8 @@ class ObserveWebMediaSourcePreferenceExtension(
                         }
                     }
 
-                    // 监听 Web 源加载失败的情况, 删除偏好.
-                    // 条目级查询会话跨集共用, 只有源自身失败 (Failed) 才算; 被中途取消 (Abandoned) 不算.
                     combine(
-                        // 如果这个 subject 没有偏好, 则不继续监听, 这里将会一直挂起
+
                         getPreferredWebMediaSource(context.subjectId).filterNotNull(),
                         combine(
                             bundle.mediaFetchSession.mediaSourceResults

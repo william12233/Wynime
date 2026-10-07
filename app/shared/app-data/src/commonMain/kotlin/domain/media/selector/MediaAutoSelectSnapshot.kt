@@ -1,21 +1,11 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.media.selector
 
-package me.him188.ani.app.domain.media.selector
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
 
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind
-
-/** Source state and the results belonging to it, before selector filtering. */
 data class MediaSourceSelectionSnapshot(
     val mediaSourceId: String,
     val kind: MediaSourceKind,
@@ -23,7 +13,6 @@ data class MediaSourceSelectionSnapshot(
     val results: List<Media>,
 )
 
-/** All decision inputs are derived together, without reading the UI's replayed candidate flows. */
 data class MediaAutoSelectSnapshot(
     val sources: List<MediaSourceSelectionSnapshot>,
     val candidates: List<MaybeExcludedMedia.Included>,

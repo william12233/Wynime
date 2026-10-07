@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.settings.framework
+package com.wynime.app.ui.settings.framework
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
-import me.him188.ani.app.tools.MonoTasker
+import com.wynime.app.tools.MonoTasker
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
@@ -22,9 +22,6 @@ private inline fun <T> propertyDelegateProvider(
     }
 }
 
-/**
- * 创建一个单个的测试器, 需要使用 `val tester by connectionTester {}`
- */
 @Suppress("FunctionName")
 fun ConnectionTester(
     testConnection: suspend () -> ConnectionTestResult,
@@ -50,7 +47,6 @@ class SingleTester<T>(
     val tester get() = testers.single()
 }
 
-// 堆屎咯
 @Stable
 open class DefaultConnectionTesterRunner<T : Tester<*>>(
     override val testers: List<T>,

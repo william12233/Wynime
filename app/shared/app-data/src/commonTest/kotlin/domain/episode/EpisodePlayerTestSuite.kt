@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.episode
+package com.wynime.app.domain.episode
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -18,19 +9,16 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.models.subject.SubjectSeriesInfo
-import me.him188.ani.app.data.models.subject.TestSubjectCollections
-import me.him188.ani.app.domain.media.hls.HlsPlaybackPreparer
-import me.him188.ani.app.domain.media.hls.NoopHlsPlaybackPreparer
-import me.him188.ani.app.domain.settings.GetVideoScaffoldConfigUseCase
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.models.subject.SubjectSeriesInfo
+import com.wynime.app.data.models.subject.TestSubjectCollections
+import com.wynime.app.domain.media.hls.HlsPlaybackPreparer
+import com.wynime.app.domain.media.hls.NoopHlsPlaybackPreparer
+import com.wynime.app.domain.settings.GetVideoScaffoldConfigUseCase
 import org.koin.core.Koin
 import org.koin.dsl.module
 import org.openani.mediamp.test.TestMediampPlayer
 
-/**
- * Test helper for [EpisodeFetchSelectPlayState] and related states.
- */
 class EpisodePlayerTestSuite(
     testScope: TestScope,
     val backgroundScope: CoroutineScope = testScope.backgroundScope,
@@ -38,7 +26,7 @@ class EpisodePlayerTestSuite(
     val player = TestMediampPlayer(StandardTestDispatcher(testScope.testScheduler))
 
     @Suppress("DEPRECATION")
-    val mediaSelectorTestBuilder = me.him188.ani.app.domain.media.selector.legacy.MediaSelectorTestBuilder(testScope)
+    val mediaSelectorTestBuilder = com.wynime.app.domain.media.selector.legacy.MediaSelectorTestBuilder(testScope)
 
     val koin = Koin()
 
@@ -104,11 +92,6 @@ class EpisodePlayerTestSuite(
     }
 }
 
-/**
- * ```
- * val (scope, backgroundException) = createExceptionCapturingSupervisorScope()
- * ```
- */
 fun TestScope.createExceptionCapturingSupervisorScope(parentScope: CoroutineScope = backgroundScope): Pair<CoroutineScope, CompletableDeferred<Throwable>> {
     val backgroundException = CompletableDeferred<Throwable>()
     val scope = CoroutineScope(

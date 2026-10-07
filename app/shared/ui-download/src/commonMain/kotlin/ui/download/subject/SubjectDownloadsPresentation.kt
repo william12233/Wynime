@@ -1,19 +1,10 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.download.subject
 
-package me.him188.ani.app.ui.download.subject
-
-import me.him188.ani.app.data.models.episode.displayName
-import me.him188.ani.app.data.models.episode.nameOrNameCn
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.domain.episode.EpisodeCompletionContext.isKnownCompleted
-import me.him188.ani.app.ui.download.components.DownloadItem
+import com.wynime.app.data.models.episode.displayName
+import com.wynime.app.data.models.episode.nameOrNameCn
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.domain.episode.EpisodeCompletionContext.isKnownCompleted
+import com.wynime.app.ui.download.components.DownloadItem
 
 internal fun SubjectCollectionInfo.downloadEpisodes(): List<EpisodeDownloadItem> = episodes.map {
     EpisodeDownloadItem(
@@ -26,10 +17,6 @@ internal fun SubjectCollectionInfo.downloadEpisodes(): List<EpisodeDownloadItem>
     )
 }
 
-/**
- * 把条目的剧集与下载合并为页面列表项, 按剧集序号排序: 有下载的剧集显示其全部下载, 其余剧集显示可发起下载的剧集行.
- * 不属于 [episodes] 中任何剧集的下载 (剧集信息缺失或仍在加载) 也保留在列表中.
- */
 fun buildSubjectDownloadItems(
     episodes: List<EpisodeDownloadItem>,
     downloads: List<DownloadItem>,

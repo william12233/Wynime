@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.details
+package com.wynime.app.ui.download.details
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -24,33 +15,30 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.domain.media.cache.DownloaderStatus
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.ui.download.components.renderFileSize
-import me.him188.ani.app.ui.download.components.renderSpeed
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_details_download_state
-import me.him188.ani.app.ui.lang.cache_details_error
-import me.him188.ani.app.ui.lang.cache_details_http_state_canceled
-import me.him188.ani.app.ui.lang.cache_details_http_state_initializing
-import me.him188.ani.app.ui.lang.cache_details_http_state_merging
-import me.him188.ani.app.ui.lang.cache_details_http_state_resolving
-import me.him188.ani.app.ui.lang.cache_details_last_error
-import me.him188.ani.app.ui.lang.cache_details_last_error_summary
-import me.him188.ani.app.ui.lang.cache_details_segments
-import me.him188.ani.app.ui.lang.cache_details_state_completed
-import me.him188.ani.app.ui.lang.cache_details_state_downloading
-import me.him188.ani.app.ui.lang.cache_details_state_failed
-import me.him188.ani.app.ui.lang.cache_details_state_paused
-import me.him188.ani.app.ui.lang.cache_details_transfer
-import me.him188.ani.app.ui.lang.cache_details_transfer_summary
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.utils.httpdownloader.DownloadStatus
+import com.wynime.app.domain.media.cache.DownloaderStatus
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.ui.download.components.renderFileSize
+import com.wynime.app.ui.download.components.renderSpeed
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_details_download_state
+import com.wynime.app.ui.lang.cache_details_error
+import com.wynime.app.ui.lang.cache_details_http_state_canceled
+import com.wynime.app.ui.lang.cache_details_http_state_initializing
+import com.wynime.app.ui.lang.cache_details_http_state_merging
+import com.wynime.app.ui.lang.cache_details_http_state_resolving
+import com.wynime.app.ui.lang.cache_details_last_error
+import com.wynime.app.ui.lang.cache_details_last_error_summary
+import com.wynime.app.ui.lang.cache_details_segments
+import com.wynime.app.ui.lang.cache_details_state_completed
+import com.wynime.app.ui.lang.cache_details_state_downloading
+import com.wynime.app.ui.lang.cache_details_state_failed
+import com.wynime.app.ui.lang.cache_details_state_paused
+import com.wynime.app.ui.lang.cache_details_transfer
+import com.wynime.app.ui.lang.cache_details_transfer_summary
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.utils.httpdownloader.DownloadStatus
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 下載器區塊：下載狀態、傳輸統計、HTTP 分片進度與錯誤資訊。
- */
 internal fun LazyGridScope.downloaderDetailsItems(details: DownloaderDetails, unknownText: String) {
     item {
         ListItem(
@@ -134,9 +122,6 @@ internal fun LazyGridScope.downloaderDetailsItems(details: DownloaderDetails, un
     }
 }
 
-/**
- * 記錄狀態，HTTP 引擎有額外資訊時以 " · " 追加。
- */
 @Composable
 private fun downloadStateText(details: DownloaderDetails): String {
     val base = stringResource(

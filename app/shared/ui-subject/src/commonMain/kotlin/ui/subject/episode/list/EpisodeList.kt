@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.list
+package com.wynime.app.ui.subject.episode.list
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,15 +30,15 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import me.him188.ani.app.data.models.preference.EpisodeListProgressTheme
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.lists.ScrollStateVerticalScrollbar
-import me.him188.ani.app.ui.foundation.lists.hasScrollableContent
-import me.him188.ani.app.ui.foundation.theme.stronglyWeaken
-import me.him188.ani.app.ui.foundation.theme.weaken
-import me.him188.ani.app.ui.lang.*
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.EpisodeListProgressTheme
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.lists.ScrollStateVerticalScrollbar
+import com.wynime.app.ui.foundation.lists.hasScrollableContent
+import com.wynime.app.ui.foundation.theme.stronglyWeaken
+import com.wynime.app.ui.foundation.theme.weaken
+import com.wynime.app.ui.lang.*
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.*
 
 @Composable
@@ -85,7 +76,7 @@ fun EpisodeListDialog(
 
                     Box(
                         Modifier.weight(1f, fill = false)
-                            .heightIn(max = 360.dp), // 特别长需要限制高度并且滚动, #182
+                            .heightIn(max = 360.dp),
                     ) {
                         Column(
                             Modifier.verticalScroll(scrollState).padding(end = scrollbarEndPadding),
@@ -157,20 +148,13 @@ fun EpisodeListDialog(
     }
 }
 
-
 @Immutable
 class EpisodeListColors(
-    /**
-     * 看过或抛弃的颜色
-     */
+
     val doneOrDroppedColor: Color,
-    /**
-     * 可以看但还没看
-     */
+
     val canWatchColor: Color,
-    /**
-     * 未开播颜色
-     */
+
     val notPublishedColor: Color,
 )
 
@@ -198,11 +182,6 @@ object EpisodeListDefaults {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////
-// Previews
-///////////////////////////////////////////////////////////////////////////
-
-
 @OptIn(TestOnly::class)
 @PreviewLightDark
 @Composable
@@ -215,8 +194,6 @@ private fun PreviewEpisodeProgressDialog() {
     }
 }
 
-
-// 特别长需要限制高度并且滚动, #182
 @OptIn(TestOnly::class)
 @PreviewLightDark
 @Composable

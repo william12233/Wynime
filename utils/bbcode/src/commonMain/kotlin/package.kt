@@ -1,1 +1,1 @@
-package me.him188.ani.utils.bbcode
+package com.wynime.utils.bbcode

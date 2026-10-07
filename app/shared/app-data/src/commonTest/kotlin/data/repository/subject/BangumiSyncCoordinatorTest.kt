@@ -1,12 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the
- * following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async

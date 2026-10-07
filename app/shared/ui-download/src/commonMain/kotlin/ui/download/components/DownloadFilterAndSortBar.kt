@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.components
+package com.wynime.app.ui.download.components
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -43,25 +34,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngineKey
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_filter_cache_type
-import me.him188.ani.app.ui.lang.cache_filter_collection_doing
-import me.him188.ani.app.ui.lang.cache_filter_collection_done
-import me.him188.ani.app.ui.lang.cache_filter_collection_dropped
-import me.him188.ani.app.ui.lang.cache_filter_collection_not_collected
-import me.him188.ani.app.ui.lang.cache_filter_collection_on_hold
-import me.him188.ani.app.ui.lang.cache_filter_collection_state
-import me.him188.ani.app.ui.lang.cache_filter_collection_wish
-import me.him188.ani.app.ui.lang.cache_filter_download_status
-import me.him188.ani.app.ui.lang.cache_filter_sort
-import me.him188.ani.app.ui.lang.cache_filter_sort_newest
-import me.him188.ani.app.ui.lang.cache_filter_sort_oldest
-import me.him188.ani.app.ui.lang.cache_filter_sort_subject_asc
-import me.him188.ani.app.ui.lang.cache_filter_sort_subject_desc
-import me.him188.ani.app.ui.lang.cache_filter_status_downloading
-import me.him188.ani.app.ui.lang.cache_filter_status_finished
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngineKey
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_filter_cache_type
+import com.wynime.app.ui.lang.cache_filter_collection_doing
+import com.wynime.app.ui.lang.cache_filter_collection_done
+import com.wynime.app.ui.lang.cache_filter_collection_dropped
+import com.wynime.app.ui.lang.cache_filter_collection_not_collected
+import com.wynime.app.ui.lang.cache_filter_collection_on_hold
+import com.wynime.app.ui.lang.cache_filter_collection_state
+import com.wynime.app.ui.lang.cache_filter_collection_wish
+import com.wynime.app.ui.lang.cache_filter_download_status
+import com.wynime.app.ui.lang.cache_filter_sort
+import com.wynime.app.ui.lang.cache_filter_sort_newest
+import com.wynime.app.ui.lang.cache_filter_sort_oldest
+import com.wynime.app.ui.lang.cache_filter_sort_subject_asc
+import com.wynime.app.ui.lang.cache_filter_sort_subject_desc
+import com.wynime.app.ui.lang.cache_filter_status_downloading
+import com.wynime.app.ui.lang.cache_filter_status_finished
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import org.jetbrains.compose.resources.stringResource
 
 @Stable
@@ -78,11 +69,6 @@ internal class DownloadFilterAndSortState {
                 (selectedStatus == null || entry.statusFilter == selectedStatus)
     }
 
-    /**
-     * 设计稿: 筛选先过滤剧集再重组分组.
-     *
-     * 过滤各分组中不符合条件的剧集, 移除空分组, 再按 [sortOption] 排序分组.
-     */
     @Composable
     fun applyFilterAndSortGrouped(groups: List<SubjectDownloadGroup>): List<SubjectDownloadGroup> {
         val result by remember(groups) {
@@ -318,7 +304,7 @@ private fun FilterPill(
                     Icon(Icons.Default.FilterList, null)
                 }
             } else null,
-            // 设计稿: 圆角矩形 (8dp) 而非全圆角.
+
             shape = MaterialTheme.shapes.small,
             colors = FilterChipDefaults.filterChipColors(),
             enabled = enabled,
@@ -368,7 +354,6 @@ enum class DownloadStatusFilter {
     Finished,
 }
 
-// 排序作用于条目分组.
 internal enum class DownloadSortOption {
     Newest,
     Oldest,

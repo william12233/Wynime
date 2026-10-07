@@ -1,9 +1,9 @@
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
-import me.him188.ani.app.data.repository.RepositoryAuthorizationException
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.data.repository.RepositoryRateLimitedException
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.data.repository.RepositoryAuthorizationException
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.data.repository.RepositoryRateLimitedException
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

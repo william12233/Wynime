@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.Popup

@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -21,14 +14,14 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.him188.ani.app.data.network.BangumiApiProvider
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.repository.user.AccessTokenSession
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.app.domain.session.AccessTokenPair
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.app.data.network.BangumiApiProvider
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.repository.user.AccessTokenSession
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.app.domain.session.AccessTokenPair
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -154,7 +147,7 @@ class BangumiTrackingSyncApiTest {
         repository.setSession(
             AccessTokenSession(
                 AccessTokenPair(
-                    aniAccessToken = "ani-test-token",
+                    legacyServiceAccessToken = "ani-test-token",
                     expiresAtMillis = Long.MAX_VALUE,
                     bangumiAccessToken = "bgm-test-token",
                 ),

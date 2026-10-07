@@ -1,12 +1,3 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.ClientRequestException
@@ -56,67 +47,6 @@ object ReleaseArtifactNames {
 
     fun fullVersionFromTag(tag: String): String = tag.removePrefix("v")
 
-    /**
-     * 从 release tag 计算 iOS 的 `CFBundleVersion` (build 号), 写入 gradle.properties 的 `ios.version.code`.
-     * 只有 iOS 用它; Android 的 `android.version.code` 是固定常量, 桌面端用 `package.version`.
-     *
-     * CFBundleVersion 允许 1 到 3 段点分隔的非负整数, 且按段数值比较, 所以直接用三段:
-     * App 的 semver 可以是 0.x; 对 CFBundleVersion 将第一段映射为至少 1,
-     * 以保留 app 版本字串的 0.x 语意, 同时符合 Apple bundle version 规则.
-     * `major.minor.(patch * 100 + meta)`.
-     * - `v6.1.0-alpha01` -> `6.1.1`
-     * - `v6.1.0-beta01`  -> `6.1.31`
-     * - `v6.1.0`         -> `6.1.99`
-     * - `v6.1.1-alpha01` -> `6.1.101`
-     * - `v6.1.1`         -> `6.1.199`
-     * - `v10.12.3`       -> `10.12.399`
-     *
-     * `meta`: alpha 取 1..29, beta 取 31..59, 正式版固定 99, 60..98 留给将来可能的 rc.
-     * 同一个 x.y.z 内 alpha < beta < 正式版, 整体严格随发布顺序递增.
-     * 每段都是不带前导零的普通整数 (iOS 会忽略前导零), 各段没有位数上限.
-     */
-    fun iosBundleVersionFromTag(tag: String): String {
-        val match = Regex("""^v(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta)(\d+))?$""").matchEntire(tag)
-            ?: throw GradleException("Unsupported tag format: '$tag'")
-
-        val major = match.groupValues[1].toIntOrNull()
-        val minor = match.groupValues[2].toIntOrNull()
-        val patch = match.groupValues[3].toIntOrNull()
-        val channel = match.groupValues[4]
-        val meta = match.groupValues[5].toIntOrNull()
-
-        require(major != null) { "Invalid major version in tag '$tag'." }
-        require(minor != null) { "Invalid minor version in tag '$tag'." }
-        require(patch != null && patch <= MAX_PATCH) { "Patch version '$patch' in tag '$tag' must be in 0..$MAX_PATCH." }
-
-        val metaCode = when (channel) {
-            "alpha" -> {
-                require(meta != null && meta in 1..MAX_PRERELEASE_NUMBER) {
-                    "Alpha number '$meta' in tag '$tag' must be in 1..$MAX_PRERELEASE_NUMBER."
-                }
-                ALPHA_META_OFFSET + meta
-            }
-
-            "beta" -> {
-                require(meta != null && meta in 1..MAX_PRERELEASE_NUMBER) {
-                    "Beta number '$meta' in tag '$tag' must be in 1..$MAX_PRERELEASE_NUMBER."
-                }
-                BETA_META_OFFSET + meta
-            }
-
-            else -> STABLE_META_CODE
-        }
-
-        val bundleMajor = maxOf(1, major)
-        return "$bundleMajor.$minor.${patch * 100 + metaCode}"
-    }
-
-    private const val MAX_PRERELEASE_NUMBER = 29
-    private const val ALPHA_META_OFFSET = 0 // alpha01..alpha29 -> 1..29
-    private const val BETA_META_OFFSET = 30 // beta01..beta29 -> 31..59
-    private const val STABLE_META_CODE = 99
-    private const val MAX_PATCH = 1_000_000 // patch * 100 + meta 必须能放进 Int, 留足余量
-
     fun androidApp(fullVersion: String, arch: String): String = "$appName-$fullVersion-$arch.apk"
 
     fun officialReleaseAssets(fullVersion: String): Set<String> = setOf(
@@ -131,15 +61,8 @@ object ReleaseArtifactNames {
 
     fun isOfficialReleaseTag(tag: String): Boolean = tag.startsWith("v")
 
-    // TV APK 独立命名, 避免与手机 arch 资产冲突
-    fun androidTvApp(fullVersion: String, arch: String): String = "$appName-tv-$fullVersion-$arch.apk"
-
     fun androidAppQr(fullVersion: String, arch: String, server: String): String =
         "${androidApp(fullVersion, arch)}.$server.qrcode.png"
-
-    fun iosIpa(fullVersion: String): String = "$appName-$fullVersion.ipa"
-
-    fun iosIpaQr(fullVersion: String, server: String): String = "${iosIpa(fullVersion)}.$server.qrcode.png"
 
     fun desktopDistributionFile(
         fullVersion: String,
@@ -382,7 +305,6 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val apkDirectory: DirectoryProperty
 
-    /** 产物 flavor: "default" (手机) 或 "tv"; 决定文件名解析前缀与发布资产命名. */
     @get:Input
     abstract val flavor: Property<String>
 
@@ -451,10 +373,7 @@ abstract class UploadAndroidApksTask : ReleaseUploadTask() {
                 verifyFormalReleaseSigning(file)
             }
             uploadReleaseAsset(
-                name = when (flavorName) {
-                    "tv" -> ReleaseArtifactNames.androidTvApp(fullVersion, arch)
-                    else -> ReleaseArtifactNames.androidApp(fullVersion, arch)
-                },
+                name = ReleaseArtifactNames.androidApp(fullVersion, arch),
                 contentType = "application/vnd.android.package-archive",
                 file = file,
             )
@@ -512,21 +431,6 @@ abstract class UploadDesktopInstallersTask : ReleaseUploadTask() {
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val zipDistribution: RegularFileProperty
 
-    @get:Optional
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val binaryDirectory: DirectoryProperty
-
-    @get:Optional
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
-    abstract val linuxAppImage: RegularFileProperty
-
-    @get:Optional
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
-    abstract val linuxAppImageZsync: RegularFileProperty
-
     @TaskAction
     fun uploadInstallers() {
         val fullVersion = releaseFullVersion.get()
@@ -541,8 +445,8 @@ abstract class UploadDesktopInstallersTask : ReleaseUploadTask() {
             }
         }
 
-        when (currentReleaseHostOs()) {
-            ReleaseHostOs.WINDOWS -> uploadReleaseAsset(
+        require(currentReleaseHostOs() == ReleaseHostOs.WINDOWS) { "Windows distribution requires a Windows host" }
+        uploadReleaseAsset(
                 name = ReleaseArtifactNames.desktopDistributionFile(
                     fullVersion = fullVersion,
                     osName = ReleaseArtifactNames.officialWindowsOs,
@@ -552,57 +456,6 @@ abstract class UploadDesktopInstallersTask : ReleaseUploadTask() {
                 contentType = "application/x-zip",
                 file = requiredFile(zipDistribution, "zipDistribution"),
             )
-
-            ReleaseHostOs.MACOS -> {
-                if (currentReleaseHostArch() == "x86_64") {
-                    uploadReleaseAsset(
-                        name = ReleaseArtifactNames.desktopDistributionFile(
-                            fullVersion = fullVersion,
-                            osName = "macos",
-                            extension = "zip",
-                        ),
-                        contentType = "application/x-zip",
-                        file = requiredFile(zipDistribution, "zipDistribution"),
-                    )
-                } else {
-                    uploadReleaseAsset(
-                        name = ReleaseArtifactNames.desktopDistributionFile(
-                            fullVersion = fullVersion,
-                            osName = "macos",
-                            extension = "dmg",
-                        ),
-                        contentType = "application/octet-stream",
-                        file = findSingleFile(
-                            directory = requiredDirectory(binaryDirectory, "binaryDirectory").resolve("dmg"),
-                            extension = "dmg",
-                        ),
-                    )
-                }
-            }
-
-            ReleaseHostOs.LINUX -> {
-                uploadReleaseAsset(
-                    name = ReleaseArtifactNames.desktopDistributionFile(
-                        fullVersion = fullVersion,
-                        osName = "linux",
-                        archName = "x86_64",
-                        extension = "appimage",
-                    ),
-                    contentType = "application/x-appimage",
-                    file = requiredFile(linuxAppImage, "linuxAppImage"),
-                )
-                uploadReleaseAsset(
-                    name = ReleaseArtifactNames.desktopDistributionFile(
-                        fullVersion = fullVersion,
-                        osName = "linux",
-                        archName = "x86_64",
-                        extension = "appimage.zsync",
-                    ),
-                    contentType = "application/octet-stream",
-                    file = requiredFile(linuxAppImageZsync, "linuxAppImageZsync"),
-                )
-            }
-        }
     }
 
     private fun requiredFile(property: RegularFileProperty, propertyName: String): File =
@@ -623,87 +476,3 @@ abstract class UploadDesktopInstallersTask : ReleaseUploadTask() {
     }
 }
 
-@DisableCachingByDefault(because = "Writes App Store Connect API key material for external tooling")
-abstract class PrepareAppStoreConnectApiKeyTask : DefaultTask() {
-    @get:Input
-    @get:Optional
-    abstract val apiKeyId: Property<String>
-
-    @get:Input
-    @get:Optional
-    abstract val apiPrivateKey: Property<String>
-
-    @get:org.gradle.api.tasks.OutputFile
-    abstract val outputKeyFile: RegularFileProperty
-
-    @TaskAction
-    fun writeKey() {
-        val keyId = apiKeyId.orNull?.takeIf { it.isNotBlank() }
-            ?: throw GradleException("APPSTORE_API_KEY_ID is not provided, cannot prepare the key.")
-        val privateKey = apiPrivateKey.orNull?.takeIf { it.isNotBlank() }
-            ?: throw GradleException("APPSTORE_API_PRIVATE_KEY is not provided, cannot prepare the key.")
-
-        val targetFile = outputKeyFile.get().asFile
-        targetFile.parentFile.mkdirs()
-        targetFile.writeText(privateKey)
-        logger.lifecycle("Prepared App Store Connect key: AuthKey_${keyId}.p8")
-    }
-}
-
-@DisableCachingByDefault(because = "Uploads an IPA through iTMSTransporter")
-abstract class UploadAppStoreConnectTestflightTask : DefaultTask() {
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
-    abstract val ipaFile: RegularFileProperty
-
-    @get:Internal
-    abstract val workingDirectory: DirectoryProperty
-
-    @get:Input
-    @get:Optional
-    abstract val apiKeyId: Property<String>
-
-    @get:Input
-    @get:Optional
-    abstract val apiIssuerId: Property<String>
-
-    @get:Optional
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
-    abstract val apiPrivateKeyFile: RegularFileProperty
-
-    @get:Inject
-    protected abstract val execOperations: ExecOperations
-
-    @TaskAction
-    fun upload() {
-        val resolvedApiKeyId = apiKeyId.orNull?.takeIf { it.isNotBlank() }
-            ?: throw GradleException("APPSTORE_API_KEY_ID is not provided.")
-        val resolvedApiIssuerId = apiIssuerId.orNull?.takeIf { it.isNotBlank() }
-            ?: throw GradleException("APPSTORE_ISSUER_ID is not provided.")
-
-        try {
-            execOperations.exec {
-                workingDir = workingDirectory.get().asFile
-                commandLine(
-                    "xcrun",
-                    "iTMSTransporter",
-                    "-m",
-                    "upload",
-                    "-assetFile",
-                    ipaFile.get().asFile.absolutePath,
-                    "-apiKey",
-                    resolvedApiKeyId,
-                    "-apiIssuer",
-                    resolvedApiIssuerId,
-                    "-app_platform",
-                    "ios",
-                    "-v",
-                    "eXtreme",
-                )
-            }
-        } finally {
-            apiPrivateKeyFile.orNull?.asFile?.delete()
-        }
-    }
-}

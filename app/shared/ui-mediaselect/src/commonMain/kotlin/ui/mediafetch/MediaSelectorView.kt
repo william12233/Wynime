@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,41 +35,36 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.domain.media.selector.DefaultMediaSelector
-import me.him188.ani.app.domain.media.selector.MaybeExcludedMedia
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason
-import me.him188.ani.app.domain.media.selector.MediaSelectorContext
-import me.him188.ani.app.domain.media.selector.TestMatchMetadata
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.icons.EditSquare
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.media_selector_view_detailed_mode
-import me.him188.ani.app.ui.lang.media_selector_view_filtered_count
-import me.him188.ani.app.ui.lang.media_selector_view_show_excluded
-import me.him188.ani.app.ui.lang.media_selector_view_simple_mode
-import me.him188.ani.app.ui.lang.settings_media_source_more
-import me.him188.ani.app.ui.mediafetch.request.MediaFetchRequestEditorDialog
-import me.him188.ani.app.ui.mediafetch.request.TestMediaFetchRequest
-import me.him188.ani.app.ui.mediaselect.selector.MediaSelectorWebSourcesColumn
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.selector.DefaultMediaSelector
+import com.wynime.app.domain.media.selector.MaybeExcludedMedia
+import com.wynime.app.domain.media.selector.MediaExclusionReason
+import com.wynime.app.domain.media.selector.MediaSelectorContext
+import com.wynime.app.domain.media.selector.TestMatchMetadata
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.icons.EditSquare
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.media_selector_view_detailed_mode
+import com.wynime.app.ui.lang.media_selector_view_filtered_count
+import com.wynime.app.ui.lang.media_selector_view_show_excluded
+import com.wynime.app.ui.lang.media_selector_view_simple_mode
+import com.wynime.app.ui.lang.settings_media_source_more
+import com.wynime.app.ui.mediafetch.request.MediaFetchRequestEditorDialog
+import com.wynime.app.ui.mediafetch.request.TestMediaFetchRequest
+import com.wynime.app.ui.mediaselect.selector.MediaSelectorWebSourcesColumn
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
-
 
 private inline val WINDOW_VERTICAL_PADDING get() = 8.dp
 
-// For search: "数据源"
-/**
- * 通用的数据源选择器. See preview
- */
 @Composable
 fun MediaSelectorView(
     state: MediaSelectorState,
@@ -94,7 +80,7 @@ fun MediaSelectorView(
     val scope = rememberCoroutineScope()
 
     Column(modifier) {
-        // 编辑查询请求的对话框
+
         var showEditRequest by rememberSaveable { mutableStateOf(false) }
         var isDetailedMode by rememberSaveable { mutableStateOf(false) }
         if (showEditRequest && fetchRequest != null) {
@@ -187,17 +173,7 @@ private fun MediaSelectorActionsRow(
             IconButton(onRequestFetchRequestEdit) {
                 Icon(Icons.Rounded.EditSquare, contentDescription = stringResource(Lang.settings_media_source_more))
             }
-//            DropdownMenu(showDropdown, { showDropdown = false }) {
-//                DropdownMenuItem(
-//                    text = { Text("编辑查询请求") },
-//                    onClick = {
-//                        showEditRequest = true
-//                        showDropdown = false
-//                    },
-//                )
-//            }
 
-            // 编辑请求
         }
     }
 }
@@ -226,7 +202,7 @@ private fun MediaSelectorDetailedList(
         modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Animeko 原版詳細模式的來源狀態列；BT 資源頁不接入，因此只顯示線上來源。
+
         MediaSourceResultsView(
             sourceResults = sourceResults,
             mediaSelector = state,
@@ -303,12 +279,6 @@ private fun MediaSelectorDetailedList(
         }
     }
 }
-
-
-///////////////////////////////////////////////////////////////////////////
-// Previews
-///////////////////////////////////////////////////////////////////////////
-
 
 @TestOnly
 internal val previewMediaList = TestMediaList.run {

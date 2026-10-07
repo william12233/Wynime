@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.imageviewer
+package com.wynime.app.ui.foundation.imageviewer
 
 import com.github.panpf.sketch.PlatformContext
 import io.ktor.client.HttpClient
@@ -16,16 +7,16 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.ui.foundation.createDefaultSketch
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.exists
-import me.him188.ani.utils.io.readBytes
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.writeBytes
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.app.ui.foundation.createDefaultSketch
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.exists
+import com.wynime.utils.io.readBytes
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.writeBytes
+import com.wynime.utils.ktor.asScopedHttpClient
 import okio.Path.Companion.toPath
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
@@ -49,7 +40,7 @@ class ImageViewerExportTest {
         val unknown = byteArrayOf(1, 2, 3)
         assertEquals("cover" to "webp", deriveImageFileName("https://a.com/cover.webp", unknown))
         assertEquals("image" to "jpg", deriveImageFileName("https://a.com/", unknown))
-        // 非图片扩展名当作文件名的一部分
+
         assertEquals("abc.php" to "jpg", deriveImageFileName("https://a.com/abc.php", unknown))
     }
 
@@ -90,14 +81,12 @@ class ImageViewerExportTest {
             assertContentEquals(png, first.path.readBytes())
             assertTrue(first.path.absolutePath.startsWith(exportDirectory.absolutePath))
 
-            // 第二次导出同一 URL: 复用文件, 且命中 Sketch 下载缓存, 不再请求网络
             first.path.writeBytes(byteArrayOf(42))
             val second = sketch.exportImageForViewer(url, exportDirectory)
             assertEquals(first.path, second.path)
             assertContentEquals(byteArrayOf(42), second.path.readBytes())
             assertEquals(1, requests.get())
 
-            // 不同 URL 但同名文件互不覆盖
             val other = sketch.exportImageForViewer("https://example.com/other/cover.jpg", exportDirectory)
             assertEquals("cover.png", other.fileName)
             assertFalse(other.path == first.path)

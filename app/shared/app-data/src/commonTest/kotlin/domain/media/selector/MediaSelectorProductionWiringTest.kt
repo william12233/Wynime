@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,24 +8,24 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.subject.SubjectSeriesInfo
-import me.him188.ani.app.data.models.subject.TestSubjectCollections
-import me.him188.ani.app.data.persistent.createTestPreferencesDataStore
-import me.him188.ani.app.data.persistent.database.dao.createMemoryPreferredWebMediaSourceDao
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepository
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepositoryImpl
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.data.repository.user.Settings
-import me.him188.ani.app.domain.episode.CreateMediaFetchSelectBundleFlowUseCaseImpl
-import me.him188.ani.app.domain.episode.SubjectEpisodeInfoBundle
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
-import me.him188.ani.app.domain.mediasource.MediaSourceTier
-import me.him188.ani.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
-import me.him188.ani.datasources.api.source.FactoryId
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.datasources.api.source.MediaSourceKind
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.subject.SubjectSeriesInfo
+import com.wynime.app.data.models.subject.TestSubjectCollections
+import com.wynime.app.data.persistent.createTestPreferencesDataStore
+import com.wynime.app.data.persistent.database.dao.createMemoryPreferredWebMediaSourceDao
+import com.wynime.app.data.repository.media.EpisodePreferencesRepository
+import com.wynime.app.data.repository.media.EpisodePreferencesRepositoryImpl
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.data.repository.user.Settings
+import com.wynime.app.domain.episode.CreateMediaFetchSelectBundleFlowUseCaseImpl
+import com.wynime.app.domain.episode.SubjectEpisodeInfoBundle
+import com.wynime.app.domain.media.fetch.MediaSourceManager
+import com.wynime.app.domain.mediasource.MediaSourceTier
+import com.wynime.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
+import com.wynime.datasources.api.source.FactoryId
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.datasources.api.source.MediaSourceKind
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -47,15 +38,6 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.test.advanceTimeBy
 
-/**
- * P0#17 的生产接线点覆盖: 此前跨会话测试用 lambda/测试实现顶替了生产类, 导致
- * [MediaSelectorEventSavePreferenceUseCaseImpl] 与
- * [CreateMediaFetchSelectBundleFlowUseCaseImpl] 的 `savedUserPreference = mediaPreferenceFlow(subjectId)`
- * 接线零覆盖 —— 方向 B 改写这两处时不会有测试变红.
- *
- * 两个生产类都是 KoinComponent (全局 Koin), 因此本测试用 startKoin/stopKoin 注入真实
- * [EpisodePreferencesRepositoryImpl] (内存 DataStore).
- */
 class MediaSelectorProductionWiringTest {
     private companion object {
         const val SUBJECT_ID = 42
@@ -127,7 +109,7 @@ class MediaSelectorProductionWiringTest {
                 MediaPreference.Empty.copy(mediaSourceId = "web1", alliance = "桜都字幕组"),
             )
 
-            val builder = me.him188.ani.app.domain.media.selector.legacy.MediaSelectorTestBuilder(this)
+            val builder = com.wynime.app.domain.media.selector.legacy.MediaSelectorTestBuilder(this)
             builder.delayedMediaSource("web1").complete(emptyList())
 
             val fakeManager = object : MediaSourceManager {
@@ -186,14 +168,12 @@ class MediaSelectorProductionWiringTest {
                 assertEquals("web1", bundle.mediaSelector.mediaSourceId.finalSelected.first())
                 assertEquals("桜都字幕组", bundle.mediaSelector.alliance.finalSelected.first())
 
-                // 必须是 flow 接线而非一次性快照: 落库更新要实时跟随
                 repository.setMediaPreference(
                     SUBJECT_ID,
                     MediaPreference.Empty.copy(mediaSourceId = "web2"),
                 )
                 assertEquals("web2", bundle.mediaSelector.mediaSourceId.finalSelected.first())
 
-                // 必须按 bundle.subjectId 读: 其他条目读不到本条目的偏好
                 val other = useCase(flowOf(createInfoBundle(SUBJECT_ID + 1))).filterNotNull().first()
                 assertNull(other.mediaSelector.mediaSourceId.finalSelected.first())
             } finally {

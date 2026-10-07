@@ -1,17 +1,8 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-import com.strumenta.antlrkotlin.gradle.AntlrKotlinTask
+import org.gradle.api.tasks.JavaExec
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool
 
 plugins {
-    id("ani.kmp-library")
-    alias(libs.plugins.antlr.kotlin)
+    id("wynime.kmp-library")
     idea
 }
 
@@ -19,11 +10,11 @@ val generatedRoot = projectDir.resolve("src/commonMain/generatedKotlin")
 
 kotlin {
     android {
-        namespace = "me.him188.ani.utils.bbcode"
+        namespace = "com.wynime.utils.bbcode"
     }
     sourceSets.commonMain {
         dependencies {
-            // antlr kotlin
+
             implementation(libs.antlr.kotlin.runtime)
         }
         kotlin.srcDirs(generatedRoot)
@@ -36,17 +27,35 @@ idea {
     }
 }
 
-val generateBBCodeGrammarSource = tasks.register<AntlrKotlinTask>("generateBBCodeGrammarSource") {
-    source = fileTree(layout.projectDirectory) {
-        include("BBCode.g4")
-    }
+val grammarGenerator = configurations.detachedConfiguration(
+    dependencies.create("org.antlr:antlr4:4.13.1"),
+    dependencies.create("com.strumenta:antlr-kotlin-target:${libs.versions.antlr.kotlin.get()}"),
+)
 
-    packageName = "me.him188.ani.utils.bbcode"
-    arguments = listOf("-visitor")
-
-    outputDirectory = generatedRoot
+val verifyGrammarComments = tasks.register<JavaExec>("verifyGrammarComments") {
+    classpath = grammarGenerator
+    mainClass.set(rootProject.file("scripts/strip-antlr-comments.java").absolutePath)
+    args(layout.projectDirectory.file("BBCode.g4").asFile.absolutePath, "--check")
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool> {
+val generateBBCodeGrammarSource = tasks.register<JavaExec>("generateBBCodeGrammarSource") {
+    dependsOn(verifyGrammarComments)
+    inputs.file(layout.projectDirectory.file("BBCode.g4"))
+    outputs.dir(generatedRoot)
+    classpath = grammarGenerator
+    mainClass.set("org.antlr.v4.Tool")
+    workingDir = projectDir
+    args("-Dlanguage=Kotlin", "-encoding", "UTF-8", "-visitor", "-package",
+        "com.wynime.utils.bbcode", "-o", generatedRoot.absolutePath, "BBCode.g4")
+}
+
+tasks.named("check") { dependsOn(verifyGrammarComments) }
+
+tasks.withType<KotlinCompileTool> {
     mustRunAfter(generateBBCodeGrammarSource)
+}
+
+val stripGrammarComments = commentFreeGeneratedSources("stripGeneratedGrammarComments", generatedRoot, generateBBCodeGrammarSource)
+tasks.withType<KotlinCompileTool>().configureEach {
+    mustRunAfter(stripGrammarComments)
 }

@@ -1,30 +1,18 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.subject.relations
 
-package me.him188.ani.app.ui.subject.relations
+import com.wynime.app.data.models.subject.SubjectRelation
+import com.wynime.app.data.models.subject.SubjectRelationGraph
+import com.wynime.app.data.models.subject.SubjectRelationGraphBranch
+import com.wynime.app.data.models.subject.SubjectRelationGraphMainNode
+import com.wynime.app.data.models.subject.SubjectRelationGraphPlatform
+import com.wynime.app.data.models.subject.SubjectRelationGraphSubject
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 
-import me.him188.ani.app.data.models.subject.SubjectRelation
-import me.him188.ani.app.data.models.subject.SubjectRelationGraph
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphBranch
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphMainNode
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphPlatform
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphSubject
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
-
-/**
- * 来自 Bangumi 真实系列的关系图, 由服务器算法计算, 并按客户端的规则分组得到.
- */
 @TestOnly
 object TestSubjectRelationGraphs {
-    /** Re:Zero, 从第二季进入. 每一季下有番外和衍生 */
+
     val ReZero = SubjectRelationGraph(
         subjectId = 278826,
         mainline = listOf(
@@ -79,7 +67,6 @@ object TestSubjectRelationGraphs {
         truncated = false,
     )
 
-    /** Re:Zero, 从 OVA 进入: 当前条目在第一季的相关条目中 */
     val ReZeroFromOva = SubjectRelationGraph(
         subjectId = 225462,
         mainline = listOf(
@@ -134,7 +121,6 @@ object TestSubjectRelationGraphs {
         truncated = false,
     )
 
-    /** 鬼灭之刃: 剧场版和 7 话的 "无限列车篇" TV 版在主线上, 总集篇列在正片下. 第一部之前的 "兄妹的羁绊" 是剧场版形式的总集篇 */
     val Kimetsu = SubjectRelationGraph(
         subjectId = 328195,
         mainline = listOf(
@@ -201,7 +187,6 @@ object TestSubjectRelationGraphs {
         truncated = false,
     )
 
-    /** 某科学的超电磁炮: 主线本身是衍生作品, 原作作为 "主线故事" 列出 */
     val Railgun = SubjectRelationGraph(
         subjectId = 2585,
         mainline = listOf(
@@ -234,9 +219,6 @@ object TestSubjectRelationGraphs {
         truncated = false,
     )
 
-    /**
-     * 第一部有 [branchCount] 个番外的系列
-     */
     fun manyBranches(branchCount: Int): SubjectRelationGraph = SubjectRelationGraph(
         subjectId = 2,
         mainline = listOf(

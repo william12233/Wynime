@@ -1,29 +1,19 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.session.auth
+package com.wynime.app.domain.session.auth
 
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
-import me.him188.ani.app.data.network.WynimeCloudClient
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.domain.session.AccessTokenPair
-import me.him188.ani.app.domain.session.SessionManager
-import me.him188.ani.utils.platform.Platform
-import me.him188.ani.utils.platform.currentPlatform
+import com.wynime.app.data.network.WynimeCloudClient
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.domain.session.AccessTokenPair
+import com.wynime.app.domain.session.SessionManager
+import com.wynime.utils.platform.Platform
+import com.wynime.utils.platform.currentPlatform
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
-/** 直接通过 Wynime Cloud 完成 Bangumi OAuth，不经过 Wynime Account API。 */
 class WynimeBangumiOAuthClient(
     private val cloudClient: WynimeCloudClient,
     private val platform: Platform = currentPlatform(),
@@ -97,14 +87,14 @@ class WynimeCloudSessionRefresher(
     }
 }
 
-private fun me.him188.ani.app.data.network.WynimeSessionResponse.toOAuthResult(clock: Clock = Clock.System): OAuthResult {
+private fun com.wynime.app.data.network.WynimeSessionResponse.toOAuthResult(clock: Clock = Clock.System): OAuthResult {
     val expiresInSeconds = (expiresAtMillis - clock.now().toEpochMilliseconds())
         .coerceAtLeast(0)
         .milliseconds
         .inWholeSeconds
     return OAuthResult(
         tokens = AccessTokenPair(
-            aniAccessToken = "",
+            legacyServiceAccessToken = "",
             expiresAtMillis = expiresAtMillis,
             bangumiAccessToken = bangumiAccessToken,
         ),

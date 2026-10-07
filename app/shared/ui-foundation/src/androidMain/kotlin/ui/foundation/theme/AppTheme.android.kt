@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.theme
+package com.wynime.app.ui.foundation.theme
 
 import android.os.Build
 import androidx.activity.ComponentActivity
@@ -24,8 +15,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamicColorScheme
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.platform.findActivity
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.platform.findActivity
 
 @Composable
 actual fun appColorScheme(
@@ -34,7 +25,7 @@ actual fun appColorScheme(
     useBlackBackground: Boolean,
     isDark: Boolean,
 ): ColorScheme {
-    // 见 AppTheme.desktop.kt.
+
     return if (useDynamicTheme && isPlatformSupportDynamicTheme()) {
         val context = LocalContext.current
         if (isDark) {
@@ -71,7 +62,7 @@ fun SystemBarColorEffect(
         DarkMode.AUTO -> isSystemInDarkThemeDetected()
     },
 ) {
-    // Set statusBarStyle & navigationBarStyle
+
     val activity = LocalContext.current.findActivity() as? ComponentActivity
     if (activity != null) {
         DisposableEffect(activity, isDark) {

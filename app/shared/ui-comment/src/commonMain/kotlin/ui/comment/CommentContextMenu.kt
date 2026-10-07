@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -27,11 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.comment_block_user
-import me.him188.ani.app.ui.lang.comment_copy_content
-import me.him188.ani.app.ui.lang.comment_open_in_bangumi
-import me.him188.ani.app.ui.lang.comment_report
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.comment_block_user
+import com.wynime.app.ui.lang.comment_copy_content
+import com.wynime.app.ui.lang.comment_open_in_bangumi
+import com.wynime.app.ui.lang.comment_report
 import org.jetbrains.compose.resources.stringResource
 
 object CommentContextMenuTestTags {
@@ -41,16 +32,6 @@ object CommentContextMenuTestTags {
     const val Report = "CommentContextMenu:report"
 }
 
-/**
- * 评论上下文菜单, 对应 Figma 设计 "CommentContextMenu".
- *
- * 由 ⋮ 按钮 / 长按 (移动端) / 右键 (桌面端) 唤出.
- *
- * @param onCopyContent 复制评论内容. 恒显示.
- * @param onOpenOriginal 在来源平台 (Bangumi) 打开. `null` 时隐藏, 仅 Bangumi 源评论应显示.
- * @param onBlockAuthor 拉黑评论作者 (本地屏蔽). `null` 时隐藏.
- * @param onReport 举报评论. `null` 时隐藏, 以 error 色展示.
- */
 @Composable
 fun CommentContextMenu(
     expanded: Boolean,

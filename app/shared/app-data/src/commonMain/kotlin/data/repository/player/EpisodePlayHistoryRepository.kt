@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.player
+package com.wynime.app.data.repository.player
 
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.flow.Flow
@@ -17,18 +8,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
-import me.him188.ani.app.data.models.player.EpisodeHistory
-import me.him188.ani.app.data.persistent.database.dao.PlaybackHistoryDao
-import me.him188.ani.app.data.persistent.database.dao.toEntity
-import me.him188.ani.app.data.persistent.database.dao.toEpisodeHistory
-import me.him188.ani.app.data.persistent.database.dao.toPendingOp
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.data.models.player.EpisodeHistory
+import com.wynime.app.data.persistent.database.dao.PlaybackHistoryDao
+import com.wynime.app.data.persistent.database.dao.toEntity
+import com.wynime.app.data.persistent.database.dao.toEpisodeHistory
+import com.wynime.app.data.persistent.database.dao.toPendingOp
+import com.wynime.app.data.repository.Repository
+import com.wynime.utils.logging.info
+import com.wynime.utils.platform.currentTimeMillis
 
 @Serializable
 data class EpisodeHistories(
-    // Playback histories are stored in SQLite. This field is only kept for one-time migration.
+
     val histories: List<EpisodeHistory> = emptyList(),
     val lastSyncAtMillis: Long = 0,
 ) {
@@ -75,10 +66,6 @@ interface EpisodePlayHistoryRepository {
     val flow: Flow<List<EpisodeHistory>>
     val allHistoriesFlow: Flow<List<EpisodeHistory>>
 
-    /**
-     * 只订阅 [episodeIds] 这些剧集的未删除记录, 供剧集列表显示播放进度; [episodeIds] 为空时恒为空列表.
-     * 与 [flow] 不同, 不会把全部记录读进内存.
-     */
     fun flowByEpisodeIds(episodeIds: Collection<Int>): Flow<List<EpisodeHistory>>
     val pendingOpsFlow: Flow<List<PlaybackHistoryPendingOp>>
     val lastSyncAtMillisFlow: Flow<Long>

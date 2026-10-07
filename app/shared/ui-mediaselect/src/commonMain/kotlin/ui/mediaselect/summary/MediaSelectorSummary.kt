@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediaselect.summary
+package com.wynime.app.ui.mediaselect.summary
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -63,17 +54,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.text.ProvideTextStyleContentColor
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.media_selector_summary_auto_selecting
-import me.him188.ani.app.ui.lang.media_selector_summary_change
-import me.him188.ani.app.ui.lang.media_selector_summary_manual_select
-import me.him188.ani.app.ui.lang.media_selector_summary_searched
-import me.him188.ani.app.ui.lang.media_selector_summary_select_source
-import me.him188.ani.app.ui.lang.media_selector_summary_source
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.text.ProvideTextStyleContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.media_selector_summary_auto_selecting
+import com.wynime.app.ui.lang.media_selector_summary_change
+import com.wynime.app.ui.lang.media_selector_summary_manual_select
+import com.wynime.app.ui.lang.media_selector_summary_searched
+import com.wynime.app.ui.lang.media_selector_summary_select_source
+import com.wynime.app.ui.lang.media_selector_summary_source
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 import kotlin.random.Random
 import kotlin.time.Duration
@@ -81,9 +72,7 @@ import kotlin.time.Duration.Companion.seconds
 
 @Immutable
 sealed class MediaSelectorSummary {
-    /**
-     * 用于 UI 比较, 如果 [MediaSelectorSummary] 变了但是 [typeId] 相同就不会有 animation.
-     */
+
     abstract val typeId: Int
 
     @Immutable
@@ -111,9 +100,6 @@ sealed class MediaSelectorSummary {
     }
 }
 
-/**
- * https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=935-6969&t=lhxsUsBY06BworUx-4
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MediaSelectorSummaryCard(
@@ -124,11 +110,11 @@ fun MediaSelectorSummaryCard(
     val colors = MediaSelectorColors.calculate(summary)
     val summaryUpdated by rememberUpdatedState(summary)
 
-    val motionScheme = LocalAniMotionScheme.current
+    val motionScheme = LocalWynimeMotionScheme.current
     val transitionSpec: AnimatedContentTransitionScope<MediaSelectorSummary>.() -> ContentTransform = {
         val default = motionScheme.animatedContent.standard(this)
         if (initialState.typeId == targetState.typeId) {
-            // 如果 typeId 相同, 不会有动画
+
             ContentTransform(
                 EnterTransition.None,
                 ExitTransition.None,
@@ -277,7 +263,7 @@ fun MediaSelectorSummaryCard(
                     }
 
                     is MediaSelectorSummary.Selected -> {
-                        if (!state.isPerfectMatch) { // 只在匹配到可能错误的时候才显示标题
+                        if (!state.isPerfectMatch) {
                             Box(
                                 Modifier.fillMaxWidth()
                                     .heightIn(min = 64.dp)
@@ -306,7 +292,7 @@ fun MediaSelectorSummaryCard(
 
 @Composable
 private fun SourceIcon(source: MediaSelectorSourceSummary, modifier: Modifier) {
-    me.him188.ani.app.ui.mediaselect.common.SourceIcon(
+    com.wynime.app.ui.mediaselect.common.SourceIcon(
         iconUrl = source.sourceIconUrl,
         sourceName = source.sourceName,
         modifier,
@@ -324,13 +310,12 @@ private class MediaSelectorSummaryState(
     suspend fun collectSummaryChanges(flow: Flow<MediaSelectorSummary>) {
         flow
             .distinctUntilChangedBy { summary ->
-                // 仅当 typeId 或者 AutoSelecting 的 estimate 变更时, 才重启协程 (动画). 
-                // 如果状态里的 sourceSummaries 属性变了, 不要重启协程 (动画), 否则可能会有轻微的不连贯.
+
                 intArrayOf(
                     summary.typeId,
-                    // AutoSelecting.estimate ?: 0
+
                     (summary as? MediaSelectorSummary.AutoSelecting)?.estimate?.inWholeMilliseconds?.toInt() ?: 0,
-                    // No boxing here.
+
                 )
             }
             .collectLatest { state ->
@@ -351,7 +336,6 @@ private class MediaSelectorSummaryState(
             }
     }
 }
-
 
 @Immutable
 data class MediaSelectorSourceSummary(
@@ -396,42 +380,10 @@ private fun SourceSummaryRow(
             val source = sources[it]
             SourceIcon(source, Modifier.size(24.dp))
         }
-//        FlowRow(
-//            Modifier.fillMaxWidth(),
-//            maxLines = 2,
-//            horizontalArrangement = Arrangement.spacedBy(4.dp),
-//            verticalArrangement = Arrangement.spacedBy(4.dp),
-//            overflow = FlowRowOverflow.expandIndicator {
-//                // Workaround for compose limitation (1.8.0-aloha02). `shownItemCount` cannot be accessed at composition time.
-//                val shownItemCount by remember(this) {
-//                    snapshotFlow { shownItemCount }
-//                }.collectAsStateWithLifecycle(0) // in preview this might not work.
-//
-//                Box(Modifier.widthIn(min = 24.dp).heightIn(min = 24.dp), contentAlignment = Alignment.Center) {
-//                    Text(
-//                        remember(sources.size, shownItemCount) {
-//                            "+${sources.size - shownItemCount}"
-//                        },
-//                        style = MaterialTheme.typography.labelMedium,
-//                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-//                        textAlign = TextAlign.Center,
-//                        softWrap = false,
-//                    )
-//                }
-//            },
-//        ) {
-//            for (source in sources) {
-//                SourceIcon(source, Modifier.size(24.dp))
-//            }
-//        }
 
     }
 }
 
-/**
- * @param header ListItem
- * @param content should have 16.dp all around padding
- */
 @Composable
 private fun MediaSelectorSummaryLayout(
     header: @Composable () -> Unit,
@@ -496,7 +448,6 @@ private data class MediaSelectorColors(
         }
     }
 }
-
 
 @OptIn(TestOnly::class)
 @Composable

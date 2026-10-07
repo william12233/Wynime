@@ -1,13 +1,3 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-// @formatter:off
 @file:Suppress(
   "FunctionName",
   "ClassName",
@@ -17,19 +7,11 @@
   "SpellCheckingInspection",
 )
 
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.title.PatternBasedTitleParserTestSuite
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.title.PatternBasedTitleParserTestSuite
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/**
- * 原名: `吹响吧_上低音号`
- * 数据源: `web-primary`
- *
- * 由 `test-codegen` 的 `GenerateTests.kt` 生成, 不要手动修改!
- * 如果你优化了解析器, 这些 test 可能会失败, 请检查是否它是因为以前解析错误而现在解析正确了. 
- * 如果是, 请更新测试数据: 执行 `GenerateTests.kt`.
- */
 public class PatternTitleParserTest吹响吧_上低音号 : PatternBasedTitleParserTestSuite() {
   @Test
   public fun `670314-670313-670276-670275-670274-670253-670252-670215-670099-669963`() {
@@ -2503,4 +2485,3 @@ public class PatternTitleParserTest吹响吧_上低音号 : PatternBasedTitlePar
   }
 }
 
-// @formatter:on

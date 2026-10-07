@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.player
+package com.wynime.app.data.repository.player
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -22,30 +13,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.models.player.EpisodeHistory
-import me.him188.ani.app.data.network.WynimeCloudClient
-import me.him188.ani.app.data.network.WynimePlaybackChange
-import me.him188.ani.app.data.network.WynimePlaybackServerChange
-import me.him188.ani.app.data.network.WynimePlaybackSyncRequest
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.domain.session.SessionEvent
-import me.him188.ani.app.domain.session.SessionState
-import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.logging.info
+import com.wynime.app.data.models.player.EpisodeHistory
+import com.wynime.app.data.network.WynimeCloudClient
+import com.wynime.app.data.network.WynimePlaybackChange
+import com.wynime.app.data.network.WynimePlaybackServerChange
+import com.wynime.app.data.network.WynimePlaybackSyncRequest
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.domain.session.SessionEvent
+import com.wynime.app.domain.session.SessionState
+import com.wynime.app.domain.session.SessionStateProvider
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.logging.info
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * 將本機播放紀錄以 local-first 方式同步到 Wynime Cloud。
- *
- * 播放器只寫入 Room 和 pending-op；網路錯誤不會回傳到播放流程。Worker 以 Bangumi user、subjectId、episodeId
- * 為複合身份，並透過 revision/baseRevision 在多裝置同時更新時做 deterministic conflict resolution。
- */
 class PlaybackHistorySyncer(
     private val repository: EpisodePlayHistoryRepository,
     private val cloudClient: WynimeCloudClient,
@@ -174,10 +159,6 @@ class PlaybackHistorySyncer(
     }
 }
 
-/**
- * Runs the first request immediately, then coalesces requests received during [cooldown] into one trailing run.
- * Every trailing run starts a new cooldown of its own.
- */
 internal class LeadingTrailingSyncGate(
     scope: CoroutineScope,
     private val cooldown: Duration,

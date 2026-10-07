@@ -1,4 +1,4 @@
-package me.him188.ani.utils.io
+package com.wynime.utils.io
 
 import java.security.SecureRandom
 import javax.crypto.Cipher

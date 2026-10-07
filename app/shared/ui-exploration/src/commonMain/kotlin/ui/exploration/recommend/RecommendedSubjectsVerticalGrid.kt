@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.recommend
+package com.wynime.app.ui.exploration.recommend
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,26 +17,26 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
-import me.him188.ani.app.data.models.recommend.RecommendedItemInfo
-import me.him188.ani.app.data.models.recommend.RecommendedSubjectInfo
-import me.him188.ani.app.data.models.recommend.TestRecommendedItemInfos
-import me.him188.ani.app.data.models.recommend.id
-import me.him188.ani.app.data.models.recommend.preferredDisplayName
-import me.him188.ani.app.data.models.recommend.type
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.layout.CarouselItemDefaults
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.minimumHairlineSize
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.ui.search.createTestPager
-import me.him188.ani.app.ui.search.rememberLoadErrorState
-import me.him188.ani.app.ui.subject.SubjectCoverCard
-import me.him188.ani.app.ui.subject.SubjectGridDefaults
-import me.him188.ani.app.ui.subject.SubjectGridLayoutParams
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.recommend.RecommendedItemInfo
+import com.wynime.app.data.models.recommend.RecommendedSubjectInfo
+import com.wynime.app.data.models.recommend.TestRecommendedItemInfos
+import com.wynime.app.data.models.recommend.id
+import com.wynime.app.data.models.recommend.preferredDisplayName
+import com.wynime.app.data.models.recommend.type
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.layout.CarouselItemDefaults
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.minimumHairlineSize
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.search.createTestPager
+import com.wynime.app.ui.search.rememberLoadErrorState
+import com.wynime.app.ui.subject.SubjectCoverCard
+import com.wynime.app.ui.subject.SubjectGridDefaults
+import com.wynime.app.ui.subject.SubjectGridLayoutParams
+import com.wynime.utils.platform.annotations.TestOnly
 
 fun LazyGridScope.recommendationItems(
     data: LazyPagingItems<RecommendedItemInfo>,
@@ -72,15 +63,15 @@ fun LazyGridScope.recommendationItems(
         },
         contentType = data.itemContentType { it.type },
     ) { index ->
-        val aniMotionScheme = LocalAniMotionScheme.current
+        val wynimeMotionScheme = LocalWynimeMotionScheme.current
         when (val item = data[index]) {
-            null,// placeholder
+            null,
             is RecommendedSubjectInfo -> {
                 val animateItem = Modifier
                     .animateItem(
-                        fadeInSpec = aniMotionScheme.feedItemFadeInSpec,
-                        fadeOutSpec = aniMotionScheme.feedItemFadeOutSpec,
-                        placementSpec = aniMotionScheme.feedItemPlacementSpec,
+                        fadeInSpec = wynimeMotionScheme.feedItemFadeInSpec,
+                        fadeOutSpec = wynimeMotionScheme.feedItemFadeOutSpec,
+                        placementSpec = wynimeMotionScheme.feedItemPlacementSpec,
                     )
                 RecommendedSubjectCard(
                     item = item,
@@ -95,7 +86,7 @@ fun LazyGridScope.recommendationItems(
 
 @Composable
 private fun RecommendedSubjectCard(
-    item: RecommendedSubjectInfo?, // null means placeholder
+    item: RecommendedSubjectInfo?,
     onClick: () -> Unit,
     shape: Shape = CarouselItemDefaults.shape,
     modifier: Modifier = Modifier,
@@ -108,7 +99,7 @@ private fun RecommendedSubjectCard(
         onClick = onClick,
         modifier = modifier,
         shape = shape,
-        imageModifier = Modifier.sizeIn(maxWidth = 300.dp, maxHeight = (300f / 9 * 16).dp), // 限制最大宽度, 可以让 iOS 不卡一点
+        imageModifier = Modifier.sizeIn(maxWidth = 300.dp, maxHeight = (300f / 9 * 16).dp),
     )
 }
 

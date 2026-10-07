@@ -1,4 +1,4 @@
-package me.him188.ani.app.navigation
+package com.wynime.app.navigation
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest

@@ -1,16 +1,7 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:JvmName("LoggerKt")
 @file:Suppress("EXTENSION_SHADOWED_BY_MEMBER", "KotlinRedundantDiagnosticSuppress")
 
-package me.him188.ani.utils.logging
+package com.wynime.utils.logging
 
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -58,16 +49,10 @@ fun Logger.error(throwable: Throwable?) = error(null, throwable)
 
 expect fun logger(name: String): Logger
 
-/**
- * Equivalent to `logger(this::class)`, but faster.
- */
 expect fun Any.thisLogger(): Logger
 
 expect inline fun <@Suppress("unused") reified T : Any> logger(): Logger
 
-/**
- * 忽略所有日志
- */
 expect val SilentLogger: Logger
 
 inline fun Logger.trace(message: () -> String) {

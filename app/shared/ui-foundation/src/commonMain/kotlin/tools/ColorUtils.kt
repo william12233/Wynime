@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
-package me.him188.ani.app.tools
-
+package com.wynime.app.tools
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
@@ -29,13 +20,6 @@ object ColorUtils {
     private const val MIN_ALPHA_SEARCH_MAX_ITERATIONS = 10
     private const val ALPHA_EPSILON = 1e-6f
 
-    /**
-     * 等价于 AndroidX ColorUtils.compositeColors(foreground, background)
-     *
-     * 含义：把 foreground 作为前景色叠到 background 上。
-     *
-     * 注意：这里统一转到 sRGB 计算，行为更接近原来的 @ColorInt 版本。
-     */
     fun compositeColor(foreground: Color, background: Color): Color {
         return compositeColors(foreground, background)
     }
@@ -65,13 +49,6 @@ object ColorUtils {
         )
     }
 
-    /**
-     * 等价于 AndroidX ColorUtils.blendARGB(color1, color2, ratio)
-     *
-     * 含义：在 color1 和 color2 之间做线性插值。
-     * ratio = 0f 得到 color1
-     * ratio = 1f 得到 color2
-     */
     fun blendColor(color1: Color, color2: Color, ratio: Float): Color {
         return blendArgb(color1, color2, ratio)
     }
@@ -119,14 +96,6 @@ object ColorUtils {
         return max(luminance1, luminance2) / min(luminance1, luminance2)
     }
 
-    /**
-     * 返回满足最小对比度的最小 alpha。
-     *
-     * 原 AndroidX 版本返回 0..255 的 Int，失败返回 -1。
-     * Compose Color 的 alpha 是 0f..1f，所以这里返回 Float?：
-     * - null 表示即使 alpha = 1f 也达不到 minContrastRatio
-     * - 非 null 表示 0f..1f 的 alpha
-     */
     fun calculateMinimumAlpha(
         foreground: Color,
         background: Color,

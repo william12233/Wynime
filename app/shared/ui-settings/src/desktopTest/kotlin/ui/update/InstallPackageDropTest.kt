@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -17,19 +8,19 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import kotlinx.io.files.Path
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.tools.update.InstallationFailureReason
-import me.him188.ani.app.tools.update.InstallationResult
-import me.him188.ani.app.tools.update.UpdateInstaller
-import me.him188.ani.app.ui.foundation.DragAndDropContent
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.WindowDropHost
-import me.him188.ani.app.ui.foundation.WindowDropHostState
-import me.him188.ani.app.ui.foundation.WindowDropTestTags
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.platform.Context
+import com.wynime.app.tools.update.InstallationFailureReason
+import com.wynime.app.tools.update.InstallationResult
+import com.wynime.app.tools.update.UpdateInstaller
+import com.wynime.app.ui.foundation.DragAndDropContent
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.WindowDropHost
+import com.wynime.app.ui.foundation.WindowDropHostState
+import com.wynime.app.ui.foundation.WindowDropTestTags
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -86,7 +77,7 @@ class InstallPackageDropHandlerTest {
 @OptIn(TestOnly::class)
 class InstallPackageDropUiTest {
     @Test
-    fun `overlay shows the dragged package and disappears when the drag ends`() = runAniComposeUiTest {
+    fun `overlay shows the dragged package and disappears when the drag ends`() = runWynimeComposeUiTest {
         val state = DropInstallPackageState(FakeInstaller())
         val host = WindowDropHostState()
         lateinit var handler: InstallPackageDropHandler
@@ -114,7 +105,7 @@ class InstallPackageDropUiTest {
     }
 
     @Test
-    fun `confirming the dialog installs the dropped package`() = runAniComposeUiTest {
+    fun `confirming the dialog installs the dropped package`() = runWynimeComposeUiTest {
         val installer = FakeInstaller()
         val state = DropInstallPackageState(installer)
         setContent {
@@ -133,7 +124,7 @@ class InstallPackageDropUiTest {
     }
 
     @Test
-    fun `cancelling the dialog does not install`() = runAniComposeUiTest {
+    fun `cancelling the dialog does not install`() = runWynimeComposeUiTest {
         val installer = FakeInstaller()
         val state = DropInstallPackageState(installer)
         setContent {
@@ -154,7 +145,7 @@ class InstallPackageDropUiTest {
     }
 
     @Test
-    fun `installation failure is shown and can be dismissed`() = runAniComposeUiTest {
+    fun `installation failure is shown and can be dismissed`() = runWynimeComposeUiTest {
         val installer = FakeInstaller(
             result = InstallationResult.Failed(InstallationFailureReason.UNSUPPORTED_FILE_STRUCTURE, "Not an app bundle"),
         )

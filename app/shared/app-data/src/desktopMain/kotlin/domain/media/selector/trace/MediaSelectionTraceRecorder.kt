@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector.trace
+package com.wynime.app.domain.media.selector.trace
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
@@ -25,25 +16,25 @@ import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.episode.CreateMediaFetchSelectBundleFlowUseCase
-import me.him188.ani.app.domain.episode.SubjectMediaFetchSessions
-import me.him188.ani.app.domain.episode.MediaFetchSelectBundle
-import me.him188.ani.app.domain.episode.SubjectEpisodeInfoBundle
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.app.domain.media.fetch.isFinal
-import me.him188.ani.app.domain.media.selector.MediaAutoSelectSnapshot
-import me.him188.ani.app.domain.media.selector.MediaSourceSelectionSnapshot
-import me.him188.ani.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaExtraFiles
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.episode.CreateMediaFetchSelectBundleFlowUseCase
+import com.wynime.app.domain.episode.SubjectMediaFetchSessions
+import com.wynime.app.domain.episode.MediaFetchSelectBundle
+import com.wynime.app.domain.episode.SubjectEpisodeInfoBundle
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.domain.media.fetch.isFinal
+import com.wynime.app.domain.media.selector.MediaAutoSelectSnapshot
+import com.wynime.app.domain.media.selector.MediaSourceSelectionSnapshot
+import com.wynime.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaExtraFiles
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import org.koin.core.Koin
 import java.io.File
 import java.security.MessageDigest
@@ -52,7 +43,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 
-/** Opt-in desktop diagnostic. Observation is tied to the real playback bundle's subscription. */
 class MediaSelectionTraceRecorder(
     private val directory: File,
     private val koin: Koin,
@@ -133,12 +123,12 @@ class MediaSelectionTraceRecorder(
             }
         } finally {
             val durationMillis = started.elapsedNow().inWholeMilliseconds
-            // Snapshot references are immutable. Encoding and file I/O happen after capture, off the playback path.
+
             withContext(NonCancellable + Dispatchers.IO) {
                 if (observations.isNotEmpty()) {
                     val trace = MediaSelectionTrace(
                         capturedAt = capturedAt.toString(),
-                        applicationVersion = currentAniBuildConfig.versionName,
+                        applicationVersion = currentWynimeBuildConfig.versionName,
                         durationMillis = durationMillis,
                         searchCacheCleared = searchCacheCleared,
                         request = request,

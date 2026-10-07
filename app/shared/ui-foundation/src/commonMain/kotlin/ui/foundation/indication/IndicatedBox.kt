@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.indication
+package com.wynime.app.ui.foundation.indication
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope

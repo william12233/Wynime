@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.playback
+package com.wynime.app.ui.playback
 
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -16,25 +7,25 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_subject_delete
-import me.him188.ani.app.ui.lang.playback_history_cover
-import me.him188.ani.app.ui.lang.playback_history_delete_selected
-import me.him188.ani.app.ui.lang.playback_history_enter_selection_mode
-import me.him188.ani.app.ui.lang.playback_history_episode_label
-import me.him188.ani.app.ui.lang.playback_history_selected_count
-import me.him188.ani.app.ui.lang.playback_history_sync_delete_pending
-import me.him188.ani.app.ui.lang.playback_history_sync_status_pending
-import me.him188.ani.app.ui.lang.playback_history_sync_status_synced
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_subject_delete
+import com.wynime.app.ui.lang.playback_history_cover
+import com.wynime.app.ui.lang.playback_history_delete_selected
+import com.wynime.app.ui.lang.playback_history_enter_selection_mode
+import com.wynime.app.ui.lang.playback_history_episode_label
+import com.wynime.app.ui.lang.playback_history_selected_count
+import com.wynime.app.ui.lang.playback_history_sync_delete_pending
+import com.wynime.app.ui.lang.playback_history_sync_status_pending
+import com.wynime.app.ui.lang.playback_history_sync_status_synced
 import org.jetbrains.compose.resources.getString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class PlaybackHistoryScreenTest {
     @Test
-    fun `shows playback history fields with subject cover`() = runAniComposeUiTest {
+    fun `shows playback history fields with subject cover`() = runWynimeComposeUiTest {
         val item = testHistory()
         val coverText = runBlocking { getString(Lang.playback_history_cover, item.subjectName!!) }
         val episodeLabel = runBlocking { getString(Lang.playback_history_episode_label, "2") }
@@ -59,7 +50,7 @@ class PlaybackHistoryScreenTest {
     }
 
     @Test
-    fun `batch delete selected playback histories`() = runAniComposeUiTest {
+    fun `batch delete selected playback histories`() = runWynimeComposeUiTest {
         val histories = listOf(
             testHistory(episodeId = 1),
             testHistory(episodeId = 2, episodeName = "魔法"),
@@ -95,7 +86,7 @@ class PlaybackHistoryScreenTest {
     }
 
     @Test
-    fun `shows synced and pending sync status icons`() = runAniComposeUiTest {
+    fun `shows synced and pending sync status icons`() = runWynimeComposeUiTest {
         val syncedText = runBlocking { getString(Lang.playback_history_sync_status_synced) }
         val pendingText = runBlocking { getString(Lang.playback_history_sync_status_pending, 2) }
         var opened = 0
@@ -138,7 +129,7 @@ class PlaybackHistoryScreenTest {
     }
 
     @Test
-    fun `sync status screen lists and deletes pending ops`() = runAniComposeUiTest {
+    fun `sync status screen lists and deletes pending ops`() = runWynimeComposeUiTest {
         val deletePendingText = runBlocking { getString(Lang.playback_history_sync_delete_pending) }
         var deletedIds = emptyList<Long>()
 

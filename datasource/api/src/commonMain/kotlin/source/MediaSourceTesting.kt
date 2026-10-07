@@ -1,10 +1,9 @@
-package me.him188.ani.datasources.api.source
+package com.wynime.datasources.api.source
 
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.paging.emptySizedSource
-import me.him188.ani.utils.platform.Uuid
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.paging.emptySizedSource
+import com.wynime.utils.platform.Uuid
 import kotlin.random.Random
-
 
 open class TestHttpMediaSource(
     override val mediaSourceId: String = Uuid.randomString(),

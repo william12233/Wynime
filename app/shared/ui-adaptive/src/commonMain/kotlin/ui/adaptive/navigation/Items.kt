@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.adaptive.navigation
+package com.wynime.app.ui.adaptive.navigation
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteItemColors
@@ -36,10 +27,6 @@ sealed interface NavigationSuiteScope {
     )
 }
 
-///////////////////////////////////////////////////////////////////////////
-// 以下内容从 CMP NavigateSuiteScaffold.kt v1.0.0-rc01 复制
-///////////////////////////////////////////////////////////////////////////
-
 internal interface NavigationSuiteItemProvider {
     val itemsCount: Int
     val itemList: MutableVector<NavigationSuiteItem>
@@ -56,7 +43,7 @@ internal class NavigationSuiteItem(
     val alwaysShowLabel: Boolean,
     val badge: (@Composable () -> Unit)?,
     val colors: NavigationSuiteItemColors?,
-    // TODO(conradchen): Make this nullable when material3 1.3.0 is released.
+
     val interactionSource: MutableInteractionSource
 )
 
@@ -86,7 +73,7 @@ private class NavigationSuiteScopeImpl : NavigationSuiteScope, NavigationSuiteIt
                 alwaysShowLabel = alwaysShowLabel,
                 badge = badge,
                 colors = colors,
-                // TODO(conradchen): Remove the fallback logic when material3 1.3.0 is released.
+
                 interactionSource = interactionSource ?: MutableInteractionSource(),
             ),
         )

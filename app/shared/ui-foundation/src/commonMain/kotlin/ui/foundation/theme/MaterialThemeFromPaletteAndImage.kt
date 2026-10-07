@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.theme
+package com.wynime.app.ui.foundation.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -25,16 +16,10 @@ import com.materialkolor.PaletteStyle
 import com.materialkolor.dynamicColorScheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.ui.foundation.resize
-import me.him188.ani.app.ui.foundation.themeColor
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.ui.foundation.resize
+import com.wynime.app.ui.foundation.themeColor
 
-/**
- * Generate a [MaterialTheme] from a [Palette].
- *
- * @receiver The [Palette] to generate from.
- * @return Generated [MaterialTheme]
- */
 @Composable
 fun MaterialThemeFromPaletteAndImage(
     palette: Palette?,

@@ -1,31 +1,22 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs
+package com.wynime.app.ui.settings.tabs
 
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.WynimeBrand
-import me.him188.ani.app.platform.navigation.rememberAsyncBrowserNavigator
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_help_feedback
-import me.him188.ani.app.ui.lang.settings_help_github
-import me.him188.ani.app.ui.lang.settings_help_qq
-import me.him188.ani.app.ui.lang.settings_help_telegram
-import me.him188.ani.app.ui.lang.settings_help_website
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.WynimeBrand
+import com.wynime.app.platform.navigation.rememberAsyncBrowserNavigator
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_help_feedback
+import com.wynime.app.ui.lang.settings_help_github
+import com.wynime.app.ui.lang.settings_help_qq
+import com.wynime.app.ui.lang.settings_help_telegram
+import com.wynime.app.ui.lang.settings_help_website
 import org.jetbrains.compose.resources.stringResource
 
-object AniHelperDestination {
+object WynimeHelperDestination {
     const val GITHUB_HOME = WynimeBrand.githubHome
     const val GITHUB_CONTRIBUTORS = WynimeBrand.githubContributors
     const val ANI_WEBSITE = WynimeBrand.githubHome
@@ -56,15 +47,15 @@ fun HelpDropdown(
         )
         DropdownMenuItem(
             text = { Text(stringResource(Lang.settings_help_github)) },
-            onClick = { browserNavigator.openBrowser(context, AniHelperDestination.GITHUB_HOME) },
+            onClick = { browserNavigator.openBrowser(context, WynimeHelperDestination.GITHUB_HOME) },
         )
         DropdownMenuItem(
             text = { Text(stringResource(Lang.settings_help_feedback)) },
-            onClick = { browserNavigator.openBrowser(context, AniHelperDestination.ISSUE_TRACKER) },
+            onClick = { browserNavigator.openBrowser(context, WynimeHelperDestination.ISSUE_TRACKER) },
         )
         DropdownMenuItem(
             text = { Text(stringResource(Lang.settings_help_website)) },
-            onClick = { browserNavigator.openBrowser(context, AniHelperDestination.ANI_WEBSITE) },
+            onClick = { browserNavigator.openBrowser(context, WynimeHelperDestination.ANI_WEBSITE) },
         )
     }
 }

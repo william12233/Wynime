@@ -1,11 +1,10 @@
-package me.him188.ani.utils.ktor
+package com.wynime.utils.ktor
 
 import io.ktor.util.network.address
 import io.ktor.util.network.port
 import java.net.Proxy
 import kotlin.test.Test
 import kotlin.test.assertEquals
-
 
 class ClientProxyConfigValidatorTest {
 

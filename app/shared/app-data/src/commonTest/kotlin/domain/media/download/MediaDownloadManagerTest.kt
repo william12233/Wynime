@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.download
+package com.wynime.app.domain.media.download
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,27 +17,24 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.cache.EpisodeCacheStatus
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngineKey
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.domain.media.cache.storage.MediaCacheStorage
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.cache.EpisodeCacheStatus
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngineKey
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.domain.media.cache.storage.MediaCacheStorage
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
 
 class MediaDownloadManagerTest {
     private fun TestScope.manager(vararg storages: MediaCacheStorage): MediaDownloadManager =
         MediaDownloadManager(storages.toList(), backgroundScope)
 
-    /**
-     * 推进一个快照采样周期.
-     */
     private fun TestScope.tick() {
         advanceTimeBy(1.seconds)
         runCurrent()
@@ -61,8 +49,6 @@ class MediaDownloadManagerTest {
 
     private fun storage(key: MediaCacheEngineKey, supports: Boolean = true) =
         DownloadTestStorage(testDownloadEngine(key, supports))
-
-    // downloads
 
     @Test
     fun `downloads keep instances for unchanged caches`() = runTest {
@@ -118,7 +104,6 @@ class MediaDownloadManagerTest {
         storage.listFlow.value = listOf(kept)
         runCurrent()
 
-        // 已关闭的实例不再为订阅者启动上游; 保留的实例照常共享快照.
         val received = mutableListOf<DownloadSnapshot>()
         backgroundScope.launch { removedDownload.snapshot.collect { received += it } }
         backgroundScope.launch { keptDownload.snapshot.collect {} }
@@ -144,7 +129,6 @@ class MediaDownloadManagerTest {
         assertSame(retained, manager.findDownload(retainedCache.cacheId))
         assertEquals(listOf(retainedCache.cacheId, testDownload(2).cacheId), manager.downloads.value.map { it.id })
 
-        // 保留的实例没有被关闭, 仍可共享快照.
         backgroundScope.launch { retained.snapshot.collect {} }
         runCurrent()
         assertEquals(1, retainedCache.fileStats.subscriptionCount.value)
@@ -157,7 +141,7 @@ class MediaDownloadManagerTest {
         runCurrent()
         val cache = testDownload(1)
         storage.listFlow.value = listOf(cache)
-        // 未推进调度器: 存储已更新, 聚合列表尚未更新.
+
         assertEquals(listOf(cache), manager.findCaches { true })
         assertNull(manager.findDownload(cache.cacheId))
         runCurrent()
@@ -179,7 +163,6 @@ class MediaDownloadManagerTest {
         val episodeMetadata = EpisodeMetadata("Episode 1", EpisodeSort(1), EpisodeSort(1))
         assertSame(existing, manager.createDownload(existing.origin, testMetadata(1), episodeMetadata, target))
 
-        // 其他剧集不受影响, 仍在指定存储中创建.
         val other = testDownload(2)
         target.create = { _, _, _ -> other }
         assertSame(other, manager.createDownload(other.origin, testMetadata(2), episodeMetadata, target))
@@ -269,14 +252,11 @@ class MediaDownloadManagerTest {
             assertEquals(stable, snapshots.first { it.id == first.cacheId }.downloadSpeed)
         }
 
-        // 速度统计继续累计, 新一秒的结果与重新开始统计时的零值不同.
         first.fileStats.value = MediaCache.FileStats(totalSize = 100_000.bytes, downloadedBytes = (9 * bytesPerSecond).bytes)
         tick()
         val continued = received.last().first { it.id == first.cacheId }.downloadSpeed
         assertTrue(continued.inBytes >= stable.inBytes * 9 / 10, "speed=$continued, stable=$stable")
     }
-
-    // downloadStatusForEpisode
 
     @Test
     fun `episode status is cached when a completed download exists`() = runTest {
@@ -357,8 +337,6 @@ class MediaDownloadManagerTest {
         assertEquals(EpisodeCacheStatus.NotCached, status.first { it is EpisodeCacheStatus.NotCached })
     }
 
-    // overallStats
-
     @Test
     fun `overall stats sum storage stats and follow their updates`() = runTest {
         val first = DownloadTestStorage().apply { stats.value = stats(1, 2, 3, 4) }
@@ -378,8 +356,6 @@ class MediaDownloadManagerTest {
     fun `overall stats are zero without storages`() = runTest {
         assertEquals(MediaStats.Zero, manager().overallStats.first())
     }
-
-    // defaultStorageFor
 
     @Test
     fun `default storage uses the first compatible web engine`() = runTest {
@@ -409,8 +385,6 @@ class MediaDownloadManagerTest {
         assertFailsWith<UnsupportedOperationException> { manager(unsupported).defaultStorageFor(media) }
         assertFailsWith<UnsupportedOperationException> { manager().defaultStorageFor(media) }
     }
-
-    // createDownload
 
     @Test
     fun `createDownload forwards arguments to the given storage and returns its result`() = runTest {
@@ -447,8 +421,6 @@ class MediaDownloadManagerTest {
         val episodeMetadata = EpisodeMetadata(title = "Episode 1", ep = EpisodeSort(1), sort = EpisodeSort(1))
         assertSame(cache, manager.createDownload(cache.origin, cache.metadata, episodeMetadata))
     }
-
-    // delete
 
     @Test
     fun `delete removes the record through its storage and reports a missing record`() = runTest {

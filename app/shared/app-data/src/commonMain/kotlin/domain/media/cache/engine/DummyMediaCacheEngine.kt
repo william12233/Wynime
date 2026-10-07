@@ -1,37 +1,25 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.engine
+package com.wynime.app.domain.media.cache.engine
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.app.tools.toProgress
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
 import kotlin.coroutines.CoroutineContext
 
-/**
- * 不会实际发起下载, 内部维护一个虚拟进度条, 用于测试.
- */
 class DummyMediaCacheEngine(
     private val mediaSourceId: String,
     private val location: MediaSourceLocation = MediaSourceLocation.Local,
     override val engineKey: MediaCacheEngineKey = Companion.engineKey,
 ) : MediaCacheEngine {
-    
+
     override val stats: Flow<MediaStats> = flowOf(MediaStats.Unspecified)
 
     override fun supports(media: Media): Boolean = true

@@ -1,4 +1,4 @@
-package me.him188.ani.datasources.bangumi.models
+package com.wynime.datasources.bangumi.models
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.search
+package com.wynime.app.ui.search
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,30 +37,29 @@ import androidx.paging.compose.LazyPagingItems
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.icons.Passkey_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_load_error_copied_feedback
-import me.him188.ani.app.ui.lang.foundation_load_error_network
-import me.him188.ani.app.ui.lang.foundation_load_error_no_details
-import me.him188.ani.app.ui.lang.foundation_load_error_no_results
-import me.him188.ani.app.ui.lang.foundation_load_error_rate_limited
-import me.him188.ani.app.ui.lang.foundation_load_error_request_error
-import me.him188.ani.app.ui.lang.foundation_load_error_requires_login
-import me.him188.ani.app.ui.lang.foundation_load_error_service_unavailable
-import me.him188.ani.app.ui.lang.foundation_load_error_unknown_with_message
-import me.him188.ani.app.ui.lang.login_sign_in
-import me.him188.ani.app.ui.lang.settings_mediasource_copy
-import me.him188.ani.app.ui.lang.settings_mediasource_retry
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.icons.Passkey_24dp_E8EAED_FILL0_wght400_GRAD0_opsz24
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_load_error_copied_feedback
+import com.wynime.app.ui.lang.foundation_load_error_network
+import com.wynime.app.ui.lang.foundation_load_error_no_details
+import com.wynime.app.ui.lang.foundation_load_error_no_results
+import com.wynime.app.ui.lang.foundation_load_error_rate_limited
+import com.wynime.app.ui.lang.foundation_load_error_request_error
+import com.wynime.app.ui.lang.foundation_load_error_requires_login
+import com.wynime.app.ui.lang.foundation_load_error_service_unavailable
+import com.wynime.app.ui.lang.foundation_load_error_unknown_with_message
+import com.wynime.app.ui.lang.login_sign_in
+import com.wynime.app.ui.lang.settings_mediasource_copy
+import com.wynime.app.ui.lang.settings_mediasource_retry
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import org.jetbrains.compose.resources.stringResource
-
 
 @Composable
 fun <T : Any> LazyPagingItems<T>.rememberLoadErrorState(): State<LoadError?> {
@@ -80,17 +70,6 @@ fun <T : Any> LazyPagingItems<T>.rememberLoadErrorState(): State<LoadError?> {
     }
 }
 
-/**
- * 一个卡片, 展示搜索时遇到的问题, 例如网络错误, 无搜索结果等.
- *
- * 提供按钮来解决错误, 例如 [onRetry].
- *
- * @param error See [rememberLoadErrorState]
- * @param onRetry 当用户点击重试时调用. 只会在 [LoadError.NetworkError], [LoadError.ServiceUnavailable], [LoadError.UnknownError] 时调用.
- * @param onLogin 当用户点击登录时调用. 只会在 [LoadError.RequiresLogin] 时调用. 如果你的功能不需要登录, 可以传递一个空函数给此参数.
- *
- * @see LoadErrorCardLayout
- */ // https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Main?node-id=239-2230&node-type=section&t=moZBMAKgeQpptXRI-0
 @Composable
 fun LoadErrorCard(
     error: LoadError?,
@@ -100,7 +79,7 @@ fun LoadErrorCard(
         val navigator = LocalNavigator.current
         { navigator.navigateBangumiAuthorize() }
     },
-    shape: Shape = MaterialTheme.shapes.large, // behave like Dialogs.
+    shape: Shape = MaterialTheme.shapes.large,
     containerColor: Color = LoadErrorDefaults.containerColor,
     elevation: CardElevation? = null,
 ) {
@@ -162,7 +141,7 @@ fun LoadErrorCard(
 
             LoadError.NoResults -> {
                 ListItem(
-                    leadingContent = { Spacer(Modifier.size(24.dp)) }, // spacer
+                    leadingContent = { Spacer(Modifier.size(24.dp)) },
                     headlineContent = { Text(renderLoadErrorMessage(error)) },
                     colors = listItemColors,
                 )
@@ -200,7 +179,7 @@ fun LoadErrorCard(
                     headlineContent = { Text(renderLoadErrorMessage(error)) },
                     trailingContent = {
                         Row {
-                            if (currentAniBuildConfig.isDebug) {
+                            if (currentWynimeBuildConfig.isDebug) {
                                 TextButton({ e?.printStackTrace() }) {
                                     Text("Dump", fontStyle = FontStyle.Italic)
                                 }
@@ -237,7 +216,6 @@ fun LoadErrorCard(
         }
     }
 
-
     LoadErrorCardLayout(
         role,
         modifier = modifier,
@@ -250,18 +228,11 @@ fun LoadErrorCard(
     )
 }
 
-
-/**
- * 一个卡片, 展示搜索时遇到的问题, 例如网络错误, 无搜索结果等.
- *
- * @param role See [rememberLoadErrorState] and [LoadErrorCardRole.from]
- * @param content 可以是一个 [ListItem]. 使用 [LoadErrorCardScope.listItemColors] 来获取颜色.
- */
 @Composable
 fun LoadErrorCardLayout(
     role: LoadErrorCardRole,
     modifier: Modifier = Modifier,
-    shape: Shape = MaterialTheme.shapes.large, // behave like Dialogs.
+    shape: Shape = MaterialTheme.shapes.large,
     containerColor: Color = LoadErrorDefaults.containerColor,
     elevation: CardElevation? = null,
     content: @Composable (LoadErrorCardScope.() -> Unit),
@@ -312,7 +283,6 @@ fun renderLoadErrorMessage(error: LoadError): String {
     }
 }
 
-// See also PreviewSearchPage
 @Composable
 @PreviewLightDark
 private fun PreviewLoadErrorCard() {

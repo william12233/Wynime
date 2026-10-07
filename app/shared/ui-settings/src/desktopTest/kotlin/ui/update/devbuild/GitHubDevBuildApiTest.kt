@@ -1,24 +1,15 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update.devbuild
+package com.wynime.app.ui.update.devbuild
 
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.readBytes
-import me.him188.ani.utils.io.resolve
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.readBytes
+import com.wynime.utils.io.resolve
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals

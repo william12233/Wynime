@@ -1,8 +1,8 @@
-package me.him188.ani.datasources.api.source.parameter
+package com.wynime.datasources.api.source.parameter
 
 sealed interface MediaSourceParameter<T> {
     val name: String
-    val description: String?  // todo: how to localize?
+    val description: String?
     val default: () -> T
     val visibleWhen: MediaSourceParameterVisibilityCondition?
         get() = null
@@ -10,10 +10,6 @@ sealed interface MediaSourceParameter<T> {
     fun parseFromString(value: String): T
 }
 
-/**
- * Shows a parameter only while [parameterName] has one of [acceptedValues].
- * A `null` condition means the parameter is always visible.
- */
 data class MediaSourceParameterVisibilityCondition(
     val parameterName: String,
     val acceptedValues: Set<String>,
@@ -36,13 +32,9 @@ class StringParameter(
     override val default: () -> String,
     val placeholder: String? = null,
     val isRequired: Boolean = false,
-    /**
-     * 验证用户输入是否合法
-     */
+
     validate: (String) -> Boolean = TrueValidator,
-    /**
-     * 用户每输入一个字都会用整个编辑框的值调用这个函数, 可用于自动清除首尾空格等
-     */
+
     val sanitize: (String) -> String = NoopSanitizer,
     override val visibleWhen: MediaSourceParameterVisibilityCondition? = null,
 ) : MediaSourceParameter<String> {

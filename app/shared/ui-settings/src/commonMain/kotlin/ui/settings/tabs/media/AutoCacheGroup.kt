@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.media
+package com.wynime.app.ui.settings.tabs.media
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,25 +14,25 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import me.him188.ani.app.data.models.preference.MediaCacheSettings
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_count
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_count_description
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_description
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_enable
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_manage
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_max_count
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_max_count_description
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_recent_only
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_space_warning
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_title
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.app.ui.settings.framework.components.RowButtonItem
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.framework.components.SliderItem
-import me.him188.ani.app.ui.settings.framework.components.SwitchItem
+import com.wynime.app.data.models.preference.MediaCacheSettings
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_media_auto_cache_count
+import com.wynime.app.ui.lang.settings_media_auto_cache_count_description
+import com.wynime.app.ui.lang.settings_media_auto_cache_description
+import com.wynime.app.ui.lang.settings_media_auto_cache_enable
+import com.wynime.app.ui.lang.settings_media_auto_cache_manage
+import com.wynime.app.ui.lang.settings_media_auto_cache_max_count
+import com.wynime.app.ui.lang.settings_media_auto_cache_max_count_description
+import com.wynime.app.ui.lang.settings_media_auto_cache_recent_only
+import com.wynime.app.ui.lang.settings_media_auto_cache_space_warning
+import com.wynime.app.ui.lang.settings_media_auto_cache_title
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.app.ui.settings.framework.components.RowButtonItem
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.SliderItem
+import com.wynime.app.ui.settings.framework.components.SwitchItem
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
@@ -62,7 +53,7 @@ internal fun SettingsScope.AutoCacheGroup(
             title = { Text(stringResource(Lang.settings_media_auto_cache_enable)) },
         )
 
-        AniAnimatedVisibility(mediaCacheSettings.enabled) {
+        WynimeAnimatedVisibility(mediaCacheSettings.enabled) {
             Column {
                 HorizontalDividerItem()
 
@@ -99,7 +90,7 @@ internal fun SettingsScope.AutoCacheGroup(
 
                 var mostRecentOnly by remember(mediaCacheSettings) {
                     mutableStateOf(mediaCacheSettings.mostRecentOnly)
-                } // for preview
+                }
                 SwitchItem(
                     checked = mostRecentOnly,
                     onCheckedChange = {
@@ -109,7 +100,7 @@ internal fun SettingsScope.AutoCacheGroup(
                     title = { Text(stringResource(Lang.settings_media_auto_cache_recent_only)) },
                 )
 
-                AniAnimatedVisibility(mostRecentOnly) {
+                WynimeAnimatedVisibility(mostRecentOnly) {
                     SubGroup {
                         var mostRecentCount by remember(mediaCacheSettings) { mutableFloatStateOf(mediaCacheSettings.mostRecentCount.toFloat()) }
                         SliderItem(

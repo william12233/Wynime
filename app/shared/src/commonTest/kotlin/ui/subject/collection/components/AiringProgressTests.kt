@@ -1,41 +1,29 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.subject.collection.components
 
-package me.him188.ani.app.ui.subject.collection.components
-
-import me.him188.ani.app.data.models.subject.ContinueWatchingStatus
-import me.him188.ani.app.data.models.subject.ContinueWatchingStatus.Done
-import me.him188.ani.app.data.models.subject.ContinueWatchingStatus.NotOnAir
-import me.him188.ani.app.data.models.subject.ContinueWatchingStatus.Start
-import me.him188.ani.app.data.models.subject.SubjectAiringInfo
-import me.him188.ani.app.data.models.subject.SubjectAiringKind
-import me.him188.ani.app.data.models.subject.SubjectAiringKind.COMPLETED
-import me.him188.ani.app.data.models.subject.SubjectAiringKind.ON_AIR
-import me.him188.ani.app.data.models.subject.SubjectAiringKind.UPCOMING
-import me.him188.ani.app.data.models.subject.SubjectProgressInfo
-import me.him188.ani.app.tools.WeekFormatter
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.app.ui.subject.AiringLabelState
-import me.him188.ani.app.ui.subject.SubjectProgressState
-import me.him188.ani.app.ui.subject.SubjectStatusStrings
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.PackedDate.Companion.Invalid
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.runDynamicTests
+import com.wynime.app.data.models.subject.ContinueWatchingStatus
+import com.wynime.app.data.models.subject.ContinueWatchingStatus.Done
+import com.wynime.app.data.models.subject.ContinueWatchingStatus.NotOnAir
+import com.wynime.app.data.models.subject.ContinueWatchingStatus.Start
+import com.wynime.app.data.models.subject.SubjectAiringInfo
+import com.wynime.app.data.models.subject.SubjectAiringKind
+import com.wynime.app.data.models.subject.SubjectAiringKind.COMPLETED
+import com.wynime.app.data.models.subject.SubjectAiringKind.ON_AIR
+import com.wynime.app.data.models.subject.SubjectAiringKind.UPCOMING
+import com.wynime.app.data.models.subject.SubjectProgressInfo
+import com.wynime.app.tools.WeekFormatter
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.app.ui.subject.AiringLabelState
+import com.wynime.app.ui.subject.SubjectProgressState
+import com.wynime.app.ui.subject.SubjectStatusStrings
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.PackedDate.Companion.Invalid
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.runDynamicTests
 import kotlin.test.assertEquals
 import kotlin.time.Instant
 
-/**
- * Test [AiringLabelState] and [SubjectProgressState]
- */
 @TestContainer
 class AiringProgressTests {
     private val today = Instant.parse("2024-08-23T12:00:00Z")
@@ -68,10 +56,10 @@ class AiringProgressTests {
     }
 
     private fun create(
-        // SubjectAiringInfo
+
         kind: SubjectAiringKind,
         latestSort: Int?,
-        // SubjectProgressInfo
+
         ep: ContinueWatchingStatus,
         episodeCount: Int = 12,
     ): Scope {
@@ -283,9 +271,7 @@ class AiringProgressTests {
             }
         }
         add("已完结, 看了 1, 没有下一集") {
-            // 注意, 只要是计算为了 ContinueWatchingStatus.Watched, 就只能显示 "看过"
-            // 不过如果总过有 12 集, 这种情况下 ContinueWatchingStatus 不会是 Watched.
-            // 这个 case 只是为了更稳健
+
             create(COMPLETED, 12, ep = watched1).run {
                 assertEquals("看过 01 · 全 12 话", airingLabel)
                 assertEquals(false, highlightProgress)
@@ -302,8 +288,6 @@ class AiringProgressTests {
             }
         }
 
-
-        // “看过 xx，全 xx 话” 同时显示 ep 和 sort #1047
         add("同时显示 ep 和 sort: 连载到 2, 看过 2, 没有下集开播时间") {
             create(ON_AIR, 23, ep = watched22).run {
                 assertEquals("看过 10 (22) · 预定全 12 话", airingLabel)

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.details
+package com.wynime.app.ui.download.details
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -36,19 +27,19 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.interaction.WindowDragArea
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_details_title
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.utils.coroutines.sampleWithInitial
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.fetch.MediaSourceManager
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.interaction.WindowDragArea
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_details_title
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.utils.coroutines.sampleWithInitial
+import com.wynime.utils.logging.logger
 import org.jetbrains.compose.resources.stringResource
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -71,9 +62,6 @@ class MediaCacheDetailsPageViewModel(
                 media?.mediaSourceId?.let { mediaSourceManager.infoFlowByMediaSourceId(it) } ?: flowOf(null)
             }
 
-    /**
-     * 下载器区块每秒刷新一次, 与静态的资源详情分开计算.
-     */
     private val downloaderFlow = mediaCacheFlow.flatMapLatest { cache ->
         if (cache == null) return@flatMapLatest flowOf(null)
         combine(cache.state, cache.sessionStats, cache.downloaderStatus) { state, stats, status ->
@@ -98,7 +86,7 @@ internal suspend fun createMediaCacheDetailsScreenState(
 }
 
 data class MediaCacheDetailsScreenState(
-    val details: MediaDetails?, // null for placeholder
+    val details: MediaDetails?,
     val downloader: DownloaderDetails? = null,
 )
 
@@ -134,7 +122,7 @@ fun MediaCacheDetailsScreen(
                 TopAppBar(
                     title = { Text(stringResource(Lang.cache_details_title)) },
                     navigationIcon = navigationIcon,
-                    colors = AniThemeDefaults.topAppBarColors(),
+                    colors = WynimeThemeDefaults.topAppBarColors(),
                     windowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
                 )
             }
@@ -148,16 +136,16 @@ fun MediaCacheDetailsScreen(
                 .padding(paddingValues)
                 .widthIn(max = 1200.dp),
         ) {
-            AniAnimatedVisibility(
+            WynimeAnimatedVisibility(
                 visible = state.details != null,
-                enter = LocalAniMotionScheme.current.animatedVisibility.screenEnter,
-                exit = LocalAniMotionScheme.current.animatedVisibility.screenExit,
+                enter = LocalWynimeMotionScheme.current.animatedVisibility.screenEnter,
+                exit = LocalWynimeMotionScheme.current.animatedVisibility.screenExit,
             ) {
                 Surface(
                     Modifier
                         .padding(horizontal = 16.dp)
                         .padding(vertical = 16.dp),
-                    color = ListItemDefaults.containerColor, // fill gap between items
+                    color = ListItemDefaults.containerColor,
                 ) {
                     state.details?.let {
                         MediaDetailsLazyGrid(

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.collection
+package com.wynime.app.ui.subject.collection
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -34,50 +25,46 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
-import me.him188.ani.app.data.models.bangumi.BangumiSyncState
-import me.him188.ani.app.data.models.preference.AnalyticsSettings
-import me.him188.ani.app.data.models.preference.DebugSettings
-import me.him188.ani.app.data.models.preference.MediaCacheSettings
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.preference.OneshotActionConfig
-import me.him188.ani.app.data.models.preference.PlayerKernelConfig
-import me.him188.ani.app.data.models.preference.ProfileSettings
-import me.him188.ani.app.data.models.preference.ProxySettings
-import me.him188.ani.app.data.models.preference.ThemeSettings
-import me.him188.ani.app.data.models.preference.UISettings
-import me.him188.ani.app.data.models.preference.UpdateSettings
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.network.AnimeScheduleService
-import me.him188.ani.app.data.network.BangumiApiProvider
-import me.him188.ani.app.data.network.EpisodeServiceImpl
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.persistent.database.AniDatabase
-import me.him188.ani.app.data.persistent.database.AniDatabaseConstructor
-import me.him188.ani.app.data.repository.episode.AnimeScheduleRepository
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.episode.EpisodeProgressRepository
-import me.him188.ani.app.data.repository.subject.CollectionsFilterQuery
-import me.him188.ani.app.data.repository.subject.GetEpisodeTypeFiltersUseCase
-import me.him188.ani.app.data.repository.subject.OfflineSubjectDisplayInfo
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.app.data.repository.user.Settings
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.domain.session.SessionEvent
-import me.him188.ani.app.domain.session.SessionState
-import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.client.apis.ScheduleAniApi
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.ktor.ApiInvoker
-import me.him188.ani.utils.ktor.asScopedHttpClient
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.bangumi.BangumiSyncState
+import com.wynime.app.data.models.preference.AnalyticsSettings
+import com.wynime.app.data.models.preference.DebugSettings
+import com.wynime.app.data.models.preference.MediaCacheSettings
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.preference.OneshotActionConfig
+import com.wynime.app.data.models.preference.PlayerKernelConfig
+import com.wynime.app.data.models.preference.ProfileSettings
+import com.wynime.app.data.models.preference.ProxySettings
+import com.wynime.app.data.models.preference.ThemeSettings
+import com.wynime.app.data.models.preference.UISettings
+import com.wynime.app.data.models.preference.UpdateSettings
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.models.subject.SubjectCollectionCounts
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.network.BangumiApiProvider
+import com.wynime.app.data.network.EpisodeServiceImpl
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.persistent.database.WynimeDatabase
+import com.wynime.app.data.persistent.database.WynimeDatabaseConstructor
+import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.episode.EpisodeProgressRepository
+import com.wynime.app.data.repository.subject.CollectionsFilterQuery
+import com.wynime.app.data.repository.subject.GetEpisodeTypeFiltersUseCase
+import com.wynime.app.data.repository.subject.OfflineSubjectDisplayInfo
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.app.data.repository.user.Settings
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.session.SessionEvent
+import com.wynime.app.domain.session.SessionState
+import com.wynime.app.domain.session.SessionStateProvider
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.ktor.asScopedHttpClient
+import com.wynime.utils.platform.annotations.TestOnly
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -88,26 +75,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * 覆盖 [UserCollectionsViewModel] 构造时启动的后台收集 (Kotlin `init {}` 块):
- * 本 ViewModel 由 androidx `viewModel {}` 取得, 不会被 compose remember, 所以
- * [me.him188.ani.app.ui.foundation.AbstractViewModel.init] 永远不会执行. 这里不 remember、不调用 `onRemembered`, 直接构造后验证:
- * - 仓库发出 `collectionsInvalidated` → 分页器被重建 (分页器工厂再次被调用), 各类型收藏数量流被重新收集;
- * - `SessionEvent.NewLogin` → 同样刷新.
- *
- * 用 Koin 提供 fake 仓库; [EpisodeProgressRepository] 是 final 类, 构造它需要真实的 [EpisodeCollectionRepository], 用内存 Room 库.
- */
 @OptIn(ExperimentalCoroutinesApi::class, TestOnly::class)
 class UserCollectionsViewModelTest {
 
-    /**
-     * 记录分页器工厂与数量流被调用的次数; 其余方法不应被调用.
-     */
     private class FakeSubjectCollectionRepository : SubjectCollectionRepository() {
-        /** [subjectCollectionsPager] 被调用 (分页器被创建 / 重建) 的次数. */
+
         val pagerCalls = AtomicInteger(0)
 
-        /** [subjectCollectionCountsFlow] 返回的流被收集的次数. */
         val countsCollected = AtomicInteger(0)
 
         fun invalidate() = notifyCollectionsInvalidated()
@@ -179,9 +153,6 @@ class UserCollectionsViewModelTest {
         override val eventFlow: Flow<SessionEvent> = events
     }
 
-    /**
-     * 只提供 ViewModel 构造时读取的 [uiSettings], 其余访问即报错.
-     */
     private class FakeSettingsRepository : SettingsRepository {
         override val uiSettings: Settings<UISettings> = object : Settings<UISettings> {
             private val state = MutableStateFlow(UISettings.Default)
@@ -206,13 +177,7 @@ class UserCollectionsViewModelTest {
         override val debugSettings: Settings<DebugSettings> by lazy { error("not implemented") }
     }
 
-    private object UnusedScheduleApi : ApiInvoker<ScheduleAniApi> {
-        override suspend fun <R> invoke(action: suspend ScheduleAniApi.() -> R): R {
-            error("ApiInvoker not expected in tests")
-        }
-    }
-
-    private lateinit var database: AniDatabase
+    private lateinit var database: WynimeDatabase
     private lateinit var episodeHttpClient: HttpClient
     private lateinit var repository: FakeSubjectCollectionRepository
     private lateinit var sessionStateProvider: FakeSessionStateProvider
@@ -220,9 +185,9 @@ class UserCollectionsViewModelTest {
 
     @BeforeTest
     fun setUp() {
-        // produceState / 分页器展示器要在 Main 上更新 compose state
+
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        database = Room.inMemoryDatabaseBuilder<AniDatabase> { AniDatabaseConstructor.initialize() }
+        database = Room.inMemoryDatabaseBuilder<WynimeDatabase> { WynimeDatabaseConstructor.initialize() }
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.Default)
             .build()
@@ -232,7 +197,6 @@ class UserCollectionsViewModelTest {
             expectSuccess = true
         }
 
-        val animeScheduleRepository = AnimeScheduleRepository(AnimeScheduleService(UnusedScheduleApi))
         val episodeCollectionRepository = EpisodeCollectionRepository(
             subjectDao = database.subjectCollection(),
             episodeCollectionDao = database.episodeCollection(),
@@ -242,7 +206,6 @@ class UserCollectionsViewModelTest {
                     tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
                 ),
             ),
-            animeScheduleRepository = animeScheduleRepository,
             subjectCollectionRepository = lazy { repository },
             getEpisodeTypeFiltersUseCase = GetEpisodeTypeFiltersUseCase { flowOf(EpisodeType.entries) },
         )
@@ -271,9 +234,6 @@ class UserCollectionsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    /**
-     * 像收藏页一样持续收集第一个 tab 的分页器 (不经过 compose): 只有被收集时分页器工厂才会被调用.
-     */
     @Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
     private fun CoroutineScope.collectFirstTab(vm: UserCollectionsViewModel): Job {
         val items = vm.state.getCollectionLazyPagingItems(0)
@@ -286,7 +246,7 @@ class UserCollectionsViewModelTest {
     }
 
     private fun runViewModelTest(block: suspend CoroutineScope.(UserCollectionsViewModel) -> Unit) = runBlocking {
-        // 不 remember, 不调用 onRemembered: 与 MainScreen 里 viewModel { UserCollectionsViewModel() } 一致
+
         val vm = UserCollectionsViewModel()
         try {
             val collector = collectFirstTab(vm)
@@ -304,7 +264,7 @@ class UserCollectionsViewModelTest {
 
     @Test
     fun `COLL-VM-01 collectionsInvalidated 时重建分页器并重新拉取数量 - 构造即订阅, 无需 remember`() = runViewModelTest { _ ->
-        // 构造时就已订阅 (而不是 onRemembered 时)
+
         withTimeout(10.seconds) { repository.collectionsInvalidatedSubscriptionCount.first { it >= 1 } }
         assertEquals(1, repository.pagerCalls.get())
         assertEquals(1, repository.countsCollected.get())

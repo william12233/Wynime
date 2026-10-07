@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.components
+package com.wynime.app.ui.download.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,11 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_total_download
-import me.him188.ani.app.ui.lang.cache_total_upload
-import me.him188.ani.datasources.api.topic.FileSize
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_total_download
+import com.wynime.app.ui.lang.cache_total_upload
+import com.wynime.datasources.api.topic.FileSize
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

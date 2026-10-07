@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -20,16 +11,16 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.io.files.Path
-import me.him188.ani.app.domain.media.DroppedFileMedia
-import me.him188.ani.app.domain.media.selector.testFramework.collectEvents
-import me.him188.ani.app.domain.media.selector.testFramework.runFetchMediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.tier
-import me.him188.ani.app.domain.player.extension.PlayerLoadErrorHandler
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceKind.WEB
-import me.him188.ani.test.DisabledOnNative
-import me.him188.ani.utils.io.inSystem
+import com.wynime.app.domain.media.DroppedFileMedia
+import com.wynime.app.domain.media.selector.testFramework.collectEvents
+import com.wynime.app.domain.media.selector.testFramework.runFetchMediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.tier
+import com.wynime.app.domain.player.extension.PlayerLoadErrorHandler
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceKind.WEB
+import com.wynime.test.DisabledOnNative
+import com.wynime.utils.io.inSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -38,11 +29,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * @see PlayerLoadErrorHandler
- * @see me.him188.ani.app.domain.player.extension.SwitchMediaOnPlayerErrorExtension
- */
-@DisabledOnNative // TODO: ContextParameters crashes on Native
+@DisabledOnNative
 class PlayerLoadErrorHandlerTest {
     @Test
     fun `ERR-05 preferKind WEB 播放失败换源到其他 WEB media 并拉黑当前`() = runFetchMediaSelectorTestSuite {
@@ -68,18 +55,14 @@ class PlayerLoadErrorHandlerTest {
         val job = testScope().launch { handler.handleError(session, selector) }
         testScope().runCurrent()
 
-        // PINNED: ERR-05 先拉黑当前 selected, 再 delay 1s, delay 期间不换源
         assertEquals(setOf(mediaA.mediaId), handler.blacklist)
         assertEquals(mediaA.mediaId, selector.selected.value?.mediaId)
 
-        // PINNED: ERR-05 延迟时长恰好是 1s (不只是"存在延迟"): 999ms 时仍未换源.
-        // 只用一次 advanceTimeBy(1.5s) 跨过去的话, delay 被改成 1.4s 也照样绿.
         testScope().advanceTimeBy(999.milliseconds)
         testScope().runCurrent()
         assertFalse(job.isCompleted)
         assertEquals(mediaA.mediaId, selector.selected.value?.mediaId)
 
-        // PINNED: ERR-05 跨过 1s 边界后立刻换源 (两个源都是 tier=0, 走 instant 路径, 无需等容忍窗)
         testScope().advanceTimeBy(2.milliseconds)
         testScope().runCurrent()
 
@@ -96,7 +79,7 @@ class PlayerLoadErrorHandlerTest {
                 val webA by web { tier = 0 }
             }
         }
-        // 有可以立即换到的 WEB media, 且 preferKind 为 WEB: 对普通 media 而言满足全部换源条件
+
         sources.webA.complete(media(kind = WEB, subjectName = initApi.subjectName))
         testScope().runCurrent()
 
@@ -124,8 +107,7 @@ class PlayerLoadErrorHandlerTest {
         initSubject("test")
         val (_, session, sources) = configureFetchSession {
             object {
-                // tier=1 高于 InstantSelectTierThreshold(0), 该源永远进不了 instant 候选,
-                // 因此只有 lowTierToleranceDuration 超时后的 fallback 能选出东西.
+
                 val webA by web { tier = 1 }
             }
         }
@@ -146,14 +128,11 @@ class PlayerLoadErrorHandlerTest {
         assertEquals(setOf(mediaA.mediaId), handler.blacklist)
         assertEquals(mediaA.mediaId, selector.selected.value?.mediaId)
 
-        // t=1999: delay(1s) 已过, fastSelectWebSources 已进入 select{}, 容忍窗还差 1ms.
-        // PINNED: ERR-05 lowTierToleranceDuration 恰好是 1s.
         testScope().advanceTimeBy(1.seconds + 999.milliseconds)
         testScope().runCurrent()
         assertFalse(job.isCompleted)
         assertEquals(mediaA.mediaId, selector.selected.value?.mediaId)
 
-        // t=2001: 容忍窗超时, 从已成功查询的源里 fallback 选择, 跳过黑名单里的 mediaA
         testScope().advanceTimeBy(2.milliseconds)
         testScope().runCurrent()
 
@@ -186,7 +165,6 @@ class PlayerLoadErrorHandlerTest {
         val job = testScope().launch { handler.handleError(session, selector) }
         testScope().advanceUntilIdle()
 
-        // PINNED: ERR-05 无自动换源, 但当前 media 仍在 delay 前被拉黑
         assertTrue(job.isCompleted)
         assertEquals(mediaA.mediaId, selector.selected.value?.mediaId)
         assertEquals(setOf(mediaA.mediaId), handler.blacklist)
@@ -223,10 +201,6 @@ class PlayerLoadErrorHandlerTest {
             testScope().advanceUntilIdle()
         }
 
-        // PINNED: ERR-05 候选全在黑名单: instant 与 1s 超时 fallback 均选不出, 返回 null 并保持当前选择.
-        // 只断 selected 值是不够的: 即便违规地把 mediaB 又选了一遍, selectImpl 也会因
-        // previous == candidate && !force 直接返回 false, selected 逐字节不变. 故用事件收集口径,
-        // 断言这期间一次 onSelect 都没有 (进而也没有 onBeforeSelect / 偏好写入).
         assertEquals(0, collected.onSelect.size)
         collected.expectNoEvents()
         assertTrue(job.isCompleted)
@@ -257,7 +231,6 @@ class PlayerLoadErrorHandlerTest {
             val defaultSelected = assertNotNull(selector.trySelectDefault())
             testScope.advanceUntilIdle()
 
-            // PINNED: ERR-04 trySelectDefault 产生的 onSelect previousMedia=null, 不拉黑
             assertTrue(handler.blacklist.isEmpty())
 
             selector.select(mediaApi.mediaList.value.first { it.mediaId != defaultSelected.mediaId })
@@ -301,7 +274,6 @@ class PlayerLoadErrorHandlerTest {
         val job = testScope().launch { handler2.handleError(session, selector) }
         testScope().advanceUntilIdle()
 
-        // PINNED: ERR-03 黑名单为 handler 实例级, 新 handler 可选回旧 handler 拉黑的 media
         assertTrue(job.isCompleted)
         assertEquals(mediaA.mediaId, selector.selected.value?.mediaId)
         assertEquals(setOf(mediaB.mediaId), handler2.blacklist)
@@ -325,7 +297,6 @@ class PlayerLoadErrorHandlerTest {
         assertTrue(job.isCompleted)
         assertEquals(manual, selector.selected.value)
     }
-
 
     @Test
     fun `player error skips ready and pending local caches`() = runFetchMediaSelectorTestSuite {

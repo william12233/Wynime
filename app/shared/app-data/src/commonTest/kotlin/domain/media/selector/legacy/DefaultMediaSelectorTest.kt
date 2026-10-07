@@ -1,54 +1,38 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("DEPRECATION")
 
-package me.him188.ani.app.domain.media.selector.legacy
+package com.wynime.app.domain.media.selector.legacy
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectSeriesInfo
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason
-import me.him188.ani.app.domain.media.selector.OptionalPreference
-import me.him188.ani.app.domain.media.selector.SelectEvent
-import me.him188.ani.app.domain.media.selector.preferredValueOrNull
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaExtraFiles
-import me.him188.ani.datasources.api.Subtitle
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.SubtitleLanguage
-import me.him188.ani.utils.coroutines.cancellableCoroutineScope
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectSeriesInfo
+import com.wynime.app.domain.media.selector.MediaExclusionReason
+import com.wynime.app.domain.media.selector.OptionalPreference
+import com.wynime.app.domain.media.selector.SelectEvent
+import com.wynime.app.domain.media.selector.preferredValueOrNull
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaExtraFiles
+import com.wynime.datasources.api.Subtitle
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.SubtitleLanguage
+import com.wynime.utils.coroutines.cancellableCoroutineScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
-/**
- * @suppress 已弃用, 新的 test 使用 [me.him188.ani.app.domain.media.selector.testFramework.TestMediaFetchSessionBuilder].
- * @see me.him188.ani.app.domain.media.selector.MediaSelector
- */
 @Deprecated(MediaSelectorDeprecationMessage)
 class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
-    ///////////////////////////////////////////////////////////////////////////
-    // Select contract
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `select two times returns false`() = runTest {
@@ -63,10 +47,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertTrue { selector.select(target) }
         assertFalse { selector.select(target) }
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // 单个选项测试
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `initial empty preferences`() = runTest {
@@ -121,10 +101,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(true, selector.alliance.userSelected.first().isPreferNoValue)
         assertEquals(null, selector.alliance.finalSelected.first())
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // 选择数据测试
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `empty preferences select all`() = runTest {
@@ -207,10 +183,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         selector.alliance.prefer("字幕组")
         assertEquals(1, selector.preferredCandidatesMedia.first().size)
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Default selection
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `select default first with no preference`() = runTest {
@@ -321,10 +293,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(null, selector.trySelectDefault())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Media source precedence
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `select first preferred media source`() = runTest {
         val target: DefaultMedia
@@ -373,10 +341,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(target, selector.trySelectDefault())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Cached
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `always show cached even if preferences dont match`() = runTest {
         val target: DefaultMedia
@@ -397,7 +361,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
 
     @Test
     fun `select cached`() = runTest {
-        // 剧集未知时不选缓存 (整个条目的缓存都在候选中)
+
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(episodeInfo = EpisodeInfo.Companion.Empty.copy(sort = EpisodeSort(1)))
         val target: DefaultMedia
         addMedia(
@@ -412,10 +376,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         )
         assertEquals(target, selector.trySelectCached())
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // 隐藏生肉
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `can hide raw`() = runTest {
@@ -443,7 +403,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(null, selector.trySelectDefault())
     }
 
-    // 当 Media 有 extraFiles.subtitles 时不隐藏
     @Test
     fun `do not hide media with extraFiles`() = runTest {
         val target: DefaultMedia
@@ -473,7 +432,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
 
     @Test
     fun `can select cached raw`() = runTest {
-        // 剧集未知时不选缓存 (整个条目的缓存都在候选中)
+
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(episodeInfo = EpisodeInfo.Companion.Empty.copy(sort = EpisodeSort(1)))
         val target: DefaultMedia
         savedDefaultPreference.value = DEFAULT_PREFERENCE.copy(
@@ -500,13 +459,8 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(target, selector.trySelectCached())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // 当资源条目名称精确匹配其他季度名称时自动排除 #1385
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `exclude other seasons - control group`() = runTest {
-        // 对照组
 
         val target: DefaultMedia
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(
@@ -537,8 +491,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         )
     }
 
-
-    // #1827
     @Test
     fun `do not exclude exactly matched by FromSequelSeason if the subject has OVA series`() = runTest {
         var target: Media
@@ -569,7 +521,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
 
         addMedia(
             media(
-                // kept
+
                 alliance = "咕咕新线(优先使用)",
                 episodeRange = EpisodeRange.Companion.single("1"),
                 kind = MediaSourceKind.WEB,
@@ -597,12 +549,12 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         savedDefaultPreference.value = DEFAULT_PREFERENCE
         addMedia(
             media(
-                // filtered out
+
                 alliance = "字幕组1", episodeRange = EpisodeRange.Companion.single("1"), kind = MediaSourceKind.WEB,
                 subjectName = "条目名称I", subtitleLanguages = listOf(SubtitleLanguage.ChineseSimplified.id),
             ),
             media(
-                // kept
+
                 alliance = "字幕组2", episodeRange = EpisodeRange.Companion.single("1"), kind = MediaSourceKind.WEB,
                 subjectName = "条目名称", subtitleLanguages = listOf(SubtitleLanguage.ChineseTraditional.id),
             ).also { target = it },
@@ -630,12 +582,12 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         savedDefaultPreference.value = DEFAULT_PREFERENCE
         addMedia(
             media(
-                // filtered out
+
                 alliance = "字幕组1", episodeRange = EpisodeRange.Companion.single("1"), kind = MediaSourceKind.WEB,
                 subjectName = "条目名称I", subtitleLanguages = listOf(SubtitleLanguage.ChineseSimplified.id),
             ),
             media(
-                // kept
+
                 alliance = "字幕组2", episodeRange = EpisodeRange.Companion.single("1"), kind = MediaSourceKind.WEB,
                 subjectName = "条目名称III", subtitleLanguages = listOf(SubtitleLanguage.ChineseTraditional.id),
             ).also { target = it },
@@ -651,12 +603,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         )
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // trySelectFromMediaSources
-    ///////////////////////////////////////////////////////////////////////////
-    /**
-     * 注意, [me.him188.ani.app.domain.media.selector.MediaSelector.trySelectFromMediaSources] 也在 [MediaSelectorFastSelectSourcesTest] 中测试.
-     */
     @Suppress("unused")
     private val _doc1 = Unit
 
@@ -679,7 +625,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
             media(sourceId = "5", episodeRange = EpisodeRange.Companion.single("4"), kind = MediaSourceKind.WEB),
         )
         selector.select(userSelection)
-        assertEquals(1, selector.preferredCandidatesMedia.first().size) // 因为会自动设置 preference
+        assertEquals(1, selector.preferredCandidatesMedia.first().size)
         assertEquals(
             null,
             selector.trySelectFromMediaSources(
@@ -852,9 +798,9 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(false)
         mediaSelectorSettings.value = MediaSelectorSettings.Companion.Default.copy()
         savedUserPreference.value = MediaPreference.Companion.Empty.copy(
-            alliance = "123123123", // matches nothing
+            alliance = "123123123",
         )
-        savedDefaultPreference.value = MediaPreference.Companion.Empty // 啥都不要, 就一定会 fallback 成选第一个
+        savedDefaultPreference.value = MediaPreference.Companion.Empty
         addMedia(
             media(sourceId = "1", episodeRange = EpisodeRange.Companion.single("1"), kind = MediaSourceKind.WEB),
         )
@@ -869,7 +815,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(false)
         mediaSelectorSettings.value = MediaSelectorSettings.Companion.Default.copy()
         savedUserPreference.value = MediaPreference.Companion.Any.copy(
-            alliance = "123123123", // matches nothing
+            alliance = "123123123",
         )
         savedDefaultPreference.value = MediaPreference.Companion.Any
         addMedia(
@@ -890,7 +836,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(false)
         mediaSelectorSettings.value = MediaSelectorSettings.Companion.Default.copy()
         savedUserPreference.value = MediaPreference.Companion.Any.copy(
-            alliance = "123123123", // matches nothing
+            alliance = "123123123",
         )
         savedDefaultPreference.value = MediaPreference.Companion.Any
         addMedia(
@@ -910,7 +856,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(false)
         mediaSelectorSettings.value = MediaSelectorSettings.Companion.Default.copy()
         savedUserPreference.value = MediaPreference.Companion.Any.copy(
-            alliance = "2", // 用户偏好 2
+            alliance = "2",
         )
         savedDefaultPreference.value = MediaPreference.Companion.Any
         val media1 =
@@ -930,7 +876,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(
             media2,
             selector.trySelectFromMediaSources(
-                listOf("1", "2"),  // 顺序是 1 更先, 但是用户偏好 2, 所以要选择 2
+                listOf("1", "2"),
                 allowNonPreferred = false,
             ),
         )
@@ -939,7 +885,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
             media2,
             selector.trySelectFromMediaSources(
                 listOf("1", "2"),
-                allowNonPreferred = true, // 仍然选 2, 因为只有在没有任何资源匹配偏好时才会选别的
+                allowNonPreferred = true,
             ),
         )
     }
@@ -949,7 +895,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(false)
         mediaSelectorSettings.value = MediaSelectorSettings.Companion.Default.copy()
         savedUserPreference.value = MediaPreference.Companion.Any.copy(
-            mediaSourceId = "2", // 用户偏好 2
+            mediaSourceId = "2",
         )
         savedDefaultPreference.value = MediaPreference.Companion.Empty
         val media1 =
@@ -969,7 +915,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(
             media2,
             selector.trySelectFromMediaSources(
-                listOf("1", "2"),  // 顺序是 1 更先, 但是用户偏好 2, 所以要选择 2
+                listOf("1", "2"),
                 allowNonPreferred = false,
             ),
         )
@@ -978,13 +924,11 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
             media2,
             selector.trySelectFromMediaSources(
                 listOf("1", "2"),
-                allowNonPreferred = true, // 仍然选 2, 因为只有在没有任何资源匹配偏好时才会选别的
+                allowNonPreferred = true,
             ),
         )
 
-
-        // 对照组
-        savedUserPreference.value = MediaPreference.Companion.Any // 没有任何偏好, 按 order 选
+        savedUserPreference.value = MediaPreference.Companion.Any
         selector.unselect()
         assertEquals(
             media1,
@@ -1000,7 +944,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(false)
         mediaSelectorSettings.value = MediaSelectorSettings.Companion.Default.copy()
         savedUserPreference.value = MediaPreference.Companion.Any.copy(
-            alliance = "2", // 用户偏好 2
+            alliance = "2",
         )
         savedDefaultPreference.value = MediaPreference.Companion.Any
         val media1 =
@@ -1018,7 +962,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(1, selector.preferredCandidatesMedia.first().size)
         assertEquals(2, selector.filteredCandidatesMedia.first().size)
         assertEquals(
-            null, // 用户偏好 2, 但是 2 被黑名单了, 而 allowNonPreferred = false, 选不了别的, 所以是 `null`
+            null,
             selector.trySelectFromMediaSources(
                 listOf("1", "2"),
                 allowNonPreferred = false,
@@ -1027,7 +971,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         )
         selector.unselect()
         assertEquals(
-            media1, // 用户偏好 2, 但是 2 被黑名单了, 但是 allowNonPreferred = true, 所以可以选别的
+            media1,
             selector.trySelectFromMediaSources(
                 listOf("1", "2"),
                 allowNonPreferred = true,
@@ -1062,7 +1006,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(2, selector.preferredCandidatesMedia.first().size)
         assertEquals(2, selector.filteredCandidatesMedia.first().size)
         assertEquals(
-            media2, // 数据源 1 优先级更高, 但是 media2 有更高的相似度, 所以选 media2
+            media2,
             selector.trySelectFromMediaSources(
                 listOf("1", "2"),
                 allowNonPreferred = true,
@@ -1096,17 +1040,13 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(2, selector.preferredCandidatesMedia.first().size)
         assertEquals(2, selector.filteredCandidatesMedia.first().size)
         assertEquals(
-            media2, // 数据源 1 优先级更高, 但是 media2 有更高的相似度, 所以选 media2
+            media2,
             selector.trySelectFromMediaSources(
                 listOf("1", "2"),
                 allowNonPreferred = true,
             ),
         )
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // 排除第二季 (#1324)
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `respect to subjectSequelNames`() = runTest {
@@ -1115,7 +1055,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
             subjectSequelNames = setOf("孤独摇滚 第二季"),
         )
         mediaSelectorSettings.value = MediaSelectorSettings.Companion.Default.copy()
-        savedUserPreference.value = MediaPreference.Companion.Any.copy(alliance = "1") // prefer 被过滤掉的那个, 以便测试
+        savedUserPreference.value = MediaPreference.Companion.Any.copy(alliance = "1")
         savedDefaultPreference.value = MediaPreference.Companion.Any
         val target: DefaultMedia
         val media1 = media(
@@ -1148,10 +1088,6 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
             ),
         )
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // 优先选择在线数据源
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `prefer any sources`() = runTest {
@@ -1215,13 +1151,9 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(target, selector.trySelectDefault())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // sort
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `sort by date`() = runTest {
-        // https://github.com/open-ani/ani/issues/445
+
         val m1 = media(alliance = "字幕组1", publishedTime = 1)
         val m4 = media(alliance = "字幕组2", publishedTime = 4)
         val m3 = media(alliance = "字幕组6", publishedTime = 3)
@@ -1231,14 +1163,10 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         assertEquals(listOf(m4, m3, m2, m1), selector.preferredCandidatesMedia.first())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Events
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `do not save subtitle language when it is ambiguous`() = runTest {
         savedUserPreference.value = MediaPreference.Companion.Empty
-        savedDefaultPreference.value = MediaPreference.Companion.Empty // 方便后面比较
+        savedDefaultPreference.value = MediaPreference.Companion.Empty
         val target = media(alliance = "字幕组", subtitleLanguages = listOf("CHS", "CHT"))
         addMedia(target)
         runCollectEvents {
@@ -1255,7 +1183,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
             )
             assertEquals(1, onChangePreference.size)
             assertEquals(
-                // 
+
                 MediaPreference.Companion.Empty.copy(
                     alliance = "字幕组",
                     resolution = target.properties.resolution,
@@ -1269,7 +1197,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
     @Test
     fun `event select`() = runTest {
         savedUserPreference.value = MediaPreference.Companion.Empty
-        savedDefaultPreference.value = MediaPreference.Companion.Empty // 方便后面比较
+        savedDefaultPreference.value = MediaPreference.Companion.Empty
         val target = media(alliance = "字幕组", subtitleLanguages = listOf("CHS"))
         addMedia(target)
         runCollectEvents {
@@ -1333,11 +1261,10 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
         }
     }
 
-
     @Test
     fun `event prefer`() = runTest {
         savedUserPreference.value = MediaPreference.Companion.Empty
-        savedDefaultPreference.value = MediaPreference.Companion.Empty // 方便后面比较
+        savedDefaultPreference.value = MediaPreference.Companion.Empty
         val target = media(alliance = "字幕组")
         addMedia(target)
         runCollectEvents {
@@ -1378,7 +1305,7 @@ class DefaultMediaSelectorTest : AbstractDefaultMediaSelectorTest() {
 
     @Test
     fun `event trySelectCached`() = runTest {
-        // 剧集未知时不选缓存 (整个条目的缓存都在候选中)
+
         mediaSelectorContext.value = createMediaSelectorContextFromEmpty(episodeInfo = EpisodeInfo.Companion.Empty.copy(sort = EpisodeSort(1)))
         savedUserPreference.value = MediaPreference.Companion.Empty
         savedDefaultPreference.value = MediaPreference.Companion.Empty

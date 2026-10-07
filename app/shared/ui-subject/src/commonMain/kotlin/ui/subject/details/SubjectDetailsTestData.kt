@@ -1,35 +1,25 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.subject.details
 
-package me.him188.ani.app.ui.subject.details
-
-import me.him188.ani.app.data.models.subject.CharacterInfo
-import me.him188.ani.app.data.models.subject.CharacterRole
-import me.him188.ani.app.data.models.subject.Images
-import me.him188.ani.app.data.models.subject.PersonCareer
-import me.him188.ani.app.data.models.subject.PersonInfo
-import me.him188.ani.app.data.models.subject.PersonPosition
-import me.him188.ani.app.data.models.subject.PersonType
-import me.him188.ani.app.data.models.subject.RatingCounts
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.RelatedCharacterInfo
-import me.him188.ani.app.data.models.subject.RelatedPersonInfo
-import me.him188.ani.app.data.models.subject.RelatedSubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectRelation
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.data.models.subject.TestCoverImage
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.CharacterInfo
+import com.wynime.app.data.models.subject.CharacterRole
+import com.wynime.app.data.models.subject.Images
+import com.wynime.app.data.models.subject.PersonCareer
+import com.wynime.app.data.models.subject.PersonInfo
+import com.wynime.app.data.models.subject.PersonPosition
+import com.wynime.app.data.models.subject.PersonType
+import com.wynime.app.data.models.subject.RatingCounts
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.RelatedCharacterInfo
+import com.wynime.app.data.models.subject.RelatedPersonInfo
+import com.wynime.app.data.models.subject.RelatedSubjectInfo
+import com.wynime.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectRelation
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.data.models.subject.TestCoverImage
+import com.wynime.datasources.api.PackedDate
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.random.Random
-
 
 @TestOnly
 internal fun testPersonInfo(
@@ -49,7 +39,6 @@ internal fun testPersonInfo(
     summary = summary,
     locked = locked,
 )
-
 
 @TestOnly
 internal fun testRelatedPersonInfo(

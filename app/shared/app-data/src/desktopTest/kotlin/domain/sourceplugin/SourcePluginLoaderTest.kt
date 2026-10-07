@@ -1,38 +1,33 @@
-/*
- * Copyright (C) 2026 OpenAni contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import java.io.File
 import java.io.FileOutputStream
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.platform.Context
-import me.him188.ani.source.plugin.api.ResolvedMedia
-import me.him188.ani.source.plugin.api.ResolvedMediaFormat
-import me.him188.ani.source.plugin.api.SourceConnectionState
-import me.him188.ani.source.plugin.api.SourceConnectionStatus
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePluginLogger
-import me.him188.ani.source.plugin.api.SourcePluginMetadata
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubject
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.resolve
+import com.wynime.app.platform.Context
+import com.wynime.source.plugin.api.ResolvedMedia
+import com.wynime.source.plugin.api.ResolvedMediaFormat
+import com.wynime.source.plugin.api.SourceConnectionState
+import com.wynime.source.plugin.api.SourceConnectionStatus
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePluginLogger
+import com.wynime.source.plugin.api.SourcePluginMetadata
+import com.wynime.source.plugin.api.SourcePluginPlatform
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubject
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.resolve
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -68,7 +63,7 @@ class SourcePluginLoaderTest {
         val loader = createSourcePluginLoader(object : Context() {})
         val loaded = loader.load(
             artifact = artifact,
-            entryClass = "me.him188.ani.app.domain.sourceplugin.LoaderFixtureEntryPoint",
+            entryClass = "com.wynime.app.domain.sourceplugin.LoaderFixtureEntryPoint",
             context = context,
         )
 
@@ -85,8 +80,8 @@ class SourcePluginLoaderTest {
         val classLoader = javaClass.classLoader
         JarOutputStream(FileOutputStream(File(path))).use { output ->
             listOf(
-                "me/him188/ani/app/domain/sourceplugin/LoaderFixtureEntryPoint.class",
-                "me/him188/ani/app/domain/sourceplugin/LoaderFixturePlugin.class",
+                "com/wynime/app/domain/sourceplugin/LoaderFixtureEntryPoint.class",
+                "com/wynime/app/domain/sourceplugin/LoaderFixturePlugin.class",
             ).forEach { resource ->
                 output.putNextEntry(JarEntry(resource))
                 classLoader.getResourceAsStream(resource).use { input ->
@@ -110,7 +105,7 @@ private class LoaderFixturePlugin(
         displayName = "Fixture plugin",
         version = "1.0.0",
         website = "https://fixture.invalid",
-        pluginApiVersion = 1,
+        pluginApiVersion = SOURCE_PLUGIN_API_VERSION,
         minHostVersion = "0",
         supportedPlatforms = setOf(SourcePluginPlatform.DESKTOP),
     )

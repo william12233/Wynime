@@ -1,17 +1,8 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.io
+package com.wynime.utils.io
 
 import kotlinx.io.files.Path
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileVisitResult
@@ -22,7 +13,6 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import kotlin.io.path.useDirectoryEntries
 import java.nio.file.Path as NioPath
-
 
 fun Path.toFile(): File = File(this.toString())
 fun SystemPath.toFile(): File = path.toFile()

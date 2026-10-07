@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.saveable
+package com.wynime.app.ui.foundation.saveable
 
 import androidx.compose.runtime.saveable.SaverScope
 import kotlinx.serialization.DeserializationStrategy

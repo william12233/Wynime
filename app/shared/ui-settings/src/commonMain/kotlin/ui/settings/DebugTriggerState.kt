@@ -1,13 +1,12 @@
-package me.him188.ani.app.ui.settings
+package com.wynime.app.ui.settings
 
 import androidx.compose.runtime.getValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
-import me.him188.ani.app.data.models.preference.DebugSettings
-import me.him188.ani.app.tools.MonoTasker
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.utils.platform.currentTimeMillis
-
+import com.wynime.app.data.models.preference.DebugSettings
+import com.wynime.app.tools.MonoTasker
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.utils.platform.currentTimeMillis
 
 class DebugTriggerState(
     private val debugSettingsState: SettingsState<DebugSettings>,

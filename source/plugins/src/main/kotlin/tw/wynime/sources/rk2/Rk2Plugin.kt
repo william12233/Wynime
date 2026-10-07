@@ -1,16 +1,16 @@
 package tw.wynime.sources.rk2
 
-import me.him188.ani.source.plugin.api.SourceChannel
-import me.him188.ani.source.plugin.api.SourceChannelEpisodes
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceMediaRequestContext
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubject
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.SourceChannel
+import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceMediaRequestContext
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubject
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractJsonStringField
@@ -32,17 +32,12 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
     iconUrl = "https://www.2rk.cc/logo.png",
     description = "二礦動漫公開 HLS 番劇來源",
 ) {
-    /**
-     * 2RK 的 /saber endpoint 會依 User-Agent 回傳不同內容；行動版瀏覽器回傳站方
-     * HLS 所需的 16-byte AES key，桌面版請求目前會得到經 UTF-8 替換的無效內容。
-     * 這仍是站方公開播放器使用的正常 HTTP 請求，不改寫 playlist 或金鑰。
-     */
+
     override val defaultHeaders: Map<String, String> = super.defaultHeaders + (
         "User-Agent" to "Mozilla/5.0 (Linux; Android 14; Pixel 8) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Mobile Safari/537.36"
         )
 
-    /** 站方 c.js 暫時不可用時的保守備援。 */
     private val fallbackChannels = listOf(
         Rk2Channel(host = "www.2rk.cc", displayName = "线路1"),
         Rk2Channel(host = "v1.2rk.cc", displayName = "线路2"),

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.collection.components
+package com.wynime.app.ui.subject.collection.components
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,39 +25,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.tools.MonoTasker
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.lang.*
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.showLoadError
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.tools.MonoTasker
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.lang.*
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.showLoadError
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.*
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * 编辑条目收藏类型的交互. 由 [EditableSubjectCollectionTypeState] 实现, 也可由页面状态委托实现.
- */
 interface SubjectCollectionTypeEditActions {
-    /**
-     * @return 失败原因, 成功为 `null`.
-     */
+
     suspend fun setSelfCollectionType(new: UnifiedCollectionType): LoadError?
 
-    /**
-     * [setSelfCollectionType] 成功后是否应该询问 "同时设置所有剧集为看过".
-     * 供不使用 [EditableSubjectCollectionTypeDialogsHost] 的界面 (例如 TV) 在设置完成后同步读取.
-     */
     val shouldOfferMarkAllWatched: Boolean
 
     fun setAllEpisodesWatched()
 
-    /**
-     * 等待完成的 [setAllEpisodesWatched].
-     *
-     * @return 失败原因, 成功为 `null`.
-     */
     suspend fun setAllEpisodesWatchedAwait(): LoadError?
     fun dismissSetAllEpisodesDoneDialog()
 
@@ -105,25 +82,13 @@ class EditableSubjectCollectionTypeState(
         }
     }
 
-    /**
-     * 是否显示 "将所有剧集标记为看过" 对话框
-     */
     private val showSetAllEpisodesDoneDialogFlow = MutableStateFlow(false)
     override val shouldOfferMarkAllWatched: Boolean get() = showSetAllEpisodesDoneDialogFlow.value
 
-    /**
-     * [setSelfCollectionType] 的后台任务
-     */
     private val setSelfCollectionTypeTasker = MonoTasker(backgroundScope)
 
-    /**
-     * [setAllEpisodesWatched] 的后台任务
-     */
     private val setAllEpisodesWatchedTasker = MonoTasker(backgroundScope)
 
-    /**
-     * 待 UI 显示的数据
-     */
     val presentationFlow: StateFlow<Presentation> =
         combine(
             selfCollectionTypeFlow,
@@ -172,10 +137,6 @@ class EditableSubjectCollectionTypeState(
     }
 }
 
-/**
- * 展示当前收藏状态的按钮, 点击弹出 [EditCollectionTypeDropDown].
- * 当设置为 "看过" 时, 还会弹出 [SetAllEpisodeDoneDialog].
- */
 @Composable
 fun EditableSubjectCollectionTypeButton(
     state: EditableSubjectCollectionTypeState,
@@ -185,18 +146,13 @@ fun EditableSubjectCollectionTypeButton(
     EditableSubjectCollectionTypeButton(presentation, state, modifier)
 }
 
-/**
- * 展示当前收藏状态的按钮, 点击弹出 [EditCollectionTypeDropDown]; 自带 [EditableSubjectCollectionTypeDialogsHost].
- *
- * 展示数据与动作分离的版本, 供页面级 UiState 使用.
- */
 @Composable
 fun EditableSubjectCollectionTypeButton(
     presentation: EditableSubjectCollectionTypeState.Presentation,
     actions: SubjectCollectionTypeEditActions,
     modifier: Modifier = Modifier,
 ) {
-    // 同时设置所有剧集为看过
+
     EditableSubjectCollectionTypeDialogsHost(presentation, actions)
 
     val scope = rememberCoroutineScope()
@@ -215,13 +171,6 @@ fun EditableSubjectCollectionTypeButton(
     )
 }
 
-/**
- * 用于显示 "同时设置所有剧集为看过" 的对话框.
- *
- * [EditableSubjectCollectionTypeButton] 已经包含了这个 dialog, 所以一般来说不需要单独使用这个.
- *
- * @see EditableSubjectCollectionTypeButton
- */
 @Composable
 fun EditableSubjectCollectionTypeDialogsHost(
     state: EditableSubjectCollectionTypeState,
@@ -230,9 +179,6 @@ fun EditableSubjectCollectionTypeDialogsHost(
     EditableSubjectCollectionTypeDialogsHost(presentation, state)
 }
 
-/**
- * "同时设置所有剧集为看过" 对话框, 展示数据与动作分离的版本.
- */
 @Composable
 fun EditableSubjectCollectionTypeDialogsHost(
     presentation: EditableSubjectCollectionTypeState.Presentation,

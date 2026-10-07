@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(TestOnly::class)
 
-package me.him188.ani.app.domain.media.download
+package com.wynime.app.domain.media.download
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,11 +16,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.utils.platform.annotations.TestOnly
 
 class DownloadRequestSessionTest {
     private val media = TestMediaList.first()
@@ -168,7 +159,7 @@ class DownloadRequestSessionTest {
         testScope.runCurrent()
         assertTrue(session.select(1, season))
         testScope.runCurrent()
-        // 合集覆盖其他集, 进入选集; 只确认本集时, 其余待处理的集因已有覆盖它们的合集而直接复用.
+
         assertTrue(session.confirmEpisodes(emptySet()))
         testScope.runCurrent()
 
@@ -385,13 +376,6 @@ class DownloadRequestSessionTest {
         assertEquals(0, subjectLoads)
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // 批量下载: 选源后选集
-    ///////////////////////////////////////////////////////////////////////////
-
-    /**
-     * 同一线路: 第 1、2 集的单集资源与一个 1..6 的合集.
-     */
     private fun DownloadRequestFixture.useBatchMediaList() {
         val single1 = requestTestMedia(1)
         val single2 = requestTestMedia(2)
@@ -474,7 +458,7 @@ class DownloadRequestSessionTest {
         assertEquals(DownloadRequestState.Finished(), session.state.value)
         createGate!!.complete(Unit)
         testScope.runCurrent()
-        // 交给应用作用域的整批仍会完成, 且不把状态改回 Creating
+
         assertEquals(DownloadRequestState.Finished(), session.state.value)
         assertEquals(listOf(1, 2, 3), created.map { it.episodeId })
     }
@@ -490,7 +474,7 @@ class DownloadRequestSessionTest {
         testScope.runCurrent()
         assertTrue(session.select(1, single1))
         testScope.runCurrent()
-        // 其他集只有别的字幕组、别的数据源的合集能覆盖: 不在线路上, 与单集下载相同, 不进入选集
+
         assertEquals(DownloadRequestState.Finished(), session.state.value)
         assertEquals(listOf(1), created.map { it.episodeId })
     }

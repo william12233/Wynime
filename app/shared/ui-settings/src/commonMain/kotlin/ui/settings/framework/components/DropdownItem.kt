@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.settings.framework.components
+package com.wynime.app.ui.settings.framework.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.DropdownMenu
@@ -17,9 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
-/**
- * 下来菜单, 用于显示简单的选择. 例如选择主题是深色还是浅色.
- */
 @SettingsDsl
 @Composable
 fun <T> SettingsScope.DropdownItem(

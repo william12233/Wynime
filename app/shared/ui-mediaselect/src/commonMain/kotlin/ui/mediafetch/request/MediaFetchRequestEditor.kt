@@ -1,14 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch.request
-
+package com.wynime.app.ui.mediafetch.request
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,35 +35,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.IconButton
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_add_name
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_collapse
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_delete_name
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_episode_ep
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_episode_ep_supporting
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_episode_info
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_episode_info_supporting
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_episode_sort
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_episode_sort_supporting
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_expand
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_primary_name
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_primary_name_supporting
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_secondary_names
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_secondary_names_supporting
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.foundation.IconButton
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.mediafetch_request_editor_add_name
+import com.wynime.app.ui.lang.mediafetch_request_editor_collapse
+import com.wynime.app.ui.lang.mediafetch_request_editor_delete_name
+import com.wynime.app.ui.lang.mediafetch_request_editor_episode_ep
+import com.wynime.app.ui.lang.mediafetch_request_editor_episode_ep_supporting
+import com.wynime.app.ui.lang.mediafetch_request_editor_episode_info
+import com.wynime.app.ui.lang.mediafetch_request_editor_episode_info_supporting
+import com.wynime.app.ui.lang.mediafetch_request_editor_episode_sort
+import com.wynime.app.ui.lang.mediafetch_request_editor_episode_sort_supporting
+import com.wynime.app.ui.lang.mediafetch_request_editor_expand
+import com.wynime.app.ui.lang.mediafetch_request_editor_primary_name
+import com.wynime.app.ui.lang.mediafetch_request_editor_primary_name_supporting
+import com.wynime.app.ui.lang.mediafetch_request_editor_secondary_names
+import com.wynime.app.ui.lang.mediafetch_request_editor_secondary_names_supporting
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
-
-/**
- * Editor for [EditingMediaFetchRequest] that exposes all editable fields.
- *
- * @param fetchRequest Current value to display/edit.
- * @param onFetchRequestChange Callback whenever any sub‑field changes.
- * @param modifier Optional [Modifier].
- */
 @Composable
 fun MediaFetchRequestEditor(
     fetchRequest: EditingMediaFetchRequest,
@@ -105,25 +87,6 @@ fun MediaFetchRequestEditor(
         val horizontalPadding = 16.dp
         val verticalSpacing = 16.dp
 
-        // 没必要允许编辑 bangumi id
-        // --- Subject & episode ids -------------------------------------------------------------
-//        OutlinedTextField(
-//            value = fetchRequest.subjectId,
-//            onValueChange = { onFetchRequestChange(fetchRequest.copy(subjectId = it)) },
-//            label = { Text("Subject ID (Bangumi)") },
-//            singleLine = true,
-//            isError = fetchRequest.subjectId.toIntOrNull() == null,
-//            modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding),
-//        )
-//        OutlinedTextField(
-//            value = fetchRequest.episodeId,
-//            onValueChange = { onFetchRequestChange(fetchRequest.copy(episodeId = it)) },
-//            label = { Text("Episode ID (Bangumi)") },
-//            singleLine = true,
-//            isError = fetchRequest.subjectId.toIntOrNull() == null,
-//            modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding),
-//        )
-
         OutlinedTextField(
             value = fetchRequest.primaryName,
             onValueChange = { onFetchRequestChange(fetchRequest.copy(primaryName = it)) },
@@ -132,8 +95,6 @@ fun MediaFetchRequestEditor(
             modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding),
             singleLine = true,
         )
-
-        // --- Subject complementary names -------------------------------------------------------------------
 
         var showComplementaryNames by rememberSaveable { mutableStateOf(false) }
         ListItem(
@@ -154,7 +115,7 @@ fun MediaFetchRequestEditor(
                     showComplementaryNames,
                     onCheckedChange = { showComplementaryNames = it },
                 ) {
-                    // expand/collapse
+
                     if (showComplementaryNames) {
                         Icon(Icons.Default.KeyboardArrowUp, contentDescription = collapseText)
                     } else {
@@ -164,7 +125,7 @@ fun MediaFetchRequestEditor(
             },
         )
 
-        AniAnimatedVisibility(showComplementaryNames) {
+        WynimeAnimatedVisibility(showComplementaryNames) {
             Column {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(verticalSpacing),
@@ -223,8 +184,6 @@ fun MediaFetchRequestEditor(
             }
         }
 
-        // --- Episode naming -------------------------------------------------------------------
-
         ListItem(
             headlineContent = {
                 Text(
@@ -245,17 +204,7 @@ fun MediaFetchRequestEditor(
         Column(
             verticalArrangement = Arrangement.spacedBy(verticalSpacing),
         ) {
-            // 没必要允许编辑名称，因为序号也可以作为名称匹配（需要支持 Unknown）
-//            OutlinedTextField(
-//                value = fetchRequest.episodeName,
-//                onValueChange = { onFetchRequestChange(fetchRequest.copy(episodeName = it)) },
-//                label = { Text("剧集名称") },
-//                supportingText = { Text("可留空") },
-//                modifier = Modifier.fillMaxWidth().padding(horizontal = horizontalPadding),
-//                singleLine = true,
-//            )
 
-            // --- Episode sort ---------------------------------------------------------------------
             val sortAndEpAreError = fetchRequest.episodeSort.isEmpty() && fetchRequest.episodeEp.isEmpty()
             OutlinedTextField(
                 value = fetchRequest.episodeSort,
@@ -282,8 +231,6 @@ fun MediaFetchRequestEditor(
         }
     }
 }
-
-// ---------------------------------------------------------------------------------------------
 
 @OptIn(TestOnly::class)
 @Preview(showBackground = true, locale = "zh-rCN")

@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.interaction
+package com.wynime.app.ui.foundation.interaction
 
 import androidx.compose.runtime.Composable
 

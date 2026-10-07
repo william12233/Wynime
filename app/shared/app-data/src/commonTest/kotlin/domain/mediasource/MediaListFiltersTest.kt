@@ -1,20 +1,11 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource
+package com.wynime.app.domain.mediasource
 
 import androidx.collection.IntSet
-import me.him188.ani.app.domain.mediasource.MediaListFilters.charsToDelete
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.runDynamicTests
+import com.wynime.app.domain.mediasource.MediaListFilters.charsToDelete
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.test.TestFactory
+import com.wynime.test.runDynamicTests
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -28,7 +19,6 @@ class MediaListFiltersTest {
 
     @Test
     fun `charsToDelete does not contains space`() {
-        // 不能意外地删除空格
 
         assertEquals(-1, charsToDelete.toIntArray().indexOf(' '.code))
         assertEquals(-1, charsToDelete.toIntArray().indexOf('\t'.code))
@@ -138,7 +128,7 @@ class MediaListFiltersTest {
             assertEquals("测试 第二季", removeSpecials("~~~~~~~~~~!测试 第二季"))
         }
         add("remove infix specials") {
-            // 需要两个非特殊字符后才会开始删除
+
             assertEquals("测!!!试    第二季", removeSpecials("测!!!试!!! 第二季"))
             assertEquals("测试       第二季", removeSpecials("测试!!!!!! 第二季"))
         }
@@ -237,12 +227,10 @@ class MediaListFiltersTest {
             }
         }
 
-        // subject matches title
         infix fun String.matches(title: String) {
             case(title, this, true)
         }
 
-        // subject matches title
         infix fun String.mismatches(title: String) {
             case(title, this, false)
         }

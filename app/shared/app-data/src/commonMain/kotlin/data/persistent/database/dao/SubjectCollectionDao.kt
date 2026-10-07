@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.persistent.database.dao
+package com.wynime.app.data.persistent.database.dao
 
 import androidx.compose.runtime.Immutable
 import androidx.paging.PagingSource
@@ -23,22 +14,19 @@ import androidx.room.Transaction
 import androidx.room.TypeConverters
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
-import me.him188.ani.app.data.models.schedule.AnimeRecurrence
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectTmdbArt
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.data.persistent.database.ProtoConverters
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.data.models.schedule.AnimeRecurrence
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectTmdbArt
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.data.persistent.database.ProtoConverters
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.currentTimeMillis
 import kotlin.time.Duration.Companion.hours
 
-/**
- * @see SubjectInfo
- */
 @Entity(
     tableName = "subject_collection",
     indices = [
@@ -48,21 +36,15 @@ import kotlin.time.Duration.Companion.hours
 data class SubjectCollectionEntity(
     @PrimaryKey val subjectId: Int,
 
-    // SubjectInfo
     val name: String,
     val nameCn: String,
     val summary: String,
     val nsfw: Boolean,
     val imageLarge: String,
-    /**
-     * 列表用封面, 服务端下发. 为空表示这条记录写入时服务端还没有这个字段.
-     * @since 6.2.0
-     */
+
     @ColumnInfo(defaultValue = "")
     val imageThumb: String = "",
-    /**
-     * 会在获取剧集列表时使用, 用于验证缓存的剧集数目是否正确
-     */
+
     val totalEpisodes: Int,
     val airDate: PackedDate,
     @field:TypeConverters(ProtoConverters.StringList::class)
@@ -74,38 +56,23 @@ data class SubjectCollectionEntity(
     @Embedded(prefix = "rating_")
     val ratingInfo: RatingInfo,
     val completeDate: PackedDate,
-    // SubjectCollectionInfo
 
     @Embedded(prefix = "self_rating_")
     val selfRatingInfo: SelfRatingInfo,
     val collectionType: UnifiedCollectionType,
 
-    /**
-     * @since 4.1.0-alpha01
-     */
     @Embedded(prefix = "recurrence_")
     val recurrence: AnimeRecurrence?,
 
-    /**
-     * @since 5.0.0
-     */
     @Embedded(prefix = "relations_")
     val relations: SubjectRelations = SubjectRelations.Empty,
 
-    /**
-     * @see SubjectInfo.tmdbArt
-     */
     @field:TypeConverters(ProtoConverters.SubjectTmdbArtConverter::class)
     val tmdbArt: SubjectTmdbArt? = null,
 
-    /**
-     * 此条目最后被修改的时间 (如修改收藏状态). 与服务器同步.
-     */
     @ColumnInfo(defaultValue = "0")
     val lastUpdated: Long,
-    /**
-     * 此条目从 bangumi 服务器上查询到的时间. 用于判断是否需要自动刷新
-     */
+
     @ColumnInfo(defaultValue = "0")
     val lastFetched: Long,
     @ColumnInfo(defaultValue = "0")
@@ -114,7 +81,7 @@ data class SubjectCollectionEntity(
     val cachedCharactersUpdated: Long,
 )
 
-@Immutable // don't change field name, stored in database
+@Immutable
 data class SubjectRelations(
     @ColumnInfo(defaultValue = "'[]'")
     @field:TypeConverters(ProtoConverters.IntList::class)
@@ -159,16 +126,9 @@ interface SubjectCollectionDao {
     @Query("""DELETE FROM subject_collection WHERE subjectId = :subjectId""")
     suspend fun delete(subjectId: Int)
 
-    /**
-     * 删除多个条目的本地缓存. 剧集缓存 ([EpisodeCollectionEntity]) 会级联删除.
-     */
     @Query("""DELETE FROM subject_collection WHERE subjectId IN (:subjectIds)""")
     suspend fun deleteByIds(subjectIds: List<Int>)
 
-    /**
-     * 将所有条目的 [SubjectCollectionEntity.lastFetched] 置 0, 使所有本地缓存视为已过期,
-     * 下次进入收藏页 (分页刷新) 或条目页时会从服务端重新拉取. 不删除本地数据.
-     */
     @Query("""UPDATE subject_collection SET lastFetched = 0""")
     suspend fun resetAllLastFetched()
 
@@ -178,18 +138,9 @@ interface SubjectCollectionDao {
     @Query("""SELECT subjectId FROM subject_collection WHERE collectionType = :type""")
     suspend fun listIdsByCollectionType(type: UnifiedCollectionType): List<Int>
 
-    /** Removes tracked cache rows while retaining local cancellation tombstone rows. */
     @Query("""DELETE FROM subject_collection WHERE collectionType != 'NOT_COLLECTED'""")
     suspend fun deleteAll()
 
-    /**
-     * Retrieves a paginated list of `SubjectCollectionEntity` items, optionally filtered by type.
-     *
-     * @param collectionTypes Optional filter for the `type` of items. If `null`, all items are retrieved.
-     * @param limit Specifies the maximum number of items to retrieve.
-     * @param offset Defines the starting position within the result set, allowing for pagination.
-     * @return A `Flow` of a list of `SubjectCollectionEntity` items.
-     */
     @Query(
         """
     SELECT * FROM subject_collection 
@@ -222,12 +173,6 @@ interface SubjectCollectionDao {
         offset: Int = 0,
     ): Flow<List<SubjectCollectionEntity>>
 
-    /**
-     * Retrieves a paginated list of `SubjectCollectionEntity` items, optionally filtered by type.
-     *
-     * @param collectionType Optional filter for the `type` of items. If `null`, all items are retrieved. If empty, no item will be returned.
-     * @return A `Flow` of a list of `SubjectCollectionEntity` items.
-     */
     @Query(
         """
         select * from subject_collection 
@@ -285,9 +230,6 @@ interface SubjectCollectionDao {
     )
     suspend fun updateRating(subjectId: Int, score: Int?, comment: String?, tags: List<String>?, private: Boolean?)
 
-    /**
-     * 只包含保存在数据库的, 可能不完整
-     */
     @Query("""SELECT COUNT(*) FROM subject_collection WHERE (collectionType is NOT NULL AND collectionType != 'NOT_COLLECTED' AND (:collectionType IS NULL OR collectionType = :collectionType))""")
     fun countCollected(collectionType: UnifiedCollectionType?): Flow<Int>
 

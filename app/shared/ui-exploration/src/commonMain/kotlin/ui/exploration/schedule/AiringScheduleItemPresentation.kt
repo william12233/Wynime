@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.schedule
+package com.wynime.app.ui.exploration.schedule
 
 import androidx.compose.runtime.Immutable
 import kotlinx.datetime.DatePeriod
@@ -18,34 +9,32 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import me.him188.ani.app.data.models.subject.displayName
-import me.him188.ani.app.data.models.subject.nameOrNameCn
-import me.him188.ani.app.domain.episode.EpisodeWithAiringTime
-import me.him188.ani.app.domain.episode.GetAnimeScheduleFlowUseCase
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.collections.ImmutableEnumMap
+import com.wynime.app.data.models.subject.displayName
+import com.wynime.app.data.models.subject.nameOrNameCn
+import com.wynime.app.domain.episode.EpisodeWithAiringTime
+import com.wynime.app.domain.episode.GetAnimeScheduleFlowUseCase
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.collections.ImmutableEnumMap
 
 @Immutable
 data class AiringScheduleItemPresentation(
     val subjectId: Int,
     val subjectTitle: String,
-    /** 条目原名 (通常为日文), 供"显示原名"设置开启时使用; 关闭时忽略, 显示 [subjectTitle]. */
+
     val subjectOriginalTitle: String = subjectTitle,
     val imageUrl: String,
     val episodeId: Int,
     val episodeSort: EpisodeSort,
     val episodeEp: EpisodeSort?,
     val episodeName: String?,
-    /** 剧集原名, 同 [subjectOriginalTitle] 的开关约定. */
+
     val episodeOriginalName: String? = episodeName,
 
     val subjectCollectionType: UnifiedCollectionType,
     val dayOfWeek: DayOfWeek,
-    /**
-     * 放送时刻. `null` 表示时间未定 (只知道放送日期), 界面显示 "时间未定", 并排在当天所有已知时间的项目之后.
-     */
+
     val time: LocalTime?,
 )
 
@@ -73,7 +62,7 @@ data class ScheduleDay(
         fun generateForRecentTwoWeeks(
             today: LocalDate,
         ): List<ScheduleDay> {
-            // 假设今天是本周三, 返回的是上周三到下周三
+
             return SchedulePageDataHelper.OFFSET_DAYS_RANGE.map { offsetDays ->
                 val date = today.plus(DatePeriod(days = offsetDays))
                 val thisWeekRange: ClosedRange<LocalDate> = getWeekRange(today)
@@ -116,7 +105,7 @@ val TestAiringScheduleItemPresentations
                         episodeOriginalName = "エピソード 1",
                         subjectCollectionType = UnifiedCollectionType.entries[i % UnifiedCollectionType.entries.size],
                         dayOfWeek = DayOfWeek.entries[i % DayOfWeek.entries.size],
-                        // 每隔几个放一个时间未定的项目, 预览里能看到 "时间未定" 的样式
+
                         time = if (i % 11 == 10) null else LocalTime(i % 24, 0),
                     ),
                 )
@@ -125,16 +114,10 @@ val TestAiringScheduleItemPresentations
         }
     }
 
-/**
- * 时间未定 (`time == null`) 的项目排在已知时间的项目之后.
- */
 private val testPresentationComparator =
     compareBy<AiringScheduleItemPresentation, LocalTime?>(nullsLast()) { it.time }
         .thenBy { it.subjectTitle }
 
-/**
- * @see TestSchedulePageData
- */
 @TestOnly
 val TestAiringScheduleItemPresentationData: ImmutableEnumMap<DayOfWeek, List<AiringScheduleItemPresentation>>
     get() = ImmutableEnumMap<DayOfWeek, List<AiringScheduleItemPresentation>> { day ->
@@ -142,14 +125,12 @@ val TestAiringScheduleItemPresentationData: ImmutableEnumMap<DayOfWeek, List<Air
             .sortedWith(testPresentationComparator)
     }
 
-
 @TestOnly
 val TestSchedulePageData: List<AiringSchedule>
     get() {
         val currentTime = LocalTime(12, 0)
         val list = TestAiringScheduleItemPresentations.filter { it.dayOfWeek == DayOfWeek.MONDAY }
             .sortedWith(testPresentationComparator)
-
 
         return ScheduleDay.generateForRecentTwoWeeks(LocalDate(2025, 12, 10)).map {
             AiringSchedule(
@@ -160,9 +141,9 @@ val TestSchedulePageData: List<AiringSchedule>
     }
 
 fun EpisodeWithAiringTime.toPresentation(timeZone: TimeZone): AiringScheduleItemPresentation {
-    // 时间未定时 airingTime 是放送日期在 timeZone 的 00:00, 日期仍然可用, 只是不显示时刻.
+
     val dateTime = airingTime.toLocalDateTime(timeZone)
-    // Return the item
+
     return AiringScheduleItemPresentation(
         subjectId = subject.subjectId,
         subjectTitle = subject.displayName,
@@ -182,12 +163,6 @@ fun EpisodeWithAiringTime.toPresentation(timeZone: TimeZone): AiringScheduleItem
 object SchedulePageDataHelper {
     val OFFSET_DAYS_RANGE = GetAnimeScheduleFlowUseCase.OFFSET_DAYS_RANGE
 
-    /**
-     * 把一天的项目转换为列表项:
-     * - 已知时间的项目按时间升序 (稳定排序, 同一时间保持输入顺序), 只有与上一项时间不同的项目显示时间;
-     * - [addIndicator] 时, 在最后一个 `time <= currentTime` 的项目之后插入当前时间指示器;
-     * - 时间未定 (`time == null`) 的项目保持输入顺序, 追加在所有已知时间的项目和指示器之后, 只有第一个显示 "时间未定".
-     */
     fun toColumnItems(
         list: List<AiringScheduleItemPresentation>,
         addIndicator: Boolean,

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.richtext
+package com.wynime.app.ui.richtext
 
 import androidx.annotation.UiThread
 import androidx.compose.animation.animateColorAsState
@@ -59,14 +50,13 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.ClickableText
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.widgets.Toaster
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.ClickableText
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.widgets.Toaster
 import org.jetbrains.compose.resources.painterResource
 
-/** [interactionEnabled] can be disabled when a containing card or reader owns input. */
 @Composable
 fun RichText(
     elements: List<UIRichElement>,
@@ -101,7 +91,7 @@ fun List<UIRichElement>.toLayout(
             RichTextDefaults.AnnotatedText(
                 slice = e.slice,
                 maskState = maskState,
-                // 指定了对齐方式时必须占满宽度, 否则文本框会包裹内容, 对齐无效果
+
                 modifier = if (e.align == TextAlign.Unspecified) Modifier else Modifier.fillMaxWidth(),
                 color = color,
                 style = style,
@@ -179,8 +169,7 @@ object RichTextDefaults {
                     if (slice.getOrNull(index - 1).let {
                             !(it is UIRichElement.Annotated.Text && it.mask)
                         }) {
-                        // 上一个 text 没有遮罩，增加遮罩块索引
-                        // 如果上一个 text 也有遮罩，则与上一个遮罩状态合并
+
                         currentMaskIndex += 1
                     }
                     state[maskIndex] = true
@@ -192,9 +181,6 @@ object RichTextDefaults {
             maskState = state
         }
 
-        /**
-         * set the underlying mask state
-         */
         fun setMask(sliceIndex: Int, masked: Boolean) {
             val maskIndex = maskConnection[sliceIndex] ?: return
             maskState = buildMap {
@@ -240,7 +226,7 @@ object RichTextDefaults {
                         append(e.content)
 
                         if (e.mask) {
-                            // 为这个 text 片段添加遮罩 annotation，用于处理点击遮罩的事件
+
                             addStringAnnotation(
                                 tag = "mask",
                                 annotation = index.toString(),
@@ -351,7 +337,7 @@ object RichTextDefaults {
             overflow = TextOverflow.Ellipsis,
             shouldConsumeTap = { textPos ->
                 if (!interactionEnabled) return@ClickableText false
-                // 只消费落在未揭开的遮罩或链接上的点击, 其余点击传给父级 (如整条评论点击回复)
+
                 val annotations = content.getStringAnnotations(textPos, textPos)
                 val maskAnno = annotations.firstOrNull { it.tag == "mask" }
                 val maskActive = maskAnno?.item?.toIntOrNull()?.let { maskState[it] == true } == true
@@ -360,20 +346,17 @@ object RichTextDefaults {
             onClick = { textPos ->
                 val annotations = content.getStringAnnotations(textPos, textPos)
 
-                // 先检查是不是 mask
                 val maskAnno = annotations.firstOrNull { it.tag == "mask" }
                 if (maskAnno != null) {
-                    // 若 annotation item 不是 slice index，视作无效的 annotation，没必要继续梳理
+
                     val sliceIndex = maskAnno.item.toIntOrNull() ?: return@ClickableText
-                    // 去掉 mask，不继续处理
-                    // 例如 mask 了一个 url，第一次点击去掉 mask，第二次跳转
+
                     if (maskState[sliceIndex] == true) {
                         maskState.setMask(sliceIndex, false)
                         return@ClickableText
                     }
                 }
 
-                // 检查有没有 url 跳转
                 val urlAnno = annotations.firstOrNull { it.tag == "url" }
                 if (urlAnno != null) {
                     val sliceIndex = urlAnno.item.toIntOrNull() ?: return@ClickableText
@@ -390,7 +373,7 @@ object RichTextDefaults {
         interactionEnabled: Boolean = true,
         onClick: () -> Unit
     ) {
-        var state by rememberSaveable { mutableIntStateOf(0) } // 0: loading, 1: success, 2: failed
+        var state by rememberSaveable { mutableIntStateOf(0) }
 
         AsyncImage(
             model = element.imageUrl,

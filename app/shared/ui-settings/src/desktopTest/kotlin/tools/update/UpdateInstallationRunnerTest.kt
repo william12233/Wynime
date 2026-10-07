@@ -1,21 +1,12 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.tools.update
+package com.wynime.app.tools.update
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.files.Path
-import me.him188.ani.app.platform.Context
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.inSystem
+import com.wynime.app.platform.Context
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.inSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

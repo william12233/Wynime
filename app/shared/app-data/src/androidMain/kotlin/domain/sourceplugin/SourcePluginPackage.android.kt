@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import java.io.File
 import java.io.FileInputStream
@@ -15,12 +6,12 @@ import java.io.FileOutputStream
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 import kotlinx.io.files.Path
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.copyTo
-import me.him188.ani.utils.io.createDirectories
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.resolve
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.copyTo
+import com.wynime.utils.io.createDirectories
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.resolve
 
 actual fun extractSourcePluginPackage(
     archive: SystemPath,

@@ -1,11 +1,7 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-package me.him188.ani.app.ui.rating
+package com.wynime.app.ui.rating
 
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

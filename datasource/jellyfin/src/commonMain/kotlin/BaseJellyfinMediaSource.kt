@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.datasources.jellyfin
+package com.wynime.datasources.jellyfin
 
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
@@ -20,26 +11,26 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.serialization.Serializable
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.MediaExtraFiles
-import me.him188.ani.datasources.api.MediaProperties
-import me.him188.ani.datasources.api.Subtitle
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.paging.SinglePagePagedSource
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.source.ConnectionStatus
-import me.him188.ani.datasources.api.source.HttpMediaSource
-import me.him188.ani.datasources.api.source.MatchKind
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.logging.warn
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.MediaExtraFiles
+import com.wynime.datasources.api.MediaProperties
+import com.wynime.datasources.api.Subtitle
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.paging.SinglePagePagedSource
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.source.ConnectionStatus
+import com.wynime.datasources.api.source.HttpMediaSource
+import com.wynime.datasources.api.source.MatchKind
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.logging.warn
 
 private const val TYPE_EPISODE = "Episode"
 private const val TYPE_MOVIE = "Movie"
@@ -65,11 +56,6 @@ abstract class BaseJellyfinMediaSource(
 
     protected abstract suspend fun getAuthorization(): Authorization
 
-    /**
-     * Invalidates [authorization] after the server rejects it.
-     *
-     * @return `true` when the request can be retried with a newly acquired authorization.
-     */
     protected open suspend fun invalidateAuthorization(authorization: Authorization): Boolean = false
 
     override suspend fun checkConnection(): ConnectionStatus {
@@ -97,12 +83,6 @@ abstract class BaseJellyfinMediaSource(
         }
     }
 
-    /**
-     * Tries all known subject names and their season-less variants in order, but stops once a
-     * container (series or season) backed by Bangumi provider ids has been enumerated, as its
-     * episodes then cover the whole subject. Results from other title matches are retained as a fallback,
-     * see [preferVerified].
-     */
     private suspend fun findBySubjectNames(query: MediaFetchRequest): List<MatchedItem> {
         val fallbackMatches = linkedMapOf<String, MatchedItem>()
 
@@ -154,11 +134,6 @@ abstract class BaseJellyfinMediaSource(
         return fallbackMatches.values.preferVerified()
     }
 
-    /**
-     * Matches backed by Bangumi provider ids supersede title-only guesses: once any item is verified, only
-     * verified items and the other episodes of their containers are kept, so an unrelated library entry
-     * sharing a title does not contribute its episodes.
-     */
     private fun Collection<MatchedItem>.preferVerified(): List<MatchedItem> {
         val verifiedContainers = filter { it.confidence != BangumiMatchConfidence.NONE }
             .mapTo(HashSet()) { it.containerId }
@@ -185,9 +160,6 @@ abstract class BaseJellyfinMediaSource(
         return results.distinctBy(Item::Id)
     }
 
-    /**
-     * Prefer the narrowest exact container so a season title does not expand the whole series.
-     */
     private fun List<Item>.preferredCandidatesFor(subjectName: String): List<Item> {
         val exactMatches = filter { it.hasExactTitle(subjectName) }
         if (exactMatches.isEmpty()) return this
@@ -239,8 +211,7 @@ abstract class BaseJellyfinMediaSource(
                             isExplicitSeasonTitle && candidate.hasExactContainerTitle(searchName)
                         val hasIsolatedSeriesEvidence =
                             seriesSubjectMatch == ProviderIdMatch.MATCH || matchesExplicitSeasonTitle
-                        // S00 specials do not make an isolated series a multi-season library.
-                        // Only its sole non-special season can use the series' subject identity.
+
                         val locallyNumberedSeason = seasons.singleOrNull { it.IndexNumber != 0 }
                             ?.takeIf { hasIsolatedSeriesEvidence }
                         val matchedSeasons = seasons.mapNotNull { season ->
@@ -362,10 +333,6 @@ abstract class BaseJellyfinMediaSource(
             .sortedByDescending { it.confidence }
     }
 
-    /**
-     * MediaStreams is large and unnecessary during discovery. Fetch it only for selected items.
-     * If this optional enrichment fails, keep the playable item and continue without subtitles.
-     */
     private suspend fun hydrateMediaStreams(matches: List<MatchedItem>): List<MatchedItem> {
         if (matches.isEmpty()) return emptyList()
 
@@ -396,11 +363,6 @@ abstract class BaseJellyfinMediaSource(
         }
     }
 
-    /**
-     * Episode number in the subject: the Bangumi episode in [MediaFetchRequest.episodes] with the item's
-     * Bangumi episode provider id wins; without that mapping, the current episode's number is used when
-     * the item's provider id identifies it and Jellyfin's own number is stale; otherwise Jellyfin's number.
-     */
     private fun MatchedItem.toMediaMatch(
         query: MediaFetchRequest,
         accessToken: String,
@@ -536,7 +498,7 @@ abstract class BaseJellyfinMediaSource(
     }
 
     private fun parseSubjectName(name: String): ParsedSubjectName {
-        // Chinese: "无职转生 第三季 ～到了异世界就拿出真本事～" → base="无职转生", season=3
+
         val chineseSeasonRegex = Regex("[第]([一二三四五六七八九十]+)季")
         val chineseMatch = chineseSeasonRegex.find(name)
         if (chineseMatch != null) {
@@ -545,7 +507,7 @@ abstract class BaseJellyfinMediaSource(
                 return ParsedSubjectName(baseName, chineseToNumber(chineseMatch.groupValues[1]))
             }
         }
-        // English: "Mushoku Tensei Season 2", "Mushoku Tensei S2"
+
         val enSeasonRegex = Regex("""\b(?:Season|S)\s*(\d+)\b""", RegexOption.IGNORE_CASE)
         val enMatch = enSeasonRegex.find(name)
         if (enMatch != null) {
@@ -712,8 +674,7 @@ private fun Item.hasExactContainerTitle(subjectName: String): Boolean {
 }
 
 private fun Item.containerSubjectIdMatch(query: MediaFetchRequest): ProviderIdMatch {
-    // A Jellyfin Series can contain several Bangumi subjects, one per season. Its provider ID
-    // commonly points to the first season, so it cannot authenticate or reject a child episode.
+
     if (Type == TYPE_SERIES) return ProviderIdMatch.UNKNOWN
 
     val actualSubjectId = when (Type) {
@@ -804,14 +765,9 @@ private enum class BangumiMatchConfidence {
 private data class MatchedItem(
     val item: Item,
     val confidence: BangumiMatchConfidence,
-    /**
-     * Enumerated from a series or season, so the container's other episodes were fetched too.
-     */
+
     val fromContainer: Boolean,
-    /**
-     * Id of the search result this item came from: the series or season it was enumerated from,
-     * or the item itself when it was a direct hit.
-     */
+
     val containerId: String,
 )
 

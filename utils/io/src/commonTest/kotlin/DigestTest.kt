@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.io
+package com.wynime.utils.io
 
 import kotlinx.io.Buffer
 import kotlinx.io.bytestring.encodeToByteString
@@ -22,12 +13,10 @@ class DigestTest {
         val data = "Hello, world!"
         val expectedHex = "6cd3556deb0da54bca060b4c39479839"
 
-        // Approach 1: ByteString.digest(...)
         val byteString = data.encodeToByteString()
         val actualByteStringDigest = byteString.digest(DigestAlgorithm.MD5).toHexString()
         assertEquals(expectedHex, actualByteStringDigest)
 
-        // Approach 2: Source.readAndDigest(...)
         val buffer = Buffer().apply { write(byteString) }
         val actualSourceDigest = buffer.readAndDigest(DigestAlgorithm.MD5).toHexString()
         assertEquals(expectedHex, actualSourceDigest)

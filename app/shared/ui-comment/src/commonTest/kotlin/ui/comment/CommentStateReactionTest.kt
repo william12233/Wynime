@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.paging.PagingData
@@ -212,7 +203,6 @@ class CommentStateReactionTest {
 
         state.clearStaleOverlays()
 
-        // 覆盖已清除, 列表回到以 (刷新后的) Paging 数据为准
         state.withOverlay(comment).let {
             assertEquals(12, it.likeCount)
             assertNull(it.selfVote)
@@ -313,7 +303,7 @@ class CommentStateReactionTest {
             briefReplies = emptyList(),
             replyCount = 0,
             rating = null,
-            source = UICommentSource.ANI,
+            source = UICommentSource.WYNIME,
             sourceCommentId = "1",
             canReply = true,
             likeCount = likeCount,

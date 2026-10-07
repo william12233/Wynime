@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode
+package com.wynime.app.ui.subject.episode
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -74,87 +65,86 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.domain.comment.CommentContext
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.features.StreamType
-import me.him188.ani.app.platform.features.getComponentAccessors
-import me.him188.ani.app.tools.rememberUiMonoTasker
-import me.him188.ani.app.ui.comment.CommentEditorState
-import me.him188.ani.app.ui.comment.CommentReportHost
-import me.him188.ani.app.ui.comment.CommentReportState
-import me.him188.ani.app.ui.comment.CommentState
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.ImageViewer
-import me.him188.ani.app.ui.foundation.ImageViewerBackHandler
-import me.him188.ani.app.ui.foundation.LocalImageViewerHandler
-import me.him188.ani.app.ui.foundation.LocalIsPreviewing
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.WindowDropHandlerEffect
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.effects.DarkStatusBarAppearance
-import me.him188.ani.app.ui.foundation.effects.OnLifecycleEvent
-import me.him188.ani.app.ui.foundation.effects.OverrideCaptionButtonAppearance
-import me.him188.ani.app.ui.foundation.effects.ScreenOnEffect
-import me.him188.ani.app.ui.foundation.effects.ScreenRotationEffect
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.input.touchHorizontalScrollOnly
-import me.him188.ani.app.ui.foundation.layout.LocalPlatformWindow
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBar
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isHeightCompact
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastExpanded
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthCompact
-import me.him188.ani.app.ui.foundation.layout.setRequestFullScreen
-import me.him188.ani.app.ui.foundation.layout.setSystemBarVisible
-import me.him188.ani.app.ui.foundation.navigation.BackHandler
-import me.him188.ani.app.ui.foundation.pagerTabIndicatorOffset
-import me.him188.ani.app.ui.foundation.rememberImageViewerHandler
-import me.him188.ani.app.ui.foundation.theme.AniTheme
-import me.him188.ani.app.ui.foundation.theme.LocalThemeSettings
-import me.him188.ani.app.ui.foundation.theme.isSystemInDarkThemeDetected
-import me.him188.ani.app.ui.foundation.theme.weaken
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.showLoadError
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.episode_comments
-import me.him188.ani.app.ui.lang.episode_comments_with_count
-import me.him188.ani.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
-import me.him188.ani.app.ui.lang.foundation_richtext_open_failed_prefix
-import me.him188.ani.app.ui.lang.subject_details_tab_details
-import me.him188.ani.app.ui.richtext.RichTextDefaults
-import me.him188.ani.app.ui.subject.episode.comments.EpisodeCommentColumn
-import me.him188.ani.app.ui.subject.episode.comments.EpisodeEditCommentSheet
-import me.him188.ani.app.ui.subject.episode.details.EpisodeDetails
-import me.him188.ani.app.ui.subject.episode.notif.VideoNotifEffect
-import me.him188.ani.app.ui.subject.episode.video.components.EpisodeVideoSideSheetPage
-import me.him188.ani.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
-import me.him188.ani.app.ui.subject.episode.video.components.FloatingFullscreenSwitchButton
-import me.him188.ani.app.ui.subject.episode.video.components.SideSheets
-import me.him188.ani.app.ui.subject.episode.video.sidesheet.EpisodeSelectorSheet
-import me.him188.ani.app.ui.subject.episode.video.sidesheet.MediaSelectorSheet
-import me.him188.ani.app.ui.subject.episode.video.topbar.EpisodePlayerTitle
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerFullscreenState
-import me.him188.ani.app.videoplayer.ui.VideoAspectRatioControllerState
-import me.him188.ani.app.videoplayer.ui.gesture.LevelController
-import me.him188.ani.app.videoplayer.ui.gesture.NoOpLevelController
-import me.him188.ani.app.videoplayer.ui.gesture.asLevelController
-import me.him188.ani.app.videoplayer.ui.progress.PlayerControllerDefaults
-import me.him188.ani.app.videoplayer.ui.progress.rememberMediaProgressFramePreviewState
-import me.him188.ani.app.videoplayer.ui.progress.rememberMediaProgressSliderState
-import me.him188.ani.app.videoplayer.ui.rememberPlayerFullscreenState
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.utils.platform.isAndroid
-import me.him188.ani.utils.platform.isDesktop
-import me.him188.ani.utils.platform.isIos
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.domain.comment.CommentContext
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.features.StreamType
+import com.wynime.app.platform.features.getComponentAccessors
+import com.wynime.app.tools.rememberUiMonoTasker
+import com.wynime.app.ui.comment.CommentEditorState
+import com.wynime.app.ui.comment.CommentReportHost
+import com.wynime.app.ui.comment.CommentReportState
+import com.wynime.app.ui.comment.CommentState
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.ImageViewer
+import com.wynime.app.ui.foundation.ImageViewerBackHandler
+import com.wynime.app.ui.foundation.LocalImageViewerHandler
+import com.wynime.app.ui.foundation.LocalIsPreviewing
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.WindowDropHandlerEffect
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.effects.DarkStatusBarAppearance
+import com.wynime.app.ui.foundation.effects.OnLifecycleEvent
+import com.wynime.app.ui.foundation.effects.OverrideCaptionButtonAppearance
+import com.wynime.app.ui.foundation.effects.ScreenOnEffect
+import com.wynime.app.ui.foundation.effects.ScreenRotationEffect
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.input.touchHorizontalScrollOnly
+import com.wynime.app.ui.foundation.layout.LocalPlatformWindow
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.desktopTitleBar
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isHeightCompact
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastExpanded
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthCompact
+import com.wynime.app.ui.foundation.layout.setRequestFullScreen
+import com.wynime.app.ui.foundation.layout.setSystemBarVisible
+import com.wynime.app.ui.foundation.navigation.BackHandler
+import com.wynime.app.ui.foundation.pagerTabIndicatorOffset
+import com.wynime.app.ui.foundation.rememberImageViewerHandler
+import com.wynime.app.ui.foundation.theme.WynimeTheme
+import com.wynime.app.ui.foundation.theme.LocalThemeSettings
+import com.wynime.app.ui.foundation.theme.isSystemInDarkThemeDetected
+import com.wynime.app.ui.foundation.theme.weaken
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.showLoadError
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.episode_comments
+import com.wynime.app.ui.lang.episode_comments_with_count
+import com.wynime.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
+import com.wynime.app.ui.lang.foundation_richtext_open_failed_prefix
+import com.wynime.app.ui.lang.subject_details_tab_details
+import com.wynime.app.ui.richtext.RichTextDefaults
+import com.wynime.app.ui.subject.episode.comments.EpisodeCommentColumn
+import com.wynime.app.ui.subject.episode.comments.EpisodeEditCommentSheet
+import com.wynime.app.ui.subject.episode.details.EpisodeDetails
+import com.wynime.app.ui.subject.episode.notif.VideoNotifEffect
+import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheetPage
+import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
+import com.wynime.app.ui.subject.episode.video.components.FloatingFullscreenSwitchButton
+import com.wynime.app.ui.subject.episode.video.components.SideSheets
+import com.wynime.app.ui.subject.episode.video.sidesheet.EpisodeSelectorSheet
+import com.wynime.app.ui.subject.episode.video.sidesheet.MediaSelectorSheet
+import com.wynime.app.ui.subject.episode.video.topbar.EpisodePlayerTitle
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.videoplayer.ui.PlayerControllerState
+import com.wynime.app.videoplayer.ui.PlayerFullscreenState
+import com.wynime.app.videoplayer.ui.VideoAspectRatioControllerState
+import com.wynime.app.videoplayer.ui.gesture.LevelController
+import com.wynime.app.videoplayer.ui.gesture.NoOpLevelController
+import com.wynime.app.videoplayer.ui.gesture.asLevelController
+import com.wynime.app.videoplayer.ui.progress.PlayerControllerDefaults
+import com.wynime.app.videoplayer.ui.progress.rememberMediaProgressFramePreviewState
+import com.wynime.app.videoplayer.ui.progress.rememberMediaProgressSliderState
+import com.wynime.app.videoplayer.ui.rememberPlayerFullscreenState
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.utils.platform.isAndroid
+import com.wynime.utils.platform.isDesktop
 import org.jetbrains.compose.resources.stringResource
 import org.openani.mediamp.features.AudioLevelController
 import org.openani.mediamp.features.PlaybackSpeed
@@ -162,10 +152,6 @@ import org.openani.mediamp.features.Screenshots
 import org.openani.mediamp.features.VideoAspectRatio
 import org.openani.mediamp.features.toggleMute
 
-
-/**
- * 番剧详情 (播放) 页面
- */
 @Composable
 fun EpisodeScreen(
     viewModel: EpisodeViewModel,
@@ -173,7 +159,7 @@ fun EpisodeScreen(
     windowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
 ) {
     val themeSettings = LocalThemeSettings.current
-    AniTheme(
+    WynimeTheme(
         darkModeOverride = if (themeSettings.alwaysDarkInEpisodePage) DarkMode.DARK else null,
     ) {
         Column(modifier.fillMaxSize()) {
@@ -196,13 +182,11 @@ private fun EpisodeScreenContent(
     modifier: Modifier = Modifier,
     windowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
 ) {
-    // 处理当用户点击返回键时, 如果是全屏, 则退出全屏
-    // 按返回退出全屏
+
     val context by rememberUpdatedState(LocalContext.current)
     val window = LocalPlatformWindow.current
     val scope = rememberCoroutineScope()
 
-    // 若窗口置顶是通过播放器内按钮开启的, 退出播放页时自动取消置顶
     DisposableEffect(window, vm) {
         onDispose {
             if (vm.desktopAlwaysOnTopSetByPlayer) {
@@ -215,7 +199,6 @@ private fun EpisodeScreenContent(
     val fullscreenState = rememberEpisodeFullscreenState(vm)
     BackHandler(enabled = fullscreenState.isFullscreen) { fullscreenState.request(false) }
 
-    // image viewer
     val imageViewer = rememberImageViewerHandler()
     ImageViewerBackHandler(imageViewer)
 
@@ -247,7 +230,6 @@ private fun EpisodeScreenContent(
 
     VideoNotifEffect(vm)
 
-    // 将本地视频文件拖入窗口, 即在当前剧集播放该文件
     WindowDropHandlerEffect(rememberEpisodeVideoDropHandler { vm.playDroppedFile(it) })
 
     DarkStatusBarAppearance()
@@ -258,9 +240,6 @@ private fun EpisodeScreenContent(
         }
     }
 
-    // 桌面端窗口可能被系统或用户直接切换全屏 (macOS 绿灯、Win 快捷键), 这是外部状态同步而不是用户意图,
-    // 因此只回写状态, 不走 fullscreenState.request (那会再请求一次窗口全屏).
-    // 必须在 effect 里写而不是在组合期写: 组合期写 snapshot state 会和 request 的写入互相覆盖.
     if (LocalPlatform.current.isDesktop()) {
         LaunchedEffect(window, vm) {
             snapshotFlow { window.isUndecoratedFullscreen }.collect { vm.isFullscreen = it }
@@ -268,11 +247,10 @@ private fun EpisodeScreenContent(
     }
 
     LaunchedEffect(vm.isFullscreen) {
-        // Update system bar visibility whenever fullscreen state changes
+
         context.setSystemBarVisible(window, !vm.isFullscreen)
     }
 
-    // 只有在首次进入的时候需要设置
     LaunchedEffect(Unit) {
         val audioController = vm.player.features[AudioLevelController]
         if (audioController != null) {
@@ -288,12 +266,11 @@ private fun EpisodeScreenContent(
         val showExpandedUI = when {
             windowSizeClass.isWidthCompact && windowSizeClass.isHeightCompact -> false
             windowSizeClass.isWidthCompact && windowSizeClass.isHeightAtLeastMedium -> false
-            windowSizeClass.isWidthAtLeastMedium && windowSizeClass.isHeightCompact -> true // #1279
-            windowSizeClass.isWidthAtLeastExpanded -> true // #932
+            windowSizeClass.isWidthAtLeastMedium && windowSizeClass.isHeightCompact -> true
+            windowSizeClass.isWidthAtLeastExpanded -> true
             else -> false
         }
 
-        // only show dark caption button on compact ui and full screen mode(windows only).
         if (vm.isFullscreen || !showExpandedUI) {
             OverrideCaptionButtonAppearance(isDark = true)
         }
@@ -302,7 +279,7 @@ private fun EpisodeScreenContent(
 
         when (val page = pageState.value) {
             null -> {
-                // TODO: EpisodePage loading
+
             }
 
             else -> {
@@ -335,7 +312,6 @@ private fun EpisodeScreenContent(
         ImageViewer(imageViewer) { imageViewer.clear() }
     }
 
-    // 页面级唯一 Host: 评论列表所在 tab 切走时也能收到举报结果提示
     CommentReportHost(vm.commentReportState)
 
     if (showEditCommentSheet) {
@@ -378,7 +354,7 @@ private fun EpisodeScreenTabletVeryWide(
                 ),
         ) {
             EpisodeVideo(
-                // do consume insets
+
                 vm,
                 page,
                 vm.playerControllerState,
@@ -388,8 +364,7 @@ private fun EpisodeScreenTabletVeryWide(
                 windowInsets = if (vm.isFullscreen) {
                     fullscreenVideoWindowInsets(windowInsets)
                 } else {
-                    // 非全屏右边还有东西
-                    // Consider #1923 平板横屏模式下播放器底栏和导航栏重合
+
                     windowInsets.only(WindowInsetsSides.Left + WindowInsetsSides.Vertical)
                 },
             )
@@ -408,7 +383,7 @@ private fun EpisodeScreenTabletVeryWide(
                             .coerceIn(340.dp, 460.dp),
                     )
                     .windowInsetsPadding(windowInsets.only(WindowInsetsSides.Right))
-                    .background(MaterialTheme.colorScheme.background), // scrollable background
+                    .background(MaterialTheme.colorScheme.background),
             ) {
 
                 val themeSettings = LocalThemeSettings.current
@@ -417,10 +392,9 @@ private fun EpisodeScreenTabletVeryWide(
                     themeSettings.darkMode == DarkMode.AUTO -> isSystemInDarkThemeDetected()
                     else -> themeSettings.darkMode == DarkMode.DARK
                 }
-                // 如果当前不是 dark theme 并且 是安卓平台 并且 没有设置播放页始终使用暗色主题，则加一个渐变色避免看不清状态栏
-                // ios 宽屏模式下会自动隐藏状态栏, 无需处理
+
                 val needShadeBackground = !isEpPageDarkTheme && LocalPlatform.current.isAndroid()
-                // 填充 insets 背景颜色
+
                 Spacer(
                     Modifier
                         .fillMaxWidth()
@@ -436,13 +410,11 @@ private fun EpisodeScreenTabletVeryWide(
                             )
                         }
                         .windowInsetsPadding(
-                            // Consider #1767
-                            WindowInsets.safeContent // Note: this does not include desktop title bar.
+
+                            WindowInsets.safeContent
                                 .only(WindowInsetsSides.Top),
                         ),
                 )
-
-                // ExternalContent("", Modifier.fillMaxWidth().height(128.dp))
 
                 TabRow(
                     pagerState, scope, { vm.episodeCommentState.count }, Modifier.fillMaxWidth(),
@@ -574,12 +546,8 @@ private fun EpisodeScreenContentPhone(
     val defaultVideoWindowInsets = windowInsets
         .union(WindowInsets.desktopTitleBar)
         .run {
-            // iOS 上的 top window insets 没有被正确消耗, 手动排除 top insets
-            if (LocalPlatform.current.isIos()) {
-                only(WindowInsetsSides.Horizontal)
-            } else {
-                only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-            }
+
+            only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
         }
     val videoWindowInsets = if (vm.isFullscreen) {
         fullscreenVideoWindowInsets(defaultVideoWindowInsets)
@@ -599,7 +567,7 @@ private fun EpisodeScreenContentPhone(
             )
         },
         headlineContent = {
-            // ExternalContent("", Modifier.fillMaxWidth().height(64.dp))
+
         },
         episodeDetails = {
             val navigator = LocalNavigator.current
@@ -692,7 +660,7 @@ fun EpisodeScreenContentPhoneScaffold(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                     )
                     Box(
-                        modifier = Modifier.weight(0.618f) // width
+                        modifier = Modifier.weight(0.618f)
                             .height(44.dp)
                             .padding(vertical = 4.dp, horizontal = 16.dp),
                     ) {
@@ -721,30 +689,11 @@ fun EpisodeScreenContentPhoneScaffold(
     }
 }
 
-/**
- * 全屏播放时传给播放器控件的 window insets.
- *
- * iOS 横屏下 [WindowInsets.systemBars] 在左右两侧对称地报告 safe area, 这个值同时为刘海和屏幕圆角预留,
- * 只避开刘海一侧会让对侧的按钮压进圆角而难以点中, 所以水平方向照系统的值用.
- * 顶部和 home indicator 的高度不需要, 带上会让控件离上下边缘过远.
- *
- * 其他平台保持 [default] 不变.
- */
 @Composable
 private fun fullscreenVideoWindowInsets(default: WindowInsets): WindowInsets {
-    return if (LocalPlatform.current.isIos()) {
-        WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)
-    } else {
-        default
-    }
+    return default
 }
 
-/**
- * 播放页全屏的唯一实现: 进入/退出全屏的平台副作用 (窗口、屏幕方向、系统栏) 只在这里做一次.
- *
- * 返回的对象本身不持有状态 (状态在 [EpisodeViewModel.isFullscreen] 上), 因此可以在需要的地方各建一个,
- * 不必把它层层传参穿过布局组件.
- */
 @Composable
 private fun rememberEpisodeFullscreenState(vm: EpisodeViewModel): PlayerFullscreenState {
     val context by rememberUpdatedState(LocalContext.current)
@@ -754,7 +703,7 @@ private fun rememberEpisodeFullscreenState(vm: EpisodeViewModel): PlayerFullscre
         isFullscreen = { vm.isFullscreen },
         onRequest = { fullscreen ->
             scope.launch {
-                // 进入是「先改状态再改窗口」, 退出是「先改窗口再改状态」, 与规范化之前的行为保持一致
+
                 if (fullscreen) {
                     vm.isFullscreen = true
                     context.setRequestFullScreen(window, true)
@@ -781,9 +730,8 @@ private fun EpisodeVideo(
     val navigator = LocalNavigator.current
     val isAndroid = LocalPlatform.current.isAndroid()
 
-    // Don't rememberSavable. 刻意让每次切换都是隐藏的
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        playerControllerState.toggleFullVisible(false) // 每次切换全屏后隐藏
+        playerControllerState.toggleFullVisible(false)
     }
 
     val window = LocalPlatformWindow.current
@@ -796,7 +744,7 @@ private fun EpisodeVideo(
         vm.player,
         vm.progressChaptersFlow,
         onPreview = {
-            // not yet supported
+
         },
         onPreviewFinished = {
             vm.player.seekTo(it)
@@ -809,7 +757,6 @@ private fun EpisodeVideo(
     }
     val scope = rememberCoroutineScope()
 
-    // 必须在 UI 里, 跟随 context 变化. 否则 #958
     val platformComponents by remember {
         derivedStateOf {
             context.getComponentAccessors()
@@ -850,7 +797,7 @@ private fun EpisodeVideo(
             val sec = (currentPositionMillis - (min * 60000)) / 1000
             val ms = currentPositionMillis - (min * 60000) - (sec * 1000)
             val currentPosition = "${min}m${sec}s${ms}ms"
-            // 条目ID-剧集序号-视频时间点.png
+
             val filename = "${vm.subjectId}-${page.episodePresentation.ep}-${currentPosition}.png"
             scope.launch {
                 if (isAndroid) {
@@ -907,7 +854,7 @@ private fun EpisodeVideo(
         },
         videoEnhancement = vm.videoEnhancement,
         leftBottomTips = {
-            AniAnimatedVisibility(
+            WynimeAnimatedVisibility(
                 visible = vm.playerSkipOpEdState.showSkipTips,
             ) {
                 PlayerControllerDefaults.LeftBottomTips(
@@ -1005,13 +952,9 @@ private fun EpisodeCommentColumn(
     )
 }
 
-
-/**
- * 切后台自动暂停
- */
 @Composable
 private fun AutoPauseEffect(viewModel: EpisodeViewModel, enabled: Boolean) {
-    var pausedVideo by rememberSaveable { mutableStateOf(true) } // live after configuration change
+    var pausedVideo by rememberSaveable { mutableStateOf(true) }
     if (LocalIsPreviewing.current || !enabled) return
 
     val autoPauseTasker = rememberUiMonoTasker()
@@ -1020,17 +963,16 @@ private fun AutoPauseEffect(viewModel: EpisodeViewModel, enabled: Boolean) {
             if (viewModel.player.state.value.playWhenReady) {
                 pausedVideo = true
                 autoPauseTasker.launch {
-                    // #160, 切换全屏时视频会暂停半秒
-                    // > 这其实是之前写切后台自动暂停导致的，检测了 lifecycle 事件，切全屏和切后台是一样的事件。延迟一下就可以了
-                    viewModel.player.pause() // 正在播放时, 切到后台自动暂停
+
+                    viewModel.player.pause()
                 }
             } else {
-                // 如果不是正在播放, 则不操作暂停, 当下次切回前台时, 也不要恢复播放
+
                 pausedVideo = false
             }
         } else if (it == Lifecycle.Event.ON_START && pausedVideo) {
             autoPauseTasker.launch {
-                viewModel.player.play() // 切回前台自动恢复, 当且仅当之前是自动暂停的
+                viewModel.player.play()
             }
             pausedVideo = false
         }
@@ -1040,9 +982,6 @@ private fun AutoPauseEffect(viewModel: EpisodeViewModel, enabled: Boolean) {
 @Composable
 internal expect fun DisplayModeEffect(config: VideoScaffoldConfig)
 
-/**
- * Delegation of [AudioLevelController], which allows observing volume state changes.
- */
 class MediampAudioLevelController(
     private val controller: AudioLevelController,
     private val onVolumeStateChanged: (level: Float, mute: Boolean) -> Unit,

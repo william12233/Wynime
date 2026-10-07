@@ -1,35 +1,26 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.datasources.api
 
-package me.him188.ani.datasources.api
-
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType.ED
-import me.him188.ani.datasources.api.EpisodeType.MAD
-import me.him188.ani.datasources.api.EpisodeType.OAD
-import me.him188.ani.datasources.api.EpisodeType.OP
-import me.him188.ani.datasources.api.EpisodeType.OVA
-import me.him188.ani.datasources.api.EpisodeType.PV
-import me.him188.ani.datasources.api.EpisodeType.SP
-import me.him188.ani.test.DynamicTestsResult
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.dynamicTest
-import me.him188.ani.test.permutedSequence
-import me.him188.ani.test.runDynamicTests
-import me.him188.ani.utils.serialization.BigNum
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType.ED
+import com.wynime.datasources.api.EpisodeType.MAD
+import com.wynime.datasources.api.EpisodeType.OAD
+import com.wynime.datasources.api.EpisodeType.OP
+import com.wynime.datasources.api.EpisodeType.OVA
+import com.wynime.datasources.api.EpisodeType.PV
+import com.wynime.datasources.api.EpisodeType.SP
+import com.wynime.test.DynamicTestsResult
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.dynamicTest
+import com.wynime.test.permutedSequence
+import com.wynime.test.runDynamicTests
+import com.wynime.utils.serialization.BigNum
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
-import me.him188.ani.datasources.api.EpisodeSort as ep
-import me.him188.ani.datasources.api.EpisodeSort.Normal as normal
-import me.him188.ani.datasources.api.EpisodeSort.Special as special
+import com.wynime.datasources.api.EpisodeSort as ep
+import com.wynime.datasources.api.EpisodeSort.Normal as normal
+import com.wynime.datasources.api.EpisodeSort.Special as special
 
 @TestContainer
 class EpisodeSortTest {
@@ -37,7 +28,7 @@ class EpisodeSortTest {
     fun `parse string`(): DynamicTestsResult {
         return runDynamicTests(
             listOf(
-                // Actual to Expected
+
                 "1" to normal(1f),
                 "0" to normal(0f),
                 "01" to normal(1f),
@@ -77,12 +68,11 @@ class EpisodeSortTest {
         )
     }
 
-
     @TestFactory
     fun `parse BigNum and EpisodeType`(): DynamicTestsResult {
         return runDynamicTests(
             listOf(
-                // Actual to Expected
+
                 Pair<BigNum, EpisodeType?>(BigNum("-1"), SP) to EpisodeSort.Unknown("-1"),
                 Pair<BigNum, EpisodeType?>(BigNum("1"), SP) to special(SP, 1f),
                 Pair<BigNum, EpisodeType?>(BigNum("2"), OP) to special(OP, 2f),
@@ -110,7 +100,7 @@ class EpisodeSortTest {
     fun `parse BigNum`(): DynamicTestsResult {
         return runDynamicTests(
             listOf(
-                // Actual to Expected
+
                 "-1" to EpisodeSort.Unknown("-1"),
                 "1" to normal(1f),
                 "1.1" to EpisodeSort.Unknown("1.1"),
@@ -131,7 +121,7 @@ class EpisodeSortTest {
     fun `to string`(): DynamicTestsResult {
         return runDynamicTests(
             listOf(
-                // Actual to Expected
+
                 normal(1f) to "01",
                 normal(0f) to "00",
                 normal(1f) to "01",
@@ -186,7 +176,7 @@ class EpisodeSortTest {
                 val (a, b) = it
                 assertNotEquals(a, b)
                 assertNotEquals(b, a)
-                assertNotEquals(b.hashCode(), a.hashCode()) // our extra constraint
+                assertNotEquals(b.hashCode(), a.hashCode())
             }
         },
     )
@@ -194,7 +184,7 @@ class EpisodeSortTest {
     @TestFactory
     fun compare() = runDynamicTests(
         listOf(
-            // Original to Sorted Ascending
+
             "int" to listOf(ep(1), ep(2), ep(3)),
             "float" to listOf(ep(1), ep("1.5"), ep("2"), ep(3)),
             "sp" to listOf(ep("SP1"), ep("SP2")),
@@ -229,55 +219,50 @@ class EpisodeSortTest {
     @TestFactory
     fun testCompareTo() = runDynamicTests(
         listOf(
-            // Actual to Expected
 
-            // Normal and Normal
-            Pair(ep("1"), ep("2")) to -1, // lt
-            Pair(ep("1"), ep("1")) to 0, // eq
-            Pair(ep("2"), ep("1")) to 1, // gt
-            // Normal and Special
-            Pair(ep("2"), ep("SP1")) to -1, // lt
-            // Normal and Unknown
-            Pair(ep("3"), ep("1.1")) to -1, // lt
+            Pair(ep("1"), ep("2")) to -1,
+            Pair(ep("1"), ep("1")) to 0,
+            Pair(ep("2"), ep("1")) to 1,
 
-            // Special and Normal
-            Pair(ep("SP1"), ep("2")) to 1, // gt
-            // Special and Special
-            Pair(ep("SP1"), ep("SP2")) to -1, // lt
-            Pair(ep("SP1"), ep(BigNum("1"), SP)) to 0, // eq
-            Pair(ep("SP2"), ep("SP1")) to 1, // gt
-            Pair(ep(BigNum(1), SP), ep(BigNum(1), OP)) to -1, // lt
-            Pair(ep(BigNum(1), OP), ep(BigNum(1), ED)) to -1, // lt
-            Pair(ep(BigNum(1), ED), ep(BigNum(1), PV)) to -1, // lt
-            Pair(ep(BigNum(1), OAD), ep(BigNum(1), OVA)) to 1, // gt
-            Pair(ep(BigNum(1), OVA), ep(BigNum(1), MAD)) to 1, // gt
-            Pair(ep(BigNum(1), MAD), ep(BigNum(1), PV)) to 1, // gt
-            Pair(ep(BigNum(1), MAD), ep(BigNum(2), MAD)) to -1, // lt
-            Pair(ep(BigNum(1), MAD), ep(BigNum(1), MAD)) to 0, // eq
-            Pair(ep(BigNum(2), MAD), ep(BigNum(1), MAD)) to 1, // gt
-            // Special and Unknown
-            Pair(ep("SP3"), ep("1.1")) to -1, // lt
+            Pair(ep("2"), ep("SP1")) to -1,
 
-            // Unknown and Normal
-            Pair(ep("1.1"), ep("3")) to 1, // gt
-            // Unknown and Special
-            Pair(ep("1.1"), ep("SP3")) to 1, // gt
-            // Unknown and Unknown
-            Pair(ep("1.1"), ep("SP3.2")) to "1.1".compareTo("SP3.2"), // raw compare to
+            Pair(ep("3"), ep("1.1")) to -1,
+
+            Pair(ep("SP1"), ep("2")) to 1,
+
+            Pair(ep("SP1"), ep("SP2")) to -1,
+            Pair(ep("SP1"), ep(BigNum("1"), SP)) to 0,
+            Pair(ep("SP2"), ep("SP1")) to 1,
+            Pair(ep(BigNum(1), SP), ep(BigNum(1), OP)) to -1,
+            Pair(ep(BigNum(1), OP), ep(BigNum(1), ED)) to -1,
+            Pair(ep(BigNum(1), ED), ep(BigNum(1), PV)) to -1,
+            Pair(ep(BigNum(1), OAD), ep(BigNum(1), OVA)) to 1,
+            Pair(ep(BigNum(1), OVA), ep(BigNum(1), MAD)) to 1,
+            Pair(ep(BigNum(1), MAD), ep(BigNum(1), PV)) to 1,
+            Pair(ep(BigNum(1), MAD), ep(BigNum(2), MAD)) to -1,
+            Pair(ep(BigNum(1), MAD), ep(BigNum(1), MAD)) to 0,
+            Pair(ep(BigNum(2), MAD), ep(BigNum(1), MAD)) to 1,
+
+            Pair(ep("SP3"), ep("1.1")) to -1,
+
+            Pair(ep("1.1"), ep("3")) to 1,
+
+            Pair(ep("1.1"), ep("SP3")) to 1,
+
+            Pair(ep("1.1"), ep("SP3.2")) to "1.1".compareTo("SP3.2"),
 
         ).map {
             dynamicTest(it.toString()) {
                 val (a, b) = it
-                if (b < -1) { // lt
+                if (b < -1) {
                     assertTrue(a.first < a.second)
-                } else if (b > 1) { // gt
+                } else if (b > 1) {
                     assertTrue(a.first > a.second)
-                } else { // -1 0 1
+                } else {
                     assertEquals(b, a.first.compareTo(a.second))
                 }
             }
         },
     )
-
 
 }

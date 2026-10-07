@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.search
+package com.wynime.app.ui.exploration.search
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,21 +35,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_play
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_play
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * Design: [SubjectItem on Figma](https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Main?node-id=101-877&t=gmFJS6LFQudIIXfK-4)
- *
- * @param image see [SubjectItemDefaults.Image]
- * @param title remember to use `maxLines`
- * @param actions see [SubjectItemDefaults.ActionPlay]
- */
 @Composable
 fun SubjectItemLayout(
     selected: Boolean,
@@ -175,7 +159,7 @@ class SubjectItemTypography(
         @Composable
         fun calculate(windowSizeClass: WindowSizeClass): SubjectItemTypography {
             if (windowSizeClass.isWidthAtLeastMedium && windowSizeClass.isHeightAtLeastMedium) {
-                // medium
+
                 return SubjectItemTypography(
                     titleStyle = MaterialTheme.typography.titleLarge,
                     tagsStyle = MaterialTheme.typography.labelLarge,
@@ -183,7 +167,7 @@ class SubjectItemTypography(
                     titleMaxLines = 2,
                 )
             }
-            // compact
+
             return SubjectItemTypography(
                 titleStyle = MaterialTheme.typography.titleMedium,
                 tagsStyle = MaterialTheme.typography.labelMedium,
@@ -233,9 +217,7 @@ class SubjectItemLayoutParameters(
         @Composable
         @Stable
         fun calculate(windowSizeClass: WindowSizeClass): SubjectItemLayoutParameters {
-//            if (windowSizeClass.isWidthAtLeastMedium && windowSizeClass.isHeightAtLeastMedium) {
-//                return MEDIUM
-//            }
+
             return COMPACT
         }
     }

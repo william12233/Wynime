@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.persistent
+package com.wynime.app.data.persistent
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
@@ -17,12 +8,12 @@ import androidx.datastore.preferences.core.Preferences
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
-import me.him188.ani.app.domain.media.cache.storage.MediaCacheSave
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.platform.DesktopContext
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.toKtPath
+import com.wynime.app.domain.media.cache.storage.MediaCacheSave
+import com.wynime.app.platform.Context
+import com.wynime.app.platform.DesktopContext
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.toKtPath
 
 actual fun Context.createPlatformDataStoreManager(): PlatformDataStoreManager =
     PlatformDataStoreManagerDesktop(this as DesktopContext)
@@ -53,9 +44,6 @@ class PlatformDataStoreManagerDesktop(
         )
     }
 
-    /**
-     * @since 5.0.2
-     */
     val firebaseDataStore by lazy {
         DataStoreFactory.create(
             serializer = MapSerializer(

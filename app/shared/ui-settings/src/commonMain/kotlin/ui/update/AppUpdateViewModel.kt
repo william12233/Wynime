@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -21,38 +12,35 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.update.UpdateManager
-import me.him188.ani.app.platform.ContextMP
-import me.him188.ani.app.platform.WynimeBrand
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.tools.MonoTasker
-import me.him188.ani.app.tools.update.DefaultFileDownloader
-import me.him188.ani.app.tools.update.FileDownloaderState
-import me.him188.ani.app.tools.update.InstallationResult
-import me.him188.ani.app.tools.update.UpdateInstallationRunner
-import me.him188.ani.app.tools.update.UpdateInstallationState
-import me.him188.ani.app.tools.update.UpdateInstaller
-import me.him188.ani.app.tools.update.UpdatePackageDescriptor
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.utils.io.createDirectories
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.domain.update.UpdateManager
+import com.wynime.app.platform.ContextMP
+import com.wynime.app.platform.WynimeBrand
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.tools.MonoTasker
+import com.wynime.app.tools.update.DefaultFileDownloader
+import com.wynime.app.tools.update.FileDownloaderState
+import com.wynime.app.tools.update.InstallationResult
+import com.wynime.app.tools.update.UpdateInstallationRunner
+import com.wynime.app.tools.update.UpdateInstallationState
+import com.wynime.app.tools.update.UpdateInstaller
+import com.wynime.app.tools.update.UpdatePackageDescriptor
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.utils.io.createDirectories
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.resolve
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.currentTimeMillis
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * 主页使用的自动更新检查
- */
 @Stable
 class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
     private val settingsRepository: SettingsRepository by inject()
@@ -65,19 +53,12 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
     private val fileDownloader by lazy { DefaultFileDownloader(clientProvider.get()) }
     private val updateChecker: UpdateChecker = UpdateChecker(clientProvider.get())
 
-    /**
-     * 最新的版本. 当 [checked] 为 `true` 时, `null` 表示没有新版本. 否则表示还没有检查过.
-     */
     private val latestVersionFlow = MutableStateFlow<NewVersion?>(null)
     private val lastCheckTime: MutableStateFlow<Long> = MutableStateFlow(0L)
 
-    /**
-     * 新版本下载进度
-     */
     private val fileDownloaderPresenter = FileDownloaderPresenter(fileDownloader, backgroundScope)
     private val autoCheckTasker = MonoTasker(backgroundScope)
-    // Linux keeps the app alive while AppImageUpdate downloads and builds a replacement.
-    // Track that work separately so the UI can show installation state and cancel it safely.
+
     private val installationTasker = MonoTasker(backgroundScope)
     private val checkUpdateErrorFlow = MutableStateFlow<LoadError?>(null)
 
@@ -90,7 +71,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
     ) { latestVersion, fileDownloaderStats, isCheckingUpdate, installationState, checkUpdateError ->
         val latestVersion = latestVersion
         val state = when {
-            // 还没检查过
+
             lastCheckTime.value == 0L -> AppUpdateState.ClickToCheck
             latestVersion == null -> AppUpdateState.AlreadyUpToDate
             installationState is UpdateInstallationState.Installing -> AppUpdateState.Installing(latestVersion)
@@ -109,7 +90,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                         AppUpdateState.Downloaded(latestVersion, fileDownloaderStats.state.file)
 
                     is FileDownloaderState.Cancelled -> {
-                        // 用户取消, 则不算失败, ClickToCheck 可以隐藏 UI 弹窗
+
                         AppUpdateState.ClickToCheck
                     }
                 }
@@ -134,22 +115,18 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
     val isChecking get() = autoCheckTasker.isRunning.value
     private val downloadTasker = MonoTasker(backgroundScope)
 
-    // 一小时内只会检查一次
     fun startAutomaticCheckLatestVersion() {
         if (autoCheckTasker.isRunning.value) {
             return
         } else {
             if (currentTimeMillis() - lastCheckTime.value < 1000 * 60 * 60 * 1) {
-                return // 1 小时内检查过
+                return
             }
 
             startCheckLatestVersion(null)
         }
     }
 
-    /**
-     * @param context 为 null 则不会自动下载
-     */
     fun startCheckLatestVersion(
         uriHandler: UriHandler?
     ) {
@@ -169,7 +146,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                 throw e
             } catch (e: Throwable) {
                 checkUpdateErrorFlow.value = LoadError.fromException(e)
-                logger.info { "Auto update checking failed due to IOException: $e" } // 故意不打印堆栈
+                logger.info { "Auto update checking failed due to IOException: $e" }
                 return@launch
             } finally {
                 lastCheckTime.value = currentTimeMillis()
@@ -196,10 +173,9 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                 return@launch
             }
 
-            // Linux prepares a small zsync file; other platforms prepare the package URL unchanged.
             val preparationUrls = updateInstaller.getUpdatePreparationUrls(ver.downloadUrlAlternatives)
             val dir = updateManager.saveDir
-            // 删除旧的安装包, 保留本次要下载的文件及其校验文件 (已下载完成的可以跳过重新下载).
+
             val keepFilenames = preparationUrls.map {
                 it.substringAfterLast("/", "")
             }.let { list ->
@@ -245,7 +221,6 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
         }
     }
 
-    /** Called when the activity returns from Android's unknown-sources settings page. */
     fun onAppResumed(context: ContextMP) {
         val waitingForPermission = installationRunner.state.value is UpdateInstallationState.WaitingForPermission
         val pending = updateInstaller.pendingInstallation(context)
@@ -298,7 +273,7 @@ data class AppUpdatePresentation(
     val isCheckingUpdate: Boolean,
     val checkUpdateError: LoadError? = null,
     val installationFailure: InstallationResult.Failed? = null,
-    val currentVersion: String = currentAniBuildConfig.versionName,
+    val currentVersion: String = currentWynimeBuildConfig.versionName,
     val isPlaceholder: Boolean = false,
 ) {
     val isDownloading = when (state) {
@@ -326,14 +301,11 @@ data class AppUpdatePresentation(
     }
 }
 
-
 @Immutable
 class NewVersion(
     val name: String,
     val changelogs: List<Changelog>,
-    /**
-     * 所有可行的下载地址. 任意一个都可以用
-     */
+
     val downloadUrlAlternatives: List<String>,
     val publishedAt: String,
     val packageDescriptor: UpdatePackageDescriptor? = null,

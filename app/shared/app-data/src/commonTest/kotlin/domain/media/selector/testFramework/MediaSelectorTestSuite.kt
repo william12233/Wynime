@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector.testFramework
+package com.wynime.app.domain.media.selector.testFramework
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -22,63 +13,53 @@ import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectSeriesInfo
-import me.him188.ani.app.data.models.subject.SubjectSeriesInfoBuilder
-import me.him188.ani.app.data.models.subject.toBuilder
-import me.him188.ani.app.domain.media.createTestDefaultMedia
-import me.him188.ani.app.domain.media.createTestMediaProperties
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.fetch.create
-import me.him188.ani.app.domain.media.selector.DefaultMediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorContext
-import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.media.selector.MediaSelectorSubtitlePreferences
-import me.him188.ani.app.domain.media.selector.SubtitleKindPreference
-import me.him188.ani.app.domain.mediasource.MediaSourceTier
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.MediaExtraFiles
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
-import me.him188.ani.datasources.api.topic.Resolution
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.datasources.api.topic.SubtitleLanguage
-import me.him188.ani.test.DynamicTestsBuilder
-import me.him188.ani.utils.platform.collections.copyPut
-import me.him188.ani.utils.platform.collections.toImmutable
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectSeriesInfo
+import com.wynime.app.data.models.subject.SubjectSeriesInfoBuilder
+import com.wynime.app.data.models.subject.toBuilder
+import com.wynime.app.domain.media.createTestDefaultMedia
+import com.wynime.app.domain.media.createTestMediaProperties
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.fetch.create
+import com.wynime.app.domain.media.selector.DefaultMediaSelector
+import com.wynime.app.domain.media.selector.MediaSelectorContext
+import com.wynime.app.domain.media.selector.MediaSelectorSourceTiers
+import com.wynime.app.domain.media.selector.MediaSelectorSubtitlePreferences
+import com.wynime.app.domain.media.selector.SubtitleKindPreference
+import com.wynime.app.domain.mediasource.MediaSourceTier
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.MediaExtraFiles
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.datasources.api.topic.Resolution
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.datasources.api.topic.SubtitleLanguage
+import com.wynime.test.DynamicTestsBuilder
+import com.wynime.utils.platform.collections.copyPut
+import com.wynime.utils.platform.collections.toImmutable
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmName
 import kotlin.random.Random
-import me.him188.ani.datasources.api.Media
+import com.wynime.datasources.api.Media
 
-/**
- * DSL for testing [me.him188.ani.app.domain.media.selector.DefaultMediaSelector].
- *
- * @see me.him188.ani.app.domain.media.selector.MediaSelectorSourceTierAutoSelectTest
- * @see me.him188.ani.app.domain.media.selector.MediaSelectorSourceTierSortTest
- * @see me.him188.ani.app.domain.media.selector.MediaSelectorMatchMetadataTest
- */
 sealed class MediaSelectorTestSuite {
     val random = Random(42)
 
     val initApi = InitApi()
     val preferenceApi = PreferenceApi()
 
-    /**
-     * initializes [me.him188.ani.app.domain.media.selector.MediaSelectorContext].
-     */
     inner class InitApi {
         lateinit var subjectName: String
         var aliases: MutableList<String> = mutableListOf()
@@ -142,7 +123,6 @@ sealed class MediaSelectorTestSuite {
                 )
             }
 
-
         fun setSubtitlePreferences(
             preferences: MediaSelectorSubtitlePreferences = getCurrentSubtitlePreferences()
         ) {
@@ -171,7 +151,6 @@ sealed class MediaSelectorTestSuite {
             )
         }
     }
-
 
     private var mediaIdCounter: Int = 0
     fun media(
@@ -277,36 +256,9 @@ sealed class MediaSelectorTestSuite {
     }
 }
 
-
-/**
- * 使用 [List] 存储待选 [me.him188.ani.datasources.api.Media].
- */
 class SimpleMediaSelectorTestSuite(
     val testScope: TestScope,
-    /**
-     * 传给 [DefaultMediaSelector] 的 `enableCaching` (INFRA-01). 生产默认是 `true`, 本夹具默认 `false`.
-     *
-     * ## 只保证终值语义等价, 不保证时序等价
-     *
-     * **禁止在 `cachingEnabled = true` 下写时序断言.** 本夹具能保证的只有"同一段断言在两种配置下得到同样的终值"
-     * (见 [me.him188.ani.app.domain.media.selector.MediaSelectorCachingEnabledTest] 的双跑用例);
-     * "第几拍能读到新值""要不要 `runCurrent`"这类观测全部是夹具与虚拟时间的产物, 不是生产语义.
-     *
-     * ## 夹具与生产的三处差异
-     *
-     * 1. `cachingEnabled = true` 时 `flowCoroutineContext` 被换成 **test dispatcher**
-     *    (见下方构造 [selector] 处), 而生产传的是 [Dispatchers.Default] 真实线程池.
-     *    也就是说, 生产上 INFRA-01 的传播延迟是多线程竞态, 在本夹具里被虚拟时间压成了"确定的一拍".
-     *    MediaAutoSelector 使用源结果直接生成决策快照, 不依赖 UI 候选流的传播时序.
-     * 2. `cachingScope` 恒传 [TestScope.backgroundScope], 因此生产真正走的另一半分支 ——
-     *    `cachingScope == null` 时每个 `cached()` 各建一个无人 cancel 的 `CoroutineScope(flowCoroutineContext)`,
-     *    即 INFRA-01 陈述里"scope 生命周期无人管理"那一半 —— 在测试中**永远不被执行**, 仍是零覆盖.
-     * 3. 承 2: `cachingScope` 上派发的任务是 **background dispatch event**
-     *    (`TestCoroutineScheduler` 按 `context[BackgroundWork] == null` 判定 `isForeground`).
-     *    而 `advanceUntilIdle()` 的停止条件是 `events.none { it.isForeground }`,
-     *    所以当队列里只剩缓存流的传播任务时, **`advanceUntilIdle()` 一步都不跑, 虚拟时间也不前进**.
-     *    要推进缓存流请用 `runCurrent()` / `advanceTimeBy()`, 它们没有 foreground 过滤.
-     */
+
     private val cachingEnabled: Boolean = false,
 ) : MediaSelectorTestSuite() {
     val mediaApi = MediaApi()
@@ -345,7 +297,7 @@ class SimpleMediaSelectorTestSuite(
 
             addMedia(
                 media(
-                    // kept
+
                     alliance = "简中",
                     episodeRange = finalRange, kind = MediaSourceKind.WEB,
                     subjectName = subjectName,
@@ -372,38 +324,15 @@ class SimpleMediaSelectorTestSuite(
     )
 }
 
-/**
- * Default state:
- *
- * - [MediaSourceTier] are unspecified.
- *
- * @see buildTestMediaFetchSession
- */
 class FetchMediaSelectorTestSuite(
     private val testDispatcher: CoroutineContext,
-    /**
-     * 见 [SimpleMediaSelectorTestSuite.cachingEnabled]: 只保证终值语义等价, 不保证时序等价, 禁止写时序断言.
-     *
-     * 注意本类无论 `cachingEnabled` 取值如何, `flowCoroutineContext` 都是 test dispatcher
-     * (生产是 [Dispatchers.Default]), 差异只在 `cached()` 是否真的 `shareIn`.
-     */
+
     private val cachingEnabled: Boolean = false,
-    /**
-     * `cached()` 使用的 scope. [runFetchMediaSelectorTestSuite] 恒传 [TestScope.backgroundScope],
-     * 因此生产的 `null` 分支 (每个 `cached()` 各建一个无人 cancel 的 scope) 在测试中不被覆盖.
-     */
+
     private val cachingScope: CoroutineScope? = null,
 ) : MediaSelectorTestSuite() {
     private lateinit var fetchSession: TestMediaFetchSession<*>
 
-    /**
-     * 配置 [MediaFetchSession], 并且在后台启动, 开始收集结果.
-     *
-     * 必须在 [initSubject] 之后调用.
-     *
-     * @param startInBackground 是否在后台自动收集 [MediaFetchSession.cumulativeResults].
-     * 传 `false` 时 fixture 不自驱查询, 用于测试被测代码自身是否驱动查询.
-     */
     context(scope: TestScope)
     fun <R> configureFetchSession(
         startInBackground: Boolean = true,
@@ -451,22 +380,7 @@ class FetchMediaSelectorTestSuite(
         }
     }
 
-//
-//    fun createSelector(
-//        fetchSession: MediaFetchSession,
-//    ): DefaultMediaSelector = DefaultMediaSelector(
-//        mediaSelectorContextNotCached = preferenceApi.mediaSelectorContext,
-//        mediaListNotCached = fetchSession.cumulativeResults,
-//        savedUserPreference = preferenceApi.savedUserPreference,
-//        savedDefaultPreference = preferenceApi.savedDefaultPreference,
-//        enableCaching = false,
-//        mediaSelectorSettings = preferenceApi.mediaSelectorSettings,
-//    )
 }
-
-///////////////////////////////////////////////////////////////////////////
-// Source Tiers
-///////////////////////////////////////////////////////////////////////////
 
 fun MediaSelectorTestSuite.setSourceTier(sourceId: String, tier: Int?) = setSourceTier(sourceId, tier?.toUInt())
 
@@ -484,15 +398,12 @@ fun MediaSelectorTestSuite.setSourceTier(sourceId: String, tier: MediaSourceTier
     }
     preferenceApi.mediaSelectorContext.value = preferenceApi.mediaSelectorContext.value.copy(
         mediaSourceTiers = MediaSelectorSourceTiers(newMap, oldTiers?.channelTiers.orEmpty()) {
-            // fallback function if not found
+
             MediaSourceTier.Fallback
         },
     )
 }
 
-/**
- * Sets channel-level tiers for a source. Channels not listed fall back to the source tier.
- */
 fun MediaSelectorTestSuite.setChannelTiers(sourceId: String, vararg pairs: Pair<String, UInt>) {
     val oldTiers = preferenceApi.mediaSelectorContext.value.mediaSourceTiers
     val newChannelTiers = oldTiers?.channelTiers.orEmpty().toMutableMap()
@@ -508,9 +419,6 @@ fun MediaSelectorTestSuite.setChannelTiers(sourceId: String, vararg pairs: Pair<
 fun MediaSelectorTestSuite.setSourceTiers(vararg pairs: Pair<String, Int?>) =
     setSourceTiers(*pairs.map { it.first to it.second?.toUInt() }.toTypedArray())
 
-/**
- * Sets tiers for multiple sources at once.
- */
 @JvmName("setSourceTiersPairStringUInt")
 fun MediaSelectorTestSuite.setSourceTiers(vararg pairs: Pair<String, UInt?>) {
     val oldTiers = preferenceApi.mediaSelectorContext.value.mediaSourceTiers
@@ -538,10 +446,6 @@ var Handle.tier: Int?
         suite.setSourceTier(instance.mediaSourceId, value?.toUInt())
     }
 
-/**
- * Sets channel-level tiers for this source.
- * @see setChannelTiers
- */
 context(suite: MediaSelectorTestSuite)
 fun Handle.channelTiers(vararg pairs: Pair<String, Int>) {
     suite.setChannelTiers(
@@ -549,12 +453,6 @@ fun Handle.channelTiers(vararg pairs: Pair<String, Int>) {
         *pairs.map { (channel, tier) -> channel to tier.toUInt() }.toTypedArray(),
     )
 }
-
-
-///////////////////////////////////////////////////////////////////////////
-// DSL Runners
-///////////////////////////////////////////////////////////////////////////
-
 
 fun runSimpleMediaSelectorTestSuite(
     cachingEnabled: Boolean = false,
@@ -566,9 +464,6 @@ fun runSimpleMediaSelectorTestSuite(
     suite.thenCheck()
 }
 
-/**
- * @see me.him188.ani.app.domain.media.selector.MediaSelectorSourceTierAutoSelectTest
- */
 fun runFetchMediaSelectorTestSuite(
     cachingEnabled: Boolean = false,
     buildTest: context(TestScope) FetchMediaSelectorTestSuite.() -> Unit = {},
@@ -599,7 +494,6 @@ inline fun DynamicTestsBuilder.addSimpleMediaSelectorTest(
         }
     }
 }
-
 
 suspend inline fun SimpleMediaSelectorTestSuite.assertMedias(block: MaybeExcludedMediaAssertions.() -> Unit) {
     contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }

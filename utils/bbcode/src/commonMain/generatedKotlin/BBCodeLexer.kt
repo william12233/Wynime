@@ -1,25 +1,9 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.utils.bbcode
 
-// Generated from /Users/stageguard/Projects/animeko/utils/bbcode/BBCode.g4 by ANTLR 4.13.1
-package me.him188.ani.utils.bbcode
-
-import org.antlr.v4.kotlinruntime.CharStream
-import org.antlr.v4.kotlinruntime.Lexer
-import org.antlr.v4.kotlinruntime.RuntimeMetaData
-import org.antlr.v4.kotlinruntime.Vocabulary
-import org.antlr.v4.kotlinruntime.VocabularyImpl
-import org.antlr.v4.kotlinruntime.atn.ATN
-import org.antlr.v4.kotlinruntime.atn.ATNDeserializer
-import org.antlr.v4.kotlinruntime.atn.LexerATNSimulator
-import org.antlr.v4.kotlinruntime.atn.PredictionContextCache
-import org.antlr.v4.kotlinruntime.dfa.DFA
+import org.antlr.v4.kotlinruntime.*
+import org.antlr.v4.kotlinruntime.atn.*
+import org.antlr.v4.kotlinruntime.dfa.*
+import org.antlr.v4.kotlinruntime.misc.*
 
 @Suppress(
     "ClassName",
@@ -212,6 +196,5 @@ public open class BBCodeLexer(input: CharStream) : Lexer(input) {
     override val modeNames: Array<String> = arrayOf(
         "DEFAULT_MODE"
     )
-
 
 }

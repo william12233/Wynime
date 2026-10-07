@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
@@ -18,11 +9,11 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
-import me.him188.ani.app.tools.LocalTimeFormatter
-import me.him188.ani.app.tools.TimeFormatter
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.tools.LocalTimeFormatter
+import com.wynime.app.tools.TimeFormatter
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -61,10 +52,10 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `like button submits LIKE vote`() = runAniComposeUiTest {
+    fun `like button submits LIKE vote`() = runWynimeComposeUiTest {
         val votes = mutableListOf<UICommentVote>()
         setItem(
-            comment = CommentItemTestFixtures.aniComment(),
+            comment = CommentItemTestFixtures.wynimeComment(),
             onToggleVote = { _, vote -> votes += vote },
         )
         onNodeWithTag(CommentItemTestTags.LikeButton).performClick()
@@ -73,10 +64,10 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `dislike button submits DISLIKE vote`() = runAniComposeUiTest {
+    fun `dislike button submits DISLIKE vote`() = runWynimeComposeUiTest {
         val votes = mutableListOf<UICommentVote>()
         setItem(
-            comment = CommentItemTestFixtures.aniComment(),
+            comment = CommentItemTestFixtures.wynimeComment(),
             onToggleVote = { _, vote -> votes += vote },
         )
         onNodeWithTag(CommentItemTestTags.DislikeButton).performClick()
@@ -85,7 +76,7 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `bangumi comment shows no action buttons`() = runAniComposeUiTest {
+    fun `bangumi comment shows no action buttons`() = runWynimeComposeUiTest {
         setItem(
             comment = CommentItemTestFixtures.bangumiComment(),
             onClickReply = {},
@@ -97,10 +88,10 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `clicking comment body requests reply`() = runAniComposeUiTest {
+    fun `clicking comment body requests reply`() = runWynimeComposeUiTest {
         var replyRequested = false
         setItem(
-            comment = CommentItemTestFixtures.aniComment(),
+            comment = CommentItemTestFixtures.wynimeComment(),
             onClickReply = { replyRequested = true },
         )
         onNodeWithTag(rootTag).performClick()
@@ -109,7 +100,7 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `clicking bangumi comment body does not request reply`() = runAniComposeUiTest {
+    fun `clicking bangumi comment body does not request reply`() = runWynimeComposeUiTest {
         var replyRequested = false
         setItem(
             comment = CommentItemTestFixtures.bangumiComment(),
@@ -121,10 +112,10 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `more button opens context menu and report invokes handler`() = runAniComposeUiTest {
+    fun `more button opens context menu and report invokes handler`() = runWynimeComposeUiTest {
         var reported = false
         setItem(
-            comment = CommentItemTestFixtures.aniComment(),
+            comment = CommentItemTestFixtures.wynimeComment(),
             onToggleVote = { _, _ -> },
             menu = CommentMenuHandlers(onReport = { reported = true }),
         )
@@ -136,9 +127,9 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `open original menu item hidden for ani comment`() = runAniComposeUiTest {
+    fun `open original menu item hidden for ani comment`() = runWynimeComposeUiTest {
         setItem(
-            comment = CommentItemTestFixtures.aniComment(),
+            comment = CommentItemTestFixtures.wynimeComment(),
             onToggleVote = { _, _ -> },
             menu = CommentMenuHandlers(onReport = {}),
         )
@@ -148,10 +139,10 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `replies block expand invokes handler`() = runAniComposeUiTest {
+    fun `replies block expand invokes handler`() = runWynimeComposeUiTest {
         var expanded = false
         setItem(
-            comment = CommentItemTestFixtures.aniComment(withReply = true),
+            comment = CommentItemTestFixtures.wynimeComment(withReply = true),
             onClickReply = { expanded = true },
         )
         onNodeWithTag(CommentItemTestTags.RepliesBlock).performClick()
@@ -160,8 +151,8 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `bangumi comment menu has copy but no report`() = runAniComposeUiTest {
-        // Bangumi 源评论不可举报, 调用方传 onReport = null; 内置的复制项仍应显示
+    fun `bangumi comment menu has copy but no report`() = runWynimeComposeUiTest {
+
         setItem(
             comment = CommentItemTestFixtures.bangumiComment(),
             menu = CommentMenuHandlers(
@@ -176,7 +167,7 @@ class CommentItemInteractionTest {
     }
 
     @Test
-    fun `bangumi replies block does not fall back to reply`() = runAniComposeUiTest {
+    fun `bangumi replies block does not fall back to reply`() = runWynimeComposeUiTest {
         var replyRequested = false
         setItem(
             comment = CommentItemTestFixtures.bangumiComment(withReply = true),

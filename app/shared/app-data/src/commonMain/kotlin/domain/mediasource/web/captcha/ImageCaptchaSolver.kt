@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web.captcha
+package com.wynime.app.domain.mediasource.web.captcha
 
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
@@ -31,30 +22,29 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.him188.ani.app.domain.mediasource.web.BlockReason
-import me.him188.ani.app.domain.mediasource.web.LoadedPage
-import me.him188.ani.app.domain.mediasource.web.PageVerdict
-import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaDetector
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.appendText
-import me.him188.ani.utils.io.createDirectories
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.writeBytes
-import me.him188.ani.utils.logging.debug
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.currentTimeMillis
-import me.him188.ani.utils.xml.Document
-import me.him188.ani.utils.xml.Html
+import com.wynime.app.domain.mediasource.web.BlockReason
+import com.wynime.app.domain.mediasource.web.LoadedPage
+import com.wynime.app.domain.mediasource.web.PageVerdict
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaDetector
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.appendText
+import com.wynime.utils.io.createDirectories
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.writeBytes
+import com.wynime.utils.logging.debug
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.currentTimeMillis
+import com.wynime.utils.xml.Document
+import com.wynime.utils.xml.Html
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.time.Duration.Companion.milliseconds
 
-/** 平台侧图片验证码识别入口。识别器只负责“图片字节 -> 四位数字”。 */
 fun interface ImageCaptchaRecognizer {
     suspend fun recognize(sample: ImageCaptchaSample): String?
 }
@@ -74,12 +64,6 @@ data class ImageCaptchaSampleCollectionResult(
     val outputDirectory: String,
 )
 
-/**
- * MacCMS 图片验证码后台协议。该策略不创建浏览器，Android/Desktop/iOS 共用同一实现。
- *
- * Cookie 由 [SolveContext.http] 所使用的 WebSourceCookieJar 维护，因此不再复制旧 coordinator
- * 中三套不同的 Cookie/重定向实现。
- */
 class MacCmsImageCaptchaSolver(
     private val recognizer: ImageCaptchaRecognizer,
 ) : CaptchaSolver {
@@ -103,7 +87,6 @@ class MacCmsImageCaptchaSolver(
     }
 }
 
-/** 使用 WebView/JCEF DOM 的通用图片验证码策略。 */
 class BrowserImageCaptchaSolver(
     private val recognizer: ImageCaptchaRecognizer,
 ) : CaptchaSolver {

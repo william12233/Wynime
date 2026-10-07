@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
@@ -18,14 +9,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 
-/**
- * 把测试素材 `src/androidDeviceTest/assets/hls/` (由其中的 `generate.sh` 用 ffmpeg 生成的真实 HLS 流) 作为源站提供的本地 HTTP 服务.
- *
- * - 支持 `Range` 请求 (206), 多线程处理.
- * - 记录每个路径的请求次数与请求头, 供断言 "是否命中缓存"、"请求头是否透传".
- * - [segmentLatencyMillis] 模拟慢速源站.
- * - [chunkedPaths] 中的路径不返回 Content-Length, 以分块传输响应; [failPaths] 中的路径返回指定状态码.
- */
 class HlsFixtureOrigin : AutoCloseable {
     class RecordedRequest(val path: String, val headers: Map<String, String>)
 
@@ -39,7 +22,6 @@ class HlsFixtureOrigin : AutoCloseable {
 
     val baseUrl: String = "http://127.0.0.1:${server.address.port}"
 
-    /** 每个分片请求在响应前的人为延迟, 用于模拟慢速源站. 播放列表不受影响. */
     @Volatile
     var segmentLatencyMillis: Long = 0
 
@@ -53,7 +35,6 @@ class HlsFixtureOrigin : AutoCloseable {
     fun count(path: String): Int = recorded.count { it.path == path }
     fun lastHeaders(path: String): Map<String, String>? = recorded.lastOrNull { it.path == path }?.headers
 
-    /** 源站上某路径的字节, 即测试资源内容. */
     fun bytesOf(path: String): ByteArray = checkNotNull(resource(path)) { "No fixture at $path" }
 
     fun url(path: String): String = baseUrl + path
@@ -87,7 +68,7 @@ class HlsFixtureOrigin : AutoCloseable {
                 200 to body
             }
             if (path in chunkedPaths) {
-                exchange.sendResponseHeaders(status, 0) // 0 = chunked
+                exchange.sendResponseHeaders(status, 0)
             } else {
                 exchange.sendResponseHeaders(status, slice.size.toLong())
             }
@@ -117,7 +98,6 @@ class HlsFixtureOrigin : AutoCloseable {
     }
 }
 
-/** 用 JDK 客户端请求一个 URL, 返回状态码、响应头和完整正文. */
 class HttpResult(val status: Int, val headers: Map<String, String>, val body: ByteArray)
 
 fun httpGet(url: String, headers: Map<String, String> = emptyMap()): HttpResult {

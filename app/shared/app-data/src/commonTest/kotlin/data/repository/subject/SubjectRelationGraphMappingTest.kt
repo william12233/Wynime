@@ -1,32 +1,20 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import kotlinx.serialization.json.Json
-import me.him188.ani.app.data.models.subject.SubjectRelation
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphPlatform
-import me.him188.ani.client.models.AniCollectionType
-import me.him188.ani.client.models.AniSubjectRelationGraph
-import me.him188.ani.client.models.AniSubjectRelationGraphNodeRole
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.data.models.subject.SubjectRelation
+import com.wynime.app.data.models.subject.SubjectRelationGraphPlatform
+import com.wynime.models.CollectionTypeDto
+import com.wynime.models.SubjectRelationGraphDto
+import com.wynime.models.SubjectRelationGraphNodeRoleDto
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
 class SubjectRelationGraphMappingTest {
-    private fun decode(json: String) = Json.decodeFromString(AniSubjectRelationGraph.serializer(), json)
+    private fun decode(json: String) = Json.decodeFromString(SubjectRelationGraphDto.serializer(), json)
 
-    /**
-     * 服务器对 "某科学的超电磁炮S OVA" 的真实响应 (省略了 edges 和图片)
-     */
     private val railgun = decode(
         """
 {"subjectId": 97197, "mainline": [2585, 51928, 262940, 537743], "truncated": false, "edges": [], "nodes": [
@@ -41,9 +29,6 @@ class SubjectRelationGraphMappingTest {
         """.trimIndent(),
     )
 
-    /**
-     * 服务器对 "鬼灭之刃 游郭篇" 的响应 (省略了 edges 和图片). 前传/续集链上的总集篇已由服务器挂到前面最近的正片下
-     */
     private val kimetsu = decode(
         """
 {"subjectId": 328195, "mainline": [245665, 291494, 350764, 328195, 369768, 441939, 501958, 501960, 501961], "truncated": false, "edges": [], "nodes": [
@@ -70,9 +55,6 @@ class SubjectRelationGraphMappingTest {
         """.trimIndent(),
     )
 
-    /**
-     * 服务器对 "进击的巨人 最终季 Part.2" 的响应的主线部分 (省略了分支, edges 和图片). 完结篇前后篇是 1 话的 TV 特别篇
-     */
     private val aot = decode(
         """
 {"subjectId": 331752, "mainline": [55770, 118335, 217300, 263750, 285666, 331752, 376739, 415779], "truncated": false, "edges": [], "nodes": [
@@ -118,7 +100,6 @@ class SubjectRelationGraphMappingTest {
         assertEquals(SubjectRelationGraphPlatform.OVA, ova.platform)
         assertEquals(UnifiedCollectionType.NOT_COLLECTED, ova.collectionType)
 
-        // 尚未公布放送日期
         assertEquals(PackedDate.Invalid, graph.mainline[3].subject.airDate)
     }
 
@@ -127,16 +108,16 @@ class SubjectRelationGraphMappingTest {
         val graph = railgun.copy(
             nodes = railgun.nodes.map {
                 when (it.id) {
-                    2585L -> it.copy(collectionType = AniCollectionType.DONE)
-                    51928L -> it.copy(collectionType = AniCollectionType.DONE)
-                    98371L -> it.copy(collectionType = AniCollectionType.WISH)
+                    2585L -> it.copy(collectionType = CollectionTypeDto.DONE)
+                    51928L -> it.copy(collectionType = CollectionTypeDto.DONE)
+                    98371L -> it.copy(collectionType = CollectionTypeDto.WISH)
                     else -> it
                 }
             },
         ).toSubjectRelationGraph(
             mapOf(
                 51928 to UnifiedCollectionType.DOING,
-                98371 to UnifiedCollectionType.NOT_COLLECTED, // 请求之后在本地取消了收藏
+                98371 to UnifiedCollectionType.NOT_COLLECTED,
             ),
         )
         assertEquals(
@@ -159,13 +140,13 @@ class SubjectRelationGraphMappingTest {
         val graph = kimetsu.toSubjectRelationGraph(emptyMap())
         assertEquals(
             listOf(
-                245665 to false, // 鬼灭之刃
-                291494 to true, // 剧场版 无限列车篇
-                350764 to true, // 无限列车篇 TV 版, 7 话
-                328195 to false, // 游郭篇
-                369768 to false, // 刀匠村篇
-                441939 to false, // 柱训练篇
-                501958 to true, // 剧场版 无限城篇 第一章
+                245665 to false,
+                291494 to true,
+                350764 to true,
+                328195 to false,
+                369768 to false,
+                441939 to false,
+                501958 to true,
                 501960 to true,
                 501961 to true,
             ),
@@ -192,7 +173,7 @@ class SubjectRelationGraphMappingTest {
     fun `tv specials on the sequel chain are minor mainline nodes`() {
         val graph = aot.toSubjectRelationGraph(emptyMap())
         assertEquals(aot.mainline.map { it.toInt() }, graph.mainline.map { it.subject.subjectId })
-        // 完结篇前后篇不计入 "第几部"
+
         assertEquals(listOf(376739, 415779), graph.mainline.filter { it.isMinor }.map { it.subject.subjectId })
         assertEquals(0, graph.branchCount)
     }
@@ -202,7 +183,7 @@ class SubjectRelationGraphMappingTest {
         val movies = kimetsu.copy(
             mainline = listOf(501958, 501960, 501961),
             nodes = kimetsu.nodes.filter { it.id in listOf(501958L, 501960L, 501961L) }
-                .map { it.copy(role = AniSubjectRelationGraphNodeRole.MAIN) },
+                .map { it.copy(role = SubjectRelationGraphNodeRoleDto.MAIN) },
         ).toSubjectRelationGraph(emptyMap())
         assertEquals(listOf(501958, 501960, 501961), movies.mainline.map { it.subject.subjectId })
         assertFalse(movies.mainline.any { it.isMinor })

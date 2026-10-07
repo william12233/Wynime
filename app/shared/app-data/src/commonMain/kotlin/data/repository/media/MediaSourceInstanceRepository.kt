@@ -1,22 +1,13 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.media
+package com.wynime.app.data.repository.media
 
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceSave
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.utils.platform.collections.partiallyReorderBy
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.domain.mediasource.instance.MediaSourceSave
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.utils.platform.collections.partiallyReorderBy
 
 sealed class MediaSourceInstanceRepository : Repository() {
     abstract val flow: Flow<List<MediaSourceSave>>
@@ -24,22 +15,13 @@ sealed class MediaSourceInstanceRepository : Repository() {
     abstract suspend fun clear()
     abstract suspend fun remove(instanceId: String)
 
-    /**
-     * 一次性移除多个数据源, 只触发一次 [flow] 更新.
-     */
     abstract suspend fun removeAll(instanceIds: Collection<String>)
     abstract suspend fun add(mediaSourceSave: MediaSourceSave)
 
     abstract suspend fun updateSave(instanceId: String, config: MediaSourceSave.() -> MediaSourceSave): Boolean
 
-    /**
-     * 一次性更新多个数据源, 只触发一次 [flow] 更新.
-     */
     abstract suspend fun updateSaves(instanceIds: Collection<String>, update: MediaSourceSave.() -> MediaSourceSave)
 
-    /**
-     * @see partiallyReorderBy
-     */
     abstract suspend fun partiallyReorder(newOrderInstanceIds: List<String>)
 }
 

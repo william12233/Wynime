@@ -1,8 +1,8 @@
-package me.him188.ani.datasources.api.title
+package com.wynime.datasources.api.title
 
-import me.him188.ani.datasources.api.topic.titles.ParsedTopicTitle
-import me.him188.ani.datasources.api.topic.titles.RawTitleParser
-import me.him188.ani.datasources.api.topic.titles.parse
+import com.wynime.datasources.api.topic.titles.ParsedTopicTitle
+import com.wynime.datasources.api.topic.titles.RawTitleParser
+import com.wynime.datasources.api.topic.titles.parse
 
 abstract class PatternBasedTitleParserTestSuite {
     private val parser = RawTitleParser.getDefault()

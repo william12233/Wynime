@@ -1,14 +1,9 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -66,7 +61,7 @@ class SourcePluginRepositoryClientTest {
         val newerSchema = FakeSourceHttpClient(
             mapOf(
                 "https://repo.example/index.json" to ArrayDeque(
-                    listOf(response("{\"schemaVersion\":2,\"pluginApiVersion\":1,\"plugins\":[]}")),
+                    listOf(response("{\"schemaVersion\":2,\"pluginApiVersion\":3,\"plugins\":[]}")),
                 ),
             ),
         )
@@ -77,7 +72,7 @@ class SourcePluginRepositoryClientTest {
         val newerPluginApi = FakeSourceHttpClient(
             mapOf(
                 "https://repo.example/index.json" to ArrayDeque(
-                    listOf(response("{\"schemaVersion\":1,\"pluginApiVersion\":3,\"plugins\":[]}")),
+                    listOf(response("{\"schemaVersion\":1,\"pluginApiVersion\":4,\"plugins\":[]}")),
                 ),
             ),
         )
@@ -91,7 +86,7 @@ class SourcePluginRepositoryClientTest {
                     listOf(
                         response(
                             """
-                            {"schemaVersion":1,"pluginApiVersion":1,"plugins":[
+                            {"schemaVersion":1,"pluginApiVersion":3,"plugins":[
                               {"id":"demo","name":"Demo","version":"1.0.0","website":"https://demo.example","platforms":["desktop"],"manifest":"manifests/demo.json"},
                               {"id":"demo","name":"Demo 2","version":"1.0.1","website":"https://demo.example","platforms":["desktop"],"manifest":"manifests/demo-2.json"}
                             ]}
@@ -185,7 +180,7 @@ class SourcePluginRepositoryClientTest {
     private fun validIndexResponse(etag: String? = null): SourceHttpResponse {
         return response(
             """
-            {"schemaVersion":1,"pluginApiVersion":1,"plugins":[
+            {"schemaVersion":1,"pluginApiVersion":3,"plugins":[
               {"id":"demo","name":"Demo","version":"1.0.0","website":"https://demo.example","platforms":["desktop"],"manifest":"manifests/demo.json"}
             ]}
             """.trimIndent(),
@@ -202,7 +197,7 @@ class SourcePluginRepositoryClientTest {
         displayName = "Demo",
         version = version,
         website = "https://demo.example",
-        platforms = setOf(me.him188.ani.source.plugin.api.SourcePluginPlatform.DESKTOP),
+        platforms = setOf(com.wynime.source.plugin.api.SourcePluginPlatform.DESKTOP),
         manifest = manifest,
     )
 
@@ -212,7 +207,7 @@ class SourcePluginRepositoryClientTest {
         icon: String? = null,
     ): String =
         """
-        {"id":"$id","name":"Demo","version":"1.0.0","pluginApiVersion":1,
+        {"id":"$id","name":"Demo","version":"1.0.0","pluginApiVersion":3,
          "minHostVersion":"1.0.0","entryClass":"demo.Entry","website":"https://demo.example",
          ${icon?.let { "\"icon\":\"$it\"," } ?: ""}
          "platforms":["desktop"],"artifacts":{"desktop":{"url":"$artifactUrl","sha256":"${"0".repeat(64)}","format":"jar"}}}

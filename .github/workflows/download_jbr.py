@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-#  Copyright (C) 2024-2025 OpenAni and contributors.
-# 
-#  此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
-#  Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
-# 
-#  https://github.com/open-ani/ani/blob/main/LICENSE
+                                                    
+  
+                                                                              
+                                                                                                           
+  
+                                                    
 
 import hashlib
 import os
@@ -19,16 +19,16 @@ def download_with_no_cert_check(url: str, destination: str):
 	"""
 	Downloads the file from `url` to `destination`, ignoring certificate verification.
 	"""
-	# Create an unverified SSL context
+	                                  
 	ssl_ctx = ssl.create_default_context()
 	ssl_ctx.check_hostname = False
 	ssl_ctx.verify_mode = ssl.CERT_NONE
 
-	# Open the remote URL with our unverified context
+	                                                 
 	with urllib.request.urlopen(url, context=ssl_ctx) as response, open(
 			destination, "wb"
 	) as out_file:
-		# Copy the response data to the local file
+		                                          
 		shutil.copyfileobj(response, out_file)
 
 
@@ -41,7 +41,7 @@ def sha512sum(filepath: str) -> str:
 
 
 def main():
-	# Read env variables
+	                    
 	runner_tool_cache = os.environ.get("RUNNER_TOOL_CACHE", "")
 	jbr_url = os.environ.get("JBR_URL", "")
 	jbr_checksum_url = os.environ.get("JBR_CHECKSUM_URL", "")
@@ -54,35 +54,35 @@ def main():
 		)
 		sys.exit(1)
 
-	# Derive final path
+	                   
 	jbr_filename = jbr_url.split('/')[-1]
 	jbr_location = os.path.join(runner_tool_cache, jbr_filename)
 
-	# Write jbrLocation to GITHUB_OUTPUT if it exists
+	                                                 
 	if github_output:
 		with open(github_output, "a", encoding="utf-8") as f:
 			f.write(f"jbrLocation={jbr_location}\n")
 
-	# Download the checksum file (ignoring cert errors)
+	                                                   
 	checksum_file = "checksum.tmp"
 	download_with_no_cert_check(jbr_checksum_url, checksum_file)
 
-	# Parse expected checksum from the first line of the .checksum file
+	                                                                   
 	with open(checksum_file, "r", encoding="utf-8") as cf:
 		line = cf.readline().strip()
 	expected_checksum = line.split()[0].lower()
 
-	# If file exists, compute its SHA-512
+	                                     
 	file_checksum = ""
 	if os.path.isfile(jbr_location):
 		file_checksum = sha512sum(jbr_location)
 
-	# If mismatch, re-download
+	                          
 	if file_checksum != expected_checksum:
 		download_with_no_cert_check(jbr_url, jbr_location)
 		file_checksum = sha512sum(jbr_location)
 
-	# Final check
+	             
 	if file_checksum != expected_checksum:
 		print("[!] Checksum verification failed.", file=sys.stderr)
 		try:
@@ -91,7 +91,7 @@ def main():
 			pass
 		sys.exit(1)
 
-	# Cleanup
+	         
 	try:
 		os.remove(checksum_file)
 	except OSError:

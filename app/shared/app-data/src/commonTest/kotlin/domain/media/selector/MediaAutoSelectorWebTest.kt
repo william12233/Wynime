@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
@@ -16,17 +7,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.selector.testFramework.FetchMediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.channelTiers
-import me.him188.ani.app.domain.media.selector.testFramework.runFetchMediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.tier
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind.LocalCache
-import me.him188.ani.datasources.api.source.MediaSourceKind.WEB
-import me.him188.ani.test.DisabledOnNative
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.selector.testFramework.FetchMediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.channelTiers
+import com.wynime.app.domain.media.selector.testFramework.runFetchMediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.tier
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind.LocalCache
+import com.wynime.datasources.api.source.MediaSourceKind.WEB
+import com.wynime.test.DisabledOnNative
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -122,7 +113,7 @@ class MediaAutoSelectorWebTest {
         testScope().runCurrent()
         assertNull(selector.selected.value)
         assertFalse(job.isCompleted)
-        // Both candidates become selectable after the fuzzy deadline.
+
         preferenceApi.mediaSelectorContext.value = context
         testScope().runCurrent()
         assertEquals(sources.exact.instance.mediaSourceId, selector.selected.value?.mediaSourceId)

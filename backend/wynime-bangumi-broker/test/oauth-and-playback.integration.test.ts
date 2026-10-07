@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
-import { hashToken } from "../src/crypto";
+import { hashToken, encryptJson } from "../src/crypto";
 import { ReplayMarker } from "../src/replay-markers";
 import type { Env, PlaybackSyncRequest } from "../src/protocol";
 
@@ -75,7 +75,7 @@ function createWorkerEnv(marker: ReplayMarker): Env {
     BANGUMI_CALLBACK_URL: "https://broker.test/api/v1/oauth/bangumi/callback",
     APP_LINK_REDIRECT_URI: "https://broker.test/app/oauth-complete",
     CUSTOM_SCHEME_REDIRECT_URI: "ani://bangumi-oauth-callback",
-    ANDROID_APP_PACKAGES: "com.wynime.app,com.wynime.app.tv",
+    ANDROID_APP_PACKAGES: "com.wynime.app",
     ANDROID_APP_SHA256_CERT_FINGERPRINTS:
       "57:F2:6D:84:A3:3C:10:A7:3B:42:9E:95:20:D7:2A:93:65:4E:90:AE:1F:E8:29:8D:47:9E:E3:42:D6:38:33:BD",
   };
@@ -121,7 +121,7 @@ describe("Wynime OAuth callback and ticket flow", () => {
     expect(body).not.toContain("access-token");
   });
 
-  it("publishes the current phone and TV release App Links", async () => {
+  it("publishes the current Android release App Link", async () => {
     const { marker } = createMarker();
     const response = await workerRequest(createWorkerEnv(marker), "https://broker.test/.well-known/assetlinks.json");
 
@@ -130,10 +130,10 @@ describe("Wynime OAuth callback and ticket flow", () => {
       target: { package_name: string; sha256_cert_fingerprints: string[] };
     }>;
     const currentStatements = statements.filter(({ target }) =>
-      ["com.wynime.app", "com.wynime.app.tv"].includes(target.package_name),
+      ["com.wynime.app"].includes(target.package_name),
     );
 
-    expect(currentStatements).toHaveLength(2);
+    expect(currentStatements).toHaveLength(1);
     for (const statement of currentStatements) {
       expect(statement.target.sha256_cert_fingerprints).toEqual([
         "57:F2:6D:84:A3:3C:10:A7:3B:42:9E:95:20:D7:2A:93:65:4E:90:AE:1F:E8:29:8D:47:9E:E3:42:D6:38:33:BD",
@@ -273,6 +273,67 @@ describe("Wynime OAuth callback and ticket flow", () => {
       body: JSON.stringify({ ticket: expiredTicket }),
     });
     expect(expiredResponse.status).toBe(410);
+  });
+});
+
+describe("Wynime authenticated collection removal", () => {
+  async function saveSession(marker: ReplayMarker, env: Env, token: string, id: number, expiresAt = Date.now() + 86400000) {
+    await markerRpc(marker, {
+      op: "putSession", sessionHash: await hashToken(token),
+      record: {
+        userKey: `bangumi:${id}`, expiresAt,
+        payloadCiphertext: await encryptJson({ userKey: `bangumi:${id}`, accessToken: `access-${id}`, refreshToken: "refresh", expiresAt }, env.SESSION_ENCRYPTION_KEY),
+      },
+    });
+  }
+
+  it("requires a valid session and isolates create/status/confirm by account", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-session-account-42-for-tests";
+    const other = "collection-session-account-99-for-tests";
+    await saveSession(marker, env, token, 42);
+    await saveSession(marker, env, other, 99);
+    const url = "https://broker.test/api/v1/collections/701779/removal";
+    const request = (session: string, method = "GET", suffix = "") => workerRequest(env, url + suffix, {
+      method, headers: { authorization: `Bearer ${session}` },
+    });
+    expect((await workerRequest(env, url, { method: "POST" })).status).toBe(401);
+    expect((await request(token, "POST")).status).toBe(200);
+    expect((await request(other)).status).toBe(404);
+    expect((await request(other, "POST", "/confirm")).status).toBe(404);
+    let upstreamStatus = 200;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(new Headers(init?.headers).get("authorization")).toBe("Bearer access-42");
+      return String(input).endsWith("/me")
+        ? Response.json({ id: 42, username: "account-42" })
+        : new Response(null, { status: upstreamStatus });
+    }));
+    expect(await (await request(token, "POST", "/confirm")).json()).toMatchObject({ status: "awaiting_web_action" });
+    upstreamStatus = 404;
+    expect(await (await request(token, "POST", "/confirm")).json()).toMatchObject({ status: "confirmed" });
+    expect(await (await request(token, "POST")).json()).toMatchObject({ status: "awaiting_web_action" });
+    upstreamStatus = 429;
+    expect((await request(token, "POST", "/confirm")).status).toBe(502);
+    expect(await (await request(token)).json()).toMatchObject({ status: "awaiting_web_action" });
+    await saveSession(marker, env, token, 42, 1);
+    expect((await request(token, "POST", "/confirm")).status).toBe(401);
+  });
+
+  it("expires operations and lets the same account start a retry", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-session-expiry-check-for-tests";
+    await saveSession(marker, env, token, 42);
+    const url = "https://broker.test/api/v1/collections/701779/removal";
+    const headers = { authorization: `Bearer ${token}` };
+    await workerRequest(env, url, { method: "POST", headers });
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(Date.now() + 7200000);
+      expect((await workerRequest(env, url, { headers })).status).toBe(404);
+      expect((await workerRequest(env, url, { method: "POST", headers })).status).toBe(200);
+    } finally { vi.useRealTimers(); }
   });
 });
 

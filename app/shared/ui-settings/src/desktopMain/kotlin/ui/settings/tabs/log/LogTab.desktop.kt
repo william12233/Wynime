@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.log
+package com.wynime.app.ui.settings.tabs.log
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.ColumnScope
@@ -16,10 +7,10 @@ import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import me.him188.ani.app.platform.DesktopContext
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_log_open_directory
+import com.wynime.app.platform.DesktopContext
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_log_open_directory
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Desktop
 

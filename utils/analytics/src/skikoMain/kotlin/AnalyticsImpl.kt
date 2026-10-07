@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.analytics
+package com.wynime.utils.analytics
 
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -24,13 +15,13 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import me.him188.ani.utils.coroutines.childScope
-import me.him188.ani.utils.ktor.createDefaultHttpClient
-import me.him188.ani.utils.logging.debug
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.currentTimeMillis
-import me.him188.ani.utils.serialization.toJsonElement
+import com.wynime.utils.coroutines.childScope
+import com.wynime.utils.ktor.createDefaultHttpClient
+import com.wynime.utils.logging.debug
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.currentTimeMillis
+import com.wynime.utils.serialization.toJsonElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.random.Random
 import kotlin.time.TimeSource
@@ -43,7 +34,7 @@ class AnalyticsSecrets(
 
 class AnalyticsImpl(
     config: AnalyticsConfig,
-    private val appInstanceId: String, // uuid
+    private val appInstanceId: String,
     private val userId: suspend () -> Uuid?,
     private val secrets: AnalyticsSecrets,
     parentCoroutineContext: CoroutineContext,
@@ -63,7 +54,6 @@ class AnalyticsImpl(
         val timestampMicros: Long = currentTimeMillis() * 1000,
     )
 
-    // ensure order
     private val eventQueue = Channel<RecordEvent>(1000, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     private var lastEventTime = TimeSource.Monotonic.markNow()
@@ -85,18 +75,12 @@ class AnalyticsImpl(
                 }
             }
         }
-//        scope.launch(CoroutineName("UserEngagementPinger")) {
-//            while (isActive) {
-//                recordEvent(AnalyticsEvent("user_engagement"))
-//                delay(10.seconds)
-//            }
-//
-//        }
+
         onAppStart()
     }
 
     override fun onAppStart() {
-//        recordEvent(AnalyticsEvent.SessionStart)
+
     }
 
     override fun recordEventImpl(event: AnalyticsEvent, properties: Map<String, Any>) {
@@ -104,10 +88,6 @@ class AnalyticsImpl(
             logger.warn { "Failed to enqueue event: $event" }
         }
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Firebase Protocol
-    ///////////////////////////////////////////////////////////////////////////
 
     private suspend fun postEvent(
         record: RecordEvent,
@@ -130,7 +110,7 @@ class AnalyticsImpl(
         }
 
         val resp = client.post("https://www.google-analytics.com/mp/collect") {
-//            parameter("measurement_id", secrets.measurementId)
+
             parameter("firebase_app_id", secrets.firebaseAppId)
             parameter("api_secret", secrets.apiSecret)
             contentType(ContentType.Application.Json)
@@ -154,7 +134,6 @@ class AnalyticsImpl(
 
 }
 
-
 @Serializable
 private data class Event(
     val name: String,
@@ -166,8 +145,7 @@ private data class Event(
 private data class Req(
     val app_instance_id: String,
     val user_id: String?,
-//        val timestamp_micros: Long,
+
     val events: List<Event>,
 )
-
 

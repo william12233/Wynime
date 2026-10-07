@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.network
+package com.wynime.app.data.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -14,10 +7,10 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

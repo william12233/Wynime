@@ -1,4 +1,4 @@
-package me.him188.ani.utils.coroutines.flows
+package com.wynime.utils.coroutines.flows
 
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -7,12 +7,9 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.utils.platform.currentTimeMillis
 import kotlin.concurrent.Volatile
 
-/**
- * 创建一个 flow, 当 [durationMillis] 时间内没有新的元素时, 会调用 [reset] 方法.
- */
 fun <T> Flow<T>.resetStale(
     durationMillis: Long,
     reset: suspend FlowCollector<T>.() -> Unit,

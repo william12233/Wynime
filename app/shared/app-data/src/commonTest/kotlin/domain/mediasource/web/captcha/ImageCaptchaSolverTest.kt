@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web.captcha
+package com.wynime.app.domain.mediasource.web.captcha
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,22 +9,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.mediasource.web.BlockReason
-import me.him188.ani.app.domain.mediasource.web.LoadedPage
-import me.him188.ani.app.domain.mediasource.web.PageEvaluator
-import me.him188.ani.app.domain.mediasource.web.PageExpectation
-import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.list
-import me.him188.ani.utils.io.readBytes
-import me.him188.ani.utils.io.readText
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.app.domain.mediasource.web.BlockReason
+import com.wynime.app.domain.mediasource.web.LoadedPage
+import com.wynime.app.domain.mediasource.web.PageEvaluator
+import com.wynime.app.domain.mediasource.web.PageExpectation
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.list
+import com.wynime.utils.io.readBytes
+import com.wynime.utils.io.readText
+import com.wynime.utils.io.resolve
+import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.Test

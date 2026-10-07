@@ -1,27 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.comment
 
-package me.him188.ani.app.ui.comment
+import com.wynime.app.data.models.comment.CommentVoteValue
+import com.wynime.app.data.models.episode.EpisodeComment
+import com.wynime.app.data.models.episode.EpisodeCommentSource
+import com.wynime.app.data.models.person.PersonComment
+import com.wynime.app.data.models.person.PersonCommentSource
+import com.wynime.app.data.models.subject.SubjectReview
+import com.wynime.app.data.models.subject.SubjectReviewSource
+import com.wynime.app.ui.richtext.toUIBriefText
+import com.wynime.app.ui.richtext.toUIRichElements
+import com.wynime.utils.bbcode.BBCode
 
-import me.him188.ani.app.data.models.comment.CommentVoteValue
-import me.him188.ani.app.data.models.episode.EpisodeComment
-import me.him188.ani.app.data.models.episode.EpisodeCommentSource
-import me.him188.ani.app.data.models.person.PersonComment
-import me.him188.ani.app.data.models.person.PersonCommentSource
-import me.him188.ani.app.data.models.subject.SubjectReview
-import me.him188.ani.app.data.models.subject.SubjectReviewSource
-import me.him188.ani.app.ui.richtext.toUIBriefText
-import me.him188.ani.app.ui.richtext.toUIRichElements
-import me.him188.ani.utils.bbcode.BBCode
-
-
-// TODO: remove this and use BBCodeRichTextState
 object CommentMapperContext {
     private fun String.toUiCommentId(): Long = hashCode().toLong()
 
@@ -52,7 +41,7 @@ object CommentMapperContext {
             replyCount = 0,
             rating = rating,
             source = when (source) {
-                SubjectReviewSource.ANI -> UICommentSource.ANI
+                SubjectReviewSource.WYNIME -> UICommentSource.WYNIME
                 SubjectReviewSource.BANGUMI -> UICommentSource.BANGUMI
             },
             sourceCommentId = reviewId,
@@ -83,7 +72,7 @@ object CommentMapperContext {
                     replyCount = 0,
                     rating = null,
                     source = when (reply.source) {
-                        EpisodeCommentSource.ANI -> UICommentSource.ANI
+                        EpisodeCommentSource.WYNIME -> UICommentSource.WYNIME
                         EpisodeCommentSource.BANGUMI -> UICommentSource.BANGUMI
                     },
                     sourceCommentId = reply.sourceCommentId,
@@ -95,7 +84,7 @@ object CommentMapperContext {
             replyCount = comment.replyCount,
             rating = null,
             source = when (comment.source) {
-                EpisodeCommentSource.ANI -> UICommentSource.ANI
+                EpisodeCommentSource.WYNIME -> UICommentSource.WYNIME
                 EpisodeCommentSource.BANGUMI -> UICommentSource.BANGUMI
             },
             sourceCommentId = comment.sourceCommentId,
@@ -107,9 +96,6 @@ object CommentMapperContext {
         )
     }
 
-    /**
-     * 人物/角色评论 (无评分). 与 [EpisodeComment.parseToUIComment] 的区别只是没有 `episodeId`.
-     */
     fun PersonComment.parseToUIComment(): UIComment {
         val comment = this
         return UIComment(
@@ -148,7 +134,7 @@ object CommentMapperContext {
     }
 
     private fun PersonCommentSource.toUICommentSource(): UICommentSource = when (this) {
-        PersonCommentSource.ANI -> UICommentSource.ANI
+        PersonCommentSource.WYNIME -> UICommentSource.WYNIME
         PersonCommentSource.BANGUMI -> UICommentSource.BANGUMI
     }
 }

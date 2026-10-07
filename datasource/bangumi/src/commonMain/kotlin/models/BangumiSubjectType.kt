@@ -5,8 +5,7 @@
     "UnusedImport",
 )
 
-package me.him188.ani.datasources.bangumi.models
-
+package com.wynime.datasources.bangumi.models
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -18,11 +17,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-/**
- * 条目类型 - `1` 为 书籍 - `2` 为 动画 - `3` 为 音乐 - `4` 为 游戏 - `6` 为 三次元  没有 `5`
- *
- * Values: Book,Anime,Music,Game,Real
- */
 @Serializable(BangumiSubjectTypeSerializer::class)
 enum class BangumiSubjectType(val value: kotlin.Int) {
 

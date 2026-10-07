@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.datasources.ikaros
+package com.wynime.datasources.ikaros
 
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -21,32 +12,32 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.MediaExtraFiles
-import me.him188.ani.datasources.api.MediaProperties
-import me.him188.ani.datasources.api.Subtitle
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.source.MatchKind
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.datasources.api.topic.titles.RawTitleParser
-import me.him188.ani.datasources.api.topic.titles.parse
-import me.him188.ani.datasources.ikaros.models.IkarosEpisodeGroup
-import me.him188.ani.datasources.ikaros.models.IkarosEpisodeMeta
-import me.him188.ani.datasources.ikaros.models.IkarosEpisodeRecord
-import me.him188.ani.datasources.ikaros.models.IkarosEpisodeResource
-import me.him188.ani.datasources.ikaros.models.IkarosSubjectSync
-import me.him188.ani.datasources.ikaros.models.IkarosVideoSubtitle
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.MediaExtraFiles
+import com.wynime.datasources.api.MediaProperties
+import com.wynime.datasources.api.Subtitle
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.source.MatchKind
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.datasources.api.topic.titles.RawTitleParser
+import com.wynime.datasources.api.topic.titles.parse
+import com.wynime.datasources.ikaros.models.IkarosEpisodeGroup
+import com.wynime.datasources.ikaros.models.IkarosEpisodeMeta
+import com.wynime.datasources.ikaros.models.IkarosEpisodeRecord
+import com.wynime.datasources.ikaros.models.IkarosEpisodeResource
+import com.wynime.datasources.ikaros.models.IkarosSubjectSync
+import com.wynime.datasources.ikaros.models.IkarosVideoSubtitle
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import models.IkarosAttachment
 
 class IkarosClient(
@@ -59,9 +50,6 @@ class IkarosClient(
         private val json = Json { ignoreUnknownKeys = true }
         private const val API_VERSION = "v1alpha1"
 
-        /**
-         * 同时转换的资源数. 每个资源要 3 次请求, 数量随集数线性增长.
-         */
         private const val RESOURCE_CONCURRENCY = 4
     }
 
@@ -81,7 +69,6 @@ class IkarosClient(
         }
     }
 
-
     suspend fun getSubjectSyncsWithBgmTvSubjectId(bgmTvSubjectId: String): List<IkarosSubjectSync> {
         if (bgmTvSubjectId.isBlank() || bgmTvSubjectId.toInt() <= 0) {
             return emptyList()
@@ -95,11 +82,6 @@ class IkarosClient(
         return json.decodeFromString(responseText)
     }
 
-    /**
-     * 把条目的全部剧集记录转换为资源. 每个资源需要多次请求 (附件信息, 播放地址, 字幕), 并发数受 [RESOURCE_CONCURRENCY] 限制.
-     *
-     * 资源的剧集范围来自记录的分组与序号 ([episodeSortOf]); 无法对应到剧集类型的分组 (如 OST, LIVE) 跳过.
-     */
     fun episodeRecords2SizeSource(
         subjectId: String,
         episodeRecords: List<IkarosEpisodeRecord>,
@@ -142,7 +124,7 @@ class IkarosClient(
                 DateFormater.utcDateStr2timeStamp(attachment?.updateTime ?: "")
             }.getOrElse { 0 },
             properties = MediaProperties(
-                subjectName = null, // Ikaros is exact match and hence does not need these properties.
+                subjectName = null,
                 episodeName = null,
                 subtitleLanguageIds = parseResult.subtitleLanguages.map { it.id },
                 resolution = parseResult.resolution?.displayName ?: "480P",
@@ -157,9 +139,6 @@ class IkarosClient(
         )
     }
 
-    /**
-     * 记录对应的集数: 正片为序号, 其他分组为对应类型的特殊剧集. 没有对应剧集类型的分组返回 `null`.
-     */
     private fun episodeSortOf(episode: IkarosEpisodeMeta): EpisodeSort? {
         val number = episode.sequence.let { seq ->
             if (seq == seq.toLong().toDouble()) seq.toLong().toString() else seq.toString()
@@ -239,7 +218,7 @@ class IkarosClient(
         val subtitles: MutableList<Subtitle> = mutableListOf()
         if (!attVideoSubtitleList.isNullOrEmpty()) {
             for (ikVideoSubtitle in attVideoSubtitleList) {
-                // convert ikarosVideoSubtitle to ani subtitle
+
                 subtitles.add(
                     Subtitle(
                         uri = getAttReadUrl(ikVideoSubtitle.attachmentId),

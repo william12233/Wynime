@@ -1,4 +1,4 @@
-package me.him188.ani.app.videoplayer
+package com.wynime.app.videoplayer
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable

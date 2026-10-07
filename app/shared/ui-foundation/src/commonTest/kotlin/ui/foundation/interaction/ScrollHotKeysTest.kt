@@ -1,12 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.interaction
+package com.wynime.app.ui.foundation.interaction
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,8 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-package me.him188.ani.app.ui.settings.tabs.theme
+package com.wynime.app.ui.settings.tabs.theme
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -15,13 +11,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_theme_palette
-import me.him188.ani.app.ui.theme.themeColorOptions
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_theme_palette
+import com.wynime.app.ui.theme.themeColorOptions
 import org.jetbrains.compose.resources.stringResource
 
-/** Shared palette presentation; hosts supply selection persistence and optional focus anchors. */
 @Composable
 fun ThemePalette(
     selectedColor: Color?,
@@ -34,7 +29,7 @@ fun ThemePalette(
         modifier.fillMaxWidth().selectableGroup(),
         horizontalArrangement = Arrangement.Center,
     ) {
-        AniThemeDefaults.themeColorOptions.forEachIndexed { index, color ->
+        WynimeThemeDefaults.themeColorOptions.forEachIndexed { index, color ->
             ColorButton(
                 onClick = { onSelect(color) },
                 baseColor = color,

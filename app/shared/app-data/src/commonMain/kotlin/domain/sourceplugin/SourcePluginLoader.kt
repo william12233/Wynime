@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import io.ktor.client.request.request
 import io.ktor.client.request.header
@@ -20,34 +11,34 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.mediasource.web.PageExpectation
-import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaDetector
-import me.him188.ani.app.domain.mediasource.web.captcha.SolveOutcome
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceCookieJar
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
-import me.him188.ani.source.plugin.api.SourceResultStatus
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginLogger
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.logging.Logger
-import me.him188.ani.utils.logging.debug
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.ktor.ScopedHttpClient
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.ScopedHttpClientUserAgent
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.domain.mediasource.web.PageExpectation
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaDetector
+import com.wynime.app.domain.mediasource.web.captcha.SolveOutcome
+import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
+import com.wynime.app.domain.mediasource.web.captcha.WebSourceCookieJar
+import com.wynime.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
+import com.wynime.source.plugin.api.SourceResultStatus
+import com.wynime.app.platform.Context
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginLogger
+import com.wynime.source.plugin.api.SourcePluginPlatform
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.logging.Logger
+import com.wynime.utils.logging.debug
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.ktor.ScopedHttpClient
 import kotlin.time.TimeSource
 import kotlin.time.Duration.Companion.seconds
 
@@ -74,11 +65,10 @@ interface SourcePluginLoader {
 
 expect fun createSourcePluginLoader(context: Context): SourcePluginLoader
 
-/** Creates one stable HTTP/cookie session per loaded plugin instance. */
 class SourcePluginContextFactory(
     private val httpClientProvider: HttpClientProvider,
     private val platform: SourcePluginPlatform,
-    private val hostVersion: String = currentAniBuildConfig.versionName,
+    private val hostVersion: String = currentWynimeBuildConfig.versionName,
     private val webSessionManager: WebSessionManager? = null,
     private val cookieJar: WebSourceCookieJar = WebSourceCookieJar(),
     private val identityRegistry: WebSourceIdentityRegistry = WebSourceIdentityRegistry(),
@@ -207,9 +197,6 @@ class SourcePluginHttpClient(
             return validatePluginResponse(pluginRequest, response)
         }
 
-        // Repository downloads use the same client type but have no provider identity and must
-        // retain their existing response handling. Provider traffic never hands a challenge page
-        // to a plugin parser.
         if (pluginId == null) {
             return response
         }
@@ -280,7 +267,6 @@ class SourcePluginHttpClient(
             )
         }
 
-        // 驗證成功後只重試原請求一次；cookie 與 UA 已由 WebSessionManager 同步到共用 HTTP 工作階段。
         val retried = executeOnce(pluginRequest)
         val retryChallenge = WebCaptchaDetector.detect(
             retried.finalUrl.ifBlank { pluginRequest.url },

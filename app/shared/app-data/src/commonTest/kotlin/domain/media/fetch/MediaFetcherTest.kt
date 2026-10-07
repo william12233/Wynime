@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.fetch
+package com.wynime.app.domain.media.fetch
 
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.EmptyCoroutineContext
@@ -29,26 +20,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.app.domain.mediasource.instance.createTestMediaSourceInstance
-import me.him188.ani.app.domain.mediasource.web.BlockReason
-import me.him188.ani.app.domain.mediasource.web.BlockedException
-import me.him188.ani.app.domain.mediasource.web.PageExpectation
-import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.paging.SinglePagePagedSource
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.source.MatchKind
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.TestHttpMediaSource
-import me.him188.ani.test.assertCoroutineSuspends
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.app.domain.mediasource.instance.createTestMediaSourceInstance
+import com.wynime.app.domain.mediasource.web.BlockReason
+import com.wynime.app.domain.mediasource.web.BlockedException
+import com.wynime.app.domain.mediasource.web.PageExpectation
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.paging.SinglePagePagedSource
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.source.MatchKind
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.TestHttpMediaSource
+import com.wynime.test.assertCoroutineSuspends
 
-/**
- * @see MediaFetcher
- */
 class MediaFetcherTest {
     private suspend fun createFetcher(
         vararg instances: MediaSourceInstance
@@ -67,10 +55,6 @@ class MediaFetcherTest {
         episodeSort = EpisodeSort("03"),
         episodeName = "测试剧集2",
     )
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Completeness
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `toList flow does not complete`() = runTest {
@@ -119,10 +103,6 @@ class MediaFetcherTest {
         assertEquals(false, session.hasCompleted.first().allCompleted())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // hasCompleted
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `hasCompleted is initially true if no source`() = runTest {
         val session = createFetcher().newSession(request1)
@@ -162,10 +142,6 @@ class MediaFetcherTest {
         assertIs<MediaSourceFetchState.Idle>(session.mediaSourceResults[1].state.value)
         assertEquals(false, session.hasCompleted.first().allCompleted())
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // cumulativeResults
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `awaitCompletedResults from one source`() = runTest {
@@ -249,7 +225,6 @@ class MediaFetcherTest {
         assertEquals(2, fetchCalled.get())
     }
 
-    // 从两个不同的源获取数据, 但是数据是相同的, 需要去重
     @Test
     fun `awaitCompletedResults from two sources distinct`() = runTest {
         val session = createFetcher(
@@ -275,7 +250,7 @@ class MediaFetcherTest {
         assertEquals(2, session.mediaSourceResults.size)
         val res = session.mediaSourceResults.first()
         assertIs<MediaSourceFetchState.Idle>(res.state.value)
-        assertEquals(5, session.awaitCompletedResults().size) // because the same media is returned from both sources
+        assertEquals(5, session.awaitCompletedResults().size)
         assertIs<MediaSourceFetchState.Succeed>(res.state.value)
     }
 
@@ -346,10 +321,6 @@ class MediaFetcherTest {
         assertEquals(5, res.results.first().size)
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // source 之间不影响
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `collecting one source does not start the other`() = runTest {
         val session = createFetcher(
@@ -377,10 +348,6 @@ class MediaFetcherTest {
         val res2 = session.mediaSourceResults[1]
         assertIs<MediaSourceFetchState.Idle>(res2.state.value)
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // disable sources
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `disable source`() = runTest {
@@ -484,10 +451,6 @@ class MediaFetcherTest {
         assertEquals(true, session.hasCompleted.first().allCompleted())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // resultsIfEnabled
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `resultsIfEnabled is empty if source is disabled`() = runTest {
         val session = createFetcher(
@@ -529,10 +492,6 @@ class MediaFetcherTest {
         assertEquals(5, res.resultsIfEnabled.first().size)
         assertEquals(5, res.results.first().size)
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // restart
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `double awaitCompletedResults`() = runTest {
@@ -798,10 +757,6 @@ class MediaFetcherTest {
         assertEquals(3, res2.results.first().size)
         assertEquals(5, session.cumulativeResults.first().size)
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // enable
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `enable disabled source before collecting result`() = runTest {

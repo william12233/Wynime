@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.app
+package com.wynime.app.ui.settings.tabs.app
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,131 +24,130 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import me.him188.ani.app.data.models.preference.DesktopCloseBehavior
-import me.him188.ani.app.data.models.preference.EpisodeListProgressTheme
-import me.him188.ani.app.data.models.preference.FullscreenSwitchMode
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.preference.PlayerKernelConfig
-import me.him188.ani.app.data.models.preference.ThemeSettings
-import me.him188.ani.app.data.models.preference.UISettings
-import me.him188.ani.app.data.models.preference.UpdateSettings
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.models.preference.VideoEnhancementDefaultMode
-import me.him188.ani.app.data.network.protocol.ReleaseClass
-import me.him188.ani.app.navigation.MainScreenPage
-import me.him188.ani.app.navigation.getIcon
-import me.him188.ani.app.navigation.getText
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.ui.settings.tabs.AniHelperDestination
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.SteppedSlider
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.quantizeSliderValue
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_app_close_behavior
-import me.him188.ani.app.ui.lang.settings_app_close_behavior_exit
-import me.him188.ani.app.ui.lang.settings_app_close_behavior_minimize_to_tray
-import me.him188.ani.app.ui.lang.settings_app_episode_playback
-import me.him188.ani.app.ui.lang.settings_app_initial_page
-import me.him188.ani.app.ui.lang.settings_app_initial_page_description
-import me.him188.ani.app.ui.lang.settings_app_episode_images
-import me.him188.ani.app.ui.lang.settings_app_episode_images_description
-import me.him188.ani.app.ui.lang.settings_app_light_up_mode
-import me.him188.ani.app.ui.lang.settings_app_light_up_mode_description
-import me.him188.ani.app.ui.lang.settings_app_list_animation
-import me.him188.ani.app.ui.lang.settings_app_list_animation_description
-import me.him188.ani.app.ui.lang.settings_app_my_collections
-import me.him188.ani.app.ui.lang.settings_app_not_show_done_and_dropped_subjects
-import me.him188.ani.app.ui.lang.settings_app_nsfw_blur
-import me.him188.ani.app.ui.lang.settings_app_nsfw_content
-import me.him188.ani.app.ui.lang.settings_app_nsfw_display
-import me.him188.ani.app.ui.lang.settings_app_nsfw_hide
-import me.him188.ani.app.ui.lang.settings_app_search
-import me.him188.ani.app.ui.lang.settings_app_subject_title
-import me.him188.ani.app.ui.lang.settings_app_use_original_title
-import me.him188.ani.app.ui.lang.settings_app_use_original_title_description
-import me.him188.ani.app.ui.lang.settings_player
-import me.him188.ani.app.ui.lang.settings_player_audio_time_stretch
-import me.him188.ani.app.ui.lang.settings_player_audio_time_stretch_description
-import me.him188.ani.app.ui.lang.settings_player_auto_fullscreen_on_landscape
-import me.him188.ani.app.ui.lang.settings_player_auto_mark_done
-import me.him188.ani.app.ui.lang.settings_player_auto_play_next
-import me.him188.ani.app.ui.lang.settings_player_auto_skip_op_ed
-import me.him188.ani.app.ui.lang.settings_player_auto_skip_op_ed_description
-import me.him188.ani.app.ui.lang.settings_player_auto_switch_media_on_error
-import me.him188.ani.app.utils.formatSpeedValue
-import me.him188.ani.app.ui.lang.settings_player_default_playback_speed
-import me.him188.ani.app.ui.lang.settings_player_default_playback_speed_description
-import me.him188.ani.app.ui.lang.settings_player_experimental_hls_segment_filter
-import me.him188.ani.app.ui.lang.settings_player_experimental_hls_segment_filter_description
-import me.him188.ani.app.ui.lang.settings_player_frame_preview
-import me.him188.ani.app.ui.lang.settings_player_frame_preview_description
-import me.him188.ani.app.ui.lang.settings_player_fullscreen_always_show
-import me.him188.ani.app.ui.lang.settings_player_fullscreen_auto_hide
-import me.him188.ani.app.ui.lang.settings_player_fullscreen_button
-import me.him188.ani.app.ui.lang.settings_player_fullscreen_button_description
-import me.him188.ani.app.ui.lang.settings_player_fullscreen_only_in_controller
-import me.him188.ani.app.ui.lang.settings_player_hide_selector_on_select
-import me.him188.ani.app.ui.lang.settings_player_long_press_fast_forward_speed
-import me.him188.ani.app.ui.lang.settings_player_long_press_fast_forward_speed_description
-import me.him188.ani.app.ui.lang.settings_player_op_ed_skip_duration
-import me.him188.ani.app.ui.lang.settings_player_op_ed_skip_duration_seconds
-import me.him188.ani.app.ui.lang.settings_player_playback_speed_range
-import me.him188.ani.app.ui.lang.settings_player_playback_speed_range_description
-import me.him188.ani.app.ui.lang.settings_player_remember_playback_speed
-import me.him188.ani.app.ui.lang.settings_player_remember_playback_speed_description
-import me.him188.ani.app.ui.lang.settings_player_video_enhancement_default
-import me.him188.ani.app.ui.lang.settings_player_video_enhancement_default_description
-import me.him188.ani.app.ui.lang.video_player_off
-import me.him188.ani.app.ui.lang.video_player_performance
-import me.him188.ani.app.ui.lang.video_player_quality
-import me.him188.ani.app.ui.lang.settings_update_auto_check
-import me.him188.ani.app.ui.lang.settings_update_auto_check_description
-import me.him188.ani.app.ui.lang.settings_update_auto_download
-import me.him188.ani.app.ui.lang.settings_update_auto_download_description
-import me.him188.ani.app.ui.lang.settings_update_check
-import me.him188.ani.app.ui.lang.settings_update_check_failed
-import me.him188.ani.app.ui.lang.settings_update_checking
-import me.him188.ani.app.ui.lang.settings_update_current_version
-import me.him188.ani.app.ui.lang.settings_update_in_app_download
-import me.him188.ani.app.ui.lang.settings_update_in_app_download_disabled
-import me.him188.ani.app.ui.lang.settings_update_in_app_download_enabled
-import me.him188.ani.app.ui.lang.settings_update_new_version
-import me.him188.ani.app.ui.lang.settings_update_software
-import me.him188.ani.app.ui.lang.settings_update_type
-import me.him188.ani.app.ui.lang.settings_update_type_alpha
-import me.him188.ani.app.ui.lang.settings_update_type_alpha_short
-import me.him188.ani.app.ui.lang.settings_update_type_beta
-import me.him188.ani.app.ui.lang.settings_update_type_beta_short
-import me.him188.ani.app.ui.lang.settings_update_type_stable
-import me.him188.ani.app.ui.lang.settings_update_type_stable_short
-import me.him188.ani.app.ui.lang.settings_update_up_to_date
-import me.him188.ani.app.ui.lang.settings_update_view_changelog
-import me.him188.ani.app.ui.settings.SettingsTab
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.app.ui.settings.framework.components.DropdownItem
-import me.him188.ani.app.ui.settings.framework.components.RangeSliderItem
-import me.him188.ani.app.ui.settings.framework.components.RowButtonItem
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.framework.components.SliderItem
-import me.him188.ani.app.ui.settings.framework.components.SwitchItem
-import me.him188.ani.app.ui.settings.framework.components.TextButtonItem
-import me.him188.ani.app.ui.settings.framework.components.TextItem
-import me.him188.ani.app.ui.settings.framework.createTestSettingsState
-import me.him188.ani.app.ui.settings.framework.rememberTestSettingsState
-import me.him188.ani.app.ui.settings.rendering.ReleaseClassIcon
-import me.him188.ani.app.ui.settings.rendering.guessReleaseClass
-import me.him188.ani.app.ui.settings.tabs.theme.ThemeGroup
-import me.him188.ani.app.ui.update.AppUpdateState
-import me.him188.ani.app.ui.update.AppUpdateViewModel
-import me.him188.ani.app.ui.update.NewVersion
-import me.him188.ani.app.ui.update.UpdateNotifier
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.isAndroid
-import me.him188.ani.utils.platform.isDesktop
-import me.him188.ani.utils.platform.isIos
-import me.him188.ani.utils.platform.isMobile
+import com.wynime.app.data.models.preference.DesktopCloseBehavior
+import com.wynime.app.data.models.preference.EpisodeListProgressTheme
+import com.wynime.app.data.models.preference.FullscreenSwitchMode
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.preference.PlayerKernelConfig
+import com.wynime.app.data.models.preference.ThemeSettings
+import com.wynime.app.data.models.preference.UISettings
+import com.wynime.app.data.models.preference.UpdateSettings
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.models.preference.VideoEnhancementDefaultMode
+import com.wynime.app.data.network.protocol.ReleaseClass
+import com.wynime.app.navigation.MainScreenPage
+import com.wynime.app.navigation.getIcon
+import com.wynime.app.navigation.getText
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.ui.settings.tabs.WynimeHelperDestination
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.SteppedSlider
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.quantizeSliderValue
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_app_close_behavior
+import com.wynime.app.ui.lang.settings_app_close_behavior_exit
+import com.wynime.app.ui.lang.settings_app_close_behavior_minimize_to_tray
+import com.wynime.app.ui.lang.settings_app_episode_playback
+import com.wynime.app.ui.lang.settings_app_initial_page
+import com.wynime.app.ui.lang.settings_app_initial_page_description
+import com.wynime.app.ui.lang.settings_app_episode_images
+import com.wynime.app.ui.lang.settings_app_episode_images_description
+import com.wynime.app.ui.lang.settings_app_light_up_mode
+import com.wynime.app.ui.lang.settings_app_light_up_mode_description
+import com.wynime.app.ui.lang.settings_app_list_animation
+import com.wynime.app.ui.lang.settings_app_list_animation_description
+import com.wynime.app.ui.lang.settings_app_my_collections
+import com.wynime.app.ui.lang.settings_app_not_show_done_and_dropped_subjects
+import com.wynime.app.ui.lang.settings_app_nsfw_blur
+import com.wynime.app.ui.lang.settings_app_nsfw_content
+import com.wynime.app.ui.lang.settings_app_nsfw_display
+import com.wynime.app.ui.lang.settings_app_nsfw_hide
+import com.wynime.app.ui.lang.settings_app_search
+import com.wynime.app.ui.lang.settings_app_subject_title
+import com.wynime.app.ui.lang.settings_app_use_original_title
+import com.wynime.app.ui.lang.settings_app_use_original_title_description
+import com.wynime.app.ui.lang.settings_player
+import com.wynime.app.ui.lang.settings_player_audio_time_stretch
+import com.wynime.app.ui.lang.settings_player_audio_time_stretch_description
+import com.wynime.app.ui.lang.settings_player_auto_fullscreen_on_landscape
+import com.wynime.app.ui.lang.settings_player_auto_mark_done
+import com.wynime.app.ui.lang.settings_player_auto_play_next
+import com.wynime.app.ui.lang.settings_player_auto_skip_op_ed
+import com.wynime.app.ui.lang.settings_player_auto_skip_op_ed_description
+import com.wynime.app.ui.lang.settings_player_auto_switch_media_on_error
+import com.wynime.app.utils.formatSpeedValue
+import com.wynime.app.ui.lang.settings_player_default_playback_speed
+import com.wynime.app.ui.lang.settings_player_default_playback_speed_description
+import com.wynime.app.ui.lang.settings_player_experimental_hls_segment_filter
+import com.wynime.app.ui.lang.settings_player_experimental_hls_segment_filter_description
+import com.wynime.app.ui.lang.settings_player_frame_preview
+import com.wynime.app.ui.lang.settings_player_frame_preview_description
+import com.wynime.app.ui.lang.settings_player_fullscreen_always_show
+import com.wynime.app.ui.lang.settings_player_fullscreen_auto_hide
+import com.wynime.app.ui.lang.settings_player_fullscreen_button
+import com.wynime.app.ui.lang.settings_player_fullscreen_button_description
+import com.wynime.app.ui.lang.settings_player_fullscreen_only_in_controller
+import com.wynime.app.ui.lang.settings_player_hide_selector_on_select
+import com.wynime.app.ui.lang.settings_player_long_press_fast_forward_speed
+import com.wynime.app.ui.lang.settings_player_long_press_fast_forward_speed_description
+import com.wynime.app.ui.lang.settings_player_op_ed_skip_duration
+import com.wynime.app.ui.lang.settings_player_op_ed_skip_duration_seconds
+import com.wynime.app.ui.lang.settings_player_playback_speed_range
+import com.wynime.app.ui.lang.settings_player_playback_speed_range_description
+import com.wynime.app.ui.lang.settings_player_remember_playback_speed
+import com.wynime.app.ui.lang.settings_player_remember_playback_speed_description
+import com.wynime.app.ui.lang.settings_player_video_enhancement_default
+import com.wynime.app.ui.lang.settings_player_video_enhancement_default_description
+import com.wynime.app.ui.lang.video_player_off
+import com.wynime.app.ui.lang.video_player_performance
+import com.wynime.app.ui.lang.video_player_quality
+import com.wynime.app.ui.lang.settings_update_auto_check
+import com.wynime.app.ui.lang.settings_update_auto_check_description
+import com.wynime.app.ui.lang.settings_update_auto_download
+import com.wynime.app.ui.lang.settings_update_auto_download_description
+import com.wynime.app.ui.lang.settings_update_check
+import com.wynime.app.ui.lang.settings_update_check_failed
+import com.wynime.app.ui.lang.settings_update_checking
+import com.wynime.app.ui.lang.settings_update_current_version
+import com.wynime.app.ui.lang.settings_update_in_app_download
+import com.wynime.app.ui.lang.settings_update_in_app_download_disabled
+import com.wynime.app.ui.lang.settings_update_in_app_download_enabled
+import com.wynime.app.ui.lang.settings_update_new_version
+import com.wynime.app.ui.lang.settings_update_software
+import com.wynime.app.ui.lang.settings_update_type
+import com.wynime.app.ui.lang.settings_update_type_alpha
+import com.wynime.app.ui.lang.settings_update_type_alpha_short
+import com.wynime.app.ui.lang.settings_update_type_beta
+import com.wynime.app.ui.lang.settings_update_type_beta_short
+import com.wynime.app.ui.lang.settings_update_type_stable
+import com.wynime.app.ui.lang.settings_update_type_stable_short
+import com.wynime.app.ui.lang.settings_update_up_to_date
+import com.wynime.app.ui.lang.settings_update_view_changelog
+import com.wynime.app.ui.settings.SettingsTab
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.app.ui.settings.framework.components.DropdownItem
+import com.wynime.app.ui.settings.framework.components.RangeSliderItem
+import com.wynime.app.ui.settings.framework.components.RowButtonItem
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.SliderItem
+import com.wynime.app.ui.settings.framework.components.SwitchItem
+import com.wynime.app.ui.settings.framework.components.TextButtonItem
+import com.wynime.app.ui.settings.framework.components.TextItem
+import com.wynime.app.ui.settings.framework.createTestSettingsState
+import com.wynime.app.ui.settings.framework.rememberTestSettingsState
+import com.wynime.app.ui.settings.rendering.ReleaseClassIcon
+import com.wynime.app.ui.settings.rendering.guessReleaseClass
+import com.wynime.app.ui.settings.tabs.theme.ThemeGroup
+import com.wynime.app.ui.update.AppUpdateState
+import com.wynime.app.ui.update.AppUpdateViewModel
+import com.wynime.app.ui.update.NewVersion
+import com.wynime.app.ui.update.UpdateNotifier
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.isAndroid
+import com.wynime.utils.platform.isDesktop
+import com.wynime.utils.platform.isMobile
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration.Companion.seconds
 
@@ -328,7 +318,7 @@ fun SettingsScope.AppearanceGroup(
 @Stable
 class SoftwareUpdateGroupState(
     val updateSettings: SettingsState<UpdateSettings>,
-    val currentVersion: String = currentAniBuildConfig.versionName,
+    val currentVersion: String = currentWynimeBuildConfig.versionName,
     val releaseClass: ReleaseClass = guessReleaseClass(currentVersion),
 )
 
@@ -349,7 +339,7 @@ fun SettingsScope.SoftwareUpdateGroup(
         RowButtonItem(
             onClick = {
                 uriHandler.openUri(
-                    AniHelperDestination.RELEASE_PREFIX + currentAniBuildConfig.versionName,
+                    WynimeHelperDestination.RELEASE_PREFIX + currentWynimeBuildConfig.versionName,
                 )
             },
             icon = { Icon(Icons.Rounded.ArrowOutward, null) },
@@ -372,7 +362,7 @@ fun SettingsScope.SoftwareUpdateGroup(
                 when (it) {
                     ReleaseClass.ALPHA -> Text(stringResource(Lang.settings_update_type_alpha))
                     ReleaseClass.BETA -> Text(stringResource(Lang.settings_update_type_beta))
-                    ReleaseClass.RC, // RC 实际上不会有
+                    ReleaseClass.RC,
                     ReleaseClass.STABLE -> Text(stringResource(Lang.settings_update_type_stable))
                 }
             },
@@ -380,7 +370,7 @@ fun SettingsScope.SoftwareUpdateGroup(
                 when (it) {
                     ReleaseClass.ALPHA -> Text(stringResource(Lang.settings_update_type_alpha_short))
                     ReleaseClass.BETA -> Text(stringResource(Lang.settings_update_type_beta_short))
-                    ReleaseClass.RC, // RC 实际上不会有
+                    ReleaseClass.RC,
                     ReleaseClass.STABLE -> Text(stringResource(Lang.settings_update_type_stable_short))
                 }
             },
@@ -392,7 +382,7 @@ fun SettingsScope.SoftwareUpdateGroup(
             },
             title = { Text(stringResource(Lang.settings_update_type)) },
         )
-        if (!LocalPlatform.current.isIos()) {
+
             HorizontalDividerItem()
             SwitchItem(
                 updateSettings.inAppDownload,
@@ -407,7 +397,7 @@ fun SettingsScope.SoftwareUpdateGroup(
                 },
                 enabled = updateSettings.autoCheckUpdate,
             )
-            AniAnimatedVisibility(updateSettings.inAppDownload) {
+            WynimeAnimatedVisibility(updateSettings.inAppDownload) {
                 Column {
                     HorizontalDividerItem()
                     SwitchItem(
@@ -419,7 +409,7 @@ fun SettingsScope.SoftwareUpdateGroup(
                     )
                 }
             }
-        }
+
         HorizontalDividerItem()
 
         val updatePresentation by autoUpdate.presentationFlow.collectAsStateWithLifecycle()
@@ -589,7 +579,7 @@ fun SettingsScope.PlayerGroup(
             )
         }
         HorizontalDividerItem()
-        if (!LocalPlatform.current.isIos()) {
+
             SwitchItem(
                 checked = config.enableExperimentalHlsSegmentFiltering,
                 onCheckedChange = {
@@ -599,7 +589,7 @@ fun SettingsScope.PlayerGroup(
                 description = { Text(stringResource(Lang.settings_player_experimental_hls_segment_filter_description)) },
             )
             HorizontalDividerItem()
-        }
+
         HorizontalDividerItem()
         SwitchItem(
             checked = config.enableFramePreview,
@@ -615,12 +605,6 @@ fun SettingsScope.PlayerGroup(
     }
 }
 
-/**
- * 倍速范围 + 记住倍速 + 默认倍速 + 长按播放速度.
- *
- * 各条 Slider 共享范围拖动状态: 拖动范围 RangeSlider 期间, 下方各条 Slider 的范围和 clamp 后的值
- * 实时跟随, 被 clamp 时通过动画过渡, 避免松手后数值「突变」.
- */
 @Composable
 private fun SettingsScope.PlaybackSpeedItems(
     config: VideoScaffoldConfig,
@@ -628,7 +612,6 @@ private fun SettingsScope.PlaybackSpeedItems(
 ) {
     val persistedRange = config.minPlaybackSpeed..config.maxPlaybackSpeed
 
-    // 范围拖动期间的瞬态值, 提交后清空; 拖动期间下方长按倍速 Slider 实时使用该范围
     var rangeDragOverride by remember { mutableStateOf<ClosedFloatingPointRange<Float>?>(null) }
     var rangeDragging by remember { mutableStateOf(false) }
     val effectiveRange = rangeDragOverride ?: persistedRange
@@ -646,7 +629,7 @@ private fun SettingsScope.PlaybackSpeedItems(
         },
         onValueChangeFinished = {
             val finalRange = rangeDragOverride ?: return@RangeSliderItem
-            // 缩小范围时把相关值一并 clamp 进新区间；保留最终范围直到配置写回，避免短暂回跳
+
             val committedConfig = config.withPlaybackSpeedRange(finalRange)
             rangeDragging = false
             rangeDragOverride = committedConfig.minPlaybackSpeed..committedConfig.maxPlaybackSpeed
@@ -662,7 +645,6 @@ private fun SettingsScope.PlaybackSpeedItems(
         description = { Text(stringResource(Lang.settings_player_playback_speed_range_description)) },
     )
 
-    // 范围变化以动画过渡, 避免 thumb 映射位置瞬移
     val animatedRangeStart by animateFloatAsState(effectiveRange.start, label = "playbackSpeedRangeStart")
     val animatedRangeEnd by animateFloatAsState(effectiveRange.endInclusive, label = "playbackSpeedRangeEnd")
     val displayRange =
@@ -679,9 +661,8 @@ private fun SettingsScope.PlaybackSpeedItems(
         description = { Text(stringResource(Lang.settings_player_remember_playback_speed_description)) },
     )
 
-    // 此处没有 ColumnScope 接收者, 不显式指定就会落到 fadeIn/fadeOut 的重载上, 高度瞬间撑开、下方条目跳位.
-    val motionScheme = LocalAniMotionScheme.current.animatedVisibility
-    AniAnimatedVisibility(
+    val motionScheme = LocalWynimeMotionScheme.current.animatedVisibility
+    WynimeAnimatedVisibility(
         visible = !config.rememberPlaybackSpeed,
         enter = motionScheme.columnEnter,
         exit = motionScheme.columnExit,
@@ -711,12 +692,6 @@ private fun SettingsScope.PlaybackSpeedItems(
     )
 }
 
-/**
- * 一条倍速 Slider. 拖动期间使用瞬态值实时预览, 松手后量化到 [commitRange] 再提交.
- *
- * @param displayRange 渲染用范围, 可能正处于动画过渡中
- * @param commitRange 提交用范围, 即用户配置的真实范围
- */
 @Composable
 private fun SettingsScope.SpeedSliderItem(
     value: Float,

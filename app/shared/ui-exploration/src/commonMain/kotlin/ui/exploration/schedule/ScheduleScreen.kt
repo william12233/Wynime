@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(TestOnly::class)
 
-package me.him188.ani.app.ui.exploration.schedule
+package com.wynime.app.ui.exploration.schedule
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -64,33 +55,33 @@ import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.number
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.HorizontalScrollControlScaffoldOnDesktop
-import me.him188.ani.app.ui.foundation.HorizontalScrollControlState
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.pagerTabIndicatorOffset
-import me.him188.ani.app.ui.foundation.rememberHorizontalScrollControlState
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.widgets.BackNavigationIconButton
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_schedule
-import me.him188.ani.app.ui.lang.exploration_schedule_last_weekday
-import me.him188.ani.app.ui.lang.exploration_schedule_next_weekday
-import me.him188.ani.app.ui.lang.exploration_schedule_this_weekday
-import me.him188.ani.app.ui.lang.exploration_schedule_weekday_friday
-import me.him188.ani.app.ui.lang.exploration_schedule_weekday_monday
-import me.him188.ani.app.ui.lang.exploration_schedule_weekday_saturday
-import me.him188.ani.app.ui.lang.exploration_schedule_weekday_sunday
-import me.him188.ani.app.ui.lang.exploration_schedule_weekday_thursday
-import me.him188.ani.app.ui.lang.exploration_schedule_weekday_tuesday
-import me.him188.ani.app.ui.lang.exploration_schedule_weekday_wednesday
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.isDesktop
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.HorizontalScrollControlScaffoldOnDesktop
+import com.wynime.app.ui.foundation.HorizontalScrollControlState
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.pagerTabIndicatorOffset
+import com.wynime.app.ui.foundation.rememberHorizontalScrollControlState
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_schedule
+import com.wynime.app.ui.lang.exploration_schedule_last_weekday
+import com.wynime.app.ui.lang.exploration_schedule_next_weekday
+import com.wynime.app.ui.lang.exploration_schedule_this_weekday
+import com.wynime.app.ui.lang.exploration_schedule_weekday_friday
+import com.wynime.app.ui.lang.exploration_schedule_weekday_monday
+import com.wynime.app.ui.lang.exploration_schedule_weekday_saturday
+import com.wynime.app.ui.lang.exploration_schedule_weekday_sunday
+import com.wynime.app.ui.lang.exploration_schedule_weekday_thursday
+import com.wynime.app.ui.lang.exploration_schedule_weekday_tuesday
+import com.wynime.app.ui.lang.exploration_schedule_weekday_wednesday
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.isDesktop
 import org.jetbrains.compose.resources.stringResource
 
 fun ScheduleScreenState(
@@ -109,12 +100,10 @@ class ScheduleScreenState(
 ) {
     val days by derivedStateOf(daysProvider)
 
-    // on mobile
     internal val pagerState = PagerState(
         currentPage = days.indexOf(initialSelected).coerceAtLeast(0),
     ) { days.size }
 
-    // on desktop jvm
     val lazyListState = LazyListState(firstVisibleItemIndex = pagerState.currentPage)
 
     val selectedDay: ScheduleDay? by derivedStateOf {
@@ -136,7 +125,6 @@ class ScheduleScreenState(
     }
 }
 
-
 @Composable
 fun ScheduleScreen(
     presentation: SchedulePagePresentation,
@@ -147,19 +135,19 @@ fun ScheduleScreen(
     colors: ScheduleScreenColors = ScheduleScreenDefaults.colors(),
     navigationIcon: @Composable () -> Unit = {},
     state: ScheduleScreenState = remember { ScheduleScreenState { presentation.days } },
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     Scaffold(
         modifier,
         topBar = {
-            AniTopAppBar(
+            WynimeTopAppBar(
                 title = { Text(stringResource(Lang.exploration_schedule)) },
                 Modifier.fillMaxWidth(),
                 navigationIcon = navigationIcon,
                 windowInsets = windowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             )
         },
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal),
     ) { paddingValues ->
         if (presentation.error != null) {
@@ -206,7 +194,6 @@ private fun DayOfWeekHeadline(
             color = if (day.kind == ScheduleDay.Kind.TODAY) MaterialTheme.colorScheme.primary else Color.Unspecified,
         )
 
-        // Rounded horizontal divider
         val thickness = 2.dp
         val color = MaterialTheme.colorScheme.outlineVariant
         Canvas(
@@ -269,7 +256,7 @@ fun ScheduleScreenContent(
         val density = LocalDensity.current
 
         if (LocalPlatform.current.isDesktop() && !layoutParams.isSinglePage) {
-            // CMP bug, HorizontalPager 在 PC 上滚动到末尾后, 内嵌的 LazyColumn 无法纵向滚动
+
             HorizontalScrollControlScaffoldOnDesktop(
                 rememberHorizontalScrollControlState(
                     state.lazyListState,
@@ -310,7 +297,7 @@ fun ScheduleScreenContent(
                 verticalAlignment = Alignment.Top,
                 key = { it },
             ) { index ->
-                Box(Modifier.fillMaxSize()) { // ensure the page is scrollable
+                Box(Modifier.fillMaxSize()) {
                     state.days.getOrNull(index)?.let {
                         pageContent(it)
                     }
@@ -329,7 +316,7 @@ data class ScheduleScreenLayoutParams private constructor(
     val showTabRow: Boolean,
     val showDayOfWeekHeadline: Boolean,
     val columnLayoutParams: ScheduleDayColumnLayoutParams,
-    val isSinglePage: Boolean, // Workaround for CMP bug
+    val isSinglePage: Boolean,
 ) {
     @Stable
     companion object {
@@ -392,7 +379,6 @@ object ScheduleScreenDefaults {
     )
 }
 
-
 @Stable
 @Composable
 private fun renderScheduleDay(day: ScheduleDay): String {
@@ -404,7 +390,7 @@ private fun renderScheduleDay(day: ScheduleDay): String {
 }
 
 @Stable
-@Suppress("REDUNDANT_ELSE_IN_WHEN") // Compiler works fine, but IDE complains about this, so we suppress it.
+@Suppress("REDUNDANT_ELSE_IN_WHEN")
 @Composable
 private fun renderDayOfWeek(day: DayOfWeek, kind: ScheduleDay.Kind): String {
     val weekday = when (day) {

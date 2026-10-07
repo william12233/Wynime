@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.details
+package com.wynime.app.ui.subject.episode.details
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,34 +32,28 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.domain.media.cache.EpisodeCacheStatus
-import me.him188.ani.app.domain.media.cache.isCachedOrCaching
-import me.him188.ani.app.tools.MonoTasker
-import me.him188.ani.app.tools.toPercentageOrZero
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.icons.PlayingIcon
-import me.him188.ani.app.ui.foundation.lists.PaginatedGroup
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.episode_comments
-import me.him188.ani.app.ui.lang.subject_episode_cached
-import me.him188.ani.app.ui.lang.subject_episode_default_title
-import me.him188.ani.app.ui.subject.episode.details.components.EpisodeWatchStatusButton
-import me.him188.ani.app.ui.subject.episode.details.components.PlayingEpisodeItem
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.api.topic.isDoneOrDropped
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.format1f
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.domain.media.cache.EpisodeCacheStatus
+import com.wynime.app.domain.media.cache.isCachedOrCaching
+import com.wynime.app.tools.MonoTasker
+import com.wynime.app.tools.toPercentageOrZero
+import com.wynime.app.tools.toProgress
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.icons.PlayingIcon
+import com.wynime.app.ui.foundation.lists.PaginatedGroup
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.episode_comments
+import com.wynime.app.ui.lang.subject_episode_cached
+import com.wynime.app.ui.lang.subject_episode_default_title
+import com.wynime.app.ui.subject.episode.details.components.EpisodeWatchStatusButton
+import com.wynime.app.ui.subject.episode.details.components.PlayingEpisodeItem
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.format1f
 import org.jetbrains.compose.resources.stringResource
 
-
-/**
- * 详细剧集列表的状态
- *
- * @see EpisodeCarousel
- */
 @Stable
 class EpisodeCarouselState(
     episodes: State<List<EpisodeCollectionInfo>>,
@@ -79,7 +64,7 @@ class EpisodeCarouselState(
     internal val gridState: LazyGridState = LazyGridState(),
     backgroundScope: CoroutineScope,
     groupsState: State<List<PaginatedGroup<EpisodeCollectionInfo>>>? = null,
-    /** 上次播放进度 `0..1`, 没有播放记录时为 `null`. 见 [playProgress]. */
+
     playProgress: (EpisodeCollectionInfo) -> Float? = { null },
 ) {
     val episodes by episodes
@@ -114,7 +99,6 @@ class EpisodeCarouselState(
         return this.cacheStatus.invoke(episode)
     }
 
-    /** 上次播放进度 `0..1`, 没有播放记录时为 `null`; 未看完且非空时卡片底边显示进度条. */
     @Stable
     internal fun playProgress(episode: EpisodeCollectionInfo): Float? = playProgressOf(episode)
 
@@ -127,9 +111,6 @@ class EpisodeCarouselState(
     }
 }
 
-/**
- * 详细剧集列表
- */
 @Composable
 fun EpisodeCarousel(
     state: EpisodeCarouselState,
@@ -217,27 +198,7 @@ fun EpisodeCarousel(
             }
         }
     }
-//    HorizontalPager(
-//        state.pagerState,
-//        contentPadding = PaddingValues(horizontal = 32.dp),
-//        pageSpacing = 16.dp,
-//    ) { page ->
-//        state.getEpisode(page)?.let { episode ->
-//            EpisodeCarouselItem(
-//                episode = episode.episode,
-//                onClick = { onPlay(episode) },
-//                isPlaying = { state.isPlaying(episode) },
-//                cacheStatus = { state.cacheStatus(episode) },
-//                collectionButton = {
-//                    EpisodeCollectionIconButton(
-//                        type = episode.collectionType,
-//                        onChange = onChangeCollectionType,
-//                    )
-//                },
-//                Modifier.fillMaxWidth().carouselTransition(page, state.pagerState),
-//            )
-//        }
-//    }
+
 }
 
 @Composable

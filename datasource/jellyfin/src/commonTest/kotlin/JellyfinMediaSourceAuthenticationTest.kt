@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.datasources.jellyfin
+package com.wynime.datasources.jellyfin
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -31,14 +22,14 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.paging.PagedSource
-import me.him188.ani.datasources.api.source.ConnectionStatus
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.paging.PagedSource
+import com.wynime.datasources.api.source.ConnectionStatus
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -84,7 +75,7 @@ class JellyfinMediaSourceAuthenticationTest {
                         loginCount++
                         assertEquals(HttpMethod.Post, request.method)
                         assertEquals(
-                            """MediaBrowser Client="Animeko", Device="Animeko", DeviceId="animeko-source-instance", Version="1.0"""",
+                            """MediaBrowser Client="Wynime", Device="Wynime", DeviceId="animeko-source-instance", Version="1.0"""",
                             request.headers[HttpHeaders.Authorization],
                         )
                         assertFalse(request.url.toString().contains("test-password"))
@@ -105,7 +96,7 @@ class JellyfinMediaSourceAuthenticationTest {
                         itemsCount++
                         assertEquals("session-user-id", request.url.parameters["userId"])
                         assertEquals(
-                            """MediaBrowser Client="Animeko", Device="Animeko", DeviceId="animeko-source-instance", Version="1.0", Token="session-token"""",
+                            """MediaBrowser Client="Wynime", Device="Wynime", DeviceId="animeko-source-instance", Version="1.0", Token="session-token"""",
                             request.headers[HttpHeaders.Authorization],
                         )
                         respondJson("""{"Items":[]}""")

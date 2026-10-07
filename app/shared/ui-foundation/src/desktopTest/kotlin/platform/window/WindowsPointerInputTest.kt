@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform.window
+package com.wynime.app.platform.window
 
 import com.sun.jna.platform.win32.WinDef.WPARAM
 import com.sun.jna.platform.win32.WinDef.POINT
@@ -189,8 +180,6 @@ class WindowsPointerInputTest {
             cancel = { cancelCount++ },
         )
 
-        // No sequence was successfully taken over, so the native message may
-        // fall back to the original procedure after the fatal bridge failure.
         assertFalse(handler.handleMessage(WM_POINTERDOWN, WPARAM(1)))
         assertEquals(1, cancelCount)
         assertFalse(handler.handleMessage(WM_POINTERDOWN, WPARAM(2)))
@@ -216,10 +205,6 @@ class WindowsPointerInputTest {
         assertEquals(1, cancelCount)
         assertFalse(handler.handleMessage(WM_POINTERUP, WPARAM(1)))
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // 非客户区消息 (Compose 自绘的标题栏按钮)
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `non-client pointer lifecycle`() {

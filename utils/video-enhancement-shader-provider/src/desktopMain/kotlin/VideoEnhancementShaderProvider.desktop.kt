@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.video.enhancement.shader.provider
+package com.wynime.utils.video.enhancement.shader.provider
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -46,7 +37,7 @@ actual object VideoEnhancementShaderProvider {
     private suspend fun extractShaderLocked(shaderName: String): Path {
         extractedShaderPaths[shaderName]?.let { return it }
 
-        val directory = temporaryShaderDirectory ?: Files.createTempDirectory("animeko-video-enhancement-shaders-")
+        val directory = temporaryShaderDirectory ?: Files.createTempDirectory("wynime-video-enhancement-shaders-")
             .also {
                 it.toFile().deleteOnExit()
                 temporaryShaderDirectory = it

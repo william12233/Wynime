@@ -1,13 +1,12 @@
-package me.him188.ani.test
+package com.wynime.test
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
-import me.him188.ani.utils.coroutines.OwnedCancellationException
-import me.him188.ani.utils.coroutines.checkOwner
-
+import com.wynime.utils.coroutines.OwnedCancellationException
+import com.wynime.utils.coroutines.checkOwner
 
 suspend inline fun assertCoroutineSuspends(crossinline block: suspend () -> Unit) {
     var suspended = false

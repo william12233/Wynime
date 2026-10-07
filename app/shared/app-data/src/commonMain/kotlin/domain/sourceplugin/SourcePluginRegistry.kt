@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -16,17 +7,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.io.files.Path
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginMetadata
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.ResolvedMedia
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginMetadata
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.ResolvedMedia
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 
 data class SourcePluginRuntimeState(
     val installed: InstalledSourcePlugin,
@@ -39,6 +30,7 @@ class SourcePluginRegistry(
     private val installer: SourcePluginInstaller,
     private val loader: SourcePluginLoader,
     private val contextFactory: SourcePluginContextFactory,
+    private val bundledPackages: BundledSourcePluginPackages? = null,
 ) : AutoCloseable {
     private val logger = logger<SourcePluginRegistry>()
     private val loaded = LinkedHashMap<String, LoadedSourcePlugin>()
@@ -59,9 +51,15 @@ class SourcePluginRegistry(
 
     suspend fun loadInstalled() {
         closeLoadedPlugins()
+        migrateBundledPlugins()
         val current = installedRepository.snapshot().plugins
         _states.value = current.map { installed ->
-            if (!installed.enabled) {
+            if (installed.manifest.pluginApiVersion != SOURCE_PLUGIN_API_VERSION) {
+                SourcePluginRuntimeState(
+                    installed,
+                    errorMessage = "來源外掛 API ${installed.manifest.pluginApiVersion} 與此版本不相容，請安裝 API $SOURCE_PLUGIN_API_VERSION 套件",
+                )
+            } else if (!installed.enabled) {
                 SourcePluginRuntimeState(installed)
             } else {
                 runCatching { load(installed) }
@@ -79,7 +77,7 @@ class SourcePluginRegistry(
     }
 
     suspend fun install(entry: SourcePluginIndexEntry): InstalledSourcePlugin {
-        val installed = installer.install(entry) { candidate ->
+        val validate: suspend (InstalledSourcePlugin) -> Unit = { candidate ->
             val loadedCandidate = loadUnregistered(candidate)
             try {
                 validateRuntimeContract(loadedCandidate.plugin, candidate)
@@ -87,8 +85,38 @@ class SourcePluginRegistry(
                 loadedCandidate.close()
             }
         }
+        val packages = bundledPackages
+        val manifest = if (packages != null && entry.id in packages.pluginIds) {
+            packages.manifest(entry.id).takeIf {
+                it.version == entry.version && entry.manifest == "manifests/${it.id}.json"
+            }
+        } else null
+        val installed = if (manifest != null) {
+            installer.installBundled(manifest, { artifact -> packages!!.artifact(entry.id, artifact) }) { candidate ->
+                loadUnregistered(candidate).close()
+            }
+        } else {
+            installer.install(entry, validate)
+        }
         loadInstalled()
         return installed
+    }
+
+    suspend fun bundledEntries(): List<SourcePluginIndexEntry> {
+        val packages = bundledPackages ?: return emptyList()
+        return packages.pluginIds.map { id ->
+            val manifest = packages.manifest(id)
+            SourcePluginIndexEntry(
+                id = id,
+                displayName = manifest.displayName,
+                version = manifest.version,
+                description = manifest.description,
+                website = manifest.website,
+                icon = manifest.icon,
+                platforms = manifest.platforms,
+                manifest = "manifests/$id.json",
+            )
+        }
     }
 
     suspend fun setEnabled(pluginId: String, enabled: Boolean) {
@@ -101,9 +129,7 @@ class SourcePluginRegistry(
         try {
             installer.uninstall(pluginId)
         } finally {
-            // Reconcile the in-memory registry even when filesystem or datastore
-            // cleanup fails. A failed uninstall must remain visible as an error,
-            // rather than leaving a stale source list in memory.
+
             loadInstalled()
         }
     }
@@ -128,6 +154,9 @@ class SourcePluginRegistry(
     }
 
     private fun loadUnregistered(installed: InstalledSourcePlugin): LoadedSourcePlugin {
+        check(installed.manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION) {
+            "Incompatible source plugin API ${installed.manifest.pluginApiVersion}"
+        }
         val context: SourcePluginContext = contextFactory.create(installed.id)
         val loadedPlugin = loader.load(
             artifact = Path(installed.artifactPath).inSystem,
@@ -146,7 +175,7 @@ class SourcePluginRegistry(
                     "Plugin metadata API ${loaded.plugin.metadata.pluginApiVersion} does not match " +
                         "manifest API ${installed.manifest.pluginApiVersion}"
                 }
-                check(loaded.plugin.metadata.pluginApiVersion <= SOURCE_PLUGIN_API_VERSION) {
+                check(loaded.plugin.metadata.pluginApiVersion == SOURCE_PLUGIN_API_VERSION) {
                     "Plugin ${installed.id} requires unsupported plugin API " +
                         loaded.plugin.metadata.pluginApiVersion
                 }
@@ -157,11 +186,26 @@ class SourcePluginRegistry(
         }
     }
 
-    /**
-     * Performs a local contract smoke test after staging. Site health is observational: a
-     * timeout, HTTP error, challenge, or parser response from [checkConnection] is recorded but
-     * does not reject an otherwise loadable plugin. Linkage and contract errors do reject it.
-     */
+    private suspend fun migrateBundledPlugins() {
+        val packages = bundledPackages ?: return
+        for (installed in installedRepository.snapshot().plugins) {
+            if (installed.manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION) continue
+            if (installed.id !in packages.pluginIds) continue
+            try {
+                val manifest = packages.manifest(installed.id)
+                check(manifest.id == installed.id)
+                installer.installBundled(manifest, { artifact -> packages.artifact(installed.id, artifact) }) { candidate ->
+                    val loadedCandidate = loadUnregistered(candidate)
+                    loadedCandidate.close()
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                logger.warn(error) { "Source plugin ${installed.id} migration failed; keeping its installed files for retry" }
+            }
+        }
+    }
+
     private suspend fun validateRuntimeContract(
         plugin: SourcePlugin,
         installed: InstalledSourcePlugin,

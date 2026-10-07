@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -52,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupPositionProvider
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import me.him188.ani.app.ui.foundation.dialogs.PlatformPopupProperties
+import com.wynime.app.ui.foundation.dialogs.PlatformPopupProperties
 
 @Composable
 fun rememberModalBottomImeAwareSheetState(): ModalBottomImeAwareSheetState {
@@ -68,17 +59,9 @@ class ModalBottomImeAwareSheetState {
     }
 }
 
-/**
- * 与 [ModalBottomSheet] 相似, 但不使用 [imePadding] 和任何 [WindowInsets]
- *
- * 默认的 [ModalBottomSheet] 在 Android 平台总是为悬浮窗口添加了 [imePadding],
- * 此实现移除了 [imePadding].
- *
- * @param onDismiss 在关闭动画完成时调用
- */
 @Composable
 fun ModalBottomImeAwareSheet(
-    // TODO: Support window insets
+
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     state: ModalBottomImeAwareSheetState = rememberModalBottomImeAwareSheetState(),
@@ -93,7 +76,6 @@ fun ModalBottomImeAwareSheet(
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
 
-    // 用于控制动画
     var presentVisibility by rememberSaveable { mutableStateOf(false) }
     val scrimAlpha by animateFloatAsState(
         targetValue = if (presentVisibility) 1f else 0f,

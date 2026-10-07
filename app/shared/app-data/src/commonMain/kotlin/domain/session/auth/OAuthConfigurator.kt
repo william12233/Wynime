@@ -1,35 +1,23 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.session.auth
+package com.wynime.app.domain.session.auth
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.user.AccessTokenSession
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.domain.session.SessionManager
-import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.Uuid
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.user.AccessTokenSession
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.domain.session.SessionManager
+import com.wynime.app.domain.session.SessionStateProvider
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.Uuid
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * Access OAuthClient oAuth
- */
 class OAuthConfigurator(
     private val client: OAuthClient,
     private val sessionManager: SessionManager,
@@ -41,11 +29,6 @@ class OAuthConfigurator(
     private val _state = MutableStateFlow<State>(State.Idle)
     val state: StateFlow<State> = _state
 
-    /**
-     * 进行 OAuth 验证, 操作时会更新 [state]. 这个函数可能会持续很久, 直到用户完成 OAuth 授权并返回结果.
-     *
-     * does not throw
-     */
     suspend fun auth(isRegister: Boolean, onOpenUrl: suspend (String) -> Unit): State {
         val requestId = Uuid.random(random).toString()
         val tokenDeferred = CompletableDeferred<OAuthResult>()
@@ -68,14 +51,13 @@ class OAuthConfigurator(
             while (oAuthResult == null) {
                 delay(1.seconds)
                 oAuthResult = client.getResult(requestId)
-                // 日志里已经有 HTTP 日志了, 可以看到 425, 不需要这个
-//                logger.info { "Check oauth result of request id $requestId: ${oAuthResult != null}" }
+
             }
 
             _state.value = State.Success(requestId, oAuthResult)
             logger.info {
                 "Oauth success, request id: $requestId, " +
-                        "token hash: ${oAuthResult.tokens.aniAccessToken.hashCode()}"
+                        "token hash: ${oAuthResult.tokens.legacyServiceAccessToken.hashCode()}"
             }
 
             sessionManager.setSession(

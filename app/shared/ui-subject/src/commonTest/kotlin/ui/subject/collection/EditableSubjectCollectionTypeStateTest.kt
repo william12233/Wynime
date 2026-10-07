@@ -1,13 +1,9 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-package me.him188.ani.app.ui.subject.collection
+package com.wynime.app.ui.subject.collection
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

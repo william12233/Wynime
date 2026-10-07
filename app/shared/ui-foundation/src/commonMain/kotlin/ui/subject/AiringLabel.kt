@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject
+package com.wynime.app.ui.subject
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -25,25 +16,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.subject.ContinueWatchingStatus
-import me.him188.ani.app.data.models.subject.SubjectAiringInfo
-import me.him188.ani.app.data.models.subject.SubjectAiringKind
-import me.him188.ani.app.data.models.subject.SubjectProgressInfo
-import me.him188.ani.app.data.models.subject.TestSubjectProgressInfos
-import me.him188.ani.app.data.models.subject.isOnAir
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.ContinueWatchingStatus
+import com.wynime.app.data.models.subject.SubjectAiringInfo
+import com.wynime.app.data.models.subject.SubjectAiringKind
+import com.wynime.app.data.models.subject.SubjectProgressInfo
+import com.wynime.app.data.models.subject.TestSubjectProgressInfos
+import com.wynime.app.data.models.subject.isOnAir
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.utils.platform.annotations.TestOnly
 
-// Test: AiringProgressTests
 @Stable
 class AiringLabelState(
-    airingInfoState: State<SubjectAiringInfo?>, // null means loading
-    progressInfoState: State<SubjectProgressInfo?>, // null means loading
+    airingInfoState: State<SubjectAiringInfo?>,
+    progressInfoState: State<SubjectProgressInfo?>,
 ) {
-    /**
-     * 从不可变的值构造. 值变化时由调用方重新构造 (例如 `remember(airingInfo, progressInfo) { ... }`).
-     */
+
     constructor(
         airingInfo: SubjectAiringInfo?,
         progressInfo: SubjectProgressInfo?,
@@ -56,11 +44,7 @@ class AiringLabelState(
         airingInfo == null || progressInfo == null
     }
 
-    /**
-     * 显示当前看到的剧集, 或者最新连载到的剧集.
-     */
     fun progressText(strings: SubjectStatusStrings): String? {
-        // Hi, 如果你修改这里, 务必在 AiringLabelStateTest 增加测试
 
         val airingInfo = airingInfo
         val progressInfo = progressInfo
@@ -70,11 +54,7 @@ class AiringLabelState(
         return when (airingInfo.kind) {
             SubjectAiringKind.UPCOMING -> {
                 strings.upcoming
-//                if (airingInfo.airDate.isInvalid) {
-//                    "未开播"
-//                } else {
-//                    airingInfo.airDate.toStringExcludingSameYear() + " 开播"
-//                }
+
             }
 
             SubjectAiringKind.ON_AIR -> {
@@ -126,26 +106,12 @@ class AiringLabelState(
                 }
     }
 
-    /**
-     * "全 xx 话"
-     */
     fun totalEpisodesText(strings: SubjectStatusStrings): String? {
         val airingInfo = airingInfo ?: return null
         return renderTotalEpisodeText(airingInfo, strings)
     }
 }
 
-/**
- * ```
- * 已完结 · 全 28 话
- * ```
- *
- * ```
- * 连载至第 28 话 · 全 34 话
- * ```
- *
- * @sample
- */
 @Composable
 fun AiringLabel(
     state: AiringLabelState,
@@ -177,18 +143,16 @@ fun AiringLabel(
 fun renderEpAndSort(ep: EpisodeSort?, sort: EpisodeSort?) = when {
     ep == null -> sort.toString()
     sort == null -> ep.toString()
-    ep.number == 0f -> sort.toString() // 有些 SP 只有 sort, ep 为 0. #1677
+    ep.number == 0f -> sort.toString()
     ep != sort -> "$ep ($sort)"
     else -> sort.toString()
 }
-
 
 @TestOnly
 fun createTestAiringLabelState(
     airingInfo: SubjectAiringInfo = TestSubjectAiringInfo,
     progressInfo: SubjectProgressInfo = TestSubjectProgressInfos.ContinueWatching2,
 ): AiringLabelState = AiringLabelState(stateOf(airingInfo), stateOf(progressInfo))
-
 
 @TestOnly
 val TestSubjectAiringInfo get() = SubjectAiringInfo.EmptyCompleted

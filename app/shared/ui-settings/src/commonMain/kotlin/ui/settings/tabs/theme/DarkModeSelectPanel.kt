@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.theme
+package com.wynime.app.ui.settings.tabs.theme
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.horizontalScroll
@@ -30,13 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.app.ui.foundation.theme.appColorScheme
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_theme_mode_auto
-import me.him188.ani.app.ui.lang.settings_theme_mode_dark
-import me.him188.ani.app.ui.lang.settings_theme_mode_light
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.foundation.theme.appColorScheme
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_theme_mode_auto
+import com.wynime.app.ui.lang.settings_theme_mode_dark
+import com.wynime.app.ui.lang.settings_theme_mode_light
 import org.jetbrains.compose.resources.stringResource
 
 @Composable

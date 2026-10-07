@@ -1,55 +1,32 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models.subject
+package com.wynime.app.data.models.subject
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.subject.SubjectProgressInfo.Companion.compute
-import me.him188.ani.app.domain.episode.EpisodeCompletionContext.isKnownCompleted
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.ifInvalid
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.subject.SubjectProgressInfo.Companion.compute
+import com.wynime.app.domain.episode.EpisodeCompletionContext.isKnownCompleted
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.ifInvalid
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 
-/**
- * 用户对一个条目的观看进度
- *
- * @see SubjectCollection
- */
 @Immutable
 data class SubjectProgressInfo(
     val continueWatchingStatus: ContinueWatchingStatus,
-    /**
-     * 供 UI 点击按钮时跳转用
-     */
+
     val nextEpisodeIdToPlay: Int?,
 ) {
-    /**
-     * 仅供 [compute]
-     */
+
     class Episode(
         val id: Int,
         val type: UnifiedCollectionType,
         val ep: EpisodeSort?,
         val sort: EpisodeSort,
-        /**
-         * Might be [PackedDate.Invalid]
-         */
+
         val airDate: PackedDate,
-        /**
-         * 是否一定已经播出了
-         * @see EpisodeInfo.isKnownCompleted
-         */
+
         val isKnownCompleted: Boolean,
     )
 
@@ -87,7 +64,7 @@ data class SubjectProgressInfo(
             episodes: List<Episode>,
             subjectAirDate: PackedDate,
         ): SubjectProgressInfo {
-            // 进度应该仅考虑普通剧集，并且按 sort 排序
+
             val sortedNormalEpisodes = episodes
                 .filter { it.sort is EpisodeSort.Normal }
                 .sortedBy { it.sort }
@@ -101,7 +78,6 @@ data class SubjectProgressInfo(
                     sortedNormalEpisodes.lastOrNull { it.isKnownCompleted }
                 }
 
-                // 有剧集 isKnownCompleted == true 时就认为已开播
                 val actualSubjectStarted = latestEp != null || subjectStarted
 
                 val latestEpIndex: Int? =
@@ -110,7 +86,7 @@ data class SubjectProgressInfo(
                         ?: sortedNormalEpisodes.lastIndex.takeIf { it != -1 }
 
                 when (lastWatchedEpIndex) {
-                    // 还没看过
+
                     -1 -> {
                         if (actualSubjectStarted) {
                             ContinueWatchingStatus.Start
@@ -123,10 +99,9 @@ data class SubjectProgressInfo(
                         }
                     }
 
-                    // 看了第 n 集并且还有第 n+1 集
                     in 0..<sortedNormalEpisodes.size - 1 -> {
                         if (latestEpIndex != null && lastWatchedEpIndex < latestEpIndex && actualSubjectStarted) {
-                            // 更新了 n+1 集
+
                             ContinueWatchingStatus.Continue(
                                 episodeEp = sortedNormalEpisodes.getOrNull(lastWatchedEpIndex + 1)?.ep,
                                 episodeSort = sortedNormalEpisodes.getOrNull(lastWatchedEpIndex + 1)?.sort,
@@ -134,7 +109,7 @@ data class SubjectProgressInfo(
                                 watchedEpisodeSort = sortedNormalEpisodes[lastWatchedEpIndex].sort,
                             )
                         } else {
-                            // 还没更新
+
                             ContinueWatchingStatus.Watched(
                                 sortedNormalEpisodes.getOrNull(lastWatchedEpIndex)?.ep,
                                 sortedNormalEpisodes.getOrNull(lastWatchedEpIndex)?.sort,
@@ -182,38 +157,26 @@ inline val SubjectProgressInfo.hasNewEpisodeToPlay: Boolean
 sealed class ContinueWatchingStatus {
     data object Start : ContinueWatchingStatus()
 
-    /**
-     * 还未开播
-     */
     data class NotOnAir(
         val airDate: PackedDate,
     ) : ContinueWatchingStatus()
 
-    /**
-     * 继续看
-     */
     data class Continue(
         val episodeEp: EpisodeSort?,
-        val episodeSort: EpisodeSort?, // "12.5"
+        val episodeSort: EpisodeSort?,
         val watchedEpisodeEp: EpisodeSort?,
         val watchedEpisodeSort: EpisodeSort,
     ) : ContinueWatchingStatus()
 
-    /**
-     * 看到了, 但是下一集还没更新
-     */
     data class Watched(
-        val episodeEp: EpisodeSort?, // "12.5"
-        val episodeSort: EpisodeSort?, // "24.5"
-        /**
-         * Might be [PackedDate.Invalid]
-         */
+        val episodeEp: EpisodeSort?,
+        val episodeSort: EpisodeSort?,
+
         val nextEpisodeAirDate: PackedDate,
     ) : ContinueWatchingStatus()
 
     data object Done : ContinueWatchingStatus()
 }
-
 
 @Stable
 @TestOnly

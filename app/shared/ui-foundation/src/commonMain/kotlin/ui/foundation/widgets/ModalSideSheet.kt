@@ -1,14 +1,6 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
 @file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -49,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import me.him188.ani.app.ui.foundation.dialogs.PlatformDialogProperties
+import com.wynime.app.ui.foundation.dialogs.PlatformDialogProperties
 
 @Composable
 fun rememberModalSideSheetState(): ModalSideSheetState {
@@ -68,13 +60,6 @@ class ModalSideSheetState {
 
 enum class SheetSide { Start, End }
 
-/**
- * A simple modal side sheet implementation following Material3 guidelines.
- * The sheet animates in from [side] and blocks interaction with underlying content using a scrim.
- *
- * @param onDismiss Called when the sheet has been completely dismissed.
- * @param overlay 覆盖整个窗口 (而不只是 sheet) 的内容, 绘制在 sheet 之上, 不随 sheet 滑动. 例如全屏图片查看器.
- */
 @Composable
 fun ModalSideSheet(
     onDismiss: () -> Unit,
@@ -134,7 +119,7 @@ fun ModalSideSheet(
             dismissOnClickOutside = true,
             usePlatformDefaultWidth = false,
             usePlatformInsets = false,
-            // 本组件自带滑入动画, 不能叠加 CMP 1.11 的 Dialog 默认 scale-in.
+
             animateTransition = false,
         ),
     ) {

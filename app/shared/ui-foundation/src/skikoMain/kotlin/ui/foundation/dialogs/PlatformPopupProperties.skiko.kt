@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.dialogs
+package com.wynime.app.ui.foundation.dialogs
 
 import androidx.compose.ui.window.PopupProperties
 
@@ -8,10 +8,10 @@ actual fun PlatformPopupPropertiesImpl(
     dismissOnBackPress: Boolean,
     dismissOnClickOutside: Boolean,
     usePlatformDefaultWidth: Boolean,
-    // Android-only:
+
     excludeFromSystemGesture: Boolean,
     clippingEnabled: Boolean,
-    // Desktop-only:
+
     usePlatformInsets: Boolean,
 ): PopupProperties {
     return PopupProperties(

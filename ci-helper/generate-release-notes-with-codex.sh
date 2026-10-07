@@ -18,8 +18,8 @@ fi
 workdir="$(mktemp -d)"
 trap 'rm -rf "$workdir"' EXIT
 
-# Release workflows often start from a shallow checkout. Fetch enough history and tags
-# so we can find the previous tag and provide Codex with an accurate changelog context.
+                                                                                      
+                                                                                       
 if [[ "$(git rev-parse --is-shallow-repository 2>/dev/null || echo false)" == "true" ]]; then
   git fetch --unshallow --tags --force --prune origin '+refs/heads/*:refs/remotes/origin/*' >/dev/null 2>&1 || true
 else
@@ -31,18 +31,18 @@ if [[ -z "$PREVIOUS_TAG" ]]; then
   tag_commit="$(git rev-list -n 1 "$GIT_TAG" 2>/dev/null || true)"
   if [[ -n "$tag_commit" ]]; then
     if [[ "$GIT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-      # Stable releases compare against the latest previous stable tag by
-      # semantic version, ignoring beta/alpha/rc tags.
+                                                                         
+                                                      
       PREVIOUS_TAG="$({
         git tag --list 'v[0-9]*.[0-9]*.[0-9]*' 2>/dev/null || true
       } | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
         | sort -V \
         | awk -v current="$GIT_TAG" '$0 < current { previous=$0 } END { print previous }')"
     else
-      # Pre-releases compare against the previous pre-release in the same base
-      # version sequence. For example, v5.5.0-beta02 -> v5.5.0-beta01 and
-      # v5.5.0-beta01 -> v5.5.0-alpha03, even if a v5.4.x hotfix was published
-      # in between.
+                                                                              
+                                                                         
+                                                                              
+                   
       base_version="$(echo "$GIT_TAG" | sed -E 's/^((v[0-9]+\.[0-9]+\.[0-9]+)).*/\1/')"
       PREVIOUS_TAG="$({
         git tag --list "${base_version}-*" 2>/dev/null || true

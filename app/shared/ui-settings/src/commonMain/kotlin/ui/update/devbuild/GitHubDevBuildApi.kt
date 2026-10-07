@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update.devbuild
+package com.wynime.app.ui.update.devbuild
 
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
@@ -33,34 +24,22 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.io.DEFAULT_BUFFER_SIZE
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.bufferedSink
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.io.DEFAULT_BUFFER_SIZE
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.bufferedSink
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 
-/**
- * 查询 GitHub 仓库的 commits, PR, Build workflow 的运行记录和上传的 artifacts, 以及下载 artifact 和安装包.
- *
- * 列表接口无需登录, 但匿名请求的速率限制很低 (每小时 60 次); 下载 artifact 必须提供 token.
- *
- * @param client 必须关闭自动跟随重定向 (`followRedirects = false`) 且不抛出非 2xx 异常 (`expectSuccess = false`):
- * artifact 下载接口返回 302 指向一个短期有效的直链, 该直链不能再附带 `Authorization` 头, 所以由本类手动处理重定向.
- */
 class GitHubDevBuildApi(
     private val client: HttpClient,
-    /**
-     * `owner/name`
-     */
+
     val repository: String = DEFAULT_REPOSITORY,
     private val branch: String = DEFAULT_BRANCH,
     private val workflowFileName: String = DEFAULT_WORKFLOW_FILE_NAME,
     private val apiBaseUrl: String = "https://api.github.com",
 ) {
-    /**
-     * [branch] 上最新的 commits, 新的在前.
-     */
+
     suspend fun listCommits(token: String?, perPage: Int = 30): List<GitHubCommit> {
         val text = getText(token, "$apiBaseUrl/repos/$repository/commits") {
             parameter("sha", branch)
@@ -69,9 +48,6 @@ class GitHubDevBuildApi(
         return json.decodeFromString(ListSerializer(GitHubCommit.serializer()), text)
     }
 
-    /**
-     * 单个 commit. [ref] 可以是完整或缩写的 sha, 返回的 [GitHubCommit.sha] 总是完整的.
-     */
     suspend fun getCommit(token: String?, ref: String): GitHubCommit {
         val text = getText(token, "$apiBaseUrl/repos/$repository/commits/$ref") {}
         return json.decodeFromString(GitHubCommit.serializer(), text)
@@ -82,9 +58,6 @@ class GitHubDevBuildApi(
         return json.decodeFromString(GitHubPullRequest.serializer(), text)
     }
 
-    /**
-     * [branch] 上由 push 触发的 Build workflow 运行记录, 新的在前.
-     */
     suspend fun listWorkflowRuns(token: String?, perPage: Int = 50): List<GitHubWorkflowRun> {
         val text = getText(token, "$apiBaseUrl/repos/$repository/actions/workflows/$workflowFileName/runs") {
             parameter("branch", branch)
@@ -94,9 +67,6 @@ class GitHubDevBuildApi(
         return json.decodeFromString(WorkflowRunsResponse.serializer(), text).workflowRuns
     }
 
-    /**
-     * 以 [sha] 为 head 的 Build workflow 运行记录, 不限分支和触发事件, 新的在前. [sha] 必须是完整的.
-     */
     suspend fun listWorkflowRunsForCommit(token: String?, sha: String, perPage: Int = 20): List<GitHubWorkflowRun> {
         val text = getText(token, "$apiBaseUrl/repos/$repository/actions/workflows/$workflowFileName/runs") {
             parameter("head_sha", sha)
@@ -110,9 +80,6 @@ class GitHubDevBuildApi(
         return json.decodeFromString(GitHubWorkflowRun.serializer(), text)
     }
 
-    /**
-     * 某次 workflow 运行上传的全部 artifacts.
-     */
     suspend fun listRunArtifacts(token: String?, runId: Long, perPage: Int = 100): List<GitHubArtifact> {
         val text = getText(token, "$apiBaseUrl/repos/$repository/actions/runs/$runId/artifacts") {
             parameter("per_page", perPage)
@@ -125,9 +92,6 @@ class GitHubDevBuildApi(
         return json.decodeFromString(GitHubArtifact.serializer(), text)
     }
 
-    /**
-     * 仓库内名为 [name] 的 artifacts (所有分支), 新的在前.
-     */
     suspend fun listArtifacts(token: String?, name: String, perPage: Int = 100): List<GitHubArtifact> {
         val text = getText(token, "$apiBaseUrl/repos/$repository/actions/artifacts") {
             parameter("name", name)
@@ -136,9 +100,6 @@ class GitHubDevBuildApi(
         return json.decodeFromString(ArtifactsResponse.serializer(), text).artifacts
     }
 
-    /**
-     * 取得 artifact zip 的直链. 直链短期有效, 需立即开始下载.
-     */
     suspend fun resolveArtifactDownloadUrl(token: String, archiveDownloadUrl: String): String {
         val response = client.get(archiveDownloadUrl) {
             configureApiRequest(token)
@@ -150,10 +111,6 @@ class GitHubDevBuildApi(
         throw response.toApiException()
     }
 
-    /**
-     * 下载 [url] 到 [target], 不附带 token. 跟随最多 [MAX_DOWNLOAD_REDIRECTS] 次重定向 (Release 附件的直链会重定向到对象存储).
-     * [onProgress] 在下载过程中周期性回调, 完成时最后回调一次.
-     */
     suspend fun downloadFile(
         url: String,
         target: SystemPath,
@@ -170,9 +127,6 @@ class GitHubDevBuildApi(
         }
     }
 
-    /**
-     * 按 RFC 3986 把 `Location` 头 [location] 解析为绝对地址: 绝对地址原样使用, 相对地址基于 [base] 解析且不继承 [base] 的 query.
-     */
     private fun resolveRedirect(base: String, location: String): String {
         if (ABSOLUTE_URL_REGEX.containsMatchIn(location)) return location
         return URLBuilder(base).apply {
@@ -182,9 +136,6 @@ class GitHubDevBuildApi(
         }.buildString()
     }
 
-    /**
-     * @return 需要跟随的重定向地址; 下载完成时为 `null`.
-     */
     private suspend fun downloadFileOnce(
         url: String,
         target: SystemPath,
@@ -284,11 +235,6 @@ class GitHubDevBuildApi(
     }
 }
 
-/**
- * GitHub API 返回了非成功状态.
- *
- * @param isRateLimited 是否因为触发速率限制. 匿名请求每小时只能调用 60 次, 提供 token 后为 5000 次.
- */
 class GitHubApiException(
     val status: HttpStatusCode,
     message: String,
@@ -315,9 +261,7 @@ data class GitHubCommit(
     @Serializable
     data class Person(
         val name: String = "",
-        /**
-         * ISO-8601, 例如 `2026-09-18T05:04:36Z`
-         */
+
         val date: String = "",
     )
 
@@ -332,13 +276,9 @@ data class GitHubWorkflowRun(
     val id: Long,
     @SerialName("head_sha") val headSha: String,
     @SerialName("head_branch") val headBranch: String? = null,
-    /**
-     * `queued`, `in_progress`, `completed`, `waiting`, `pending`, `requested`
-     */
+
     val status: String? = null,
-    /**
-     * [status] 为 `completed` 时: `success`, `failure`, `cancelled`, `skipped`, `timed_out`, `action_required`, `startup_failure`, ...
-     */
+
     val conclusion: String? = null,
     @SerialName("html_url") val htmlUrl: String = "",
     @SerialName("run_attempt") val runAttempt: Int = 1,
@@ -355,9 +295,7 @@ data class GitHubPullRequest(
     data class Head(
         val sha: String,
         val ref: String = "",
-        /**
-         * 分支所在的仓库. fork 已被删除时为 `null`.
-         */
+
         val repo: Repo? = null,
     )
 

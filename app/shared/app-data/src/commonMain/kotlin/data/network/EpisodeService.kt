@@ -1,49 +1,33 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.network
+package com.wynime.app.data.network
 
 import io.ktor.client.plugins.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.repository.episode.toEpisodeCollectionInfo
-import me.him188.ani.app.data.repository.subject.toEntity1
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.EpisodeType.*
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.paging.Paged
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiEpType
-import me.him188.ani.datasources.bangumi.models.BangumiEpisode
-import me.him188.ani.datasources.bangumi.models.BangumiEpisodeDetail
-import me.him188.ani.datasources.bangumi.models.BangumiPatchUserSubjectEpisodeCollectionRequest
-import me.him188.ani.datasources.bangumi.models.BangumiUserEpisodeCollection
-import me.him188.ani.datasources.bangumi.processing.toCollectionType
-import me.him188.ani.datasources.bangumi.processing.toEpisodeCollectionType
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.platform.currentTimeMillis
-import me.him188.ani.utils.serialization.BigNum
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.repository.episode.toEpisodeCollectionInfo
+import com.wynime.app.data.repository.subject.toEntity1
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.EpisodeType.*
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.paging.Paged
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.bangumi.models.BangumiEpType
+import com.wynime.datasources.bangumi.models.BangumiEpisode
+import com.wynime.datasources.bangumi.models.BangumiEpisodeDetail
+import com.wynime.datasources.bangumi.models.BangumiPatchUserSubjectEpisodeCollectionRequest
+import com.wynime.datasources.bangumi.models.BangumiUserEpisodeCollection
+import com.wynime.datasources.bangumi.processing.toCollectionType
+import com.wynime.datasources.bangumi.processing.toEpisodeCollectionType
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.platform.currentTimeMillis
+import com.wynime.utils.serialization.BigNum
 import kotlin.coroutines.CoroutineContext
 
-/**
- * 执行网络请求查询.
- */
 sealed interface EpisodeService {
-    /**
-     * 获取用户在这个条目下的所有剧集的收藏状态. 当用户没有收藏此条目时返回 [collectionType] 均为 [UnifiedCollectionType.NOT_COLLECTED].
-     *
-     * @return 分页的剧集收藏信息.
-     */
+
     suspend fun getEpisodeCollectionInfosPaged(
         subjectId: Int,
         offset: Int? = 0,
@@ -51,18 +35,8 @@ sealed interface EpisodeService {
         episodeType: BangumiEpType? = null,
     ): Paged<EpisodeCollectionInfo>
 
-    /**
-     * 获取单个剧集的信息和用户的收藏状态. 如果用户没有收藏这个剧集所属的条目, 则返回 [collectionType] 为 [UnifiedCollectionType.NOT_COLLECTED].
-     *
-     * 只有在 [episodeId] 找不到对应的公开剧集时返回 `null`.
-     */
     suspend fun getEpisodeCollectionById(subjectId: Int, episodeId: Int): EpisodeCollectionInfo?
 
-    /**
-     * 设置多个剧集的收藏状态.
-     *
-     * 当设置成功时返回 `true`. 返回 `false` 表示用户没有收藏这个条目. 其他异常将会抛出.
-     */
     suspend fun setEpisodeCollection(
         subjectId: Int,
         episodeId: List<Int>,
@@ -107,7 +81,6 @@ class EpisodeServiceImpl(
             )
         }
     }
-
 
     override suspend fun getEpisodeCollectionById(subjectId: Int, episodeId: Int): EpisodeCollectionInfo? =
         withContext(ioDispatcher) {
@@ -183,12 +156,12 @@ internal fun BangumiEpisode.toEpisodeInfo(): EpisodeInfo {
         nameCn = this.nameCn,
         airDate = PackedDate.parseFromDate(this.airdate),
         comment = this.comment,
-//        duration = this.duration,
+
         desc = this.desc,
-//        disc = this.disc,
+
         sort = EpisodeSort(this.sort, getEpisodeTypeByBangumiCode(this.type)),
         ep = EpisodeSort(this.ep ?: BigNum.ONE, getEpisodeTypeByBangumiCode(this.type)),
-//        durationSeconds = this.durationSeconds
+
     )
 }
 
@@ -201,13 +174,12 @@ internal fun BangumiEpisodeDetail.toEpisodeInfo(): EpisodeInfo {
         sort = EpisodeSort(this.sort, getEpisodeTypeByBangumiCode(this.type)),
         airDate = PackedDate.parseFromDate(this.airdate),
         comment = comment,
-//        duration = duration,
+
         desc = desc,
-//        disc = disc,
+
         ep = EpisodeSort(this.ep ?: BigNum.ONE, getEpisodeTypeByBangumiCode(this.type)),
     )
 }
-
 
 internal fun EpisodeType.toBangumiEpType(): BangumiEpType {
     return when (this) {

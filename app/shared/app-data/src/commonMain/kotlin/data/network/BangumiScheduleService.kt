@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.network
+package com.wynime.app.data.network
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -23,25 +14,24 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
-import me.him188.ani.app.data.models.subject.LightEpisodeInfo
-import me.him188.ani.app.data.models.subject.LightSubjectInfo
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.domain.episode.AiringScheduleForDate
-import me.him188.ani.app.domain.episode.EpisodeWithAiringTime
-import me.him188.ani.app.domain.episode.GetAnimeScheduleFlowUseCase
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.serialization.BigNum
+import com.wynime.app.data.models.subject.LightEpisodeInfo
+import com.wynime.app.data.models.subject.LightSubjectInfo
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.domain.episode.AiringScheduleForDate
+import com.wynime.app.domain.episode.EpisodeWithAiringTime
+import com.wynime.app.domain.episode.GetAnimeScheduleFlowUseCase
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.PackedDate
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.serialization.BigNum
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-/** Loads Bangumi's calendar and episode air dates and assembles the local schedule view. */
 class BangumiScheduleService(
     private val dataSource: BangumiExploreDataSource,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,

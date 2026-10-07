@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -17,12 +8,6 @@ expect fun ImageBitmap.resize(
     height: Int,
 ): ImageBitmap
 
-/**
- * Determine the main color in a [ImageBitmap].
- *
- * @receiver The [ImageBitmap] to extract colors from.
- * @return The main color.
- */
 fun ImageBitmap.themeColor(): Color {
     val width = this.width
     val height = this.height
@@ -38,7 +23,6 @@ fun ImageBitmap.themeColor(): Color {
         stride = width,
     )
 
-    // 将像素转换为带权重的 RGB 点
     val points = mutableListOf<WeightedRGBPoint>()
     val centerX = width / 2.0
     val centerY = height / 2.0
@@ -49,11 +33,10 @@ fun ImageBitmap.themeColor(): Color {
             val pixel = pixels[y * width + x]
             if ((pixel shr 24) and 0xFF <= 128) continue
 
-            // 计算到图片中心的距离作为权重
             val distanceFromCenter = kotlin.math.sqrt(
                 (x - centerX) * (x - centerX) + (y - centerY) * (y - centerY),
             )
-            val weight = 1.0 - (distanceFromCenter / maxDistance) * 0.5 // 中心权重最高为 1，边缘为 0.5
+            val weight = 1.0 - (distanceFromCenter / maxDistance) * 0.5
 
             val r = (pixel shr 16) and 0xFF
             val g = (pixel shr 8) and 0xFF
@@ -65,16 +48,13 @@ fun ImageBitmap.themeColor(): Color {
 
     if (points.isEmpty()) return Color.Black
 
-    // 使用 K-means++ 进行聚类
     val k = 5
     val clusters = kMeansPlusPlus(points, k, maxIterations = 15)
 
-    // 评估每个聚类的重要性（考虑点数量和权重）
     val dominantCluster = clusters.maxByOrNull { cluster ->
         cluster.points.sumOf { it.weight } * cluster.points.size
     } ?: return Color.Black
 
-    // 返回主导聚类的中心点 RGB
     val (r, g, b) = dominantCluster.centroid
     return Color(
         red = r / 255f,
@@ -107,14 +87,12 @@ private fun kMeansPlusPlus(
     k: Int,
     maxIterations: Int
 ): List<Cluster> {
-    // K-means++ 初始化
+
     val centroids = mutableListOf<RGBColor>()
     val random = kotlin.random.Random.Default
 
-    // 随机选择第一个中心点
     centroids.add(points.random().rgb)
 
-    // 选择剩余的中心点
     while (centroids.size < k) {
         var totalDistance = 0.0
         val distances = points.map { point ->
@@ -125,7 +103,6 @@ private fun kMeansPlusPlus(
             totalDistance
         }
 
-        // 按距离的平方选择下一个中心点
         val threshold = random.nextDouble() * totalDistance
         val nextCentroid = points[distances.indexOfFirst { it >= threshold }].rgb
         centroids.add(nextCentroid)
@@ -133,14 +110,12 @@ private fun kMeansPlusPlus(
 
     val clusters = centroids.map { Cluster(it) }
 
-    // K-means 迭代
     var iteration = 0
     var changed: Boolean
 
     do {
         clusters.forEach { it.points.clear() }
 
-        // 分配点到最近的聚类
         for (point in points) {
             val nearestCluster = clusters.minByOrNull {
                 point.rgb.distanceTo(it.centroid)
@@ -150,11 +125,9 @@ private fun kMeansPlusPlus(
 
         changed = false
 
-        // 更新聚类中心
         for (cluster in clusters) {
             if (cluster.points.isEmpty()) continue
 
-            // 计算加权平均值作为新的中心点
             val totalWeight = cluster.points.sumOf { it.weight }
             val newCentroid = RGBColor(
                 r = (cluster.points.sumOf { it.rgb.r * it.weight } / totalWeight).toInt(),

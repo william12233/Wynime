@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.layout
+package com.wynime.app.ui.foundation.layout
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -48,10 +39,6 @@ inline val WindowAdaptiveInfo.isWidthAtLeastMedium: Boolean
 inline val WindowAdaptiveInfo.isWidthAtLeastExpanded: Boolean
     get() = windowSizeClass.isWidthAtLeastExpanded
 
-/**
- * 宽度至少达到 [WindowSizeClass.WIDTH_DP_EXTRA_LARGE_LOWER_BOUND] (1600dp, Material Design extraLarge).
- * 条目详情页三栏布局的启用断点.
- */
 @Stable
 inline val WindowAdaptiveInfo.isWidthAtLeastExtraLarge: Boolean
     get() = windowSizeClass.isWidthAtLeastExtraLarge
@@ -63,7 +50,6 @@ inline val WindowAdaptiveInfo.isHeightCompact: Boolean
 @Stable
 inline val WindowAdaptiveInfo.isHeightAtLeastMedium: Boolean
     get() = windowSizeClass.isHeightAtLeastMedium
-
 
 @Stable
 inline val WindowSizeClass.isWidthCompact: Boolean
@@ -77,10 +63,6 @@ inline val WindowSizeClass.isWidthAtLeastMedium: Boolean
 inline val WindowSizeClass.isWidthAtLeastExpanded: Boolean
     get() = isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXPANDED_LOWER_BOUND)
 
-/**
- * 宽度至少达到 [WindowSizeClass.WIDTH_DP_EXTRA_LARGE_LOWER_BOUND] (1600dp, Material Design extraLarge).
- * 条目详情页三栏布局的启用断点.
- */
 @Stable
 inline val WindowSizeClass.isWidthAtLeastExtraLarge: Boolean
     get() = isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_EXTRA_LARGE_LOWER_BOUND)
@@ -97,7 +79,6 @@ inline val WindowSizeClass.isHeightAtLeastMedium: Boolean
 inline val WindowSizeClass.isHeightAtLeastExpanded: Boolean
     get() = isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_EXPANDED_LOWER_BOUND)
 
-
 @Stable
 val WindowSizeClass.panePadding
     get() = PanePaddings.get(this)
@@ -110,21 +91,15 @@ val WindowSizeClass.paneHorizontalPadding
 val WindowSizeClass.paneVerticalPadding
     get() = if (isHeightCompact) 16.dp else 24.dp
 
-/**
- * 在一个主要的滚动列表中卡片的间距
- */
 @Stable
 val WindowSizeClass.cardHorizontalPadding
     get() = if (isWidthCompact) 16.dp else 20.dp
 
-/**
- * 在一个主要的滚动列表中卡片的间距
- */
 @Stable
 val WindowSizeClass.cardVerticalPadding
     get() = if (isHeightCompact) 16.dp else 20.dp
 
-private val zeroInsets = WindowInsets(0.dp) // single instance to be shared
+private val zeroInsets = WindowInsets(0.dp)
 
 @Stable
 val WindowInsets.Companion.Zero: WindowInsets

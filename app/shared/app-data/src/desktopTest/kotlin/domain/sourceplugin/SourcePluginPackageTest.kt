@@ -1,22 +1,17 @@
-/*
- * Copyright (C) 2026 OpenAni contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.exists
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.writeBytes
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.exists
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.writeBytes
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

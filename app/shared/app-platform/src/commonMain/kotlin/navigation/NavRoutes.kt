@@ -1,13 +1,6 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.navigation
 
-package me.him188.ani.app.navigation
+import kotlinx.serialization.SerialName
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DownloadDone
@@ -18,125 +11,121 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.main_screen_page_cache_management
-import me.him188.ani.app.ui.lang.main_screen_page_collection
-import me.him188.ani.app.ui.lang.main_screen_page_exploration
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.main_screen_page_cache_management
+import com.wynime.app.ui.lang.main_screen_page_collection
+import com.wynime.app.ui.lang.main_screen_page_exploration
 import org.jetbrains.compose.resources.stringResource
 
 @Serializable
 sealed class NavRoutes : NavKey {
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.EmailLoginStart")
     @Serializable
     data object EmailLoginStart : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.EmailLoginVerify")
     @Serializable
     data object EmailLoginVerify : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.Main")
     @Serializable
     data class Main(
         val initialPage: MainScreenPage,
         val requestSearchFocus: Boolean = false,
     ) : NavRoutes()
 
-    /**
-     * 第三方账号登录 / 绑定页.
-     *
-     * @param provider 平台 ID, 见 `OAuthPlatform.id`
-     */
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.OAuthAuthorize")
     @Serializable
     data class OAuthAuthorize(val provider: String) : NavRoutes()
 
-    /**
-     * 扫描其他设备 (例如电视) 上的登录二维码.
-     */
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.QrLoginScan")
     @Serializable
     data object QrLoginScan : NavRoutes()
 
-    /**
-     * 确认为其他设备登录当前账号.
-     *
-     * @param requestId 扫码登录会话的 ID, 来自二维码或 `ani://qr-login` 链接
-     */
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.QrLoginConfirm")
     @Serializable
     data class QrLoginConfirm(val requestId: String) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.Settings")
     @Serializable
     data class Settings(
-        /**
-         * 如果指定了 [tab]，则直接跳转到指定的设置页. 在按返回时将回到上一页, 而不是设置页的导航 (list).
-         *
-         * 如果为 `null`, 则正常打开设置页的导航.
-         */
+
         val tab: SettingsTab? = null,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.SubjectSearch")
     @Serializable
     data class SubjectSearch(
         val keyword: String? = null,
         val tags: List<String>? = null,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.SubjectDetail")
     @Serializable
     data class SubjectDetail(
         val subjectId: Int,
         val placeholder: SubjectDetailPlaceholder? = null,
     ) : NavRoutes()
 
-    /**
-     * 条目所在系列的关系图
-     */
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.SubjectRelationGraph")
     @Serializable
     data class SubjectRelationGraph(
         val subjectId: Int,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.PersonDetail")
     @Serializable
     data class PersonDetail(
         val personId: Int,
         val role: PersonDetailRole = PersonDetailRole.Staff,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.CharacterDetail")
     @Serializable
     data class CharacterDetail(
         val characterId: Int,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.SubjectCaches")
     @Serializable
     data class SubjectCaches(
         val subjectId: Int,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.EpisodeDetail")
     @Serializable
     data class EpisodeDetail(
         val subjectId: Int,
         val episodeId: Int,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.Caches")
     @Serializable
     data object Caches : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.CacheDetail")
     @Serializable
     data class CacheDetail(
         val cacheId: String,
     ) : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.Schedule")
     @Serializable
     data object Schedule : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.PlaybackHistory")
     @Serializable
     data object PlaybackHistory : NavRoutes()
 
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.PlaybackHistorySyncStatus")
     @Serializable
     data object PlaybackHistorySyncStatus : NavRoutes()
 
-    /**
-     * 合并收藏: 处理 Animeko 与 Bangumi 两侧的收藏冲突.
-     */
+    @SerialName("me.him188.ani.app.navigation.NavRoutes.BangumiMerge")
     @Serializable
     data object BangumiMerge : NavRoutes()
 }
 
-/** Explicit entry identity; a person's asynchronously loaded careers never change their route. */
 @Serializable
 enum class PersonDetailRole { VoiceActor, Staff }
 
@@ -176,7 +165,6 @@ enum class SettingsTab {
 
     PROXY,
 
-    //    CACHE, // 自动缓存, 4.10 删除
     STORAGE,
 
     SETTINGS_BACKUP,
@@ -187,9 +175,7 @@ enum class SettingsTab {
     ;
 
     companion object {
-        /**
-         * 在 PC 上右侧默认显示的 tab.
-         */
+
         val Default = APPEARANCE
     }
 }

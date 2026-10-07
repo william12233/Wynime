@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui
+package com.wynime.app.videoplayer.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -62,10 +53,10 @@ private fun MediampPlayer.readMpvPlayerStats(handle: MPVHandle): PlayerStatsSnap
         audioBitrate = handle.getPropertyInt("audio-bitrate").takeIf { it > 0 }?.toLong(),
         audioSampleRate = handle.getPropertyInt("audio-params/samplerate").takeIf { it > 0 },
         audioChannels = handle.getPropertyInt("audio-params/channel-count").takeIf { it > 0 },
-        // cache-speed 为字节每秒
+
         realtimeInputBitrate = handle.getPropertyInt("cache-speed").takeIf { it > 0 }?.toLong()?.times(8),
         realtimeDemuxBitrate = null,
-        // mpv 不暴露已解码帧计数
+
         decodedVideoFrames = null,
         decodedAudioFrames = null,
         droppedVideoFrames = (decoderDroppedFrames + voDroppedFrames).takeIf { it > 0 }?.toLong(),

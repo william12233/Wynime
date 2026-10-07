@@ -1,32 +1,14 @@
-/*
- * Ani
- * Copyright (C) 2022-2024 Him188
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+package com.wynime.datasources.api
 
-package me.him188.ani.datasources.api
-
-import me.him188.ani.datasources.api.topic.EpisodeRange.Companion.range
-import me.him188.ani.datasources.api.topic.titles.ParsedTopicTitle
-import me.him188.ani.datasources.api.topic.titles.PatternBasedRawTitleParser
-import me.him188.ani.datasources.api.topic.titles.parse
-import me.him188.ani.test.DynamicTestsResult
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.dynamicTest
-import me.him188.ani.test.runDynamicTests
+import com.wynime.datasources.api.topic.EpisodeRange.Companion.range
+import com.wynime.datasources.api.topic.titles.ParsedTopicTitle
+import com.wynime.datasources.api.topic.titles.PatternBasedRawTitleParser
+import com.wynime.datasources.api.topic.titles.parse
+import com.wynime.test.DynamicTestsResult
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.dynamicTest
+import com.wynime.test.runDynamicTests
 import kotlin.test.assertEquals
 
 @TestContainer
@@ -56,16 +38,15 @@ internal class RawPatternBasedTitleParserTestSuite {
                         builder,
                     )
                     builder.build().run {
-                        // TODO: 2022/8/4 test TopicDetails
+
                         println(this)
-//                    assertEquals("", chineseTitle)
+
                     }
                 }
             },
         )
     }
 
-    // Test fixtures cover the episode-range formats used by ordinary web sources.
     private val episodeRangeData = listOf(
         range(1, 12)
                 to "[悠哈璃羽字幕社&LoliHouse] Overtake! [01-12 合集][WebRip 1080p HEVC-10bit AAC][简繁内封字幕][Fin]",

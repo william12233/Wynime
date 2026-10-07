@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(UnsafeEpisodeSessionApi::class)
 
-package me.him188.ani.app.domain.player.extension
+package com.wynime.app.domain.player.extension
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -21,24 +12,24 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.domain.episode.EpisodeFetchSelectPlayState
-import me.him188.ani.app.domain.episode.EpisodePlayerTestSuite
-import me.him188.ani.app.domain.episode.UnsafeEpisodeSessionApi
-import me.him188.ani.app.domain.episode.createExceptionCapturingSupervisorScope
-import me.him188.ani.app.domain.episode.getCurrentEpisodeId
-import me.him188.ani.app.domain.episode.mediaSelectorFlow
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.player.data.MediaDataProvider
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.domain.media.resolver.TestUniversalMediaResolver
-import me.him188.ani.app.domain.media.resolver.UnsupportedMediaException
-import me.him188.ani.app.domain.player.ExtensionException
-import me.him188.ani.app.domain.settings.GetVideoScaffoldConfigUseCase
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.utils.coroutines.childScope
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
+import com.wynime.app.domain.episode.EpisodePlayerTestSuite
+import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
+import com.wynime.app.domain.episode.createExceptionCapturingSupervisorScope
+import com.wynime.app.domain.episode.getCurrentEpisodeId
+import com.wynime.app.domain.episode.mediaSelectorFlow
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.player.data.MediaDataProvider
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.media.resolver.TestUniversalMediaResolver
+import com.wynime.app.domain.media.resolver.UnsupportedMediaException
+import com.wynime.app.domain.player.ExtensionException
+import com.wynime.app.domain.settings.GetVideoScaffoldConfigUseCase
+import com.wynime.datasources.api.Media
+import com.wynime.utils.coroutines.childScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -95,7 +86,6 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
 
         assertEquals(initialEpisodeId, state.getCurrentEpisodeId())
 
-        // 播到最尾部了, 但没有自然结束 (无 MediaEnded 事件)
         suite.player.seekTo(suite.player.mediaProperties.value!!.durationMillis!!)
 
         advanceUntilIdle()
@@ -107,8 +97,7 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
 
     @Test
     fun `does not switch if position is not close to the end`() = runTest {
-        // v2: with a known duration, a natural end always snaps the final position to the
-        // duration, so the "far from end" guard can only trigger for unknown durations.
+
         val (testScope, suite, state) =
             createCase(getNextEpisode = { 1000 })
 
@@ -136,7 +125,6 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
 
         assertEquals(initialEpisodeId, state.getCurrentEpisodeId())
 
-        // 播到最尾部了
         suite.player.seekTo(suite.player.mediaProperties.value!!.durationMillis!!)
         advanceUntilIdle()
         suite.player.injectEnded()
@@ -163,7 +151,6 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
 
         assertEquals(initialEpisodeId, state.getCurrentEpisodeId())
 
-        // 播到最尾部了
         suite.player.seekTo(suite.player.mediaProperties.value!!.durationMillis!!)
         advanceUntilIdle()
         suite.player.injectEnded()
@@ -199,7 +186,6 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
 
         assertEquals(initialEpisodeId, state.getCurrentEpisodeId())
 
-        // 播到最尾部了
         suite.player.seekTo(suite.player.mediaProperties.value!!.durationMillis!!)
         advanceUntilIdle()
         suite.player.injectEnded()
@@ -218,8 +204,7 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
     fun `does not switch next episode when playback never started after switching`() = runTest {
         var getNextEpisodeCalled = 0
         var resolveCalls = 0
-        // The first resolve (initial episode) succeeds; later resolves (the new episode) fail,
-        // so the new episode's media never loads into the player.
+
         val failingAfterFirstResolver = object : MediaResolver {
             override fun supports(media: Media): Boolean = true
             override suspend fun resolve(media: Media, episode: EpisodeMetadata): MediaDataProvider<*> {
@@ -241,27 +226,20 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
         assertEquals(initialEpisodeId, state.getCurrentEpisodeId())
         assertEquals(0, getNextEpisodeCalled)
 
-        // 播到最尾部了，触发自动切集
         suite.player.seekTo(suite.player.mediaProperties.value!!.durationMillis!!)
         advanceUntilIdle()
         suite.player.injectEnded()
         advanceUntilIdle()
 
-        // Verify switched to next episode (1000)
         assertEquals(1000, state.getCurrentEpisodeId())
         assertEquals(1, getNextEpisodeCalled)
 
-        // Trigger media selection for the new episode; its load fails (the player stays Idle,
-        // production keeps mediaProperties/state reset via stopPlayback).
         state.mediaSelectorFlow.filterNotNull().first().select(TestMediaList[0])
         advanceUntilIdle()
 
-        // v2: without a loaded media there is no playback session, so a natural-end signal
-        // cannot even be produced — injectEnded is a no-op. The extension must not switch again.
         suite.player.injectEnded()
         advanceUntilIdle()
 
-        // Verify does NOT switch again
         assertEquals(1000, state.getCurrentEpisodeId())
         assertEquals(1, getNextEpisodeCalled)
 

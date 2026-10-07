@@ -22,8 +22,7 @@
 ## 平台入口
 
 - `app/android/`：Android 啟動器與平台 DI。
-- `app/desktop/`：桌面啟動器與 Compose Desktop 打包設定。
-- `app/ios/`：iOS 平台整合。
+- `app/desktop/`：Windows 啟動器與 Compose Desktop 打包設定。
 
 修改媒體流程時，請先確認資料源回傳的 `Media`、選源結果與播放器 resolver 的邊界，
-再檢查 Android、桌面與 iOS 的平台 DI 是否仍只註冊目前支援的元件。
+再檢查 Android 與 Windows 的平台 DI 是否只註冊目前支援的元件。

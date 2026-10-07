@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediaselect.selector
+package com.wynime.app.ui.mediaselect.selector
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,33 +39,33 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
-import me.him188.ani.app.ui.foundation.IconButton
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.media_selector_web_captcha_unsupported
-import me.him188.ani.app.ui.lang.media_selector_web_edit_query_action
-import me.him188.ani.app.ui.lang.media_selector_web_edit_query_prompt
-import me.him188.ani.app.ui.lang.media_selector_web_rate_limited
-import me.him188.ani.app.ui.lang.media_selector_web_waiting_captcha
-import me.him188.ani.app.ui.lang.media_source_results_challenge
-import me.him188.ani.app.ui.lang.media_source_results_episode_no_match
-import me.him188.ani.app.ui.lang.media_source_results_failed
-import me.him188.ani.app.ui.lang.media_source_results_http_error
-import me.him188.ani.app.ui.lang.media_source_results_no_match
-import me.him188.ani.app.ui.lang.media_source_results_parse_error
-import me.him188.ani.app.ui.lang.media_source_results_plugin_error
-import me.him188.ani.app.ui.lang.media_source_results_subject_no_match
-import me.him188.ani.app.ui.lang.settings_mediasource_refresh
-import me.him188.ani.app.ui.media.webCaptchaRequiredMessage
-import me.him188.ani.app.ui.mediaselect.common.SourceIcon
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.source.plugin.api.SourceResultStatus
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.app.ui.foundation.IconButton
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.media_selector_web_captcha_unsupported
+import com.wynime.app.ui.lang.media_selector_web_edit_query_action
+import com.wynime.app.ui.lang.media_selector_web_edit_query_prompt
+import com.wynime.app.ui.lang.media_selector_web_rate_limited
+import com.wynime.app.ui.lang.media_selector_web_waiting_captcha
+import com.wynime.app.ui.lang.media_source_results_challenge
+import com.wynime.app.ui.lang.media_source_results_episode_no_match
+import com.wynime.app.ui.lang.media_source_results_failed
+import com.wynime.app.ui.lang.media_source_results_http_error
+import com.wynime.app.ui.lang.media_source_results_no_match
+import com.wynime.app.ui.lang.media_source_results_parse_error
+import com.wynime.app.ui.lang.media_source_results_plugin_error
+import com.wynime.app.ui.lang.media_source_results_subject_no_match
+import com.wynime.app.ui.lang.settings_mediasource_refresh
+import com.wynime.app.ui.media.webCaptchaRequiredMessage
+import com.wynime.app.ui.mediaselect.common.SourceIcon
+import com.wynime.datasources.api.Media
+import com.wynime.source.plugin.api.SourceResultStatus
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.currentTimeMillis
 import org.jetbrains.compose.resources.stringResource
 
 data class WebSourceChannel(
@@ -83,13 +74,11 @@ data class WebSourceChannel(
 )
 
 data class WebSource(
-    /**
-     * @see MediaSourceInstance.instanceId
-     */
+
     val instanceId: String,
     val mediaSourceId: String,
     val iconUrl: String,
-//    val iconResourceId: String?,
+
     val name: String,
     val channels: List<WebSourceChannel>,
     val isLoading: Boolean,
@@ -97,11 +86,11 @@ data class WebSource(
     val isPreferred: Boolean,
     val captchaRequest: SolveRequest? = null,
     val isResolvingCaptcha: Boolean = false,
-    /** 限流中: 到达该时间 (epoch millis) 后会自动重试. */
+
     val rateLimitedUntilMillis: Long? = null,
-    /** 当前平台是否支持交互解决验证码 (iOS 为 false, 显示降级提示). */
+
     val isCaptchaSupported: Boolean = true,
-    /** 查詢已完成，但沒有找到與目前劇集相符的結果。 */
+
     val isNoMatch: Boolean = false,
     val sourceStatus: SourceResultStatus? = null,
 ) {
@@ -110,9 +99,6 @@ data class WebSource(
     val isRateLimited: Boolean get() = rateLimitedUntilMillis != null
 }
 
-/**
- * https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=1054-13751&t=OSgRmNiOHpUGBYYu-0
- */
 @Composable
 fun MediaSelectorWebSourcesColumn(
     list: List<WebSource>,
@@ -147,13 +133,9 @@ fun MediaSelectorWebSourcesColumn(
                 },
         )
     }
-//    LazyColumn(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-//        items(list, key = { it.instanceId }) { source ->
-//            card(source)
-//        }
-//    }
+
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // not scrollable. 否则会跟 bottom sheet 的 scroll 冲突. 
+
         list.forEach { source ->
             card(source)
         }
@@ -260,7 +242,7 @@ private fun WebSourceCard(
                             .padding(vertical = 8.dp),
                     )
                 } else {
-                    // iOS 等无浏览器平台: 提示降级, 不可点击
+
                     Text(
                         text = captchaUnsupportedText,
                         color = MaterialTheme.colorScheme.error,
@@ -414,7 +396,6 @@ private fun PreviewWebSourceCard() {
         }
     }
 }
-
 
 @TestOnly
 internal val TestWebSources

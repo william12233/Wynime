@@ -1,23 +1,9 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.coroutines.CancellationException
-import me.him188.ani.source.plugin.api.SourceDiagnostics
-import me.him188.ani.source.plugin.api.SourceResultStatus
+import com.wynime.source.plugin.api.SourceDiagnostics
+import com.wynime.source.plugin.api.SourceResultStatus
 
-/**
- * A provider failure that has enough safe context for the media-source layer to classify it.
- *
- * The exception deliberately carries no response body, cookie value, token, or credential.
- */
 class SourcePluginFailure(
     val status: SourceResultStatus,
     val diagnostics: SourceDiagnostics,
@@ -30,7 +16,6 @@ class SourcePluginFailure(
     cause,
 )
 
-/** A provider completed discovery without a safe subject or episode match. */
 class SourcePluginNoMatchException(
     val diagnostics: SourceDiagnostics,
 ) : Exception(
@@ -85,12 +70,6 @@ internal fun sourceFailureDiagnostics(
     failureReason = failureReason,
 )
 
-/**
- * Classifies an exception crossing the executable plugin boundary.
- *
- * Linkage failures are contract failures, not content parsing failures. Other [Error] values are
- * deliberately rethrown so the host does not turn process-level failures into provider results.
- */
 internal fun sourcePluginBoundaryFailure(
     traceId: String,
     provider: String,

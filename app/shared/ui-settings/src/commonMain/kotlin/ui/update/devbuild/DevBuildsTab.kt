@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update.devbuild
+package com.wynime.app.ui.update.devbuild
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,73 +58,73 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.tools.TimeFormatter
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_artifact
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_cancel
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_close
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_download
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_install
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_message_android
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_message_android_debug
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_message_desktop
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_message_manual
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_title
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_confirm_title_package
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_current_version
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_debug_package
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_download
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_downloading
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_empty
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_extracting
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_failure_package_not_found
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_failure_token_required
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_from_fork
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_install
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_installing
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_load_failed
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_artifact_mismatch
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_clear
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_description
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_failed
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_label
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_not_found
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_placeholder
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_unrecognized
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_lookup_unsupported_package
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_manual_install_hint
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_manual_message
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_manual_reveal
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_manual_title
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_package_available
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_package_unavailable
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_pull_request
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_rate_limited
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_refresh
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_retry
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_running
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_size_unknown
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_status_cancelled
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_status_failure
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_status_in_progress
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_status_no_build
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_status_other
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_status_queued
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_status_success
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_token
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_token_description
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_token_placeholder
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_token_not_set
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_token_save
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_token_set
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_unauthorized
-import me.him188.ani.app.ui.lang.settings_debug_dev_builds_unsupported_platform
-import me.him188.ani.app.ui.update.FailedToInstallDialog
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.utils.io.absolutePath
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.tools.TimeFormatter
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_debug_dev_builds_artifact
+import com.wynime.app.ui.lang.settings_debug_dev_builds_cancel
+import com.wynime.app.ui.lang.settings_debug_dev_builds_close
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_download
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_install
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_message_android
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_message_android_debug
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_message_desktop
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_message_manual
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_title
+import com.wynime.app.ui.lang.settings_debug_dev_builds_confirm_title_package
+import com.wynime.app.ui.lang.settings_debug_dev_builds_current_version
+import com.wynime.app.ui.lang.settings_debug_dev_builds_debug_package
+import com.wynime.app.ui.lang.settings_debug_dev_builds_download
+import com.wynime.app.ui.lang.settings_debug_dev_builds_downloading
+import com.wynime.app.ui.lang.settings_debug_dev_builds_empty
+import com.wynime.app.ui.lang.settings_debug_dev_builds_extracting
+import com.wynime.app.ui.lang.settings_debug_dev_builds_failure_package_not_found
+import com.wynime.app.ui.lang.settings_debug_dev_builds_failure_token_required
+import com.wynime.app.ui.lang.settings_debug_dev_builds_from_fork
+import com.wynime.app.ui.lang.settings_debug_dev_builds_install
+import com.wynime.app.ui.lang.settings_debug_dev_builds_installing
+import com.wynime.app.ui.lang.settings_debug_dev_builds_load_failed
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_artifact_mismatch
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_clear
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_description
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_failed
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_label
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_not_found
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_placeholder
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_unrecognized
+import com.wynime.app.ui.lang.settings_debug_dev_builds_lookup_unsupported_package
+import com.wynime.app.ui.lang.settings_debug_dev_builds_manual_install_hint
+import com.wynime.app.ui.lang.settings_debug_dev_builds_manual_message
+import com.wynime.app.ui.lang.settings_debug_dev_builds_manual_reveal
+import com.wynime.app.ui.lang.settings_debug_dev_builds_manual_title
+import com.wynime.app.ui.lang.settings_debug_dev_builds_package_available
+import com.wynime.app.ui.lang.settings_debug_dev_builds_package_unavailable
+import com.wynime.app.ui.lang.settings_debug_dev_builds_pull_request
+import com.wynime.app.ui.lang.settings_debug_dev_builds_rate_limited
+import com.wynime.app.ui.lang.settings_debug_dev_builds_refresh
+import com.wynime.app.ui.lang.settings_debug_dev_builds_retry
+import com.wynime.app.ui.lang.settings_debug_dev_builds_running
+import com.wynime.app.ui.lang.settings_debug_dev_builds_size_unknown
+import com.wynime.app.ui.lang.settings_debug_dev_builds_status_cancelled
+import com.wynime.app.ui.lang.settings_debug_dev_builds_status_failure
+import com.wynime.app.ui.lang.settings_debug_dev_builds_status_in_progress
+import com.wynime.app.ui.lang.settings_debug_dev_builds_status_no_build
+import com.wynime.app.ui.lang.settings_debug_dev_builds_status_other
+import com.wynime.app.ui.lang.settings_debug_dev_builds_status_queued
+import com.wynime.app.ui.lang.settings_debug_dev_builds_status_success
+import com.wynime.app.ui.lang.settings_debug_dev_builds_token
+import com.wynime.app.ui.lang.settings_debug_dev_builds_token_description
+import com.wynime.app.ui.lang.settings_debug_dev_builds_token_placeholder
+import com.wynime.app.ui.lang.settings_debug_dev_builds_token_not_set
+import com.wynime.app.ui.lang.settings_debug_dev_builds_token_save
+import com.wynime.app.ui.lang.settings_debug_dev_builds_token_set
+import com.wynime.app.ui.lang.settings_debug_dev_builds_unauthorized
+import com.wynime.app.ui.lang.settings_debug_dev_builds_unsupported_platform
+import com.wynime.app.ui.update.FailedToInstallDialog
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.utils.io.absolutePath
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -144,19 +135,10 @@ object DevBuildsTestTags {
     const val TOKEN_SAVE_BUTTON = "dev_builds_token_save"
     const val RETRY_BUTTON = "dev_builds_retry"
 
-    /**
-     * 后接 commit sha
-     */
     const val COMMIT_PREFIX = "dev_builds_commit_"
 
-    /**
-     * 后接 commit sha
-     */
     const val INSTALL_BUTTON_PREFIX = "dev_builds_install_"
 
-    /**
-     * 后接 commit sha
-     */
     const val CANCEL_BUTTON_PREFIX = "dev_builds_cancel_"
     const val CONFIRM_BUTTON = "dev_builds_confirm"
     const val CONFIRM_CANCEL_BUTTON = "dev_builds_confirm_cancel"
@@ -164,9 +146,6 @@ object DevBuildsTestTags {
     const val LOOKUP_BUTTON = "dev_builds_lookup_button"
     const val LOOKUP_CLEAR_BUTTON = "dev_builds_lookup_clear"
 
-    /**
-     * 查询结果卡片, 内含 [COMMIT_PREFIX] 或 [PACKAGE_ROW] 行
-     */
     const val LOOKUP_RESULT = "dev_builds_lookup_result"
     const val LOOKUP_ERROR = "dev_builds_lookup_error"
     const val PACKAGE_ROW = "dev_builds_package"
@@ -174,9 +153,6 @@ object DevBuildsTestTags {
     const val PACKAGE_CANCEL_BUTTON = "dev_builds_package_cancel"
 }
 
-/**
- * 开发者功能「安装指定版本」页面: 输入框查询任意 commit / PR / artifact / 安装包直链, 以及 main 分支最近 commits 的列表.
- */
 @Composable
 fun DevBuildsTab(
     modifier: Modifier = Modifier,
@@ -202,16 +178,13 @@ fun DevBuildsTab(
     )
 }
 
-/**
- * @param token 已保存的 GitHub token. 用户编辑完成 (失焦或按下完成) 时通过 [onTokenChange] 提交.
- */
 @Composable
 fun DevBuildsTabContent(
     state: DevBuildsState,
     token: String,
     onTokenChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    currentVersion: String = currentAniBuildConfig.versionName,
+    currentVersion: String = currentWynimeBuildConfig.versionName,
 ) {
     LaunchedEffect(state) {
         if (state.listState.value is DevBuildListState.Idle) {
@@ -228,7 +201,6 @@ fun DevBuildsTabContent(
     val timeFormatter = remember { TimeFormatter() }
     var pendingInstall by remember { mutableStateOf<PendingInstall?>(null) }
 
-    // 列表最多几十项, 不需要懒加载; 由外层的设置页容器提供滚动
     Column(
         modifier.padding(horizontal = 16.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -332,9 +304,6 @@ fun DevBuildsTabContent(
     }
 }
 
-/**
- * 用户点击安装后, 等待确认的目标.
- */
 private sealed interface PendingInstall {
     data class Commit(val commit: DevBuildCommit) : PendingInstall
     data class Package(val url: String, val fileName: String) : PendingInstall
@@ -774,9 +743,6 @@ private fun DevBuildCommitRow(
     }
 }
 
-/**
- * 安装包直链的查询结果行: 文件名, 地址, 安装按钮和进度.
- */
 @Composable
 private fun DevBuildPackageRow(
     url: String,
@@ -990,14 +956,13 @@ private fun ConfirmInstallDevBuildDialog(
         }
     }
     val message = when (kind) {
-        DevBuildPackageKind.WINDOWS_PORTABLE_ZIP, DevBuildPackageKind.MACOS_DMG ->
+        DevBuildPackageKind.WINDOWS_PORTABLE_ZIP ->
             Lang.settings_debug_dev_builds_confirm_message_desktop
 
         DevBuildPackageKind.ANDROID_APK ->
             if (isDebugPackage) Lang.settings_debug_dev_builds_confirm_message_android_debug
             else Lang.settings_debug_dev_builds_confirm_message_android
 
-        DevBuildPackageKind.LINUX_APPIMAGE -> Lang.settings_debug_dev_builds_confirm_message_manual
     }
     AlertDialog(
         onDismissRequest = onDismissRequest,

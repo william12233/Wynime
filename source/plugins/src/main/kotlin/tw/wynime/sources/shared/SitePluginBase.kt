@@ -1,20 +1,20 @@
 package tw.wynime.sources.shared
 
-import me.him188.ani.source.plugin.api.ResolvedMedia
-import me.him188.ani.source.plugin.api.ResolvedMediaFormat
-import me.him188.ani.source.plugin.api.SourceConnectionState
-import me.him188.ani.source.plugin.api.SourceConnectionStatus
-import me.him188.ani.source.plugin.api.SourceEpisode
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceMediaIdentity
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginMetadata
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubject
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
-import me.him188.ani.source.plugin.api.mediaIdentity
+import com.wynime.source.plugin.api.ResolvedMedia
+import com.wynime.source.plugin.api.ResolvedMediaFormat
+import com.wynime.source.plugin.api.SourceConnectionState
+import com.wynime.source.plugin.api.SourceConnectionStatus
+import com.wynime.source.plugin.api.SourceEpisode
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceMediaIdentity
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginMetadata
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubject
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.mediaIdentity
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -149,7 +149,7 @@ internal abstract class SitePluginBase(
     )
 
     protected fun resolvedMedia(
-        request: me.him188.ani.source.plugin.api.SourceResolveRequest,
+        request: com.wynime.source.plugin.api.SourceResolveRequest,
         pageUrl: String,
         rawUrl: String?,
         headers: Map<String, String> = emptyMap(),
@@ -200,10 +200,6 @@ internal abstract class SitePluginBase(
         else -> SourceWebResourceMatch.Continue
     }
 
-    /**
-     * Returns true for a site media URL even when the provider omits a file extension.
-     * Site plugins can extend this for stable, site-owned media endpoints.
-     */
     protected open fun isDirectMediaUrl(url: String): Boolean = isMediaUrl(url)
 
     protected open fun directMediaFormat(url: String): ResolvedMediaFormat = mediaFormat(url)
@@ -542,11 +538,6 @@ internal fun decodePlayerUrl(raw: String): String? {
     return value.takeIf(::isHttpUrl)
 }
 
-/**
- * Some source sites put the actual playlist in a normal player-page query parameter.
- * The value is already supplied by the site in the resolved player URL; prefer it when
- * it is an explicitly identifiable media URL and otherwise keep the page URL intact.
- */
 internal fun extractMediaQueryUrl(value: String): String? = Regex(
     "(?i)(?:[?&](?:url|file|src|play)=)([^&#\\\"'<>]+)",
 ).findAll(value).mapNotNull { match ->
@@ -574,10 +565,10 @@ internal fun isMediaUrl(url: String): Boolean = Regex(
 
 internal fun isHttpUrl(url: String): Boolean = url.startsWith("https://") || url.startsWith("http://")
 
-internal const val PLUGIN_VERSION = "1.0.25"
-internal const val PLUGIN_API_VERSION = 2
+internal const val PLUGIN_VERSION = "1.0.26"
+internal const val PLUGIN_API_VERSION = 3
 internal const val MIN_HOST_VERSION = "0.1.3"
 internal val SUPPORTED_PLATFORMS = setOf(
-    me.him188.ani.source.plugin.api.SourcePluginPlatform.DESKTOP,
-    me.him188.ani.source.plugin.api.SourcePluginPlatform.ANDROID,
+    com.wynime.source.plugin.api.SourcePluginPlatform.DESKTOP,
+    com.wynime.source.plugin.api.SourcePluginPlatform.ANDROID,
 )

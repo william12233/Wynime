@@ -1,17 +1,8 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.media.resolver
 
-package me.him188.ani.app.domain.media.resolver
-
-import me.him188.ani.app.data.models.preference.ProxyConfig
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.domain.media.resolver.WebViewVideoExtractor
+import com.wynime.app.data.models.preference.ProxyConfig
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.domain.media.resolver.WebViewVideoExtractor
 
 actual fun WebViewVideoExtractor(
     proxyConfig: ProxyConfig?,
@@ -19,5 +10,5 @@ actual fun WebViewVideoExtractor(
 ): WebViewVideoExtractor {
     return AndroidWebViewVideoExtractor(
         videoResolverSettings.effectiveResourceExtractionTimeoutMillis,
-    ) // does not support proxy
+    )
 }

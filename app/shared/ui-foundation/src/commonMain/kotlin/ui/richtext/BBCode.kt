@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.richtext
+package com.wynime.app.ui.richtext
 
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
@@ -25,13 +16,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.tools.HtmlColor
-import me.him188.ani.app.ui.comment.BangumiCommentSticker
-import me.him188.ani.utils.bbcode.BBCode
-import me.him188.ani.utils.bbcode.RichElement
-import me.him188.ani.utils.bbcode.RichText
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.tools.HtmlColor
+import com.wynime.app.ui.comment.BangumiCommentSticker
+import com.wynime.utils.bbcode.BBCode
+import com.wynime.utils.bbcode.RichElement
+import com.wynime.utils.bbcode.RichText
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import kotlin.coroutines.CoroutineContext
 
 @Composable
@@ -82,10 +73,9 @@ class BBCodeRichTextState(
     }
 }
 
-// TODO: move to BBCodeRichTextState
 fun RichText.toUIRichElements(overrideTextSize: Float? = null): List<UIRichElement> = buildList {
     val annotated = mutableListOf<UIRichElement.Annotated>()
-    // 当前累积的 annotated 所属的对齐方式. 对齐是段落级属性, 对齐方式变化时必须切分出新的 AnnotatedText
+
     var currentAlign = TextAlign.Unspecified
 
     fun flushAnnotated() {
@@ -99,7 +89,7 @@ fun RichText.toUIRichElements(overrideTextSize: Float? = null): List<UIRichEleme
     elements.forEach { e ->
         when (e) {
             is RichElement.Text -> {
-                // Whitespace between inline tags still separates words in the same paragraph.
+
                 if (e.value.isNotBlank() || (e.value.isNotEmpty() && annotated.isNotEmpty())) {
                     val align = e.align.toTextAlign()
                     if (align != currentAlign) flushAnnotated()
@@ -133,7 +123,7 @@ fun RichText.toUIRichElements(overrideTextSize: Float? = null): List<UIRichEleme
             is RichElement.Kanmoji -> annotated.add(
                 UIRichElement.Annotated.Sticker(
                     id = e.id,
-                    resource = null, // TODO: path
+                    resource = null,
                     url = e.jumpUrl,
                 ),
             )

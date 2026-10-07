@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +25,9 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.him188.ani.app.ui.framework.doesNotExist
-import me.him188.ani.app.ui.framework.exists
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
+import com.wynime.app.ui.framework.doesNotExist
+import com.wynime.app.ui.framework.exists
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
 import kotlin.test.Test
 
 private const val TAG_SCROLL_CONTROL_LEFT_BUTTON = "scrollControlLeftButton"
@@ -103,7 +94,7 @@ class HorizontalScrollControlScaffoldTest {
     }
 
     @Test
-    fun `too many items - left button - invisible when cant scroll forward`() = runAniComposeUiTest {
+    fun `too many items - left button - invisible when cant scroll forward`() = runWynimeComposeUiTest {
         val listState = LazyListState()
 
         setContent {
@@ -116,12 +107,11 @@ class HorizontalScrollControlScaffoldTest {
         }
 
         runOnIdle {
-            lazyList.performMouseInput { // Move 事件才能触发
+            lazyList.performMouseInput {
                 moveTo(centerLeft + Offset(10f, 0f))
             }
         }
 
-        // 目前在最左边, 所以左边按钮应该不可见
         runOnIdle {
             waitUntil { scrollControlLeftButton.doesNotExist() }
             waitUntil { scrollControlRightButton.exists() }
@@ -129,7 +119,7 @@ class HorizontalScrollControlScaffoldTest {
     }
 
     @Test
-    fun `too many items - left button - visible when can scroll forward`() = runAniComposeUiTest {
+    fun `too many items - left button - visible when can scroll forward`() = runWynimeComposeUiTest {
         val listState = LazyListState()
 
         setContent {
@@ -145,7 +135,7 @@ class HorizontalScrollControlScaffoldTest {
             lazyList.performTouchInput {
                 swipeLeft(centerX, centerX - 100)
             }
-            lazyList.performMouseInput { // Move 事件才能触发
+            lazyList.performMouseInput {
                 moveTo(centerLeft + Offset(10f, 0f))
             }
         }
@@ -157,7 +147,7 @@ class HorizontalScrollControlScaffoldTest {
     }
 
     @Test
-    fun `too many items - right button - invisible when already at the right end`() = runAniComposeUiTest {
+    fun `too many items - right button - invisible when already at the right end`() = runWynimeComposeUiTest {
         val listState = LazyListState()
 
         setContent {
@@ -171,14 +161,13 @@ class HorizontalScrollControlScaffoldTest {
 
         runOnIdle {
             lazyList.performTouchInput {
-                repeat(10) { swipeLeft() } // 保证滑动到最右边
+                repeat(10) { swipeLeft() }
             }
-            lazyList.performMouseInput { // Move 事件才能触发
+            lazyList.performMouseInput {
                 moveTo(centerRight - Offset(10f, 0f))
             }
         }
 
-        // 目前列表在最右边, 所以左边按钮应该不可见
         runOnIdle {
             waitUntil { scrollControlLeftButton.exists() }
             waitUntil { scrollControlRightButton.doesNotExist() }
@@ -186,7 +175,7 @@ class HorizontalScrollControlScaffoldTest {
     }
 
     @Test
-    fun `too many items - right button - visible when can scroll forward`() = runAniComposeUiTest {
+    fun `too many items - right button - visible when can scroll forward`() = runWynimeComposeUiTest {
         val listState = LazyListState()
 
         setContent {
@@ -200,15 +189,14 @@ class HorizontalScrollControlScaffoldTest {
 
         runOnIdle {
             lazyList.performTouchInput {
-                repeat(10) { swipeLeft() } // 保证滑动到最右边
+                repeat(10) { swipeLeft() }
                 swipeRight(centerX, centerX + 100)
             }
-            lazyList.performMouseInput { // Move 事件才能触发
+            lazyList.performMouseInput {
                 moveTo(centerRight - Offset(10f, 0f))
             }
         }
 
-        // 目前列表在最右边, 所以左边按钮应该不可见
         runOnIdle {
             waitUntil { scrollControlLeftButton.exists() }
             waitUntil { scrollControlRightButton.exists() }
@@ -216,20 +204,18 @@ class HorizontalScrollControlScaffoldTest {
     }
 
     @Test
-    fun `too less items - both buttons - composite test`() = runAniComposeUiTest {
+    fun `too less items - both buttons - composite test`() = runWynimeComposeUiTest {
         val listState = LazyListState()
 
         setContent {
             View(listState, itemCount = 2)
         }
 
-        // 初始在最左侧；左按钮不可见，右按钮也不可见（鼠标不在两边）
         runOnIdle {
             waitUntil { scrollControlLeftButton.doesNotExist() }
             waitUntil { scrollControlRightButton.doesNotExist() }
         }
 
-        // 移动鼠标到左边，虽然在最左侧无法再向左滚动，但仍测试一下：左按钮不应出现
         runOnIdle {
             lazyList.performMouseInput {
                 moveTo(centerLeft + Offset(10f, 0f))
@@ -237,18 +223,16 @@ class HorizontalScrollControlScaffoldTest {
         }
         runOnIdle {
             waitUntil { scrollControlLeftButton.doesNotExist() }
-            // 还没滚动过，右边也不出现
+
             waitUntil { scrollControlRightButton.doesNotExist() }
         }
 
-        // 往右滑一点，让列表可以向左滚动
         runOnIdle {
             lazyList.performTouchInput {
-                swipeLeft(centerX, centerX - 100) // 往左滑，向右滚动一些
+                swipeLeft(centerX, centerX - 100)
             }
         }
 
-        // 鼠标移动到左侧，按钮应出现
         runOnIdle {
             lazyList.performMouseInput {
                 moveTo(centerLeft + Offset(10f, 0f))
@@ -256,11 +240,10 @@ class HorizontalScrollControlScaffoldTest {
         }
         runOnIdle {
             waitUntil { scrollControlLeftButton.doesNotExist() }
-            // 此时由于鼠标在左侧，右侧按钮不一定出现
+
             waitUntil { scrollControlRightButton.doesNotExist() }
         }
 
-        // 再把鼠标移到右侧，左边按钮应该消失，右侧按钮出现
         runOnIdle {
             lazyList.performMouseInput {
                 moveTo(centerRight - Offset(10f, 0f))
@@ -268,14 +251,13 @@ class HorizontalScrollControlScaffoldTest {
         }
         runOnIdle {
             waitUntil { scrollControlLeftButton.doesNotExist() }
-            // 若还能继续往右滚，就会显示右侧按钮
+
             waitUntil { scrollControlRightButton.doesNotExist() }
         }
 
-        // 再滑动到最右边
         runOnIdle {
             lazyList.performTouchInput {
-                repeat(10) { swipeLeft() } // 保证滑动到最右边
+                repeat(10) { swipeLeft() }
             }
         }
         runOnIdle {

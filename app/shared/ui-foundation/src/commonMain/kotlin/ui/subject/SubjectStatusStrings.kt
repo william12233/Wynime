@@ -1,31 +1,22 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject
+package com.wynime.app.ui.subject
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_airing_completed
-import me.him188.ani.app.ui.lang.subject_airing_on_air
-import me.him188.ani.app.ui.lang.subject_airing_on_air_to
-import me.him188.ani.app.ui.lang.subject_airing_total_episodes_completed
-import me.him188.ani.app.ui.lang.subject_airing_total_episodes_scheduled
-import me.him188.ani.app.ui.lang.subject_airing_upcoming
-import me.him188.ani.app.ui.lang.subject_progress_continue_watching
-import me.him188.ani.app.ui.lang.subject_progress_done
-import me.him188.ani.app.ui.lang.subject_progress_not_on_air
-import me.him188.ani.app.ui.lang.subject_progress_start_watching
-import me.him188.ani.app.ui.lang.subject_progress_starts_on
-import me.him188.ani.app.ui.lang.subject_progress_unknown
-import me.him188.ani.app.ui.lang.subject_progress_updates_on
-import me.him188.ani.app.ui.lang.subject_progress_watched
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_airing_completed
+import com.wynime.app.ui.lang.subject_airing_on_air
+import com.wynime.app.ui.lang.subject_airing_on_air_to
+import com.wynime.app.ui.lang.subject_airing_total_episodes_completed
+import com.wynime.app.ui.lang.subject_airing_total_episodes_scheduled
+import com.wynime.app.ui.lang.subject_airing_upcoming
+import com.wynime.app.ui.lang.subject_progress_continue_watching
+import com.wynime.app.ui.lang.subject_progress_done
+import com.wynime.app.ui.lang.subject_progress_not_on_air
+import com.wynime.app.ui.lang.subject_progress_start_watching
+import com.wynime.app.ui.lang.subject_progress_starts_on
+import com.wynime.app.ui.lang.subject_progress_unknown
+import com.wynime.app.ui.lang.subject_progress_updates_on
+import com.wynime.app.ui.lang.subject_progress_watched
 import org.jetbrains.compose.resources.stringResource
 
 @Stable
@@ -73,21 +64,21 @@ fun rememberSubjectStatusStrings(): SubjectStatusStrings = SubjectStatusStrings(
 )
 
 fun renderTotalEpisodeText(
-    airingInfo: me.him188.ani.app.data.models.subject.SubjectAiringInfo,
+    airingInfo: com.wynime.app.data.models.subject.SubjectAiringInfo,
     strings: SubjectStatusStrings,
 ): String? {
     return if (
-        airingInfo.kind == me.him188.ani.app.data.models.subject.SubjectAiringKind.UPCOMING &&
+        airingInfo.kind == com.wynime.app.data.models.subject.SubjectAiringKind.UPCOMING &&
         airingInfo.mainEpisodeCount == 0
     ) {
         null
     } else {
         when (airingInfo.kind) {
-            me.him188.ani.app.data.models.subject.SubjectAiringKind.COMPLETED ->
+            com.wynime.app.data.models.subject.SubjectAiringKind.COMPLETED ->
                 strings.totalEpisodesCompleted(airingInfo.mainEpisodeCount)
 
-            me.him188.ani.app.data.models.subject.SubjectAiringKind.UPCOMING,
-            me.him188.ani.app.data.models.subject.SubjectAiringKind.ON_AIR,
+            com.wynime.app.data.models.subject.SubjectAiringKind.UPCOMING,
+            com.wynime.app.data.models.subject.SubjectAiringKind.ON_AIR,
                 ->
                 strings.totalEpisodesScheduled(airingInfo.mainEpisodeCount)
         }

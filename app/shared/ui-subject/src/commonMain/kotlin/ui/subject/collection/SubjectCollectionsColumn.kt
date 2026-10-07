@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.collection
+package com.wynime.app.ui.subject.collection
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,42 +55,35 @@ import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import kotlinx.coroutines.flow.MutableStateFlow
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.TestSubjectCollections
-import me.him188.ani.app.data.models.subject.TestSubjectProgressInfos
-import me.him188.ani.app.data.models.subject.preferredDisplayName
-import me.him188.ani.app.data.models.subject.listCoverUrl
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isWidthCompact
-import me.him188.ani.app.ui.foundation.layout.plus
-import me.him188.ani.app.ui.lang.*
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.ui.search.isLoadingNextPage
-import me.him188.ani.app.ui.subject.AiringLabel
-import me.him188.ani.app.ui.subject.AiringLabelState
-import me.him188.ani.app.ui.subject.collection.components.EditCollectionTypeDropDown
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.app.ui.subject.collection.components.rememberTestEditableSubjectCollectionTypeState
-import me.him188.ani.app.ui.subject.collection.progress.SubjectProgressButton
-import me.him188.ani.app.ui.subject.collection.progress.rememberTestSubjectProgressState
-import me.him188.ani.app.ui.subject.details.components.COVER_WIDTH_TO_HEIGHT_RATIO
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.TestSubjectCollections
+import com.wynime.app.data.models.subject.TestSubjectProgressInfos
+import com.wynime.app.data.models.subject.preferredDisplayName
+import com.wynime.app.data.models.subject.listCoverUrl
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isWidthCompact
+import com.wynime.app.ui.foundation.layout.plus
+import com.wynime.app.ui.lang.*
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.search.isLoadingNextPage
+import com.wynime.app.ui.subject.AiringLabel
+import com.wynime.app.ui.subject.AiringLabelState
+import com.wynime.app.ui.subject.collection.components.EditCollectionTypeDropDown
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.collection.components.rememberTestEditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.collection.progress.SubjectProgressButton
+import com.wynime.app.ui.subject.collection.progress.rememberTestSubjectProgressState
+import com.wynime.app.ui.subject.details.components.COVER_WIDTH_TO_HEIGHT_RATIO
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.*
 
-/**
- * 用户的收藏列表.
- *
- * 自带一圈 padding
- *
- * @param item 每个 item. 内容为 [SubjectCollectionItem]. 注意考虑 [me.him188.ani.app.ui.foundation.widgets.NsfwMask].
- */
 @Composable
 fun SubjectCollectionsColumn(
     items: LazyPagingItems<SubjectCollectionInfo>,
@@ -111,7 +95,7 @@ fun SubjectCollectionsColumn(
 ) {
     val isCompact = currentWindowAdaptiveInfo1().windowSizeClass.isWidthCompact
     val spacedBy = if (isCompact) 16.dp else 24.dp
-    val aniMotionScheme = LocalAniMotionScheme.current
+    val wynimeMotionScheme = LocalWynimeMotionScheme.current
 
     LazyVerticalGrid(
         GridCells.Adaptive(360.dp),
@@ -120,14 +104,14 @@ fun SubjectCollectionsColumn(
         contentPadding = contentPadding + PaddingValues(all = spacedBy / 2),
         userScrollEnabled = true,
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(1.dp)) } // 添加新 item 时保持到顶部
+        item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(1.dp)) }
 
         if (items.loadState.hasError) {
             item {
                 LoadErrorCard(
                     LoadError.fromCombinedLoadStates(items.loadState),
                     onRetry = { items.refresh() },
-                    Modifier.padding(all = spacedBy / 2), // should not happen
+                    Modifier.padding(all = spacedBy / 2),
                 )
             }
         }
@@ -143,9 +127,9 @@ fun SubjectCollectionsColumn(
                         .padding(all = spacedBy / 2)
                         .ifThen(enableAnimation) {
                             animateItem(
-                                fadeInSpec = aniMotionScheme.feedItemFadeInSpec,
-                                placementSpec = aniMotionScheme.feedItemPlacementSpec,
-                                fadeOutSpec = aniMotionScheme.feedItemFadeOutSpec,
+                                fadeInSpec = wynimeMotionScheme.feedItemFadeInSpec,
+                                placementSpec = wynimeMotionScheme.feedItemPlacementSpec,
+                                fadeOutSpec = wynimeMotionScheme.feedItemFadeOutSpec,
                             )
                         },
                 ) {
@@ -162,18 +146,9 @@ fun SubjectCollectionsColumn(
             }
         }
 
-//        item(span = { GridItemSpan(maxLineSpan) }) {
-//            items[items.itemCount] // trigger loading next page
-//            Spacer(Modifier.height(1.dp))
-//        }
     }
 }
 
-/**
- * 追番列表的一个条目卡片
- *
- * @param onClick on clicking this card (background)
- */
 @Composable
 fun SubjectCollectionItem(
     item: SubjectCollectionInfo,
@@ -222,9 +197,6 @@ object SubjectCollectionItemDefaults {
         get() = MaterialTheme.shapes.small
 }
 
-/**
- * 追番列表的一个条目卡片的内容
- */
 @Composable
 private fun SubjectCollectionItemContent(
     item: SubjectCollectionInfo,
@@ -236,7 +208,7 @@ private fun SubjectCollectionItemContent(
     var showEditCollectionTypeMenu by remember { mutableStateOf(false) }
 
     Column(modifier) {
-        // 标题和右上角菜单
+
         Row(
             Modifier.fillMaxWidth()
                 .height(IntrinsicSize.Min),
@@ -271,7 +243,7 @@ private fun SubjectCollectionItemContent(
             Modifier.padding(top = 0.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 连载至第 28 话 · 全 34 话
+
             AiringLabel(
                 remember(item) {
                     AiringLabelState(stateOf(item.airingInfo), stateOf(item.progressInfo))
@@ -281,7 +253,6 @@ private fun SubjectCollectionItemContent(
         }
 
         Spacer(Modifier.weight(1f))
-
 
         Row(
             Modifier
@@ -303,7 +274,6 @@ object SubjectCollectionItemTestTags {
     const val MoreButton = "SubjectCollectionItemMoreButton"
     const val EditCollectionTypeMenu = "SubjectCollectionItemEditCollectionTypeMenu"
 }
-
 
 @PreviewLightDark
 @Composable

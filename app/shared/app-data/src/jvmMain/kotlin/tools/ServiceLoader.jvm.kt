@@ -1,4 +1,4 @@
-package me.him188.ani.app.tools
+package com.wynime.app.tools
 
 import kotlin.reflect.KClass
 

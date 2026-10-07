@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -51,45 +42,37 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.io.files.Path
-import me.him188.ani.app.domain.usecase.GlobalKoin
-import me.him188.ani.app.platform.ContextMP
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.tools.update.UpdateInstallationRunner
-import me.him188.ani.app.tools.update.UpdateInstallationState
-import me.him188.ani.app.tools.update.UpdateInstaller
-import me.him188.ani.app.ui.foundation.DragAndDropContent
-import me.him188.ani.app.ui.foundation.WindowDropCardContent
-import me.him188.ani.app.ui.foundation.WindowDropHandler
-import me.him188.ani.app.ui.foundation.WindowDropPreview
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_debug_install_package_cancel
-import me.him188.ani.app.ui.lang.settings_debug_install_package_confirm
-import me.him188.ani.app.ui.lang.settings_debug_install_package_confirm_message
-import me.him188.ani.app.ui.lang.settings_debug_install_package_confirm_new_version
-import me.him188.ani.app.ui.lang.settings_debug_install_package_confirm_title
-import me.him188.ani.app.ui.lang.settings_debug_install_package_drop_badge
-import me.him188.ani.app.ui.lang.settings_debug_install_package_drop_meta
-import me.him188.ani.app.ui.lang.settings_debug_install_package_drop_supported_hint
-import me.him188.ani.app.ui.lang.settings_debug_install_package_drop_title
-import me.him188.ani.app.ui.lang.settings_debug_install_package_drop_unknown_name
-import me.him188.ani.app.ui.lang.settings_debug_install_package_unsupported
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.length
-import me.him188.ani.utils.io.name
+import com.wynime.app.domain.usecase.GlobalKoin
+import com.wynime.app.platform.ContextMP
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.tools.update.UpdateInstallationRunner
+import com.wynime.app.tools.update.UpdateInstallationState
+import com.wynime.app.tools.update.UpdateInstaller
+import com.wynime.app.ui.foundation.DragAndDropContent
+import com.wynime.app.ui.foundation.WindowDropCardContent
+import com.wynime.app.ui.foundation.WindowDropHandler
+import com.wynime.app.ui.foundation.WindowDropPreview
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_debug_install_package_cancel
+import com.wynime.app.ui.lang.settings_debug_install_package_confirm
+import com.wynime.app.ui.lang.settings_debug_install_package_confirm_message
+import com.wynime.app.ui.lang.settings_debug_install_package_confirm_new_version
+import com.wynime.app.ui.lang.settings_debug_install_package_confirm_title
+import com.wynime.app.ui.lang.settings_debug_install_package_drop_badge
+import com.wynime.app.ui.lang.settings_debug_install_package_drop_meta
+import com.wynime.app.ui.lang.settings_debug_install_package_drop_supported_hint
+import com.wynime.app.ui.lang.settings_debug_install_package_drop_title
+import com.wynime.app.ui.lang.settings_debug_install_package_drop_unknown_name
+import com.wynime.app.ui.lang.settings_debug_install_package_unsupported
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.length
+import com.wynime.utils.io.name
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 开发者功能「拖拽安装包以安装」的状态.
- *
- * 松手后 [offer] 筛选出当前平台支持自动安装的安装包, 记为 [pendingPackage] 等待用户确认;
- * 确认后 [installPending] 调用安装器安装, 安装成功会退出当前进程并由外部更新程序重启.
- * 安装失败的原因通过 [installationState] 暴露, 失败的安装包记录在 [lastInstalledPackage] 供手动安装.
- * 窗口拖放的接入见 [InstallPackageDropHandler], 对话框见 [InstallPackageDropDialogs].
- */
 @Stable
 class DropInstallPackageState(
     private val installer: UpdateInstaller,
@@ -98,34 +81,19 @@ class DropInstallPackageState(
 
     val installationState: StateFlow<UpdateInstallationState> get() = installationRunner.state
 
-    /**
-     * 当前平台支持自动安装的安装包扩展名, 用于向用户展示.
-     */
     val supportedExtensions: Set<String> get() = installer.installablePackageExtensions
 
-    /**
-     * 等待用户确认安装的安装包.
-     */
     var pendingPackage: SystemPath? by mutableStateOf(null)
         private set
 
-    /**
-     * 最近一次调用安装器安装的安装包.
-     */
     var lastInstalledPackage: SystemPath? by mutableStateOf(null)
         private set
 
     val isInstalling: Boolean get() = installationState.value is UpdateInstallationState.Installing
 
-    /**
-     * [files] 中首个当前平台支持自动安装的安装包.
-     */
     fun findInstallablePackage(files: List<Path>): SystemPath? =
         files.firstOrNull { installer.isInstallablePackage(it.inSystem) }?.inSystem
 
-    /**
-     * 处理松手后的内容. 取 [DragAndDropContent.FileList] 中首个受支持的安装包作为 [pendingPackage].
-     */
     fun offer(content: DragAndDropContent): DropInstallPackageOutcome {
         if (isInstalling) {
             return DropInstallPackageOutcome.IGNORED
@@ -143,9 +111,6 @@ class DropInstallPackageState(
         pendingPackage = null
     }
 
-    /**
-     * 安装 [pendingPackage]. 调用后 [pendingPackage] 立即清空, 失败原因见 [installationState].
-     */
     suspend fun installPending(context: ContextMP) {
         val file = pendingPackage ?: return
         pendingPackage = null
@@ -159,26 +124,14 @@ class DropInstallPackageState(
 }
 
 enum class DropInstallPackageOutcome {
-    /**
-     * 内容与本功能无关 (不是文件列表, 或正在安装中), 交由其他拖放目标处理.
-     */
+
     IGNORED,
 
-    /**
-     * 拖入了文件, 但没有当前平台支持自动安装的安装包.
-     */
     UNSUPPORTED,
 
-    /**
-     * 已记录待确认的安装包.
-     */
     PENDING_CONFIRMATION,
 }
 
-/**
- * 从安装包文件名中提取版本号, 例如 `Ani-4.12.0-macos-aarch64.dmg` 得到 `4.12.0`,
- * `ani-4.12.0-beta02-windows-x86_64.zip` 得到 `4.12.0-beta02`. 提取不到时返回 `null`.
- */
 internal fun parsePackageVersion(fileName: String): String? = PACKAGE_VERSION_REGEX.find(fileName)?.value
 
 private val PACKAGE_VERSION_REGEX =
@@ -194,12 +147,6 @@ fun rememberDropInstallPackageState(): DropInstallPackageState {
     return remember { DropInstallPackageState(GlobalKoin.get<UpdateInstaller>()) }
 }
 
-/**
- * 「拖拽安装包以安装」的窗口拖放处理者.
- *
- * 只接管含有受支持安装包的文件列表, 以及拖动阶段读不到内容的拖放 (松手后再判断);
- * 其他内容交给后续处理者. 松手时没有受支持的安装包则调用 [onUnsupported].
- */
 class InstallPackageDropHandler(
     private val state: DropInstallPackageState,
     private val onUnsupported: () -> Unit,
@@ -233,9 +180,6 @@ class InstallPackageDropHandler(
     )
 }
 
-/**
- * 创建 [InstallPackageDropHandler], 松手时拖入的不是安装包则 toast 提示支持的格式.
- */
 @Composable
 fun rememberInstallPackageDropHandler(state: DropInstallPackageState): InstallPackageDropHandler {
     val toaster = LocalToaster.current
@@ -247,24 +191,17 @@ fun rememberInstallPackageDropHandler(state: DropInstallPackageState): InstallPa
     return remember(state) { InstallPackageDropHandler(state) { onUnsupported() } }
 }
 
-/**
- * 拖入安装包时的卡片内容. [file] 为 `null` 表示拖动阶段读不到文件名.
- */
 @Composable
 private fun InstallPackageDropCard(file: SystemPath?) {
     WindowDropCardContent(
         icon = Icons.Rounded.Inventory2,
         title = stringResource(Lang.settings_debug_install_package_drop_title),
         subtitle = file?.name ?: stringResource(Lang.settings_debug_install_package_drop_unknown_name),
-        description = stringResource(Lang.settings_debug_install_package_drop_meta, currentAniBuildConfig.versionName),
+        description = stringResource(Lang.settings_debug_install_package_drop_meta, currentWynimeBuildConfig.versionName),
         badge = stringResource(Lang.settings_debug_install_package_drop_badge),
     )
 }
 
-/**
- * 「拖拽安装包以安装」的对话框: 松手后的确认框, 以及安装失败的提示 (可打开安装包手动安装).
- * 放在主窗口内容的同级, 与 [InstallPackageDropHandler] 配合使用.
- */
 @Composable
 fun InstallPackageDropDialogs(state: DropInstallPackageState) {
     val context = LocalContext.current
@@ -272,7 +209,7 @@ fun InstallPackageDropDialogs(state: DropInstallPackageState) {
     state.pendingPackage?.let { file ->
         ConfirmInstallPackageDialog(
             file = file,
-            currentVersion = currentAniBuildConfig.versionName,
+            currentVersion = currentWynimeBuildConfig.versionName,
             onConfirm = {
                 scope.launch { state.installPending(context) }
             },

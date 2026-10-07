@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.collection.components
+package com.wynime.app.ui.subject.collection.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.EventNote
@@ -23,13 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import me.him188.ani.app.ui.lang.*
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.ui.lang.*
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import org.jetbrains.compose.resources.*
 
-/**
- * 收藏类型的展示图标和标题. 用于给各种需要展示收藏类型的地方提供一致的展示方式.
- */
 @Immutable
 class SubjectCollectionAction(
     val title: @Composable () -> Unit,

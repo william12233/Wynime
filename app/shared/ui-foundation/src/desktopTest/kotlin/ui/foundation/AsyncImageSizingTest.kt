@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -26,12 +17,12 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.headersOf
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.ktor.asScopedHttpClient
 import okio.Path.Companion.toPath
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Surface
@@ -83,7 +74,7 @@ class AsyncImageSizingTest {
         val url = "https://example.com/background-resize-${System.nanoTime()}.png"
 
         try {
-            runAniComposeUiTest {
+            runWynimeComposeUiTest {
                 setContent {
                     CompositionLocalProvider(LocalSketch provides sketch) {
                         content(url, Modifier.size(side.value)) {

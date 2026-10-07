@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,32 +21,32 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.player.EpisodeHistory
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.cache.engine.DummyMediaCacheEngine
-import me.him188.ani.app.domain.media.download.DownloadOperations
-import me.him188.ani.app.domain.media.download.DownloadRequestSessionFactory
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.app.ui.download.FakeAddDownloadUseCase
-import me.him188.ani.app.ui.download.FakeDeleteCacheUseCase
-import me.him188.ani.app.ui.download.FakeDownloadStorage
-import me.him188.ani.app.ui.download.FakeEpisodePlayHistoryRepository
-import me.him188.ani.app.ui.download.FakeEpisodePreferencesRepository
-import me.him188.ani.app.ui.download.FakeMediaFetcher
-import me.him188.ani.app.ui.download.FakeMediaSourceManager
-import me.him188.ani.app.ui.download.FakeSettingsRepository
-import me.him188.ani.app.ui.download.FakeSubjectCollectionRepository
-import me.him188.ani.app.ui.download.components.DownloadItem
-import me.him188.ani.app.ui.download.components.DownloadStatus
-import me.him188.ani.app.ui.download.fakeMediaSelectorFactory
-import me.him188.ani.app.ui.download.testDownloadCache
-import me.him188.ani.app.ui.download.testSubjectCollection
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.player.EpisodeHistory
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.cache.engine.DummyMediaCacheEngine
+import com.wynime.app.domain.media.download.DownloadOperations
+import com.wynime.app.domain.media.download.DownloadRequestSessionFactory
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.tools.toProgress
+import com.wynime.app.ui.download.FakeAddDownloadUseCase
+import com.wynime.app.ui.download.FakeDeleteCacheUseCase
+import com.wynime.app.ui.download.FakeDownloadStorage
+import com.wynime.app.ui.download.FakeEpisodePlayHistoryRepository
+import com.wynime.app.ui.download.FakeEpisodePreferencesRepository
+import com.wynime.app.ui.download.FakeMediaFetcher
+import com.wynime.app.ui.download.FakeMediaSourceManager
+import com.wynime.app.ui.download.FakeSettingsRepository
+import com.wynime.app.ui.download.FakeSubjectCollectionRepository
+import com.wynime.app.ui.download.components.DownloadItem
+import com.wynime.app.ui.download.components.DownloadStatus
+import com.wynime.app.ui.download.fakeMediaSelectorFactory
+import com.wynime.app.ui.download.testDownloadCache
+import com.wynime.app.ui.download.testSubjectCollection
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 
 @OptIn(TestOnly::class)
 class SubjectDownloadsPresenterTest {
@@ -182,7 +173,6 @@ class SubjectDownloadsPresenterTest {
         assertEquals(setOf(1), fetcher.releasedEpisodeIds)
         assertEquals(setOf(2), presenter.uiState.value.request.episodeIds)
 
-        // 再次请求正在等待选源的同一集不会重建会话, 也不算开启了新会话.
         assertFalse(presenter.requestDownload(2))
         runCurrent()
         assertSame(picker, presenter.requestDialogs.value?.selection)
@@ -218,7 +208,6 @@ class SubjectDownloadsPresenterTest {
         presenter.dismissOperationFailures()
         assertEquals(0, presenter.operationFailures.value)
 
-        // 第一次暂停排队后, 第二次提交被跳过: 不会再调用 pause, 也不计入失败.
         presenter.pauseDownloads(setOf(blocked.cacheId))
         runCurrent()
         presenter.pauseDownloads(setOf(blocked.cacheId))
@@ -306,7 +295,6 @@ class SubjectDownloadsPresenterTest {
         first.cancel()
         advanceTimeBy(6_000)
 
-        // 条目流挂起: 重新订阅后若回到空的加载状态, 页面会一直停留在那一帧.
         subjects.collection.value = null
         val observed = mutableListOf<SubjectDownloadsUiState>()
         subscribeUiState(observed)
@@ -343,7 +331,7 @@ class SubjectDownloadsPresenterTest {
         assertEquals(listOf(true, false, false), episodePicker.options.map { it.isCurrent })
         val awaiting = awaitState { !it.request.busy }
         assertEquals(DownloadRequestUiState(episodeIds = setOf(1), busy = false, canCancel = true), awaiting.request)
-        // 选集期间再次请求同一集不会重建会话.
+
         assertFalse(presenter.requestDownload(1))
 
         presenter.backToMediaSelection()
@@ -377,17 +365,11 @@ class SubjectDownloadsPresenterTest {
         assertTrue(addDownload.createdEpisodeIds.isEmpty())
     }
 
-    /**
-     * @param subscribe 是否在整个测试期间保持订阅 [SubjectDownloadsPresenter.uiState] 与 [SubjectDownloadsPresenter.requestDialogs].
-     */
     private class Fixture(private val testScope: TestScope, subscribe: Boolean, initialTitle: String?) {
         val storage = FakeDownloadStorage()
         val downloadManager = MediaDownloadManager(listOf(storage), testScope.backgroundScope)
         val deleteCache = FakeDeleteCacheUseCase(downloadManager)
 
-        /**
-         * 操作的执行作用域. 提交操作会立即在其中创建协程, 因此在 [runCurrent] 之前检查 [pendingOperationCount] 即可判断是否提交了操作.
-         */
         private val operationJob = SupervisorJob(testScope.backgroundScope.coroutineContext.job)
         val operations = DownloadOperations(
             downloadManager, deleteCache,
@@ -419,15 +401,12 @@ class SubjectDownloadsPresenterTest {
 
         init {
             if (subscribe) {
-                // 保持订阅, 让两个状态流在整个测试期间持续更新.
+
                 subscribeUiState()
                 testScope.backgroundScope.launch { presenter.requestDialogs.collect() }
             }
         }
 
-        /**
-         * 在后台订阅 [SubjectDownloadsPresenter.uiState], 收到的每个值记入 [into]. 取消返回的 [Job] 即取消订阅.
-         */
         fun subscribeUiState(into: MutableList<SubjectDownloadsUiState> = mutableListOf()): Job =
             testScope.backgroundScope.launch { presenter.uiState.collect { into += it } }
 

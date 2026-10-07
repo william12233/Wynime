@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.tools.update
+package com.wynime.app.tools.update
 
 import android.content.ClipData
 import android.content.Context
@@ -16,19 +7,17 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import androidx.core.content.FileProvider
-import me.him188.ani.app.platform.ContextMP
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.exists
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.length
-import me.him188.ani.utils.io.toFile
-import me.him188.ani.utils.io.toKtPath
+import com.wynime.app.platform.ContextMP
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.exists
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.length
+import com.wynime.utils.io.toFile
+import com.wynime.utils.io.toKtPath
 import java.util.Locale
 import java.io.File
 
-
 private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
-
 
 class AndroidUpdateInstaller : UpdateInstaller {
     private companion object {
@@ -118,8 +107,7 @@ class AndroidUpdateInstaller : UpdateInstaller {
     }
 
     override fun clearPendingInstallation() {
-        // This method is also called from validation/error paths where there is no Context. The
-        // Android implementation keeps the preference file on the application context instead.
+
         lastContext?.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)?.edit()?.clear()?.apply()
     }
 
@@ -242,10 +230,6 @@ class AndroidUpdateInstaller : UpdateInstaller {
         }
         val intent = createApkInstallIntent(apkUri, file.name)
 
-        // Some third-party installers are launched through a system installer replacement. In that flow, Android may
-        // grant the URI to the original resolved activity instead of the installer that ultimately reads the APK.
-        // Grant every discoverable handler read access as well, while retaining the intent grant for whichever
-        // activity ultimately receives it.
         val handlers = context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
         if (handlers.isEmpty()) {
             throw ApkInstallException(
@@ -272,7 +256,6 @@ class AndroidUpdateInstaller : UpdateInstaller {
         cause: Throwable? = null,
     ) : Exception(message, cause)
 }
-
 
 internal fun createApkInstallIntent(apkUri: Uri, apkName: String): Intent = Intent(Intent.ACTION_VIEW).apply {
     setDataAndType(apkUri, APK_MIME_TYPE)

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.gesture
+package com.wynime.app.videoplayer.ui.gesture
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.KeyEventType
@@ -16,9 +7,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import me.him188.ani.app.ui.foundation.effects.ComposeKey
-import me.him188.ani.app.ui.foundation.effects.onKey
-import me.him188.ani.app.videoplayer.ui.nextPlaybackSpeed
+import com.wynime.app.ui.foundation.effects.ComposeKey
+import com.wynime.app.ui.foundation.effects.onKey
+import com.wynime.app.videoplayer.ui.nextPlaybackSpeed
 
 private val PLAYBACK_SPEED_SHORTCUTS = listOf(
     ComposeKey.One to 1f,
@@ -29,12 +20,6 @@ private val PLAYBACK_SPEED_SHORTCUTS = listOf(
     ComposeKey.NumPad3 to 3f,
 )
 
-/**
- * Installs the player keyboard commands on a single focus target.
- *
- * The caller owns focus policy. Commands are active only while the modified node owns focus, so a text field or
- * another player control can temporarily take keyboard input without triggering playback commands.
- */
 internal fun Modifier.playerKeyboardShortcuts(
     seekerState: SwipeSeekerState,
     fastSkipState: FastSkipState?,
@@ -93,9 +78,7 @@ internal fun Modifier.playerKeyboardShortcuts(
     }
     return result
         .onKey(ComposeKey.I, onTogglePlayerStats)
-        // The same node carries combinedClickable, which treats Enter as a click when focused.
-        // Enter is not a player shortcut, so swallow it; DPad center is left for clickable so that
-        // remote/DPad activation still works like a tap.
+
         .onPreviewKeyEvent { event ->
             event.key == ComposeKey.Enter || event.key == ComposeKey.NumPadEnter
         }

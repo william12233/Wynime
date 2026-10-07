@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.storage
+package com.wynime.app.domain.media.cache.storage
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -16,22 +7,22 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.TestMediaCache
-import me.him188.ani.app.domain.media.cache.engine.DummyMediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.domain.media.createTestDefaultMedia
-import me.him188.ani.app.domain.media.createTestMediaProperties
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.datasources.api.topic.ResourceLocation
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.TestMediaCache
+import com.wynime.app.domain.media.cache.engine.DummyMediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.domain.media.createTestDefaultMedia
+import com.wynime.app.domain.media.createTestMediaProperties
+import com.wynime.app.tools.toProgress
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.datasources.api.topic.ResourceLocation
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals

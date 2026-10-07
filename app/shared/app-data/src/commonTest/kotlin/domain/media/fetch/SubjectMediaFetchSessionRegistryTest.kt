@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni contributors.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.fetch
+package com.wynime.app.domain.media.fetch
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -17,9 +10,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaFetchRequest
 import kotlin.time.Duration.Companion.seconds
 
 class SubjectMediaFetchSessionRegistryTest {

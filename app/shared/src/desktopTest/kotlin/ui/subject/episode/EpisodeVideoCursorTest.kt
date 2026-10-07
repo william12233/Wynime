@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode
+package com.wynime.app.ui.subject.episode
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,32 +24,32 @@ import androidx.compose.ui.test.swipe
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.MutableStateFlow
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.staticMediaCacheProgressState
-import me.him188.ani.app.domain.player.VideoLoadingState
-import me.him188.ani.app.ui.episode.share.MediaShareData
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.effects.TAG_CURSOR_VISIBILITY_EFFECT_INVISIBLE
-import me.him188.ani.app.ui.foundation.effects.TAG_CURSOR_VISIBILITY_EFFECT_VISIBLE
-import me.him188.ani.app.ui.framework.doesNotExist
-import me.him188.ani.app.ui.framework.exists
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.subject.episode.video.components.FloatingFullscreenSwitchButton
-import me.him188.ani.app.videoplayer.ui.ControllerVisibility
-import me.him188.ani.app.videoplayer.ui.MutablePlayerFullscreenState
-import me.him188.ani.app.videoplayer.ui.NoOpPlaybackSpeedController
-import me.him188.ani.app.videoplayer.ui.NoOpVideoAspectRatio
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerControllerState
-import me.him188.ani.app.videoplayer.ui.VideoAspectRatioControllerState
-import me.him188.ani.app.videoplayer.ui.gesture.GestureFamily
-import me.him188.ani.app.videoplayer.ui.gesture.NoOpLevelController
-import me.him188.ani.app.videoplayer.ui.gesture.VIDEO_GESTURE_MOUSE_MOVE_SHOW_CONTROLLER_DURATION
-import me.him188.ani.app.videoplayer.ui.progress.PlayerControllerDefaults
-import me.him188.ani.app.videoplayer.ui.progress.PlayerProgressSliderState
-import me.him188.ani.app.videoplayer.ui.progress.TAG_PROGRESS_SLIDER_PREVIEW_POPUP
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.staticMediaCacheProgressState
+import com.wynime.app.domain.player.VideoLoadingState
+import com.wynime.app.ui.episode.share.MediaShareData
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.effects.TAG_CURSOR_VISIBILITY_EFFECT_INVISIBLE
+import com.wynime.app.ui.foundation.effects.TAG_CURSOR_VISIBILITY_EFFECT_VISIBLE
+import com.wynime.app.ui.framework.doesNotExist
+import com.wynime.app.ui.framework.exists
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.subject.episode.video.components.FloatingFullscreenSwitchButton
+import com.wynime.app.videoplayer.ui.ControllerVisibility
+import com.wynime.app.videoplayer.ui.MutablePlayerFullscreenState
+import com.wynime.app.videoplayer.ui.NoOpPlaybackSpeedController
+import com.wynime.app.videoplayer.ui.NoOpVideoAspectRatio
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.videoplayer.ui.PlayerControllerState
+import com.wynime.app.videoplayer.ui.VideoAspectRatioControllerState
+import com.wynime.app.videoplayer.ui.gesture.GestureFamily
+import com.wynime.app.videoplayer.ui.gesture.NoOpLevelController
+import com.wynime.app.videoplayer.ui.gesture.VIDEO_GESTURE_MOUSE_MOVE_SHOW_CONTROLLER_DURATION
+import com.wynime.app.videoplayer.ui.progress.PlayerControllerDefaults
+import com.wynime.app.videoplayer.ui.progress.PlayerProgressSliderState
+import com.wynime.app.videoplayer.ui.progress.TAG_PROGRESS_SLIDER_PREVIEW_POPUP
 import org.openani.mediamp.test.TestMediampPlayer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -153,11 +144,8 @@ class EpisodeVideoCursorTest {
         }
     }
 
-    /**
-     * 初始 controller visible, 会显示指针
-     */
     @Test
-    fun `initial controller visible`() = runAniComposeUiTest {
+    fun `initial controller visible`() = runWynimeComposeUiTest {
         controllerState.toggleFullVisible(true)
         setContent {
             Player()
@@ -167,54 +155,44 @@ class EpisodeVideoCursorTest {
         }
     }
 
-    /**
-     * 初始 controller invisible, 但因为鼠标没有 hover 到视频, 也会显示指针
-     */
     @Test
-    fun `initial controller invisible`() = runAniComposeUiTest {
+    fun `initial controller invisible`() = runWynimeComposeUiTest {
         controllerState.toggleFullVisible(false)
         setContent {
             Player()
         }
         runOnIdle {
-            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() } // 因为没有 hover
+            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() }
         }
     }
 
-    /**
-     * 初始 controller invisible, 但因为鼠标没有 hover 到视频, 也会显示指针.
-     * 当鼠标滑入视频 (并且 controller 也显示几秒隐藏后), 会显示指针
-     */
     @Test
-    fun `initial controller invisible and hover`() = runAniComposeUiTest {
+    fun `initial controller invisible and hover`() = runWynimeComposeUiTest {
         controllerState.toggleFullVisible(false)
         setContent {
             Player()
         }
         runOnIdle {
-            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() } // 因为没有 hover
+            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() }
         }
         runOnIdle {
             onRoot().performMouseInput {
                 moveTo(center)
             }
-        } // 这里不会因为滑动鼠标而显示 controller 进而显示 cursor, 因为会自动 advance 时间跳过状态
+        }
         runOnIdle {
             waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorInvisible.exists() }
         }
     }
 
-    /**
-     * 滑出视频区域后显示指针
-     */
     @Test
-    fun `show cursor when outside of video`() = runAniComposeUiTest {
+    fun `show cursor when outside of video`() = runWynimeComposeUiTest {
         controllerState.toggleFullVisible(false)
         setContent {
             Player()
         }
         runOnIdle {
-            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() } // 因为没有 hover
+            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() }
         }
         runOnIdle {
             onRoot().performMouseInput {
@@ -222,11 +200,11 @@ class EpisodeVideoCursorTest {
             }
         }
         runOnIdle {
-            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorInvisible.exists() } // hover 了
+            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorInvisible.exists() }
         }
         runOnIdle {
             onRoot().performMouseInput {
-                moveTo(centerRight) // 移出视频区域
+                moveTo(centerRight)
             }
         }
         runOnIdle {
@@ -235,11 +213,8 @@ class EpisodeVideoCursorTest {
         }
     }
 
-    /**
-     * 在 controller visible 时鼠标滑入播放器, 等待几秒后隐藏 controller, 同时隐藏 cursor
-     */
     @Test
-    fun `hide cursor after some seconds`() = runAniComposeUiTest {
+    fun `hide cursor after some seconds`() = runWynimeComposeUiTest {
         controllerState.toggleFullVisible(true)
         mainClock.autoAdvance = false
         setContent {
@@ -248,17 +223,16 @@ class EpisodeVideoCursorTest {
         val root = onAllNodes(isRoot()).onFirst()
         runOnIdle {
             assertEquals(true, controllerState.visibility.topBar)
-            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() } // 因为没有 hover
+            waitUntil(timeoutMillis = WAIT_TIMEOUT) { cursorVisible.exists() }
             root.performMouseInput {
-                moveTo(centerRight) // 初始在视频外面
+                moveTo(centerRight)
             }
         }
         runOnIdle {
             root.performMouseInput {
                 moveTo(center)
             }
-            // 目前的 controller mouseHoverForController 依赖 Move 事件, 但 compose 似乎有点问题
-            // 所以额外广播一个事件
+
             root.performTouchInput {
                 swipe(center, center - Offset(1f, 1f))
             }

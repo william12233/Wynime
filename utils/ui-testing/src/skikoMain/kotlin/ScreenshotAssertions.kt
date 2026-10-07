@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.framework
+package com.wynime.app.ui.framework
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asSkiaBitmap
@@ -15,13 +6,13 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.SkikoComposeUiTest
 import androidx.compose.ui.test.captureToImage
 import kotlinx.io.files.SystemTemporaryDirectory
-import me.him188.ani.test.readTestResourceAsByteArray
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.createDirectories
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.writeBytes
-import me.him188.ani.utils.platform.Uuid
+import com.wynime.test.readTestResourceAsByteArray
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.createDirectories
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.writeBytes
+import com.wynime.utils.platform.Uuid
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.impl.use
@@ -29,26 +20,16 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.fail
 
-/**
- * 截图当前的 UI 并与 resources 目录下的图片 [expectedResource] 进行比较.
- */
 fun SkikoComposeUiTest.assertScreenshot(expectedResource: String) {
     captureToImage().assertScreenshot(expectedResource)
 }
 
-/**
- * 截图当前的 UI 并与 resources 目录下的图片 [expectedResource] 进行比较.
- */
 actual fun SemanticsNodeInteraction.assertScreenshot(expectedResource: String) {
     captureToImage().assertScreenshot(expectedResource)
 }
 
-/**
- * 截图当前的 UI 并与 resources 目录下的图片 [expectedResource] 进行比较.
- */
 @OptIn(ExperimentalEncodingApi::class)
 actual fun ImageBitmap.assertScreenshot(expectedResource: String) {
-    // https://github.com/JetBrains/compose-multiplatform-core/blob/jb-main/compose/ui/ui-test-junit4/src/desktopTest/kotlin/androidx/compose/ui/test/UseComposeUiTest.kt
 
     Image.makeFromBitmap(asSkiaBitmap()).use { img: Image ->
         val actualImage = img.encodeToData(EncodedImageFormat.PNG)
@@ -71,7 +52,7 @@ actual fun ImageBitmap.assertScreenshot(expectedResource: String) {
 
         val expectedBytes = readTestResourceAsByteArray(expectedResource)
         if (actualBytes.contentEquals(expectedBytes)) {
-            // ok
+
         } else {
             val tempFile = saveActualImage(actualBytes, tempDir)
             fail(
@@ -103,7 +84,7 @@ private fun saveActualImage(
     val tempFile = folder.resolve(
         (Exception().guessTestFunctionName() ?: "ani-compose-test-${Uuid.randomString()}") + ".png",
     )
-    // 添加测试时获取截图
+
     tempFile.writeBytes(actualBytes)
     return tempFile
 }

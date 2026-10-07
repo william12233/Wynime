@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.episode
+package com.wynime.app.ui.episode
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,20 +34,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
-import me.him188.ani.app.data.models.subject.TestRatingInfo
-import me.him188.ani.app.data.models.subject.TestSelfRatingInfo
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.episode_summary_download
-import me.him188.ani.app.ui.lang.episode_summary_share
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.TestRatingInfo
+import com.wynime.app.data.models.subject.TestSelfRatingInfo
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.episode_summary_download
+import com.wynime.app.ui.lang.episode_summary_share
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
 @Immutable
@@ -68,15 +59,12 @@ data class PlayingEpisodeSummary(
     val subjectCoverUrl: String,
     val rating: RatingInfo,
     val selfRatingInfo: SelfRatingInfo,
-    /** 剧集原名, 供"显示原名"设置开启时使用; 默认与 [episodeName] 相同. */
+
     val episodeOriginalName: String = episodeName,
-    /** 条目原名, 同 [episodeOriginalName] 的开关约定; 默认与 [subjectName] 相同. */
+
     val subjectOriginalName: String = subjectName,
 )
 
-/**
- * https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=898-7207&t=BTaIuPfq1Qm7cTfJ-0
- */
 @Composable
 fun PlayingEpisodeSummaryRow(
     expanded: Boolean,
@@ -95,7 +83,7 @@ fun PlayingEpisodeSummaryRow(
     Surface(color = containerColor) {
         Column(modifier) {
             if (expanded) {
-                // title
+
                 Row(Modifier.fillMaxWidth()) {
                     Text(
                         "${summary.episodeSort}  $episodeName",
@@ -107,7 +95,6 @@ fun PlayingEpisodeSummaryRow(
 
                 Spacer(Modifier.height(8.dp))
 
-                // subject info
                 Row(
                     Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -116,7 +103,7 @@ fun PlayingEpisodeSummaryRow(
                         summary.subjectCoverUrl,
                         contentDescription = subjectName,
                         Modifier.clip(MaterialTheme.shapes.medium).width(158.dp)
-                            .height(233.dp), //.aspectRatio(9f / 16f),
+                            .height(233.dp),
                         contentScale = ContentScale.Crop,
                     )
 
@@ -149,7 +136,7 @@ fun PlayingEpisodeSummaryRow(
                     Spacer(Modifier.width(24.dp))
 
                     Column {
-                        // actions
+
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(16.dp, alignment = Alignment.End),
                             verticalArrangement = Arrangement.spacedBy(16.dp, alignment = Alignment.CenterVertically),
@@ -160,7 +147,7 @@ fun PlayingEpisodeSummaryRow(
                     }
                 }
             } else {
-                // title
+
                 Row(Modifier.fillMaxWidth()) {
                     Text(
                         subjectName,

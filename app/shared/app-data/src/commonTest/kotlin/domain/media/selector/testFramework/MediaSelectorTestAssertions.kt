@@ -1,25 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector.testFramework
+package com.wynime.app.domain.media.selector.testFramework
 
 import androidx.annotation.CheckResult
-import me.him188.ani.app.domain.media.selector.MatchMetadata
-import me.him188.ani.app.domain.media.selector.MaybeExcludedMedia
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason
-import me.him188.ani.app.domain.media.selector.UnsafeOriginalMediaAccess
-import me.him188.ani.app.domain.media.selector.testFramework.MaybeExcludedMediaAssertions.Assert
-import me.him188.ani.app.domain.media.selector.testFramework.MaybeExcludedMediaAssertions.AssertNoMoreElements
-import me.him188.ani.app.domain.media.selector.testFramework.MaybeExcludedMediaAssertions.Filter.FilterType
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.topic.EpisodeRange
+import com.wynime.app.domain.media.selector.MatchMetadata
+import com.wynime.app.domain.media.selector.MaybeExcludedMedia
+import com.wynime.app.domain.media.selector.MediaExclusionReason
+import com.wynime.app.domain.media.selector.UnsafeOriginalMediaAccess
+import com.wynime.app.domain.media.selector.testFramework.MaybeExcludedMediaAssertions.Assert
+import com.wynime.app.domain.media.selector.testFramework.MaybeExcludedMediaAssertions.AssertNoMoreElements
+import com.wynime.app.domain.media.selector.testFramework.MaybeExcludedMediaAssertions.Filter.FilterType
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.topic.EpisodeRange
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.jvm.JvmName
@@ -58,21 +49,11 @@ class MaybeExcludedMediaAssertions {
     private val rules = mutableListOf<Rule>()
     private val unusedTargets = mutableListOf<Target>()
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Positional Access
-    ///////////////////////////////////////////////////////////////////////////
-
-    /**
-     * 匹配列表中的下一个元素.
-     */
     @CheckResult
     fun next() = Next(getCodeSource("filter")).also {
         unusedTargets.add(it)
     }
 
-    /**
-     * 匹配列表中的唯一一个元素.
-     */
     @CheckResult
     fun single(): Filter {
         return Filter(
@@ -85,15 +66,6 @@ class MaybeExcludedMediaAssertions {
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Random Access
-    ///////////////////////////////////////////////////////////////////////////
-
-    /**
-     * 匹配满足所有条件的一个特定元素. 这将会移动当前指针到该元素, 也就是说 [next] 将会匹配紧接着的下一个元素.
-     * 如果条件为 `null`, 则忽略该条件.
-     * 需要至少有一个条件, 否则请使用 [onOneOrMore].
-     */
     @CheckResult
     fun onSingle(
         sourceId: String? = null,
@@ -114,9 +86,6 @@ class MaybeExcludedMediaAssertions {
         }
     }
 
-    /**
-     * 匹配至少一个元素.
-     */
     @CheckResult
     fun onOneOrMore(
         sourceId: String? = null,
@@ -137,9 +106,6 @@ class MaybeExcludedMediaAssertions {
         }
     }
 
-    /**
-     * 匹配 0 个或者更多元素
-     */
     @CheckResult
     fun onZeroOrMore(
         sourceId: String? = null,
@@ -160,26 +126,15 @@ class MaybeExcludedMediaAssertions {
         }
     }
 
-    /**
-     * 匹配所有元素. 这将会移动当前指针到最后一个元素, 也就是说为 [next] 创建 assertion 将会报错.
-     */
     @CheckResult
     fun onAll(): All = All(getCodeSource("filter")).also {
         unusedTargets.add(it)
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Assertions
-    ///////////////////////////////////////////////////////////////////////////
-
     fun assertNoMoreElements() {
         rules.add(AssertNoMoreElements(getCodeSource("assertion")))
     }
 
-    // ignorable return value
-    /**
-     * Assert all medias matched by the target has the specified properties.
-     */
     fun Target.assert(
         mediaId: String? = null,
         included: Boolean? = null,
@@ -193,7 +148,6 @@ class MaybeExcludedMediaAssertions {
             "sourceId and source cannot be set at the same time."
         }
 
-        // Properties can be null, in which case we only assert this element exists.
         addCheck(
             this,
             CheckProperties(
@@ -208,8 +162,6 @@ class MaybeExcludedMediaAssertions {
         return this
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-
     private fun removeUnusedTarget(target: Target) {
         unusedTargets.remove(target)
     }
@@ -223,13 +175,6 @@ class MaybeExcludedMediaAssertions {
         MaybeExcludedMediaAssertionsExecutor(list, rules).execute()
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Rules
-    ///////////////////////////////////////////////////////////////////////////
-
-    /**
-     * 用来匹配待 assert 的 media
-     */
     sealed class Target {
         abstract val codeSource: CodeSource
         abstract override fun toString(): String
@@ -258,12 +203,7 @@ class MaybeExcludedMediaAssertions {
         override val codeSource: CodeSource,
     ) : Target()
 
-
     sealed class Rule()
-
-//    data class AssertPosition(
-//        val filter: Filter,
-//    ) : Rule()
 
     data class Assert(
         val target: Target,
@@ -273,7 +213,6 @@ class MaybeExcludedMediaAssertions {
     data class AssertNoMoreElements(
         val source: CodeSource,
     ) : Rule()
-
 
     sealed class Check(val source: CodeSource)
 
@@ -303,16 +242,12 @@ class MaybeExcludedMediaAssertions {
             }
         }
 
-        // No existing rule, create a new rule
         rules.add(Assert(target, mutableListOf(check)))
     }
 }
 
-/**
- * 创建 rule/check 的代码. 用于更好地追踪.
- */
 class CodeSource(
-    val exception: Exception, // for stacktrace, addSuppressed
+    val exception: Exception,
 )
 
 inline fun <R> CodeSource.runWithSourceInfo(
@@ -327,11 +262,9 @@ inline fun <R> CodeSource.runWithSourceInfo(
     }
 }
 
-
 @Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-@kotlin.internal.InlineOnly // This function call will not be in the stacktrace.
+@kotlin.internal.InlineOnly
 inline fun getCodeSource(name: String): CodeSource = CodeSource(Exception("Source code for $name"))
-
 
 private class MaybeExcludedMediaAssertionsExecutor(
     private val list: List<MaybeExcludedMedia>,
@@ -400,7 +333,6 @@ private class MaybeExcludedMediaAssertionsExecutor(
                         )
                     }
 
-                    // Handle match type
                     when (this.type) {
                         FilterType.ALL -> {}
                         FilterType.SINGLE -> {

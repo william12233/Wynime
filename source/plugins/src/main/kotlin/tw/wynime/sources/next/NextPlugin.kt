@@ -1,15 +1,15 @@
 package tw.wynime.sources.next
 
-import me.him188.ani.source.plugin.api.ResolvedMediaFormat
-import me.him188.ani.source.plugin.api.SourceChannel
-import me.him188.ani.source.plugin.api.SourceChannelEpisodes
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.ResolvedMediaFormat
+import com.wynime.source.plugin.api.SourceChannel
+import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.extractJsonNumberField
 import tw.wynime.sources.shared.extractJsonStringField
@@ -43,14 +43,14 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
     iconUrl = "https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico",
     description = "稀飯動漫 Next 的 SSR 番劇與正常播放服務",
 ) {
-    override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
+    override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {
         val page = requestPage(
             "$rootUrl/search?q=${urlEncode(request.query)}",
             traceId = request.traceId,
             entryPoint = request.entryPoint,
         )
         val variants = searchQueryVariants(request.query)
-        val serverResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+        val serverResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (variant in variants) {
             serverResults += dynamicSearchLinks(
                 page.html,
@@ -59,7 +59,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
             )
         }
         val apiConfig = discoverPlaybackConfig(page.html) ?: (PUBLIC_API_ROOT to PUBLIC_API_KEY)
-        val apiResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+        val apiResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (variant in variants) {
             apiResults += searchApi(
                 apiConfig.first,
@@ -84,7 +84,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
             .ifBlank { subjectId }
         val subject = subject(subjectId, subjectTitle, page.finalUrl)
         val sourceIds = sourceIdsByCode(page.html)
-        val groups = linkedMapOf<String, MutableList<me.him188.ani.source.plugin.api.SourceEpisode>>()
+        val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
         links(page.html).forEach { link ->
             val match = Regex("(?i)/anime/${Regex.escape(subjectId)}/play/(\\d+)(?:\\?source=([^&#\"']+))?").find(link.href)
                 ?: return@forEach
@@ -200,7 +200,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         limit: Int,
         traceId: String,
         entryPoint: String,
-    ): List<me.him188.ani.source.plugin.api.SourceSubject> {
+    ): List<com.wynime.source.plugin.api.SourceSubject> {
         val body = "{\"search_term\":${jsonString(query)},\"page_number\":1,\"items_per_page\":$limit,\"sort_by\":\"created_at\",\"sort_order\":\"desc\"}"
         val response = requestJson(
             url = "$api/rest/v1/rpc/search_animes",
@@ -258,7 +258,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         return result?.getOrThrow() ?: error("Next playback configuration request did not complete")
     }
 
-    private fun parseSearchResults(response: String): List<me.him188.ani.source.plugin.api.SourceSubject> =
+    private fun parseSearchResults(response: String): List<com.wynime.source.plugin.api.SourceSubject> =
         jsonObjects(response).mapNotNull { item ->
             val id = extractJsonNumberField(item, "id")?.toString() ?: return@mapNotNull null
             val title = extractJsonStringField(item, "title")

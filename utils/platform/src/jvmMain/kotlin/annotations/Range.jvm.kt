@@ -1,4 +1,4 @@
-package me.him188.ani.utils.platform.annotations
+package com.wynime.utils.platform.annotations
 
 import org.jetbrains.annotations.Range
 

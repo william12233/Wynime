@@ -1,12 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.desktop
+package com.wynime.app.desktop
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -17,24 +9,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.window.ApplicationScope
 import com.kdroid.composetray.menu.api.TrayMenuBuilder
-import me.him188.ani.app.data.models.preference.DesktopCloseBehavior
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.desktop_tray_open
-import me.him188.ani.app.ui.lang.settings_app_close_behavior_exit
+import com.wynime.app.data.models.preference.DesktopCloseBehavior
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.desktop_tray_open
+import com.wynime.app.ui.lang.settings_app_close_behavior_exit
 import org.jetbrains.compose.resources.stringResource
 import java.awt.SystemTray
 import com.kdroid.composetray.tray.api.Tray as ComposeNativeTray
 
 @Composable
-fun rememberAniTrayState(): AniTrayState {
+fun rememberWynimeTrayState(): WynimeTrayState {
     val isTraySupported = remember { SystemTray.isSupported() }
     return remember(isTraySupported) {
-        AniTrayState(isTraySupported = isTraySupported)
+        WynimeTrayState(isTraySupported = isTraySupported)
     }
 }
 
 @Stable
-class AniTrayState internal constructor(
+class WynimeTrayState internal constructor(
     val isTraySupported: Boolean,
 ) {
     var isWindowHiddenToTray by mutableStateOf(false)
@@ -65,8 +57,8 @@ class AniTrayState internal constructor(
 }
 
 @Composable
-fun ApplicationScope.AniSystemTray(
-    state: AniTrayState,
+fun ApplicationScope.WynimeSystemTray(
+    state: WynimeTrayState,
     icon: Painter,
     tooltip: String,
     onExit: () -> Unit,

@@ -1,19 +1,9 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.datasources.bangumi.processing
 
-package me.him188.ani.datasources.bangumi.processing
-
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiEpisodeCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiSubjectCollectionType
-import me.him188.ani.datasources.bangumi.next.models.BangumiNextCollectionType
-
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.bangumi.models.BangumiEpisodeCollectionType
+import com.wynime.datasources.bangumi.models.BangumiSubjectCollectionType
+import com.wynime.datasources.bangumi.next.models.BangumiNextCollectionType
 
 fun UnifiedCollectionType.toSubjectCollectionType(): BangumiSubjectCollectionType? {
     return when (this) {

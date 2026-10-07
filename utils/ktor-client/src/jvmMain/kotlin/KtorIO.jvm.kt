@@ -1,4 +1,4 @@
-package me.him188.ani.utils.ktor
+package com.wynime.utils.ktor
 
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.jvm.javaio.toInputStream

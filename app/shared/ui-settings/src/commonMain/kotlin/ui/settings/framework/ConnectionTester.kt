@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.framework
+package com.wynime.app.ui.settings.framework
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,20 +25,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.domain.settings.ServiceConnectionTester
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_framework_not_enabled
-import me.him188.ani.app.ui.lang.settings_framework_timeout
-import me.him188.ani.app.ui.lang.settings_framework_waiting_for_test
+import com.wynime.app.domain.settings.ServiceConnectionTester
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_framework_not_enabled
+import com.wynime.app.ui.lang.settings_framework_timeout
+import com.wynime.app.ui.lang.settings_framework_waiting_for_test
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.measureTimedValue
 
-
-/**
- * @suppress soft deprecated. use [ServiceConnectionTester] instead.
- */
 @Immutable
 enum class ConnectionTestResult {
     SUCCESS,
@@ -58,14 +45,8 @@ enum class ConnectionTestResult {
 fun Boolean.toConnectionTestResult() =
     if (this) ConnectionTestResult.SUCCESS else ConnectionTestResult.FAILED
 
-/**
- * @suppress soft deprecated. use [ServiceConnectionTester] instead.
- */
 typealias ConnectionTester = Tester<ConnectionTestResult>
 
-/**
- * @suppress soft deprecated. use [ServiceConnectionTester] instead.
- */
 fun ConnectionTester(
     id: String,
     testConnection: suspend () -> ConnectionTestResult,
@@ -77,9 +58,6 @@ fun ConnectionTester(
     },
 )
 
-/**
- * @suppress soft deprecated. use [ServiceConnectionTester] instead.
- */
 @Stable
 open class Tester<T>(
     val id: String,
@@ -114,7 +92,7 @@ open class Tester<T>(
             }
             throw e
         } finally {
-            // We can't use `withContext` be cause this scope has already been cancelled
+
             @OptIn(DelicateCoroutinesApi::class)
             GlobalScope.launch(Dispatchers.Main) {
                 isTesting = false
@@ -123,9 +101,6 @@ open class Tester<T>(
     }
 }
 
-/**
- * @suppress deprecated.
- */
 @Composable
 fun ConnectionTesterResultIndicator(
     tester: ConnectionTester,

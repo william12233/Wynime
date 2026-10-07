@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web.captcha
+package com.wynime.app.domain.mediasource.web.captcha
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -21,10 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
-import me.him188.ani.app.domain.mediasource.web.LoadedPage
-import me.him188.ani.app.platform.AniCefApp
-import me.him188.ani.utils.platform.currentPlatformDesktop
-import me.him188.ani.utils.platform.Platform
+import com.wynime.app.domain.mediasource.web.LoadedPage
+import com.wynime.app.platform.WynimeCefApp
+import com.wynime.utils.platform.currentPlatformDesktop
+import com.wynime.utils.platform.Platform
 import org.cef.CefClient
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
@@ -41,15 +32,10 @@ import org.cef.network.CefRequest
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * JCEF 实现的 [CaptchaBrowser].
- *
- * 线程模型: CEF 回调 (EDT / IO 线程) 上只做 `tryEmit` / `resume`, 一切等待都在调用方协程里.
- */
 class CefCaptchaBrowser private constructor(
     private val client: CefClient,
     private val browser: CefBrowser,
-    private val permit: AniCefApp.BrowserLifecyclePermit?,
+    private val permit: WynimeCefApp.BrowserLifecyclePermit?,
 ) : CaptchaBrowser {
     private val _pageLoads = MutableSharedFlow<LoadedPage>(
         extraBufferCapacity = 16,
@@ -60,7 +46,6 @@ class CefCaptchaBrowser private constructor(
     private val _isLoading = MutableStateFlow(false)
     override val isLoading: StateFlow<Boolean> get() = _isLoading
 
-    /** 从真实请求头捕获的 UA. */
     private val capturedUserAgent = atomic<String?>(null)
 
     private val interceptor = atomic<((String) -> InterceptDecision)?>(null)
@@ -69,7 +54,7 @@ class CefCaptchaBrowser private constructor(
         get() = capturedUserAgent.value ?: fallbackUserAgent()
 
     override suspend fun navigate(url: String) {
-        AniCefApp.runOnCefContext {
+        WynimeCefApp.runOnCefContext {
             browser.loadURL(url)
         }
     }
@@ -77,7 +62,7 @@ class CefCaptchaBrowser private constructor(
     override suspend fun currentPage(): LoadedPage? {
         return withTimeoutOrNull(2.seconds) {
             suspendCancellableCoroutine { cont ->
-                AniCefApp.runOnCefContext {
+                WynimeCefApp.runOnCefContext {
                     val currentUrl = browser.url
                     if (currentUrl.isNullOrBlank()) {
                         cont.resume(null)
@@ -98,7 +83,7 @@ class CefCaptchaBrowser private constructor(
     }
 
     override suspend fun executeJavaScript(script: String) {
-        AniCefApp.runOnCefContext {
+        WynimeCefApp.runOnCefContext {
             browser.executeJavaScript(script, browser.url, 0)
         }
     }
@@ -114,7 +99,7 @@ class CefCaptchaBrowser private constructor(
     private suspend fun collectCookiesForUrl(url: String): List<BrowserCookie> {
         return withTimeoutOrNull(2.seconds) {
             suspendCancellableCoroutine { cont ->
-                AniCefApp.runOnCefContext {
+                WynimeCefApp.runOnCefContext {
                     val cookies = mutableListOf<BrowserCookie>()
                     val visitor = object : CefCookieVisitor {
                         override fun visit(
@@ -165,7 +150,7 @@ class CefCaptchaBrowser private constructor(
 
     override fun close() {
         try {
-            AniCefApp.closeBrowserAndDisposeClientBlocking(browser, client)
+            WynimeCefApp.closeBrowserAndDisposeClientBlocking(browser, client)
         } finally {
             permit?.release()
         }
@@ -242,13 +227,13 @@ class CefCaptchaBrowser private constructor(
 
     companion object {
         internal suspend fun create(): CefCaptchaBrowser {
-            var permit: AniCefApp.BrowserLifecyclePermit? = AniCefApp.acquireDataSourceBrowserPermit()
+            var permit: WynimeCefApp.BrowserLifecyclePermit? = WynimeCefApp.acquireDataSourceBrowserPermit()
             var client: CefClient? = null
             var browser: CefBrowser? = null
             try {
-                return AniCefApp.suspendCoroutineOnCefContext {
-                    val createdClient = AniCefApp.createClient()
-                        ?: error("AniCefApp is not initialized, cannot create CaptchaBrowser")
+                return WynimeCefApp.suspendCoroutineOnCefContext {
+                    val createdClient = WynimeCefApp.createClient()
+                        ?: error("WynimeCefApp is not initialized, cannot create CaptchaBrowser")
                     client = createdClient
 
                     val instance = CefCaptchaBrowser(
@@ -268,18 +253,14 @@ class CefCaptchaBrowser private constructor(
                     instance
                 }
             } catch (e: Throwable) {
-                AniCefApp.closeBrowserAndDisposeClientBlocking(browser, client)
+                WynimeCefApp.closeBrowserAndDisposeClientBlocking(browser, client)
                 permit?.release()
                 throw e
             }
         }
 
         private fun fallbackUserAgent(): String {
-            val osToken = when (currentPlatformDesktop()) {
-                is Platform.MacOS -> "Macintosh; Intel Mac OS X 10_15_7"
-                is Platform.Windows -> "Windows NT 10.0; Win64; x64"
-                is Platform.Linux -> "X11; Linux x86_64"
-            }
+            val osToken = "Windows NT 10.0; Win64; x64"
             return "Mozilla/5.0 ($osToken) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
     }

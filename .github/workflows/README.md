@@ -1,6 +1,6 @@
 # GitHub Actions Workflows
 
-`build.yml` 和 `release.yml` 由 `src.main.kts` 生成而来。详情参考 <https://typesafegithub.github.io/github-workflows-kt/>。
+`build.yml` 與 `release.yml` 直接維護 Android／Windows 工作。Linux 主機執行 Android 模擬器與 Worker 檢查。`validate_platform_workflows.py` 檢查目標平台、工作相依及正式發行簽章檢查順序。
 
 `codex-agent.yml` 直接维护。新 issue 的分类器会读取组织级 `Priority` 字段的选项，校验模型输出后填写空缺的优先级，保留已有值。P0–P3 labels 已过时，不参与分类。
 

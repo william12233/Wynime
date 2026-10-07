@@ -1,19 +1,10 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import io.ktor.http.Url
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
 
 class SourcePluginRepositoryClient(
     private val http: SourceHttpClient,
@@ -33,10 +24,16 @@ class SourcePluginRepositoryClient(
             acceptedStatus = setOf(304) + (200..299).toSet(),
         )
         if (response.statusCode == 304) {
+            val index = cache.index ?: throw SourcePluginRepositoryException(
+                "Plugin repository returned 304 without a cached index",
+            )
+            if (index.pluginApiVersion != SOURCE_PLUGIN_API_VERSION ||
+                index.schemaVersion > SOURCE_PLUGIN_REPOSITORY_SCHEMA_VERSION
+            ) {
+                throw UnsupportedSourcePluginException("Cached plugin repository is incompatible with this host")
+            }
             return SourcePluginIndexFetchResult(
-                index = cache.index ?: throw SourcePluginRepositoryException(
-                    "Plugin repository returned 304 without a cached index",
-                ),
+                index = index,
                 etag = cache.etag,
                 fromCache = true,
             )
@@ -47,7 +44,7 @@ class SourcePluginRepositoryClient(
                 "Plugin repository schema ${index.schemaVersion} requires a newer host",
             )
         }
-        if (index.pluginApiVersion > SOURCE_PLUGIN_API_VERSION) {
+        if (index.pluginApiVersion != SOURCE_PLUGIN_API_VERSION) {
             throw UnsupportedSourcePluginException(
                 "Plugin repository plugin API ${index.pluginApiVersion} requires a newer host",
             )
@@ -134,7 +131,7 @@ class SourcePluginRepositoryClient(
             artifact.sha256.requireSha256()
             resolveUrl(artifact.url)
         }
-        if (manifest.pluginApiVersion > SOURCE_PLUGIN_API_VERSION) {
+        if (manifest.pluginApiVersion != SOURCE_PLUGIN_API_VERSION) {
             throw UnsupportedSourcePluginException(
                 "Plugin ${manifest.id} requires plugin API ${manifest.pluginApiVersion}",
             )

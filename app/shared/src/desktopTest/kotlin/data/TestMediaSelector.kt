@@ -1,35 +1,26 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("CanBeParameter", "MemberVisibilityCanBePrivate")
 
-package me.him188.ani.app.domain.media.framework
+package com.wynime.app.domain.media.framework
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.domain.media.selector.MaybeExcludedMedia
-import me.him188.ani.app.domain.media.selector.MediaAutoSelectSnapshot
-import me.him188.ani.app.domain.media.selector.MediaSourceSelectionSnapshot
-import me.him188.ani.app.domain.media.selector.MediaPreferenceItem
-import me.him188.ani.app.domain.media.selector.MediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorEvents
-import me.him188.ani.app.domain.media.selector.MutableMediaSelectorEvents
-import me.him188.ani.app.domain.media.selector.OptionalPreference
-import me.him188.ani.app.domain.media.selector.filter.MediaSelectorFilterSortAlgorithm
-import me.him188.ani.app.domain.media.selector.orElse
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.topic.Resolution
-import me.him188.ani.datasources.api.topic.SubtitleLanguage.ChineseSimplified
-import me.him188.ani.datasources.api.topic.SubtitleLanguage.ChineseTraditional
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.domain.media.selector.MaybeExcludedMedia
+import com.wynime.app.domain.media.selector.MediaAutoSelectSnapshot
+import com.wynime.app.domain.media.selector.MediaSourceSelectionSnapshot
+import com.wynime.app.domain.media.selector.MediaPreferenceItem
+import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.app.domain.media.selector.MediaSelectorEvents
+import com.wynime.app.domain.media.selector.MutableMediaSelectorEvents
+import com.wynime.app.domain.media.selector.OptionalPreference
+import com.wynime.app.domain.media.selector.filter.MediaSelectorFilterSortAlgorithm
+import com.wynime.app.domain.media.selector.orElse
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.topic.Resolution
+import com.wynime.datasources.api.topic.SubtitleLanguage.ChineseSimplified
+import com.wynime.datasources.api.topic.SubtitleLanguage.ChineseTraditional
 
 class TestMediaPreferenceItem<T : Any>(
     override val available: MutableStateFlow<List<T>> = MutableStateFlow(emptyList()),

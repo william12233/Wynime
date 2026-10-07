@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.search
+package com.wynime.app.ui.search
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -26,16 +17,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import me.him188.ani.app.navigation.SubjectDetailPlaceholder
-import me.him188.ani.app.ui.exploration.search.SearchPage
-import me.him188.ani.app.ui.exploration.search.SearchPageEffect
-import me.him188.ani.app.ui.exploration.search.SearchPageIntent
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.widgets.BackNavigationIconButton
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.showLoadError
-import me.him188.ani.app.ui.main.SearchViewModel
-import me.him188.ani.app.ui.subject.details.SubjectDetailsScreen
+import com.wynime.app.navigation.SubjectDetailPlaceholder
+import com.wynime.app.ui.exploration.search.SearchPage
+import com.wynime.app.ui.exploration.search.SearchPageEffect
+import com.wynime.app.ui.exploration.search.SearchPageIntent
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.showLoadError
+import com.wynime.app.ui.main.SearchViewModel
+import com.wynime.app.ui.subject.details.SubjectDetailsScreen
 
 @Composable
 fun SearchScreen(
@@ -44,7 +35,7 @@ fun SearchScreen(
     onNavigateToSubjectDetails: (subjectId: Int, placeholder: SubjectDetailPlaceholder?) -> Unit,
     onNavigateToEpisodeDetails: (subjectId: Int, episodeId: Int) -> Unit,
     modifier: Modifier = Modifier,
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent()
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent()
 ) {
     val listDetailNavigator = rememberListDetailPaneScaffoldNavigator()
     val gridState = rememberLazyGridState()
@@ -115,7 +106,7 @@ fun SearchScreen(
                 },
                 windowInsets = paneContentWindowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Right),
                 navigationIcon = {
-                    // 只有在单面板模式下才显示返回按钮
+
                     if (listDetailLayoutParameters.preferSinglePane) {
                         BackNavigationIconButton(
                             onNavigateBack = {

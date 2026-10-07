@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("SSBasedInspection")
 
-package me.him188.ani.app.domain.foundation
+package com.wynime.app.domain.foundation
 
 import io.ktor.client.*
 import io.ktor.client.engine.mock.*
@@ -24,26 +15,21 @@ import kotlin.test.*
 
 class ServerListFeatureHandlerTest {
 
-    // Helper: Basic config that we pass to `ServerListFeatureHandler.applyToClient`.
     private fun defaultConfig(
         hostMatches: Set<String> = setOf(ServerListFeatureConfig.MAGIC_ANI_SERVER_HOST),
     ) = ServerListFeatureConfig(
-        aniServerRules = ServerListFeatureConfig.AniServerRule(
+        serviceServerRules = ServerListFeatureConfig.WynimeServerRule(
             hostMatches = hostMatches,
         ),
     )
 
-    /**
-     * Common method to build a test HttpClient that has HttpSend installed and the
-     * ServerListFeatureHandler's intercept logic applied.
-     */
     private fun buildTestClient(
-        aniServerUrlsFlow: MutableStateFlow<List<Url>>,
+        wynimeServerUrlsFlow: MutableStateFlow<List<Url>>,
         featureConfig: ServerListFeatureConfig,
         respondBlock: suspend (url: Url) -> Pair<HttpStatusCode, String>
     ): HttpClient {
         val mockEngine = MockEngine { request ->
-            // We'll look at request.url to decide how to respond.
+
             val (status, body) = respondBlock(request.url)
             respond(
                 content = body,
@@ -52,17 +38,15 @@ class ServerListFeatureHandlerTest {
             )
         }
 
-        // Build HttpClient with the mock engine
         val client = HttpClient(mockEngine) {
-            // Ensure we can retry multiple times if needed
+
             install(HttpSend) {
                 maxSendCount = 10
             }
         }
 
-        // Apply the new feature
         val handler = ServerListFeatureHandler(
-            aniServerUrls = aniServerUrlsFlow,
+            wynimeServerUrls = wynimeServerUrlsFlow,
         )
         handler.applyToClient(client, featureConfig)
         return client
@@ -70,17 +54,16 @@ class ServerListFeatureHandlerTest {
 
     @Test
     fun `does not intercept - host not in rule`() = runTest {
-        val aniServerUrls = MutableStateFlow(listOf(Url("https://ani-server-1.com")))
+        val wynimeServerUrls = MutableStateFlow(listOf(Url("https://ani-server-1.com")))
         val config = defaultConfig(
-            hostMatches = setOf("some-other-magic"), // we won't match the actual host
+            hostMatches = setOf("some-other-magic"),
         )
 
-        // We only expect one request to "non-matching.com" with no rewriting
         val client = buildTestClient(
-            aniServerUrlsFlow = aniServerUrls,
+            wynimeServerUrlsFlow = wynimeServerUrls,
             featureConfig = config,
         ) { url ->
-            // We expect the request's host to remain "non-matching.com"
+
             if (url.host == "non-matching.com") {
                 HttpStatusCode.OK to "unchanged host"
             } else {
@@ -95,15 +78,14 @@ class ServerListFeatureHandlerTest {
 
     @Test
     fun `single server - successful on first try`() = runTest {
-        val aniServerUrls = MutableStateFlow(listOf(Url("https://ani-server-1.com")))
+        val wynimeServerUrls = MutableStateFlow(listOf(Url("https://ani-server-1.com")))
         val config = defaultConfig()
 
         val client = buildTestClient(
-            aniServerUrlsFlow = aniServerUrls,
+            wynimeServerUrlsFlow = wynimeServerUrls,
             featureConfig = config,
         ) { url ->
-            // We only have one server in the flow: "ani-server-1.com"
-            // If the request host is "ani-server-1.com", we respond with 200
+
             when (url.host) {
                 "ani-server-1.com" -> HttpStatusCode.OK to "OK from first server"
                 else -> fail("Host should have been rewritten to ani-server-1.com but got: ${url.host}")
@@ -117,7 +99,7 @@ class ServerListFeatureHandlerTest {
 
     @Test
     fun `multiple servers - retries next if previous fails`() = runTest {
-        val aniServerUrls = MutableStateFlow(
+        val wynimeServerUrls = MutableStateFlow(
             listOf(
                 Url("https://fail1.com"),
                 Url("https://fail2.com"),
@@ -130,7 +112,7 @@ class ServerListFeatureHandlerTest {
         var fail2Requests = 0
         var okRequests = 0
 
-        val client = buildTestClient(aniServerUrls, config) { url ->
+        val client = buildTestClient(wynimeServerUrls, config) { url ->
             when (url.host) {
                 "fail1.com" -> {
                     assertEquals(listOf("someApi"), url.segments)
@@ -141,7 +123,7 @@ class ServerListFeatureHandlerTest {
                 "fail2.com" -> {
                     assertEquals(listOf("someApi"), url.segments)
                     fail2Requests++
-                    // Let's simulate a 400 for fail2
+
                     HttpStatusCode.BadRequest to "fail2"
                 }
 
@@ -161,7 +143,6 @@ class ServerListFeatureHandlerTest {
         assertEquals(HttpStatusCode.OK, response.status, "Expected to eventually succeed on the third server")
         assertEquals("success from ok.com", response.bodyAsText())
 
-        // Verify that we actually retried in the correct order
         assertEquals(1, fail1Requests, "First server tried exactly once")
         assertEquals(1, fail2Requests, "Second server tried exactly once")
         assertEquals(1, okRequests, "Third server tried once - success, so we stop further retries")
@@ -169,7 +150,7 @@ class ServerListFeatureHandlerTest {
 
     @Test
     fun `all servers fail - return last call if available`() = runTest {
-        val aniServerUrls = MutableStateFlow(
+        val wynimeServerUrls = MutableStateFlow(
             listOf(
                 Url("https://fail1.com"),
                 Url("https://fail2.com"),
@@ -177,7 +158,7 @@ class ServerListFeatureHandlerTest {
         )
         val config = defaultConfig()
 
-        val client = buildTestClient(aniServerUrls, config) { url ->
+        val client = buildTestClient(wynimeServerUrls, config) { url ->
             when (url.host) {
                 "fail1.com" -> HttpStatusCode.ServiceUnavailable to "fail1"
                 "fail2.com" -> HttpStatusCode.GatewayTimeout to "fail2"
@@ -186,23 +167,21 @@ class ServerListFeatureHandlerTest {
         }
 
         val response = client.get("https://${ServerListFeatureConfig.MAGIC_ANI_SERVER_HOST}/failAll")
-        // Because none returned 100..399, the code picks the "lastCall" to return.
-        // The last call has status GatewayTimeout
+
         assertEquals(HttpStatusCode.GatewayTimeout, response.status)
         assertEquals("fail2", response.bodyAsText(), "Expected body from the last call")
     }
 
     @Test
     fun `empty server list - throws immediately`() = runTest {
-        val aniServerUrls = MutableStateFlow<List<Url>>(emptyList())
+        val wynimeServerUrls = MutableStateFlow<List<Url>>(emptyList())
         val config = defaultConfig()
 
         val client = buildTestClient(
-            aniServerUrlsFlow = aniServerUrls,
+            wynimeServerUrlsFlow = wynimeServerUrls,
             featureConfig = config,
         ) { _ ->
-            // We should never get here because the code calls
-            // `error("No server URL to try for ani server request")` first
+
             fail("Should not attempt any request if the server list is empty")
         }
 
@@ -214,14 +193,13 @@ class ServerListFeatureHandlerTest {
 
     @Test
     fun `host matches check - partial match is allowed if it starts with`() = runTest {
-        // By default the code checks `rule.hostMatches.none { request.url.host.startsWith(it) }`
-        // So "abc.magic_ani_server" also matches if rule.hostMatches contains "abc." or "a"
-        val aniServerUrls = MutableStateFlow(listOf(Url("https://faked.com")))
+
+        val wynimeServerUrls = MutableStateFlow(listOf(Url("https://faked.com")))
         val config = defaultConfig(
             hostMatches = setOf("abc."),
         )
         val client = buildTestClient(
-            aniServerUrlsFlow = aniServerUrls,
+            wynimeServerUrlsFlow = wynimeServerUrls,
             featureConfig = config,
         ) { url ->
             if (url.host == "faked.com") {
@@ -231,26 +209,24 @@ class ServerListFeatureHandlerTest {
             }
         }
 
-        // "abc.magic_ani_server.com" starts with "abc."
         val response = client.get("https://abc.magic_ani_server.com")
         assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test
     fun `cancellation exceptions are rethrown - no fallback`() = runTest {
-        val aniServerUrls = MutableStateFlow(listOf(Url("https://server1.com"), Url("https://server2.com")))
+        val wynimeServerUrls = MutableStateFlow(listOf(Url("https://server1.com"), Url("https://server2.com")))
         val config = defaultConfig()
 
         val client = buildTestClient(
-            aniServerUrlsFlow = aniServerUrls,
+            wynimeServerUrlsFlow = wynimeServerUrls,
             featureConfig = config,
         ) { url ->
-            // Force a CancellationException for the first server
+
             if (url.host == "server1.com") {
                 throw CancellationException("User canceled")
             }
-            // If the code wrongly swallows cancellation, it would proceed to server2.
-            // But we expect the code to re-throw cancellation.
+
             fail("We should never proceed to server2 if the first server throws CancellationException.")
         }
 
@@ -264,10 +240,9 @@ class ServerListFeatureHandlerTest {
     @Test
     fun `replaceUrl - verifies correct replacement in URLBuilder`() {
         val originalUrl = Url("http://user:pass@oldhost:1234/some/path?query=1#fragment")
-        val newServer = Url("https://newhost:443/") // no path => we want to preserve path from original
+        val newServer = Url("https://newhost:443/")
         val builder = io.ktor.http.URLBuilder(originalUrl)
 
-        // Actually call the tested function
         ServerListFeatureHandler.replaceUrl(builder, newServer)
 
         val replaced = builder.build()
@@ -276,7 +251,7 @@ class ServerListFeatureHandlerTest {
         assertEquals(443, replaced.port)
         assertEquals(null, replaced.user)
         assertEquals(null, replaced.password)
-        // Path and query remain from the builder
+
         assertEquals("/some/path", replaced.encodedPath)
         assertEquals("query=1", replaced.fullPath.substringAfter('?'))
 
@@ -285,7 +260,7 @@ class ServerListFeatureHandlerTest {
 
     @Test
     fun `sticky selection - rotates starting server based on last success`() = runTest {
-        val aniServerUrls = MutableStateFlow(
+        val wynimeServerUrls = MutableStateFlow(
             listOf(
                 Url("https://server1.com"),
                 Url("https://server2.com"),
@@ -294,14 +269,12 @@ class ServerListFeatureHandlerTest {
         )
         val config = defaultConfig()
 
-        // Track attempts per request path to check the first tried host of each request
         val attemptsByPath = mutableMapOf<String, MutableList<String>>()
 
-        // Phase controls which host succeeds to simulate different successful servers over time
         var phase = 1
 
         val client = buildTestClient(
-            aniServerUrlsFlow = aniServerUrls,
+            wynimeServerUrlsFlow = wynimeServerUrls,
             featureConfig = config,
         ) { url ->
             val path = url.fullPath
@@ -352,10 +325,6 @@ class ServerListFeatureHandlerTest {
         assertEquals(HttpStatusCode.OK, r3.status)
         assertEquals("ok1", r3.bodyAsText())
 
-        // Verify the first tried host for each request follows sticky order:
-        // - req1 starts with server1 (default index 0)
-        // - req2 starts with server2 (last success)
-        // - req3 starts with server3 (updated last success)
         assertEquals("server1.com", attemptsByPath["/req1"]?.firstOrNull())
         assertEquals("server2.com", attemptsByPath["/req2"]?.firstOrNull())
         assertEquals("server3.com", attemptsByPath["/req3"]?.firstOrNull())

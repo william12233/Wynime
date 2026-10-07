@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download
+package com.wynime.app.ui.download
 
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
@@ -21,26 +12,21 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepository
-import me.him188.ani.app.data.repository.subject.OfflineSubjectDisplayInfo
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.domain.media.download.DownloadOperation
-import me.him188.ani.app.domain.media.download.DownloadOperations
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.ui.download.components.DownloadItem
-import me.him188.ani.app.ui.download.components.SubjectDownloadGroup
-import me.him188.ani.app.ui.download.components.toDownloadItem
-import me.him188.ani.app.ui.download.subject.SubjectDownloadsPresenter
-import me.him188.ani.app.ui.download.subject.SubjectDownloadsPresenterFactory
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.coroutines.sampleWithInitial
+import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
+import com.wynime.app.data.repository.subject.OfflineSubjectDisplayInfo
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.domain.media.download.DownloadOperation
+import com.wynime.app.domain.media.download.DownloadOperations
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.ui.download.components.DownloadItem
+import com.wynime.app.ui.download.components.SubjectDownloadGroup
+import com.wynime.app.ui.download.components.toDownloadItem
+import com.wynime.app.ui.download.subject.SubjectDownloadsPresenter
+import com.wynime.app.ui.download.subject.SubjectDownloadsPresenterFactory
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.coroutines.sampleWithInitial
 
-/**
- * 全局下载管理页面: 所有存储中的下载按条目分组展示.
- *
- * @param coroutineContext [backgroundScope] 的额外 context, 测试时传入测试调度器.
- */
 class DownloadManagementViewModel(
     downloadManager: MediaDownloadManager,
     subjects: SubjectCollectionRepository,
@@ -53,15 +39,8 @@ class DownloadManagementViewModel(
 
     private val currentSubjectPresenter = MutableStateFlow<SubjectDownloadsPresenter?>(null)
 
-    /**
-     * 详情栏展示的条目, `null` 表示未展示.
-     */
     val subjectPresenter: StateFlow<SubjectDownloadsPresenter?> = currentSubjectPresenter.asStateFlow()
 
-    /**
-     * 上一条目的实例被关闭, 其选源会话随之取消; 相同条目不做任何事.
-     * @param subjectName 已知的条目名, 在条目信息加载完成前作为标题
-     */
     fun selectSubject(subjectId: Int?, subjectName: String? = null) {
         val previous = currentSubjectPresenter.value
         if (previous?.subjectId == subjectId) return
@@ -70,9 +49,6 @@ class DownloadManagementViewModel(
     }
     private val downloads = downloadManager.snapshots().shareInBackground()
 
-    /**
-     * 数据库返回前以 `null` 占位, 列表不必等待条目信息.
-     */
     private val subjectMetadata = downloads
         .map { list -> list.mapTo(hashSetOf()) { it.metadata.subjectId.toIntOrNull() ?: 0 } }
         .distinctUntilChanged()
@@ -109,7 +85,7 @@ class DownloadManagementViewModel(
                 totalEpisodeCount = subject?.info?.totalEpisodes?.takeIf { it > 0 },
             )
         }.sortedWith(
-            // 有未完成下载的条目在前, 其余按最新一条下载的创建时间降序.
+
             compareByDescending<SubjectDownloadGroup> { it.hasUnfinished }
                 .thenByDescending { it.entries.maxOfOrNull { entry -> entry.creationTime ?: 0 } },
         )
@@ -120,9 +96,6 @@ class DownloadManagementViewModel(
     fun resumeDownload(item: DownloadItem) = operationRunner.run(setOf(item.id), DownloadOperation.Resume)
     fun deleteDownload(item: DownloadItem) = operationRunner.run(setOf(item.id), DownloadOperation.Delete)
 
-    /**
-     * 批量操作累计的失败数, [dismissOperationFailures] 后归零.
-     */
     val operationFailures: StateFlow<Int> get() = operationRunner.failedCount
 
     fun dismissOperationFailures() = operationRunner.dismissFailures()

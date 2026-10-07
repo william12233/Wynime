@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.adaptive.navigation
+package com.wynime.app.ui.adaptive.navigation
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -40,37 +31,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.theme.appChromeFrostedGlass
-import me.him188.ani.app.ui.foundation.theme.isAppChromeFrostedGlassActive
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.theme.appChromeFrostedGlass
+import com.wynime.app.ui.foundation.theme.isAppChromeFrostedGlassActive
+import com.wynime.utils.platform.currentTimeMillis
 
-/**
- * @see NavigationSuite with Ani modifications:
- * - Added `windowInsets` parameter
- * - Added `navigationRailHeader` parameter
- * - Added `navigationRailItemSpacing` parameter, to better comply M3 design
- */
 @Composable
-fun AniNavigationSuite(
+fun WynimeNavigationSuite(
     modifier: Modifier = Modifier,
     layoutType: NavigationSuiteType =
         NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(currentWindowAdaptiveInfo1()),
     colors: NavigationSuiteColors = NavigationSuiteDefaults.colors(),
-    navigationRailHeader: @Composable (NavigationRailItemScope.() -> Unit)? = null, // Ani added
-    navigationRailFooter: @Composable (NavigationRailItemScope.() -> Unit)? = null, // Ani added
-    navigationRailItemSpacing: Dp = 0.dp, // Ani added
+    navigationRailHeader: @Composable (NavigationRailItemScope.() -> Unit)? = null,
+    navigationRailFooter: @Composable (NavigationRailItemScope.() -> Unit)? = null,
+    navigationRailItemSpacing: Dp = 0.dp,
     content: NavigationSuiteScope.() -> Unit
 ) {
     val scope by rememberStateOfItems(content)
-    // Define defaultItemColors here since we can't set NavigationSuiteDefaults.itemColors() as a
-    // default for the colors param of the NavigationSuiteScope.item non-composable function.
+
     val defaultItemColors by rememberUpdatedState(NavigationSuiteDefaults.itemColors())
 
     val viewConfiguration = LocalViewConfiguration.current
-    // 毛玻璃效果仅对底部导航栏启用: 只有 NavigationBar 布局会将内容延伸到导航栏下方.
+
     val frostedGlassActive = isAppChromeFrostedGlassActive() &&
             layoutType == NavigationSuiteType.NavigationBar
 
@@ -105,7 +89,7 @@ fun AniNavigationSuite(
                 ),
                 containerColor = if (frostedGlassActive) Color.Transparent else colors.navigationBarContainerColor,
                 contentColor = colors.navigationBarContentColor,
-                windowInsets = AniWindowInsets.forNavigationBar(), // Ani added
+                windowInsets = WynimeWindowInsets.forNavigationBar(),
             ) {
                 scope.itemList.forEach { item ->
                     NavigationBarItem(
@@ -129,7 +113,7 @@ fun AniNavigationSuite(
                 modifier = modifier,
                 containerColor = colors.navigationRailContainerColor,
                 contentColor = colors.navigationRailContentColor,
-                windowInsets = AniWindowInsets.forNavigationRail(), // Ani added
+                windowInsets = WynimeWindowInsets.forNavigationRail(),
                 header = {
                     navigationRailHeader?.let { lambda ->
                         val itemScope = remember(this) {
@@ -176,7 +160,7 @@ fun AniNavigationSuite(
                 modifier = modifier,
                 drawerContainerColor = colors.navigationDrawerContainerColor,
                 drawerContentColor = colors.navigationDrawerContentColor,
-                windowInsets = AniWindowInsets.forNavigationDrawer(), // Ani added
+                windowInsets = WynimeWindowInsets.forNavigationDrawer(),
             ) {
                 scope.itemList.forEach { item ->
                     NavigationDrawerItem(
@@ -194,7 +178,7 @@ fun AniNavigationSuite(
             }
         }
 
-        NavigationSuiteType.None -> { /* Do nothing. */
+        NavigationSuiteType.None -> {
         }
     }
 }

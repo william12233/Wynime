@@ -1,16 +1,7 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.update.devbuild
 
-package me.him188.ani.app.ui.update.devbuild
-
-import me.him188.ani.utils.platform.Arch
-import me.him188.ani.utils.platform.Platform
+import com.wynime.utils.platform.Arch
+import com.wynime.utils.platform.Platform
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -26,23 +17,6 @@ class DevBuildPackageSpecTest {
             DevBuildPackageSpec(listOf("wynime-windows-aarch64-portable"), DevBuildPackageKind.WINDOWS_PORTABLE_ZIP),
             DevBuildPackageSpec.forPlatform(Platform.Windows(Arch.AARCH64)),
         )
-    }
-
-    @Test
-    fun `macos aarch64 uses the dmg artifact and x64 is unsupported`() {
-        assertEquals(
-            DevBuildPackageSpec(listOf("wynime-macos-dmg-aarch64"), DevBuildPackageKind.MACOS_DMG),
-            DevBuildPackageSpec.forPlatform(Platform.MacOS(Arch.AARCH64)),
-        )
-        assertNull(DevBuildPackageSpec.forPlatform(Platform.MacOS(Arch.X86_64)))
-    }
-
-    @Test
-    fun `linux x64 downloads the appimage for manual install`() {
-        val spec = DevBuildPackageSpec.forPlatform(Platform.Linux(Arch.X86_64))
-        assertEquals(DevBuildPackageSpec(listOf("wynime-linux-appimage-x64"), DevBuildPackageKind.LINUX_APPIMAGE), spec)
-        assertEquals(false, spec!!.kind.supportsAutomaticInstall)
-        assertNull(DevBuildPackageSpec.forPlatform(Platform.Linux(Arch.AARCH64)))
     }
 
     @Test
@@ -66,17 +40,12 @@ class DevBuildPackageSpecTest {
     }
 
     @Test
-    fun `ios is unsupported`() {
-        assertNull(DevBuildPackageSpec.forPlatform(Platform.Ios))
-    }
-
-    @Test
     fun `package file name uses the short sha and the package extension`() {
-        val spec = DevBuildPackageSpec.forPlatform(Platform.MacOS(Arch.AARCH64))!!
-        assertEquals("wynime-main-28ec14ac.dmg", spec.packageFileName("28ec14ac"))
+        val spec = DevBuildPackageSpec.forPlatform(Platform.Windows(Arch.AARCH64))!!
+        assertEquals("wynime-main-28ec14ac.zip", spec.packageFileName("28ec14ac"))
         assertEquals(
-            "wynime-main-28ec14ac.AppImage",
-            DevBuildPackageSpec.forPlatform(Platform.Linux(Arch.X86_64))!!.packageFileName("28ec14ac"),
+            "wynime-main-28ec14ac.apk",
+            DevBuildPackageSpec.forPlatform(Platform.Android(Arch.ARMV8A))!!.packageFileName("28ec14ac"),
         )
     }
 }

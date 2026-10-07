@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
@@ -35,40 +26,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.io.IOException
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.prefetch.MediaTimeRange
-import me.him188.ani.app.domain.media.player.prefetch.PrefetchSegmentInfo
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.httpdownloader.m3u.DefaultM3u8Parser
-import me.him188.ani.utils.httpdownloader.m3u.M3u8Playlist
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.ScopedHttpClientUserAgent
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.prefetch.MediaTimeRange
+import com.wynime.app.domain.media.player.prefetch.PrefetchSegmentInfo
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.httpdownloader.m3u.DefaultM3u8Parser
+import com.wynime.utils.httpdownloader.m3u.M3u8Playlist
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.warn
 import org.openani.mediamp.source.UriMediaData
 import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToLong
 
-/**
- * 在本机 127.0.0.1 上起一个极简 HTTP 服务代理 HLS 播放:
- *
- * - [HlsPlaybackOptions.filterSegments]: 改写播放列表, 移除疑似广告分片 ([HlsManifestFilter]).
- * - [HlsPlaybackOptions.proxySegments]: 把媒体分片的地址也改写到本地, 由本地转发. 这样才能在播放器之外
- *   提前下载指定时间范围的分片 ([HlsPlaybackProxySession.setPrefetchRange]), 供自动跳过 OP/ED 后立即续播.
- *   只对点播 (含 `#EXT-X-ENDLIST`) 且不使用 `#EXT-X-BYTERANGE` 的播放列表启用.
- *
- * 逻辑与平台无关, 只有 socket 部分由各平台的 [HlsProxyServer] 提供.
- */
 class PlatformHlsPlaybackPreparer internal constructor(
     private val httpClientProvider: HttpClientProvider,
     private val segmentCacheMaxBytes: Long,
     private val serverFactory: HlsProxyServerFactory,
 ) : HlsPlaybackPreparer {
-    /**
-     * @param segmentCacheMaxBytes 预缓存分片的内存缓存上限. 正在被预缓存请求引用的分片不会被淘汰.
-     */
+
     constructor(
         httpClientProvider: HttpClientProvider,
         segmentCacheMaxBytes: Long = DEFAULT_SEGMENT_CACHE_MAX_BYTES,
@@ -124,9 +103,6 @@ class PlatformHlsPlaybackPreparer internal constructor(
     }
 }
 
-/**
- * 一次播放对应一个代理会话. 关闭后本地端口释放, 所有预缓存任务取消.
- */
 private class LocalHlsProxySession private constructor(
     private val headers: Map<String, String>,
     private val httpClientProvider: HttpClientProvider,
@@ -137,20 +113,15 @@ private class LocalHlsProxySession private constructor(
     private val closed = atomic(false)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO_ + CoroutineName("HlsProxy-${server.port}"))
 
-    /** 保护 [nextRouteId], [playlistRoutes] 和 [segmentRoutes]: 播放器会并发请求多个播放列表. */
     private val routesLock = SynchronizedObject()
     private var nextRouteId = 1
 
-    /** `/playlist/N.m3u8` -> 远端播放列表 */
     private val playlistRoutes = HashMap<String, String>()
 
-    /** `/segment/N` -> 分片 */
     private val segmentRoutes = HashMap<String, ProxiedSegment>()
 
-    /** `/resource/N` -> 需要沿用原请求上下文的 key、init map 或其他 HLS 資源. */
     private val resourceRoutes = HashMap<String, String>()
 
-    /** 最近一次提供给播放器的、分片已代理的媒体播放列表. 预缓存以它的时间轴为准. */
     @Volatile
     private var activePlaylist: ProxiedPlaylist? = null
 
@@ -158,17 +129,13 @@ private class LocalHlsProxySession private constructor(
 
     val playlistUri: String = "http://127.0.0.1:${server.port}/playlist.m3u8"
 
-    // ---------- 预缓存 ----------
-
     private val segmentCache = SegmentCache(maxBytes = segmentCacheMaxBytes)
     private val prefetchLock = SynchronizedObject()
     private var requestedPrefetchRange: MediaTimeRange? = null
     private var prefetchJob: Job? = null
 
-    /** 当前预缓存任务针对的分片地址, 用于判断新的请求是否与正在进行的完全相同. */
     private var prefetchTargetUris: List<String> = emptyList()
 
-    /** 请求已被清除: 正在下载的分片继续下完, 但不再开始新的. */
     @Volatile
     private var prefetchStopRequested = false
     private val prefetchProgressFlow = MutableStateFlow<List<PrefetchSegmentInfo>>(emptyList())
@@ -199,14 +166,12 @@ private class LocalHlsProxySession private constructor(
             playlist.segments.filter { it.timeRange.overlaps(range) }
         }
         val targetUris = targets.map { it.remoteUri }
-        // 播放器会重复请求同一个播放列表 (每次都会走到这里). 目标分片没变时保留正在进行的任务,
-        // 否则会反复取消重下, 白白浪费已经下载了一半的分片.
+
         if (targetUris.isNotEmpty() && targetUris == prefetchTargetUris && prefetchJob?.isActive == true) {
             return
         }
         if (targets.isEmpty()) {
-            // 请求被清除. 最常见的原因是播放器已经跳到了预缓存的位置, 此时正在下载的那个分片很可能就是它马上要的:
-            // 让这一片下完 (播放器的请求会直接等它, 见 serveSegment), 只是不再开始新的. 直接取消的话播放器得从头重下.
+
             prefetchStopRequested = true
             prefetchTargetUris = emptyList()
             prefetchProgressFlow.value = emptyList()
@@ -259,8 +224,6 @@ private class LocalHlsProxySession private constructor(
         }
     }
 
-    // ---------- HTTP 服务 ----------
-
     private suspend fun respond(request: HlsProxyRequest, output: HlsProxyResponseSink) {
         val path = request.path
         val segment = synchronized(routesLock) { segmentRoutes[path] }
@@ -307,9 +270,6 @@ private class LocalHlsProxySession private constructor(
         }
     }
 
-    /**
-     * 提供分片: 已预缓存的直接从内存返回, 否则从远端流式转发 (不缓存).
-     */
     private suspend fun serveSegment(segment: ProxiedSegment, request: HlsProxyRequest, output: HlsProxyResponseSink) {
         val cached = segmentCache.getCompleted(segment.remoteUri) ?: segmentCache.awaitInFlight(segment.remoteUri)
         if (cached != null) {
@@ -319,7 +279,6 @@ private class LocalHlsProxySession private constructor(
         serveRemoteResource(segment.remoteUri, request, output, DEFAULT_SEGMENT_CONTENT_TYPE)
     }
 
-    /** 以相同的 headers 轉發 segment、AES key、EXT-X-MAP 與其他 HLS 資源. */
     private suspend fun serveRemoteResource(
         remoteUri: String,
         request: HlsProxyRequest,
@@ -330,7 +289,7 @@ private class LocalHlsProxySession private constructor(
         try {
             httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
                 prepareGet(remoteUri) {
-                    // 源站的错误状态原样转发给播放器, 由播放器决定重试策略
+
                     expectSuccess = false
                     this@LocalHlsProxySession.headers.forEach { (name, value) -> header(name, value) }
                     request.headers["range"]?.let { header(HttpHeaders.Range, it) }
@@ -375,7 +334,7 @@ private class LocalHlsProxySession private constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            // 连接源站失败等: 若还没开始写响应, 回一个 502, 让播放器按加载失败处理; 已经在写正文则只能断开
+
             if (!headersWritten) {
                 logger.warn(e) { "Failed to proxy HLS resource $remoteUri" }
                 output.write(errorResponseHeader(502, "Bad Gateway").encodeToByteArray())
@@ -420,14 +379,9 @@ private class LocalHlsProxySession private constructor(
         }
     }
 
-    // ---------- 播放列表改写 ----------
-
     private class RemotePlaylist(val content: String, val baseUri: String)
     private class LocalPlaylist(val content: String)
 
-    /**
-     * 把远端播放列表处理成给播放器的版本: 主播放列表把各变体指向本地路由; 媒体播放列表按需过滤广告并代理分片.
-     */
     private fun RemotePlaylist.toLocalPlaylist(): LocalPlaylist {
         val filterResult = HlsManifestFilter.filter(content, baseUri)
         if (options.filterSegments) {
@@ -445,9 +399,6 @@ private class LocalHlsProxySession private constructor(
         return LocalPlaylist(rewriteMediaPlaylist(mediaContent, baseUri))
     }
 
-    /**
-     * 媒体播放列表: 把所有子資源改到本地路由，讓 playlist、segment、key 與 init map 共用同一組 headers.
-     */
     private fun rewriteMediaPlaylist(content: String, baseUri: String): String {
         val playlist = runCatching { DefaultM3u8Parser.parse(content, baseUri) }.getOrNull()
         val eligible = playlist is M3u8Playlist.MediaPlaylist &&
@@ -466,7 +417,7 @@ private class LocalHlsProxySession private constructor(
                     for ((index, segment) in playlist.segments.withIndex()) {
                         val durationMillis = (segment.duration.toDouble() * 1000).roundToLong().coerceAtLeast(0L)
                         val remoteUri = resolveHlsUri(baseUri, segment.uri)
-                        // 保留原分片的扩展名: 新版 FFmpeg (mpv) 会依赖扩展名判断媒体类型.
+
                         val route = "/segment/${nextRouteId++}${segmentExtension(remoteUri)}"
                         val item = ProxiedSegment(
                             index = index,
@@ -560,9 +511,6 @@ private class LocalHlsProxySession private constructor(
         private const val DEFAULT_RESOURCE_CONTENT_TYPE = "application/octet-stream"
         private val CRLF = "\r\n".encodeToByteArray()
 
-        /**
-         * @return `null` 表示这个播放列表不需要代理 (例如只开了广告过滤但没有可过滤的内容), 应直接播放原地址.
-         */
         suspend fun createOrNull(
             manifest: String,
             baseUri: String,
@@ -600,9 +548,6 @@ private class LocalHlsProxySession private constructor(
     }
 }
 
-/**
- * 预缓存分片的内存缓存, 按 URI 索引. 正在下载的分片以 [Deferred] 形式存在, 便于播放器请求时等待其完成而不是重复下载.
- */
 private class SegmentCache(private val maxBytes: Long) {
     private class Entry(val deferred: kotlinx.coroutines.CompletableDeferred<ByteArray>) {
         val bytes: ByteArray? get() = if (deferred.isCompleted && !deferred.isCancelled) deferred.getCompleted() else null
@@ -610,14 +555,12 @@ private class SegmentCache(private val maxBytes: Long) {
 
     private val lock = SynchronizedObject()
 
-    /** 按最近使用排序, 最久未使用的在最前. 见 [touchLocked]. */
     private val entries = LinkedHashMap<String, Entry>()
     private var pinned: Set<String> = emptySet()
     private var totalBytes = 0L
 
     fun pin(uris: List<String>) = synchronized(lock) { pinned = uris.toSet() }
 
-    /** 取出 [uri] 并标记为最近使用. */
     private fun touchLocked(uri: String): Entry? {
         val entry = entries.remove(uri) ?: return null
         entries[uri] = entry
@@ -650,7 +593,7 @@ private class SegmentCache(private val maxBytes: Long) {
                 try {
                     return entry.deferred.await()
                 } catch (e: CancellationException) {
-                    // 要区分 "我被取消了" 和 "正在下载它的那个任务被取消/失败了". 后者不是我的取消, 由我接手重新下载.
+
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
                     continue
                 }
@@ -666,7 +609,7 @@ private class SegmentCache(private val maxBytes: Long) {
             } catch (e: Throwable) {
                 synchronized(lock) {
                     if (entries[uri] === entry) entries.remove(uri)
-                    // Deferred.cancel 要的是 kotlinx 的类型; 它和标准库的那个在公共元数据编译里不是同一个类型
+
                     entry.deferred.cancel(kotlinx.coroutines.CancellationException("download failed", e))
                 }
                 throw e
@@ -693,25 +636,19 @@ private class SegmentCache(private val maxBytes: Long) {
     }
 }
 
-private val logger = me.him188.ani.utils.logging.logger<PlatformHlsPlaybackPreparer>()
+private val logger = com.wynime.utils.logging.logger<PlatformHlsPlaybackPreparer>()
 
 private fun String.isCandidateHlsUri(): Boolean {
     val scheme = substringBefore("://", missingDelimiterValue = "").lowercase()
     return (scheme == "http" || scheme == "https") && lowercase().contains(".m3u8")
 }
 
-/**
- * 分片地址的扩展名 (含点), 取不到合理的扩展名时用 `.ts`.
- */
 private fun segmentExtension(remoteUri: String): String {
     val fileName = remoteUri.substringBefore('?').substringBefore('#').substringAfterLast('/')
     val extension = fileName.substringAfterLast('.', missingDelimiterValue = "")
     return if (extension.length in 1..5 && extension.all { it.isLetterOrDigit() }) ".$extension" else ".ts"
 }
 
-/**
- * 解析 `bytes=start-end` 形式的 Range 头 (只支持单个范围). 无法满足时返回 `null`.
- */
 private fun parseByteRange(header: String, totalLength: Long): LongRange? {
     val spec = header.trim().removePrefix("bytes=").takeIf { it != header.trim() } ?: return null
     if (',' in spec) return null

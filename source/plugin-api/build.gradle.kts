@@ -1,23 +1,14 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 plugins {
-    id("ani.kmp-library")
+    id("wynime.kmp-library")
     alias(libs.plugins.kotlin.plugin.serialization)
 }
 
 val desktopApiClasses = layout.buildDirectory.dir("classes/kotlin/desktop/main")
-val publicAbiSnapshot = layout.projectDirectory.file("abi/public-api-v2.txt").asFile
+val publicAbiSnapshot = layout.projectDirectory.file("abi/public-api-v3.txt").asFile
 val apiVersionSource = rootProject.file(
     "app/shared/app-data/src/commonMain/kotlin/domain/sourceplugin/SourcePluginRepositoryModels.kt",
 )
@@ -34,14 +25,16 @@ fun javapOutput(classpath: File, className: String): String {
         File(System.getProperty("java.home"), "bin/javap.exe"),
         File(System.getProperty("java.home"), "bin/javap"),
     ).firstOrNull(File::isFile) ?: error("javap was not found under java.home")
-    val process = ProcessBuilder(
+    val builder = ProcessBuilder(
         javap.absolutePath,
         "-public",
         "-s",
         "-classpath",
         classpath.absolutePath,
         className,
-    ).redirectErrorStream(true).start()
+    ).redirectErrorStream(true)
+    builder.environment().remove("JAVA_TOOL_OPTIONS")
+    val process = builder.start()
     val output = process.inputStream.readBytes().toString(StandardCharsets.UTF_8)
         .replace("\r\n", "\n")
         .trim()
@@ -71,6 +64,7 @@ fun publicAbiSnapshotText(): String {
 }
 
 val writePublicAbiSnapshot = tasks.register("writePublicAbiSnapshot") {
+    notCompatibleWithConfigurationCache("The ABI snapshot invokes javap during task execution.")
     dependsOn(tasks.named("compileKotlinDesktop"))
     outputs.file(publicAbiSnapshot)
     doLast {
@@ -114,7 +108,7 @@ tasks.named("check") {
 
 kotlin {
     android {
-        namespace = "me.him188.ani.source.plugin.api"
+        namespace = "com.wynime.source.plugin.api"
     }
 
     sourceSets.commonMain.dependencies {

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.details.components
+package com.wynime.app.ui.subject.episode.details.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowOutward
@@ -21,23 +12,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalUriHandler
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.navigation.rememberAsyncBrowserNavigator
-import me.him188.ani.app.ui.episode.share.MediaShareData
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_share_copy_link
-import me.him188.ani.app.ui.lang.subject_episode_share_copy_source_page
-import me.him188.ani.app.ui.lang.subject_episode_share_local_file_link
-import me.him188.ani.app.ui.lang.subject_episode_share_open_link
-import me.him188.ani.app.ui.lang.subject_episode_share_open_source_page
-import me.him188.ani.app.ui.lang.subject_episode_share_open_with_other_app
-import me.him188.ani.app.ui.lang.subject_episode_share_stream_link
-import me.him188.ani.app.ui.lang.subject_episode_share_webpage_link
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.platform.isAndroid
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.navigation.rememberAsyncBrowserNavigator
+import com.wynime.app.ui.episode.share.MediaShareData
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_share_copy_link
+import com.wynime.app.ui.lang.subject_episode_share_copy_source_page
+import com.wynime.app.ui.lang.subject_episode_share_local_file_link
+import com.wynime.app.ui.lang.subject_episode_share_open_link
+import com.wynime.app.ui.lang.subject_episode_share_open_source_page
+import com.wynime.app.ui.lang.subject_episode_share_open_with_other_app
+import com.wynime.app.ui.lang.subject_episode_share_stream_link
+import com.wynime.app.ui.lang.subject_episode_share_webpage_link
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.platform.isAndroid
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -63,7 +54,7 @@ fun ShareEpisodeDropdown(
                 is ResourceLocation.HttpStreamingFile -> stringResource(Lang.subject_episode_share_stream_link)
                 is ResourceLocation.LocalFile -> stringResource(Lang.subject_episode_share_local_file_link)
                 is ResourceLocation.SourcePluginMedia -> stringResource(Lang.subject_episode_share_webpage_link)
-                is ResourceLocation.WebVideo -> stringResource(Lang.subject_episode_share_webpage_link) // should not happen though
+                is ResourceLocation.WebVideo -> stringResource(Lang.subject_episode_share_webpage_link)
             }
             val copyDownloadText = stringResource(Lang.subject_episode_share_copy_link, downloadText)
             val openDownloadText = stringResource(Lang.subject_episode_share_open_link, downloadText)

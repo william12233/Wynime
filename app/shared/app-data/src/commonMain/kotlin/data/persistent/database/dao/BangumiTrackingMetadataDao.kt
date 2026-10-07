@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.persistent.database.dao
+package com.wynime.app.data.persistent.database.dao
 
 import androidx.room.Dao
 import androidx.room.Entity
@@ -15,12 +8,6 @@ import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Local metadata for the Bangumi tracking synchronizer.
- *
- * A row with [localDeletedAt] set is a durable local tombstone. Rows are scoped by
- * [accountKey] so switching Bangumi accounts never reuses another account's decision.
- */
 @Entity(
     tableName = "bangumi_tracking_metadata",
     primaryKeys = ["accountKey", "subjectId"],
@@ -35,9 +22,9 @@ data class BangumiTrackingMetadataEntity(
     val remoteUpdatedAt: Long? = null,
     val pendingType: String? = null,
     val pendingError: String? = null,
-    /** Remote collection state captured by the last verified reconciliation; null means absent. */
+
     val lastSyncedType: String? = null,
-    /** UPSERT_COLLECTION or DELETE_COLLECTION. Kept as data so mutations survive process death. */
+
     val pendingOperation: String? = null,
 )
 

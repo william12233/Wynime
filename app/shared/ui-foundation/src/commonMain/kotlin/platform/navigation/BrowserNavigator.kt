@@ -1,46 +1,28 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform.navigation
+package com.wynime.app.platform.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalClipboard
-import me.him188.ani.app.navigation.BrowserNavigator
-import me.him188.ani.app.navigation.OpenBrowserResult
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_browser_open_failed_copied
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.navigation.BrowserNavigator
+import com.wynime.app.navigation.OpenBrowserResult
+import com.wynime.app.platform.Context
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_browser_open_failed_copied
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * Please use [rememberAsyncBrowserNavigator] instead of this directly.
- */
 val LocalBrowserNavigator: ProvidableCompositionLocal<BrowserNavigator> = staticCompositionLocalOf {
     error("No BrowserNavigator provided")
 }
 
 private val logger = logger<BrowserNavigator>()
 
-/**
- * Get [BrowserNavigator] which handles opening URLs asynchronously.
- * That means calling any of its methods always returns [OpenBrowserResult.Success] whether succeeded or failed.
- *
- * If operation failed, the URL will be copied to clipboard, and a toast will be shown.
- */
 @Composable
 @Suppress("DEPRECATION")
 fun rememberAsyncBrowserNavigator(): BrowserNavigator {

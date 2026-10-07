@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.rendering
+package com.wynime.app.ui.settings.rendering
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -25,9 +16,9 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalIsPreviewing
-import me.him188.ani.datasources.api.source.MediaSourceInfo
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalIsPreviewing
+import com.wynime.datasources.api.source.MediaSourceInfo
 
 @Composable
 fun MediaSourceInfo.getIconResourceOrNull(): Painter? = null
@@ -39,7 +30,7 @@ fun MediaSourceIcon(
 ) {
     val url = sourceInfo?.getIconResourceOrNull()
     when {
-        url != null && !LocalIsPreviewing.current -> { // TODO: 升级到 CMP 1.7 后, 可以去掉这里的 LocalIsPreviewing
+        url != null && !LocalIsPreviewing.current -> {
             Image(
                 url,
                 null,
@@ -73,9 +64,6 @@ fun MediaSourceIcon(
     }
 }
 
-/**
- * 宽度不固定
- */
 @Composable
 fun SmallMediaSourceIcon(
     info: MediaSourceInfo,

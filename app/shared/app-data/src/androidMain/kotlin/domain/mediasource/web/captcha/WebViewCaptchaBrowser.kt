@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web.captcha
+package com.wynime.app.domain.mediasource.web.captcha
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -33,18 +24,12 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonPrimitive
-import me.him188.ani.app.domain.mediasource.web.LoadedPage
-import me.him188.ani.app.platform.Context
+import com.wynime.app.domain.mediasource.web.LoadedPage
+import com.wynime.app.platform.Context
 import java.io.ByteArrayInputStream
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * android.webkit.WebView 实现的 [CaptchaBrowser].
- *
- * 线程模型: WebView 的方法只在 Main 线程调用 (suspend 方法内部 marshal);
- * WebViewClient 回调 (Main 线程) 上只做 `tryEmit` / `resume`.
- */
 class WebViewCaptchaBrowser private constructor(
     val webView: WebView,
 ) : CaptchaBrowser {
@@ -87,7 +72,7 @@ class WebViewCaptchaBrowser private constructor(
         withContext(Dispatchers.Main.immediate) {
             val manager = CookieManager.getInstance()
             manager.flush()
-            // Android 降级路径: 只能拿到 name=value, 无 domain/expiry 等属性
+
             urls.flatMap { url ->
                 manager.getCookie(url)
                     ?.split(";")
@@ -165,7 +150,7 @@ class WebViewCaptchaBrowser private constructor(
             }
 
             override fun onLoadResource(view: WebView, url: String) {
-                // shouldInterceptRequest 覆盖不到的资源 (如 media) 由这里兜底通知
+
                 interceptor.value?.invoke(url)
                 super.onLoadResource(view, url)
             }

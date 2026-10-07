@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.lists
+package com.wynime.app.ui.foundation.lists
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -41,31 +32,16 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
-/**
- * Cross-platform vertical scrollbar for [ScrollState].
- *
- * - Desktop: uses Compose Desktop built-in `VerticalScrollbar`, which supports dragging and track clicks.
- * - Mobile/Native: uses a lightweight scroll indicator.
- */
 @Composable
 expect fun ScrollStateVerticalScrollbar(
     state: ScrollState,
     modifier: Modifier = Modifier,
 )
 
-/**
- * Returns whether [ScrollState] has content outside its viewport.
- */
 fun ScrollState.hasScrollableContent(): Boolean {
     return maxValue > 0 && maxValue != Int.MAX_VALUE
 }
 
-/**
- * A lightweight vertical scroll indicator for [ScrollState] (mobile-friendly).
- *
- * - No dragging / click-to-jump.
- * - Only visible while scrolling (with fade in/out).
- */
 @Composable
 fun ScrollStateVerticalScrollIndicator(
     state: ScrollState,

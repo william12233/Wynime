@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.details.components
+package com.wynime.app.ui.subject.episode.details.components
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -33,29 +24,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.preferredDisplayName
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.LongClickProgressFill
-import me.him188.ani.app.ui.foundation.icons.PlayingIcon
-import me.him188.ani.app.ui.foundation.lists.PaginatedGroup
-import me.him188.ani.app.ui.foundation.lists.PaginatedList
-import me.him188.ani.app.ui.foundation.lists.rememberPaginatedListState
-import me.him188.ani.app.ui.subject.episode.details.EpisodeCarouselState
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.api.topic.isDoneOrDropped
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.preferredDisplayName
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.LongClickProgressFill
+import com.wynime.app.ui.foundation.icons.PlayingIcon
+import com.wynime.app.ui.foundation.lists.PaginatedGroup
+import com.wynime.app.ui.foundation.lists.PaginatedList
+import com.wynime.app.ui.foundation.lists.rememberPaginatedListState
+import com.wynime.app.ui.subject.episode.details.EpisodeCarouselState
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
 
-/**
- * 分页剧集列表组件，用于处理大量剧集的性能优化显示。
- *
- * 将剧集按100集为一组进行分组，提供分组导航和快速跳转功能。
- *
- * - 每100集为一组，显示为“第1-100话”格式
- * - 顶部固定导航栏，支持上下翻页和下拉选择
- * - 初始化时自动滚动到当前播放的剧集
- * - 每个分组在列表中显示标题分隔
- * - 支持点击切换剧集和长按标记观看状态
- */
 @Composable
 fun PaginatedEpisodeList(
     groups: List<PaginatedGroup<EpisodeCollectionInfo>>,
@@ -74,7 +54,6 @@ fun PaginatedEpisodeList(
 
     val state = rememberPaginatedListState(groups, allEpisodes, listState)
 
-    // 统一的播放位置处理
     LaunchedEffect(playingEpisodeIndex) {
         if (playingEpisodeIndex >= 0) {
             state.bringIntoView(playingEpisodeIndex)
@@ -113,9 +92,6 @@ fun PaginatedEpisodeList(
     )
 }
 
-/**
- * 剧集列表项组件，用于宽屏垂直列表中的单个剧集显示。
- */
 @Composable
 private fun EpisodeDetailsListItem(
     episode: EpisodeCollectionInfo,

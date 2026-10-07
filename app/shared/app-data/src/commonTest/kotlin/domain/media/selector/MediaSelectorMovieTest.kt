@@ -1,25 +1,13 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("SameParameterValue")
 
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason.FromSeriesSeason
-import me.him188.ani.app.domain.media.selector.testFramework.addSimpleMediaSelectorTest
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.runDynamicTests
+import com.wynime.app.domain.media.selector.MediaExclusionReason.FromSeriesSeason
+import com.wynime.app.domain.media.selector.testFramework.addSimpleMediaSelectorTest
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.runDynamicTests
 
-/**
- * 测试主番与剧场版的关系
- */
 @TestContainer
 class MediaSelectorMovieTest {
     @TestFactory
@@ -34,7 +22,7 @@ class MediaSelectorMovieTest {
                     )
                     seriesInfo(seasonSort = 1) {
                         series(
-                            // 剧场版:
+
                             "玉子市场 剧场版",
                             "玉子爱情故事",
                             "Tamako Love Story",
@@ -71,7 +59,7 @@ class MediaSelectorMovieTest {
                     )
                     seriesInfo(seasonSort = 1) {
                         series(
-                            // 主番:
+
                             "玉子市场",
                             "Tamako Market",
                             "たまこまーけっと",

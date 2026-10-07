@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.main
+package com.wynime.app.ui.main
 
 import androidx.compose.runtime.Stable
 import androidx.paging.PagingData
@@ -25,33 +16,33 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.subject.SubjectSearchCompletionRepository
-import me.him188.ani.app.data.repository.subject.SubjectSearchHistoryRepository
-import me.him188.ani.app.data.repository.subject.SubjectSearchRepository
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.episode.GetAnimeSeasonIdsFlowUseCase
-import me.him188.ani.app.domain.episode.SetEpisodeCollectionTypeUseCase
-import me.him188.ani.app.domain.search.SubjectSearchQuery
-import me.him188.ani.app.domain.search.withYearFilter
-import me.him188.ani.app.ui.exploration.search.SearchPageEffect
-import me.him188.ani.app.ui.exploration.search.SearchPageIntent
-import me.him188.ani.app.ui.exploration.search.SearchPageState
-import me.him188.ani.app.ui.exploration.search.SubjectPreviewItemInfo
-import me.him188.ani.app.ui.exploration.search.buildSearchFilterState
-import me.him188.ani.app.ui.exploration.search.withQuery
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.foundation.launchInBackground
-import me.him188.ani.app.ui.search.PagingSearchState
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsStateFactory
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsStateLoader
-import me.him188.ani.app.ui.user.SelfInfoStateProducer
-import me.him188.ani.utils.analytics.Analytics
-import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.SearchStart
-import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.SubjectEnter
-import me.him188.ani.utils.analytics.recordEvent
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.subject.SubjectSearchCompletionRepository
+import com.wynime.app.data.repository.subject.SubjectSearchHistoryRepository
+import com.wynime.app.data.repository.subject.SubjectSearchRepository
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.episode.GetAnimeSeasonIdsFlowUseCase
+import com.wynime.app.domain.episode.SetEpisodeCollectionTypeUseCase
+import com.wynime.app.domain.search.SubjectSearchQuery
+import com.wynime.app.domain.search.withYearFilter
+import com.wynime.app.ui.exploration.search.SearchPageEffect
+import com.wynime.app.ui.exploration.search.SearchPageIntent
+import com.wynime.app.ui.exploration.search.SearchPageState
+import com.wynime.app.ui.exploration.search.SubjectPreviewItemInfo
+import com.wynime.app.ui.exploration.search.buildSearchFilterState
+import com.wynime.app.ui.exploration.search.withQuery
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.foundation.launchInBackground
+import com.wynime.app.ui.search.PagingSearchState
+import com.wynime.app.ui.subject.details.state.SubjectDetailsStateFactory
+import com.wynime.app.ui.subject.details.state.SubjectDetailsStateLoader
+import com.wynime.app.ui.user.SelfInfoStateProducer
+import com.wynime.utils.analytics.Analytics
+import com.wynime.utils.analytics.AnalyticsEvent.Companion.SearchStart
+import com.wynime.utils.analytics.AnalyticsEvent.Companion.SubjectEnter
+import com.wynime.utils.analytics.recordEvent
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -138,7 +129,7 @@ open class SearchViewModel(
     private var initialSearchQueryStarted = false
 
     init {
-        // 拉取可浏览的季度列表, 供番剧索引的季度筛选使用.
+
         launchInBackground {
             try {
                 val seasons = getAnimeSeasonIdsFlowUseCase().first()
@@ -146,7 +137,7 @@ open class SearchViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // 季度列表加载失败: 静默降级, 年份下拉为空 (仅"全部年份"可选), 不影响搜索主功能.
+
             }
         }
     }
@@ -172,14 +163,13 @@ open class SearchViewModel(
             }
 
             is SearchPageIntent.ChangeYear -> {
-                // 切换到具体年份时保留季度; 清至"全部年份"时 withYearFilter 会连带清除季度.
+
                 applyQueryAndRefresh(_searchPageState.value.query.withYearFilter(intent.year))
             }
 
             is SearchPageIntent.ChangeSeason -> {
                 val query = _searchPageState.value.query
-                // 季度从属于年份: 未选年份时仅允许清除季度, 不允许单独设置季度.
-                // UI 已通过禁用 chip 防护, 此处兜底避免异常路径触发 SubjectSearchQuery 的不变量.
+
                 if (intent.season == null || query.year != null) {
                     applyQueryAndRefresh(query.copy(season = intent.season))
                 }
@@ -289,14 +279,11 @@ open class SearchViewModel(
         }
     }
 
-    /**
-     * 更新 query 并视筛选条件触发或清空搜索.
-     */
     private fun applyQueryAndRefresh(query: SubjectSearchQuery) {
         if (query.shouldTriggerSearch()) {
             refreshSearch(query)
         } else {
-            // 没有任何筛选条件: 回到未搜索状态, 展示历史/建议.
+
             updateQueryState(query)
             clearSearchResults()
             updateSearchPageState { it.copy(hasActiveSearch = false) }
@@ -330,7 +317,7 @@ open class SearchViewModel(
     }
 
     private fun viewSubjectDetails(previewItem: SubjectPreviewItemInfo) {
-        // load 自动取消在途任务, 不需要先 clear
+
         subjectDetailsStateLoader.load(
             previewItem.subjectId,
             placeholder = SubjectInfo.createPlaceholder(

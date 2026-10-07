@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.subject.episode.details.components
+package com.wynime.app.ui.subject.episode.details.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
@@ -15,10 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_watched
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_watched
 import org.jetbrains.compose.resources.stringResource
-
 
 @Composable
 fun EpisodeWatchStatusButton(

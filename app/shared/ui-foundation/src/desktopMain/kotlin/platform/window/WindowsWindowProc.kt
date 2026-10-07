@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform.window
+package com.wynime.app.platform.window
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -41,33 +32,33 @@ import com.sun.jna.platform.win32.WinUser.WindowProc
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.MFT_STRING
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.MIIM_STATE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.SC_CLOSE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.SC_MOVE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.SC_RESTORE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.SC_SIZE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.SWP_NOACTIVATE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.TPM_RETURNCMD
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WA_INACTIVE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WINT_MAX
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_ACTIVATE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_LBUTTONDOWN
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_LBUTTONUP
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_MOUSEMOVE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_NCCALCSIZE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_NCHITTEST
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_NCLBUTTONDOWN
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_NCLBUTTONUP
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_NCMOUSEMOVE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_NCRBUTTONUP
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WM_SETTINGCHANGE
-import me.him188.ani.app.platform.window.ExtendedUser32.MENUITEMINFO
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.layout.LocalPlatformWindow
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.platform.isWindows
+import com.wynime.app.platform.window.ExtendedUser32.Companion.MFT_STRING
+import com.wynime.app.platform.window.ExtendedUser32.Companion.MIIM_STATE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.SC_CLOSE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.SC_MOVE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.SC_RESTORE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.SC_SIZE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.SWP_NOACTIVATE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.TPM_RETURNCMD
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WA_INACTIVE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WINT_MAX
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_ACTIVATE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_LBUTTONDOWN
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_LBUTTONUP
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_MOUSEMOVE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_NCCALCSIZE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_NCHITTEST
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_NCLBUTTONDOWN
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_NCLBUTTONUP
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_NCMOUSEMOVE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_NCRBUTTONUP
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WM_SETTINGCHANGE
+import com.wynime.app.platform.window.ExtendedUser32.MENUITEMINFO
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.layout.LocalPlatformWindow
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
+import com.wynime.utils.platform.isWindows
 import org.jetbrains.skiko.SkiaLayer
 import java.awt.Window
 
@@ -84,9 +75,9 @@ internal fun windowsWindowCompositionMode(
     windowsBuildNumber: Int?,
     fullscreen: Boolean,
 ): WindowsWindowCompositionMode = WindowsWindowCompositionMode(
-    // Microsoft documents all-zero margins as resetting an extended DWM frame.
+
     frameMargin = if (fullscreen) 0 else -1,
-    // Windows 10 needs this for the custom title bar, but a fullscreen window must be opaque.
+
     skiaLayerTransparency = !fullscreen &&
         (windowsBuildNumber ?: WINDOWS_11_MIN_BUILD_NUMBER) < WINDOWS_11_MIN_BUILD_NUMBER,
 )
@@ -178,7 +169,7 @@ internal open class BasicWindowProc(
         }
         if (uMsg == WM_SETTINGCHANGE) {
             val changedKey = Pointer(lParam.toLong()).getWideString(0)
-            // Theme changed for color and darkTheme
+
             if (changedKey == "ImmersiveColorSet") {
                 _accentColor.tryEmit(currentAccentColor())
                 onThemeChanged()
@@ -255,11 +246,6 @@ internal class ExtendedTitleBarWindowProc(
         eraseWindowBackground()
     }
 
-    /**
-     * A Windows 10 custom title bar uses a glass client frame and a transparent Skia layer.
-     * Borderless fullscreen has no title bar to extend and must stay opaque; otherwise
-     * partially transparent Compose/video pixels are blended with the desktop.
-     */
     internal fun applyWindowCompositionMode(fullscreen: Boolean) {
         val mode = windowsWindowCompositionMode(windowsBuildNumber, fullscreen)
         val margin = mode.frameMargin
@@ -270,14 +256,10 @@ internal class ExtendedTitleBarWindowProc(
         )
     }
 
-    /***
-     * @param x, the horizontal offset relative to the client area.
-     * @param y, the vertical offset relative to the client area.
-     */
     private fun hitTestWindowResizerBorder(x: Int, y: Int): WindowsWindowHitResult {
-        // Force update window info.
+
         updateWindowInfo()
-        // If window not contains the border, return NOWHERE.
+
         val currentStyle = User32.INSTANCE.GetWindowLong(windowHandle, WinUser.GWL_STYLE)
         if (currentStyle and WinUser.WS_CAPTION == 0) {
             return WindowsWindowHitResult.NOWHERE
@@ -334,13 +316,12 @@ internal class ExtendedTitleBarWindowProc(
 
     override fun callback(hwnd: HWND, uMsg: Int, wParam: WinDef.WPARAM, lParam: WinDef.LPARAM): LRESULT {
         return when (uMsg) {
-            // Returns 0 to make the window not draw the non-client area (title bar and border)
-            // thus effectively making all the window our client area
+
             WM_NCCALCSIZE -> {
                 if (wParam.toInt() == 0) {
                     super.callback(hwnd, uMsg, wParam, lParam)
                 } else {
-                    // this behavior is call full screen mode
+
                     val style = user32.GetWindowLong(hwnd, WinUser.GWL_STYLE)
                     if (style and (WinUser.WS_CAPTION or WinUser.WS_THICKFRAME) == 0) {
                         frameX = 0
@@ -389,7 +370,7 @@ internal class ExtendedTitleBarWindowProc(
             }
 
             WM_NCHITTEST -> {
-                // Skip resizer border hit test if window is maximized
+
                 if (!isMaximized) {
                     val callResult = lParam.usePoint(::hitTestWindowResizerBorder)
                     if (isHitWindowResizer(callResult)) {
@@ -407,7 +388,7 @@ internal class ExtendedTitleBarWindowProc(
                     user32.SetWindowLong(hwnd, WinUser.GWL_STYLE, oldStyle)
                     isMaximized = user32.isWindowInMaximized(hwnd)
                     if (menu != null) {
-                        // Update menu items state.
+
                         val menuItemInfo = MENUITEMINFO().apply {
                             cbSize = this.size()
                             fMask = MIIM_STATE
@@ -421,19 +402,16 @@ internal class ExtendedTitleBarWindowProc(
                         updateMenuItemInfo(menu, menuItemInfo, WinUser.SC_MAXIMIZE, !isMaximized)
                         updateMenuItemInfo(menu, menuItemInfo, SC_CLOSE, true)
 
-                        // Set default menu item.
                         user32.SetMenuDefaultItem(menu, WINT_MAX, false)
 
-                        // Get cursor position.
                         val lParamValue = lParam.toInt()
                         val x = lowWord(lParamValue)
                         val y = highWord(lParamValue)
 
-                        // Show menu and get user selection.
                         val ret = user32.TrackPopupMenu(menu, TPM_RETURNCMD, x, y, 0, hwnd, null)
                         menuItemInfo.clear()
                         if (ret != 0) {
-                            // Send WM_SYSCOMMAND message.
+
                             user32.PostMessage(
                                 hwnd,
                                 WinUser.WM_SYSCOMMAND,
@@ -465,7 +443,7 @@ internal class ExtendedTitleBarWindowProc(
 
                 if (uMsg == WM_SETTINGCHANGE) {
                     val changedKey = Pointer(lParam.toLong()).getWideString(0)
-                    // Theme changed for color and darkTheme
+
                     if (changedKey == "ImmersiveColorSet") {
                         _frameIsColorful.tryEmit(isAccentColorWindowFrame())
                     }
@@ -488,7 +466,6 @@ internal class ExtendedTitleBarWindowProc(
         user32.SetMenuItemInfo(menu, item, false, menuItemInfo)
     }
 
-    // Workaround for background erase.
     private fun eraseWindowBackground() {
         val buildNumber = windowsBuildNumber ?: return
         if (buildNumber < WINDOWS_11_MIN_BUILD_NUMBER) {

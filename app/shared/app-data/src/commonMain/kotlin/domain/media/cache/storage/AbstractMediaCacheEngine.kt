@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.storage
+package com.wynime.app.domain.media.cache.storage
 
 import androidx.datastore.core.DataStore
 import kotlinx.collections.immutable.minus
@@ -29,21 +20,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.domain.media.cache.LocalFileMediaCache
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.domain.media.cache.engine.sum
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.coroutines.childScope
-import me.him188.ani.utils.coroutines.update
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.thisLogger
+import com.wynime.app.domain.media.cache.LocalFileMediaCache
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.domain.media.cache.engine.sum
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.coroutines.childScope
+import com.wynime.utils.coroutines.update
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.thisLogger
 import kotlin.coroutines.CoroutineContext
 
 abstract class AbstractDataStoreMediaCacheStorage(
@@ -59,13 +50,9 @@ abstract class AbstractDataStoreMediaCacheStorage(
     protected val metadataFlow = datastore.data
         .map { list ->
             list.filter { it.engine == engine.engineKey }
-                .sortedBy { it.origin.mediaId } // consistent stable order
+                .sortedBy { it.origin.mediaId }
         }
 
-    /**
-     * 已经恢复的 [LocalFileMediaCache] 的 [MediaCache.cacheId], 不会重复恢复.
-     * 同一合集的多条记录共用 [Media.mediaId], 所以不能按资源 id 记.
-     */
     protected val restoredLocalFileMediaCacheIds = MutableStateFlow(persistentListOf<String>())
 
     open suspend fun refreshCache(): List<MediaCache> {
@@ -95,7 +82,6 @@ abstract class AbstractDataStoreMediaCacheStorage(
             }
         }
 
-        // 新 restore 的加上 list 中已经有的 LocalFileMediaCache
         listFlow.update {
             allRecovered.value +
                     listFlow.value.filter { it.cacheId in restoredLocalFileMediaCacheIds.value }
@@ -188,7 +174,7 @@ abstract class AbstractDataStoreMediaCacheStorage(
         listFlow.update { minus(cache) }
         restoredLocalFileMediaCacheIds.update { minus(cache.cacheId) }
         withContext(Dispatchers.IO_) {
-            // 多个存储共用同一个 datastore, 只删除本引擎的记录, 其他引擎的同资源同剧集记录保留.
+
             datastore.updateData { list ->
                 list.filterNot { it.engine == engine.engineKey && isSameMediaAndEpisode(cache, it) }
             }

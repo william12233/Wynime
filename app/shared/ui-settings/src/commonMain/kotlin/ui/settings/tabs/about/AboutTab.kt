@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.about
+package com.wynime.app.ui.settings.tabs.about
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -48,40 +39,40 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.DelicateCoroutinesApi
-import me.him188.ani.app.data.network.protocol.ReleaseClass
-import me.him188.ani.app.navigation.QQ_GROUP_ID
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.navigation.rememberAsyncBrowserNavigator
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.Res
-import me.him188.ani.app.ui.foundation.a
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.icons.AniIcons
-import me.him188.ani.app.ui.foundation.icons.AwardStar
-import me.him188.ani.app.ui.foundation.icons.DeployedCodeAccount
-import me.him188.ani.app.ui.foundation.icons.News
-import me.him188.ani.app.ui.foundation.icons.QqRoundedOutline
-import me.him188.ani.app.ui.foundation.icons.Telegram
-import me.him188.ani.app.ui.foundation.widgets.HeroIcon
-import me.him188.ani.app.ui.foundation.widgets.HeroIconDefaults
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.acknowledgements
-import me.him188.ani.app.ui.lang.developer_list
-import me.him188.ani.app.ui.lang.settings_about_app_description
-import me.him188.ani.app.ui.lang.settings_about_app_name
-import me.him188.ani.app.ui.lang.settings_about_build_info
-import me.him188.ani.app.ui.lang.settings_about_chat_groups
-import me.him188.ani.app.ui.lang.settings_about_feedback
-import me.him188.ani.app.ui.lang.settings_about_icon_description
-import me.him188.ani.app.ui.lang.settings_about_qq_group
-import me.him188.ani.app.ui.lang.settings_about_release_notes
-import me.him188.ani.app.ui.lang.settings_about_source_code
-import me.him188.ani.app.ui.lang.settings_about_version
-import me.him188.ani.app.ui.lang.settings_about_website
-import me.him188.ani.app.ui.lang.settings_help_telegram
-import me.him188.ani.app.ui.settings.rendering.ReleaseClassIcon
-import me.him188.ani.app.ui.settings.rendering.guessReleaseClass
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.network.protocol.ReleaseClass
+import com.wynime.app.navigation.QQ_GROUP_ID
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.navigation.rememberAsyncBrowserNavigator
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.Res
+import com.wynime.app.ui.foundation.a
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.icons.WynimeIcons
+import com.wynime.app.ui.foundation.icons.AwardStar
+import com.wynime.app.ui.foundation.icons.DeployedCodeAccount
+import com.wynime.app.ui.foundation.icons.News
+import com.wynime.app.ui.foundation.icons.QqRoundedOutline
+import com.wynime.app.ui.foundation.icons.Telegram
+import com.wynime.app.ui.foundation.widgets.HeroIcon
+import com.wynime.app.ui.foundation.widgets.HeroIconDefaults
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.acknowledgements
+import com.wynime.app.ui.lang.developer_list
+import com.wynime.app.ui.lang.settings_about_app_description
+import com.wynime.app.ui.lang.settings_about_app_name
+import com.wynime.app.ui.lang.settings_about_build_info
+import com.wynime.app.ui.lang.settings_about_chat_groups
+import com.wynime.app.ui.lang.settings_about_feedback
+import com.wynime.app.ui.lang.settings_about_icon_description
+import com.wynime.app.ui.lang.settings_about_qq_group
+import com.wynime.app.ui.lang.settings_about_release_notes
+import com.wynime.app.ui.lang.settings_about_source_code
+import com.wynime.app.ui.lang.settings_about_version
+import com.wynime.app.ui.lang.settings_about_website
+import com.wynime.app.ui.lang.settings_help_telegram
+import com.wynime.app.ui.settings.rendering.ReleaseClassIcon
+import com.wynime.app.ui.settings.rendering.guessReleaseClass
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -109,12 +100,10 @@ fun AboutTab(
     val context = LocalContext.current
 
     Column(modifier.fillMaxWidth()) {
-        // Centered HeroIcon at the top
-        AniHeroIconAndDescriptions()
+
+        WynimeHeroIconAndDescriptions()
 
         Spacer(Modifier.height(36.dp))
-
-        // Menu items
 
         val listItemColors = ListItemDefaults.colors(
             containerColor = Color.Transparent,
@@ -134,7 +123,7 @@ fun AboutTab(
                 Icon(Icons.Outlined.Info, contentDescription = null)
             },
             supportingContent = {
-                // 分支 @ 短 sha, 不知道时不显示
+
                 val branch = state.buildInfo.gitBranch
                 val sha = state.buildInfo.gitCommitShortSha
                 val summary = listOf(branch, sha).filter { it.isNotBlank() }.joinToString(" @ ")
@@ -200,7 +189,7 @@ fun AboutTab(
             },
             colors = listItemColors,
         )
-        AniAnimatedVisibility(
+        WynimeAnimatedVisibility(
             showChatGroups,
             label = "ChatGroups",
         ) {
@@ -216,7 +205,7 @@ fun AboutTab(
                     { browserNavigator.openJoinGroup(context) },
                     icon = {
                         Icon(
-                            AniIcons.QqRoundedOutline, stringResource(Lang.settings_about_qq_group),
+                            WynimeIcons.QqRoundedOutline, stringResource(Lang.settings_about_qq_group),
                             Modifier.size(20.dp),
                         )
                     },
@@ -227,7 +216,7 @@ fun AboutTab(
                     { browserNavigator.openJoinTelegram(context) },
                     icon = {
                         Image(
-                            AniIcons.Telegram, stringResource(Lang.settings_help_telegram),
+                            WynimeIcons.Telegram, stringResource(Lang.settings_help_telegram),
                             Modifier.size(20.dp),
                         )
                     },
@@ -239,7 +228,7 @@ fun AboutTab(
 }
 
 @Composable
-fun AniHeroIconAndDescriptions(modifier: Modifier = Modifier) {
+fun WynimeHeroIconAndDescriptions(modifier: Modifier = Modifier) {
     Column(modifier.padding(vertical = 36.dp)) {
         HeroIcon(
             modifier = Modifier.fillMaxWidth(),

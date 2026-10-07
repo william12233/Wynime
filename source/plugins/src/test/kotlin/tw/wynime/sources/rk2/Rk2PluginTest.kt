@@ -1,14 +1,14 @@
 package tw.wynime.sources.rk2
 
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginLogger
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginLogger
+import com.wynime.source.plugin.api.SourcePluginPlatform
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

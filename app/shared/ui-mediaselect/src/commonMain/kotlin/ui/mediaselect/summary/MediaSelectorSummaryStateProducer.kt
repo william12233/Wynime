@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediaselect.summary
+package com.wynime.app.ui.mediaselect.summary
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -18,37 +9,30 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.transformLatest
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.DroppedFileMedia
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchResult
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.app.domain.media.fetch.MediaSourceInfoWithId
-import me.him188.ani.app.domain.media.selector.MatchMetadata
-import me.him188.ani.app.domain.media.selector.MaybeExcludedMedia
-import me.him188.ani.app.domain.media.selector.MediaSelector
-import me.him188.ani.app.domain.media.selector.UnsafeOriginalMediaAccess
-import me.him188.ani.app.domain.media.selector.isPerfectMatch
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.media_selector_summary_dropped_file
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.utils.platform.collections.tupleOf
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.DroppedFileMedia
+import com.wynime.app.domain.media.fetch.MediaSourceFetchResult
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.domain.media.fetch.MediaSourceInfoWithId
+import com.wynime.app.domain.media.selector.MatchMetadata
+import com.wynime.app.domain.media.selector.MaybeExcludedMedia
+import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.app.domain.media.selector.UnsafeOriginalMediaAccess
+import com.wynime.app.domain.media.selector.isPerfectMatch
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.media_selector_summary_dropped_file
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.utils.platform.collections.tupleOf
 import org.jetbrains.compose.resources.getString
 import kotlin.time.Duration.Companion.seconds
 
-
-/**
- * @see MediaSelectorSummary
- * @see me.him188.ani.app.domain.media.selector.MediaSelector.selectedMaybeExcludedMediaFlow
- */
 class MediaSelectorSummaryStateProducer(
     selectedMaybeExcludedMediaFlow: Flow<MaybeExcludedMedia?>,
     mediaSourceResultsFlow: Flow<List<MediaSourceFetchResult>>,
     mediaSelectorSettingsFlow: Flow<MediaSelectorSettings>,
     mediaSources: Flow<List<MediaSourceInfoWithId>>,
-    /**
-     * 选中的是用户拖入的本地文件 ([DroppedFileMedia]) 时展示的来源名称.
-     */
+
     droppedFileSourceName: suspend () -> String = { getString(Lang.media_selector_summary_dropped_file) },
 ) {
     private val sourceSummariesFlow = combine(mediaSourceResultsFlow, mediaSources) { results, sources ->
@@ -62,7 +46,7 @@ class MediaSelectorSummaryStateProducer(
             results
                 .asSequence()
                 .filter { !it.sourceInfo.isSpecial }
-                .filter { it.kind == MediaSourceKind.WEB } // 摘要目前只展示可直接查询的网络来源
+                .filter { it.kind == MediaSourceKind.WEB }
                 .filter { states[results.indexOf(it)] }
                 .sortedWith(
                     compareBy { source ->
@@ -124,18 +108,14 @@ class MediaSelectorSummaryStateProducer(
     }.distinctUntilChanged()
 }
 
-/**
- * [MediaSelector.selected] 及其匹配信息. [MediaSelector.selected] 不一定在候选列表中 (例如 [DroppedFileMedia]),
- * 此时没有匹配信息可用, 按未精确匹配处理.
- */
 @OptIn(UnsafeOriginalMediaAccess::class)
 val MediaSelector.selectedMaybeExcludedMediaFlow: Flow<MaybeExcludedMedia?>
     get() = this.selected.mapLatest { selected ->
         if (selected == null) {
             null
         } else {
-            filteredCandidates.first() // No need to subscribe to flow change. When selected is updated, filteredCandidates should have already been updated.
-                .firstOrNull { it.original === selected } // identity check is enough and fast
+            filteredCandidates.first()
+                .firstOrNull { it.original === selected }
                 ?: MaybeExcludedMedia.Included(
                     selected,
                     MatchMetadata(

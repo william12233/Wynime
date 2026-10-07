@@ -182,7 +182,7 @@ class IssueClassificationTest(unittest.TestCase):
         self.save_state()
         result = self.apply()
         self.assertIn("Preserving existing Priority: High", result.stdout)
-        self.assertEqual(len(self.writes()), 1)  # Title/type/labels only.
+        self.assertEqual(len(self.writes()), 1)                           
         self.assertEqual(self.writes()[0]["args"][:2], ["issue", "edit"])
 
     def test_rerun_preserves_priority(self):

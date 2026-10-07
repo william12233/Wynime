@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.text
+package com.wynime.app.ui.foundation.text
 
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle

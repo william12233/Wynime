@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.player.extension
+package com.wynime.app.domain.player.extension
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,14 +11,14 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.domain.episode.EpisodeFetchSelectPlayState
-import me.him188.ani.app.domain.episode.EpisodePlayerTestSuite
-import me.him188.ani.app.domain.episode.GetEpisodeCollectionTypeUseCase
-import me.him188.ani.app.domain.episode.SetEpisodeCollectionTypeUseCase
-import me.him188.ani.app.domain.settings.GetVideoScaffoldConfigUseCase
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.coroutines.childScope
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
+import com.wynime.app.domain.episode.EpisodePlayerTestSuite
+import com.wynime.app.domain.episode.GetEpisodeCollectionTypeUseCase
+import com.wynime.app.domain.episode.SetEpisodeCollectionTypeUseCase
+import com.wynime.app.domain.settings.GetVideoScaffoldConfigUseCase
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.coroutines.childScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -41,13 +32,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         MarkAsWatchedExtension(context, koin, enableSamplingAndDebounce = false)
     }
 
-    /**
-     * Creates a test environment with the [MarkAsWatchedExtension].
-     *
-     * @param videoScaffoldConfigFlow How the mocked [GetVideoScaffoldConfigUseCase] emits config values.
-     * @param getEpisodeCollectionType A function controlling the mocked [GetEpisodeCollectionTypeUseCase].
-     * @param setEpisodeCollectionType A function controlling the mocked [SetEpisodeCollectionTypeUseCase].
-     */
     private fun TestScope.createCase(
         videoScaffoldConfigFlow: Flow<VideoScaffoldConfig> = flowOf(
             VideoScaffoldConfig.AllDisabled.copy(autoMarkDone = true),
@@ -59,7 +43,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         val testScope = this.childScope()
         val suite = createSuite(testScope)
 
-        // Register mocked or stubbed components.
         suite.registerComponent<GetVideoScaffoldConfigUseCase> {
             GetVideoScaffoldConfigUseCase {
                 videoScaffoldConfigFlow
@@ -91,7 +74,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
             },
         )
 
-        // Suppose the total duration is 10 seconds for easy math; playback at 95% (well past 90%).
         suite.player.loadMedia(durationMs = 10000L, playWhenReady = true)
         advanceUntilIdle()
 
@@ -99,7 +81,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
 
         advanceUntilIdle()
 
-        // Because autoMarkDone is false, we expect no marking action.
         assertFalse(setCalled)
 
         testScope.cancel()
@@ -114,19 +95,18 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
             },
         )
 
-        // Current position is 95% but the media is loaded paused (not playing).
         suite.player.loadMedia(durationMs = 10000L, playWhenReady = false)
         advanceUntilIdle()
 
         suite.player.injectPosition(9500L)
         advanceUntilIdle()
-        assertFalse(setCalled) // paused: strict isPlaying gate does not mark
+        assertFalse(setCalled)
 
         suite.player.play()
 
         advanceUntilIdle()
 
-        assertTrue(setCalled) // TODO: 2025/3/25 This case may be wrong. We should reconsider.
+        assertTrue(setCalled)
 
         testScope.cancel()
     }
@@ -141,7 +121,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
             },
         )
 
-        // Even though we are at 95% and playing, if it's already DONE, we don't mark it again.
         suite.player.loadMedia(durationMs = 10000L, playWhenReady = true)
         advanceUntilIdle()
 
@@ -161,7 +140,7 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         var requestedType: UnifiedCollectionType? = null
 
         val (testScope, suite, _) = createCase(
-            getEpisodeCollectionType = { _, _, _ -> null }, // Not already marked
+            getEpisodeCollectionType = { _, _, _ -> null },
             setEpisodeCollectionType = { subjectId, episodeId, type ->
                 requestedSubjectId = subjectId
                 requestedEpisodeId = episodeId
@@ -169,7 +148,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
             },
         )
 
-        // Set up 10-second media playing, move position to 95%.
         suite.player.loadMedia(durationMs = 10000L, playWhenReady = true)
         advanceUntilIdle()
 
@@ -194,7 +172,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
             },
         )
 
-        // Move near 90% while playing -> triggers mark once.
         suite.player.loadMedia(durationMs = 10000L, playWhenReady = true)
         advanceUntilIdle()
 
@@ -203,11 +180,9 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         advanceUntilIdle()
         assertEquals(1, callCount)
 
-        // Advance the position a bit, remain playing, still near the 90% mark.
-        // The extension uses `cancelScope()` once it marks, so no double marking.
         suite.player.injectPosition(9999L)
         advanceUntilIdle()
-        // Still 1
+
         assertEquals(1, callCount)
 
         testScope.cancel()
@@ -220,7 +195,7 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         var requestedType: UnifiedCollectionType? = null
 
         val (testScope, suite, _) = createCase(
-            getEpisodeCollectionType = { _, _, _ -> null }, // Not already marked
+            getEpisodeCollectionType = { _, _, _ -> null },
             setEpisodeCollectionType = { subjectId, episodeId, type ->
                 requestedSubjectId = subjectId
                 requestedEpisodeId = episodeId
@@ -235,7 +210,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
 
         advanceUntilIdle()
 
-        // Should mark as watched because we're within the last 100 seconds
         assertEquals(subjectId, requestedSubjectId)
         assertEquals(initialEpisodeId, requestedEpisodeId)
         assertEquals(UnifiedCollectionType.DONE, requestedType)
@@ -250,7 +224,7 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         var requestedType: UnifiedCollectionType? = null
 
         val (testScope, suite, _) = createCase(
-            getEpisodeCollectionType = { _, _, _ -> null }, // Not already marked
+            getEpisodeCollectionType = { _, _, _ -> null },
             setEpisodeCollectionType = { subjectId, episodeId, type ->
                 requestedSubjectId = subjectId
                 requestedEpisodeId = episodeId
@@ -265,7 +239,6 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
 
         advanceUntilIdle()
 
-        // Should mark as watched because we're within the last 100 seconds
         assertEquals(subjectId, requestedSubjectId)
         assertEquals(initialEpisodeId, requestedEpisodeId)
         assertEquals(UnifiedCollectionType.DONE, requestedType)
@@ -277,22 +250,19 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
     fun `does not mark when neither at 90 percent nor within last 100 seconds`() = runTest {
         var setCalled = false
         val (testScope, suite, _) = createCase(
-            getEpisodeCollectionType = { _, _, _ -> null }, // Not already marked
+            getEpisodeCollectionType = { _, _, _ -> null },
             setEpisodeCollectionType = { _, _, _ ->
                 setCalled = true
             },
         )
 
-        // Set up a 20-minute video (1,200,000 ms)
-        // Position at 80% (960,000 ms) which is less than 90% and more than 100 seconds from the end
         suite.player.loadMedia(durationMs = 1_200_000L, playWhenReady = true)
         advanceUntilIdle()
 
-        suite.player.injectPosition(960_000L) // 80% of video, more than 100 seconds from end
+        suite.player.injectPosition(960_000L)
 
         advanceUntilIdle()
 
-        // Should not mark as watched because we're neither at 90% nor within the last 100 seconds
         assertFalse(setCalled)
 
         testScope.cancel()
@@ -302,68 +272,23 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
     fun `does not mark when video is shorter than 10 seconds`() = runTest {
         var setCalled = false
         val (testScope, suite, _) = createCase(
-            getEpisodeCollectionType = { _, _, _ -> null }, // Not already marked
+            getEpisodeCollectionType = { _, _, _ -> null },
             setEpisodeCollectionType = { _, _, _ ->
                 setCalled = true
             },
         )
 
-        // Set up a video shorter than 10 seconds (9 seconds)
         suite.player.loadMedia(durationMs = 9.seconds.inWholeMilliseconds, playWhenReady = true)
         advanceUntilIdle()
 
-        // Position at 95% which would normally trigger marking
         suite.player.injectPosition((9.seconds.inWholeMilliseconds * 0.95).toLong())
 
         advanceUntilIdle()
 
-        // Should not mark as watched because the video is shorter than 10 seconds
         assertFalse(setCalled)
 
         testScope.cancel()
     }
-
-    // TODO: 2025/1/5 This test sometimes fails on desktopMain.
-//    @Test
-//    fun `handles exceptions from setEpisodeCollectionTypeUseCase`(): TestResult = runTest {
-//        val (scope, backgroundException) = createExceptionCapturingSupervisorScope(this)
-//        val suite = createSuite(scope)
-//
-//        // Register mock components. We'll throw an exception from setEpisodeCollectionTypeUseCase
-//        suite.registerComponent<GetVideoScaffoldConfigUseCase> {
-//            GetVideoScaffoldConfigUseCase {
-//                flowOf(VideoScaffoldConfig.AllDisabled.copy(autoMarkDone = true))
-//            }
-//        }
-//        suite.registerComponent<GetEpisodeCollectionTypeUseCase> {
-//            GetEpisodeCollectionTypeUseCase { _, _ ->
-//                null // Not already marked
-//            }
-//        }
-//        suite.registerComponent<SetEpisodeCollectionTypeUseCase> {
-//            SetEpisodeCollectionTypeUseCase { _, _, _ -> throw RepositoryNetworkException("Simulated network error") }
-//        }
-//
-//        val state = suite.createState(
-//            listOf(
-//                extensionFactory,
-//            ),
-//        )
-//        state.onUIReady()
-//
-//        // Move near 90% while playing -> triggers mark once, but we'll throw from setEpisodeCollectionTypeUseCase
-//        suite.player.loadMedia(durationMs = 10000L, playWhenReady = true)
-//        suite.player.injectPosition(9500L)
-//        advanceUntilIdle()
-//
-//        // The exception thrown in setEpisodeCollectionTypeUseCase should propagate as ExtensionException
-//        backgroundException.await().let { ex ->
-//            assertIs<ExtensionException>(ex)
-//            assertIs<RepositoryNetworkException>(ex.cause)
-//        }
-//
-//        scope.cancel()
-//    }
 
     private fun TestScope.createSuite(scope: CoroutineScope): EpisodePlayerTestSuite {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))

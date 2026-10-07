@@ -1,1 +1,97 @@
-{"schemaVersion":1,"pluginApiVersion":2,"plugins":[{"id":"eacg","name":"E-ACG","version":"1.0.25","description":"E-ACG 動畫來源","website":"https://eacg.net/","icon":"https://k8dm.com/template/vfed/asset/img/favicon.png","platforms":["desktop","android"],"manifest":"manifests/eacg.json"},{"id":"dm1","name":"DM1","version":"1.0.25","description":"DM1 動畫來源","website":"https://dm1.xfdm.pro/","icon":"https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png","platforms":["desktop","android"],"manifest":"manifests/dm1.json"},{"id":"next","name":"Xifan Next","version":"1.0.25","description":"Xifan Next 動畫來源","website":"https://next.xifanacg.com/","icon":"https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico","platforms":["desktop","android"],"manifest":"manifests/next.json"},{"id":"girigiri","name":"Girigiri Love","version":"1.0.25","description":"Girigiri Love 動畫來源","website":"https://ani.girigirilove.com/","icon":"https://ani.girigirilove.com/upload/anime.girigirilove.com_.png","platforms":["desktop","android"],"manifest":"manifests/girigiri.json"},{"id":"2rk","name":"2RK","version":"1.0.25","description":"2RK 動畫來源","website":"https://www.2rk.cc/","icon":"https://www.2rk.cc/logo.png","platforms":["desktop","android"],"manifest":"manifests/2rk.json"},{"id":"dida","name":"DIDAHD","version":"1.0.25","description":"DIDAHD 動畫來源","website":"https://www.didahd.pro/","icon":"https://www.didahd.pro/template/mytheme/statics/img/newfavicon.png","platforms":["desktop","android"],"manifest":"manifests/dida.json"},{"id":"dmbus","name":"DMBUS","version":"1.0.25","description":"DMBUS 動畫來源","website":"https://dmbus.cc/","icon":"https://dmbus.cc/favicon.ico","platforms":["desktop","android"],"manifest":"manifests/dmbus.json"}]}
+{
+  "schemaVersion": 1,
+  "pluginApiVersion": 3,
+  "plugins": [
+    {
+      "id": "eacg",
+      "name": "E-ACG",
+      "version": "1.0.26",
+      "description": "E-ACG 動畫來源",
+      "website": "https://eacg.net/",
+      "icon": "https://k8dm.com/template/vfed/asset/img/favicon.png",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/eacg.json"
+    },
+    {
+      "id": "dm1",
+      "name": "DM1",
+      "version": "1.0.26",
+      "description": "DM1 動畫來源",
+      "website": "https://dm1.xfdm.pro/",
+      "icon": "https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/dm1.json"
+    },
+    {
+      "id": "next",
+      "name": "Xifan Next",
+      "version": "1.0.26",
+      "description": "Xifan Next 動畫來源",
+      "website": "https://next.xifanacg.com/",
+      "icon": "https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/next.json"
+    },
+    {
+      "id": "girigiri",
+      "name": "Girigiri Love",
+      "version": "1.0.26",
+      "description": "Girigiri Love 動畫來源",
+      "website": "https://ani.girigirilove.com/",
+      "icon": "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/girigiri.json"
+    },
+    {
+      "id": "2rk",
+      "name": "2RK",
+      "version": "1.0.26",
+      "description": "2RK 動畫來源",
+      "website": "https://www.2rk.cc/",
+      "icon": "https://www.2rk.cc/logo.png",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/2rk.json"
+    },
+    {
+      "id": "dida",
+      "name": "DIDAHD",
+      "version": "1.0.26",
+      "description": "DIDAHD 動畫來源",
+      "website": "https://www.didahd.pro/",
+      "icon": "https://www.didahd.pro/template/mytheme/statics/img/newfavicon.png",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/dida.json"
+    },
+    {
+      "id": "dmbus",
+      "name": "DMBUS",
+      "version": "1.0.26",
+      "description": "DMBUS 動畫來源",
+      "website": "https://dmbus.cc/",
+      "icon": "https://dmbus.cc/favicon.ico",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/dmbus.json"
+    }
+  ]
+}

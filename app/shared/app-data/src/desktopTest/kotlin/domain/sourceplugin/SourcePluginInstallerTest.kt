@@ -1,9 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import java.io.File
 import java.io.FileOutputStream
@@ -11,21 +6,21 @@ import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.files.Path
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.platform.Context
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginLogger
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.exists
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.resolve
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.platform.Context
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourcePluginPlatform
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginLogger
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.exists
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.resolve
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -134,6 +129,65 @@ class SourcePluginInstallerTest {
         assertTrue(File(root.resolve("staging").absolutePath).listFiles().orEmpty().isEmpty())
     }
 
+    @Test
+    fun `bundled ABI upgrade works offline and preserves disabled state`() = runTest {
+        val artifact = createFixtureArtifact()
+        val entry = fixtureEntry("1.0.0")
+        val repository = InstalledSourcePluginRepository(MemoryDataStore(InstalledSourcePlugins.Empty))
+        val installer = createInstaller(repository, entry, artifact)
+        val previous = installer.install(entry)
+        repository.upsert(previous.copy(enabled = false, manifest = previous.manifest.copy(pluginApiVersion = 2)))
+        val manifest = previous.manifest.copy(version = "1.0.1")
+        val installed = installer.installBundled(manifest, { artifact }) { candidate ->
+            val loaded = createSourcePluginLoader(object : Context() {}).load(
+                Path(candidate.artifactPath).inSystem, candidate.manifest.entryClass, fixtureContext(),
+            )
+            loaded.close()
+        }
+        assertFalse(installed.enabled)
+        assertEquals(3, repository.snapshot().plugins.single().manifest.pluginApiVersion)
+        assertTrue(File(installed.artifactPath).isFile)
+        assertFalse(File(previous.artifactPath).exists())
+    }
+
+    @Test
+    fun `corrupt bundled upgrade retains the old installation for retry`() = runTest {
+        val artifact = createFixtureArtifact()
+        val entry = fixtureEntry("1.0.0")
+        val repository = InstalledSourcePluginRepository(MemoryDataStore(InstalledSourcePlugins.Empty))
+        val installer = createInstaller(repository, entry, artifact)
+        val previous = installer.install(entry)
+        val old = previous.copy(manifest = previous.manifest.copy(pluginApiVersion = 2))
+        repository.upsert(old)
+        val manifest = previous.manifest.copy(version = "1.0.1")
+        assertFailsWith<IllegalStateException> {
+            installer.installBundled(manifest, { byteArrayOf(1, 2, 3) })
+        }
+        assertEquals(old, repository.snapshot().plugins.single())
+        assertTrue(File(previous.artifactPath).readBytes().contentEquals(artifact))
+        val installed = installer.installBundled(manifest, { artifact })
+        assertEquals("1.0.1", installed.version)
+    }
+
+    @Test
+    fun `bundled candidate load failure preserves the old ABI and files`() = runTest {
+        val artifact = createFixtureArtifact()
+        val entry = fixtureEntry("1.0.0")
+        val repository = InstalledSourcePluginRepository(MemoryDataStore(InstalledSourcePlugins.Empty))
+        val installer = createInstaller(repository, entry, artifact)
+        val previous = installer.install(entry)
+        val old = previous.copy(manifest = previous.manifest.copy(pluginApiVersion = 2))
+        repository.upsert(old)
+        assertFailsWith<LinkageError> {
+            installer.installBundled(previous.manifest.copy(version = "1.0.1"), { artifact }) {
+                throw LinkageError("incompatible entry point")
+            }
+        }
+        assertEquals(old, repository.snapshot().plugins.single())
+        assertTrue(File(previous.artifactPath).readBytes().contentEquals(artifact))
+        assertFalse(root.resolve("installed").resolve("fixture").resolve("1.0.1").exists())
+    }
+
     private fun createInstaller(
         repository: InstalledSourcePluginRepository,
         entry: SourcePluginIndexEntry,
@@ -173,8 +227,8 @@ class SourcePluginInstallerTest {
         """
         {
           "id":"${entry.id}","name":"Fixture plugin","version":"${entry.version}",
-          "pluginApiVersion":1,"minHostVersion":"1.0.0",
-          "entryClass":"me.him188.ani.app.domain.sourceplugin.LoaderFixtureEntryPoint",
+          "pluginApiVersion":3,"minHostVersion":"1.0.0",
+          "entryClass":"com.wynime.app.domain.sourceplugin.LoaderFixtureEntryPoint",
           "website":"https://fixture.invalid","platforms":["desktop"],
           "artifacts":{"desktop":{"url":"artifacts/fixture.jar","sha256":"$artifactSha256","format":"jar"}}
         }
@@ -190,8 +244,8 @@ class SourcePluginInstallerTest {
         val artifact = root.resolve("fixture.jar")
         JarOutputStream(FileOutputStream(File(artifact.absolutePath))).use { output ->
             listOf(
-                "me/him188/ani/app/domain/sourceplugin/LoaderFixtureEntryPoint.class",
-                "me/him188/ani/app/domain/sourceplugin/LoaderFixturePlugin.class",
+                "com/wynime/app/domain/sourceplugin/LoaderFixtureEntryPoint.class",
+                "com/wynime/app/domain/sourceplugin/LoaderFixturePlugin.class",
             ).forEach { resource ->
                 output.putNextEntry(JarEntry(resource))
                 javaClass.classLoader.getResourceAsStream(resource).use { input ->

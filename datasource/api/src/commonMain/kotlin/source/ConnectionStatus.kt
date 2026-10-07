@@ -1,8 +1,5 @@
-package me.him188.ani.datasources.api.source
+package com.wynime.datasources.api.source
 
-/**
- * @see MediaSource.checkConnection
- */
 enum class ConnectionStatus {
     SUCCESS,
     FAILED,

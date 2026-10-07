@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui
+package com.wynime.app.videoplayer.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,9 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import me.him188.ani.app.videoplayer.ui.gesture.GestureIndicator
-import me.him188.ani.app.videoplayer.ui.gesture.rememberGestureIndicatorState
-
+import com.wynime.app.videoplayer.ui.gesture.GestureIndicator
+import com.wynime.app.videoplayer.ui.gesture.rememberGestureIndicatorState
 
 @Composable
 private fun SeekPositionIndicator(
@@ -78,7 +68,6 @@ private fun PreviewSeekPositionIndicatorBackwardMinutes() {
         SeekPositionIndicator(deltaDuration = -90)
     }
 }
-
 
 @Preview
 @Composable

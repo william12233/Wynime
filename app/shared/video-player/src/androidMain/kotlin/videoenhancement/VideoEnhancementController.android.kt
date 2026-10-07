@@ -1,22 +1,13 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 
-package me.him188.ani.app.videoplayer.videoenhancement
+package com.wynime.app.videoplayer.videoenhancement
 
 import androidx.media3.exoplayer.ExoPlayer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.PlayerKernelConfig
+import com.wynime.app.data.models.preference.PlayerKernelConfig
 import org.openani.mediamp.MediampPlayer
 import kotlin.coroutines.CoroutineContext
 
@@ -46,8 +37,7 @@ private class ExoPlayerVideoEnhancementController(
     private var appliedHeight = 0
 
     init {
-        // Media3 requires the effect graph to exist before the first prepare in order to
-        // support switching effects while playback is active.
+
         scope.launch {
             if (preinitVideoEffects.first()) {
                 exoPlayer.setVideoEffects(emptyList())

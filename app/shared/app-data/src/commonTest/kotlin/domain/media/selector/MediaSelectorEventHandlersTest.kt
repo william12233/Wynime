@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.first
@@ -15,11 +6,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_PRIMARY_WEB
-import me.him188.ani.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_SECONDARY_WEB
-import me.him188.ani.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
-import me.him188.ani.test.TestContainer
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_PRIMARY_WEB
+import com.wynime.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_SECONDARY_WEB
+import com.wynime.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
+import com.wynime.test.TestContainer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -150,7 +141,6 @@ class MediaSelectorEventHandlersTest {
         testScope.runCurrent()
         testScope.advanceTimeBy(500)
 
-        // PINNED: SAVE-03 挂载 scope 在 debounce 期间被取消则该次变更不落盘; 重构改为保存必达时翻转此断言
         job.cancel()
         testScope.advanceUntilIdle()
         assertEquals(emptyList(), saved)

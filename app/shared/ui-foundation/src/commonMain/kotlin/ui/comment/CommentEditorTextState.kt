@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,12 +15,6 @@ class CommentEditorTextState(
     var textField by mutableStateOf(TextFieldValue(initialText))
         private set
 
-    /**
-     * 在当前位置插入文本，清除 selection 状态
-     *
-     * @param value 插入的文本
-     * @param cursorOffset 相较于插入前的 [TextFieldValue.selection] 偏移
-     */
     fun insertTextAt(
         value: String,
         cursorOffset: Int = value.length
@@ -41,12 +35,6 @@ class CommentEditorTextState(
         )
     }
 
-    /**
-     * 将当前选择的文本以字符包裹，若未选择文本则相当于 insert
-     *
-     * @param value 插入的文本
-     * @param secondSliceIndex 将 [value] 按此索引一分为二，前半段不包含此索引
-     */
     fun wrapSelectionWith(
         value: String,
         secondSliceIndex: Int
@@ -83,7 +71,7 @@ class CommentEditorTextState(
     fun override(value: TextFieldValue) {
         textField = value
     }
-    
+
     companion object {
         val Saver: Saver<CommentEditorTextState, Any> = listSaver(
             save = { original ->
@@ -92,7 +80,7 @@ class CommentEditorTextState(
                 )
             },
             restore = { saveable ->
-                CommentEditorTextState("").apply { 
+                CommentEditorTextState("").apply {
                     override(with(TextFieldValue.Saver) { restore(saveable[0]!!) }!!)
                 }
             }

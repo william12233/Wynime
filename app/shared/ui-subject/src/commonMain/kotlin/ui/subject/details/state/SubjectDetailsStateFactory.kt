@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.state
+package com.wynime.app.ui.subject.details.state
 
 import androidx.paging.LoadState
 import androidx.paging.LoadStates
@@ -37,39 +28,39 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
-import me.him188.ani.app.data.models.subject.RelatedCharacterInfo
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectProgressInfo
-import me.him188.ani.app.data.network.BangumiRelatedPeopleService
-import me.him188.ani.app.data.repository.episode.BangumiCommentRepository
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepository
-import me.him188.ani.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.data.repository.subject.SubjectRelationsRepository
-import me.him188.ani.app.data.models.comment.CommentReportTargetType
-import me.him188.ani.app.data.models.player.playProgressByEpisodeId
-import me.him188.ani.app.data.network.AniCommentReportService
-import me.him188.ani.app.ui.comment.CommentMapperContext.parseToUIComment
-import me.him188.ani.app.ui.comment.CommentMapperContext.toCommentVoteValue
-import me.him188.ani.app.ui.comment.CommentReportState
-import me.him188.ani.app.ui.comment.CommentState
-import me.him188.ani.app.ui.comment.UICommentSource
-import me.him188.ani.app.ui.comment.reportSnapshotText
-import me.him188.ani.app.ui.comment.toDataReason
-import me.him188.ani.app.ui.foundation.produceState
-import me.him188.ani.app.ui.rating.EditableRatingActions
-import me.him188.ani.app.ui.rating.RatingEditController
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.app.ui.subject.collection.components.SubjectCollectionTypeEditActions
-import me.him188.ani.app.ui.subject.details.updateRating
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListUiState
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.api.topic.isDoneOrDropped
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.RelatedCharacterInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectProgressInfo
+import com.wynime.app.data.network.BangumiRelatedPeopleService
+import com.wynime.app.data.repository.episode.BangumiCommentRepository
+import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
+import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.subject.SubjectRelationsRepository
+import com.wynime.app.data.models.comment.CommentReportTargetType
+import com.wynime.app.data.models.player.playProgressByEpisodeId
+import com.wynime.app.data.network.WynimeCommentReportService
+import com.wynime.app.ui.comment.CommentMapperContext.parseToUIComment
+import com.wynime.app.ui.comment.CommentMapperContext.toCommentVoteValue
+import com.wynime.app.ui.comment.CommentReportState
+import com.wynime.app.ui.comment.CommentState
+import com.wynime.app.ui.comment.UICommentSource
+import com.wynime.app.ui.comment.reportSnapshotText
+import com.wynime.app.ui.comment.toDataReason
+import com.wynime.app.ui.foundation.produceState
+import com.wynime.app.ui.rating.EditableRatingActions
+import com.wynime.app.ui.rating.RatingEditController
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.collection.components.SubjectCollectionTypeEditActions
+import com.wynime.app.ui.subject.details.updateRating
+import com.wynime.app.ui.subject.episode.list.EpisodeListUiState
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
+import com.wynime.utils.platform.annotations.TestOnly
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.time.Clock
@@ -79,10 +70,6 @@ interface SubjectDetailsStateFactory {
     fun create(subjectInfoFlow: Flow<SubjectInfo>): Flow<SubjectDetailsState>
     fun create(subjectInfo: SubjectInfo): Flow<SubjectDetailsState>
 
-    /**
-     * @param placeholder 通常是仅仅包含少量信息的预加载的 subject 信息.
-     *        例如从探索页导航到详情页时, subject 名字和封面图时已知的, 可以作为预加载信息以第一时间显示一些东西.
-     */
     fun create(
         subjectId: Int,
         placeholder: SubjectInfo? = null
@@ -98,7 +85,7 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
     private val bangumiRelatedPeopleService: BangumiRelatedPeopleService by inject()
     private val subjectRelationsRepository: SubjectRelationsRepository by inject()
     private val bangumiCommentRepository: BangumiCommentRepository by inject()
-    private val commentReportService: AniCommentReportService by inject()
+    private val commentReportService: WynimeCommentReportService by inject()
     private val setSubjectCollectionTypeOrDeleteUseCase: SetSubjectCollectionTypeOrDeleteUseCase by inject()
 
     override fun create(
@@ -196,7 +183,6 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
             SubjectCollectionTypeEditActions by editableSubjectCollectionTypeState,
             EditableRatingActions by ratingEditController {}
 
-
         val commentsCount = MutableStateFlow<Int?>(null)
         val comments = bangumiCommentRepository.subjectCommentsPager(subjectId) { commentsCount.value = it }
             .map { page ->
@@ -210,8 +196,8 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
             onSubmitCommentReaction = { _, _, _ -> },
             backgroundScope = this,
             onSubmitCommentVote = { comment, vote ->
-                // 只有 Ani 源的评价可投票; Bangumi 源的评价 reviewId 为空
-                if (comment.source == UICommentSource.ANI && comment.sourceCommentId.isNotEmpty()) {
+
+                if (comment.source == UICommentSource.WYNIME && comment.sourceCommentId.isNotEmpty()) {
                     bangumiCommentRepository.voteSubjectReview(
                         subjectId = subjectId,
                         reviewId = comment.sourceCommentId,
@@ -249,7 +235,6 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
             }
         }
 
-        // 只订阅本条目剧集的播放记录, 换算成按剧集 id 索引的进度
         @OptIn(ExperimentalCoroutinesApi::class)
         val playProgressFlow = subjectCollectionFlow
             .map { collection -> collection.episodes.map { it.episodeId } }
@@ -288,7 +273,7 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
             }.cachedIn(this),
             relatedSubjectsPager = bangumiRelatedPeopleService.relatedSubjectsFlow(subjectId)
                 .map {
-                    // This response contains the complete list; no further pages will arrive.
+
                     PagingData.from(
                         it,
                         sourceLoadStates = LoadStates(
@@ -305,7 +290,7 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
             subjectCommentState = subjectCommentState,
             subjectCommentReportState = subjectCommentReportState,
             actions = actions,
-            // 页面展示内容只从这一处派生, 每分钟重算一次以跟上日期变化 (播出状态、未开播判断)
+
             uiState = combine(
                 minuteTicker,
                 subjectCollectionFlow,
@@ -361,14 +346,12 @@ class TestSubjectDetailsStateFactory : SubjectDetailsStateFactory {
 
 }
 
-/** 角色区块露出数 (Figma 定稿 1515:336: 8 个). */
 private const val EXPOSED_CHARACTERS_COUNT = 8
 
-/** 制作人员露出数 (Figma 定稿三栏右栏卡: 10 个职位; 双栏/手机由 UI 层截取前 6). */
 private const val EXPOSED_STAFF_COUNT = 10
 
 private fun List<RelatedCharacterInfo>.computeExposed(): List<RelatedCharacterInfo> {
-    // 主角优先; 主角不足 4 个时按原始顺序补足 (含配角).
+
     val mains = filter { it.isMainCharacter() }
     return if (mains.size >= 4) {
         mains.take(EXPOSED_CHARACTERS_COUNT)

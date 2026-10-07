@@ -1,14 +1,14 @@
 package tw.wynime.sources.dida
 
-import me.him188.ani.source.plugin.api.SourceChannel
-import me.him188.ani.source.plugin.api.SourceChannelEpisodes
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.SourceChannel
+import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractJsonStringField
@@ -31,8 +31,8 @@ internal class DidaPlugin(context: SourcePluginContext) : SitePluginBase(
     iconUrl = "https://www.didahd.pro/template/mytheme/statics/img/newfavicon.png",
     description = "嘀嗒影視公開番劇與分集來源",
 ) {
-    override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
-        val results = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+    override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {
+        val results = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (variant in didaSearchQueryVariants(request.query)) {
             val page = requestPage(
                 "$rootUrl/search/-------------.html?wd=${urlEncode(variant)}",
@@ -61,7 +61,7 @@ internal class DidaPlugin(context: SourcePluginContext) : SitePluginBase(
         return variants.distinct()
     }
 
-    private fun aliasSearchLinks(html: String, query: String): List<me.him188.ani.source.plugin.api.SourceSubject> {
+    private fun aliasSearchLinks(html: String, query: String): List<com.wynime.source.plugin.api.SourceSubject> {
         val detailPattern = Regex("(?i)href=[\\\"']([^\\\"']*/detail/(\\d+)\\.html)[\\\"']")
         return Regex("(?is)<li\\b[^>]*>.*?</li>")
             .findAll(html)
@@ -96,7 +96,7 @@ internal class DidaPlugin(context: SourcePluginContext) : SitePluginBase(
         val page = requestPage("$rootUrl/detail/$subjectId.html")
         val title = page.title.substringBefore("-").substringBefore("_").ifBlank { subjectId }
         val subject = subject(subjectId, title, page.finalUrl)
-        val groups = linkedMapOf<String, MutableList<me.him188.ani.source.plugin.api.SourceEpisode>>()
+        val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
         links(page.html).forEach { link ->
             val match = Regex("(?i)/play/(\\d+)-(\\d+)-(\\d+)\\.html").find(link.href) ?: return@forEach
             if (match.groupValues[1] != subjectId) return@forEach

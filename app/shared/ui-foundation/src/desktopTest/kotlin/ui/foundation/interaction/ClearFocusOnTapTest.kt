@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.interaction
+package com.wynime.app.ui.foundation.interaction
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -28,13 +19,13 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ClearFocusOnTapTest {
     @Test
-    fun `does not merge a descendant pane title`() = runAniComposeUiTest {
+    fun `does not merge a descendant pane title`() = runWynimeComposeUiTest {
         setContent {
             Box(
                 Modifier
@@ -46,12 +37,11 @@ class ClearFocusOnTapTest {
             }
         }
 
-        // Layout Inspector reads the merged tree. This used to throw while merging PaneTitle.
         onNodeWithTag("root").fetchSemanticsNode()
     }
 
     @Test
-    fun `handled descendant tap keeps focus while background tap clears it`() = runAniComposeUiTest {
+    fun `handled descendant tap keeps focus while background tap clears it`() = runWynimeComposeUiTest {
         val focusRequester = FocusRequester()
         val keyboard = RecordingSoftwareKeyboardController()
         setContent {

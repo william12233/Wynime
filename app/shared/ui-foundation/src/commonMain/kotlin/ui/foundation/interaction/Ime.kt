@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.interaction
+package com.wynime.app.ui.foundation.interaction
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -23,13 +23,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
-/**
- * 当后代没有消费 tap 时清除焦点并隐藏软键盘.
- *
- * 清除焦点是 pointer side effect, 并不是可访问的 click action, 因此这里刻意使用不带语义的
- * pointer input. 若在 APP 根节点使用 `clickable`, 会合并整个后代语义树, 并把本来不是控件的背景
- * 暴露为无障碍点击操作.
- */
 fun Modifier.clearFocusOnUnhandledTap(): Modifier = composed {
     val focusManager by rememberUpdatedState(LocalFocusManager.current)
     val keyboard by rememberUpdatedState(LocalSoftwareKeyboardController.current)
@@ -75,13 +68,10 @@ fun Modifier.clearFocusOnKeyboardDismiss(onClear: (() -> Unit)? = null): Modifie
 @Composable
 expect inline fun isImeVisible(): Boolean
 
-/**
- * 返回 IME 最大的高度
- */
 @Composable
 fun rememberImeMaxHeight(): State<Int> {
     val density = LocalDensity.current
-    
+
     val imePadding by rememberUpdatedState(WindowInsets.ime.getBottom(density))
     val navigationBarPadding by rememberUpdatedState(WindowInsets.navigationBars.getBottom(density))
 

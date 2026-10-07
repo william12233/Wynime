@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import android.content.Context
 import android.util.Log
@@ -26,10 +17,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import me.him188.ani.app.domain.foundation.DefaultHttpClientProvider
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.prefetch.MediaTimeRange
-import me.him188.ani.app.domain.settings.NoProxyProvider
+import com.wynime.app.domain.foundation.DefaultHttpClientProvider
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.prefetch.MediaTimeRange
+import com.wynime.app.domain.settings.NoProxyProvider
 import org.openani.mediamp.source.UriMediaData
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -46,19 +37,10 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * 在真机/模拟器上用真实的 ExoPlayer (media3) 通过 [PlatformHlsPlaybackPreparer] 的本地代理播放真实 HLS 夹具
- * (`assets/hls`, 与桌面端测试共用), 验证:
- *
- * - 各种播放列表形态 (普通点播, 主播放列表, AES-128, fMP4, 过滤广告) 都能正常起播并跳转;
- * - 在慢速源站上, 预缓存跳转目标后, 跳转到该位置的起播时间明显缩短, 且不再访问源站.
- */
 @OptIn(UnstableApi::class)
 class ExoPlayerHlsProxyDeviceTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context get() = instrumentation.targetContext
-
-    // ---------------- 测试 ----------------
 
     @Test
     fun exoplayerPlaysEveryVariantThroughTheProxyAndSeeks() = withFixture {
@@ -100,9 +82,8 @@ class ExoPlayerHlsProxyDeviceTest {
     @Test
     fun prefetchLetsExoplayerResumeFasterAfterSeekingOnASlowOrigin() = withFixture {
         origin.segmentLatencyMillis = 1_500
-        val target = 48_000L // 相当于跳过 OP 后的位置
+        val target = 48_000L
 
-        // 不预缓存
         val coldMillis = run {
             val result = preparer.prepare(UriMediaData(origin.url("/hls/vod/index.m3u8")), HlsPlaybackOptions(proxySegments = true))
             val session = assertNotNull(result.session)
@@ -121,7 +102,6 @@ class ExoPlayerHlsProxyDeviceTest {
             }
         }
 
-        // 预缓存 [48s, 78s) 后再跳转
         val warmMillis = run {
             val result = preparer.prepare(UriMediaData(origin.url("/hls/vod/index.m3u8")), HlsPlaybackOptions(proxySegments = true))
             val session = assertNotNull(result.session)
@@ -160,8 +140,6 @@ class ExoPlayerHlsProxyDeviceTest {
         )
     }
 
-    // ---------------- 基础设施 ----------------
-
     private class Fixture(val origin: AssetOrigin, val preparer: PlatformHlsPlaybackPreparer)
 
     private fun withFixture(block: suspend Fixture.() -> Unit) = runBlocking {
@@ -184,10 +162,6 @@ class ExoPlayerHlsProxyDeviceTest {
 
     private class Snapshot(val state: Int, val positionMillis: Long, val durationMillis: Long)
 
-    /**
-     * 在主线程上持有一个真实的 ExoPlayer. 不设置 Surface: 播放时钟由音频驱动, 足以验证加载与跳转.
-     * 缓冲上限设为 6 秒, 避免播放器自己一路缓冲到跳转目标, 影响对预缓存效果的测量.
-     */
     private inner class PlayerHarness(context: Context) {
         @Volatile
         var error: PlaybackException? = null
@@ -242,9 +216,6 @@ class ExoPlayerHlsProxyDeviceTest {
         fun release() = onMain { player.release() }
     }
 
-    /**
-     * 把 assets 里的 HLS 夹具作为源站提供的极简 HTTP 服务 (Android 上没有 JDK 自带的 HttpServer).
-     */
     private class AssetOrigin(private val context: Context) : AutoCloseable {
         private val closed = AtomicBoolean(false)
         private val serverSocket = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))

@@ -1,6 +1,6 @@
-package me.him188.ani.app.domain.media.fetch
+package com.wynime.app.domain.media.fetch
 
-import me.him188.ani.app.data.models.preference.ProxyAuthorization
+import com.wynime.app.data.models.preference.ProxyAuthorization
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

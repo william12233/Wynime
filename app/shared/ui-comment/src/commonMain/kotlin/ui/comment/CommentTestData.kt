@@ -1,27 +1,17 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.CoroutineScope
-import me.him188.ani.app.data.models.UserInfo
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.app.ui.richtext.UIRichElement
-import me.him188.ani.app.ui.search.createTestPager
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.data.models.UserInfo
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.app.ui.richtext.UIRichElement
+import com.wynime.app.ui.search.createTestPager
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.currentTimeMillis
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.minutes
-
 
 @Composable
 @TestOnly

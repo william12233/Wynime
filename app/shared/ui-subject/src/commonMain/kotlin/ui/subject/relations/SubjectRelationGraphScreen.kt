@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.relations
+package com.wynime.app.ui.subject.relations
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.animateScrollBy
@@ -58,29 +49,23 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.subject.SubjectRelationGraph
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphSubject
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.HorizontalScrollControlScaffoldOnDesktop
-import me.him188.ani.app.ui.foundation.HorizontalScrollControlState
-import me.him188.ani.app.ui.foundation.rememberHorizontalScrollControlState
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_relation_graph_summary
-import me.him188.ani.app.ui.lang.subject_relation_graph_summary_main_only
-import me.him188.ani.app.ui.lang.subject_relation_graph_title
-import me.him188.ani.app.ui.lang.subject_relation_graph_truncated
-import me.him188.ani.app.ui.search.LoadErrorCard
+import com.wynime.app.data.models.subject.SubjectRelationGraph
+import com.wynime.app.data.models.subject.SubjectRelationGraphSubject
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.HorizontalScrollControlScaffoldOnDesktop
+import com.wynime.app.ui.foundation.HorizontalScrollControlState
+import com.wynime.app.ui.foundation.rememberHorizontalScrollControlState
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_relation_graph_summary
+import com.wynime.app.ui.lang.subject_relation_graph_summary_main_only
+import com.wynime.app.ui.lang.subject_relation_graph_title
+import com.wynime.app.ui.lang.subject_relation_graph_truncated
+import com.wynime.app.ui.search.LoadErrorCard
 import org.jetbrains.compose.resources.stringResource
 
 const val SUBJECT_RELATION_GRAPH_TEST_TAG = "SubjectRelationGraph"
 
-/**
- * 系列关系图页面. 主线条目构成一条时间线, 番外和衍生挂在对应的主线条目下.
- *
- * 可用宽度小于 [WIDE_LAYOUT_MIN_WIDTH] 时时间线纵向排列 ([SubjectRelationGraphColumn]),
- * 否则横向排列 ([SubjectRelationGraphRow]).
- */
 @Composable
 fun SubjectRelationGraphScreen(
     vm: SubjectRelationGraphViewModel,
@@ -105,16 +90,16 @@ fun SubjectRelationGraphScreen(
     Scaffold(
         modifier,
         topBar = {
-            AniTopAppBar(
+            WynimeTopAppBar(
                 title = { Text(stringResource(Lang.subject_relation_graph_title)) },
                 navigationIcon = navigationIcon,
                 windowInsets = windowInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
             )
         },
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { paddingValues ->
-        // 页面可能显示在窄的 pane 中, 因此用实际可用宽度而不是 WindowSizeClass
+
         BoxWithConstraints(Modifier.padding(paddingValues).fillMaxSize()) {
             val graph = state.graph
             when {
@@ -145,23 +130,15 @@ fun SubjectRelationGraphScreen(
     }
 }
 
-/**
- * [SubjectRelationGraph] 中与布局无关的派生信息.
- */
 @Immutable
 internal class SubjectRelationGraphPresentation(
     val graph: SubjectRelationGraph,
 ) {
-    /**
-     * 用户查看的条目所在的主线位置: 它自己在主线上, 或它是该主线条目的分支. 找不到时为 -1.
-     */
+
     val currentMainIndex: Int = graph.mainline.indexOfFirst { node ->
         node.subject.subjectId == graph.subjectId || node.branches.any { it.subject.subjectId == graph.subjectId }
     }
 
-    /**
-     * 每个主线条目是 "第几部". 非正片条目不计数, 为 `null`.
-     */
     val ordinals: List<Int?> = run {
         var count = 0
         graph.mainline.map { if (it.isMinor) null else ++count }
@@ -170,13 +147,9 @@ internal class SubjectRelationGraphPresentation(
     val seriesName: String = (graph.mainline.firstOrNull { !it.isMinor } ?: graph.mainline.firstOrNull())
         ?.subject?.displayName.orEmpty()
 
-    /** 时间线走到 [index] 处是否已经经过用户查看的条目 */
     fun isReached(index: Int): Boolean = index <= currentMainIndex
 }
 
-/**
- * 纵向时间线, 适合手机.
- */
 @Composable
 internal fun SubjectRelationGraphColumn(
     presentation: SubjectRelationGraphPresentation,
@@ -185,8 +158,7 @@ internal fun SubjectRelationGraphColumn(
     contentPadding: PaddingValues = PaddingValues(start = 12.dp, end = 16.dp, bottom = 24.dp),
 ) {
     val graph = presentation.graph
-    // 第 0 项是标题, 因此下标 currentMainIndex 是当前条目的前一部: 把它显示在顶部以保留上下文.
-    // 当前条目在前两部时从标题开始显示.
+
     val listState = rememberLazyListState(
         initialFirstVisibleItemIndex = presentation.currentMainIndex.takeIf { it > 1 } ?: 0,
     )
@@ -199,7 +171,7 @@ internal fun SubjectRelationGraphColumn(
             Row(
                 Modifier.fillMaxWidth().timelineVertical(
                     colors = colors,
-                    // 圆点对齐海报的垂直中心
+
                     dotCenterY = SubjectRelationGraphDefaults.CompactCardPadding +
                             SubjectRelationGraphDefaults.CompactPosterHeight / 2,
                     dot = timelineDot(presentation, index),
@@ -228,7 +200,7 @@ internal fun SubjectRelationGraphColumn(
                         collapsedCount = SubjectRelationGraphDefaults.COLLAPSED_BRANCH_COUNT_COMPACT,
                         nameMaxLines = 1,
                         onClick = onClickSubject,
-                        // 列表左边缘与海报对齐, 支线从海报底部垂下
+
                         Modifier.padding(horizontal = SubjectRelationGraphDefaults.CompactCardPadding),
                         connectorTopExtent = SubjectRelationGraphDefaults.CompactCardPadding + branchListSpacing,
                     )
@@ -241,9 +213,6 @@ internal fun SubjectRelationGraphColumn(
     }
 }
 
-/**
- * 横向时间线, 适合平板和桌面. 时间轴在上方, 每个主线条目是一列: 年份, 大海报, 以及它的相关条目列表.
- */
 @Composable
 internal fun SubjectRelationGraphRow(
     presentation: SubjectRelationGraphPresentation,
@@ -255,7 +224,7 @@ internal fun SubjectRelationGraphRow(
     val horizontalScrollState = rememberScrollState()
     val density = LocalDensity.current
     LaunchedEffect(presentation) {
-        // 让当前条目的前一部显示在最左, 保留上下文
+
         val index = (presentation.currentMainIndex - 1).coerceAtLeast(0)
         horizontalScrollState.scrollTo(with(density) { (WIDE_COLUMN_WIDTH * index).roundToPx() })
     }
@@ -271,7 +240,7 @@ internal fun SubjectRelationGraphRow(
             presentation,
             Modifier.padding(start = horizontalPadding, end = horizontalPadding, top = 4.dp, bottom = 24.dp),
         )
-        // 桌面端鼠标没有横向滚轮, 悬停时显示左右翻页按钮
+
         HorizontalScrollControlScaffoldOnDesktop(
             rememberHorizontalScrollControlState(horizontalScrollState) { direction ->
                 val distance = with(density) { (WIDE_COLUMN_WIDTH * 3).toPx() }
@@ -339,9 +308,6 @@ internal fun SubjectRelationGraphRow(
     }
 }
 
-/**
- * 页面的主轴是横向的, 而鼠标通常只有纵向滚轮: 当页面在滚轮方向上无法纵向滚动时, 用纵向滚轮横向滚动时间线.
- */
 private fun Modifier.verticalWheelScrollsHorizontally(
     horizontalScrollState: ScrollState,
     verticalScrollState: ScrollState,
@@ -416,7 +382,6 @@ private fun TruncatedHint(modifier: Modifier = Modifier) {
     )
 }
 
-/** 手机上时间线到主线卡片的距离 */
 private val TIMELINE_GUTTER = 32.dp
 private val WIDE_LAYOUT_MIN_WIDTH = 600.dp
 private val WIDE_COLUMN_WIDTH = 204.dp

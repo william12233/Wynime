@@ -1,20 +1,8 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.media.selector.testFramework
 
-package me.him188.ani.app.domain.media.selector.testFramework
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.source.MediaFetchRequest
 
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-
-/**
- * @see MediaFetchRequest
- */
 class MediaFetchRequestBuilder(
     var subjectId: String = "1",
     var episodeId: String = "1",

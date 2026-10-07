@@ -1,24 +1,13 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.download
+package com.wynime.app.domain.media.download
 
 import kotlin.test.Test
 import kotlin.test.assertNull
 import kotlin.test.assertSame
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.EpisodeRange
 
 class DownloadReusePolicyTest {
-    /**
-     * sort 为 14 但 ep 为 2 的一集, 例如第二季的第二集.
-     */
+
     private val episode = requestTestEpisode(14).copy(ep = EpisodeSort(2))
     private val season = requestTestMedia(1, EpisodeRange.range(EpisodeSort(1), EpisodeSort(12)))
     private val single = requestTestMedia(2, EpisodeRange.single(EpisodeSort(2)))

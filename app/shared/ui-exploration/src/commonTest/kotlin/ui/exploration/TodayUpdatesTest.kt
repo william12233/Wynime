@@ -1,15 +1,8 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration
+package com.wynime.app.ui.exploration
 
 import kotlinx.datetime.TimeZone
-import me.him188.ani.app.data.network.BangumiCalendarDay
-import me.him188.ani.app.data.network.BangumiCalendarEntry
+import com.wynime.app.data.network.BangumiCalendarDay
+import com.wynime.app.data.network.BangumiCalendarEntry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.hours

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.components
+package com.wynime.app.ui.download.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,10 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_pause_selected
-import me.him188.ani.app.ui.lang.cache_management_resume_selected
-import me.him188.ani.app.ui.lang.cache_subject_delete
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_pause_selected
+import com.wynime.app.ui.lang.cache_management_resume_selected
+import com.wynime.app.ui.lang.cache_subject_delete
 import org.jetbrains.compose.resources.stringResource
 
 object DownloadSelectionToolbarTestTags {
@@ -45,9 +36,6 @@ object DownloadSelectionToolbarTestTags {
     const val DELETE = "cache_selection_toolbar_delete"
 }
 
-/**
- * 多选模式下的浮动批量操作工具栏 (M3 floating toolbar): 继续 / 暂停 / 删除.
- */
 @Composable
 internal fun DownloadSelectionFloatingToolbar(
     resumeEnabled: Boolean,

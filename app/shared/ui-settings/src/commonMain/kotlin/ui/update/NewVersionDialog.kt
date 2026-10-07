@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,13 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.text.ProvideTextStyleContentColor
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_update_popup_auto_update
-import me.him188.ani.app.ui.lang.settings_update_popup_close
-import me.him188.ani.app.ui.lang.settings_update_popup_new_version
-import me.him188.ani.app.ui.lang.settings_update_popup_see_details
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.text.ProvideTextStyleContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_update_popup_auto_update
+import com.wynime.app.ui.lang.settings_update_popup_close
+import com.wynime.app.ui.lang.settings_update_popup_new_version
+import com.wynime.app.ui.lang.settings_update_popup_see_details
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -132,7 +123,7 @@ fun BasicNotificationPopupCard(
                 .padding(horizontal = 24.dp, vertical = 20.dp)
                 .widthIn(min = 280.dp, max = 380.dp),
         ) {
-            /* ─── Title + Dismiss ─────────────────────────────────────────────── */
+
             Row(
                 verticalAlignment = Alignment.Top,
                 modifier = Modifier.fillMaxWidth(),
@@ -154,16 +145,14 @@ fun BasicNotificationPopupCard(
 
             Spacer(Modifier.height(16.dp))
 
-            /* ─── Release Notes ──────────────────────────────────────────────── */
             Column {
                 content()
             }
 
             Spacer(Modifier.height(16.dp))
 
-            /* ─── Action Buttons ────────────────────────────────────────────── */
             Row(
-//                horizontalArrangement = Arrangement.spacedBy(0.dp, Alignment.End),
+
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -194,7 +183,7 @@ object NotificationPopupDefaults {
 @Preview
 @Composable
 private fun NewVersionDialogPreview() {
-    ProvideCompositionLocalsForPreview { // your project’s theme wrapper
+    ProvideCompositionLocalsForPreview {
         Surface {
             NewVersionPopupCard(
                 version = "4.8.0‑alpha01",

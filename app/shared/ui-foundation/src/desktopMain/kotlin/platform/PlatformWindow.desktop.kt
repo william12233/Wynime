@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform
+package com.wynime.app.platform
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
@@ -23,11 +14,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import me.him188.ani.app.platform.window.BasicWindowProc
-import me.him188.ani.app.platform.window.LayoutHitTestOwner
-import me.him188.ani.app.platform.window.LinuxAccentColorMonitor
-import me.him188.ani.utils.platform.Platform
-import me.him188.ani.utils.platform.isWindows
+import com.wynime.app.platform.window.BasicWindowProc
+import com.wynime.app.platform.window.LayoutHitTestOwner
+import com.wynime.utils.platform.Platform
+import com.wynime.utils.platform.isWindows
 
 actual open class PlatformWindow(
     val windowHandle: Long,
@@ -41,13 +31,9 @@ actual open class PlatformWindow(
 
     internal val windowsWindowProc = MutableStateFlow<BasicWindowProc?>(null)
 
-    // Common desktop accent color for window.
     val accentColor: Flow<Color>
-        get() = when (platform) {
-            is Platform.Linux -> LinuxAccentColorMonitor.accentColor
-            else -> windowsWindowProc.flatMapLatest {
-                it?.accentColor ?: flowOf(Color.Unspecified)
-            }
+        get() = windowsWindowProc.flatMapLatest {
+            it?.accentColor ?: flowOf(Color.Unspecified)
         }
 
     private var isWindowsUndecoratedFullscreen by mutableStateOf(false)

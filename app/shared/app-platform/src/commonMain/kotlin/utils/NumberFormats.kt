@@ -1,7 +1,7 @@
-package me.him188.ani.app.utils
+package com.wynime.app.utils
 
-import me.him188.ani.utils.platform.format2f
-import me.him188.ani.utils.serialization.BigNum
+import com.wynime.utils.platform.format2f
+import com.wynime.utils.serialization.BigNum
 
 fun Float.formatSpeedValue(): String = String.format2f(this).let {
     it.padEnd(it.indexOf('.') + 3, '0')

@@ -1,25 +1,13 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.comment
 
-package me.him188.ani.app.ui.comment
-
-import me.him188.ani.app.data.models.UserInfo
-import me.him188.ani.app.ui.richtext.UIRichElement
+import com.wynime.app.data.models.UserInfo
+import com.wynime.app.ui.richtext.UIRichElement
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
-/**
- * 与 Figma 设计稿 "📐 定稿示例" 对齐的确定性测试数据.
- */
 object CommentItemTestFixtures {
-    /** 固定的 "当前时间", 保证相对时间文案确定. */
+
     val fixedNow: Instant = Instant.parse("2026-08-12T21:00:00+08:00")
 
     private fun text(content: String) = UIRichText(
@@ -37,7 +25,7 @@ object CommentItemTestFixtures {
         avatarUrl = null,
     )
 
-    fun aniComment(
+    fun wynimeComment(
         reactions: List<UICommentReaction> = emptyList(),
         withReply: Boolean = false,
         likeCount: Int = 12,
@@ -62,7 +50,7 @@ object CommentItemTestFixtures {
                     briefReplies = emptyList(),
                     replyCount = 0,
                     rating = null,
-                    source = UICommentSource.ANI,
+                    source = UICommentSource.WYNIME,
                     sourceCommentId = "2",
                     canReply = true,
                 ),
@@ -70,7 +58,7 @@ object CommentItemTestFixtures {
         } else emptyList(),
         replyCount = if (withReply) 5 else 0,
         rating = null,
-        source = UICommentSource.ANI,
+        source = UICommentSource.WYNIME,
         sourceCommentId = "1",
         canReply = true,
         likeCount = likeCount,
@@ -136,19 +124,16 @@ object CommentItemTestFixtures {
         rawContent = content,
     )
 
-    /** 对应 Figma "回应行": 😹 3 + 🎸 2 */
     val defaultReactions = listOf(
         UICommentReaction("bgm11", count = 3, selected = false),
         UICommentReaction("bgm16", count = 2, selected = false),
     )
 
-    /** 对应 Figma "回应行 · 已贴": 😹 4 (toggled) + 🎸 2 */
     val toggledReactions = listOf(
         UICommentReaction("bgm11", count = 4, selected = true),
         UICommentReaction("bgm16", count = 2, selected = false),
     )
 
-    /** 对应 Figma "列表模式": 大量贴纸, 一行放不下 */
     val overflowingReactions = listOf(
         UICommentReaction("bgm2", count = 24, selected = true),
         UICommentReaction("bgm5", count = 18, selected = false),

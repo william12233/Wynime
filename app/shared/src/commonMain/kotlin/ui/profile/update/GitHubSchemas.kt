@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.profile.update
+package com.wynime.app.ui.profile.update
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

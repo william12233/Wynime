@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.download
+package com.wynime.app.domain.media.download
 
 import kotlinx.atomicfu.AtomicLongArray
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -20,7 +11,6 @@ import kotlinx.coroutines.selects.select
 import kotlin.concurrent.Volatile
 import kotlin.time.Duration.Companion.seconds
 
-/** Calculates a moving average download rate from cumulative byte counts. */
 private class RateAverager(
     private val bytes: ReceiveChannel<Long>,
     private val ticker: ReceiveChannel<Unit>,
@@ -88,7 +78,6 @@ private class RateAverager(
     }
 }
 
-/** Returns the moving average rate in bytes per second. */
 internal fun Flow<Long>.averageRate(
     windowSize: Int = 5,
     tickerFlow: Flow<Unit> = flow {

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.video.sidesheet
+package com.wynime.app.ui.subject.episode.video.sidesheet
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -46,30 +37,27 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import me.him188.ani.app.ui.download.subject.contentColorForWatchStatus
-import me.him188.ani.app.ui.foundation.BackgroundScope
-import me.him188.ani.app.ui.foundation.HasBackgroundScope
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.icons.PlayingIcon
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_close
-import me.him188.ani.app.ui.lang.subject_episode_now_playing
-import me.him188.ani.app.ui.lang.video_player_select_episode
-import me.him188.ani.app.ui.subject.episode.EpisodePresentation
-import me.him188.ani.app.ui.subject.episode.TAG_EPISODE_SELECTOR_SHEET
-import me.him188.ani.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
-import me.him188.ani.app.ui.subject.episode.video.settings.SideSheetLayout
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.download.subject.contentColorForWatchStatus
+import com.wynime.app.ui.foundation.BackgroundScope
+import com.wynime.app.ui.foundation.HasBackgroundScope
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.icons.PlayingIcon
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_close
+import com.wynime.app.ui.lang.subject_episode_now_playing
+import com.wynime.app.ui.lang.video_player_select_episode
+import com.wynime.app.ui.subject.episode.EpisodePresentation
+import com.wynime.app.ui.subject.episode.TAG_EPISODE_SELECTOR_SHEET
+import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
+import com.wynime.app.ui.subject.episode.video.settings.SideSheetLayout
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 private typealias Item = EpisodePresentation
 
-/**
- * 播放页面内选集
- */
 @Stable
 class EpisodeSelectorState(
     itemsFlow: Flow<List<Item>>,
@@ -77,16 +65,11 @@ class EpisodeSelectorState(
     private val onSelect: (Item) -> Unit,
     parentCoroutineContext: CoroutineContext,
 ) : HasBackgroundScope by BackgroundScope(parentCoroutineContext) {
-    /**
-     * 可切换的剧集列表
-     */
+
     val items: List<Item> by itemsFlow.produceState(emptyList())
 
     private val currentEpisodeId by currentEpisodeId.produceState(-1)
 
-    /**
-     * 当前选中剧集在 [items] 中的 index. -1 代表未选中
-     */
     val currentIndex by derivedStateOf {
         if (this.currentEpisodeId == -1) {
             -1
@@ -95,9 +78,6 @@ class EpisodeSelectorState(
         }
     }
 
-    /**
-     * 当前选中的剧集
-     */
     val current: Item? by derivedStateOf {
         items.find { it.episodeId == this.currentEpisodeId }
     }
@@ -105,7 +85,7 @@ class EpisodeSelectorState(
     val hasNextEpisode by derivedStateOf {
         val currentIndex = currentIndex
         currentIndex != -1 && currentIndex < items.lastIndex
-                && items[currentIndex + 1].isKnownBroadcast // 仅限下一集开播了
+                && items[currentIndex + 1].isKnownBroadcast
     }
 
     fun select(item: Item) {
@@ -151,7 +131,7 @@ fun EpisodeVideoSideSheets.EpisodeSelectorSheet(
         },
     ) {
         val lazyListState = rememberLazyListState()
-        // 自动滚动到当前选中的剧集
+
         LaunchedEffect(true) {
             val currentIndex = snapshotFlow { state.currentIndex }
                 .filter { it != -1 }
@@ -159,7 +139,7 @@ fun EpisodeVideoSideSheets.EpisodeSelectorSheet(
             if (currentIndex != -1) {
                 lazyListState.scrollToItem(
                     currentIndex,
-                    // 显示半个上个元素
+
                     scrollOffset = -(lazyListState.layoutInfo.visibleItemsInfo.getOrNull(0)?.size?.div(2) ?: 0),
                 )
             }
@@ -200,7 +180,6 @@ fun EpisodeVideoSideSheets.EpisodeSelectorSheet(
         }
     }
 }
-
 
 @Composable
 @TestOnly

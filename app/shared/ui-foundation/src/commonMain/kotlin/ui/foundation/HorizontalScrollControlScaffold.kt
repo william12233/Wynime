@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.gestures.ScrollableState
@@ -35,11 +26,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.foundation.text.ProvideContentColor
 
-/**
- * Provide buttons to navigate horizontally. Effectively works on desktop.
- */
 @Composable
 fun HorizontalScrollControlScaffold(
     state: HorizontalScrollControlState,
@@ -107,16 +95,6 @@ fun HorizontalScrollControlScaffold(
     }
 }
 
-/**
- * Create a [HorizontalScrollControlState] that can be used to navigate horizontally
- *
- * @param scrollableState the incoming scrollable state. Use this to detect
- *      if the content can be scrolled, then finally determine the visibility of navigation button.
- * @param onClickScroll called when clicked navigation button.
- *      `step` is the scroll step, positive means scroll forward.
- *      You should handle actual scrolling in this lambda.
- * @see HorizontalScrollControlScaffold
- */
 @Composable
 fun rememberHorizontalScrollControlState(
     scrollableState: ScrollableState,

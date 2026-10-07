@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.fetch
+package com.wynime.app.domain.media.fetch
 
 import io.ktor.client.plugins.ServerResponseException
 import kotlinx.atomicfu.locks.SynchronizedObject
@@ -39,63 +30,49 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.launch
 import kotlinx.io.IOException
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.episode.displayName
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.nameCnOrName
-import me.him188.ani.app.data.repository.RepositoryAuthorizationException
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.data.repository.RepositoryRateLimitedException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.data.repository.RepositoryServiceUnavailableException
-import me.him188.ani.app.data.repository.RepositoryUnknownException
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.app.domain.mediasource.web.BlockReason
-import me.him188.ani.app.domain.mediasource.web.BlockedException
-import me.him188.ani.app.domain.sourceplugin.SourcePluginFailure
-import me.him188.ani.app.domain.sourceplugin.SourcePluginNoMatchException
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.toStringMultiline
-import me.him188.ani.utils.coroutines.cancellableCoroutineScope
-import me.him188.ani.utils.coroutines.flows.flowOfEmptyList
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.collections.EnumMap
-import me.him188.ani.utils.platform.collections.ImmutableEnumMap
-import me.him188.ani.utils.platform.currentTimeMillis
-import me.him188.ani.utils.platform.Uuid
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.episode.displayName
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.nameCnOrName
+import com.wynime.app.data.repository.RepositoryAuthorizationException
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.data.repository.RepositoryRateLimitedException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.data.repository.RepositoryServiceUnavailableException
+import com.wynime.app.data.repository.RepositoryUnknownException
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.app.domain.mediasource.web.BlockReason
+import com.wynime.app.domain.mediasource.web.BlockedException
+import com.wynime.app.domain.sourceplugin.SourcePluginFailure
+import com.wynime.app.domain.sourceplugin.SourcePluginNoMatchException
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.toStringMultiline
+import com.wynime.utils.coroutines.cancellableCoroutineScope
+import com.wynime.utils.coroutines.flows.flowOfEmptyList
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.collections.EnumMap
+import com.wynime.utils.platform.collections.ImmutableEnumMap
+import com.wynime.utils.platform.currentTimeMillis
+import com.wynime.utils.platform.Uuid
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration.Companion.seconds
 
 private val DEFAULT_RATE_LIMIT_RETRY_DELAY = 30.seconds
 
-/**
- * [MediaFetcher], 为支持从多个 [MediaSource] 并行获取 [Media] 的综合查询工具.
- *
- * 封装了获取查询进度, 重试失败的查询, 以及合并结果等功能.
- *
- * @see MediaSourceMediaFetcher
- */
 interface MediaFetcher {
-    /**
-     * 创建一个惰性查询会话, 从多个 [MediaSource] 并行获取 [Media].
-     *
-     * 查询仅在 [MediaFetchSession.cumulativeResults] 被 collect 时开始.
-     *
-     * @param flowContext 传递给 [MediaFetchSession] 的 flow 的 context. (用于 [Flow.flowOn].) 将会与 [MediaSourceMediaFetcher.flowContext] 叠加.
-     * @see MediaFetchRequest.Companion.create
-     */
+
     fun newSession(
         request: MediaFetchRequest,
         flowContext: CoroutineContext = EmptyCoroutineContext
@@ -103,29 +80,12 @@ interface MediaFetcher {
         return newSession(flowOf(request), flowContext)
     }
 
-    /**
-     * 创建一个惰性查询会话, 从多个 [MediaSource] 并行获取 [Media].
-     *
-     * 查询仅在 [MediaFetchSession.cumulativeResults] 被 collect 时开始.
-     *
-     * @param requestLazy 用于动态请求的 [MediaFetchRequest] 流. 只有第一个元素会被使用.
-     *
-     * @param flowContext 传递给 [MediaFetchSession] 的 flow 的 context. (用于 [Flow.flowOn].) 将会与 [MediaSourceMediaFetcher.flowContext] 叠加.
-     *
-     * @see MediaFetchRequest.Companion.create
-     */
     fun newSession(
         requestLazy: Flow<MediaFetchRequest>,
         flowContext: CoroutineContext = EmptyCoroutineContext,
     ): MediaFetchSession
 }
 
-/**
- * 根据 [SubjectInfo] 和 [EpisodeInfo] 创建一个 [MediaFetchRequest].
- *
- * @param episode 当前剧集, 仅作提示.
- * @param episodes 条目的全部剧集, 按剧集顺序; 数据源用它做序号映射与缓存陈旧判定.
- */
 fun MediaFetchRequest.Companion.create(
     subject: SubjectInfo,
     episode: EpisodeInfo,
@@ -151,18 +111,12 @@ fun MediaFetchRequest.Companion.create(
     )
 }
 
-class MediaFetcherConfig { // Per-session fetch configuration.
+class MediaFetcherConfig {
     companion object {
         val Default = MediaFetcherConfig()
     }
 }
 
-/**
- * 一个 [MediaFetcher] 的实现, 从多个 [MediaSource] 并行[查询][MediaSource.fetch].
- *
- * @param configProvider 配置每一个 [MediaFetchSession]. 会在创建 [MediaFetchSession] 时调用.
- * @param flowContext 传递给 [MediaFetchSession] 的 flow 的 context. (用于 [Flow.flowOn].)
- */
 class MediaSourceMediaFetcher(
     private val configProvider: () -> MediaFetcherConfig,
     private val mediaSources: List<MediaSourceInstance>,
@@ -178,37 +132,28 @@ class MediaSourceMediaFetcher(
         pagedSources: Flow<SizedSource<MediaMatch>>,
         private val flowContext: CoroutineContext,
     ) : MediaSourceFetchResult, SynchronizedObject() {
-        /**
-         * 为了确保线程安全, 对 [state] 的写入必须谨慎.
-         *
-         * [state] 只能在 [results] 的 flow 里, 或者在 [restart] 中修改.
-         */
+
         override val state: MutableStateFlow<MediaSourceFetchState> =
             MutableStateFlow(if (disabled) MediaSourceFetchState.Disabled else MediaSourceFetchState.Idle)
-        private val restartCount = MutableStateFlow(0) // 只能在 [restart] 内修改
+        private val restartCount = MutableStateFlow(0)
 
         override val results by lazy {
             restartCount.flatMapLatest { restartCount ->
 
                 state.value.let { currentState ->
-                    // 注意, 读 state 可能是线程不安全的, 因此检查一次 coroutine cancellation.
-                    // 因为 [results] flow 被 share, 只有可能有一个协程在执行本代码, 相当于拥有 mutual exclusion.
-                    // [state] 还能在 [restart] 中修改, 但 [restart] 在修改 [state] 之后一定会操作 [restartCount], 
-                    // 导致本 flow 被 cancel ([flatMapLatest]).
+
                     currentCoroutineContext().ensureActive()
 
-                    // 此时的 currentState 是可信的
-
                     if (restartCount == 0 && currentState is MediaSourceFetchState.Disabled)
-                        return@flatMapLatest flowOf(FetchUpdate.Results(restartCount, emptyList())) // 禁用的数据源, 第一次查询给空列表, 必须要 restart 才能发起查询
+                        return@flatMapLatest flowOf(FetchUpdate.Results(restartCount, emptyList()))
 
                     val lastRestartCount = when (currentState) {
                         is MediaSourceFetchState.Completed -> currentState.id
                         else -> -1
                     }
                     if (lastRestartCount == restartCount) {
-                        // 这个 [restartCount] 已经跑过一次了, 不要重复跑
-                        return@flatMapLatest emptyFlow() // 返回空 flow, 复用 replayCache
+
+                        return@flatMapLatest emptyFlow()
                     }
                 }
 
@@ -265,18 +210,16 @@ class MediaSourceMediaFetcher(
                         FetchUpdate.Results(restartCount, list.distinctBy { it.mediaId })
                     }
                     .onStart {
-                        // 启动时 emit emptyList, 更新 replayCache 为 empty. 
-                        // 这是为了处理 cancellation. 如果 results collect 在 emit 第一个 list 之前就被 cancel, 就会记忆一个 MediaSourceFetchState.Failed, 并且下次重新 collect 也不会重试.
+
                         emit(FetchUpdate.Results(restartCount, emptyList()))
                     }
                     .onCompletion { exception ->
                         if (exception == null) {
-                            // flatMapLatest buffers its output. Publish the terminal state only after
-                            // all preceding results have reached shareIn, including partial failures.
+
                             emit(FetchUpdate.Completed(terminalState ?: MediaSourceFetchState.Succeed(restartCount)))
                         } else {
                             synchronized(this@MediaSourceResultImpl) {
-                                // Cancellation of an old run must not terminate a restarted query.
+
                                 if (this@MediaSourceResultImpl.restartCount.value == restartCount &&
                                     state.value !is MediaSourceFetchState.Completed
                                 ) {
@@ -294,8 +237,7 @@ class MediaSourceMediaFetcher(
                 when (update) {
                     is FetchUpdate.Results -> emit(update.results)
                     is FetchUpdate.Completed -> {
-                        // This transform runs on the shareIn collector side of flatMapLatest's buffer.
-                        // Earlier emits have updated replay before a terminal state becomes visible.
+
                         val published = synchronized(this@MediaSourceResultImpl) {
                             if (update.generation != restartCount.value) false else {
                                 if (update.state is MediaSourceFetchState.Succeed) rateLimitAutoRestartBudget = 1
@@ -383,7 +325,6 @@ class MediaSourceMediaFetcher(
             }
         }
 
-        // 限流自动重试: 到点自动 restart 一次. 若重试后仍被限流则不再自动重试, 等待用户手动操作.
         private var rateLimitAutoRestartBudget = 1
 
         private fun scheduleRateLimitAutoRestart(rateLimited: MediaSourceFetchState.RateLimited) {
@@ -405,20 +346,18 @@ class MediaSourceMediaFetcher(
         }
 
         override fun restart() {
-            // 不允许同时调用 restart
+
             synchronized(this) {
                 while (true) {
                     when (val value = state.value) {
                         is MediaSourceFetchState.Completed,
                         MediaSourceFetchState.Disabled -> {
                             restartCount.value += 1
-                            // 必须使用 CAS
-                            // 如果 [results] 现在有人 collect, [state] 可能会被变更. 
-                            // 我们只需要在它没有被其他人修改的时候, 把它修改为 [Idle].
+
                             if (state.compareAndSet(value, MediaSourceFetchState.Idle)) {
                                 break
                             }
-                            // Ok if we lost race - the [results] must be running
+
                         }
 
                         MediaSourceFetchState.Idle,
@@ -434,7 +373,7 @@ class MediaSourceMediaFetcher(
             while (true) {
                 val value = state.value
                 if (value == MediaSourceFetchState.Disabled) {
-                    if (restartCount.compareAndSet(0, 1)) { // 非 0 表示有人已经 [restart] 过了
+                    if (restartCount.compareAndSet(0, 1)) {
                         state.compareAndSet(value, MediaSourceFetchState.Idle)
                         break
                     }
@@ -451,12 +390,12 @@ class MediaSourceMediaFetcher(
         private val flowContext: CoroutineContext,
     ) : MediaFetchSession {
         private val initialFetchRequest: Flow<MediaFetchRequest> =
-            request.take(1) // 只采用第一个, as per described in [fetch]
+            request.take(1)
                 .onEach {
                     logger.info { "MediaFetchSessionImpl pagedSources creating, request: \n${it.toStringMultiline()}" }
                 }
-                .shareIn(CoroutineScope(flowContext), started = SharingStarted.Lazily, replay = 1) // only 
-                .take(1) // 只采用 replayCache, 让后面 flow 能完结
+                .shareIn(CoroutineScope(flowContext), started = SharingStarted.Lazily, replay = 1)
+                .take(1)
 
         private val overrideFetchRequest = MutableStateFlow<MediaFetchRequest?>(null)
 
@@ -464,7 +403,7 @@ class MediaSourceMediaFetcher(
             combine(initialFetchRequest, overrideFetchRequest) { initial, override ->
                 override ?: initial
             }
-        override val request: Flow<MediaFetchRequest> = latestRequest.take(1) // 否则会一直显示加载
+        override val request: Flow<MediaFetchRequest> = latestRequest.take(1)
 
         override val mediaSourceResults: List<MediaSourceFetchResult> = mediaSources
             .map { instance ->
@@ -490,10 +429,10 @@ class MediaSourceMediaFetcher(
             combine(mediaSourceResults.map { it.results }) { lists ->
                 lists.asSequence().flatten().toList()
             }.map { list ->
-                list.distinctBy { it.mediaId } // distinct globally by id, just to be safe
+                list.distinctBy { it.mediaId }
             }.flowOn(flowContext)
                 .run {
-                    if (currentAniBuildConfig.isDebug && ENABLE_WATCHDOG) {
+                    if (currentWynimeBuildConfig.isDebug && ENABLE_WATCHDOG) {
                         flow {
                             cancellableCoroutineScope {
                                 val watchdog = launch {
@@ -525,7 +464,7 @@ class MediaSourceMediaFetcher(
                 val pairs = mediaSourceResults.groupBy { it.kind }.mapValues { results ->
                     val states = results.value.map { it.state }
                     when {
-                        // 该类型数据源全部禁用时返回 null，如果返回 false 会导致 awaitCompletion 无法结束
+
                         states.all { it.value is MediaSourceFetchState.Disabled } -> null
                         states.all { it.value is MediaSourceFetchState.Completed || it.value is MediaSourceFetchState.Disabled } -> true
                         else -> false
@@ -583,7 +522,6 @@ data class CompletedConditions(
     }
 }
 
-/** Ordered updates crossing flatMapLatest's buffer before entering the shared result cache. */
 private sealed interface FetchUpdate {
     val generation: Int
 
@@ -593,10 +531,6 @@ private sealed interface FetchUpdate {
     }
 }
 
-/**
- * 用户在查询请求编辑器里改了当前集的集数时, 选择器按改后的集数匹配 (站点集数与 Bangumi 对不上时的修正手段).
- * 请求里的集数只对请求指向的那一集生效 (查询会话按条目共用).
- */
 internal fun EpisodeInfo.withRequestedNumbers(request: MediaFetchRequest): EpisodeInfo {
     if (request.episodeId != episodeId.toString()) return this
     if (request.episodeSort == sort && request.episodeEp == ep) return this

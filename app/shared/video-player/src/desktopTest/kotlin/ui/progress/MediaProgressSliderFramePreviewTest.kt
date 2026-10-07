@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.progress
+package com.wynime.app.videoplayer.ui.progress
 
 import androidx.collection.floatListOf
 import androidx.compose.ui.graphics.Canvas
@@ -20,18 +11,15 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.performTouchInput
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.MediaCacheProgressInfo
-import me.him188.ani.app.ui.framework.exists
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.MediaCacheProgressInfo
+import com.wynime.app.ui.framework.exists
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
 import org.openani.mediamp.features.PreviewFrame
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * 测试悬浮进度条时, 预览帧浮窗的展示与缓存区域门控.
- */
 @OptIn(ExperimentalTestApi::class)
 class MediaProgressSliderFramePreviewTest {
 
@@ -51,7 +39,7 @@ class MediaProgressSliderFramePreviewTest {
     }
 
     @Test
-    fun `hover shows frame preview in popup`() = runAniComposeUiTest {
+    fun `hover shows frame preview in popup`() = runWynimeComposeUiTest {
         val frame = solidFrame(Color.Green)
         val requestedPositions = mutableListOf<Long>()
         val framePreview = MediaProgressFramePreviewState(
@@ -85,7 +73,7 @@ class MediaProgressSliderFramePreviewTest {
     }
 
     @Test
-    fun `drag requests frame at dragged position`() = runAniComposeUiTest {
+    fun `drag requests frame at dragged position`() = runWynimeComposeUiTest {
         val frame = solidFrame(Color.Green)
         val requestedPositions = mutableListOf<Long>()
         val framePreview = MediaProgressFramePreviewState(
@@ -115,7 +103,7 @@ class MediaProgressSliderFramePreviewTest {
                 onNodeWithTag(TAG_PROGRESS_SLIDER_PREVIEW_FRAME, useUnmergedTree = true).exists()
             }
         }
-        // 拖到中间, 请求的位置应当在总时长的一半附近.
+
         assertTrue(
             (requestedPositions.lastOrNull() ?: -1L) in 40_000L..60_000L,
             "requested positions $requestedPositions do not end near the dragged center",
@@ -128,7 +116,7 @@ class MediaProgressSliderFramePreviewTest {
     }
 
     @Test
-    fun `uncached position does not request frame but still shows time popup`() = runAniComposeUiTest {
+    fun `uncached position does not request frame but still shows time popup`() = runWynimeComposeUiTest {
         var fetchCount = 0
         val framePreview = MediaProgressFramePreviewState(
             fetchFrame = {
@@ -164,7 +152,7 @@ class MediaProgressSliderFramePreviewTest {
     }
 
     @Test
-    fun `no frame preview state keeps time-only popup`() = runAniComposeUiTest {
+    fun `no frame preview state keeps time-only popup`() = runWynimeComposeUiTest {
         setContent {
             MediaProgressSlider(
                 createSliderState(),
@@ -186,7 +174,7 @@ class MediaProgressSliderFramePreviewTest {
 
     @Test
     fun `preview frame pixels convert to image bitmap`() {
-        // 2x1: 左红右蓝
+
         val frame = PreviewFrame(
             positionMillis = 0,
             width = 2,

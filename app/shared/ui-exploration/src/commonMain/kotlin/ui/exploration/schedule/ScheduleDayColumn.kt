@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.schedule
+package com.wynime.app.ui.exploration.schedule
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,20 +35,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.packInts
 import kotlinx.datetime.LocalTime
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.layout.paddingIfNotEmpty
-import me.him188.ani.app.ui.foundation.layout.plus
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.datasources.api.EpisodeSort
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.layout.paddingIfNotEmpty
+import com.wynime.app.ui.foundation.layout.plus
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.datasources.api.EpisodeSort
 
-
-/**
- * 新番时间表的单日视图, 例如周一.
- *
- * [Design](https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=349-9250&t=hBPSAEVlsmuEWPJt-0)
- */
 @Composable
 fun ScheduleDayColumn(
     items: List<AiringScheduleColumnItem>,
@@ -140,7 +125,7 @@ fun ScheduleDayColumn(
                                 }
                             },
                             action = {
-                                // TODO: 2025/1/14 新番时间表追番动作
+
                             },
                             colors = itemColors,
                         )
@@ -242,7 +227,7 @@ data class ScheduleDayColumnLayoutParams(
     @Stable
     companion object {
 
-        @Stable // Adaptive layout not needed by design.
+        @Stable
         val Default = ScheduleDayColumnLayoutParams(
             dayOfWeekPaddings = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             listVerticalSpacing = 0.dp,

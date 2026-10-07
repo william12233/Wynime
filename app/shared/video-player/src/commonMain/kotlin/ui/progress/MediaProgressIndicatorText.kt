@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.progress
+package com.wynime.app.videoplayer.ui.progress
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.LocalTextStyle
@@ -24,18 +15,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
 import kotlin.math.roundToLong
 
 const val TAG_MEDIA_PROGRESS_INDICATOR_TEXT = "MediaProgressIndicatorText"
 
-/**
- * "88:88:88 / 88:88:88 (-88:88:88)"
- *
- * @param playbackSpeedState 当前播放倍速的单一状态源, 用于计算真实剩余时间
- * `(total - current) / speed` (同 mpv `time-remaining`).
- * 仅在倍速不为 `1.0f` 时显示剩余时间.
- */
 @Composable
 fun MediaProgressIndicatorText(
     state: PlayerProgressSliderState,
@@ -66,7 +50,7 @@ fun MediaProgressIndicatorText(
         }
     }
     Box(modifier, contentAlignment = Alignment.Center) {
-        Text(renderedText.reserve, Modifier.alpha(0f)) // fix width
+        Text(renderedText.reserve, Modifier.alpha(0f))
         Text(
             text = renderedText.text,
             style = LocalTextStyle.current.copy(
@@ -77,7 +61,7 @@ fun MediaProgressIndicatorText(
                     join = StrokeJoin.Round,
                 ),
             ),
-        ) // border
+        )
         Text(
             text = renderedText.text,
             Modifier.testTag(TAG_MEDIA_PROGRESS_INDICATOR_TEXT),
@@ -90,15 +74,12 @@ private data class RenderedProgressText(
     val reserve: String,
 )
 
-/**
- * Returns the most wide text that [renderSeconds] may return for that [totalSecs]. This can be used to reserve space for the text.
- */
 @Stable
 internal fun renderSecondsReserve(
     totalSecs: Long?,
     includeRemaining: Boolean,
 ): String {
-    // 8 is usually the visually widest character
+
     val (base, remaining) = if (totalSecs != null && totalSecs >= 3600) {
         "88:88:88 / 88:88:88" to " (-88:88:88)"
     } else {
@@ -107,12 +88,6 @@ internal fun renderSecondsReserve(
     return if (includeRemaining) base + remaining else base
 }
 
-/**
- * Renders position into format like "888:88:88 / 888:88:88 (-88:88:88)" (hours:minutes:seconds).
- *
- * [remainingSecs] 为真实剩余时间 (已按倍速重算), 为 `null` (总时长未知) 时不显示.
- * @see renderSecondsReserve
- */
 @Stable
 internal fun renderSeconds(current: Long, total: Long?, remainingSecs: Long? = null): String {
     if (total == null) {
@@ -136,7 +111,7 @@ internal fun renderSeconds(current: Long, total: Long?, remainingSecs: Long? = n
         """$startH:$startM:$startS / $endH:$endM:$endS"""
     }
     if (remainingSecs == null) return base
-    // 与总时长同款格式: 总时长达小时级则剩余也用小时级.
+
     val remaining = if (total >= 3600) {
         val h = (remainingSecs / 3600).fixToString(2)
         val m = (remainingSecs % 3600 / 60).fixToString(2)

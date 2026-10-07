@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.gesture
+package com.wynime.app.videoplayer.ui.gesture
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -32,14 +23,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.input.LocalActiveInputSource
-import me.him188.ani.app.ui.foundation.theme.slightlyWeaken
-import me.him188.ani.app.videoplayer.ui.ControllerVisibility
-import me.him188.ani.app.videoplayer.ui.PlaybackSpeedControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerControllerState
-import me.him188.ani.app.videoplayer.ui.PlayerFullscreenState
-import me.him188.ani.app.videoplayer.ui.progress.PlayerProgressSliderState
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.input.LocalActiveInputSource
+import com.wynime.app.ui.foundation.theme.slightlyWeaken
+import com.wynime.app.videoplayer.ui.ControllerVisibility
+import com.wynime.app.videoplayer.ui.PlaybackSpeedControllerState
+import com.wynime.app.videoplayer.ui.PlayerControllerState
+import com.wynime.app.videoplayer.ui.PlayerFullscreenState
+import com.wynime.app.videoplayer.ui.progress.PlayerProgressSliderState
 import org.openani.mediamp.MediampPlayer
 import org.openani.mediamp.features.PlaybackSpeed
 import kotlin.time.Duration.Companion.seconds
@@ -52,20 +43,7 @@ fun GestureLock(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-//    val background = MaterialTheme.colorScheme.onSurface
-//    SmallFloatingActionButton(
-//        onClick = onClick,
-//        modifier = modifier,
-//        containerColor = background,
-//    ) {
-//        CompositionLocalProvider(LocalContentColor provides appColorScheme(isDark = true).contentColorFor(background)) {
-//            if (isLocked) {
-//                Icon(Icons.Outlined.LockOpen, contentDescription = "Lock screen")
-//            } else {
-//                Icon(Icons.Outlined.Lock, contentDescription = "Unlock screen")
-//            }
-//        }
-//    }
+
     Surface(
         modifier.testTag(TAG_GESTURE_LOCK),
         shape = RoundedCornerShape(16.dp),
@@ -87,28 +65,9 @@ fun GestureLock(
             }
         }
     }
-//    Surface(
-//        modifier,
-//        shape = MaterialTheme.shapes.small,
-//        shadowElevation = 1.dp,
-//    ) {
-//        IconButton(
-//            onClick = onClick,
-//        ) {
-//            if (isLocked) {
-//                Icon(Icons.Rounded.Lock, contentDescription = "Lock screen")
-//            } else {
-//                Icon(Icons.Rounded.LockOpen, contentDescription = "Unlock screen")
-//            }
-//        }
-//    }
+
 }
 
-/**
- * Handles click events and auto-hide controller.
- *
- * @see LockableVideoGestureHost
- */
 @Composable
 fun LockedScreenGestureHost(
     controllerVisibility: () -> ControllerVisibility,
@@ -132,7 +91,6 @@ fun LockedScreenGestureHost(
     }
     return
 }
-
 
 @Composable
 fun LockableVideoGestureHost(

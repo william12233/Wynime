@@ -1,60 +1,47 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("DEPRECATION")
 
-package me.him188.ani.app.domain.media.selector.legacy
+package com.wynime.app.domain.media.selector.legacy
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.TestScope
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectSeriesInfo
-import me.him188.ani.app.domain.media.createTestDefaultMedia
-import me.him188.ani.app.domain.media.createTestMediaProperties
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.fetch.MediaFetcher
-import me.him188.ani.app.domain.media.fetch.MediaFetcherConfig
-import me.him188.ani.app.domain.media.fetch.MediaSourceMediaFetcher
-import me.him188.ani.app.domain.media.selector.DefaultMediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorContext
-import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.media.selector.MediaSelectorSubtitlePreferences
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.app.domain.mediasource.instance.createTestMediaSourceInstance
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.paging.SinglePagePagedSource
-import me.him188.ani.datasources.api.source.MatchKind
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.source.TestHttpMediaSource
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
-import me.him188.ani.datasources.api.topic.Resolution
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.datasources.api.topic.SubtitleLanguage
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectSeriesInfo
+import com.wynime.app.domain.media.createTestDefaultMedia
+import com.wynime.app.domain.media.createTestMediaProperties
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.fetch.MediaFetcher
+import com.wynime.app.domain.media.fetch.MediaFetcherConfig
+import com.wynime.app.domain.media.fetch.MediaSourceMediaFetcher
+import com.wynime.app.domain.media.selector.DefaultMediaSelector
+import com.wynime.app.domain.media.selector.MediaSelectorContext
+import com.wynime.app.domain.media.selector.MediaSelectorSourceTiers
+import com.wynime.app.domain.media.selector.MediaSelectorSubtitlePreferences
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.app.domain.mediasource.instance.createTestMediaSourceInstance
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.paging.SinglePagePagedSource
+import com.wynime.datasources.api.source.MatchKind
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.source.TestHttpMediaSource
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.datasources.api.topic.Resolution
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.datasources.api.topic.SubtitleLanguage
 import kotlin.coroutines.ContinuationInterceptor
 
-/**
- * @suppress 已弃用, 新的 test 使用 [me.him188.ani.app.domain.media.selector.testFramework.TestMediaFetchSessionBuilder].
- * @see me.him188.ani.app.domain.media.selector.MediaSelector
- */
 @Deprecated(MediaSelectorDeprecationMessage)
 class MediaSelectorTestBuilder(
     private val testScope: TestScope,
@@ -65,9 +52,6 @@ class MediaSelectorTestBuilder(
 
     val mediaSources = mutableListOf<MediaSourceInstance>()
 
-    /**
-     * 添加一个 [me.him188.ani.app.domain.media.fetch.MediaSourceMediaFetcher]. 它会一直等待, 直到 `deferred.complete(list)`, 并返回 list 作为查询结果.
-     */
     fun delayedMediaSource(
         mediaSourceId: String,
         kind: MediaSourceKind = MediaSourceKind.WEB,
@@ -90,10 +74,6 @@ class MediaSelectorTestBuilder(
         )
         return deferred
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Outputs
-    ///////////////////////////////////////////////////////////////////////////
 
     fun createMedia(
         mediaSourceId: String,

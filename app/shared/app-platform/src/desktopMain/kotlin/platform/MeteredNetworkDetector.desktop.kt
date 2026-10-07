@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform
+package com.wynime.app.platform
 
 import com.sun.jna.platform.win32.COM.COMException
 import com.sun.jna.platform.win32.COM.COMUtils
@@ -20,11 +11,10 @@ import com.sun.jna.ptr.IntByReference
 import com.sun.jna.ptr.PointerByReference
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.Platform
-import me.him188.ani.utils.platform.currentPlatformDesktop
-
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.Platform
+import com.wynime.utils.platform.currentPlatformDesktop
 
 private class WindowsMeteredNetworkDetector : MeteredNetworkDetector {
     private val logger = logger<MeteredNetworkDetector>()
@@ -98,10 +88,6 @@ private class WindowsMeteredNetworkDetector : MeteredNetworkDetector {
 }
 
 actual fun createMeteredNetworkDetector(context: Context): MeteredNetworkDetector {
-    return when (currentPlatformDesktop()) {
-        is Platform.Windows -> WindowsMeteredNetworkDetector()
-        is Platform.MacOS -> NoopMeteredNetworkDetector // macos API 要用 swift 才能实现
-        is Platform.Linux -> NoopMeteredNetworkDetector
-    }
+    return WindowsMeteredNetworkDetector()
 }
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import androidx.paging.LoadType
 import androidx.paging.Pager
@@ -48,91 +39,81 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.SupervisorJob
-import me.him188.ani.app.data.models.bangumi.BangumiSyncState
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.subject.RatingCounts
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
-import me.him188.ani.app.data.models.subject.SubjectAiringInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectProgressInfo
-import me.him188.ani.app.data.models.subject.SubjectRecurrence
-import me.him188.ani.app.data.models.subject.SubjectTmdbArt
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.data.models.subject.TmdbImage
-import me.him188.ani.app.data.network.EpisodeService
-import me.him188.ani.app.data.network.SubjectService
-import me.him188.ani.app.data.network.SubjectCollectionPage
-import me.him188.ani.app.data.persistent.database.dao.EpisodeCollectionDao
-import me.him188.ani.app.data.persistent.database.dao.EpisodeCollectionEntity
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionEntity
-import me.him188.ani.app.data.persistent.database.dao.SubjectRelations
-import me.him188.ani.app.data.persistent.database.dao.SubjectRelationsDao
-import me.him188.ani.app.data.persistent.database.dao.deleteAll
-import me.him188.ani.app.data.persistent.database.dao.filterMostRecentUpdated
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.data.repository.episode.AnimeScheduleRepository
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.episode.toEpisodeCollectionInfo
-import me.him188.ani.app.data.repository.shouldRetry
-import me.him188.ani.app.domain.search.SubjectType
-import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.app.domain.session.checkAccessBangumiApiNow
-import me.him188.ani.app.domain.session.restartOnNewLogin
-import me.him188.ani.client.models.AniAnimeRecurrence
-import me.him188.ani.client.models.AniCollectionType
-import me.him188.ani.client.models.AniEpisodeCollection
-import me.him188.ani.client.models.AniEpisodeCollectionType
-import me.him188.ani.client.models.AniEpisodeType
-import me.him188.ani.client.models.AniFavourite
-import me.him188.ani.client.models.AniSelfRatingInfo
-import me.him188.ani.client.models.AniSubjectCollection
-import me.him188.ani.client.models.AniSubjectRelations
-import me.him188.ani.client.models.AniTag
-import me.him188.ani.client.models.AniTmdbImage
-import me.him188.ani.client.models.AniTmdbSubjectArt
-import me.him188.ani.client.models.AniUpdateSubjectCollectionRequest
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.bangumi.processing.toSubjectCollectionType
-import me.him188.ani.utils.coroutines.combine
-import me.him188.ani.utils.coroutines.flows.flowOfEmptyList
-import me.him188.ani.utils.logging.debug
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.currentTimeMillis
-import me.him188.ani.utils.serialization.BigNum
+import com.wynime.app.data.models.bangumi.BangumiSyncState
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.subject.RatingCounts
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.SubjectAiringInfo
+import com.wynime.app.data.models.subject.SubjectCollectionCounts
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectProgressInfo
+import com.wynime.app.data.models.subject.SubjectRecurrence
+import com.wynime.app.data.models.subject.SubjectTmdbArt
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.data.models.subject.TmdbImage
+import com.wynime.app.data.network.EpisodeService
+import com.wynime.app.data.network.SubjectService
+import com.wynime.app.data.network.SubjectCollectionPage
+import com.wynime.app.data.persistent.database.dao.EpisodeCollectionDao
+import com.wynime.app.data.persistent.database.dao.EpisodeCollectionEntity
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionEntity
+import com.wynime.app.data.persistent.database.dao.SubjectRelations
+import com.wynime.app.data.persistent.database.dao.SubjectRelationsDao
+import com.wynime.app.data.persistent.database.dao.deleteAll
+import com.wynime.app.data.persistent.database.dao.filterMostRecentUpdated
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.episode.toEpisodeCollectionInfo
+import com.wynime.app.data.repository.shouldRetry
+import com.wynime.app.domain.search.SubjectType
+import com.wynime.app.domain.session.SessionStateProvider
+import com.wynime.app.domain.session.checkAccessBangumiApiNow
+import com.wynime.app.domain.session.restartOnNewLogin
+import com.wynime.models.AnimeRecurrenceDto
+import com.wynime.models.CollectionTypeDto
+import com.wynime.models.EpisodeCollectionDto
+import com.wynime.models.EpisodeCollectionTypeDto
+import com.wynime.models.EpisodeTypeDto
+import com.wynime.models.FavouriteDto
+import com.wynime.models.SelfRatingInfoDto
+import com.wynime.models.SubjectCollectionDto
+import com.wynime.models.SubjectRelationsDto
+import com.wynime.models.TagDto
+import com.wynime.models.TmdbImageDto
+import com.wynime.models.TmdbSubjectArtDto
+import com.wynime.models.UpdateSubjectCollectionRequestDto
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.bangumi.processing.toSubjectCollectionType
+import com.wynime.utils.coroutines.combine
+import com.wynime.utils.coroutines.flows.flowOfEmptyList
+import com.wynime.utils.logging.debug
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.currentTimeMillis
+import com.wynime.utils.serialization.BigNum
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
-/**
- * 条目信息和条目收藏的仓库.
- *
- * [SubjectInfo], [SubjectCollectionInfo], [SubjectCollectionCounts]
- *
- * 是 abstract 而不是 sealed: 生产实现只有 [SubjectCollectionRepositoryImpl], 但 Bangumi 收藏合并相关的测试 (其他模块) 需要用轻量的 fake 替代它.
- */
 abstract class SubjectCollectionRepository(
     defaultDispatcher: CoroutineContext = Dispatchers.Default
 ) : Repository(defaultDispatcher) {
-    /**
-     * 获取条目收藏统计信息 cold [Flow]. Flow 将会 emit 至少一个值, 失败时 emit `null`.
-     */
+
     abstract fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts?>
 
     abstract fun subjectCollectionFlow(subjectId: Int): Flow<SubjectCollectionInfo>
@@ -145,33 +126,19 @@ abstract class SubjectCollectionRepository(
         ),
     ): Flow<PagingData<SubjectCollectionInfo>>
 
-    /**
-     * 获取本地所有缓存的 [SubjectCollectionInfo] 的 [subjectId][SubjectCollectionInfo.subjectId]
-     */
     abstract fun cachedValidSubjectIds(): Flow<List<Int>>
 
-    /**
-     * 更新根据服务器上记录的最近有修改的条目收藏. 也就是用户最近操作过的条目收藏.
-     */
     abstract suspend fun updateRecentlyUpdatedSubjectCollections(
         limit: Int,
         type: UnifiedCollectionType?,
         offset: Int = 0,
     )
 
-    /**
-     * 获取最近更新的条目收藏 cold [Flow].
-     */
     abstract fun mostRecentlyUpdatedSubjectCollectionsFlow(
         limit: Int,
-        types: List<UnifiedCollectionType>? = null, // null for all
+        types: List<UnifiedCollectionType>? = null,
     ): Flow<List<SubjectCollectionInfo>>
 
-    /**
-     * @param score 0 to remove rating
-     * @param comment set empty to remove
-     * @param tags set empty to remove
-     */
     abstract suspend fun updateRating(
         subjectId: Int,
         score: Int? = null,
@@ -180,23 +147,13 @@ abstract class SubjectCollectionRepository(
         isPrivate: Boolean? = null,
     )
 
-    /**
-     * @throws me.him188.ani.app.data.repository.RepositoryAuthorizationException
-     */
     abstract suspend fun setSubjectCollectionTypeOrDelete(
         subjectId: Int,
         type: UnifiedCollectionType?,
     )
 
-    /**
-     * 只从本地数据库中获取收藏类型, 不进行网络请求.
-     */
     abstract fun getSubjectCollectionTypeOffline(subjectId: Int): Flow<UnifiedCollectionType?>
 
-    /**
-     * 只从本地数据库中获取条目的展示信息 (名称/封面/总集数), 不进行网络请求.
-     * 未收藏 (本地无记录) 时 emit `null`.
-     */
     abstract fun getSubjectDisplayInfoOffline(subjectId: Int): Flow<OfflineSubjectDisplayInfo?>
 
     abstract suspend fun getSubjectIdsByCollectionType(types: List<UnifiedCollectionType>): Flow<List<Int>>
@@ -209,48 +166,18 @@ abstract class SubjectCollectionRepository(
 
     open suspend fun getBangumiFullSyncSummary(): BangumiFullSyncSummary? = null
 
-    /**
-     * 使 [subjectIds] 对应条目的本地缓存失效, 并立即从服务端重新拉取这些条目 (并行度有限, 见实现):
-     * - 服务端仍有收藏 → 用服务端的值覆盖本地行与剧集缓存 (正在展示的收藏列表随之更新);
-     * - 服务端已无收藏 (条目不存在或未收藏) → 删除本地行 (剧集缓存随之级联删除);
-     * - 网络失败 → 保留本地行 (绝不因失败删除), 只将其 `lastFetched` 置 0, 下次访问时重新拉取;
-     *   首次失败后不再对剩余条目发起新的拉取 (多半是断网, 逐个等待超时会让 "应用合并" 长时间转圈), 已发起的照常完成.
-     *
-     * 之后将所有条目的 `lastFetched` 置 0 (下次创建收藏列表分页器时从服务端刷新), 并发出 [collectionsInvalidated].
-     *
-     * [subjectIds] 为空时不做任何事.
-     *
-     * 用于服务端解决 Bangumi 收藏冲突之后: 这些条目在服务端的值已经改变, 本地缓存不再可信.
-     */
     abstract suspend fun invalidateCache(subjectIds: List<Int>)
 
-    /**
-     * 将所有条目的 `lastFetched` 置 0 (不删除本地数据), 使下次进入收藏页或条目页时从服务端刷新, 并发出 [collectionsInvalidated].
-     *
-     * 用于服务端 Bangumi 全量同步 (对账) 完成之后: 自动合并的结果已写入服务端, 本地缓存可能过期.
-     */
     abstract suspend fun invalidateAllCaches()
 
     private val _collectionsInvalidated = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    /**
-     * [invalidateCache] / [invalidateAllCaches] 完成后发出一次, 供已经创建的收藏列表分页器重新加载.
-     *
-     * 分页器只在创建时 (`RemoteMediator.initialize`) 根据 `lastFetched` 决定是否从服务端刷新, 已在展示的列表不会因为
-     * `lastFetched` 被置 0 而自动刷新; 收藏页的 ViewModel 收集此流并重建分页器.
-     */
     val collectionsInvalidated: SharedFlow<Unit> = _collectionsInvalidated.asSharedFlow()
 
-    /**
-     * [collectionsInvalidated] 当前的订阅者数. 仅测试用: 等 ViewModel 订阅之后再触发失效, 否则事件没有订阅者会被丢弃.
-     */
     @TestOnly
     val collectionsInvalidatedSubscriptionCount: StateFlow<Int>
         get() = _collectionsInvalidated.subscriptionCount
 
-    /**
-     * 缓存失效完成后调用, 发出 [collectionsInvalidated]. 没有订阅者时直接丢弃; 订阅者来不及处理时多次失效合并为一次.
-     */
     protected fun notifyCollectionsInvalidated() {
         _collectionsInvalidated.tryEmit(Unit)
     }
@@ -271,7 +198,6 @@ class SubjectCollectionRepositoryImpl(
     private val subjectCollectionDao: SubjectCollectionDao,
     private val subjectRelationsDao: SubjectRelationsDao,
     private val episodeCollectionRepository: EpisodeCollectionRepository,
-    private val animeScheduleRepository: AnimeScheduleRepository,
     private val episodeService: EpisodeService,
     private val episodeCollectionDao: EpisodeCollectionDao,
     private val sessionManager: SessionStateProvider,
@@ -322,18 +248,17 @@ class SubjectCollectionRepositoryImpl(
             .restartOnNewLogin(sessionManager)
             .transform { existing ->
                 if (existing != null) {
-                    // 不管是不是过期都先 emit, 确保离线时能播放
+
                     emit(existing)
                 }
 
-                // 如果没有缓存, 则 fetch 然后插入 subject 缓存
                 if (existing == null || existing.isExpired()) {
                     refetchSubjectCollection(subjectId)
-                    // TODO: 2025/5/24 handle subject not found 
+
                 }
             }
             .filterNotNull()
-            // 有 subject 缓存后才能从 episodeCollectionRepository fetch episodes
+
             .combine(
                 episodeCollectionDao
                     .filterBySubjectId(subjectId, epTypes)
@@ -349,12 +274,7 @@ class SubjectCollectionRepositoryImpl(
             }
     }.flowOn(defaultDispatcher)
 
-    /**
-     * 从服务端拉取条目 (含用户的收藏状态与剧集) 并写入本地缓存: 覆盖同 id 的旧行 (`lastFetched` 为当前时间), 删除本地多余的剧集.
-     *
-     * @return 服务端返回的条目; 条目不存在 (404) 时为 `null`, 此时不写入任何东西.
-     */
-    private suspend fun refetchSubjectCollection(subjectId: Int): AniSubjectCollection? {
+    private suspend fun refetchSubjectCollection(subjectId: Int): SubjectCollectionDto? {
         val subject = subjectService.getSubjectCollection(subjectId) ?: return null
         val lastFetched = currentTimeMillis()
         val subjectEntity = subject.toEntity(lastFetched = lastFetched)
@@ -362,12 +282,10 @@ class SubjectCollectionRepositoryImpl(
         if (tombstone?.localDeletedAt != null && subjectEntity.lastUpdated <= tombstone.localDeletedAt) {
             val protectedEntity = subjectCollectionDao.findById(subjectId).first()
                 ?.copy(
-                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
                     lastUpdated = maxOf(tombstone.localDeletedAt, subjectEntity.lastUpdated),
                     lastFetched = lastFetched,
                 )
                 ?: subjectEntity.copy(
-                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
                     lastUpdated = tombstone.localDeletedAt,
                 )
             subjectCollectionDao.upsert(protectedEntity)
@@ -382,13 +300,12 @@ class SubjectCollectionRepositoryImpl(
         }
         subjectCollectionDao.upsert(subjectEntity)
 
-        // 更新剧集列表
         val oldIds = episodeCollectionDao.listIdBySubjectId(subjectId).first().toMutableList()
         episodeCollectionDao.upsert(episodeEntities)
         for (newEntity in episodeEntities) {
             oldIds.remove(newEntity.episodeId)
         }
-        if (oldIds.isNotEmpty()) { // 删除本地存的多余的剧集 (通常没有)
+        if (oldIds.isNotEmpty()) {
             episodeCollectionDao.deleteAllByEpisodeIds(subjectId, oldIds)
         }
         return subject
@@ -396,7 +313,7 @@ class SubjectCollectionRepositoryImpl(
 
     private suspend fun saveEpisodeEntities(
         subjectId: Int,
-        episodes: List<AniEpisodeCollection>,
+        episodes: List<EpisodeCollectionDto>,
         lastFetched: Long,
     ) {
         val episodeEntities = episodes.map { it.toEntity1(subjectId, lastFetched = lastFetched) }
@@ -408,7 +325,7 @@ class SubjectCollectionRepositoryImpl(
 
     override fun mostRecentlyUpdatedSubjectCollectionsFlow(
         limit: Int,
-        types: List<UnifiedCollectionType>?, // null for all
+        types: List<UnifiedCollectionType>?,
     ): Flow<List<SubjectCollectionInfo>> = subjectCollectionDao.filterMostRecentUpdated(types, limit)
         .restartOnNewLogin(sessionManager)
         .combine(nsfwModeSettingsFlow) { list, nsfwModeSettings ->
@@ -481,8 +398,7 @@ class SubjectCollectionRepositoryImpl(
     ) {
         try {
             withContext(defaultDispatcher) {
-                // 只允许同时一个请求. 防止多个请求浪费带宽.
-                // 一般来说不会有多个请求. 最常见的并行请求可能是用户刚刚打开 APP 进入探索页自动刷新"继续观看"栏目, 在刷新还在进行时切换到收藏页触发自动刷新.
+
                 updateRecentlyUpdatedSubjectCollectionsMutex.withLock {
                     fetchAndSaveSubjectCollectionsWithEpisodes(type, limit, offset)
                 }
@@ -492,12 +408,6 @@ class SubjectCollectionRepositoryImpl(
         }
     }
 
-    // transparent exception
-    /**
-     * 执行网络查询条目收藏及其剧集列表, 在所有网络请求都成功后调用 [onFetched], 然后保存查询结果到数据库.
-     *
-     * @param onFetched 当所有网络请求都成功后调用
-     */
     private suspend inline fun fetchAndSaveSubjectCollectionsWithEpisodes(
         type: UnifiedCollectionType?,
         limit: Int,
@@ -507,7 +417,6 @@ class SubjectCollectionRepositoryImpl(
         require(type != UnifiedCollectionType.NOT_COLLECTED) { "type must not be NOT_COLLECTED" }
         require(limit > 0) { "limit must be positive" }
 
-        // 执行网络请求查询好需要的 subject 和 episodes
         val page = subjectService.getSubjectCollectionsPage(
             type = type?.toSubjectCollectionType(),
             offset = offset,
@@ -539,19 +448,13 @@ class SubjectCollectionRepositoryImpl(
             }
         }
 
-        // 批量插入条目信息
         val lastFetched = currentTimeMillis()
         saveSubjectCollectionsWithEpisodes(page.items, lastFetched)
         onFetched(page)
     }
 
-    /**
-     * 將一次成功取得的 Bangumi 收藏頁寫入本機快取。
-     *
-     * 先寫入條目再寫入集數，並清理同一條目已不存在的舊集數，避免外鍵與過期觀看狀態殘留。
-     */
     private suspend fun saveSubjectCollectionsWithEpisodes(
-        items: List<AniSubjectCollection>,
+        items: List<SubjectCollectionDto>,
         lastFetched: Long,
     ) {
         val entities = ArrayList<SubjectCollectionEntity>(items.size)
@@ -559,11 +462,10 @@ class SubjectCollectionRepositoryImpl(
             val entity = item.toEntity(lastFetched = lastFetched)
             val tombstone = trackingMetadataRepository?.find(entity.subjectId)
             if (tombstone?.localDeletedAt != null && entity.lastUpdated <= tombstone.localDeletedAt) {
-                // Collection refreshes can still return a remote row that the user cancelled
-                // locally. Keep the detail cache, but never let that stale remote row re-enter
-                // collection lists.
+
                 entities += entity.copy(
-                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                    collectionType = subjectCollectionDao.findById(entity.subjectId).first()?.collectionType
+                        ?: entity.collectionType,
                     lastUpdated = tombstone.localDeletedAt,
                 )
             } else {
@@ -575,7 +477,6 @@ class SubjectCollectionRepositoryImpl(
         }
         subjectCollectionDao.upsert(entities)
 
-        // 必须先插入好条目信息, 否则插入 episode 会 foreign key constraint failed
         episodeCollectionDao.upsert(
             items
                 .flatMap { it.episodes }
@@ -600,16 +501,16 @@ class SubjectCollectionRepositoryImpl(
 
     override suspend fun updateRating(
         subjectId: Int,
-        score: Int?, // 0 to remove rating
-        comment: String?, // set empty to remove
+        score: Int?,
+        comment: String?,
         tags: List<String>?,
         isPrivate: Boolean?,
     ) {
         withContext(defaultDispatcher) {
             subjectService.patchSubjectCollection(
                 subjectId,
-                AniUpdateSubjectCollectionRequest(
-                    selfRating = AniSelfRatingInfo(
+                UpdateSubjectCollectionRequestDto(
+                    selfRating = SelfRatingInfoDto(
                         score = score ?: 0,
                         comment = comment,
                         tags = tags.orEmpty(),
@@ -696,15 +597,10 @@ class SubjectCollectionRepositoryImpl(
         return withContext(defaultDispatcher) {
             val now = currentTimeMillis()
             if (type == null || type == UnifiedCollectionType.NOT_COLLECTED) {
-                // Keep the local row as NOT_COLLECTED for immediate UI updates and persist a
-                // durable DELETE_COLLECTION tombstone for the authenticated sync route.
-                subjectCollectionDao.updateType(
-                    subjectId = subjectId,
-                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
-                    lastUpdated = now,
-                    lastFetched = now,
-                )
-                trackingMetadataRepository?.markLocalDeletion(subjectId, now)
+
+                val metadata = trackingMetadataRepository
+                    ?: throw RepositoryRequestError("取消收藏的同步狀態儲存未設定")
+                metadata.markLocalDeletion(subjectId, now)
             } else {
                 val updated = subjectCollectionDao.updateType(
                     subjectId = subjectId,
@@ -713,8 +609,7 @@ class SubjectCollectionRepositoryImpl(
                     lastFetched = now,
                 )
                 if (updated == 0) {
-                    // A missing detail cache is hydrated only when necessary; the local mutation
-                    // is still recorded before the optional network-backed hydration completes.
+
                     refetchSubjectCollection(subjectId)
                     subjectCollectionDao.updateType(
                         subjectId = subjectId,
@@ -785,7 +680,7 @@ class SubjectCollectionRepositoryImpl(
                     bangumiFullSyncState.value = BangumiSyncState.Preparing
                     val syncStartedAt = currentTimeMillis()
                     val pageSize = 100
-                    val remoteCollections = ArrayList<AniSubjectCollection>()
+                    val remoteCollections = ArrayList<SubjectCollectionDto>()
                     val collectionTotals = mutableMapOf<UnifiedCollectionType, Int?>()
                     val failedSubjectIds = mutableListOf<Int>()
                     val failureMessages = mutableListOf<String>()
@@ -893,7 +788,7 @@ class SubjectCollectionRepositoryImpl(
                         val remoteEntity = remote.toEntity(lastFetched)
                         val local = existing[subjectId]
                         episodeCount += remote.episodes.size
-                        watchedEpisodeCount += remote.episodes.count { it.collectionType == AniEpisodeCollectionType.DONE }
+                        watchedEpisodeCount += remote.episodes.count { it.collectionType == EpisodeCollectionTypeDto.DONE }
                         try {
                             val tombstone = trackingMetadataRepository?.find(subjectId)
                             if (tombstone?.localDeletedAt != null &&
@@ -901,7 +796,7 @@ class SubjectCollectionRepositoryImpl(
                             ) {
                                 subjectCollectionDao.updateType(
                                     subjectId = subjectId,
-                                    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                                    collectionType = local?.collectionType ?: remoteEntity.collectionType,
                                     lastUpdated = tombstone.localDeletedAt,
                                     lastFetched = lastFetched,
                                 )
@@ -909,7 +804,7 @@ class SubjectCollectionRepositoryImpl(
                                 if (tombstone?.localDeletedAt != null) {
                                     trackingMetadataRepository.clearTombstone(subjectId, remoteEntity.lastUpdated)
                                 }
-                                // Bangumi updatedAt 是收藏狀態的版本時間；較舊的回應不可覆蓋較新的本機狀態。
+
                                 if (local == null ||
                                     remoteEntity.lastUpdated <= 0L ||
                                     local.lastUpdated <= remoteEntity.lastUpdated
@@ -1018,9 +913,9 @@ class SubjectCollectionRepositoryImpl(
         if (subjectIds.isEmpty()) return
         withContext(defaultDispatcher) {
             coroutineScope {
-                // 有限并行: 解决冲突后通常要重新拉取几十个条目 (每个都带完整剧集列表), 串行会让 "应用合并" 等几十个 RTT.
+
                 val semaphore = Semaphore(INVALIDATE_REFETCH_PARALLELISM)
-                // 首次网络失败后不再发起新的拉取: 断网时每个请求都要等到连接超时, 剩余行由下面的 resetAllLastFetched 覆盖.
+
                 val failed = atomic(false)
                 subjectIds.distinct().map { subjectId ->
                     async {
@@ -1031,8 +926,7 @@ class SubjectCollectionRepositoryImpl(
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
-                                // 网络失败: 保留本地行, 靠下面的 resetAllLastFetched 让它下次重新拉取.
-                                // 绝不因失败删除, 否则条目会从正在展示的收藏列表里消失.
+
                                 failed.value = true
                                 logger.warn(e) { "Failed to refetch subject collection $subjectId after invalidation, keeping the cached row and skipping the remaining refetches" }
                                 return@withPermit
@@ -1040,17 +934,16 @@ class SubjectCollectionRepositoryImpl(
                             if (fetched == null || fetched.collectionType == null) {
                                 val tombstone = trackingMetadataRepository?.find(subjectId)
                                 if (tombstone?.localDeletedAt != null) {
-                                    // A local cancellation remains visible to the detail flow even
-                                    // when Bangumi still returns no collection for the subject.
+
                                     subjectCollectionDao.updateType(
                                         subjectId = subjectId,
-                                        collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                                        collectionType = subjectCollectionDao.findById(subjectId).first()?.collectionType
+                                            ?: UnifiedCollectionType.NOT_COLLECTED,
                                         lastUpdated = tombstone.localDeletedAt,
                                         lastFetched = currentTimeMillis(),
                                     )
                                 } else {
-                                    // A normal remote absence keeps the historical invalidation
-                                    // behaviour and removes the cache row with its episode cache.
+
                                     subjectCollectionDao.delete(subjectId)
                                 }
                             }
@@ -1058,7 +951,7 @@ class SubjectCollectionRepositoryImpl(
                     }
                 }.awaitAll()
             }
-            // 分页器创建时只看最新的 lastFetched 决定是否从服务端刷新; 已在展示的分页器由 collectionsInvalidated 触发重建
+
             subjectCollectionDao.resetAllLastFetched()
         }
         notifyCollectionsInvalidated()
@@ -1082,9 +975,6 @@ class SubjectCollectionRepositoryImpl(
             UnifiedCollectionType.DROPPED,
         )
 
-        /**
-         * [invalidateCache] 重新拉取条目的最大并行数.
-         */
         private const val INVALIDATE_REFETCH_PARALLELISM = 4
     }
 }
@@ -1135,7 +1025,7 @@ private fun SubjectCollectionEntity.toSubjectCollectionInfo(
             recurrence,
         ),
         progressInfo = SubjectProgressInfo.compute(subjectInfo, episodes, currentDate, recurrence),
-//        isOnAir = ,
+
         recurrence = recurrence,
         cachedStaffUpdated = cachedStaffUpdated,
         cachedCharactersUpdated = cachedCharactersUpdated,
@@ -1144,7 +1034,6 @@ private fun SubjectCollectionEntity.toSubjectCollectionInfo(
         relations = relations ?: SubjectRelations.Empty,
     )
 }
-
 
 data class LoadInfo(
     val offset: Int,
@@ -1164,7 +1053,7 @@ fun <T : Any> calculateIndexBasedLoadInfo(
             val firstLoadedPage = state.pages.firstOrNull()
             if (firstLoadedPage != null) {
                 if (firstLoadedPage.itemsBefore == 0) {
-                    // 没有更多数据了
+
                     return null
                 }
                 val offset = firstLoadedPage.itemsBefore - state.config.pageSize
@@ -1189,7 +1078,7 @@ fun <T : Any> calculateIndexBasedLoadInfo(
 
         LoadType.APPEND -> {
             val lastLoadedPage = state.pages.lastOrNull()
-            //                        logger.warn { "Mediator APPEND, lastLoadedPage ${}" }
+
             val offset = if (lastLoadedPage != null) {
                 lastLoadedPage.itemsBefore + lastLoadedPage.data.size
             } else {
@@ -1203,7 +1092,7 @@ fun <T : Any> calculateIndexBasedLoadInfo(
     }
 }
 
-fun AniSubjectCollection.toEntity(
+fun SubjectCollectionDto.toEntity(
     lastFetched: Long,
 ): SubjectCollectionEntity {
     return SubjectCollectionEntity(
@@ -1249,28 +1138,24 @@ fun AniSubjectCollection.toEntity(
     )
 }
 
-private fun AniTmdbSubjectArt.toSubjectTmdbArt(): SubjectTmdbArt = SubjectTmdbArt(
+private fun TmdbSubjectArtDto.toSubjectTmdbArt(): SubjectTmdbArt = SubjectTmdbArt(
     backdrops = backdrops.map { it.toTmdbImage() },
     posters = posters.mapValues { it.value.toTmdbImage() },
     logos = logos.mapValues { it.value.toTmdbImage() },
 )
 
-private fun AniTmdbImage.toTmdbImage(): TmdbImage = TmdbImage(medium = medium, large = large, vector = vector)
+private fun TmdbImageDto.toTmdbImage(): TmdbImage = TmdbImage(medium = medium, large = large, vector = vector)
 
-/**
- * 本地数据库中缓存的条目展示信息.
- * @see SubjectCollectionRepository.getSubjectDisplayInfoOffline
- */
 data class OfflineSubjectDisplayInfo(
     val subjectId: Int,
     val displayName: String,
     val imageLarge: String,
-    /** 列表用封面, 没有缩略图时与 [imageLarge] 相同. */
+
     val imageThumb: String,
     val totalEpisodes: Int,
 )
 
-fun AniSubjectRelations.toSubjectRelationsEntity(): SubjectRelations {
+fun SubjectRelationsDto.toSubjectRelationsEntity(): SubjectRelations {
     return SubjectRelations(
         seriesMainSubjectIds,
         seriesMainSubjectNames,
@@ -1279,12 +1164,12 @@ fun AniSubjectRelations.toSubjectRelationsEntity(): SubjectRelations {
     )
 }
 
-fun AniTag.toTag(): Tag = Tag(
+fun TagDto.toTag(): Tag = Tag(
     name = name,
     count = count,
 )
 
-fun AniFavourite.toSubjectCollectionStats(): SubjectCollectionStats {
+fun FavouriteDto.toSubjectCollectionStats(): SubjectCollectionStats {
     return SubjectCollectionStats(
         wish = wish,
         doing = doing,
@@ -1294,25 +1179,25 @@ fun AniFavourite.toSubjectCollectionStats(): SubjectCollectionStats {
     )
 }
 
-fun AniAnimeRecurrence.toSubjectRecurrence(): SubjectRecurrence? {
+fun AnimeRecurrenceDto.toSubjectRecurrence(): SubjectRecurrence? {
     return SubjectRecurrence(
         Instant.parse(startTime),
         interval = intervalMillis.milliseconds,
     )
 }
 
-fun AniCollectionType?.toUnifiedCollectionType(): UnifiedCollectionType {
+fun CollectionTypeDto?.toUnifiedCollectionType(): UnifiedCollectionType {
     return when (this) {
-        AniCollectionType.WISH -> UnifiedCollectionType.WISH
-        AniCollectionType.DOING -> UnifiedCollectionType.DOING
-        AniCollectionType.DONE -> UnifiedCollectionType.DONE
-        AniCollectionType.ON_HOLD -> UnifiedCollectionType.ON_HOLD
-        AniCollectionType.DROPPED -> UnifiedCollectionType.DROPPED
+        CollectionTypeDto.WISH -> UnifiedCollectionType.WISH
+        CollectionTypeDto.DOING -> UnifiedCollectionType.DOING
+        CollectionTypeDto.DONE -> UnifiedCollectionType.DONE
+        CollectionTypeDto.ON_HOLD -> UnifiedCollectionType.ON_HOLD
+        CollectionTypeDto.DROPPED -> UnifiedCollectionType.DROPPED
         null -> UnifiedCollectionType.NOT_COLLECTED
     }
 }
 
-fun AniEpisodeCollection.toEntity1(
+fun EpisodeCollectionDto.toEntity1(
     subjectId: Int,
     lastFetched: Long,
 ): EpisodeCollectionEntity {
@@ -1335,38 +1220,38 @@ fun AniEpisodeCollection.toEntity1(
     )
 }
 
-fun AniEpisodeType.toEpisodeType(): EpisodeType? {
+fun EpisodeTypeDto.toEpisodeType(): EpisodeType? {
     return when (this) {
-        AniEpisodeType.MAIN -> EpisodeType.MainStory
-        AniEpisodeType.SPECIAL -> EpisodeType.SP
-        AniEpisodeType.OP -> EpisodeType.OP
-        AniEpisodeType.ED -> EpisodeType.ED
-        AniEpisodeType.TRAILER -> EpisodeType.PV
-        AniEpisodeType.MAD -> EpisodeType.MAD
-        AniEpisodeType.OTHER -> null
+        EpisodeTypeDto.MAIN -> EpisodeType.MainStory
+        EpisodeTypeDto.SPECIAL -> EpisodeType.SP
+        EpisodeTypeDto.OP -> EpisodeType.OP
+        EpisodeTypeDto.ED -> EpisodeType.ED
+        EpisodeTypeDto.TRAILER -> EpisodeType.PV
+        EpisodeTypeDto.MAD -> EpisodeType.MAD
+        EpisodeTypeDto.OTHER -> null
     }
 }
 
-fun AniEpisodeCollectionType?.toUnifiedCollectionType(): UnifiedCollectionType {
+fun EpisodeCollectionTypeDto?.toUnifiedCollectionType(): UnifiedCollectionType {
     return when (this) {
         null -> UnifiedCollectionType.NOT_COLLECTED
-        AniEpisodeCollectionType.DONE -> UnifiedCollectionType.DONE
+        EpisodeCollectionTypeDto.DONE -> UnifiedCollectionType.DONE
     }
 }
 
-fun AniSelfRatingInfo.toSelfRatingInfo(): SelfRatingInfo {
+fun SelfRatingInfoDto.toSelfRatingInfo(): SelfRatingInfo {
     return SelfRatingInfo(
         score = score, comment = comment, tags = tags, isPrivate = isPrivate,
     )
 }
 
-fun UnifiedCollectionType.toAniSubjectCollectionType(): AniCollectionType? {
+fun UnifiedCollectionType.toWynimeSubjectCollectionType(): CollectionTypeDto? {
     return when (this) {
-        UnifiedCollectionType.WISH -> AniCollectionType.WISH
-        UnifiedCollectionType.DOING -> AniCollectionType.DOING
-        UnifiedCollectionType.DONE -> AniCollectionType.DONE
-        UnifiedCollectionType.ON_HOLD -> AniCollectionType.ON_HOLD
-        UnifiedCollectionType.DROPPED -> AniCollectionType.DROPPED
+        UnifiedCollectionType.WISH -> CollectionTypeDto.WISH
+        UnifiedCollectionType.DOING -> CollectionTypeDto.DOING
+        UnifiedCollectionType.DONE -> CollectionTypeDto.DONE
+        UnifiedCollectionType.ON_HOLD -> CollectionTypeDto.ON_HOLD
+        UnifiedCollectionType.DROPPED -> CollectionTypeDto.DROPPED
         UnifiedCollectionType.NOT_COLLECTED -> null
     }
 }

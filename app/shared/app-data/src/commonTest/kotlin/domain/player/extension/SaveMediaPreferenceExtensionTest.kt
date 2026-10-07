@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(UnsafeEpisodeSessionApi::class)
 
-package me.him188.ani.app.domain.player.extension
+package com.wynime.app.domain.player.extension
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,34 +17,31 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.domain.episode.EpisodeFetchSelectPlayState
-import me.him188.ani.app.domain.episode.EpisodePlayerTestSuite
-import me.him188.ani.app.domain.episode.UnsafeEpisodeSessionApi
-import me.him188.ani.app.domain.episode.mediaFetchSessionFlow
-import me.him188.ani.app.domain.episode.mediaSelectorFlow
-import me.him188.ani.app.domain.media.createTestDefaultMedia
-import me.him188.ani.app.domain.media.createTestMediaProperties
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.domain.media.resolver.TestUniversalMediaResolver
-import me.him188.ani.app.domain.media.selector.MediaAutoSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorEventSavePreferenceUseCase
-import me.him188.ani.app.domain.media.selector.eventHandling
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.datasources.api.topic.SubtitleLanguage
-import me.him188.ani.utils.coroutines.childScope
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
+import com.wynime.app.domain.episode.EpisodePlayerTestSuite
+import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
+import com.wynime.app.domain.episode.mediaFetchSessionFlow
+import com.wynime.app.domain.episode.mediaSelectorFlow
+import com.wynime.app.domain.media.createTestDefaultMedia
+import com.wynime.app.domain.media.createTestMediaProperties
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.media.resolver.TestUniversalMediaResolver
+import com.wynime.app.domain.media.selector.MediaAutoSelector
+import com.wynime.app.domain.media.selector.MediaSelectorEventSavePreferenceUseCase
+import com.wynime.app.domain.media.selector.eventHandling
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.datasources.api.topic.SubtitleLanguage
+import com.wynime.utils.coroutines.childScope
 
-/**
- * @see SaveMediaPreferenceExtension
- */
 class SaveMediaPreferenceExtensionTest : AbstractPlayerExtensionTest() {
     private fun TestScope.createCase(
         saved: MutableList<Pair<Int, MediaPreference>>,
@@ -161,7 +149,6 @@ class SaveMediaPreferenceExtensionTest : AbstractPlayerExtensionTest() {
         val selected = MediaAutoSelector(selector).select(session)
         assertEquals(myMedia, selected)
 
-        // PINNED: SAVE-01 自动选择 (selectDefault, updatePreference=false) 不广播 onChangePreference, 不触发保存
         advanceTimeBy(1001)
         runCurrent()
         advanceUntilIdle()

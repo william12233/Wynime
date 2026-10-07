@@ -1,23 +1,13 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import me.him188.ani.source.plugin.api.SourcePluginMetadata
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
+import com.wynime.source.plugin.api.SourcePluginMetadata
+import com.wynime.source.plugin.api.SourcePluginPlatform
 
 const val SOURCE_PLUGIN_REPOSITORY_SCHEMA_VERSION = 1
-const val SOURCE_PLUGIN_API_VERSION = 2
+const val SOURCE_PLUGIN_API_VERSION = 3
 
-/** The single first-party repository configured by the host application. */
 object SourcePluginRepositoryDefaults {
     const val owner = "william12233"
     const val repository = "Wynime"
@@ -33,7 +23,6 @@ data class SourcePluginRepositoryIndex(
     val plugins: List<SourcePluginIndexEntry> = emptyList(),
 )
 
-/** Last successfully validated first-party index used while the repository is unavailable. */
 @Serializable
 data class SourcePluginRepositoryCache(
     val etag: String? = null,
@@ -100,7 +89,7 @@ data class InstalledSourcePlugin(
     val id: String,
     val version: String,
     val manifest: SourcePluginManifest,
-    /** Absolute path to the extracted JVM/DEX artifact. */
+
     val artifactPath: String,
     val enabled: Boolean = true,
 )

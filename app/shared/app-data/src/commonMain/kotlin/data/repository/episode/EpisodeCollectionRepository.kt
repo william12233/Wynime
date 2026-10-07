@@ -1,40 +1,31 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.episode
+package com.wynime.app.data.repository.episode
 
 import androidx.paging.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.network.EpisodeService
-import me.him188.ani.app.data.network.toBangumiEpType
-import me.him188.ani.app.data.persistent.database.dao.EpisodeCollectionDao
-import me.him188.ani.app.data.persistent.database.dao.EpisodeCollectionEntity
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionEntity
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.subject.GetEpisodeTypeFiltersUseCase
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.data.repository.subject.toEpisodeType
-import me.him188.ani.app.data.repository.subject.toUnifiedCollectionType
-import me.him188.ani.app.domain.episode.EpisodeCollections
-import me.him188.ani.client.models.AniEpisodeCollection
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.currentTimeMillis
-import me.him188.ani.utils.serialization.BigNum
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.network.EpisodeService
+import com.wynime.app.data.network.toBangumiEpType
+import com.wynime.app.data.persistent.database.dao.EpisodeCollectionDao
+import com.wynime.app.data.persistent.database.dao.EpisodeCollectionEntity
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionEntity
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.subject.GetEpisodeTypeFiltersUseCase
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.subject.toEpisodeType
+import com.wynime.app.data.repository.subject.toUnifiedCollectionType
+import com.wynime.app.domain.episode.EpisodeCollections
+import com.wynime.models.EpisodeCollectionDto
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.currentTimeMillis
+import com.wynime.utils.serialization.BigNum
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
@@ -44,7 +35,6 @@ class EpisodeCollectionRepository(
     private val subjectDao: SubjectCollectionDao,
     private val episodeCollectionDao: EpisodeCollectionDao,
     private val episodeService: EpisodeService,
-    private val animeScheduleRepository: AnimeScheduleRepository,
     subjectCollectionRepository: Lazy<SubjectCollectionRepository>,
     private val getEpisodeTypeFiltersUseCase: GetEpisodeTypeFiltersUseCase,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
@@ -61,9 +51,6 @@ class EpisodeCollectionRepository(
         return (currentTimeMillis() - lastFetched).milliseconds > cacheExpiry
     }
 
-    /**
-     * 获取指定条目的指定剧集信息, 如果没有则从网络获取并缓存
-     */
     fun episodeCollectionInfoFlow(subjectId: Int, episodeId: Int): Flow<EpisodeCollectionInfo> {
         return episodeCollectionDao.findByEpisodeId(episodeId).map { entity ->
             entity?.takeIf { !it.isExpired() }
@@ -78,13 +65,6 @@ class EpisodeCollectionRepository(
         }.flowOn(defaultDispatcher)
     }
 
-    /**
-     * 获取指定条目的所有剧集信息, 如果没有则从网络获取.
-     *
-     * 如果 [subjectId] 对应的 [SubjectCollectionEntity] 缓存存在, 则获取到的剧集信息还会插入到缓存 ([EpisodeCollectionEntity]). 否则不会操作缓存 (因为 foreign key).
-     *
-     * 当网络错误时, 总是会使用缓存.
-     */
     fun subjectEpisodeCollectionInfosFlow(
         subjectId: Int,
     ): Flow<List<EpisodeCollectionInfo>> = subjectCollectionRepository.subjectCollectionFlow(subjectId).map {
@@ -101,16 +81,9 @@ class EpisodeCollectionRepository(
             subjectDao.findById(subjectId).first()
                 ?.takeIf { !it.isExpired() }
                 ?.totalEpisodes
-                ?: // 无法确定条目是否有剧集, 无法确认缓存是否有效, 保守判定为无效
+                ?:
                 return false
 
-            // 不能这样判断, 因为 bangumi 数据上 subjectTotalEpisodes 可能一直都是 0, 但是实际上有剧集.
-//            if (subjectTotalEpisodes == 0) {
-//                // 条目没有剧集, 缓存有效 (为空)
-//                return true
-//            }
-
-            // 条目有剧集而缓存未空. 缓存肯定无效. 已经无效了就不用再判断时间了
             return false
         }
 
@@ -136,9 +109,6 @@ class EpisodeCollectionRepository(
         }
     }.flowOn(defaultDispatcher)
 
-    /**
-     * 设置指定条目的所有剧集为已看.
-     */
     suspend fun setAllEpisodesWatched(subjectId: Int) = withContext(defaultDispatcher) {
         val episodeIds = subjectEpisodeCollectionInfosFlow(subjectId)
             .first()
@@ -157,18 +127,12 @@ class EpisodeCollectionRepository(
                 .first().collectionType == UnifiedCollectionType.NOT_COLLECTED
         ) {
             logger.warn { "User has not yet collected subject $subjectId when we want to setEpisodeCollectionType, ignoring." }
-//            subjectCollectionRepository.setSubjectCollectionTypeOrDelete(subjectId, UnifiedCollectionType.DOING)
+
         }
         episodeService.setEpisodeCollection(subjectId, listOf(episodeId), collectionType)
         episodeCollectionDao.updateSelfCollectionType(subjectId, episodeId, collectionType)
     }
 
-    /**
-     * 获取指定条目的指定剧集的收藏状态.
-     *
-     * @param allowNetwork 是否允许网络请求. 如果不允许, 将只返回本地缓存, 即使已经失效.
-     * @return 收藏状态. 当无法确定时返回 `null`.
-     */
     suspend fun getEpisodeCollectionType(
         subjectId: Int,
         episodeId: Int,
@@ -192,9 +156,6 @@ class EpisodeCollectionRepository(
         }
     }
 
-    /**
-     * 获取指定条目是否已经完结. 不是用户是否看完, 只要条目本身完结了就算.
-     */
     fun subjectCompletedFlow(subjectId: Int): Flow<Boolean> {
         return subjectEpisodeCollectionInfosFlow(subjectId)
             .combine(subjectCollectionRepository.subjectCollectionFlow(subjectId)) { epCollection, subject ->
@@ -202,9 +163,6 @@ class EpisodeCollectionRepository(
             }
     }
 
-    /**
-     * Loads [EpisodeCollectionEntity]
-     */
     private inner class EpisodeCollectionsRemoteMediator<T : Any>(
         private val episodeCollectionDao: EpisodeCollectionDao,
         private val episodeService: EpisodeService,
@@ -234,8 +192,7 @@ class EpisodeCollectionRepository(
                 val episodeTypes = getEpisodeTypeFiltersUseCase().first()
                 val episodes = episodeService.getEpisodeCollectionInfosPaged(
                     subjectId,
-                    // TODO: 2025/4/10 这里实际上不可以用 singleOrNull.
-                    //  为 null 时会查询所有类型, 然后再过滤, 导致结果数量可能少于服务器数量, UI paging 反馈的 index 可能错误, 导致无限加载某一页.
+
                     episodeType = episodeTypes.singleOrNull()?.toBangumiEpType(),
                     offset = offset,
                     limit = state.config.pageSize,
@@ -291,7 +248,7 @@ fun EpisodeCollectionEntity.toEpisodeCollectionInfo() =
         collectionType = selfCollectionType,
     )
 
-fun AniEpisodeCollection.toEpisodeCollectionInfo() =
+fun EpisodeCollectionDto.toEpisodeCollectionInfo() =
     EpisodeCollectionInfo(
         episodeInfo = toEpisodeInfo(),
         collectionType = collectionType.toUnifiedCollectionType(),
@@ -313,7 +270,7 @@ private fun EpisodeCollectionEntity.toEpisodeInfo(): EpisodeInfo {
     )
 }
 
-private fun AniEpisodeCollection.toEpisodeInfo(): EpisodeInfo {
+private fun EpisodeCollectionDto.toEpisodeInfo(): EpisodeInfo {
     return EpisodeInfo(
         episodeId = this.episodeId.toInt(),
         type = this.type.toEpisodeType(),

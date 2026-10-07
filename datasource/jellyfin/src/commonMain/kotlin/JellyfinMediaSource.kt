@@ -1,25 +1,16 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.datasources.jellyfin
 
-package me.him188.ani.datasources.jellyfin
-
-import me.him188.ani.datasources.api.source.FactoryId
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.datasources.api.source.MediaSourceFactory
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.get
-import me.him188.ani.datasources.api.source.parameter.MediaSourceParameters
-import me.him188.ani.datasources.api.source.parameter.MediaSourceParametersBuilder
-import me.him188.ani.datasources.api.source.parameter.hasValue
-import me.him188.ani.utils.ktor.ScopedHttpClient
+import com.wynime.datasources.api.source.FactoryId
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.datasources.api.source.MediaSourceFactory
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.get
+import com.wynime.datasources.api.source.parameter.MediaSourceParameters
+import com.wynime.datasources.api.source.parameter.MediaSourceParametersBuilder
+import com.wynime.datasources.api.source.parameter.hasValue
+import com.wynime.utils.ktor.ScopedHttpClient
 
 class JellyfinMediaSource(
     config: MediaSourceConfig,
@@ -62,11 +53,7 @@ class JellyfinMediaSource(
             description = "仅 API Key 模式使用。可在 Jellyfin \"控制台 - API 秘钥\" 中添加",
             visibleWhen = authMode.hasValue(AUTH_MODE_API_KEY),
         )
-        // SECURITY: Legacy media-source parameters are serialized as plain text in
-        // MediaSourceConfig.arguments. Password authentication intentionally uses the same local
-        // storage path as API-key authentication; neither secret is protected by an OS credential
-        // store. An HTTP base URL also sends the login password without transport encryption.
-        // Code handling logs, exports, or diagnostics must redact both secrets.
+
         val username = string(
             "username",
             description = "仅用户名密码模式使用",

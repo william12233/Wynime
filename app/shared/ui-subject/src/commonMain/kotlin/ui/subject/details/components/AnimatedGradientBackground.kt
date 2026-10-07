@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.components
+package com.wynime.app.ui.subject.details.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
@@ -42,8 +33,7 @@ internal fun AnimatedGradientBackground(
     blurRadius: Dp = 60.dp,
 ) {
     var time by remember { mutableFloatStateOf(0f) }
-    // Inspection / preview environments don't tick frames; leave `time` at
-    // zero so screenshot tests get a deterministic still frame.
+
     val animate = !LocalInspectionMode.current
     LaunchedEffect(speed, animate) {
         if (!animate) return@LaunchedEffect
@@ -97,5 +87,4 @@ private const val RADIUS_SWING: Float = 0.15f
 private const val BASE_RADIUS_FACTOR: Float = 0.55f
 private const val NANOS_PER_SECOND: Double = 1_000_000_000.0
 
-// Lower fraction of the glow band that fades into the page background.
 private const val FADE_FRACTION: Float = 0.5f

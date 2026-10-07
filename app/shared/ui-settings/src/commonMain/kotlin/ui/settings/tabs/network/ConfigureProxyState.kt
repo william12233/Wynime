@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.network
+package com.wynime.app.ui.settings.tabs.network
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Immutable
@@ -15,13 +6,13 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.flow.Flow
-import me.him188.ani.app.data.models.preference.MediaSourceProxySettings
-import me.him188.ani.app.data.models.preference.ProxyAuthorization
-import me.him188.ani.app.data.models.preference.ProxyConfig
-import me.him188.ani.app.data.models.preference.ProxyMode
-import me.him188.ani.app.data.models.preference.ProxySettings
-import me.him188.ani.app.ui.foundation.icons.BangumiNext
-import me.him188.ani.app.ui.foundation.icons.BangumiNextIconColor
+import com.wynime.app.data.models.preference.MediaSourceProxySettings
+import com.wynime.app.data.models.preference.ProxyAuthorization
+import com.wynime.app.data.models.preference.ProxyConfig
+import com.wynime.app.data.models.preference.ProxyMode
+import com.wynime.app.data.models.preference.ProxySettings
+import com.wynime.app.ui.foundation.icons.BangumiNext
+import com.wynime.app.ui.foundation.icons.BangumiNextIconColor
 
 @Stable
 class ConfigureProxyState(
@@ -98,8 +89,6 @@ sealed class ProxyTestCase(
     )
 }
 
-// region transform between ui ProxyUIConfig and data ProxySettings
-
 fun ProxyMode.toUIMode(): ProxyUIMode {
     return when (this) {
         ProxyMode.DISABLED -> ProxyUIMode.DISABLED
@@ -139,4 +128,3 @@ fun ProxyUIConfig.toDataSettings(): ProxySettings {
     )
 }
 
-// endregion

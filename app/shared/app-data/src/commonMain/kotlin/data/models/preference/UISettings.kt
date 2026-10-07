@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models.preference
+package com.wynime.app.data.models.preference
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -18,25 +9,14 @@ import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import me.him188.ani.app.navigation.MainScreenPage
-
+import com.wynime.app.navigation.MainScreenPage
 
 @Serializable
 @Immutable
 data class UISettings(
-    /**
-     * APP 语言 (如果系统支持设置).
-     *
-     * 如果为 `null`, 则使用系统默认语言.
-     *
-     * @since 4.9
-     * @see me.him188.ani.app.ui.lang.SupportedLocales
-     */
+
     val appLanguage: @Serializable(LocaleSerializer::class) Locale? = null,
 
-    /**
-     * 启动 App 时的初始页面
-     */
     val mainSceneInitialPage: MainScreenPage = MainScreenPage.Exploration,
 
     @Suppress("DEPRECATION") @Deprecated(
@@ -68,9 +48,7 @@ enum class DesktopCloseBehavior {
 @Immutable
 data class LegacyThemeSettings(
     val darkMode: DarkMode = DarkMode.AUTO,
-    /**
-     * Only on Android
-     */
+
     val dynamicTheme: Boolean = false,
     @Suppress("PropertyName") @Transient val _placeholder: Int = 0,
 ) {
@@ -94,7 +72,7 @@ data class MyCollectionsSettings(
 @Serializable
 @Immutable
 data class SubjectAppearanceSettings(
-    /** 优先显示条目原名 (通常为日文), 而非 Bangumi 简体中文名. */
+
     val useOriginalTitle: Boolean = false,
 ) {
     companion object {
@@ -105,19 +83,11 @@ data class SubjectAppearanceSettings(
 
 @Serializable
 enum class NsfwMode {
-    /**
-     * 从列表中完全隐藏 NSFW 内容
-     */
+
     HIDE,
 
-    /**
-     * 显示一个遮罩
-     */
     BLUR,
 
-    /**
-     * 不做任何隐藏操作, 像一个正常条目一样显示
-     */
     DISPLAY,
 }
 
@@ -137,7 +107,7 @@ data class SearchSettings(
 @Immutable
 data class EpisodeProgressSettings(
     val theme: EpisodeListProgressTheme = EpisodeListProgressTheme.Default,
-    /** 在选集列表中显示 TMDB 剧照 (仅部分番剧提供). */
+
     val showEpisodeImages: Boolean = true,
 ) {
     companion object {
@@ -149,14 +119,9 @@ data class EpisodeProgressSettings(
 @Immutable
 @Serializable
 enum class EpisodeListProgressTheme {
-    /**
-     * 点亮模式, 看过的是亮色
-     */
+
     LIGHT_UP,
 
-    /**
-     * 动作模式, 可以看的是亮色
-     */
     ACTION;
 
     companion object {

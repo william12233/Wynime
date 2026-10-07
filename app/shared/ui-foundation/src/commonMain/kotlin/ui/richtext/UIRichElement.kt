@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.richtext
+package com.wynime.app.ui.richtext
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -40,10 +31,6 @@ sealed interface UIRichElement {
         ) : Annotated
     }
 
-    /**
-     * @param align 整段文本的水平对齐方式, [TextAlign.Unspecified] 表示不指定, 跟随默认行为.
-     * 对齐是段落级属性, 因此一个 [AnnotatedText] 内的所有 [slice] 共享同一个对齐方式.
-     */
     data class AnnotatedText(
         val slice: List<Annotated>,
         val maxLine: Int? = null,

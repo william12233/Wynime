@@ -1,4 +1,3 @@
-// @formatter:off
 @file:Suppress(
   "FunctionName",
   "ClassName",
@@ -10,17 +9,9 @@
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.title.PatternBasedTitleParserTestSuite
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.title.PatternBasedTitleParserTestSuite
 
-/**
- * 原名: `迷宫饭`
- * 数据源: `web-primary`
- *
- * 由 `test-codegen` 的 `GenerateTests.kt` 生成, 不要手动修改!
- * 如果你优化了解析器, 这些 test 可能会失败, 请检查是否它是因为以前解析错误而现在解析正确了. 
- * 如果是, 请更新测试数据: 执行 `GenerateTests.kt`.
- */
 public class PatternTitleParserTest迷宫饭 : PatternBasedTitleParserTestSuite() {
   @Test
   public fun `670480_1_Dungeon_Meshi_21_BIG5_MP4_1920X1080`() {
@@ -3219,4 +3210,3 @@ public class PatternTitleParserTest迷宫饭 : PatternBasedTitleParserTestSuite(
   }
 }
 
-// @formatter:on

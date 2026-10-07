@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.icons
+package com.wynime.app.ui.foundation.icons
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType
@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 
 private var _GithubMarkWhite: ImageVector? = null
 
-public val AniIcons.GithubMarkWhite: ImageVector
+public val WynimeIcons.GithubMarkWhite: ImageVector
     get() {
         if (_GithubMarkWhite != null) {
             return _GithubMarkWhite!!

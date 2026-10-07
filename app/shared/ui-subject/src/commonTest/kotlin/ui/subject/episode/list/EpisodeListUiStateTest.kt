@@ -1,23 +1,14 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.subject.episode.list
 
-package me.him188.ani.app.ui.subject.episode.list
-
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.subject.SubjectRecurrence
-import me.him188.ani.app.data.models.subject.createTestSubjectCollection
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.subject.SubjectRecurrence
+import com.wynime.app.data.models.subject.createTestSubjectCollection
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -26,12 +17,9 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
 
-/**
- * 剧集列表 "未开播" 着色规则: [EpisodeListUiState.isEpisodeBroadcast], 以及 [EpisodeListUiState.from] 对它的使用.
- */
 @OptIn(TestOnly::class)
 class EpisodeListUiStateTest {
-    /** 周五 14:30Z 每周 (545917 これ描いて死ね) */
+
     private val recurrence = SubjectRecurrence(Instant.parse("2026-07-03T14:30:00Z"), 7.days)
     private val now = Instant.parse("2026-09-04T00:00:00Z")
 
@@ -120,7 +108,7 @@ class EpisodeListUiStateTest {
 
     @Test
     fun `exact_slot_flips_at_the_slot_instant`() {
-        val airDate = PackedDate(2026, 7, 10) // ep2 -> 2026-07-10T14:30Z
+        val airDate = PackedDate(2026, 7, 10)
         val slot = Instant.parse("2026-07-10T14:30:00Z")
         assertFalse(EpisodeListUiState.isEpisodeBroadcast(recurrence, airDate, slot - 1.milliseconds))
         assertTrue(EpisodeListUiState.isEpisodeBroadcast(recurrence, airDate, slot))

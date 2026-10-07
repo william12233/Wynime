@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.details
+package com.wynime.app.ui.subject.episode.details
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -77,62 +68,62 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.him188.ani.app.data.models.episode.preferredDisplayName
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.data.models.subject.preferredDisplayName
-import me.him188.ani.app.domain.episode.SetEpisodeCollectionTypeRequest
-import me.him188.ani.app.domain.episode.SubjectRecommendation
-import me.him188.ani.app.domain.media.cache.EpisodeCacheStatus
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.navigation.SubjectDetailPlaceholder
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.navigation.LocalBrowserNavigator
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBar
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBarPadding
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.paddingIfNotEmpty
-import me.him188.ani.app.ui.foundation.widgets.ModalSideSheet
-import me.him188.ani.app.ui.foundation.widgets.rememberModalSideSheetState
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_close_selector
-import me.him188.ani.app.ui.lang.subject_episode_related_recommendations
-import me.him188.ani.app.ui.lang.subject_episode_select_media_source
-import me.him188.ani.app.ui.lang.subject_episode_wish_change_to
-import me.him188.ani.app.ui.mediafetch.MediaSelectorState
-import me.him188.ani.app.ui.mediafetch.MediaSelectorView
-import me.him188.ani.app.ui.mediafetch.rememberTestMediaSelectorState
-import me.him188.ani.app.ui.mediafetch.request.TestMediaFetchRequest
-import me.him188.ani.app.ui.mediaselect.summary.MediaSelectorSummary
-import me.him188.ani.app.ui.mediaselect.summary.MediaSelectorSummaryBanner
-import me.him188.ani.app.ui.mediaselect.summary.MediaSelectorSummaryCard
-import me.him188.ani.app.ui.mediaselect.summary.createTestMediaSelectorSummaryAutoSelecting
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.ui.subject.AiringLabel
-import me.him188.ani.app.ui.subject.AiringLabelState
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeDialogsHost
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.app.ui.subject.collection.components.rememberTestEditableSubjectCollectionTypeState
-import me.him188.ani.app.ui.subject.createTestAiringLabelState
-import me.him188.ani.app.ui.subject.details.SubjectDetailsScreen
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsStateLoader
-import me.him188.ani.app.ui.subject.details.state.createTestSubjectDetailsLoader
-import me.him188.ani.app.ui.subject.episode.EpisodePageLoadError
-import me.him188.ani.app.ui.subject.episode.details.components.FavoriteIconButton
-import me.him188.ani.app.ui.subject.episode.details.components.SubjectRecommendationCard
-import me.him188.ani.app.ui.user.SelfInfoUiState
-import me.him188.ani.app.ui.user.TestSelfInfoUiState
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.analytics.Analytics
-import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.SubjectEnter
-import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.SubjectRecommendationClick
-import me.him188.ani.utils.analytics.recordEvent
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.episode.preferredDisplayName
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.data.models.subject.preferredDisplayName
+import com.wynime.app.domain.episode.SetEpisodeCollectionTypeRequest
+import com.wynime.app.domain.episode.SubjectRecommendation
+import com.wynime.app.domain.media.cache.EpisodeCacheStatus
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.navigation.SubjectDetailPlaceholder
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.navigation.LocalBrowserNavigator
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.desktopTitleBar
+import com.wynime.app.ui.foundation.layout.desktopTitleBarPadding
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.layout.paddingIfNotEmpty
+import com.wynime.app.ui.foundation.widgets.ModalSideSheet
+import com.wynime.app.ui.foundation.widgets.rememberModalSideSheetState
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_close_selector
+import com.wynime.app.ui.lang.subject_episode_related_recommendations
+import com.wynime.app.ui.lang.subject_episode_select_media_source
+import com.wynime.app.ui.lang.subject_episode_wish_change_to
+import com.wynime.app.ui.mediafetch.MediaSelectorState
+import com.wynime.app.ui.mediafetch.MediaSelectorView
+import com.wynime.app.ui.mediafetch.rememberTestMediaSelectorState
+import com.wynime.app.ui.mediafetch.request.TestMediaFetchRequest
+import com.wynime.app.ui.mediaselect.summary.MediaSelectorSummary
+import com.wynime.app.ui.mediaselect.summary.MediaSelectorSummaryBanner
+import com.wynime.app.ui.mediaselect.summary.MediaSelectorSummaryCard
+import com.wynime.app.ui.mediaselect.summary.createTestMediaSelectorSummaryAutoSelecting
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.subject.AiringLabel
+import com.wynime.app.ui.subject.AiringLabelState
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeDialogsHost
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.collection.components.rememberTestEditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.createTestAiringLabelState
+import com.wynime.app.ui.subject.details.SubjectDetailsScreen
+import com.wynime.app.ui.subject.details.state.SubjectDetailsStateLoader
+import com.wynime.app.ui.subject.details.state.createTestSubjectDetailsLoader
+import com.wynime.app.ui.subject.episode.EpisodePageLoadError
+import com.wynime.app.ui.subject.episode.details.components.FavoriteIconButton
+import com.wynime.app.ui.subject.episode.details.components.SubjectRecommendationCard
+import com.wynime.app.ui.user.SelfInfoUiState
+import com.wynime.app.ui.user.TestSelfInfoUiState
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.analytics.Analytics
+import com.wynime.utils.analytics.AnalyticsEvent.Companion.SubjectEnter
+import com.wynime.utils.analytics.AnalyticsEvent.Companion.SubjectRecommendationClick
+import com.wynime.utils.analytics.recordEvent
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
 @Stable
@@ -145,17 +136,10 @@ class EpisodeDetailsState(
     private val subject by subjectInfo
 
     val subjectId by derivedStateOf { subject.subjectId }
-//    var subjectDetailsState by mutableStateOf<SubjectDetailsState?>(null)
-//    val subjectDetailsStateError: SearchProblem
 
     var showEpisodes: Boolean by mutableStateOf(false)
 }
 
-/**
- * 番剧详情内容, 包含条目的基本信息, 选集, 评分.
- *
- * has inner top padding 8.dp
- */
 @Composable
 fun EpisodeDetails(
     mediaSelectorSummary: MediaSelectorSummary,
@@ -276,33 +260,7 @@ fun EpisodeDetails(
                 )
             }
         },
-        /* subjectSuggestions = {
-            // 推荐一些状态修改操作
-            val editableSubjectCollectionTypePresentation by editableSubjectCollectionTypeState.presentationFlow.collectAsStateWithLifecycle()
-            if (selfInfo.isSessionValid == true) {
-                when (editableSubjectCollectionTypePresentation.selfCollectionType) {
-                    // 2025-10-20 改为在标题显示这个
-                    /*UnifiedCollectionType.NOT_COLLECTED -> {
-                        SubjectCollectionTypeSuggestions.Collect(editableSubjectCollectionTypeState)
-                    }*/
 
-                    UnifiedCollectionType.WISH, UnifiedCollectionType.ON_HOLD -> {
-                        ProvideTextStyle(MaterialTheme.typography.labelLarge) {
-                            Text(
-                                stringResource(Lang.subject_episode_wish_change_to),
-                                Modifier.align(Alignment.CenterVertically),
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { // 一起换行
-                            SubjectCollectionTypeSuggestions.MarkAsDoing(editableSubjectCollectionTypeState)
-                            SubjectCollectionTypeSuggestions.MarkAsDropped(editableSubjectCollectionTypeState)
-                        }
-                    }
-
-                    else -> {}
-                }
-            }
-        },*/
         mediaSelectorItem = { innerPadding ->
             var showMediaSelector by rememberSaveable { mutableStateOf(false) }
             if (showMediaSelector) {
@@ -319,7 +277,7 @@ fun EpisodeDetails(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .widthIn(300.dp, 400.dp)
-                                .windowInsetsPadding(AniWindowInsets.safeDrawing),
+                                .windowInsetsPadding(WynimeWindowInsets.safeDrawing),
                         ) {
                             TopAppBar(
                                 title = {
@@ -488,9 +446,6 @@ private fun SectionTitle(
     }
 }
 
-/**
- * [subjectRecommendations] 是最底部的内容, 可以使用 [LazyListScope].
- */
 @Composable
 fun EpisodeDetailsScaffold(
     subjectTitle: @Composable () -> Unit,
@@ -530,7 +485,7 @@ fun EpisodeDetailsScaffold(
         }
 
         item("episode_detail_header") {
-            // header
+
             Column(
                 Modifier.padding(horizontalPaddingValues),
             ) {
@@ -574,7 +529,7 @@ fun EpisodeDetailsScaffold(
                     Modifier.padding(top = 8.dp, bottom = 8.dp),
                 ) {
                     FlowRow(
-                        Modifier,/*.weight(1f)*/
+                        Modifier,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
                     ) {
@@ -601,13 +556,12 @@ fun EpisodeDetailsScaffold(
         item("system_bar_spacer") {
             Spacer(
                 Modifier.windowInsetsBottomHeight(
-                    AniWindowInsets.safeDrawing,
+                    WynimeWindowInsets.safeDrawing,
                 ).heightIn(min = Dp.Hairline),
             )
         }
     }
 }
-
 
 @Composable
 @PreviewLightDark

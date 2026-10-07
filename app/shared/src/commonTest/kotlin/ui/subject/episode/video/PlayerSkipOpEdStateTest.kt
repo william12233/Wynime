@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.subject.episode.video
 
-package me.him188.ani.app.ui.subject.episode.video
-
-import me.him188.ani.app.ui.foundation.stateOf
+import com.wynime.app.ui.foundation.stateOf
 import org.openani.mediamp.InternalMediampApi
 import org.openani.mediamp.metadata.Chapter
 import kotlin.test.Test
@@ -89,24 +80,21 @@ class PlayerSkipOpEdStateTest {
             assertEquals(false, state.skipped)
         }
 
-        /**
-         * 成功自动跳过 OP 后, 用户又回到 OP 开头, 此时不能触发自动跳过
-         */
         @Test
         fun `after skip op and return to op`() {
             var skipTime = 0L
             val localState = createState_opChapterOnStart_24minutes() {
                 skipTime = it
             }
-            // 到达 OP 开头
+
             localState.update(0L)
             assertEquals(80_000L, skipTime)
             assertEquals(false, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 跳过 OP
+
             localState.update(skipTime)
             skipTime = 0L
-            // 回到 OP 开头
+
             localState.update(0L)
             assertEquals(0L, skipTime)
             assertEquals(false, localState.showSkipTips)
@@ -275,80 +263,71 @@ class PlayerSkipOpEdStateTest {
             assertEquals(false, state.skipped)
         }
 
-        /**
-         * 成功自动跳过 OP 后, 用户又回到 OP 开头, 此时不能触发自动跳过
-         */
         @Test
         fun `after skip op and return to op`() {
             var skipTime = 0L
             val localState = createState_opChapterOnChapter2_24minutes {
                 skipTime = it
             }
-            // 到达 OP 开头
+
             localState.update(10_000L)
             assertEquals(100_000L, skipTime)
             assertEquals(false, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 跳过 OP
+
             localState.update(skipTime)
             skipTime = 0L
-            // 回到 OP 开头
+
             localState.update(10_000L)
             assertEquals(0L, skipTime)
             assertEquals(false, localState.showSkipTips)
             assertEquals(true, localState.skipped)
         }
 
-        /**
-         * 用户取消跳过后, 用户又回到 OP 开头, 此时不能触发自动跳过
-         */
         @Test
         fun `after cancel skip op and return to op`() {
             var skipTime = 0L
             val localState = createState_opChapterOnChapter2_24minutes {
                 skipTime = it
             }
-            // 显示跳过提示
+
             localState.update(7_000L)
             assertEquals(true, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 取消跳过
+
             localState.cancelSkipOpEd()
             assertEquals(false, localState.showSkipTips)
             assertEquals(true, localState.skipped)
-            // 到达 OP 开头
+
             localState.update(10_000L)
             assertEquals(0L, skipTime)
             assertEquals(false, localState.showSkipTips)
             assertEquals(true, localState.skipped)
-            // 跳过 OP
+
             localState.update(skipTime)
             skipTime = 0L
-            // 回到 OP 开头
+
             localState.update(10_000L)
             assertEquals(0L, skipTime)
             assertEquals(false, localState.showSkipTips)
             assertEquals(true, localState.skipped)
         }
 
-        /**
-         * 显示即将跳过 OP 的弹窗, 用户立即拖到别的地方, 应当取消跳过并且记忆操作. 当用户又回到 OP 开头, 此时不能触发自动跳过
-         */
         @Test
         fun `show skip tips and seek to other place and return to op`() {
             var skipTime = 0L
             val localState = createState_opChapterOnChapter2_24minutes {
                 skipTime = it
             }
-            // 显示跳过提示
+
             localState.update(7_000L)
             assertEquals(true, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 滑到 OP 中
+
             localState.update(40_000L)
             assertEquals(false, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 回到 OP 开头
+
             localState.update(10_000L)
             assertEquals(0L, skipTime)
             assertEquals(false, localState.showSkipTips)
@@ -361,19 +340,19 @@ class PlayerSkipOpEdStateTest {
             val localState = createState_opChapterOnChapter2_24minutes {
                 skipTime = it
             }
-            // 到达 OP 前10秒
+
             localState.update(0)
             assertEquals(false, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 滑到 OP 后
+
             localState.update(110_000L)
             assertEquals(false, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 回到显示跳过提示
+
             localState.update(7_000L)
             assertEquals(true, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 到达 OP 开头
+
             localState.update(10_000L)
             assertEquals(100_000L, skipTime)
             assertEquals(false, localState.showSkipTips)
@@ -383,15 +362,15 @@ class PlayerSkipOpEdStateTest {
         @Test
         fun `from show skip tips and seek to after op then return to show skip tips`() {
             val localState = createState_opChapterOnChapter2_24minutes()
-            // 到达 OP 前3秒
+
             localState.update(7_000L)
             assertEquals(true, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 滑到 OP 后
+
             localState.update(110_000L)
             assertEquals(false, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 回到显示跳过提示
+
             localState.update(7_000L)
             assertEquals(false, localState.showSkipTips)
             assertEquals(true, localState.skipped)
@@ -400,15 +379,15 @@ class PlayerSkipOpEdStateTest {
         @Test
         fun `from show skip tips and seek to at op then return to show skip tips`() {
             val localState = createState_opChapterOnChapter2_24minutes()
-            // 到达 OP 前3秒
+
             localState.update(7_000L)
             assertEquals(true, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 滑到 OP 后
+
             localState.update(40_000L)
             assertEquals(false, localState.showSkipTips)
             assertEquals(false, localState.skipped)
-            // 回到显示跳过提示
+
             localState.update(7_000L)
             assertEquals(false, localState.showSkipTips)
             assertEquals(true, localState.skipped)

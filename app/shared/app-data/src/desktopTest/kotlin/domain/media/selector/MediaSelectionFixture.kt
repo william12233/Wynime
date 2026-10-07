@@ -1,22 +1,12 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.serialization.Serializable
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.selector.trace.MediaSelectionTrace
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.source.MediaFetchRequest
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.selector.trace.MediaSelectionTrace
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.source.MediaFetchRequest
 
-/** Test-only, cleaned recording: each distinct media value occurs once; events contain source deltas. */
 @Serializable
 internal class MediaSelectionFixture(
     val formatVersion: Int,

@@ -1,19 +1,19 @@
 package tw.wynime.sources.dmbus
 
 import java.net.URI
-import me.him188.ani.source.plugin.api.ResolvedMedia
-import me.him188.ani.source.plugin.api.ResolvedMediaFormat
-import me.him188.ani.source.plugin.api.SourceChannel
-import me.him188.ani.source.plugin.api.SourceChannelEpisodes
-import me.him188.ani.source.plugin.api.SourceMediaRequestContext
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
-import me.him188.ani.source.plugin.api.mediaIdentity
+import com.wynime.source.plugin.api.ResolvedMedia
+import com.wynime.source.plugin.api.ResolvedMediaFormat
+import com.wynime.source.plugin.api.SourceChannel
+import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourceMediaRequestContext
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.mediaIdentity
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractJsonNumberField
@@ -36,8 +36,8 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
     iconUrl = "https://dmbus.cc/favicon.ico",
     description = "動漫巴士公開番劇與外部播放頁來源",
 ) {
-    override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
-        val results = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+    override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {
+        val results = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (variant in searchQueryVariants(request.query)) {
             val page = requestPage(
                 "$rootUrl/s----------.html?wd=${urlEncode(variant)}",
@@ -61,7 +61,7 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
             ?.ifBlank { null }
             ?: page.title.substringBefore("-").ifBlank { subjectId }
         val subject = subject(subjectId, title, page.finalUrl)
-        val groups = linkedMapOf<String, MutableList<me.him188.ani.source.plugin.api.SourceEpisode>>()
+        val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
         links(page.html).forEach { link ->
             val match = Regex("(?i)/p/(\\d+)-(\\d+)-(\\d+)\\.html").find(link.href) ?: return@forEach
             if (match.groupValues[1] != subjectId) return@forEach
@@ -126,7 +126,7 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
                 },
             )
             if (directReferer != null) {
-                // HHJX's returned QQ media rejects requests carrying a Referer.
+
                 resolved.copy(
                     headers = emptyMap(),
                     requestContext = SourceMediaRequestContext(),

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import androidx.paging.Pager
 import androidx.paging.PagingData
@@ -17,21 +8,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.network.AniSubjectSearchService
-import me.him188.ani.app.data.network.SubjectSearchField
-import me.him188.ani.app.data.network.SubjectSearchFilters
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.runWrappingExceptionAsLoadResult
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.logging.error
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.network.WynimeSubjectSearchService
+import com.wynime.app.data.network.SubjectSearchField
+import com.wynime.app.data.network.SubjectSearchFilters
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.runWrappingExceptionAsLoadResult
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.logging.error
 
-/**
- * 搜索补全 (推荐)
- */
 class SubjectSearchCompletionRepository(
-    private val aniSubjectSearchService: AniSubjectSearchService,
+    private val wynimeSubjectSearchService: WynimeSubjectSearchService,
     private val subjectCollectionRepository: SubjectCollectionRepository,
     settingsRepository: SettingsRepository,
 ) : Repository() {
@@ -48,8 +36,8 @@ class SubjectSearchCompletionRepository(
                 override suspend fun load(
                     params: LoadParams<Int>
                 ): LoadResult<Int, String> = runWrappingExceptionAsLoadResult<Int, String> {
-                    // 只加载第一页
-                    val subjects = aniSubjectSearchService.searchSubjects(
+
+                    val subjects = wynimeSubjectSearchService.searchSubjects(
                         keyword = query,
                         limit = params.loadSize,
                         filters = SubjectSearchFilters(

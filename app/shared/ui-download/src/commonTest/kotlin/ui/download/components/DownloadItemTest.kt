@@ -1,22 +1,13 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.components
+package com.wynime.app.ui.download.components
 
 import kotlinx.coroutines.DelicateCoroutinesApi
-import me.him188.ani.app.tools.Progress
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.app.ui.framework.runComposeStateTest
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.Unspecified
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.app.tools.Progress
+import com.wynime.app.tools.toProgress
+import com.wynime.app.ui.framework.runComposeStateTest
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.Unspecified
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -28,7 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.foundation.text.ProvideContentColor
 
 @Composable
 fun OutlinedTag(
@@ -53,7 +44,6 @@ fun OutlinedTag(
     )
 }
 
-// 一个标签, 例如 "2023年10月", "漫画改"
 @Composable
 fun Tag(
     modifier: Modifier = Modifier,
@@ -65,8 +55,6 @@ fun Tag(
     border: BorderStroke = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     label: @Composable RowScope.() -> Unit,
 ) {
-    // M3 Input chip
-    // https://m3.material.io/components/chips/specs#facb7c02-74c4-4b81-bd52-6ad10ce351eb
 
     Surface(
         modifier

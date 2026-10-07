@@ -1,32 +1,19 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("DEPRECATION")
 
-package me.him188.ani.app.domain.media.selector.legacy
+package com.wynime.app.domain.media.selector.legacy
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason
-import me.him188.ani.app.domain.media.selector.MediaSelectorSubtitlePreferences
-import me.him188.ani.app.domain.media.selector.SubtitleKindPreference
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.utils.platform.Arch
-import me.him188.ani.utils.platform.Platform
+import com.wynime.app.domain.media.selector.MediaExclusionReason
+import com.wynime.app.domain.media.selector.MediaSelectorSubtitlePreferences
+import com.wynime.app.domain.media.selector.SubtitleKindPreference
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.utils.platform.Arch
+import com.wynime.utils.platform.Platform
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/**
- * @suppress 已弃用, 新的 test 使用 [me.him188.ani.app.domain.media.selector.testFramework.TestMediaFetchSessionBuilder].
- * @see me.him188.ani.app.domain.media.selector.MediaSelector
- */
 @Deprecated(MediaSelectorDeprecationMessage)
 class DefaultMediaSelectorSubtitleKindTest : AbstractDefaultMediaSelectorTest() {
     @Test
@@ -105,49 +92,13 @@ class DefaultMediaSelectorSubtitleKindTest : AbstractDefaultMediaSelectorTest() 
     }
 }
 
-/**
- * 测试各个平台的默认设置
- *
- * @see SubtitleKind
- */
 @Deprecated(MediaSelectorDeprecationMessage)
 sealed class DefaultMediaSelectorSubtitleKindPlatformTest(
     platform: Platform
 ) : AbstractDefaultMediaSelectorTest() {
-    class MacOS : DefaultMediaSelectorSubtitleKindPlatformTest(Platform.MacOS(Arch.AARCH64)) {
-        @Test
-        fun `does not select CLOSED_OR_EXTERNAL_DISCOVER`() = runTest {
-            val target: DefaultMedia
-            addMedia(
-                media(alliance = "字幕组1", subtitleKind = SubtitleKind.CLOSED_OR_EXTERNAL_DISCOVER),
-                media(alliance = "字幕组2").also { target = it },
-                media(alliance = "字幕组3"),
-                media(alliance = "字幕组4"),
-                media(alliance = "字幕组5"),
-            )
-            savedDefaultPreference.value = DEFAULT_PREFERENCE
-            assertEquals(target, selector.trySelectDefault())
-        }
-
-        @Test
-        fun `does not select CLOSED`() = runTest {
-            val target: DefaultMedia
-            addMedia(
-                media(alliance = "字幕组1", subtitleKind = SubtitleKind.CLOSED),
-                media(alliance = "字幕组2").also { target = it },
-                media(alliance = "字幕组3"),
-                media(alliance = "字幕组4"),
-                media(alliance = "字幕组5"),
-            )
-            savedDefaultPreference.value = DEFAULT_PREFERENCE
-            assertEquals(target, selector.trySelectDefault())
-        }
-    }
 
     class Windows : DefaultMediaSelectorSubtitleKindPlatformTest(Platform.Windows(Arch.X86_64))
     class Android : DefaultMediaSelectorSubtitleKindPlatformTest(Platform.Android(Arch.ARMV8A))
-
-    // TODO: Test DefaultMediaSelectorSubtitleKindPlatformTest for iOS
 
     init {
         setSubtitlePreferences(MediaSelectorSubtitlePreferences.Companion.forPlatform(platform))

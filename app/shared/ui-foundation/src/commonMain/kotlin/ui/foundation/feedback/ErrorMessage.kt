@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.feedback
+package com.wynime.app.ui.foundation.feedback
 
 import androidx.annotation.UiThread
 import androidx.compose.foundation.layout.Column
@@ -35,23 +26,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_error_dialog_copy_prefix
-import me.him188.ani.app.ui.lang.foundation_error_dialog_default_message
-import me.him188.ani.app.ui.lang.settings_account_profile_ok
-import me.him188.ani.app.ui.lang.settings_mediasource_copy
-import me.him188.ani.app.ui.lang.subject_collection_cancel
-import me.him188.ani.app.ui.loading.ConnectingDialog
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_error_dialog_copy_prefix
+import com.wynime.app.ui.lang.foundation_error_dialog_default_message
+import com.wynime.app.ui.lang.settings_account_profile_ok
+import com.wynime.app.ui.lang.settings_mediasource_copy
+import com.wynime.app.ui.lang.subject_collection_cancel
+import com.wynime.app.ui.loading.ConnectingDialog
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration.Companion.seconds
 
-
-/**
- * A controller for a dialog that shows an error message and a cancel button.
- *
- * @see ErrorDialogHost
- */
 interface ErrorDialogController {
     val isVisible: Boolean
         @Composable get
@@ -84,21 +69,11 @@ class StateErrorDialogController : ErrorDialogController {
     override val debugInfo: String?
         @Composable get() = _debugInfo
 
-
     override fun setDebugInfo(debugInfo: String?) {
         _debugInfo = debugInfo
     }
 }
 
-/**
- * Composes a [ErrorDialogHost] that shows a "Connection lost, reconnecting..." message and a cancel button.
- *
- * [errorFlow] is a flow of error messages that will trigger the dialog to show.
- * If the flow emits `null`, the dialog is hidden.
- *
- * @param onClickCancel the action to perform when the cancel button is clicked, when the error is [recovering][ErrorMessage.isRecovering].
- * @param onConfirm the action to perform when the confirm button is clicked, when the error is not [recovering][ErrorMessage.isRecovering].
- */
 @Composable
 fun ErrorDialogHost(
     errorFlow: MutableStateFlow<ErrorMessage?>,
@@ -114,15 +89,6 @@ fun ErrorDialogHost(
     )
 }
 
-/**
- * Composes a [ErrorDialogHost] that shows a "Connection lost, reconnecting..." message and a cancel button.
- *
- * [errorFlow] is a flow of error messages that will trigger the dialog to show.
- * If the flow emits `null`, the dialog is hidden.
- *
- * @param onClickCancel the action to perform when the cancel button is clicked, when the error is [recovering][ErrorMessage.isRecovering].
- * @param onConfirm the action to perform when the confirm button is clicked, when the error is not [recovering][ErrorMessage.isRecovering].
- */
 @Composable
 fun ErrorDialogHost(
     errorFlow: Flow<ErrorMessage?>,
@@ -199,7 +165,7 @@ fun ErrorDialogHost(
                         Text(confirmText)
                     }
                 } else {
-                    // recovering
+
                     TextButton(
                         onClick = {
                             controller.hide()
@@ -215,35 +181,6 @@ fun ErrorDialogHost(
     }
 }
 
-
-///**
-// * Shows a [Toast] with the error message when [error] emits an error message.
-// */
-//@Composable
-//fun ErrorToast(
-//    error: Flow<ErrorMessage?>,
-//) {
-//    val context = LocalContext.current
-//    LaunchedEffect(error) {
-//        error.distinctUntilChanged()
-//            .debounce(0.5.seconds)
-//            .collect { error ->
-//                if (error != null) {
-//                    withContext(Dispatchers.Main.immediate) {
-//                        Toast.makeText(
-//                            context,
-//                            error.message ?: "Operation failed, please try again",
-//                            Toast.LENGTH_LONG
-//                        ).show()
-//                    }
-//                }
-//            }
-//    }
-//}
-
-/**
- * An error message to be presented.
- */
 @Stable
 interface ErrorMessage {
     val message: String?
@@ -255,21 +192,10 @@ interface ErrorMessage {
     val onCancel: (() -> Unit)?
 
     companion object Factory {
-        /**
-         * A network error that automatically recovering.
-         *
-         * @param cause internal cause of the error, to be displayed when the app is built in debug mode
-         */
+
         fun networkErrorRecovering(cause: Throwable? = null): ErrorMessage =
             SimpleErrorMessage("Connection lost, reconnecting...", cause, isRecovering = true)
 
-        /**
-         * A network error that is not automatically recovering.
-         *
-         * Users will see a simple alert dialog with the message and a "OK" button.
-         *
-         * @param cause internal cause of the error, to be displayed when the app is built in debug mode
-         */
         fun networkError(cause: Throwable? = null): ErrorMessage =
             SimpleErrorMessage("Network error, please check your connection and try again", cause)
 

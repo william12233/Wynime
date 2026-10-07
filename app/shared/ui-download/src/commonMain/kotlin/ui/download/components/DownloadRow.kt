@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.components
+package com.wynime.app.ui.download.components
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -43,38 +34,26 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.tools.getOrZero
-import me.him188.ani.app.ui.download.DownloadActionDropdown
-import me.him188.ani.app.ui.download.DeleteActionDialog
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_episode_download_failed
-import me.him188.ani.app.ui.lang.cache_episode_pause_download
-import me.him188.ani.app.ui.lang.cache_episode_resume_download
-import me.him188.ani.app.ui.lang.cache_episode_status_paused
-import me.him188.ani.app.ui.lang.cache_episode_watched_progress
-import me.him188.ani.app.ui.lang.cache_filter_status_finished
-import me.him188.ani.app.ui.lang.cache_management_episode_label
-import me.him188.ani.app.ui.lang.cache_management_invalid_cache_info
-import me.him188.ani.app.ui.lang.cache_management_more_actions
-import me.him188.ani.app.ui.lang.cache_management_play
-import me.him188.ani.app.ui.lang.cache_management_streaming_not_supported
-import me.him188.ani.app.ui.mediafetch.MediaSourceInfoProvider
+import com.wynime.app.tools.getOrZero
+import com.wynime.app.ui.download.DownloadActionDropdown
+import com.wynime.app.ui.download.DeleteActionDialog
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_episode_download_failed
+import com.wynime.app.ui.lang.cache_episode_pause_download
+import com.wynime.app.ui.lang.cache_episode_resume_download
+import com.wynime.app.ui.lang.cache_episode_status_paused
+import com.wynime.app.ui.lang.cache_episode_watched_progress
+import com.wynime.app.ui.lang.cache_filter_status_finished
+import com.wynime.app.ui.lang.cache_management_episode_label
+import com.wynime.app.ui.lang.cache_management_invalid_cache_info
+import com.wynime.app.ui.lang.cache_management_more_actions
+import com.wynime.app.ui.lang.cache_management_play
+import com.wynime.app.ui.lang.cache_management_streaming_not_supported
+import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 剧集下载行, 用于条目下载页与全局下载管理页的详情栏.
- *
- * - 已完成: 标题 + "1.2 GB · AnimeGarden · 已完成 · 已观看 50.0%" (有观看进度时) + 播放/更多按钮
- * - 下载中: 标题 + "890 MB / 1.3 GB · AnimeGarden" + 暂停/更多按钮 + 进度条 + 速度/百分比
- * - 已暂停: 同上, 主操作为继续, 进度条右侧显示 "已暂停"
- * - 多选模式: 行首复选框, 行尾操作隐藏
- *
- * 设计稿: [Figma](https://www.figma.com/design/LET1n9mmDa6npDTIlUuJjU/Animeko?node-id=1657-414)
- *
- * @param showSubjectTitle 是否将条目名作为标题展示 (用于跨条目的场景). 否则展示 "第x话 · 名称".
- */
 @Composable
 fun DownloadRow(
     episode: DownloadItem,
@@ -90,7 +69,7 @@ fun DownloadRow(
     onViewDetail: (() -> Unit)?,
     modifier: Modifier = Modifier,
     showSubjectTitle: Boolean = false,
-    // 设计稿: 手机上行通栏无圆角 (选中高亮铺满全宽), 宽屏详情栏内为圆角.
+
     shape: Shape = MaterialTheme.shapes.medium,
 ) {
     var showMenu by rememberSaveable { mutableStateOf(false) }
@@ -136,7 +115,7 @@ fun DownloadRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // 设计稿: 多选模式下复选框在行首, 行尾单项操作隐藏.
+
                 if (selectionMode) {
                     Checkbox(
                         checked = selected,
@@ -205,7 +184,7 @@ fun DownloadRow(
                 }
             }
 
-            AniAnimatedVisibility(!episode.isFinished) {
+            WynimeAnimatedVisibility(!episode.isFinished) {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -241,9 +220,6 @@ fun DownloadRow(
     }
 }
 
-/**
- * 行尾的主操作按钮: 已完成 → 播放, 下载中 → 暂停, 已暂停 → 继续. 失败时不显示.
- */
 @Composable
 private fun DownloadPrimaryAction(
     episode: DownloadItem,
@@ -288,9 +264,6 @@ private fun DownloadPrimaryAction(
     }
 }
 
-/**
- * "1.2 GB · AnimeGarden · 已完成 · 已观看 50.0%" 形式的行副标题, 观看进度仅在已完成且有播放历史时展示.
- */
 @Composable
 private fun cacheEpisodeMetaText(
     episode: DownloadItem,

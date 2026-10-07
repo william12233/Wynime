@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
@@ -47,24 +38,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.comment.CommentSendResult
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.interaction.isImeVisible
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.comment_ani_only_notice
-import me.him188.ani.app.ui.lang.comment_send_failed_network
-import me.him188.ani.app.ui.lang.comment_send_failed_unknown
+import com.wynime.app.domain.comment.CommentSendResult
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.interaction.isImeVisible
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.comment_ani_only_notice
+import com.wynime.app.ui.lang.comment_send_failed_network
+import com.wynime.app.ui.lang.comment_send_failed_unknown
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 评论编辑.
- *
- * @param stickerPanelHeight 表情面板的高度，调用者可以提供 IME 高度来配合实现沉浸效果
- *
- * @see EditCommentScaffold
- */
 @Composable
 fun EditComment(
     state: CommentEditorState,
@@ -187,7 +171,7 @@ fun EditComment(
                         focusRequester.requestFocus()
                     }
                 }
-                AniAnimatedVisibility(
+                WynimeAnimatedVisibility(
                     visible = state.sendResult is CommentSendResult.Error,
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -216,16 +200,6 @@ private fun renderCommentSendError(result: CommentSendResult.Error): String {
     }
 }
 
-/**
- * 评论编辑 Scaffold
- *
- * @param previewing 是否正在 preview
- * @param actionRow 操作按钮, 进行富文本编辑和评论发送. see [EditCommentDefaults.ActionRow].
- * @param expanded 展开按钮状态, 为 `null` 时不显示按钮.
- * @param onClickExpand 点击展开按钮时触发该点击事件.
- * @param title 评论编辑标题, 一般显示 正在为哪个对象发送评论. see [EditCommentDefaults.Title].
- * @param content 评论编辑框. see [EditCommentDefaults.CommentTextField].
- */
 @Composable
 fun EditCommentScaffold(
     previewing: Boolean,
@@ -276,7 +250,7 @@ fun EditCommentScaffold(
             ) { previewing ->
                 content(previewing)
             }
-            
+
         }
 
         Column {

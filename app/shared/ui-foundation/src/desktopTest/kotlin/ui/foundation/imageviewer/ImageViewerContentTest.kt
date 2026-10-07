@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.imageviewer
+package com.wynime.app.ui.foundation.imageviewer
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,26 +29,26 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
-import me.him188.ani.app.ui.foundation.IMAGE_VIEWER_TEST_TAG
-import me.him188.ani.app.ui.foundation.LocalSketch
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.createDefaultSketch
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.Toaster
-import me.him188.ani.app.ui.framework.AniComposeUiTest
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.framework.runOnSwingEdt
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.image_viewer_copied
-import me.him188.ani.app.ui.lang.image_viewer_save_failed
-import me.him188.ani.app.ui.lang.image_viewer_saved
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.app.ui.foundation.IMAGE_VIEWER_TEST_TAG
+import com.wynime.app.ui.foundation.LocalSketch
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.createDefaultSketch
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.Toaster
+import com.wynime.app.ui.framework.WynimeComposeUiTest
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.framework.runOnSwingEdt
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.image_viewer_copied
+import com.wynime.app.ui.lang.image_viewer_save_failed
+import com.wynime.app.ui.lang.image_viewer_saved
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.resolve
+import com.wynime.utils.ktor.asScopedHttpClient
 import okio.Path.Companion.toPath
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.skia.EncodedImageFormat
@@ -68,9 +59,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * 交互测试: 查看器工具栏的缩放, 保存, 关闭.
- */
 class ImageViewerContentTest {
     private class Env(
         val mainScheduler: TestCoroutineScheduler,
@@ -81,9 +69,8 @@ class ImageViewerContentTest {
         val toasts: CopyOnWriteArrayList<String>,
     )
 
-    /** 等待 [condition] 成立, 期间在当前线程 (EDT) 上执行 Dispatchers.Main 的排队任务. */
     private fun Env.waitUntilPumpingMain(
-        test: AniComposeUiTest,
+        test: WynimeComposeUiTest,
         timeoutMillis: Long = 5_000,
         condition: () -> Boolean,
     ) {
@@ -96,7 +83,7 @@ class ImageViewerContentTest {
     private fun runViewerTest(
         fileSaver: ImageFileSaver = ImageFileSaver { true },
         imageClipboard: ImageClipboard? = null,
-        block: AniComposeUiTest.(Env) -> Unit,
+        block: WynimeComposeUiTest.(Env) -> Unit,
     ) {
         val tempDirectory = SystemPaths.createTempDirectory("ani-image-viewer-content-test")
         val bytes = encodedRaster(width = 400, height = 300)
@@ -126,11 +113,9 @@ class ImageViewerContentTest {
             }
         }
         try {
-            // Sketch 和 zoomimage 都要求在 Swing EDT 上执行 (真实 App 里 Compose 就跑在 EDT 上), 因此整个测试在 EDT 上跑.
-            // 测试线程占着 EDT 时 Dispatchers.Main (=Swing) 无法调度, 而 Sketch 用 Main 跑请求管线,
-            // 所以把 Main 换成测试调度器, 在等待条件时由测试线程 (即 EDT) 手动泵.
+
             runOnSwingEdt {
-                runAniComposeUiTest {
+                runWynimeComposeUiTest {
                     Dispatchers.setMain(mainDispatcher)
                     setContent {
                         ProvideCompositionLocalsForPreview {
@@ -149,7 +134,7 @@ class ImageViewerContentTest {
                             }
                         }
                     }
-                    // 图片加载完成后缩放控件才可用
+
                     env.waitUntilPumpingMain(this, timeoutMillis = 10_000) {
                         runCatching {
                             onNodeWithTag(ImageViewerTestTags.ZOOM_IN).assertIsEnabled()
@@ -171,7 +156,7 @@ class ImageViewerContentTest {
         onNodeWithTag(IMAGE_VIEWER_TEST_TAG).assertIsDisplayed()
         val initial = scalePercent()
         assertTrue(initial > 0, "initial scale should be positive, was $initial")
-        // 适应窗口时不能再缩小
+
         onNodeWithTag(ImageViewerTestTags.ZOOM_OUT).assertIsNotEnabled()
         onNodeWithTag(ImageViewerTestTags.RESET_ZOOM).assertIsNotEnabled()
 
@@ -188,13 +173,13 @@ class ImageViewerContentTest {
 
     @Test
     fun `tap on the image closes, drag does not`() = runViewerTest { env ->
-        // 适应窗口时单指拖动没有人消费, zoomimage 的 detectTapGestures 抬起时也会报 tap; 这里要求不关闭
+
         onNodeWithTag(IMAGE_VIEWER_TEST_TAG).performTouchInput {
             down(center)
             moveBy(Offset(200f, 0f))
             up()
         }
-        // 让 detectTapGestures 的双击等待超时后再判断
+
         mainClock.advanceTimeBy(1_000)
         env.mainScheduler.advanceUntilIdle()
         waitForIdle()
@@ -240,7 +225,6 @@ class ImageViewerContentTest {
             assertEquals(1, copied.size)
             assertEquals("png", copied.single().extension)
 
-            // 图片加载后自动获得焦点, Ctrl+C 直接可用
             onNodeWithTag(IMAGE_VIEWER_TEST_TAG).performKeyInput {
                 withKeyDown(Key.CtrlLeft) { pressKey(Key.C) }
             }
@@ -277,7 +261,7 @@ class ImageViewerContentTest {
         }
     }
 
-    private fun AniComposeUiTest.scalePercent(): Int {
+    private fun WynimeComposeUiTest.scalePercent(): Int {
         val node = onNodeWithTag(ImageViewerTestTags.SCALE_TEXT).fetchSemanticsNode()
         val text = node.config.getOrNull(SemanticsProperties.Text)
             ?.joinToString("") { it.text }

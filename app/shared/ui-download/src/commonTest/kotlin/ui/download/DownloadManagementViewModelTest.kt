@@ -1,20 +1,11 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download
+package com.wynime.app.ui.download
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertNotNull
-import me.him188.ani.app.ui.download.subject.SubjectDownloadsPresenterFactory
-import me.him188.ani.app.domain.media.download.DownloadRequestSessionFactory
+import com.wynime.app.ui.download.subject.SubjectDownloadsPresenterFactory
+import com.wynime.app.domain.media.download.DownloadRequestSessionFactory
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -26,15 +17,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.repository.subject.OfflineSubjectDisplayInfo
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.domain.media.download.DownloadOperations
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.ui.download.components.DownloadStatus
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.data.repository.subject.OfflineSubjectDisplayInfo
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.domain.media.download.DownloadOperations
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.ui.download.components.DownloadStatus
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 
 class DownloadManagementViewModelTest {
     @Test
@@ -167,11 +158,9 @@ class DownloadManagementViewModelTest {
         assertEquals("Known name", first.uiState.value.title)
         assertFalse(first.isClosed)
 
-        // 相同条目不重建.
         vm.selectSubject(1)
         assertSame(first, vm.subjectPresenter.value)
 
-        // 切换条目关闭上一个实例.
         vm.selectSubject(2)
         val second = assertNotNull(vm.subjectPresenter.value)
         assertEquals(2, second.subjectId)
@@ -204,7 +193,7 @@ class DownloadManagementViewModelTest {
         )
 
         init {
-            // 保持订阅, 让 uiState 在整个测试期间持续更新.
+
             testScope.backgroundScope.launch { vm.uiState.collect() }
         }
 

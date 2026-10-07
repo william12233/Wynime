@@ -1,29 +1,20 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector.testFramework
+package com.wynime.app.domain.media.selector.testFramework
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.TestScope
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.fetch.MediaFetcherConfig
-import me.him188.ani.app.domain.media.fetch.MediaSourceMediaFetcher
-import me.him188.ani.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_PRIMARY_WEB
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.paging.SinglePagePagedSource
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.paging.emptySizedSource
-import me.him188.ani.datasources.api.source.*
-import me.him188.ani.utils.platform.Uuid
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.fetch.MediaFetcherConfig
+import com.wynime.app.domain.media.fetch.MediaSourceMediaFetcher
+import com.wynime.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_PRIMARY_WEB
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.paging.SinglePagePagedSource
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.paging.emptySizedSource
+import com.wynime.datasources.api.source.*
+import com.wynime.utils.platform.Uuid
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.coroutines.ContinuationInterceptor
@@ -33,11 +24,6 @@ import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadOnlyProperty
 import kotlin.random.Random
 
-/**
- * 一个测试的 [MediaFetchSession]
- *
- * @see MediaFetchSession
- */
 class TestMediaFetchSessionBuilder {
     private val instances = mutableListOf<Handle>()
     private val mediaFetchRequestBuilder: MediaFetchRequestBuilder = MediaFetchRequestBuilder()
@@ -45,7 +31,6 @@ class TestMediaFetchSessionBuilder {
     fun request(block: MediaFetchRequestBuilder.() -> Unit) {
         mediaFetchRequestBuilder.apply(block)
     }
-
 
     fun web(
         enabled: Boolean = true,
@@ -108,15 +93,11 @@ class TestMediaFetchSessionBuilder {
     }
 }
 
-
 class Handle(
     val instance: MediaSourceInstance,
 ) {
     val result = CompletableDeferred<List<MediaMatch>>()
 
-    /**
-     * [TestMediaSource.fetch] 被调用的次数, 即该源的查询被驱动的次数.
-     */
     var fetchCount: Int = 0
         private set
 
@@ -145,7 +126,6 @@ class Handle(
         return this
     }
 }
-
 
 class TestMediaSource(
     val displayName: String,
@@ -181,7 +161,6 @@ class TestMediaFetchSession<T>(
     operator fun component2() = session
     operator fun component3() = userContext
 }
-
 
 context(testScope: TestScope)
 fun <R> TestMediaFetchSessionBuilder.build(userContext: R): TestMediaFetchSession<R> =

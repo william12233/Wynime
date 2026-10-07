@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.comments
+package com.wynime.app.ui.subject.episode.comments
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -16,15 +7,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.domain.comment.CommentSendResult
-import me.him188.ani.app.ui.comment.CommentEditorState
-import me.him188.ani.app.ui.comment.CommentMapperContext
-import me.him188.ani.app.ui.comment.EditComment
-import me.him188.ani.app.ui.comment.EditCommentSheet
-import me.him188.ani.app.ui.comment.EditCommentDefaults
-import me.him188.ani.app.ui.comment.EditCommentSticker
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.rememberBackgroundScope
+import com.wynime.app.domain.comment.CommentSendResult
+import com.wynime.app.ui.comment.CommentEditorState
+import com.wynime.app.ui.comment.CommentMapperContext
+import com.wynime.app.ui.comment.EditComment
+import com.wynime.app.ui.comment.EditCommentSheet
+import com.wynime.app.ui.comment.EditCommentDefaults
+import com.wynime.app.ui.comment.EditCommentSticker
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.rememberBackgroundScope
 
 @Composable
 fun EpisodeEditCommentSheet(

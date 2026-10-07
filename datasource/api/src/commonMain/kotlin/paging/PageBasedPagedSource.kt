@@ -1,4 +1,4 @@
-package me.him188.ani.datasources.api.paging
+package com.wynime.datasources.api.paging
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
 
 interface PagedSourceContext {
     fun setTotalSize(size: Int)
@@ -50,29 +49,12 @@ fun <T> SinglePagePagedSource(getAll: suspend PagedSourceContext.() -> Flow<T>):
     }
 }
 
-/**
- * 基于自增页码的 [PagedSource].
- * [nextPageOrNull] 会携带当前请求的页码参数.
- *
- * 示例:
- *
- * ```
- * PageBasedPagedSource { page ->
- *     bangumiClient.episodes.getEpisodes(
- *         subjectId.toLong(),
- *         type,
- *         offset = page * 100,
- *         limit = 100
- *     )
- * }
- * ```
- */
 @Suppress("FunctionName")
 fun <T> PageBasedPagedSource(
     initialPage: Int = 0,
     nextPageOrNull: suspend PagedSourceContext.(page: Int) -> Paged<T>?
 ): PagedSource<T> {
-    @Suppress("UnnecessaryVariable", "RedundantSuppression") // two bugs...
+    @Suppress("UnnecessaryVariable", "RedundantSuppression")
     val nextPageOrNullImpl = nextPageOrNull
     return object : AbstractPageBasedPagedSource<T>() {
         override val currentPage: MutableStateFlow<Int> = MutableStateFlow(initialPage)
@@ -94,7 +76,7 @@ fun <T> PageBasedPagedSource(
             if (!paged.hasMore) {
                 noMorePages()
             }
-            if (paged.page.isEmpty()) { // to get same behavior as [SinglePagePagedSourceTest]
+            if (paged.page.isEmpty()) {
                 return null
             }
             return paged.page
@@ -116,22 +98,19 @@ abstract class AbstractPageBasedPagedSource<T>(
             return null
         }
         val result = nextPageImpl(currentPage.value)
-        // Impl note: after [nextPageImpl] there must not be any suspension points, 
-        // otherwise we risk breaking the coroutine cancellation contract.
-        // See comments of [nextPageOrNull] for details.
 
         if (result == null) {
             noMorePages()
             return null
         }
         if (!finished.value) {
-            // CAS loop to increment page
+
             while (!currentPage.compareAndSet(currentPage.value, currentPage.value + 1)) {
                 @Suppress("ControlFlowWithEmptyBody")
                 for (i in 0..4) {
-                    // some backoff
+
                 }
-                // retry
+
             }
         }
         return result
@@ -162,7 +141,6 @@ abstract class AbstractPageBasedPagedSource<T>(
     }
 
     final override fun backToPrevious() {
-        // This is actually not thread-safe, but it's fine for now
 
         if (currentPage.value == 0) {
             return
@@ -174,9 +152,9 @@ abstract class AbstractPageBasedPagedSource<T>(
         while (!currentPage.compareAndSet(currentPage.value, currentPage.value - 1)) {
             @Suppress("ControlFlowWithEmptyBody")
             for (i in 0..4) {
-                // some backoff
+
             }
-            // retry
+
         }
     }
 
@@ -189,7 +167,7 @@ abstract class AbstractPageBasedPagedSource<T>(
                     return@flow
                 }
                 emitAll(result.asFlow())
-                if (finished.value) { // [noMorePages] called within [nextPageOrNull]
+                if (finished.value) {
                     return@flow
                 }
             }

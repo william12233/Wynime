@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 
-package me.him188.ani.app.videoplayer.videoenhancement
+package com.wynime.app.videoplayer.videoenhancement
 
 import android.content.Context
 import android.opengl.GLES20
@@ -20,15 +11,9 @@ import androidx.media3.common.util.Size
 import androidx.media3.effect.BaseGlShaderProgram
 import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
-import me.him188.ani.utils.video.enhancement.shader.provider.VideoEnhancementShaderProvider
+import com.wynime.utils.video.enhancement.shader.provider.VideoEnhancementShaderProvider
 import kotlin.math.roundToInt
 
-/**
- * A single-pass radial EWA approximation of mpv's `ewa_lanczossharp` presentation chain.
- *
- * It uses mpv's Jinc radius and sharp blur, sigmoid upscaling, and 0.7 anti-ringing while
- * avoiding a second full-size intermediate texture on mobile GPUs.
- */
 internal class DesktopStyleLanczosSharpEffect(
     private val viewportWidth: Int,
     private val viewportHeight: Int,
@@ -42,8 +27,8 @@ private class DesktopStyleLanczosSharpShaderProgram(
     private val viewportWidth: Int,
     private val viewportHeight: Int,
 ) : BaseGlShaderProgram(
-    /* useHighPrecisionColorComponents = */ true,
-    /* texturePoolCapacity = */ 1,
+                                            true,
+                                1,
 ) {
     val shaderSources = LanczosSharpShaderSources(context)
 
@@ -78,13 +63,13 @@ private class DesktopStyleLanczosSharpShaderProgram(
     override fun drawFrame(inputTexId: Int, presentationTimeUs: Long) {
         try {
             program.use()
-            program.setSamplerTexIdUniform("uTexSampler", inputTexId, /* texUnitIndex = */ 0)
+            program.setSamplerTexIdUniform("uTexSampler", inputTexId,                      0)
             program.setFloatsUniform(
                 "uInputSize",
                 floatArrayOf(inputWidth.toFloat(), inputHeight.toFloat()),
             )
             program.bindAttributesAndUniforms()
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first = */ 0, /* count = */ 4)
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,               0,               4)
             GlUtil.checkGlError()
         } catch (e: GlUtil.GlException) {
             throw VideoFrameProcessingException(e, presentationTimeUs)
@@ -100,7 +85,6 @@ private class DesktopStyleLanczosSharpShaderProgram(
         super.release()
     }
 }
-
 
 private class LanczosSharpShaderSources(context: Context) {
     val vertexShader = VideoEnhancementShaderProvider.getShaderSource(

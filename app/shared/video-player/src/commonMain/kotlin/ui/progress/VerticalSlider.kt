@@ -1,4 +1,4 @@
-package me.him188.ani.app.videoplayer.ui.progress
+package com.wynime.app.videoplayer.ui.progress
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.Slider
@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 
-// copy from https://gist.github.com/Debdutta-Panda/d47a84b3e2f82b4dd4b1f0cf131e73d8
 @Composable
 fun VerticalSlider(
     value: Float,
@@ -21,7 +20,7 @@ fun VerticalSlider(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
-    /*@IntRange(from = 0)*/
+
     steps: Int = 0,
     onValueChangeFinished: (() -> Unit)? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },

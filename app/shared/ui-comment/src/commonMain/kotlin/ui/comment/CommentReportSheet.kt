@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,43 +37,35 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isWidthCompact
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.comment_report_cancel
-import me.him188.ani.app.ui.lang.comment_report_detail_hint
-import me.him188.ani.app.ui.lang.comment_report_reason_harassment
-import me.him188.ani.app.ui.lang.comment_report_reason_illegal
-import me.him188.ani.app.ui.lang.comment_report_reason_nsfw
-import me.him188.ani.app.ui.lang.comment_report_reason_other
-import me.him188.ani.app.ui.lang.comment_report_reason_spam
-import me.him188.ani.app.ui.lang.comment_report_reason_spoiler
-import me.him188.ani.app.ui.lang.comment_report_submit
-import me.him188.ani.app.ui.lang.comment_report_subtitle
-import me.him188.ani.app.ui.lang.comment_report_title
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isWidthCompact
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.comment_report_cancel
+import com.wynime.app.ui.lang.comment_report_detail_hint
+import com.wynime.app.ui.lang.comment_report_reason_harassment
+import com.wynime.app.ui.lang.comment_report_reason_illegal
+import com.wynime.app.ui.lang.comment_report_reason_nsfw
+import com.wynime.app.ui.lang.comment_report_reason_other
+import com.wynime.app.ui.lang.comment_report_reason_spam
+import com.wynime.app.ui.lang.comment_report_reason_spoiler
+import com.wynime.app.ui.lang.comment_report_submit
+import com.wynime.app.ui.lang.comment_report_subtitle
+import com.wynime.app.ui.lang.comment_report_title
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 举报理由分类, 与服务端 `CommentReportReason` 对应.
- */
 enum class CommentReportReason {
-    /** 垃圾广告或引流 */
+
     SPAM,
 
-    /** 人身攻击、骚扰 */
     HARASSMENT,
 
-    /** 剧透 */
     SPOILER,
 
-    /** 色情、血腥或令人不适 */
     NSFW,
 
-    /** 违法违规内容 */
     ILLEGAL,
 
-    /** 其他 */
     OTHER,
 }
 
@@ -96,14 +79,6 @@ private val CommentReportReason.titleRes: StringResource
         CommentReportReason.OTHER -> Lang.comment_report_reason_other
     }
 
-/**
- * 举报评论弹层, 对应 Figma 设计 "ReportSheet".
- *
- * 移动端 (紧凑宽度) 为 bottom sheet, 桌面端为对话框.
- *
- * @param snapshotText 被举报评论的快照预览, 一般为 "作者名：评论内容".
- * @param onSubmit 提交举报. 参数为选择的理由与补充说明 (可能为空字符串). 调用方负责关闭弹层与提示.
- */
 @Composable
 fun CommentReportSheet(
     snapshotText: String,
@@ -165,7 +140,6 @@ internal fun CommentReportSheetContent(
         )
         Spacer(Modifier.height(10.dp))
 
-        // 被举报评论快照
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
@@ -212,7 +186,6 @@ internal fun CommentReportSheetContent(
         }
         Spacer(Modifier.height(2.dp))
 
-        // 补充说明 (选填), 与理由文本左对齐
         Row(Modifier.fillMaxWidth().padding(start = 30.dp)) {
             Surface(
                 modifier = Modifier.weight(1f),

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.HoverInteraction
@@ -39,21 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
-/**
- * Slider 固定步进, 所有可调倍速都落在该网格上.
- */
 const val SLIDER_VALUE_STEP = 0.25f
 
 private const val FLOAT_EPSILON = 1e-4f
 
-/**
- * 以 [SLIDER_VALUE_STEP] 为固定步进的 Slider, 带拖动数值气泡.
- *
- * 档位由 Material Slider 原生 `steps` 与内部量化共同实现拖动吸附；当范围只有两个端点时，
- * Material 的 `steps = 0` 会退化为连续 Slider，因此仍需内部量化。刻度指示点不绘制 (0.25 步进下过密).
- * 拖动期间由内部值驱动 thumb, 避免外部状态提交期间短暂回跳;
- * [onValueChangeFinished] 收到最终档位值, 由调用方完成提交.
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SteppedSlider(
@@ -106,8 +86,7 @@ fun SteppedSlider(
         },
         colors = colors,
         track = { sliderState ->
-            // M3E 样式: 小圆角轨道 + 末端 stop 圆点.
-            // 刻度点默认不画 (M3E spec 中 stop indicators 默认关闭, 0.25 步进下也太密).
+
             SliderDefaults.Track(
                 sliderState = sliderState,
                 trackCornerSize = 4.dp,
@@ -119,9 +98,6 @@ fun SteppedSlider(
     )
 }
 
-/**
- * 将 [rawValue] 限制在 [range] 内并量化到最近的 [SLIDER_VALUE_STEP] 档位.
- */
 fun quantizeSliderValue(
     rawValue: Float,
     range: ClosedFloatingPointRange<Float>,
@@ -130,22 +106,11 @@ fun quantizeSliderValue(
     return ((rawValue.coerceIn(range) / SLIDER_VALUE_STEP).roundToInt() * SLIDER_VALUE_STEP).coerceIn(range)
 }
 
-/**
- * 返回 [range] 内 [SLIDER_VALUE_STEP] 步进对应的 Material Slider `steps` 数.
- */
 fun sliderStepsInRange(range: ClosedFloatingPointRange<Float>): Int {
     val intervals = ((range.endInclusive - range.start) / SLIDER_VALUE_STEP + FLOAT_EPSILON).toInt()
     return (intervals - 1).coerceAtLeast(0)
 }
 
-/**
- * 转发 [source] 的 Hover 和 Drag 交互事件，忽略 Press 交互事件.
- *
- * Android Slider 开始触摸拖动时会发送 `Press → Press.Cancel → Drag.Start`。Material `Label`
- * 使用 `collectLatest` 消费事件，未处理的 `Press.Cancel` 仍会取消正在执行的 `show()`，导致
- * Indicator 闪现后消失。Label 只需要 Hover 支持鼠标悬停、Drag 支持各平台拖动，因此不转发
- * Press 序列；拖动期间也忽略鼠标移出 thumb 产生的 Hover Exit.
- */
 @Composable
 fun rememberHoverExitFilteredInteractionSource(
     source: MutableInteractionSource,
@@ -174,9 +139,6 @@ fun rememberHoverExitFilteredInteractionSource(
     return filtered
 }
 
-/**
- * Slider 拖动数值气泡，供 Material `Label` 的 `label` 插槽使用.
- */
 @Composable
 fun TooltipScope.SliderValueIndicator(
     modifier: Modifier = Modifier,

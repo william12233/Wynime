@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -44,13 +35,13 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.utils.platform.annotations.TestOnly
 
 @Composable
 fun BoxScope.UpdateNotifier(
@@ -59,7 +50,7 @@ fun BoxScope.UpdateNotifier(
     layoutKind: UpdateNotifierLayoutKind = UpdateNotifierDefaults.layoutKind(),
 ) {
     SideEffect {
-        // 用户每次从别的页面回到主页, 都会触发一次检查.
+
         viewModel.startAutomaticCheckLatestVersion()
     }
 
@@ -103,12 +94,6 @@ fun BoxScope.UpdateNotifier(
     }
 }
 
-/**
- * A one‑stop host that
- *  1. kicks off automatic update check on the first composition, and
- *  2. shows *either* a bottom‑right popup (desktop) *or* a snackbar (mobile)
- *     when a new version is available.
- */
 @Composable
 fun BoxScope.UpdateNotifier(
     presentation: AppUpdatePresentation,
@@ -121,9 +106,8 @@ fun BoxScope.UpdateNotifier(
 ) {
     val uriHandler = LocalUriHandler.current
 
-    // Track whether the user dismisses the notification in this session
     var dismissedManually by rememberSaveable(
-        presentation.newVersion?.name, // 当有新版本时, 重新显示
+        presentation.newVersion?.name,
     ) {
         mutableStateOf(false)
     }
@@ -155,7 +139,6 @@ fun BoxScope.UpdateNotifier(
                 )
             }
         } else {
-            // 提示有新版本
 
             val onDetailsClick =
                 { uriHandler.openUri("https://github.com/william12233/Wynime/releases/tag/${newVersion.name}") }
@@ -177,7 +160,7 @@ fun BoxScope.UpdateNotifier(
                 }
 
                 UpdateNotifierLayoutKind.SNACKBAR -> {
-                    // 点击 snackbar 后显示 popup
+
                     var showDetails by rememberSaveable { mutableStateOf(false) }
 
                     if (!dismissedManually) {
@@ -191,7 +174,6 @@ fun BoxScope.UpdateNotifier(
 
                     SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
 
-                    // If snackbar action is clicked, we pop up a dialog containing the card.
                     if (showDetails && !dismissedManually) {
                         BasicAlertDialog(
                             { dismissedManually = true },
@@ -227,7 +209,6 @@ object UpdateNotifierDefaults {
     }
 }
 
-// ───────────────────────── Desktop implementation ────────────────────────────
 @Composable
 private fun BoxScope.DesktopPopup(
     version: NewVersion,
@@ -236,7 +217,7 @@ private fun BoxScope.DesktopPopup(
     onAutoUpdateClick: () -> Unit,
     modifier: Modifier,
 ) {
-    AniAnimatedVisibility(
+    WynimeAnimatedVisibility(
         visible = true,
         modifier = modifier.align(Alignment.BottomEnd),
     ) {
@@ -250,7 +231,6 @@ private fun BoxScope.DesktopPopup(
     }
 }
 
-// ───────────────────────── Mobile implementation ─────────────────────────────
 @Composable
 private fun MobileSnackbar(
     hostState: SnackbarHostState,
@@ -276,14 +256,10 @@ private fun MobileSnackbar(
                 onShowDetailsClick()
             }
 
-            SnackbarResult.Dismissed -> onDismissChanged(true) // user swiped it away / dismissed
+            SnackbarResult.Dismissed -> onDismissChanged(true)
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////
-// Previews
-///////////////////////////////////////////////////////////////////////////
 
 @OptIn(TestOnly::class)
 @Composable

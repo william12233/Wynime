@@ -1,28 +1,19 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.components
+package com.wynime.app.ui.download.components
 
 import androidx.compose.runtime.Immutable
 import kotlin.random.Random
 import kotlinx.coroutines.DelicateCoroutinesApi
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngineKey
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.tools.Progress
-import me.him188.ani.app.tools.toPercentageOrZero
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.format1f
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngineKey
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.tools.Progress
+import com.wynime.app.tools.toPercentageOrZero
+import com.wynime.app.tools.toProgress
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.format1f
 
 @Immutable
 data class DownloadItem(
@@ -35,16 +26,12 @@ data class DownloadItem(
     val creationTime: Long?,
     val stats: Stats,
     val status: DownloadStatus,
-    /**
-     * 该剧集的观看进度. 仅在播放历史包含有效时长和大于 0 的播放位置时可用.
-     */
+
     val playbackProgress: Progress = Progress.Unspecified,
     val engineKey: MediaCacheEngineKey?,
     val subjectCollectionType: UnifiedCollectionType?,
     val playability: Playability = Playability.PLAYABLE,
-    /**
-     * 该缓存来源的数据源 id, 用于展示数据源名称. `null` 表示未知.
-     */
+
     val mediaSourceId: String? = null,
     val isBusy: Boolean = false,
 ) {
@@ -65,7 +52,6 @@ data class DownloadItem(
                 Stats(FileSize.Unspecified, Progress.Unspecified, FileSize.Unspecified)
         }
     }
-
 
     val progress get() = stats.progress
 
@@ -100,9 +86,6 @@ data class DownloadItem(
         null
     }
 
-    /**
-     * 设计稿中的尺寸文案: 已完成时为 "1.2 GB", 未完成时为 "890 MB / 1.3 GB".
-     */
     val detailedSizeText: String? = if (isFinished) {
         sizeText
     } else {

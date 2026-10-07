@@ -1,47 +1,32 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.platform
 
-package me.him188.ani.app.platform
-
-import me.him188.ani.app.platform.trace.SentryErrorReport
-import me.him188.ani.app.trace.ErrorReportHolder
-import me.him188.ani.utils.analytics.AnalyticsConfig
-import me.him188.ani.utils.analytics.AnalyticsHolder
-import me.him188.ani.utils.analytics.IAnalytics
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.platform.currentPlatform
+import com.wynime.app.platform.trace.SentryErrorReport
+import com.wynime.app.trace.ErrorReportHolder
+import com.wynime.utils.analytics.AnalyticsConfig
+import com.wynime.utils.analytics.AnalyticsHolder
+import com.wynime.utils.analytics.IAnalytics
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.platform.currentPlatform
 
 object AppStartupTasks {
     fun initializeSentry(userId: String) {
-        if (!currentAniBuildConfig.isDebug && currentAniBuildConfig.sentryEnabled) {
+        if (!currentWynimeBuildConfig.isDebug && currentWynimeBuildConfig.sentryEnabled) {
             ErrorReportHolder.init(SentryErrorReport)
-            me.him188.ani.app.platform.initializeSentry(userId = userId)
+            com.wynime.app.platform.initializeSentry(userId = userId)
         } else {
-//            if (currentPlatform().isIos()) {
-//                // 初始化一下然后关闭, 否则 ios 上 sentry 会捕获 crash, 导致 debug 看不到堆栈.
-//                Sentry.init {
-//                    it.beforeBreadcrumb = { null }
-//                }
-//                Sentry.close()
-//            }
+
         }
     }
 
     inline fun initializeAnalytics(instance: () -> IAnalytics) {
-        if (currentAniBuildConfig.analyticsEnabled) {
+        if (currentWynimeBuildConfig.analyticsEnabled) {
             AnalyticsHolder.init(instance())
         }
     }
 
     fun printVersions() {
-        logger.info { "Wynime started. platform: ${currentPlatform()}, version: ${currentAniBuildConfig.versionName}, isDebug: ${currentAniBuildConfig.isDebug}" }
+        logger.info { "Wynime started. platform: ${currentPlatform()}, version: ${currentWynimeBuildConfig.versionName}, isDebug: ${currentWynimeBuildConfig.isDebug}" }
     }
 
     private val logger = logger<AppStartupTasks>()
@@ -49,7 +34,7 @@ object AppStartupTasks {
 
 fun AnalyticsConfig.Companion.create(): AnalyticsConfig {
     return AnalyticsConfig(
-        currentAniBuildConfig.versionName,
-        currentAniBuildConfig.isDebug,
+        currentWynimeBuildConfig.versionName,
+        currentWynimeBuildConfig.isDebug,
     )
 }

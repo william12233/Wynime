@@ -1,30 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.foundation
+package com.wynime.app.domain.foundation
 
 import androidx.paging.CombinedLoadStates
-import me.him188.ani.app.data.repository.RepositoryAuthorizationException
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.data.repository.RepositoryRateLimitedException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.data.repository.RepositoryServiceUnavailableException
-import me.him188.ani.app.tools.paging.exceptions
+import com.wynime.app.data.repository.RepositoryAuthorizationException
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.data.repository.RepositoryRateLimitedException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.data.repository.RepositoryServiceUnavailableException
+import com.wynime.app.tools.paging.exceptions
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * 加载时遇到的问题.
- *
- * @see FlowLoadErrorObserver
- */ // UI: renderLoadErrorMessage
 sealed class LoadError {
     data object NoResults : LoadError()
     data object RequiresLogin : LoadError()
@@ -64,7 +50,7 @@ sealed class LoadError {
         }
 
         inline fun runAndWrapOrThrowCancellation(block: () -> Unit): LoadError? {
-            @Suppress("WRONG_INVOCATION_KIND") // false positive
+            @Suppress("WRONG_INVOCATION_KIND")
             contract {
                 callsInPlace(block, InvocationKind.EXACTLY_ONCE)
             }

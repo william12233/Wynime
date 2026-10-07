@@ -1,2 +1,2 @@
-package me.him188.ani.app.videoplayer.ui.top
+package com.wynime.app.videoplayer.ui.top
 

@@ -1,8 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-package me.him188.ani.app.data.repository.episode
+package com.wynime.app.data.repository.episode
 
 import androidx.paging.PagingDataEvent
 import androidx.paging.PagingDataPresenter
@@ -11,13 +7,13 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.comment.CommentVoteValue
-import me.him188.ani.app.data.models.subject.SubjectReview
-import me.him188.ani.app.data.models.subject.SubjectReviewSource
-import me.him188.ani.app.data.network.BangumiCommentService
-import me.him188.ani.app.data.persistent.database.dao.SubjectReviewDao
-import me.him188.ani.app.data.persistent.database.entity.SubjectReviewEntity
-import me.him188.ani.datasources.api.paging.Paged
+import com.wynime.app.data.models.comment.CommentVoteValue
+import com.wynime.app.data.models.subject.SubjectReview
+import com.wynime.app.data.models.subject.SubjectReviewSource
+import com.wynime.app.data.network.BangumiCommentService
+import com.wynime.app.data.persistent.database.dao.SubjectReviewDao
+import com.wynime.app.data.persistent.database.entity.SubjectReviewEntity
+import com.wynime.datasources.api.paging.Paged
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

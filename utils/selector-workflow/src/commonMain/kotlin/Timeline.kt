@@ -1,25 +1,10 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.selectorworkflow
+package com.wynime.utils.selectorworkflow
 
 import androidx.compose.runtime.Immutable
-import me.him188.ani.utils.selectorworkflow.anim.ToneTracks
-import me.him188.ani.utils.selectorworkflow.anim.Track
+import com.wynime.utils.selectorworkflow.anim.ToneTracks
+import com.wynime.utils.selectorworkflow.anim.Track
 import kotlin.time.Duration
 
-/**
- * 编译好的时间线. 每个单元一组轨道, 采样即得 [SelectorWorkflowState].
- *
- * 时间线是纯数据、可重复采样的 —— 同一个 [Duration] 采出来永远是同一份状态,
- * 所以拖进度条、单帧截图、单元测试都能直接用.
- */
 @Immutable
 class SelectorWorkflowTimeline internal constructor(
     val config: SelectorWorkflowConfig,
@@ -136,7 +121,7 @@ internal class ClockTracks(
     private val sweep: Track<Float>,
     private val tone: ToneTracks<ClockTone>,
     private val overlay: Track<Float>,
-    /** 这个表数的是设置里配的多少秒. 整条时间线上是个常量, 不需要轨道. */
+
     private val budgetSeconds: Float,
 ) {
     fun sample(t: Duration) = ClockState(

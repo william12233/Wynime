@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.about
+package com.wynime.app.ui.settings.tabs.about
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -25,17 +16,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.Res
-import me.him188.ani.app.ui.foundation.bangumi
-import me.him188.ani.app.ui.foundation.tmdb
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_acknowledgements_bangumi
-import me.him188.ani.app.ui.lang.settings_acknowledgements_bangumi_description
-import me.him188.ani.app.ui.lang.settings_acknowledgements_oss_licenses
-import me.him188.ani.app.ui.lang.settings_acknowledgements_oss_licenses_description
-import me.him188.ani.app.ui.lang.settings_acknowledgements_tmdb
-import me.him188.ani.app.ui.lang.settings_acknowledgements_tmdb_description
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.Res
+import com.wynime.app.ui.foundation.bangumi
+import com.wynime.app.ui.foundation.tmdb
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_acknowledgements_bangumi
+import com.wynime.app.ui.lang.settings_acknowledgements_bangumi_description
+import com.wynime.app.ui.lang.settings_acknowledgements_oss_licenses
+import com.wynime.app.ui.lang.settings_acknowledgements_oss_licenses_description
+import com.wynime.app.ui.lang.settings_acknowledgements_tmdb
+import com.wynime.app.ui.lang.settings_acknowledgements_tmdb_description
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -73,7 +64,7 @@ fun AcknowledgementsTab(
             },
             supportingContent = { Text(stringResource(Lang.settings_acknowledgements_tmdb_description)) },
             leadingContent = {
-                // TMDB 的品牌条款要求原样使用官方标志, 不做圆形裁切
+
                 Image(
                     painterResource(Res.drawable.tmdb),
                     contentDescription = null,

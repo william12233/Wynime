@@ -1,15 +1,15 @@
 package tw.wynime.sources
 
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.source.plugin.api.ResolvedMediaFormat
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginLogger
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.ResolvedMediaFormat
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginLogger
+import com.wynime.source.plugin.api.SourcePluginPlatform
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -20,10 +20,6 @@ import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
 
-/**
- * Offline parser contracts for every published source. The live site is exercised separately;
- * these fixtures keep search, channel, episode, and playback-page parsing regression-safe.
- */
 class SourcePluginFixtureTest {
     @Test
     fun `eacg parses search subject channel episode and mp4`() = runBlocking {

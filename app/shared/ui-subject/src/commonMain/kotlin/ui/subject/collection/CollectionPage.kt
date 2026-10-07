@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.collection
+package com.wynime.app.ui.subject.collection
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -97,66 +88,64 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.bangumi.BangumiSyncState
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.toNavPlaceholder
-import me.him188.ani.app.data.repository.subject.CollectionsFilterQuery
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.AniTopAppBarDefaults
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.input.touchHorizontalScrollOnly
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.paneHorizontalPadding
-import me.him188.ani.app.ui.foundation.session.SelfAvatar
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.theme.appChromeFrostedGlass
-import me.him188.ani.app.ui.foundation.theme.appChromeHazeSource
-import me.him188.ani.app.ui.foundation.theme.isAppChromeFrostedGlassActive
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.NsfwMask
-import me.him188.ani.app.ui.foundation.widgets.PullToRefreshBox
-import me.him188.ani.app.ui.foundation.widgets.showLoadError
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_search
-import me.him188.ani.app.ui.lang.login_sign_in
-import me.him188.ani.app.ui.lang.settings
-import me.him188.ani.app.ui.lang.subject_collection_doing
-import me.him188.ani.app.ui.lang.subject_collection_done
-import me.him188.ani.app.ui.lang.subject_collection_dropped
-import me.him188.ani.app.ui.lang.subject_collection_guest_mode_tip
-import me.him188.ani.app.ui.lang.subject_collection_move_to_watched
-import me.him188.ani.app.ui.lang.subject_collection_on_hold
-import me.him188.ani.app.ui.lang.subject_collection_page_title
-import me.him188.ani.app.ui.lang.subject_collection_syncing
-import me.him188.ani.app.ui.lang.subject_collection_uncollected
-import me.him188.ani.app.ui.lang.subject_collection_wish
-import me.him188.ani.app.ui.search.isLoadingFirstPageOrRefreshing
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.app.ui.subject.collection.progress.SubjectProgressButton
-import me.him188.ani.app.ui.subject.collection.progress.SubjectProgressStateFactory
-import me.him188.ani.app.ui.subject.collection.progress.rememberSubjectProgressState
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListDialog
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListItem
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListUiState
-import me.him188.ani.app.ui.user.BangumiFullSyncStateDialog
-import me.him188.ani.app.ui.user.SelfInfoUiState
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.coroutines.flows.FlowRestarter
-import me.him188.ani.utils.coroutines.flows.restartable
-import me.him188.ani.utils.platform.hasScrollingBug
-import me.him188.ani.utils.platform.isDesktop
+import com.wynime.app.data.models.bangumi.BangumiSyncState
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.subject.SubjectCollectionCounts
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.toNavPlaceholder
+import com.wynime.app.data.repository.subject.CollectionsFilterQuery
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.WynimeTopAppBarDefaults
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.input.touchHorizontalScrollOnly
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.layout.paneHorizontalPadding
+import com.wynime.app.ui.foundation.session.SelfAvatar
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.theme.appChromeFrostedGlass
+import com.wynime.app.ui.foundation.theme.appChromeHazeSource
+import com.wynime.app.ui.foundation.theme.isAppChromeFrostedGlassActive
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.NsfwMask
+import com.wynime.app.ui.foundation.widgets.PullToRefreshBox
+import com.wynime.app.ui.foundation.widgets.showLoadError
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_search
+import com.wynime.app.ui.lang.login_sign_in
+import com.wynime.app.ui.lang.settings
+import com.wynime.app.ui.lang.subject_collection_doing
+import com.wynime.app.ui.lang.subject_collection_done
+import com.wynime.app.ui.lang.subject_collection_dropped
+import com.wynime.app.ui.lang.subject_collection_guest_mode_tip
+import com.wynime.app.ui.lang.subject_collection_move_to_watched
+import com.wynime.app.ui.lang.subject_collection_on_hold
+import com.wynime.app.ui.lang.subject_collection_page_title
+import com.wynime.app.ui.lang.subject_collection_syncing
+import com.wynime.app.ui.lang.subject_collection_uncollected
+import com.wynime.app.ui.lang.subject_collection_wish
+import com.wynime.app.ui.search.isLoadingFirstPageOrRefreshing
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.collection.progress.SubjectProgressButton
+import com.wynime.app.ui.subject.collection.progress.SubjectProgressStateFactory
+import com.wynime.app.ui.subject.collection.progress.rememberSubjectProgressState
+import com.wynime.app.ui.subject.episode.list.EpisodeListDialog
+import com.wynime.app.ui.subject.episode.list.EpisodeListItem
+import com.wynime.app.ui.subject.episode.list.EpisodeListUiState
+import com.wynime.app.ui.user.BangumiFullSyncStateDialog
+import com.wynime.app.ui.user.SelfInfoUiState
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.coroutines.flows.FlowRestarter
+import com.wynime.utils.coroutines.flows.restartable
+import com.wynime.utils.platform.hasScrollingBug
+import com.wynime.utils.platform.isDesktop
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
 
-
-// 有顺序, https://github.com/Him188/ani/issues/73
 @Stable
 val COLLECTION_TABS_SORTED = listOf(
     UnifiedCollectionType.DROPPED,
@@ -185,10 +174,8 @@ class UserCollectionsState(
     val tabRowScrollState = ScrollState(selectedTypeIndex)
     val pagerState = PagerState(selectedTypeIndex) { availableTypes.size }
 
-    // Store LazyGridState for each tab
     private val gridStates = mutableMapOf<Int, LazyGridState>()
 
-    // Cache data flows for each tab
     private val cachedLazyPagingItems: MutableMap<Int, LazyPagingItems<SubjectCollectionInfo>> = mutableMapOf()
     val selectedPageRefreshing by derivedStateOf {
         cachedLazyPagingItems[selectedTypeIndex]?.isLoadingFirstPageOrRefreshing == true
@@ -211,7 +198,7 @@ class UserCollectionsState(
                 .restartable(restarter)
                 .map { CollectionsFilterQuery(availableTypes[it]) }
                 .transformLatest { query ->
-                    // 不再发射初始加载状态，直接发射真实数据
+
                     emitAll(startSearch(query))
                 }
                 .cachedIn(backgroundScope)
@@ -250,7 +237,7 @@ fun CollectionPage(
     onCollectionUpdate: (subjectId: Int, episode: EpisodeListItem) -> Unit,
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
     enableAnimation: Boolean = true,
 
     ) {
@@ -258,10 +245,9 @@ fun CollectionPage(
     var hideBangumiSync by rememberSaveable { mutableStateOf(false) }
     val isBangumiSyncing = fullSyncState != null && !fullSyncState.finished
 
-    // 如果有缓存, 列表区域要展示缓存, 错误就用图标放在角落
     CollectionPageLayout(
         settingsIcon = {
-            if (selfInfo.isSessionValid == false // #1269 游客模式下无法打开设置界面
+            if (selfInfo.isSessionValid == false
                 || currentWindowAdaptiveInfo1().windowSizeClass.isWidthAtLeastMedium
             ) {
                 IconButton(onClick = onClickSettings) {
@@ -364,7 +350,7 @@ fun CollectionPage(
                 enabled = !isBangumiSyncing,
                 touchOnly = true,
                 indicator = {
-                    // 内容延伸到 top bar 下方, 指示器需要避开 top bar.
+
                     PullToRefreshDefaults.Indicator(
                         modifier = Modifier.align(Alignment.TopCenter)
                             .padding(top = contentPadding.calculateTopPadding()),
@@ -413,9 +399,6 @@ fun CollectionPage(
     }
 }
 
-/**
- * @param filters see [CollectionPageFilters]
- */
 @Composable
 private fun CollectionPageLayout(
     settingsIcon: @Composable () -> Unit,
@@ -426,22 +409,22 @@ private fun CollectionPageLayout(
     onRefresh: () -> Unit,
     onFullSync: () -> Unit,
     modifier: Modifier = Modifier,
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
     content: @Composable (nestedScrollConnection: NestedScrollConnection?, contentPadding: PaddingValues) -> Unit,
 ) {
     val isHeightAtLeastMedium = currentWindowAdaptiveInfo1().windowSizeClass.isHeightAtLeastMedium
     val scrollBehavior = if (LocalPlatform.current.hasScrollingBug() || isHeightAtLeastMedium) {
-        null // Can't use PinnedBehavior, because we have a TabRow in this page, which does not sync color
+        null
     } else {
-        // 在紧凑高度时收起 Top bar
+
         TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     }
     val frostedGlassActive = isAppChromeFrostedGlassActive()
-    val appBarColors = AniThemeDefaults.topAppBarColors()
+    val appBarColors = WynimeThemeDefaults.topAppBarColors()
     Scaffold(
         modifier,
         topBar = {
-            // 整个 topBar (app bar + tab row) 作为一个毛玻璃面板; 不启用时用不透明背景遮住下方滚动的内容.
+
             Column(
                 modifier = Modifier.fillMaxWidth()
                     .appChromeFrostedGlass(
@@ -450,8 +433,8 @@ private fun CollectionPageLayout(
                     )
                     .ifThen(!frostedGlassActive) { background(appBarColors.containerColor) },
             ) {
-                AniTopAppBar(
-                    title = { AniTopAppBarDefaults.Title(stringResource(Lang.subject_collection_page_title)) },
+                WynimeTopAppBar(
+                    title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.subject_collection_page_title)) },
                     modifier = Modifier,
                     actions = {
                         actions()
@@ -467,7 +450,7 @@ private fun CollectionPageLayout(
                         }
 
                         if (LocalPlatform.current.isDesktop()) {
-                            // PC 无法下拉刷新
+
                             IconButton(
                                 {
                                     onRefresh()
@@ -489,20 +472,20 @@ private fun CollectionPageLayout(
                     } else {
                         appBarColors
                     },
-                    windowInsets = AniWindowInsets.forTopAppBarWithoutDesktopTitle(),
+                    windowInsets = WynimeWindowInsets.forTopAppBarWithoutDesktopTitle(),
                     scrollBehavior = scrollBehavior,
-                    enableFrostedGlass = false, // 由上面的 Column 统一应用
+                    enableFrostedGlass = false,
                 )
 
                 filters(CollectionPageFilters)
             }
         },
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
     ) { topBarPaddings ->
         Box(
-            // 毛玻璃 app chrome 的模糊来源. 内容通过 contentPadding 延伸到 chrome 下方.
-            Modifier.appChromeHazeSource(backgroundColor = AniThemeDefaults.pageContentBackgroundColor)
+
+            Modifier.appChromeHazeSource(backgroundColor = WynimeThemeDefaults.pageContentBackgroundColor)
                 .fillMaxSize(),
         ) {
             Box(
@@ -517,13 +500,6 @@ private fun CollectionPageLayout(
     }
 }
 
-/**
- * 使用 [HorizontalPager] 支持左右滑动切换标签.
- *
- * 是否能滑动取决于有没有触摸, 而不是平台: 之前桌面端整个走另一条分支, 连 [HorizontalPager]
- * 都不创建, 带触屏的二合一设备也就无从滑动 (标签点击里的 `animateScrollToPage` 同样一直在空转).
- * 现在统一挂载, 由 [touchHorizontalScrollOnly] 按本次手势的指针类型过滤, 鼠标拖动依然不会翻页.
- */
 @Composable
 private fun CollectionPageColumnLayout(
     state: UserCollectionsState,
@@ -630,7 +606,6 @@ private fun SubjectCollectionItem(
 ) {
     var showEpisodeProgressDialog by rememberSaveable { mutableStateOf(false) }
 
-    // 即使对话框不显示也加载, 避免打开对话框要等待一秒才能看到进度
     val navigator = LocalNavigator.current
     if (showEpisodeProgressDialog) {
         EpisodeListDialog(
@@ -707,7 +682,7 @@ private fun SubjectCollectionItem(
                 }
             }
         },
-        colors = AniThemeDefaults.primaryCardColors(),
+        colors = WynimeThemeDefaults.primaryCardColors(),
         modifier = modifier,
     )
 }
@@ -724,7 +699,6 @@ private fun UnifiedCollectionType.displayText(): String {
         UnifiedCollectionType.NOT_COLLECTED -> stringResource(Lang.subject_collection_uncollected)
     }
 }
-
 
 @Composable
 private fun GuestTips(

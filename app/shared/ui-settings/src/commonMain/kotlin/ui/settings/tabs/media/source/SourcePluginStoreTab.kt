@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.media.source
+package com.wynime.app.ui.settings.tabs.media.source
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,11 +23,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.him188.ani.app.domain.sourceplugin.SourcePluginRuntimeState
-import me.him188.ani.app.domain.sourceplugin.compareSourcePluginVersions
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.framework.components.TextItem
+import com.wynime.app.domain.sourceplugin.SourcePluginRuntimeState
+import com.wynime.app.domain.sourceplugin.compareSourcePluginVersions
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.TextItem
 
 private object SourcePluginStoreTestTags {
     const val REFRESH = "source_plugin_store_refresh"

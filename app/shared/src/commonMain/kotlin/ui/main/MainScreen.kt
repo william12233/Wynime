@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.main
+package com.wynime.app.ui.main
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.layout.Arrangement
@@ -61,63 +52,62 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.foundation.VersionExpiryService
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.navigation.MainScreenPage
-import me.him188.ani.app.navigation.SettingsTab
-import me.him188.ani.app.navigation.getIcon
-import me.him188.ani.app.navigation.getText
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.WynimeBrand
-import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuite
-import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuiteDefaults
-import me.him188.ani.app.ui.adaptive.navigation.AniNavigationSuiteLayout
-import me.him188.ani.app.ui.exploration.ExplorationPageViewModel
-import me.him188.ani.app.ui.download.DownloadManagementScreen
-import me.him188.ani.app.ui.download.DownloadManagementViewModel
-import me.him188.ani.app.ui.download.createDownloadManagementViewModel
-import me.him188.ani.app.ui.exploration.ExplorationScreen
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.LocalPlatformWindow
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.desktopCaptionButton
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBar
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBarPadding
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isTopRight
-import me.him188.ani.app.ui.foundation.layout.setRequestFullScreen
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.theme.LocalAppChromeHazeState
-import me.him188.ani.app.ui.foundation.theme.LocalAppChromeOverlayInsets
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.showLoadError
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_search
-import me.him188.ani.app.ui.lang.settings
-import me.him188.ani.app.ui.lang.settings_update_version_expired_copied_to_clipboard
-import me.him188.ani.app.ui.lang.settings_update_version_expired_export_settings
-import me.him188.ani.app.ui.lang.settings_update_version_expired_import_settings_hint
-import me.him188.ani.app.ui.lang.settings_update_version_expired_message
-import me.him188.ani.app.ui.lang.settings_update_version_expired_message_with_latest
-import me.him188.ani.app.ui.lang.settings_update_version_expired_title
-import me.him188.ani.app.ui.settings.SettingsViewModel
-import me.him188.ani.app.ui.settings.account.ProfilePopup
-import me.him188.ani.app.ui.settings.account.ProfileViewModel
-import me.him188.ani.app.ui.subject.collection.CollectionPage
-import me.him188.ani.app.ui.subject.collection.UserCollectionsViewModel
-import me.him188.ani.app.ui.update.AppUpdateViewModel
-import me.him188.ani.app.ui.update.UpdateNotifier
-import me.him188.ani.app.ui.user.SelfInfoUiState
-import me.him188.ani.utils.platform.isAndroid
+import com.wynime.app.domain.foundation.VersionExpiryService
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.navigation.MainScreenPage
+import com.wynime.app.navigation.SettingsTab
+import com.wynime.app.navigation.getIcon
+import com.wynime.app.navigation.getText
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.WynimeBrand
+import com.wynime.app.ui.adaptive.navigation.WynimeNavigationSuite
+import com.wynime.app.ui.adaptive.navigation.WynimeNavigationSuiteDefaults
+import com.wynime.app.ui.adaptive.navigation.WynimeNavigationSuiteLayout
+import com.wynime.app.ui.exploration.ExplorationPageViewModel
+import com.wynime.app.ui.download.DownloadManagementScreen
+import com.wynime.app.ui.download.DownloadManagementViewModel
+import com.wynime.app.ui.download.createDownloadManagementViewModel
+import com.wynime.app.ui.exploration.ExplorationScreen
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.LocalPlatformWindow
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.desktopCaptionButton
+import com.wynime.app.ui.foundation.layout.desktopTitleBar
+import com.wynime.app.ui.foundation.layout.desktopTitleBarPadding
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isTopRight
+import com.wynime.app.ui.foundation.layout.setRequestFullScreen
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.theme.LocalAppChromeHazeState
+import com.wynime.app.ui.foundation.theme.LocalAppChromeOverlayInsets
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.showLoadError
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_search
+import com.wynime.app.ui.lang.settings
+import com.wynime.app.ui.lang.settings_update_version_expired_copied_to_clipboard
+import com.wynime.app.ui.lang.settings_update_version_expired_export_settings
+import com.wynime.app.ui.lang.settings_update_version_expired_import_settings_hint
+import com.wynime.app.ui.lang.settings_update_version_expired_message
+import com.wynime.app.ui.lang.settings_update_version_expired_message_with_latest
+import com.wynime.app.ui.lang.settings_update_version_expired_title
+import com.wynime.app.ui.settings.SettingsViewModel
+import com.wynime.app.ui.settings.account.ProfilePopup
+import com.wynime.app.ui.settings.account.ProfileViewModel
+import com.wynime.app.ui.subject.collection.CollectionPage
+import com.wynime.app.ui.subject.collection.UserCollectionsViewModel
+import com.wynime.app.ui.update.AppUpdateViewModel
+import com.wynime.app.ui.update.UpdateNotifier
+import com.wynime.app.ui.user.SelfInfoUiState
+import com.wynime.utils.platform.isAndroid
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import org.koin.mp.KoinPlatform
-
 
 @Composable
 fun MainScreen(
@@ -127,7 +117,7 @@ fun MainScreen(
     onNavigateToPage: (MainScreenPage) -> Unit,
     onNavigateToSettings: (tab: SettingsTab?) -> Unit,
     onNavigateToSearch: () -> Unit,
-    navigationLayoutType: NavigationSuiteType = AniNavigationSuiteDefaults.calculateLayoutType(
+    navigationLayoutType: NavigationSuiteType = WynimeNavigationSuiteDefaults.calculateLayoutType(
         currentWindowAdaptiveInfo1(),
     ),
 ) {
@@ -158,7 +148,7 @@ private fun MainScreenContent(
     onNavigateToSettings: (tab: SettingsTab?) -> Unit,
     onNavigateToSearch: () -> Unit,
     modifier: Modifier = Modifier,
-    navigationLayoutType: NavigationSuiteType = AniNavigationSuiteDefaults.calculateLayoutType(
+    navigationLayoutType: NavigationSuiteType = WynimeNavigationSuiteDefaults.calculateLayoutType(
         currentWindowAdaptiveInfo1(),
     ),
 ) {
@@ -172,8 +162,6 @@ private fun MainScreenContent(
     val navigatorState = rememberUpdatedState(LocalNavigator.current)
     val navigator by navigatorState
 
-    // 毛玻璃 app chrome 仅在主页面启用: 各 tab 页面通过 appChromeHazeSource 标记模糊来源,
-    // 其他页面不提供 HazeState, 保持不透明的 chrome.
     CompositionLocalProvider(LocalAppChromeHazeState provides rememberHazeState()) {
         MainScreenNavigationLayout(
             page = page,
@@ -226,7 +214,7 @@ private fun MainScreenNavigationLayout(
     userCollectionsViewModel: UserCollectionsViewModel,
     downloadManagementViewModel: DownloadManagementViewModel,
     modifier: Modifier = Modifier,
-    navigationLayoutType: NavigationSuiteType = AniNavigationSuiteDefaults.calculateLayoutType(
+    navigationLayoutType: NavigationSuiteType = WynimeNavigationSuiteDefaults.calculateLayoutType(
         currentWindowAdaptiveInfo1(),
     ),
 ) {
@@ -234,14 +222,14 @@ private fun MainScreenNavigationLayout(
     val navigatorState = rememberUpdatedState(LocalNavigator.current)
     val navigator by navigatorState
 
-    AniNavigationSuiteLayout(
+    WynimeNavigationSuiteLayout(
         navigationSuite = {
-            AniNavigationSuite(
+            WynimeNavigationSuite(
                 layoutType = navigationLayoutType,
                 colors = NavigationSuiteDefaults.colors(
-                    navigationDrawerContainerColor = AniThemeDefaults.navigationContainerColor,
-                    navigationBarContainerColor = AniThemeDefaults.navigationContainerColor,
-                    navigationRailContainerColor = AniThemeDefaults.navigationContainerColor,
+                    navigationDrawerContainerColor = WynimeThemeDefaults.navigationContainerColor,
+                    navigationBarContainerColor = WynimeThemeDefaults.navigationContainerColor,
+                    navigationRailContainerColor = WynimeThemeDefaults.navigationContainerColor,
                 ),
                 navigationRailHeader = {
                     FloatingActionButton(
@@ -249,7 +237,7 @@ private fun MainScreenNavigationLayout(
                         Modifier
                             .desktopTitleBarPadding()
                             .ifThen(currentWindowAdaptiveInfo1().windowSizeClass.isHeightAtLeastMedium) {
-                                // 移动端横屏不增加额外 padding
+
                                 padding(vertical = 48.dp)
                             },
                         elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
@@ -261,7 +249,7 @@ private fun MainScreenNavigationLayout(
                     NavigationRailItem(
                         modifier = Modifier.padding(bottom = itemSpacing)
                             .ifThen(currentWindowAdaptiveInfo1().windowSizeClass.isHeightAtLeastMedium) {
-                                // 移动端横屏不增加额外 padding
+
                                 padding(vertical = 16.dp)
                             },
                         selected = false,
@@ -291,7 +279,7 @@ private fun MainScreenNavigationLayout(
                                         userCollectionsViewModel.state.scrollToTop()
 
                                     MainScreenPage.CacheManagement -> {
-                                        // downloadManagementViewModel.lazyGridState.animateScrollToItem(0)
+
                                     }
                                 }
                             }
@@ -306,7 +294,7 @@ private fun MainScreenNavigationLayout(
         layoutType = navigationLayoutType,
     ) {
         val coroutineScope = rememberCoroutineScope()
-        // Windows caption button 在右侧, 没有足够空间放置按钮, 需要保留 title bar insets
+
         val isRightCaptionButton = WindowInsets.desktopCaptionButton.isTopRight()
         val toaster = LocalToaster.current
 
@@ -314,19 +302,19 @@ private fun MainScreenNavigationLayout(
             layoutType = navigationLayoutType,
             selfInfo = selfInfo,
             modifier = Modifier.ifThen(navigationLayoutType != NavigationSuiteType.NavigationBar && !isRightCaptionButton) {
-                // macos 标题栏只会在 NavigationRail 的区域内, TabContent 区域无需这些 padding.
+
                 consumeWindowInsets(WindowInsets.desktopTitleBar())
             },
         ) {
-            val aniMotionScheme = LocalAniMotionScheme.current
-            // 毛玻璃导航栏覆盖在内容上方时, 页面内容需要额外的 bottom insets 才不会被遮挡.
-            val pageWindowInsets = AniWindowInsets.forPageContent()
+            val wynimeMotionScheme = LocalWynimeMotionScheme.current
+
+            val pageWindowInsets = WynimeWindowInsets.forPageContent()
                 .add(LocalAppChromeOverlayInsets.current)
             AnimatedContent(
                 page,
                 Modifier.fillMaxSize(),
                 transitionSpec = {
-                    aniMotionScheme.topLevelTransition
+                    wynimeMotionScheme.topLevelTransition
                 },
             ) { page ->
                 when (page) {
@@ -384,7 +372,6 @@ private fun MainScreenNavigationLayout(
     }
 }
 
-
 @Composable
 private fun TabContent(
     layoutType: NavigationSuiteType,
@@ -407,14 +394,11 @@ private fun TabContent(
     Surface(
         modifier.clip(shape),
         shape = shape,
-        color = AniThemeDefaults.pageContentBackgroundColor,
+        color = WynimeThemeDefaults.pageContentBackgroundColor,
     ) {
         Box(Modifier.fillMaxWidth()) {
             content()
 
-            // 毛玻璃导航栏覆盖在内容上时, 通知需要避开导航栏.
-            // 注意不能用 windowInsetsPadding: 祖先已 consume 了系统导航栏 insets,
-            // windowInsetsPadding 会减去已消耗的部分, 导致通知被导航栏遮挡一截.
             BottomNotifierStack(
                 Modifier.matchParentSize()
                     .padding(LocalAppChromeOverlayInsets.current.asPaddingValues()),
@@ -425,11 +409,6 @@ private fun TabContent(
     }
 }
 
-/**
- * 主界面底部的通知堆疊: [top] 顯示更新提示或版本過期鎖定頁；[bottom] 保留給平台端額外通知。
- *
- * 版本过期锁定页 (fillMaxSize) 也在 [top] 里, 用 weight 让它能占满剩余高度; 平时更新提示只占自身高度.
- */
 @Composable
 internal fun BottomNotifierStack(
     modifier: Modifier = Modifier,
@@ -444,7 +423,7 @@ internal fun BottomNotifierStack(
 
 @Composable
 private fun BoxScope.UpdateNotifierWithVersionExpiryCheck() {
-    // Force check when version expired
+
     val updateVm = viewModel { AppUpdateViewModel() }
     val versionExpiryService = remember { KoinPlatform.getKoin().get<VersionExpiryService>() }
     val expired by versionExpiryService.state.collectAsStateWithLifecycle(null)

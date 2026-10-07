@@ -1,16 +1,7 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web
+package com.wynime.app.domain.mediasource.web
 
 import io.ktor.http.Url
-import me.him188.ani.utils.xml.Document
+import com.wynime.utils.xml.Document
 
 enum class WebCaptchaKind {
     Image,
@@ -20,21 +11,11 @@ enum class WebCaptchaKind {
     Unknown,
 }
 
-/**
- * 引擎的调试管线 (如 `tools/datasource-test-mcp`) 在被挡状态码上抛出的异常.
- * App 的正式链路使用 [BlockedException].
- */
 class WebPageCaptchaException(
     val url: String,
     val kind: WebCaptchaKind,
 ) : Exception("Captcha detected while loading $url: $kind")
 
-/**
- * 启发式验证码检测器.
- *
- * 定位是**纯分类器**: 只在解析失败后由 [PageEvaluator] 运行, 职责只是猜验证码类型,
- * 用于决定 UI 文案与 auto-solve 策略. 判错的代价很低, 因此规则宁可漏报也不误报.
- */
 object WebCaptchaDetector {
     fun detect(pageUrl: String, html: String): WebCaptchaKind? {
         val lowerHtml = html.lowercase()
@@ -120,8 +101,6 @@ object WebCaptchaDetector {
                 "提交驗證" in html ||
                 "提交验证" in html
 
-        // 图片验证码必须有结构证据 (输入框 + 提交按钮 + 验证码图片三件套).
-        // 刻意不再兜底匹配 "captcha" 等宽泛词: 检测器只是解析失败后的分类器, 宁可漏报也不误报.
         if (
             hasInlineVerifyImage &&
             hasInlineVerifyInput &&
@@ -142,9 +121,6 @@ fun WebCaptchaKind.displayName(): String = when (this) {
     WebCaptchaKind.SliderCaptcha -> "滑动验证"
 }
 
-/**
- * 会话注册表与 cookie/UA 归属使用的 host key: 小写, 去 `www.` 前缀.
- */
 internal fun normalizedSessionHost(pageUrl: String): String? {
     return runCatching { Url(pageUrl).host.lowercase() }
         .getOrNull()
@@ -161,9 +137,6 @@ internal fun normalizedStorageOrigin(pageUrl: String): String? {
     return "${url.protocol.name}://$host$port"
 }
 
-/**
- * 站内冷却页 (如 "请不要频繁操作"). 属于限流, 不是验证码.
- */
 internal fun Document.isSearchCooldownPage(): Boolean {
     val normalizedText = text()
         .replace(Regex("\\s+"), " ")

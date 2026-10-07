@@ -1,51 +1,34 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepository
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.data.repository.subject.SubjectRelationsRepository
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
-import me.him188.ani.app.domain.media.selector.MediaSelectorFactory.Companion.withRepositories
-import me.him188.ani.datasources.api.Media
+import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.media.EpisodePreferencesRepository
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.subject.SubjectRelationsRepository
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.media.fetch.MediaSourceManager
+import com.wynime.app.domain.media.selector.MediaSelectorFactory.Companion.withRepositories
+import com.wynime.datasources.api.Media
 import org.koin.core.Koin
 import org.koin.mp.KoinPlatform
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.flow.combine
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.fetch.withRequestedNumbers
-import me.him188.ani.datasources.api.source.MediaFetchRequest
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.fetch.withRequestedNumbers
+import com.wynime.datasources.api.source.MediaFetchRequest
 
-/**
- * 提前给予 episode 和 subject 的 context, 用于构造 [MediaSelector].
- *
- * @see withRepositories
- */
 interface MediaSelectorFactory {
-    /**
-     * @param fetchRequest 查询会话当前生效的请求 ([MediaFetchSession.latestRequest]); 提供时, 用户在编辑器里改的当前集集数
-     * 覆盖 Bangumi 的集数 ([withRequestedNumbers]).
-     */
+
     fun create(
         subjectId: Int,
         episodeId: Int,
         mediaList: Flow<List<Media>>,
         flowCoroutineContext: CoroutineContext = Dispatchers.Default,
         fetchRequest: Flow<MediaFetchRequest>? = null,
-    ): MediaSelector // 如果要'挂载'自动保存配置, 可以为这个的返回值操作.
+    ): MediaSelector
 
     companion object {
         fun withKoin(koin: Koin = KoinPlatform.getKoin()): MediaSelectorFactory = withRepositories(

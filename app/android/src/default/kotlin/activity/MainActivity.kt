@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.android.activity
+package com.wynime.android.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -28,25 +19,25 @@ import androidx.lifecycle.lifecycleScope
 import com.wynime.app.BuildConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.session.auth.OAuthCallbackRegistry
-import me.him188.ani.app.navigation.AniNavigator
-import me.him188.ani.app.platform.AniComponentActivity
-import me.him188.ani.app.platform.rememberPlatformWindow
-import me.him188.ani.app.ui.exprovider.ExternalContentProviderFactory
-import me.him188.ani.app.ui.exprovider.LocalExternalContentProvider
-import me.him188.ani.app.ui.foundation.layout.LocalPlatformWindow
-import me.him188.ani.app.ui.foundation.theme.SystemBarColorEffect
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.Toaster
-import me.him188.ani.app.ui.main.AniApp
-import me.him188.ani.app.ui.main.AniAppContent
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.domain.session.auth.OAuthCallbackRegistry
+import com.wynime.app.navigation.WynimeNavigator
+import com.wynime.app.platform.WynimeComponentActivity
+import com.wynime.app.platform.rememberPlatformWindow
+import com.wynime.app.ui.exprovider.ExternalContentProviderFactory
+import com.wynime.app.ui.exprovider.LocalExternalContentProvider
+import com.wynime.app.ui.foundation.layout.LocalPlatformWindow
+import com.wynime.app.ui.foundation.theme.SystemBarColorEffect
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.Toaster
+import com.wynime.app.ui.main.WynimeApp
+import com.wynime.app.ui.main.WynimeAppContent
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import org.koin.android.ext.android.inject
 
-class MainActivity : AniComponentActivity() {
+class MainActivity : WynimeComponentActivity() {
     private val logger = logger<MainActivity>()
-    private val aniNavigator = AniNavigator()
+    private val wynimeNavigator = WynimeNavigator()
 
     private val externalContentProviderFactory: ExternalContentProviderFactory by inject()
 
@@ -92,14 +83,14 @@ class MainActivity : AniComponentActivity() {
         }
     }
 
-    private fun navigateWhenReady(destination: String, action: AniNavigator.() -> Unit) {
+    private fun navigateWhenReady(destination: String, action: WynimeNavigator.() -> Unit) {
         lifecycleScope.launch {
             try {
-                if (!aniNavigator.isBackStackReady()) {
-                    aniNavigator.awaitBackStack()
-                    delay(1000) // 等待初始化好, 否则跳转可能无效
+                if (!wynimeNavigator.isBackStackReady()) {
+                    wynimeNavigator.awaitBackStack()
+                    delay(1000)
                 }
-                aniNavigator.action()
+                wynimeNavigator.action()
             } catch (e: Exception) {
                 logger.error(e) { "Failed to navigate to $destination" }
             }
@@ -111,19 +102,18 @@ class MainActivity : AniComponentActivity() {
         handleStartIntent(intent)
 
         enableEdgeToEdge(
-            // 透明状态栏
+
             statusBarStyle = SystemBarStyle.auto(
                 android.graphics.Color.TRANSPARENT,
                 android.graphics.Color.TRANSPARENT,
             ),
-            // 透明导航栏
+
             navigationBarStyle = SystemBarStyle.auto(
                 android.graphics.Color.TRANSPARENT,
                 android.graphics.Color.TRANSPARENT,
             ),
         )
 
-        // 允许画到 system bars
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         val toaster = object : Toaster {
@@ -135,7 +125,7 @@ class MainActivity : AniComponentActivity() {
         val externalContentProvider = externalContentProviderFactory.create(this, lifecycleScope)
 
         setContent {
-            AniApp {
+            WynimeApp {
                 val externalComponentProviderUpdated by rememberUpdatedState(externalContentProvider)
 
                 SystemBarColorEffect()
@@ -145,8 +135,7 @@ class MainActivity : AniComponentActivity() {
                     LocalPlatformWindow provides rememberPlatformWindow(this),
                     LocalExternalContentProvider provides externalComponentProviderUpdated,
                 ) {
-                    // Expose Modifier.testTag as resource-id in accessibility/uiautomator dumps,
-                    // so UI-automation agents can locate elements by stable ids (debug only).
+
                     @OptIn(ExperimentalComposeUiApi::class)
                     val rootModifier = if (BuildConfig.DEBUG) {
                         Modifier.semantics { testTagsAsResourceId = true }
@@ -154,7 +143,7 @@ class MainActivity : AniComponentActivity() {
                         Modifier
                     }
                     Box(rootModifier) {
-                        AniAppContent(aniNavigator)
+                        WynimeAppContent(wynimeNavigator)
                     }
                 }
             }

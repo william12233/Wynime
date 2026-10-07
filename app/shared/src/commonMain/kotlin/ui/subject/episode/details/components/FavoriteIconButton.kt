@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.details.components
+package com.wynime.app.ui.subject.episode.details.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -21,10 +12,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.subject.collection.components.EditCollectionTypeDropDown
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.subject.collection.components.EditCollectionTypeDropDown
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 
 @Composable
 fun FavoriteIconButton(

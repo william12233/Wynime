@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.CoroutineScope
@@ -22,24 +15,24 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.him188.ani.app.data.persistent.database.dao.BangumiTrackingAccountEntity
-import me.him188.ani.app.data.persistent.database.dao.BangumiTrackingMetadataDao
-import me.him188.ani.app.data.persistent.database.dao.BangumiTrackingMetadataEntity
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
-import me.him188.ani.app.data.repository.RepositoryAuthorizationException
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.RepositoryRateLimitedException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.data.repository.RepositoryException.Companion.wrapOrThrowCancellation
-import me.him188.ani.app.data.repository.user.AccessTokenSession
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.network.SubjectService
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.currentTimeMillis
-import me.him188.ani.utils.logging.debug
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.data.persistent.database.dao.BangumiTrackingAccountEntity
+import com.wynime.app.data.persistent.database.dao.BangumiTrackingMetadataDao
+import com.wynime.app.data.persistent.database.dao.BangumiTrackingMetadataEntity
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
+import com.wynime.app.data.repository.RepositoryAuthorizationException
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryRateLimitedException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.data.repository.RepositoryException.Companion.wrapOrThrowCancellation
+import com.wynime.app.data.repository.user.AccessTokenSession
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.network.SubjectService
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.currentTimeMillis
+import com.wynime.utils.logging.debug
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Instant
@@ -194,8 +187,9 @@ class BangumiTrackingMetadataRepository(
         remoteType: UnifiedCollectionType?,
         remoteUpdatedAt: Long?,
         syncedAt: Long = currentTimeMillis(),
+        expectedAccountKey: String? = null,
     ) {
-        val key = accountKey()
+        val key = expectedAccountKey ?: accountKey()
         val old = dao.find(key, subjectId)
         dao.upsert(
             (old ?: BangumiTrackingMetadataEntity(accountKey = key, subjectId = subjectId)).copy(
@@ -210,8 +204,8 @@ class BangumiTrackingMetadataRepository(
         )
     }
 
-    suspend fun markPendingError(subjectId: Int, error: Throwable) {
-        val key = accountKey()
+    suspend fun markPendingError(subjectId: Int, error: Throwable, expectedAccountKey: String? = null) {
+        val key = expectedAccountKey ?: accountKey()
         val old = dao.find(key, subjectId) ?: return
         dao.upsert(old.copy(pendingError = error.message ?: error::class.simpleName))
     }
@@ -297,7 +291,7 @@ fun classifyBangumiTrackingError(throwable: Throwable): BangumiTrackingConnectio
     return when (normalized) {
         is RepositoryAuthorizationException -> BangumiTrackingConnectionError.AUTHORIZATION
         is RepositoryRateLimitedException -> BangumiTrackingConnectionError.RATE_LIMITED
-        is me.him188.ani.app.data.repository.RepositoryNetworkException ->
+        is com.wynime.app.data.repository.RepositoryNetworkException ->
             BangumiTrackingConnectionError.NETWORK
         is RepositoryException -> BangumiTrackingConnectionError.UNKNOWN
     }
@@ -337,8 +331,7 @@ class BangumiTrackingSyncRepository(
             pendingLock.withLock {
                 pendingJobs.remove(subjectId)?.cancel()
                 pendingJobs[subjectId] = serviceScope.launch {
-                    // Let a burst of local writes finish committing. This is a scheduling yield,
-                    // not a wall-clock throttle; the latest durable operation is read below.
+
                     yield()
                     flushPending(subjectId)
                 }
@@ -358,11 +351,6 @@ class BangumiTrackingSyncRepository(
         }
     }
 
-    /**
-     * Re-queues only mutations that were left pending by an earlier automatic sync. This is a
-     * bounded retry trigger for app startup or a user-initiated connection check; it never fetches
-     * the full collection list.
-     */
     suspend fun retryPendingChanges(account: BangumiTrackingAccount) {
         if (!settingsStore.flow.first().autoSyncTracking) return
         val accountKey = metadataRepository.adoptAccount(account)
@@ -392,12 +380,29 @@ class BangumiTrackingSyncRepository(
         }
     }
 
-    private suspend fun flushPending(subjectId: Int) {
+    suspend fun confirmPendingWebRemovals() {
+        try {
+            if (metadataDao.list(metadataRepository.accountKey()).none {
+                    it.pendingOperation == BangumiTrackingPendingOperation.DELETE_COLLECTION.name
+                }) return
+            val account = currentBangumiUser() ?: return
+            val key = metadataRepository.adoptAccount(account)
+            metadataDao.list(key).filter {
+                it.pendingOperation == BangumiTrackingPendingOperation.DELETE_COLLECTION.name
+            }.forEach { flushPending(it.subjectId, confirmWebRemoval = true) }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            logger.warn(error) { "Pending collection removal verification failed; retaining its state" }
+        }
+    }
+
+    private suspend fun flushPending(subjectId: Int, confirmWebRemoval: Boolean = false) {
         var attemptedOperation: BangumiTrackingPendingOperation? = null
         var accountKey: String? = null
         try {
             val settings = settingsStore.flow.first()
-            if (!settings.autoSyncTracking) return
+            if (!settings.autoSyncTracking && !confirmWebRemoval) return
             val user = currentBangumiUser() ?: return
             val resolvedAccountKey = metadataRepository.adoptAccount(user)
             accountKey = resolvedAccountKey
@@ -410,12 +415,14 @@ class BangumiTrackingSyncRepository(
                     else -> return
                 }
             attemptedOperation = operation
+            if (confirmWebRemoval && operation != BangumiTrackingPendingOperation.DELETE_COLLECTION) return
             syncCoordinator.withExclusive(BangumiSyncOperation.AUTO) {
                 when (operation) {
                     BangumiTrackingPendingOperation.DELETE_COLLECTION -> {
+                        ensureRemovalAccount(resolvedAccountKey, user.username)
                         val before = readRemoteCollection(user.username, subjectId)
                         if (before != null) {
-                            timedRemoteMutation("DELETE", "/v2/subjects/{subjectId}") {
+                            timedRemoteMutation("POST", "/api/v1/collections/{subjectId}/removal/confirm") {
                                 subjectService.deleteSubjectCollection(subjectId)
                             }
                         }
@@ -423,10 +430,17 @@ class BangumiTrackingSyncRepository(
                         check(after == null) {
                             "Bangumi collection still exists after DELETE_COLLECTION"
                         }
+                        ensureRemovalAccount(resolvedAccountKey, user.username)
+                        val latest = metadataDao.find(resolvedAccountKey, subjectId)
+                        check(latest?.pendingOperation == metadata.pendingOperation &&
+                            latest?.localDeletedAt == metadata.localDeletedAt
+                        ) { "Collection operation changed during removal verification" }
+                        markVerifiedLocalRemoval(subjectId)
                         metadataRepository.markMutationSucceeded(
                             subjectId = subjectId,
                             remoteType = null,
                             remoteUpdatedAt = null,
+                            expectedAccountKey = resolvedAccountKey,
                         )
                         _autoSyncEvents.tryEmit(BangumiTrackingAutoSyncEvent.Deleted(subjectId))
                     }
@@ -472,7 +486,7 @@ class BangumiTrackingSyncRepository(
                 (attemptedOperation == BangumiTrackingPendingOperation.DELETE_COLLECTION &&
                     latest?.localDeletedAt != null)
             if (isCurrentAttempt) {
-                metadataRepository.markPendingError(subjectId, e)
+                metadataRepository.markPendingError(subjectId, e, accountKey)
                 _autoSyncEvents.tryEmit(
                     BangumiTrackingAutoSyncEvent.Failed(subjectId, classifyBangumiTrackingError(e)),
                 )
@@ -512,6 +526,9 @@ class BangumiTrackingSyncRepository(
         }
         val plans = subjectIds.map { subjectId ->
             val metadataRow = metadata[subjectId]
+            if (metadataRow?.pendingOperation == BangumiTrackingPendingOperation.DELETE_COLLECTION.name) {
+                return@map BangumiTrackingSyncPlan(subjectId, BangumiTrackingSyncAction.DeleteRemote, conflict = false)
+            }
             BangumiTrackingSyncEngine.plan(
                 policy = settings.conflictPolicy,
                 local = local[subjectId],
@@ -556,10 +573,10 @@ class BangumiTrackingSyncRepository(
             }.map { plan ->
                 async {
                     try {
-                        executeRemoteMutation(user.username, plan)
+                        executeRemoteMutation(user.username, accountKey, plan)
                     } catch (e: Throwable) {
                         if (e is CancellationException) throw e
-                        metadataRepository.markPendingError(plan.subjectId, e)
+                        metadataRepository.markPendingError(plan.subjectId, e, accountKey)
                         MutationResult.Failure(plan.subjectId, e)
                     }
                 }
@@ -633,12 +650,12 @@ class BangumiTrackingSyncRepository(
 
                 is BangumiTrackingSyncAction.UpsertRemote -> {
                     if (mutationResults.any { it is MutationResult.UpsertSuccess && it.subjectId == plan.subjectId }) {
-                        // The remote mutation is counted separately; there is no local write here.
+
                     }
                 }
 
                 BangumiTrackingSyncAction.DeleteRemote -> {
-                    // The verified remote deletion is counted in deletedRemote.
+
                 }
 
                 BangumiTrackingSyncAction.Conflict -> {
@@ -824,6 +841,7 @@ class BangumiTrackingSyncRepository(
 
     private suspend fun executeRemoteMutation(
         username: String,
+        accountKey: String,
         plan: BangumiTrackingSyncPlan,
     ): MutationResult {
         return when (val action = plan.action) {
@@ -844,24 +862,41 @@ class BangumiTrackingSyncRepository(
             }
 
             BangumiTrackingSyncAction.DeleteRemote -> {
+                ensureRemovalAccount(accountKey, username)
                 if (readRemoteCollection(username, plan.subjectId) != null) {
-                    timedRemoteMutation("DELETE", "/v2/subjects/{subjectId}") {
+                    timedRemoteMutation("POST", "/api/v1/collections/{subjectId}/removal/confirm") {
                         subjectService.deleteSubjectCollection(plan.subjectId)
                     }
                 }
                 check(readRemoteCollection(username, plan.subjectId) == null) {
                     "Bangumi collection still exists after DELETE_COLLECTION"
                 }
+                ensureRemovalAccount(accountKey, username)
+                markVerifiedLocalRemoval(plan.subjectId)
                 metadataRepository.markMutationSucceeded(
                     subjectId = plan.subjectId,
                     remoteType = null,
                     remoteUpdatedAt = null,
+                    expectedAccountKey = accountKey,
                 )
                 MutationResult.DeleteSuccess(plan.subjectId)
             }
 
             else -> error("Not a remote mutation: ${plan.action}")
         }
+    }
+
+    private suspend fun ensureRemovalAccount(accountKey: String, username: String) {
+        check(metadataRepository.accountKey() == accountKey) { "Account changed during collection removal" }
+        val current = currentBangumiUser()
+        check(current?.key == accountKey && current.username == username) {
+            "Account changed during collection removal"
+        }
+    }
+
+    private suspend fun markVerifiedLocalRemoval(subjectId: Int) {
+        val now = currentTimeMillis()
+        subjectCollectionDao.updateType(subjectId, UnifiedCollectionType.NOT_COLLECTED, now, now)
     }
 
     private suspend fun applyRemoteType(subjectId: Int, type: UnifiedCollectionType, remoteUpdatedAt: Long) {

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.persistent
+package com.wynime.app.data.persistent
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.DataStoreFactory
@@ -16,18 +7,17 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.nullable
-import me.him188.ani.app.data.models.user.SelfInfo
-import me.him188.ani.app.data.repository.SavedWindowState
-import me.him188.ani.app.data.repository.media.MediaSourceSaves
-import me.him188.ani.app.data.repository.player.EpisodeHistories
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.app.domain.sourceplugin.InstalledSourcePlugins
-import me.him188.ani.app.domain.sourceplugin.SourcePluginRepositoryCache
-import me.him188.ani.app.domain.media.cache.storage.MediaCacheSave
-import me.him188.ani.utils.httpdownloader.DownloadState
-import me.him188.ani.utils.io.SystemPath
+import com.wynime.app.data.models.user.SelfInfo
+import com.wynime.app.data.repository.SavedWindowState
+import com.wynime.app.data.repository.media.MediaSourceSaves
+import com.wynime.app.data.repository.player.EpisodeHistories
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.app.domain.sourceplugin.InstalledSourcePlugins
+import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryCache
+import com.wynime.app.domain.media.cache.storage.MediaCacheSave
+import com.wynime.utils.httpdownloader.DownloadState
+import com.wynime.utils.io.SystemPath
 
-// 一个对象, 可都写到 common 里, 不用每个 store 都 expect/actual
 abstract class PlatformDataStoreManager {
     val mediaSourceSaveStore by lazy {
         DataStoreFactory.create(
@@ -72,10 +62,6 @@ abstract class PlatformDataStoreManager {
         )
     }
 
-    /**
-     * For [me.him188.ani.app.data.repository.user.TokenRepository]
-     * @since 4.9
-     */
     val tokenStore by lazy {
         DataStoreFactory.create(
             serializer = TokenSave.serializer().asDataStoreSerializer({ TokenSave.Initial }),
@@ -113,9 +99,6 @@ abstract class PlatformDataStoreManager {
     abstract val preferencesStore: DataStore<Preferences>
     abstract val preferredAllianceStore: DataStore<Preferences>
 
-    /**
-     * On Android, this store can be shared between the media cache service and app process.
-     */
     abstract val mediaCacheMetadataStore: DataStore<List<MediaCacheSave>>
 
     abstract fun resolveDataStoreFile(name: String): SystemPath

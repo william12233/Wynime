@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.gesture
+package com.wynime.app.videoplayer.ui.gesture
 
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -25,13 +16,6 @@ import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/**
- * 在屏幕上垂直滑动以进入/退出全屏.
- *
- * 滑动距离超过 [swipeThreshold] 时立即触发, 每次手势只触发一次:
- * - 向上滑动: [onEnterFullscreen]
- * - 向下滑动: [onExitFullscreen]
- */
 fun Modifier.swipeToFullscreen(
     enabled: Boolean = true,
     swipeThreshold: Dp = 64.dp,
@@ -53,11 +37,11 @@ fun Modifier.swipeToFullscreen(
             if (triggered) return@rememberDraggableState
             totalDelta += delta
             if (totalDelta <= -thresholdPx) {
-                // 向上滑动
+
                 triggered = true
                 onEnterFullscreenState()
             } else if (totalDelta >= thresholdPx) {
-                // 向下滑动
+
                 triggered = true
                 onExitFullscreenState()
             }

@@ -1,22 +1,13 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.update
 
-package me.him188.ani.app.domain.update
-
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.SystemPaths
-import me.him188.ani.utils.io.createDirectories
-import me.him188.ani.utils.io.createTempDirectory
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.exists
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.writeText
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.SystemPaths
+import com.wynime.utils.io.createDirectories
+import com.wynime.utils.io.createTempDirectory
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.exists
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.writeText
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,8 +40,6 @@ class UpdateManagerTest {
         assertNull(UpdateManager.devBuildShaOf("6.1.0"))
     }
 
-    // deleteStaleInstallers
-
     @Test
     fun `deleteStaleInstallers keeps the files being downloaded and removes the rest`() {
         manager.saveDir.createDirectories()
@@ -71,7 +60,7 @@ class UpdateManagerTest {
 
     @Test
     fun `deleteStaleInstallers ignores directories instead of failing`() {
-        // #3441 曾把 dev builds 放在 saveDir/dev-builds, 删除目录抛 IOException, 让整个下载静默失败.
+
         val dir = manager.saveDir.resolve("dev-builds").apply { createDirectories() }
         file(dir.resolve("ani-main-45f0e6fb.dmg"))
         val stale = file(manager.saveDir.resolve("ani-6.1.0-windows-x86_64.zip"))
@@ -84,11 +73,9 @@ class UpdateManagerTest {
 
     @Test
     fun `deleteStaleInstallers is a no-op when save dir does not exist`() {
-        manager.deleteStaleInstallers(listOf("ani.zip"))
+        manager.deleteStaleInstallers(listOf("wynime.zip"))
         assertFalse(manager.saveDir.exists())
     }
-
-    // deleteInstalledFiles
 
     @Test
     fun `deleteInstalledFiles removes the auto update installer of the current version only`() {
@@ -114,7 +101,7 @@ class UpdateManagerTest {
 
     @Test
     fun `deleteInstalledFiles keeps dev builds dir when its package is for another commit`() {
-        // 例如 Linux 上下载好等待手动安装的 AppImage, 当前运行的还是旧 commit.
+
         manager.devBuildsDir.createDirectories()
         val pending = file(manager.devBuildsDir.resolve("ani-main-0badcafe.AppImage"))
 

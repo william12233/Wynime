@@ -1,29 +1,19 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform.trace
+package com.wynime.app.platform.trace
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.settings.ServiceConnectionTester
-import me.him188.ani.app.domain.settings.ServiceConnectionTester.Service
-import me.him188.ani.app.domain.usecase.GlobalKoin
-import me.him188.ani.app.platform.StartupTimeMonitor
-import me.him188.ani.datasources.api.source.ConnectionStatus
-import me.him188.ani.datasources.bangumi.BangumiClientImpl
-import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.AppStart
-import me.him188.ani.utils.analytics.IAnalytics
-import me.him188.ani.utils.analytics.recordEvent
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.domain.settings.ServiceConnectionTester
+import com.wynime.app.domain.settings.ServiceConnectionTester.Service
+import com.wynime.app.domain.usecase.GlobalKoin
+import com.wynime.app.platform.StartupTimeMonitor
+import com.wynime.datasources.api.source.ConnectionStatus
+import com.wynime.datasources.bangumi.BangumiClientImpl
+import com.wynime.utils.analytics.AnalyticsEvent.Companion.AppStart
+import com.wynime.utils.analytics.IAnalytics
+import com.wynime.utils.analytics.recordEvent
 
-// 统计连接各个服务器的速度
 suspend fun IAnalytics.recordAppStart(startupTimeMonitor: StartupTimeMonitor) {
     val client = GlobalKoin.get<HttpClientProvider>().get()
 

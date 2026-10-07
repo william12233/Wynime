@@ -1,4 +1,4 @@
-package me.him188.ani.utils.coroutines
+package com.wynime.utils.coroutines
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch

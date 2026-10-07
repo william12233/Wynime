@@ -1,11 +1,10 @@
-package me.him188.ani.app.ui.foundation.animation
+package com.wynime.app.ui.foundation.animation
 
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.util.lerp
 import kotlin.math.absoluteValue
-
 
 fun Modifier.carouselTransition(page: Int, pagerState: PagerState) =
     graphicsLayer {

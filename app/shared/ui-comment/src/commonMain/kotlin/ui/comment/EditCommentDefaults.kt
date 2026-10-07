@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
@@ -68,27 +59,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import me.him188.ani.app.domain.comment.CommentContext
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.IconButton
-import me.him188.ani.app.ui.foundation.LocalIsPreviewing
-import me.him188.ani.app.ui.foundation.theme.looming
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.comment_add_emoji
-import me.him188.ani.app.ui.lang.comment_bold
-import me.him188.ani.app.ui.lang.comment_edit
-import me.him188.ani.app.ui.lang.comment_image
-import me.him188.ani.app.ui.lang.comment_italic
-import me.him188.ani.app.ui.lang.comment_link
-import me.him188.ani.app.ui.lang.comment_mask
-import me.him188.ani.app.ui.lang.comment_more_editor_actions
-import me.him188.ani.app.ui.lang.comment_preview
-import me.him188.ani.app.ui.lang.comment_rendering
-import me.him188.ani.app.ui.lang.comment_send
-import me.him188.ani.app.ui.lang.comment_send_comment
-import me.him188.ani.app.ui.lang.comment_strikethrough
-import me.him188.ani.app.ui.lang.comment_underline
-import me.him188.ani.app.ui.richtext.RichText
+import com.wynime.app.domain.comment.CommentContext
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.IconButton
+import com.wynime.app.ui.foundation.LocalIsPreviewing
+import com.wynime.app.ui.foundation.theme.looming
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.comment_add_emoji
+import com.wynime.app.ui.lang.comment_bold
+import com.wynime.app.ui.lang.comment_edit
+import com.wynime.app.ui.lang.comment_image
+import com.wynime.app.ui.lang.comment_italic
+import com.wynime.app.ui.lang.comment_link
+import com.wynime.app.ui.lang.comment_mask
+import com.wynime.app.ui.lang.comment_more_editor_actions
+import com.wynime.app.ui.lang.comment_preview
+import com.wynime.app.ui.lang.comment_rendering
+import com.wynime.app.ui.lang.comment_send
+import com.wynime.app.ui.lang.comment_send_comment
+import com.wynime.app.ui.lang.comment_strikethrough
+import com.wynime.app.ui.lang.comment_underline
+import com.wynime.app.ui.richtext.RichText
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -220,7 +211,7 @@ object EditCommentDefaults {
 
     @Composable
     fun ActionRow(
-        sendTarget: 
+        sendTarget:
         CommentContext?,
         onClickBold: () -> Unit,
         onClickItalic: () -> Unit,
@@ -236,7 +227,7 @@ object EditCommentDefaults {
         previewing: Boolean = false,
         sending: Boolean = false,
     ) {
-        // maybe we can extract the layout
+
         val size = ActionButtonSize.dp
         var actionRowExpanded by rememberSaveable { mutableStateOf(false) }
         val expandableActionWidth by animateDpAsState(if (actionRowExpanded) size else 0.dp)
@@ -255,7 +246,6 @@ object EditCommentDefaults {
         val previewText = stringResource(Lang.comment_preview)
         val sendText = stringResource(Lang.comment_send)
 
-        // Custom FlowRow which supports a right-aligned element.
         Layout(
             modifier = modifier.then(Modifier.fillMaxWidth().animateContentSize()),
             measurePolicy = { measurables, rawConstraints ->
@@ -270,7 +260,6 @@ object EditCommentDefaults {
                 val textPlaceables = textActions.foldIndexed(mutableListOf<List<Placeable>>()) { i, acc, curr ->
                     val placeable = curr.measure(constraints)
 
-                    // 当前一行显示不下了，需要放到下一行
                     if (currentAccumulatedWidth + placeable.width > containerWidth) {
                         acc.add(currentList.toList())
                         currentList.clear()
@@ -309,7 +298,7 @@ object EditCommentDefaults {
                         )
 
                         line.forEach { p ->
-                            // center vertically
+
                             p.placeRelative(currentX, currentY + (lineMaxHeight - p.height) / 2)
                             currentX += p.width
                         }
@@ -390,7 +379,7 @@ object EditCommentDefaults {
                         enabled = actionEnabled,
                     )
                 }
-                // 最后一个按钮不要有 ripple effect，因为有动画，看起来比较奇怪
+
                 ActionButton(
                     imageVector = Icons.Outlined.MoreHoriz,
                     contentDescription = moreEditorActionsText,

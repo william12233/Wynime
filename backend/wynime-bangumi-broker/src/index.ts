@@ -1,5 +1,6 @@
 import { decryptJson, encryptJson, hashToken, randomToken } from "./crypto";
 import { ReplayMarker } from "./replay-markers";
+import { collectionRemoval } from "./collection-removal";
 import type {
   BangumiGrant,
   Env,
@@ -44,6 +45,12 @@ export default {
 
 async function route(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
+  const removalMatch = /^\/api\/v1\/collections\/(\d+)\/removal(\/confirm)?$/.exec(url.pathname);
+  if (removalMatch) {
+    const action = removalMatch[2] ? "confirm" : request.method === "POST" ? "start" : "status";
+    if (request.method !== (action === "status" ? "GET" : "POST")) throw new HttpError(405, "method_not_allowed");
+    return collectionRemoval(request, env, await authenticateSession(request, env), Number(removalMatch[1]), action, rpc);
+  }
   if (url.pathname === "/.well-known/assetlinks.json") {
     return assetLinks(env);
   }
@@ -450,12 +457,12 @@ function redirectToApp(
   return Response.redirect(target.toString(), 302);
 }
 
-/**
- * App Links are preferred for release builds, but Android may open this URL in
- * a browser when the installed build is not covered by the published
- * assetlinks statement (for example, a debug application ID). Keep the
- * callback short-lived and hand it to the app's custom scheme as a fallback.
- */
+   
+                                                                               
+                                                                     
+                                                                       
+                                                                             
+   
 function oauthAppLinkFallback(url: URL, env: Env): Response {
   const state = url.searchParams.get("state");
   const ticket = url.searchParams.get("ticket");

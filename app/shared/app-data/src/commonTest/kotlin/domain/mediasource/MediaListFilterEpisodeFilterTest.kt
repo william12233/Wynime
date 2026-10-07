@@ -1,20 +1,11 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.mediasource
 
-package me.him188.ani.app.domain.mediasource
-
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.test.DynamicTestsBuilder
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.runDynamicTests
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.test.DynamicTestsBuilder
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.runDynamicTests
 import kotlin.test.assertEquals
 
 @TestContainer
@@ -94,7 +85,7 @@ class MediaListFilterEpisodeFilterTest {
         case(
             "true case",
             subjectName = "来自深渊 烈日的黄金乡",
-            episodeSort = EpisodeSort(12), // 在看 12, 所以可以匹配 12
+            episodeSort = EpisodeSort(12),
             episodeName = "黄金",
             mediaEpisodeSort = EpisodeSort(12),
             expected = true,
@@ -102,7 +93,7 @@ class MediaListFilterEpisodeFilterTest {
         case(
             "fail case",
             subjectName = "来自深渊 烈日的黄金乡",
-            episodeSort = EpisodeSort(11), // 在看 11, 但是标题叫"黄金", 不能匹配到
+            episodeSort = EpisodeSort(11),
             episodeName = "黄金",
             mediaEpisodeSort = EpisodeSort(12),
             expected = false,

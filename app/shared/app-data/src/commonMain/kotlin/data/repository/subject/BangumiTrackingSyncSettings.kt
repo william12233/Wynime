@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -50,11 +43,6 @@ class BangumiTrackingSyncSettingsStore(
         preferences.edit { it[SHOW_RESULT] = value }
     }
 
-    /**
-     * Resolves an OAuth token family to the stable, id-scoped Bangumi metadata key. The binding
-     * is persisted separately from the Room rows so a refreshed access token can still find local
-     * tombstones after the application restarts without issuing a network request.
-     */
     suspend fun accountKeyForToken(tokenKey: String): String? = preferences.data
         .first()[ACCOUNT_BINDINGS]
         .parseBindings()[tokenKey]

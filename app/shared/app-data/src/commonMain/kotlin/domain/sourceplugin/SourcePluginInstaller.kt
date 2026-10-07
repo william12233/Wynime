@@ -1,29 +1,20 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.io.files.Path
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.createDirectories
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.exists
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.isRegularFile
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.writeBytes
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.source.plugin.api.SourcePluginPlatform
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.createDirectories
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.exists
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.isRegularFile
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.writeBytes
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 
 class SourcePluginInstaller(
     private val repositoryClient: SourcePluginRepositoryClient,
@@ -39,6 +30,20 @@ class SourcePluginInstaller(
         validateLoaded: suspend (InstalledSourcePlugin) -> Unit = {},
     ): InstalledSourcePlugin {
         val manifest = repositoryClient.fetchManifest(entry)
+        return installManifest(manifest, { artifact -> repositoryClient.downloadArtifact(artifact) }, validateLoaded)
+    }
+
+    suspend fun installBundled(
+        manifest: SourcePluginManifest,
+        readArtifact: suspend (SourcePluginArtifact) -> ByteArray,
+        validateLoaded: suspend (InstalledSourcePlugin) -> Unit = {},
+    ): InstalledSourcePlugin = installManifest(manifest, readArtifact, validateLoaded)
+
+    private suspend fun installManifest(
+        manifest: SourcePluginManifest,
+        readArtifact: suspend (SourcePluginArtifact) -> ByteArray,
+        validateLoaded: suspend (InstalledSourcePlugin) -> Unit,
+    ): InstalledSourcePlugin {
         validateManifest(manifest)
         val artifact = manifest.artifacts[platform]
             ?: throw UnsupportedSourcePluginException("Plugin ${manifest.id} has no $platform artifact")
@@ -67,7 +72,7 @@ class SourcePluginInstaller(
         var committed: SystemPath? = null
         try {
             staging.createDirectories()
-            val archiveBytes = repositoryClient.downloadArtifact(artifact)
+            val archiveBytes = readArtifact(artifact)
             val expectedHash = artifact.sha256.lowercase()
             require(expectedHash.matches(HEX_SHA256)) { "Invalid SHA-256 for ${manifest.id}" }
             check(sha256Hex(archiveBytes).equals(expectedHash, ignoreCase = true)) {
@@ -105,9 +110,7 @@ class SourcePluginInstaller(
                 }.onSuccess {
                     logger.info { "Removed replaced source plugin ${existing.id} ${existing.version}" }
                 }.onFailure { throwable ->
-                    // The new version is already committed and registered. A stale old
-                    // directory is safe to clean up on a later install and must not make a
-                    // validated update look failed or remove the new registry entry.
+
                     logger.warn(throwable) {
                         "Failed to remove replaced source plugin ${existing.id} ${existing.version}; keeping the new version"
                     }
@@ -132,8 +135,6 @@ class SourcePluginInstaller(
     suspend fun uninstall(pluginId: String) {
         val installed = installedRepository.snapshot().plugins.firstOrNull { it.id == pluginId } ?: return
 
-        // Remove the files first. If the filesystem rejects the operation, keep the
-        // installed record so the source is not silently lost from the next startup.
         storage.deleteInstalled(installed)
         installedRepository.remove(pluginId)
     }
@@ -141,8 +142,8 @@ class SourcePluginInstaller(
     private fun validateManifest(manifest: SourcePluginManifest) {
         require(manifest.id.isNotBlank()) { "Plugin id must not be blank" }
         require(manifest.platforms.contains(platform)) { "Plugin ${manifest.id} does not support $platform" }
-        require(manifest.pluginApiVersion <= SOURCE_PLUGIN_API_VERSION) {
-            "Plugin ${manifest.id} requires plugin API ${manifest.pluginApiVersion}"
+        require(manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION) {
+            "Plugin ${manifest.id} API ${manifest.pluginApiVersion} is incompatible with host API $SOURCE_PLUGIN_API_VERSION"
         }
         require(compareSourcePluginVersions(hostVersion, manifest.minHostVersion) >= 0) {
             "Plugin ${manifest.id} requires a newer Wynime host"

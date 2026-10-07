@@ -1,25 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.list
+package com.wynime.app.ui.subject.episode.list
 
 import androidx.compose.runtime.Immutable
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.SubjectRecurrence
-import me.him188.ani.app.data.models.subject.nameOrNameCn
-import me.him188.ani.app.domain.episode.EpisodeCompletionContext
-import me.him188.ani.app.domain.episode.EpisodeCompletionContext.mapAirDate
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.serialization.BigNum
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.SubjectRecurrence
+import com.wynime.app.data.models.subject.nameOrNameCn
+import com.wynime.app.domain.episode.EpisodeCompletionContext
+import com.wynime.app.domain.episode.EpisodeCompletionContext.mapAirDate
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.PackedDate
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.serialization.BigNum
 import kotlin.time.Instant
 
 @Immutable
@@ -28,13 +19,11 @@ data class EpisodeListUiState(
     val mainEpisodes: List<EpisodeListItem>,
     val otherEpisodes: List<EpisodeListItem>,
     val isPlaceholder: Boolean = false,
-    /** 条目原名, 供 "显示原名" 设置开启时使用; 默认与 [subjectTitle] 相同. */
+
     val subjectOriginalTitle: String = subjectTitle,
 ) {
     companion object {
-        /**
-         * @param playProgress 按剧集 id 索引的上次播放进度, 见 [EpisodeListItem.playProgress].
-         */
+
         fun from(
             collection: SubjectCollectionInfo,
             currentTime: Instant,
@@ -58,15 +47,6 @@ data class EpisodeListUiState(
             )
         }
 
-        /**
-         * 剧集列表的 "未开播" 着色规则.
-         *
-         * - 能算出播出时刻 (见 [EpisodeCompletionContext.mapAirDate]) 时, 以 [currentTime] 是否已到达该时刻为准;
-         * - 算不出时 (剧集没有上映日期): 有 [recurrence] 说明条目仍在连载, 没有日期的剧集视为未开播;
-         *   没有 [recurrence] 时保持显示为已开播.
-         *
-         * 注意 [recurrence] 为 `null` 只表示 bangumi-data 没有该条目的 `broadcast` 信息, 与是否完结无关 (完结番同样保留 `broadcast`).
-         */
         fun isEpisodeBroadcast(
             recurrence: SubjectRecurrence?,
             airDate: PackedDate,
@@ -112,6 +92,5 @@ val TestEpisodeListItems
         }
     }
 
-/** 每三集里两集带剧照, 让预览与测试同时覆盖有图和无图的单元格. */
 @TestOnly
 private fun testEpisodeStillUrlOrNull(index: Int): String? = if (index % 3 != 2) TestEpisodeStillUrl else null

@@ -1,17 +1,7 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 plugins {
-    id("ani.kmp-compose")
+    id("wynime.kmp-compose")
     alias(libs.plugins.kotlin.plugin.serialization)
 
-    // alias(libs.plugins.kotlinx.atomicfu)
     alias(libs.plugins.kotlin.parcelize)
 
     alias(libs.plugins.google.devtools.ksp)
@@ -21,7 +11,7 @@ plugins {
 
 kotlin {
     android {
-        namespace = "me.him188.ani.app.data"
+        namespace = "com.wynime.app.data"
     }
     sourceSets.commonMain.dependencies {
         implementation(projects.app.shared.appPlatform)
@@ -30,7 +20,6 @@ kotlin {
         implementation(libs.compose.components.resources)
         api(projects.app.shared.videoPlayer.videoPlayerApi)
         api(libs.mediamp.api)
-        api(libs.mediamp.test)
         api(libs.mediamp.source.ktxio)
         implementation(libs.kotlinx.serialization.json.io)
         api(libs.kotlinx.coroutines.core)
@@ -41,15 +30,16 @@ kotlin {
         implementation(projects.utils.coroutines)
         api(projects.utils.xml)
         api(projects.utils.coroutines)
-        api(projects.client)
+        api(projects.appModels)
+        implementation(projects.cloudClient)
         api(projects.utils.ipParser)
         api(projects.utils.jsonpath)
         api(projects.utils.httpDownloader)
         api(projects.utils.serialization)
         api(projects.source.pluginApi)
 
-        api(libs.datastore.core) // Data Persistence
-        api(libs.datastore.preferences.core) // Preferences
+        api(libs.datastore.core)
+        api(libs.datastore.preferences.core)
         api(libs.androidx.room.runtime)
         api(libs.androidx.room.paging)
         api(libs.sqlite.bundled)
@@ -64,9 +54,10 @@ kotlin {
 
         implementation(libs.koin.core)
         implementation(libs.atomicfu)
-        implementation(libs.ktor.network) // HLS 本地代理 (iOS)
+        implementation(libs.ktor.network)
     }
     sourceSets.commonTest.dependencies {
+        implementation(libs.mediamp.test)
         implementation(projects.utils.uiTesting)
         implementation(projects.utils.androidxLifecycleRuntimeTesting)
         implementation(libs.ktor.client.mock)
@@ -79,21 +70,20 @@ kotlin {
     sourceSets.desktopMain {
         dependencies {
             implementation(libs.onnxruntime)
-            // 判断的是构建主机, 所以 Windows ARM64 包必须在 ARM64 机器上原生构建, 无法从 x64 交叉打包.
+
             if (getOs() == Os.Windows && getArch() == Arch.AARCH64) {
-                // AndroidX sqlite-bundled-jvm 没有 Windows ARM64 native 库, 这里补上本机编译的 sqliteJni.dll.
-                // 详见 ci-helper/sqlite-woa64/build.gradle.kts 的头注释
+
                 runtimeOnly(projects.ciHelper.sqliteWoa64)
             }
         }
     }
     sourceSets.getByName("androidDeviceTest").dependencies {
-        // 用真实 ExoPlayer 验证 HLS 本地代理 (ExoPlayerHlsProxyDeviceTest)
+
         implementation(libs.androidx.media3.exoplayer)
         implementation(libs.androidx.media3.exoplayer.hls)
     }
     sourceSets.desktopTest {
-        // 与 Android 设备测试共用测试素材 (验证码样本, HLS 夹具等)
+
         resources.srcDir("src/androidDeviceTest/assets")
         dependencies {
             implementation("androidx.room:room-testing:${libs.versions.room.get()}")
@@ -102,29 +92,20 @@ kotlin {
     sourceSets.androidMain.dependencies {
         implementation(libs.androidx.browser)
         implementation(libs.onnxruntime.android)
-        api(libs.datastore) // PlatformDataStoreManagerAndroid (data/persistent, 自 :app:shared 搬迁)
+        api(libs.datastore)
         api(libs.datastore.preferences)
         api(libs.androidx.lifecycle.runtime.ktx)
         api(libs.androidx.lifecycle.service)
         api(libs.androidx.lifecycle.process)
     }
-    sourceSets.nativeMain.dependencies {
-        implementation(libs.stately.common) // fixes koin bug
-        implementation(libs.kotlinx.io.okio)
-    }
+
 }
 
 compose.resources {
-    packageOfResClass = "me.him188.ani.app.data"
+    packageOfResClass = "com.wynime.app.data"
     generateResClass = always
 }
 
-// 两个都要, 不是重复配置, 删任何一个都会坏:
-// - room {} 负责 Android 侧, 并注册 copyRoomSchemas* (把 schema 拷进 androidTest assets 给 MigrationTestHelper 用);
-//   但它没把 room.schemaLocation 传给 KMP 的 desktop / iOS 那几个 KSP task.
-// - ksp {} 的 arg 对所有 KSP task 生效, 补上 room {} 没覆盖到的 target.
-// 少了下面这段, kspKotlinDesktop 会报 "Schema import directory was not provided" 而失败 (自动迁移读不到旧 schema).
-// 两者同时存在不冲突, Room 插件不会因此报错.
 room {
     schemaDirectory("$projectDir/schemas")
 }
@@ -136,8 +117,30 @@ ksp {
 dependencies {
     kspDesktop(libs.androidx.room.compiler)
     kspAndroid(libs.androidx.room.compiler)
-    if (enableIos) {
-        add("kspIosArm64", libs.androidx.room.compiler)
-        add("kspIosSimulatorArm64", libs.androidx.room.compiler)
-    }
+
+}
+
+val pluginResourceRoot = rootProject.layout.projectDirectory.dir("source/plugins")
+val bundledPluginManifests = tasks.register<Copy>("copyBundledPluginManifests") {
+    from(pluginResourceRoot.dir("manifests"))
+    into("src/commonMain/composeResources/files/source-plugins/manifests")
+}
+val bundledAndroidPlugins = tasks.register<Copy>("copyBundledAndroidPlugins") {
+    from(pluginResourceRoot.dir("artifacts")) { include("source-*-android.jar") }
+    into("src/androidMain/composeResources/files/source-plugins/artifacts")
+    dependsOn(bundledPluginManifests)
+}
+val bundledWindowsPlugins = tasks.register<Copy>("copyBundledWindowsPlugins") {
+    from(pluginResourceRoot.dir("artifacts")) { include("source-*.jar"); exclude("*-android.jar") }
+    into("src/desktopMain/composeResources/files/source-plugins/artifacts")
+    dependsOn(bundledPluginManifests)
+}
+tasks.matching { it.name in setOf("prepareComposeResourcesTaskForCommonMain", "copyNonXmlValueResourcesForCommonMain", "convertXmlValueResourcesForCommonMain") }.configureEach {
+    dependsOn(bundledPluginManifests)
+}
+tasks.matching { it.name in setOf("prepareComposeResourcesTaskForAndroidMain", "copyNonXmlValueResourcesForAndroidMain", "convertXmlValueResourcesForAndroidMain") }.configureEach {
+    dependsOn(bundledAndroidPlugins)
+}
+tasks.matching { it.name in setOf("prepareComposeResourcesTaskForDesktopMain", "copyNonXmlValueResourcesForDesktopMain", "convertXmlValueResourcesForDesktopMain") }.configureEach {
+    dependsOn(bundledWindowsPlugins)
 }

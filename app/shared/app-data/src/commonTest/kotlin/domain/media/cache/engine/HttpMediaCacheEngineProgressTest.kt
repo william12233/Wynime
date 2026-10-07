@@ -1,21 +1,12 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.media.cache.engine
 
-package me.him188.ani.app.domain.media.cache.engine
-
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.tools.Progress
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.utils.httpdownloader.DownloadId
-import me.him188.ani.utils.httpdownloader.DownloadProgress
-import me.him188.ani.utils.httpdownloader.DownloadStatus
-import me.him188.ani.utils.httpdownloader.MediaType
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.tools.Progress
+import com.wynime.app.tools.toProgress
+import com.wynime.utils.httpdownloader.DownloadId
+import com.wynime.utils.httpdownloader.DownloadProgress
+import com.wynime.utils.httpdownloader.DownloadStatus
+import com.wynime.utils.httpdownloader.MediaType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

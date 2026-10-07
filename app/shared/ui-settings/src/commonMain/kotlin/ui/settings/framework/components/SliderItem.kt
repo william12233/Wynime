@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.settings.framework.components
+package com.wynime.app.ui.settings.framework.components
 
 import androidx.annotation.IntRange
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,9 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.SliderValueIndicator
-import me.him188.ani.app.ui.foundation.rememberHoverExitFilteredInteractionSource
-
+import com.wynime.app.ui.foundation.SliderValueIndicator
+import com.wynime.app.ui.foundation.rememberHoverExitFilteredInteractionSource
 
 @SettingsDsl
 @Composable
@@ -158,7 +157,7 @@ fun SettingsScope.RangeSliderItem(
                 endInteractionSource, colors, enabled, { it.activeRangeEnd }, valueIndicator,
             ),
             track = { rangeSliderState ->
-                // M3E 样式: 小圆角轨道; 刻度点不画 (spec 默认关闭, 密步进下是「豌豆荚」).
+
                 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
                 SliderDefaults.Track(
                     rangeSliderState = rangeSliderState,

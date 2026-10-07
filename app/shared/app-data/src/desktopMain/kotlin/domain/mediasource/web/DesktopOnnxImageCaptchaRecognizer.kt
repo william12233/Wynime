@@ -1,34 +1,24 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web
+package com.wynime.app.domain.mediasource.web
 
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.domain.mediasource.web.captcha.ImageCaptchaRecognizer
-import me.him188.ani.app.domain.mediasource.web.captcha.ImageCaptchaSample
-import me.him188.ani.app.domain.mediasource.web.captcha.readImageCaptchaModelBytes
-import me.him188.ani.utils.coroutines.SuspendLazy
-import me.him188.ani.utils.logging.debug
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.domain.mediasource.web.captcha.ImageCaptchaRecognizer
+import com.wynime.app.domain.mediasource.web.captcha.ImageCaptchaSample
+import com.wynime.app.domain.mediasource.web.captcha.readImageCaptchaModelBytes
+import com.wynime.utils.coroutines.SuspendLazy
+import com.wynime.utils.logging.debug
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.nio.FloatBuffer
 import javax.imageio.ImageIO
 
-/** Desktop 图片验证码识别器，使用随应用交付的 captcha-v1.0 ONNX 模型。 */
 class DesktopOnnxImageCaptchaRecognizer : ImageCaptchaRecognizer {
     private val environment by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         OrtEnvironment.getEnvironment()

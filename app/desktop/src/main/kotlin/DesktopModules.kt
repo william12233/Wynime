@@ -1,56 +1,47 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.desktop
+package com.wynime.app.desktop
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.data.persistent.dataStores
-import me.him188.ani.app.data.persistent.database.AniDatabase
-import me.him188.ani.app.data.repository.WindowStateRepository
-import me.him188.ani.app.data.repository.WindowStateRepositoryImpl
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.media.cache.engine.HttpMediaCacheEngine
-import me.him188.ani.app.domain.media.cache.storage.MediaSaveDirProvider
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
-import me.him188.ani.app.domain.media.hls.HlsPlaybackPreparer
-import me.him188.ani.app.domain.media.hls.PlatformHlsPlaybackPreparer
-import me.him188.ani.app.domain.media.resolver.DesktopWebMediaResolver
-import me.him188.ani.app.domain.media.resolver.HttpStreamingMediaResolver
-import me.him188.ani.app.domain.media.resolver.LocalFileMediaResolver
-import me.him188.ani.app.domain.media.resolver.MediaResolver
-import me.him188.ani.app.domain.sourceplugin.SourcePluginMediaResolver
-import me.him188.ani.app.domain.mediasource.web.DesktopOnnxImageCaptchaRecognizer
-import me.him188.ani.app.domain.mediasource.web.captcha.CaptchaBrowserFactory
-import me.him188.ani.app.domain.mediasource.web.captcha.DesktopCaptchaBrowserFactory
-import me.him188.ani.app.domain.mediasource.web.captcha.ImageCaptchaRecognizer
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
-import me.him188.ani.app.navigation.BrowserNavigator
-import me.him188.ani.app.navigation.DesktopBrowserNavigator
-import me.him188.ani.app.platform.AppTerminator
-import me.him188.ani.app.platform.DefaultAppTerminator
-import me.him188.ani.app.platform.DesktopContext
-import me.him188.ani.app.platform.GrantedPermissionManager
-import me.him188.ani.app.platform.PermissionManager
-import me.him188.ani.app.platform.files
-import me.him188.ani.app.tools.update.DesktopUpdateInstaller
-import me.him188.ani.app.tools.update.UpdateInstaller
-import me.him188.ani.app.videoplayer.player.AniMpvMediampPlayerFactory
-import me.him188.ani.utils.httpdownloader.HttpDownloader
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.toKtPath
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.data.persistent.dataStores
+import com.wynime.app.data.persistent.database.WynimeDatabase
+import com.wynime.app.data.repository.WindowStateRepository
+import com.wynime.app.data.repository.WindowStateRepositoryImpl
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.domain.media.cache.engine.HttpMediaCacheEngine
+import com.wynime.app.domain.media.cache.storage.MediaSaveDirProvider
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.fetch.MediaSourceManager
+import com.wynime.app.domain.media.hls.HlsPlaybackPreparer
+import com.wynime.app.domain.media.hls.PlatformHlsPlaybackPreparer
+import com.wynime.app.domain.media.resolver.DesktopWebMediaResolver
+import com.wynime.app.domain.media.resolver.HttpStreamingMediaResolver
+import com.wynime.app.domain.media.resolver.LocalFileMediaResolver
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.sourceplugin.SourcePluginMediaResolver
+import com.wynime.app.domain.mediasource.web.DesktopOnnxImageCaptchaRecognizer
+import com.wynime.app.domain.mediasource.web.captcha.CaptchaBrowserFactory
+import com.wynime.app.domain.mediasource.web.captcha.DesktopCaptchaBrowserFactory
+import com.wynime.app.domain.mediasource.web.captcha.ImageCaptchaRecognizer
+import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
+import com.wynime.app.navigation.BrowserNavigator
+import com.wynime.app.navigation.DesktopBrowserNavigator
+import com.wynime.app.platform.AppTerminator
+import com.wynime.app.platform.DefaultAppTerminator
+import com.wynime.app.platform.DesktopContext
+import com.wynime.app.platform.GrantedPermissionManager
+import com.wynime.app.platform.PermissionManager
+import com.wynime.app.platform.files
+import com.wynime.app.tools.update.DesktopUpdateInstaller
+import com.wynime.app.tools.update.UpdateInstaller
+import com.wynime.app.videoplayer.player.WynimeMpvMediampPlayerFactory
+import com.wynime.utils.httpdownloader.HttpDownloader
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.toKtPath
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import org.koin.dsl.module
 import org.openani.mediamp.MediampPlayerFactory
 import org.openani.mediamp.MediampPlayerFactoryLoader
@@ -66,14 +57,13 @@ fun getDesktopModules(getContext: () -> DesktopContext, scope: CoroutineScope) =
 
         val baseSaveDir = runBlocking {
             val saveDirSettings = settings.flow.first().saveDir
-            // 首次启动设置默认 dir
+
             if (saveDirSettings == null) {
                 val finalPathString = defaultMediaCachePath.absolutePath
                 settings.update { copy(saveDir = finalPathString) }
                 return@runBlocking finalPathString
             }
 
-            // 如果当前目录没有权限读写, 直接使用默认目录
             if (!File(saveDirSettings).run { canRead() && canWrite() }) {
                 val fallbackPathString = defaultMediaCachePath.absolutePath
                 settings.update { copy(saveDir = fallbackPathString) }
@@ -93,7 +83,7 @@ fun getDesktopModules(getContext: () -> DesktopContext, scope: CoroutineScope) =
         logger<HttpMediaCacheEngine>().info { "HttpMediaCacheEngine base save dir: $saveDir" }
 
         HttpMediaCacheEngine(
-            dao = get<AniDatabase>().httpCacheDownloadStateDao(),
+            dao = get<WynimeDatabase>().httpCacheDownloadStateDao(),
             mediaSourceId = MediaDownloadManager.LOCAL_FS_MEDIA_SOURCE_ID,
             downloader = get<HttpDownloader>(),
             saveDir = saveDir.toKtPath(),
@@ -102,7 +92,7 @@ fun getDesktopModules(getContext: () -> DesktopContext, scope: CoroutineScope) =
     }
 
     single<MediampPlayerFactory<*>> {
-        MediampPlayerFactoryLoader.register(AniMpvMediampPlayerFactory())
+        MediampPlayerFactoryLoader.register(WynimeMpvMediampPlayerFactory())
         MediampPlayerSurfaceProviderLoader.register(MpvMediampPlayerSurfaceProvider())
         MediampPlayerFactoryLoader.first()
     }

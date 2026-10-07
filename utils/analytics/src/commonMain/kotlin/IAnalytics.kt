@@ -1,28 +1,11 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.utils.analytics
 
-package me.him188.ani.utils.analytics
-
-import me.him188.ani.utils.platform.currentPlatform
+import com.wynime.utils.platform.currentPlatform
 import kotlin.concurrent.Volatile
 import kotlin.jvm.JvmInline
 
-/**
- * Global instance of [IAnalytics].
- *
- * 如果用户愿意分享数据，此实例将为 [AnalyticsImpl]. 否则为 no-op.
- */
 val Analytics: IAnalytics get() = AnalyticsHolder.getInstance()
 
-/**
- * Defines common interface for analytics
- */
 interface IAnalytics {
     fun recordEvent(
         event: AnalyticsEvent,
@@ -43,7 +26,7 @@ inline fun IAnalytics.recordEvent(
 value class AnalyticsEvent(val event: String) {
     companion object {
         val Screen = AnalyticsEvent("screen")
-        val AppStart = Screen // compatibility
+        val AppStart = Screen
         val SessionStart = AnalyticsEvent("session_start")
 
         val AppServerTestSuccess = AnalyticsEvent("app_server_test_success")
@@ -70,11 +53,6 @@ value class AnalyticsEvent(val event: String) {
     }
 }
 
-
-///////////////////////////////////////////////////////////////////////////
-// implementation
-///////////////////////////////////////////////////////////////////////////
-
 data class AnalyticsConfig(
     val appVersion: String,
     val debugLogging: Boolean,
@@ -82,9 +60,6 @@ data class AnalyticsConfig(
     companion object
 }
 
-/**
- * Common implementation of [IAnalytics]
- */
 abstract class CommonAnalyticsImpl(
     protected val config: AnalyticsConfig,
 ) : IAnalytics {
@@ -104,7 +79,6 @@ abstract class CommonAnalyticsImpl(
     }
 
     protected abstract fun recordEventImpl(event: AnalyticsEvent, properties: Map<String, Any> = emptyMap())
-
 
     protected fun sanitizeEventName(name: String): String {
         val cleaned = name.replace(Regex("[^A-Za-z0-9_-]+"), "_")
@@ -126,9 +100,6 @@ object AnalyticsHolder {
 
     internal fun getInstance(): IAnalytics = instance
 
-    /**
-     * 启动 APP 时调用.
-     */
     fun init(instance: IAnalytics) {
         check(this.instance === NoopAnalytics) { "Analytics instance is already initialized" }
         this.instance = instance

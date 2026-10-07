@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch.request
+package com.wynime.app.ui.mediafetch.request
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -23,22 +14,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import me.him188.ani.app.ui.foundation.saveable.mutableStateSaver
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_continue_editing
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_discard
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_discard_confirmation
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_invalid_request
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_save_and_refresh
-import me.him188.ani.app.ui.lang.mediafetch_request_editor_title
-import me.him188.ani.app.ui.lang.settings_cancel
-import me.him188.ani.datasources.api.source.MediaFetchRequest
+import com.wynime.app.ui.foundation.saveable.mutableStateSaver
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.mediafetch_request_editor_continue_editing
+import com.wynime.app.ui.lang.mediafetch_request_editor_discard
+import com.wynime.app.ui.lang.mediafetch_request_editor_discard_confirmation
+import com.wynime.app.ui.lang.mediafetch_request_editor_invalid_request
+import com.wynime.app.ui.lang.mediafetch_request_editor_save_and_refresh
+import com.wynime.app.ui.lang.mediafetch_request_editor_title
+import com.wynime.app.ui.lang.settings_cancel
+import com.wynime.datasources.api.source.MediaFetchRequest
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * @see MediaFetchRequestEditor
- */
 @Composable
 fun MediaFetchRequestEditorDialog(
     fetchRequest: MediaFetchRequest,

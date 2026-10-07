@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -22,16 +13,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.download.components.DownloadItem
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_downloading_count
-import me.him188.ani.app.ui.lang.cache_management_finished_count
-import me.him188.ani.app.ui.lang.cache_management_selection_downloading_count
-import me.him188.ani.app.ui.lang.cache_management_selection_summary
-import me.him188.ani.app.ui.lang.cache_subject_pause_all
-import me.him188.ani.app.ui.lang.cache_subject_resume_all
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.app.ui.download.components.DownloadItem
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_downloading_count
+import com.wynime.app.ui.lang.cache_management_finished_count
+import com.wynime.app.ui.lang.cache_management_selection_downloading_count
+import com.wynime.app.ui.lang.cache_management_selection_summary
+import com.wynime.app.ui.lang.cache_subject_pause_all
+import com.wynime.app.ui.lang.cache_subject_resume_all
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
 import org.jetbrains.compose.resources.stringResource
 
 object SubjectDownloadsTestTags {
@@ -78,9 +69,6 @@ fun SubjectDownloadsSummaryRow(
     }
 }
 
-/**
- * "全部暂停" / "全部继续" 按钮. 无可操作缓存时不显示.
- */
 @Composable
 private fun PauseOrResumeAllTextButton(
     downloads: List<DownloadItem>,
@@ -115,7 +103,7 @@ private fun downloadSummaryText(
     val finishedCount = downloads.filter { it.isFinished }.map { it.episodeId }.distinct().size
     val downloadedEpisodeCount = downloads.map { it.episodeId }.distinct().size
     val totalCount = totalEpisodeCount?.coerceAtLeast(downloadedEpisodeCount) ?: downloadedEpisodeCount
-    // 设计稿: "2 个下载中" 统计所有未完成的下载任务 (含暂停).
+
     val downloadingCount = downloads.count { !it.isFinished && !it.isFailed }
 
     val parts = buildList {
@@ -169,7 +157,7 @@ fun SubjectDownloadsHeader(
             Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 两个文本均可收缩, 长条目名不会把汇总和按钮挤出屏幕.
+
             Text(
                 title.orEmpty(),
                 Modifier.weight(1f, fill = false),

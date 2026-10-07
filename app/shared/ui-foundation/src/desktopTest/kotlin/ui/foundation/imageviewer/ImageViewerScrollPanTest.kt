@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.imageviewer
+package com.wynime.app.ui.foundation.imageviewer
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -24,23 +15,20 @@ import androidx.compose.ui.unit.dp
 import com.github.panpf.zoomimage.ZoomImage
 import com.github.panpf.zoomimage.compose.ZoomState
 import com.github.panpf.zoomimage.compose.rememberZoomState
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.imageScrollPan
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.framework.runOnSwingEdt
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.imageScrollPan
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.framework.runOnSwingEdt
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * 桌面端滚轮 / 触摸板滚动: 不按修饰键平移, Ctrl/Cmd 缩放.
- */
 @OptIn(ExperimentalTestApi::class)
 class ImageViewerScrollPanTest {
     private fun runScrollTest(block: androidx.compose.ui.test.ComposeUiTest.(ZoomState) -> Unit) = runOnSwingEdt {
-        runAniComposeUiTest {
+        runWynimeComposeUiTest {
             lateinit var zoomState: ZoomState
-            // 有固有尺寸的图片, zoomimage 才有 min/max 缩放范围
+
             val painter = BitmapPainter(ImageBitmap(800, 600))
             setContent {
                 ProvideCompositionLocalsForPreview {

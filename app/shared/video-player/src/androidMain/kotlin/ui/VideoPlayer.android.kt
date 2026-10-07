@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui
+package com.wynime.app.videoplayer.ui
 
 import android.graphics.Color
 import android.graphics.Typeface
@@ -23,7 +14,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView.ControllerVisibilityListener
 import io.github.peerless2012.ass.media.widget.AssSubtitleView
-import me.him188.ani.app.videoplayer.media.LibassExoPlayerMediampPlayer
+import com.wynime.app.videoplayer.media.LibassExoPlayerMediampPlayer
 import org.openani.mediamp.MediampPlayer
 import org.openani.mediamp.exoplayer.ExoPlayerMediampPlayer
 import org.openani.mediamp.exoplayer.compose.ExoPlayerMediampPlayerSurface
@@ -34,7 +25,7 @@ actual fun VideoPlayer(
     player: MediampPlayer,
     modifier: Modifier
 ) {
-    val isPreviewing by rememberUpdatedState(me.him188.ani.app.ui.foundation.LocalIsPreviewing.current)
+    val isPreviewing by rememberUpdatedState(com.wynime.app.ui.foundation.LocalIsPreviewing.current)
 
     if (isPreviewing) {
         Box(modifier)

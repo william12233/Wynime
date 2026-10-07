@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.progress
+package com.wynime.app.videoplayer.ui.progress
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
@@ -80,16 +71,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.MediaCacheProgressInfo
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.dialogs.PlatformPopupProperties
-import me.him188.ani.app.ui.foundation.effects.onPointerEventMultiplatform
-import me.him188.ani.app.ui.foundation.input.asGesturePointerType
-import me.him188.ani.app.ui.foundation.theme.slightlyWeaken
-import me.him188.ani.app.ui.foundation.theme.weaken
-import me.him188.ani.app.videoplayer.ui.gesture.SwipeSeekerConfig
-import me.him188.ani.app.videoplayer.ui.gesture.isVerticalDragCancelled
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.MediaCacheProgressInfo
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.dialogs.PlatformPopupProperties
+import com.wynime.app.ui.foundation.effects.onPointerEventMultiplatform
+import com.wynime.app.ui.foundation.input.asGesturePointerType
+import com.wynime.app.ui.foundation.theme.slightlyWeaken
+import com.wynime.app.ui.foundation.theme.weaken
+import com.wynime.app.videoplayer.ui.gesture.SwipeSeekerConfig
+import com.wynime.app.videoplayer.ui.gesture.isVerticalDragCancelled
 import org.openani.mediamp.MediampPlayer
 import org.openani.mediamp.features.chapters
 import org.openani.mediamp.metadata.Chapter
@@ -101,26 +92,14 @@ const val TAG_PROGRESS_SLIDER_PREVIEW_FRAME = "ProgressSliderPreviewFrame"
 const val TAG_PROGRESS_SLIDER_CENTERED_PREVIEW_FRAME = "ProgressSliderCenteredPreviewFrame"
 const val TAG_PROGRESS_SLIDER = "ProgressSlider"
 
-/**
- * 播放器进度滑块的状态.
- *
- * - 支持从 [currentPositionMillis] 同步当前播放位置, 从 [totalDurationMillis] 同步总时长.
- * - 使用 [onPreview] 和 [onPreviewFinished] 来处理用户拖动进度条的事件.
- *
- * @see MediaProgressSlider
- */
 @Stable
 class PlayerProgressSliderState(
     currentPositionMillis: () -> Long,
     totalDurationMillis: () -> Long,
     chapters: () -> List<Chapter>,
-    /**
-     * 当用户正在拖动进度条时触发. 每有一个 change 都会调用.
-     */
+
     private val onPreview: (positionMillis: Long) -> Unit,
-    /**
-     * 当用户松开进度条时触发. 此时播放器应当要跳转到该位置.
-     */
+
     private val onPreviewFinished: (positionMillis: Long) -> Unit,
 ) {
     val currentPositionMillis: Long by derivedStateOf(currentPositionMillis)
@@ -133,18 +112,11 @@ class PlayerProgressSliderState(
         !previewPositionRatio.isNaN()
     }
 
-    /**
-     * Sets the slider to move to the given position.
-     * [onPreview] will be triggered.
-     */
     fun previewPositionRatio(ratio: Float) {
         previewPositionRatio = ratio
         onPreview((totalDurationMillis * ratio).roundToLong())
     }
 
-    /**
-     * The ratio of the current display position to the total duration. Range is `0..1`
-     */
     val displayPositionRatio by derivedStateOf {
         val previewPositionRatio = this.previewPositionRatio
         if (!previewPositionRatio.isNaN()) {
@@ -165,9 +137,6 @@ class PlayerProgressSliderState(
         previewPositionRatio = Float.NaN
     }
 
-    /**
-     * Stops previewing without seeking to the previewed position.
-     */
     fun cancelPreview() {
         previewPositionRatio = Float.NaN
     }
@@ -185,16 +154,13 @@ private class Data(
     }
 }
 
-/**
- * 便捷方法, 从 [MediampPlayer.currentPositionMillis] 创建  [PlayerProgressSliderState]
- */
 @Composable
 fun rememberMediaProgressSliderState(
     player: MediampPlayer,
     chaptersFlow: Flow<List<Chapter>> = player.chapters ?: flowOf(emptyList()),
     onPreview: (positionMillis: Long) -> Unit,
     onPreviewFinished: (positionMillis: Long) -> Unit,
-): PlayerProgressSliderState { // TODO: 2025/1/3  refactor rememberMediaProgressSliderState
+): PlayerProgressSliderState {
 
     val flow = remember(player, chaptersFlow) {
         combine(
@@ -202,7 +168,7 @@ fun rememberMediaProgressSliderState(
             player.mediaProperties,
             chaptersFlow,
             ::Data,
-        ) // TODO: this should be in domain layer
+        )
     }
 
     val data by flow.collectAsStateWithLifecycle(Data.EMPTY)
@@ -266,20 +232,6 @@ class MediaProgressSliderColors(
     val previewTimeTextColor: Color,
 )
 
-/**
- * 直接拖动进度条时的触摸手势状态机, 不参与鼠标交互.
- *
- * 状态只按以下路径迁移:
- * ```
- * Idle --start--> Seeking
- * Seeking --move upward past threshold--> Cancelling
- * Cancelling --move back within threshold--> Seeking
- * Seeking / Cancelling --stop--> Idle
- * ```
- * [move] 根据手指相对按下点的上滑距离，在 [State.Seeking] 和 [State.Cancelling] 之间切换；
- * [stop] 返回松手时是否处于取消状态，供进度条决定提交或放弃 seek.
- * [onStateChanged] 只在状态实际变化时调用，控制器显隐和取消提示统一在这里响应.
- */
 @Stable
 class TouchSeekState(
     swipeSeekerConfig: SwipeSeekerConfig,
@@ -334,9 +286,6 @@ class TouchSeekState(
     }
 }
 
-/**
- * 视频播放器的进度条, 支持拖动调整播放位置, 支持显示缓冲进度.
- */
 @Composable
 fun MediaProgressSlider(
     state: PlayerProgressSliderState,
@@ -347,12 +296,7 @@ fun MediaProgressSlider(
     framePreview: MediaProgressFramePreviewState? = null,
     showFramePreviewInPopup: Boolean = true,
     touchSeekState: TouchSeekState? = null,
-//    drawThumb: @Composable DrawScope.() -> Unit = {
-//        drawCircle(
-//            MaterialTheme.colorScheme.primary,
-//            radius = 12f,
-//        )
-//    },
+
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -363,11 +307,11 @@ fun MediaProgressSlider(
     ) {
         Box(
             Modifier.fillMaxWidth().height(6.dp)
-                .padding(horizontal = 2.dp) // half thumb width
+                .padding(horizontal = 2.dp)
                 .clip(CircleShape),
         ) {
             Canvas(Modifier.matchParentSize()) {
-                // draw track
+
                 drawRect(
                     colors.trackBackgroundColor,
                     topLeft = Offset(0f, 0f),
@@ -376,12 +320,11 @@ fun MediaProgressSlider(
             }
 
             Canvas(Modifier.matchParentSize()) {
-                // draw cached progress
-                val snapshotCacheProgress = cacheProgressInfoFlow() ?: return@Canvas // ignore initial state
+
+                val snapshotCacheProgress = cacheProgressInfoFlow() ?: return@Canvas
 
                 var currentX = 0f
 
-                // 连续的缓存区块连着画, 否则会因精度缺失导致不连续
                 forEachConsecutiveChunk(snapshotCacheProgress) { state, weight ->
                     val color = when (state) {
                         ChunkState.NONE -> Color.Unspecified
@@ -393,7 +336,7 @@ fun MediaProgressSlider(
                         val size = Size(
                             weight * size.width,
                             size.height,
-                        )// TODO: draw more cache states (colors)
+                        )
                         drawRect(
                             color,
                             topLeft = Offset(currentX, 0f),
@@ -405,7 +348,7 @@ fun MediaProgressSlider(
             }
 
             Canvas(Modifier.matchParentSize()) {
-                // draw play progress
+
                 val xPlay = size.width * state.displayPositionRatio
 
                 drawRect(
@@ -414,31 +357,6 @@ fun MediaProgressSlider(
                     size = Size(xPlay, size.height),
                 )
 
-                // 下面的是有 gap 的视线, 但是会抖动, 不知道为什么
-//                val thumbWidth = 4.dp.toPx()
-//                val gapWidthEach = 3.dp.toPx() // thumb width + gap
-//                val actualXPlay = (xPlay - (gapWidthEach + thumbWidth / 2)).fastCoerceAtLeast(0f)
-//                drawRect(
-//                    trackProgressColor,
-//                    topLeft = Offset(0f, 0f),
-//                    size = Size(actualXPlay, size.height),
-//                )
-//                val drawBackgroundWidth = xPlay - actualXPlay
-//                if (drawBackgroundWidth != 0f) {
-//                    // 画上背景, 覆盖掉加载中颜色
-//                    drawRect(
-//                        trackBackgroundColor,
-//                        topLeft = Offset(actualXPlay, 0f),
-//                        size = Size(drawBackgroundWidth, size.height),
-//                        blendMode = BlendMode.Src, // override
-//                    )
-//                }
-//                drawRect(
-//                    trackBackgroundColor,
-//                    topLeft = Offset(xPlay, 0f),
-//                    size = Size(gapWidthEach + thumbWidth / 2, size.height),
-//                    blendMode = BlendMode.Src, // override
-//                )
             }
 
             Canvas(Modifier.matchParentSize()) {
@@ -450,12 +368,11 @@ fun MediaProgressSlider(
                             color = colors.chapterColor,
                             radius = 2.dp.toPx(),
                             center = Offset(size.width * percent, this.center.y),
-                            blendMode = BlendMode.Src, // override background
+                            blendMode = BlendMode.Src,
                         )
                     }
                     drawChapterMarker(chapter.offsetMillis)
 
-                    // also draw end marker
                     val endMillis = chapter.offsetMillis + chapter.durationMillis
                     if (state.chapters.none { it.offsetMillis == endMillis }) {
                         drawChapterMarker(endMillis)
@@ -487,7 +404,7 @@ fun MediaProgressSlider(
         val previewTimeText by remember {
             derivedStateOf {
                 val containerWidth = sliderWidth - thumbWidth
-                if (containerWidth == 0) { // avoid division by zero during preview or in a extremely small container
+                if (containerWidth == 0) {
                     ""
                 } else {
                     val percent = mousePosX.minus(thumbWidth / 2).div(containerWidth)
@@ -506,7 +423,7 @@ fun MediaProgressSlider(
             }
         }
         val hoverInteraction = remember { MutableInteractionSource() }
-        val isHovered by hoverInteraction.collectIsHoveredAsState() // works only for desktop
+        val isHovered by hoverInteraction.collectIsHoveredAsState()
         var isPressed by remember { mutableStateOf(false) }
         val showPreviewTime by remember {
             derivedStateOf {
@@ -514,7 +431,7 @@ fun MediaProgressSlider(
             }
         }
         if (framePreview != null) {
-            // 悬浮或拖动时加载目标位置的预览帧, 显示在浮窗中.
+
             val previewingPositionMillis by remember(state) {
                 derivedStateOf {
                     when {
@@ -545,7 +462,7 @@ fun MediaProgressSlider(
                         }
                         val total = state.totalDurationMillis
                         if (total <= 0) return@collectLatest
-                        // 只预览已缓存的区域，避免抢占播放位置的下载优先级或发起额外网络请求。
+
                         if (!cacheProgressInfoFlow().isPositionCached(positionMillis.toFloat() / total)) {
                             return@collectLatest
                         }
@@ -568,7 +485,7 @@ fun MediaProgressSlider(
                 )
             }
         }
-        // draw thumb
+
         val interactionSource = remember { MutableInteractionSource() }
         Slider(
             value = state.displayPositionRatio,
@@ -590,19 +507,7 @@ fun MediaProgressSlider(
                         radius = 8.dp.toPx(),
                     )
                 }
-//                SliderDefaults.Thumb(
-//                    interactionSource = interactionSource,
-//                    colors = SliderDefaults.colors(
-//                        thumbColor = MaterialTheme.colorScheme.primary,
-//                    ),
-//                    enabled = true,
-//                    modifier = Modifier.onSizeChanged {
-//                        thumbWidth = it.width
-//                    },
-//                    thumbSize = DpSize(6.dp, 32.dp)
-//                )
 
-                // 仅在 detached slider 上显示
                 if (state.isPreviewing && showPreviewTimeTextOnThumb) {
                     val showFrame = showFramePreviewInPopup && framePreview != null
                     ProgressSliderPreviewPopup(
@@ -698,9 +603,6 @@ private fun ProgressSliderPreviewContent(
     }
 }
 
-/**
- * 浮窗形状: 只有时间文字时用胶囊形; 有预览帧时用圆角矩形, 避免图片角被大圆角裁掉.
- */
 @Composable
 internal fun previewPopupShape(hasFrame: Boolean): Shape =
     if (hasFrame) RoundedCornerShape(12.dp) else CircleShape
@@ -788,10 +690,6 @@ private fun PreviewProgressSliderPreviewPopup() = ProvideCompositionLocalsForPre
     }
 }
 
-/**
- * 浮窗内容: 启用预览帧时, 在时间上方显示固定尺寸的帧图区域 (帧未加载时显示占位背景,
- * 保证浮窗大小从出现起就固定, 不随帧的加载而跳动); 未启用时只显示时间.
- */
 @Composable
 fun PreviewFrameAndTimeText(
     frame: ImageBitmap?,
@@ -825,9 +723,6 @@ fun PreviewFrameAndTimeText(
     }
 }
 
-/**
- * Compact 播放器布局中显示在播放器中央的预览帧.
- */
 @Composable
 fun ProgressSliderCenteredPreviewFrame(
     frame: ImageBitmap?,
@@ -873,11 +768,6 @@ private fun PreviewFrameAndTimeTextContent() = ProvideCompositionLocalsForPrevie
     }
 }
 
-/**
- * 判断进度条上 [ratio] (0..1) 处的内容是否已缓存完成.
- *
- * 无缓存信息 (null) 或空信息 (如本地文件) 视为可用.
- */
 internal fun MediaCacheProgressInfo?.isPositionCached(ratio: Float): Boolean {
     if (this == null || isEmpty()) return true
     var accumulated = 0f
@@ -896,7 +786,7 @@ fun PreviewTimeText(
     Box(contentAlignment = Alignment.Center) {
         ProvideTextStyle(MaterialTheme.typography.labelLarge) {
             Text(
-                // 占位置
+
                 text = text,
                 Modifier.alpha(0f),
                 fontFamily = FontFamily.Monospace,
@@ -929,7 +819,7 @@ private inline fun forEachConsecutiveChunk(
         }
         end = index
     }
-    // Handle the final chunk
+
     action(currentState, chunks.sumWeightOfRange(start, end + 1))
 }
 

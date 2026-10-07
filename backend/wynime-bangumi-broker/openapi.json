@@ -1,0 +1,40 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Wynime Cloud", "version": "1.0.0" },
+  "servers": [{ "url": "https://wynime-bangumi-broker.wzhou785.workers.dev" }],
+  "security": [{ "cloudSession": [] }],
+  "paths": {
+    "/api/v1/collections/{subjectId}/removal": {
+      "parameters": [{ "name": "subjectId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int32", "minimum": 1 } }],
+      "post": {
+        "operationId": "createCollectionRemoval",
+        "responses": { "200": { "description": "Removal awaiting a web action or confirmation", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionRemoval" } } } } }
+      },
+      "get": {
+        "operationId": "getCollectionRemoval",
+        "responses": { "200": { "description": "Current removal state", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionRemoval" } } } }, "404": { "description": "Operation missing or expired" } }
+      }
+    },
+    "/api/v1/collections/{subjectId}/removal/confirm": {
+      "parameters": [{ "name": "subjectId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int32", "minimum": 1 } }],
+      "post": {
+        "operationId": "confirmCollectionRemoval",
+        "responses": { "200": { "description": "Verified remote state", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionRemoval" } } } }, "401": { "description": "Session requires refresh" }, "409": { "description": "Authenticated account differs" }, "502": { "description": "Bangumi verification failed" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "cloudSession": { "type": "http", "scheme": "bearer" } },
+    "schemas": {
+      "CollectionRemoval": {
+        "type": "object", "required": ["subjectId", "status", "webUrl", "expiresAt"],
+        "properties": {
+          "subjectId": { "type": "integer", "format": "int32" },
+          "status": { "type": "string", "enum": ["awaiting_web_action", "confirmed"] },
+          "webUrl": { "type": "string" },
+          "expiresAt": { "type": "integer", "format": "int64" }
+        }
+      }
+    }
+  }
+}

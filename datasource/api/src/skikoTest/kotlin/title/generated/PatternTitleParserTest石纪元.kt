@@ -1,4 +1,3 @@
-// @formatter:off
 @file:Suppress(
   "FunctionName",
   "ClassName",
@@ -8,19 +7,11 @@
   "SpellCheckingInspection",
 )
 
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.title.PatternBasedTitleParserTestSuite
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.title.PatternBasedTitleParserTestSuite
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/**
- * 原名: `石纪元`
- * 数据源: `web-primary`
- *
- * 由 `test-codegen` 的 `GenerateTests.kt` 生成, 不要手动修改!
- * 如果你优化了解析器, 这些 test 可能会失败, 请检查是否它是因为以前解析错误而现在解析正确了. 
- * 如果是, 请更新测试数据: 执行 `GenerateTests.kt`.
- */
 public class PatternTitleParserTest石纪元 : PatternBasedTitleParserTestSuite() {
   @Test
   public fun `690822_Dr_STONE_Science_Future_05_1080p_2025_1`() {
@@ -2302,4 +2293,3 @@ public class PatternTitleParserTest石纪元 : PatternBasedTitleParserTestSuite(
   }
 }
 
-// @formatter:on

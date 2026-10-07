@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.statistics
+package com.wynime.app.ui.subject.episode.statistics
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -33,26 +24,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
-import me.him188.ani.app.domain.player.VideoLoadingState
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_mediasource_close
-import me.him188.ani.app.ui.lang.subject_episode_statistics_cancelled
-import me.him188.ani.app.ui.lang.subject_episode_statistics_copy
-import me.him188.ani.app.ui.lang.subject_episode_statistics_error
-import me.him188.ani.app.ui.lang.subject_episode_statistics_error_details
-import me.him188.ani.app.ui.lang.subject_episode_statistics_network_error
-import me.him188.ani.app.ui.lang.subject_episode_statistics_no_matching_file
-import me.him188.ani.app.ui.lang.subject_episode_statistics_resolution_timed_out
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_error
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_verification
-import me.him188.ani.app.ui.lang.subject_episode_statistics_unknown_error_tap
-import me.him188.ani.app.ui.lang.subject_episode_statistics_unsupported_media
+import com.wynime.app.domain.player.VideoLoadingState
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_mediasource_close
+import com.wynime.app.ui.lang.subject_episode_statistics_cancelled
+import com.wynime.app.ui.lang.subject_episode_statistics_copy
+import com.wynime.app.ui.lang.subject_episode_statistics_error
+import com.wynime.app.ui.lang.subject_episode_statistics_error_details
+import com.wynime.app.ui.lang.subject_episode_statistics_network_error
+import com.wynime.app.ui.lang.subject_episode_statistics_no_matching_file
+import com.wynime.app.ui.lang.subject_episode_statistics_resolution_timed_out
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_source_error
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_source_verification
+import com.wynime.app.ui.lang.subject_episode_statistics_unknown_error_tap
+import com.wynime.app.ui.lang.subject_episode_statistics_unsupported_media
 import org.jetbrains.compose.resources.stringResource
-
 
 @Composable
 fun SimpleErrorDialog(

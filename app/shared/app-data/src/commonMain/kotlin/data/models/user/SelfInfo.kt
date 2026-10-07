@@ -1,21 +1,9 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models.user
+package com.wynime.app.data.models.user
 
 import androidx.compose.runtime.Stable
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
-/**
- * @since 5.0
- */
 @Serializable
 data class SelfInfo(
     val id: Uuid,
@@ -25,20 +13,13 @@ data class SelfInfo(
     val avatarUrl: String?,
     val bangumiUsername: String?,
     val isBangumiSessionValid: Boolean? = null,
-    /**
-     * 绑定的其他第三方账号 (GitHub 等), 不含 Bangumi.
-     */
+
     val externalAccounts: List<ExternalAccount> = emptyList(),
 )
 
-/**
- * 绑定的第三方账号.
- */
 @Serializable
 data class ExternalAccount(
-    /**
-     * 平台 ID, 见 [me.him188.ani.app.domain.session.auth.OAuthPlatform.id]. 可能是客户端不认识的平台.
-     */
+
     val provider: String,
     val username: String?,
 )
@@ -47,24 +28,20 @@ fun SelfInfo.externalAccount(provider: String): ExternalAccount? = externalAccou
 
 data class SelfInfoDisplay(
     val title: String,
-    val subtitle: String, // can be ""
+    val subtitle: String,
 )
 
-/**
- * 计算用于显示的昵称和 email.
- */
 @Stable
 fun SelfInfo?.calculateDisplay(): SelfInfoDisplay {
     val selfInfo = this
     if (selfInfo == null) {
-        return SelfInfoDisplay("加载中...", "") // placeholder, no need to be localized
+        return SelfInfoDisplay("加载中...", "")
     }
 
     if (selfInfo.nickname.isNotEmpty()) {
         return SelfInfoDisplay(selfInfo.nickname, selfInfo.email ?: "")
     }
 
-    // 如果没有昵称, 则使用 email 作为显示名
     return (selfInfo.email ?: selfInfo.bangumiUsername)?.let { SelfInfoDisplay(it, "") }
         ?: SelfInfoDisplay(selfInfo.id.toString(), "")
 }

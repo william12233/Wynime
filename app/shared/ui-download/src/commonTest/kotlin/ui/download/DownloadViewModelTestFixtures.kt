@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download
+package com.wynime.app.ui.download
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -23,81 +14,78 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.models.bangumi.BangumiSyncState
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.EpisodeInfo
-import me.him188.ani.app.data.models.player.EpisodeHistory
-import me.him188.ani.app.data.models.preference.AnalyticsSettings
-import me.him188.ani.app.data.models.preference.DebugSettings
-import me.him188.ani.app.data.models.preference.MediaCacheSettings
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.preference.OneshotActionConfig
-import me.him188.ani.app.data.models.preference.PlayerKernelConfig
-import me.him188.ani.app.data.models.preference.ProfileSettings
-import me.him188.ani.app.data.models.preference.ProxySettings
-import me.him188.ani.app.data.models.preference.ThemeSettings
-import me.him188.ani.app.data.models.preference.UISettings
-import me.him188.ani.app.data.models.preference.UpdateSettings
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.createTestSubjectCollection
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepository
-import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepository
-import me.him188.ani.app.data.repository.player.PlaybackHistoryPendingOp
-import me.him188.ani.app.data.repository.subject.CollectionsFilterQuery
-import me.him188.ani.app.data.repository.subject.OfflineSubjectDisplayInfo
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.data.repository.user.Settings
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.cache.DeleteCacheUseCase
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.cache.TestMediaCache
-import me.him188.ani.app.domain.media.cache.engine.DummyMediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.domain.media.cache.storage.MediaCacheStorage
-import me.him188.ani.app.domain.media.download.AddDownloadUseCase
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.domain.media.fetch.CompletedConditions
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.fetch.MediaFetcher
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchResult
-import me.him188.ani.app.domain.media.fetch.MediaSourceManager
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.app.domain.media.selector.DefaultMediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorContext
-import me.him188.ani.app.domain.media.selector.MediaSelectorFactory
-import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceSave
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
-import me.him188.ani.datasources.api.source.FactoryId
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.datasources.api.source.MediaSourceFactory
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.bangumi.BangumiSyncState
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.models.player.EpisodeHistory
+import com.wynime.app.data.models.preference.AnalyticsSettings
+import com.wynime.app.data.models.preference.DebugSettings
+import com.wynime.app.data.models.preference.MediaCacheSettings
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.preference.OneshotActionConfig
+import com.wynime.app.data.models.preference.PlayerKernelConfig
+import com.wynime.app.data.models.preference.ProfileSettings
+import com.wynime.app.data.models.preference.ProxySettings
+import com.wynime.app.data.models.preference.ThemeSettings
+import com.wynime.app.data.models.preference.UISettings
+import com.wynime.app.data.models.preference.UpdateSettings
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.models.subject.SubjectCollectionCounts
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.createTestSubjectCollection
+import com.wynime.app.data.repository.media.EpisodePreferencesRepository
+import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
+import com.wynime.app.data.repository.player.PlaybackHistoryPendingOp
+import com.wynime.app.data.repository.subject.CollectionsFilterQuery
+import com.wynime.app.data.repository.subject.OfflineSubjectDisplayInfo
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.user.Settings
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.cache.DeleteCacheUseCase
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.cache.TestMediaCache
+import com.wynime.app.domain.media.cache.engine.DummyMediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.domain.media.cache.storage.MediaCacheStorage
+import com.wynime.app.domain.media.download.AddDownloadUseCase
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.fetch.CompletedConditions
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.fetch.MediaFetcher
+import com.wynime.app.domain.media.fetch.MediaSourceFetchResult
+import com.wynime.app.domain.media.fetch.MediaSourceManager
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.app.domain.media.selector.DefaultMediaSelector
+import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.app.domain.media.selector.MediaSelectorContext
+import com.wynime.app.domain.media.selector.MediaSelectorFactory
+import com.wynime.app.domain.media.selector.MediaSelectorSourceTiers
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.app.domain.mediasource.instance.MediaSourceSave
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
+import com.wynime.datasources.api.source.FactoryId
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.datasources.api.source.MediaSourceFactory
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 
 internal const val TEST_STORAGE_ID = "test-storage"
 
-/**
- * 一条内存中的下载记录. 默认状态为进行中.
- */
 @OptIn(TestOnly::class)
 internal fun testDownloadCache(
     episodeId: Int,
@@ -120,9 +108,6 @@ internal fun testDownloadCache(
     ).apply { this.state.value = state }
 }
 
-/**
- * 内存存储: 记录列表与统计都可由测试直接修改.
- */
 internal class FakeDownloadStorage(
     initialStats: MediaStats = MediaStats.Zero,
     override val engine: MediaCacheEngine = DummyMediaCacheEngine(TEST_STORAGE_ID),
@@ -150,9 +135,6 @@ internal class FakeDownloadStorage(
     override fun close() = Unit
 }
 
-/**
- * 删除时直接从下载管理器移除; [failure] 非空时抛出它.
- */
 internal class FakeDeleteCacheUseCase(private val downloadManager: MediaDownloadManager) : DeleteCacheUseCase {
     var failure: Throwable? = null
 
@@ -162,18 +144,10 @@ internal class FakeDeleteCacheUseCase(private val downloadManager: MediaDownload
     }
 }
 
-/**
- * 只提供条目收藏流与离线条目信息的仓库.
- */
 internal class FakeSubjectCollectionRepository : SubjectCollectionRepository() {
-    /**
-     * [subjectCollectionFlow] 的数据源; 为 `null` 时该流一直挂起.
-     */
+
     val collection = MutableStateFlow<SubjectCollectionInfo?>(null)
 
-    /**
-     * 非空时 [subjectCollectionFlow] 以该异常失败.
-     */
     var collectionFailure: Throwable? = null
     val collectionTypes = mutableMapOf<Int, UnifiedCollectionType?>()
     val displayInfos = mutableMapOf<Int, OfflineSubjectDisplayInfo?>()
@@ -222,9 +196,6 @@ internal class FakeSubjectCollectionRepository : SubjectCollectionRepository() {
     override suspend fun getBangumiFullSyncState(): BangumiSyncState? = throw UnsupportedOperationException()
 }
 
-/**
- * 条目 [subjectId] 的收藏信息, 包含正片 1..[episodeCount] 集.
- */
 @OptIn(TestOnly::class)
 internal fun testSubjectCollection(subjectId: Int = 1, episodeCount: Int = 3): SubjectCollectionInfo =
     createTestSubjectCollection(
@@ -266,9 +237,6 @@ internal class FakeEpisodePlayHistoryRepository : EpisodePlayHistoryRepository {
     override suspend fun getPositionMillisByEpisodeId(episodeId: Int): Long? = throw UnsupportedOperationException()
 }
 
-/**
- * 只提供选源设置, 其余设置访问即报错.
- */
 internal class FakeSettingsRepository : SettingsRepository {
     override val mediaSelectorSettings: Settings<MediaSelectorSettings> = object : Settings<MediaSelectorSettings> {
         private val state = MutableStateFlow(MediaSelectorSettings.Default)
@@ -293,17 +261,10 @@ internal class FakeSettingsRepository : SettingsRepository {
     override val debugSettings: Settings<DebugSettings> get() = error("Not used")
 }
 
-/**
- * 每个查询会话立即返回 [mediaListFor] 的结果. 持续订阅结果的查询被取消时, 把剧集 id 记入 [releasedEpisodeIds];
- * 只取首个结果的订阅 (如选择器内部的查询) 不计入.
- */
 @OptIn(TestOnly::class)
 internal class FakeMediaFetcher : MediaFetcher {
     val releasedEpisodeIds = mutableSetOf<Int>()
 
-    /**
-     * 每集查询返回的资源. 默认把 [TestMediaList] 的每个资源都收窄为只含当前集, 使选源后直接创建下载而不进入选集.
-     */
     var mediaListFor: (episodeId: Int) -> List<Media> = { episodeId ->
         TestMediaList.map { it.copy(episodeRange = EpisodeRange.single(EpisodeSort(episodeId))) }
     }
@@ -326,9 +287,6 @@ internal class FakeMediaFetcher : MediaFetcher {
         }
 }
 
-/**
- * 只提供 [mediaFetcher] 的数据源管理器.
- */
 internal class FakeMediaSourceManager(val fetcher: FakeMediaFetcher = FakeMediaFetcher()) : MediaSourceManager {
     override val allInstances: Flow<List<MediaSourceInstance>> = flowOf(emptyList())
     override val allFactories: List<MediaSourceFactory> = emptyList()
@@ -348,9 +306,6 @@ internal class FakeMediaSourceManager(val fetcher: FakeMediaFetcher = FakeMediaF
     override fun mediaSourceTiersFlow(): Flow<MediaSelectorSourceTiers> = flowOf(MediaSelectorSourceTiers.Empty)
 }
 
-/**
- * 不读取任何仓库的选择器工厂. 选择器的流不切换调度器, 让测试始终跑在测试调度器上.
- */
 internal fun fakeMediaSelectorFactory(): MediaSelectorFactory = object : MediaSelectorFactory {
     override fun create(
         subjectId: Int,
@@ -382,9 +337,6 @@ internal class FakeEpisodePreferencesRepository : EpisodePreferencesRepository {
     override suspend fun removePreferredWebMediaSource(subjectId: Int) = error("Not used")
 }
 
-/**
- * 把新下载直接放入 [storage]. [gate] 非空时先等待它完成; [failure] 非空时抛出它.
- */
 internal class FakeAddDownloadUseCase(private val storage: FakeDownloadStorage) : AddDownloadUseCase {
     val createdEpisodeIds = mutableListOf<Int>()
     var gate: CompletableDeferred<Unit>? = null

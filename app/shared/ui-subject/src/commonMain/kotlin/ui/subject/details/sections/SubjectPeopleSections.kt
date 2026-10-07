@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.sections
+package com.wynime.app.ui.subject.details.sections
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,35 +32,31 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.RelatedCharacterInfo
-import me.him188.ani.app.data.models.subject.RelatedPersonInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
-import me.him188.ani.app.data.models.subject.nameCn
-import me.him188.ani.app.ui.foundation.avatar.AvatarImage
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_details_characters
-import me.him188.ani.app.ui.lang.subject_details_characters_with_count
-import me.him188.ani.app.ui.lang.subject_details_rating_summary
-import me.him188.ani.app.ui.lang.subject_details_staff
-import me.him188.ani.app.ui.lang.subject_details_staff_with_count
-import me.him188.ani.app.ui.lang.subject_details_stat_collected
-import me.him188.ani.app.ui.lang.subject_details_stat_watching
-import me.him188.ani.app.ui.lang.subject_details_stat_wish
-import me.him188.ani.app.ui.lang.subject_details_view_all
-import me.him188.ani.app.ui.rating.FiveRatingStars
-import me.him188.ani.app.ui.rating.renderScore
-import me.him188.ani.app.ui.subject.details.components.PersonCard
-import me.him188.ani.app.ui.subject.person.PeoplePreviewTarget
-import me.him188.ani.app.ui.subject.person.rememberPeopleClickHandler
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.RelatedCharacterInfo
+import com.wynime.app.data.models.subject.RelatedPersonInfo
+import com.wynime.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.models.subject.nameCn
+import com.wynime.app.ui.foundation.avatar.AvatarImage
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_details_characters
+import com.wynime.app.ui.lang.subject_details_characters_with_count
+import com.wynime.app.ui.lang.subject_details_rating_summary
+import com.wynime.app.ui.lang.subject_details_staff
+import com.wynime.app.ui.lang.subject_details_staff_with_count
+import com.wynime.app.ui.lang.subject_details_stat_collected
+import com.wynime.app.ui.lang.subject_details_stat_watching
+import com.wynime.app.ui.lang.subject_details_stat_wish
+import com.wynime.app.ui.lang.subject_details_view_all
+import com.wynime.app.ui.rating.FiveRatingStars
+import com.wynime.app.ui.rating.renderScore
+import com.wynime.app.ui.subject.details.components.PersonCard
+import com.wynime.app.ui.subject.person.PeoplePreviewTarget
+import com.wynime.app.ui.subject.person.rememberPeopleClickHandler
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-/**
- * 收藏统计三格 (对齐 Figma 定稿: `74,553 收藏 / 5,120 在看 / 680 想看`).
- * 收藏 = 五档之和; 在看 = doing; 想看 = wish.
- */
 @Composable
 fun SubjectCollectionStatsRow(
     stats: SubjectCollectionStats,
@@ -100,7 +87,6 @@ private fun StatCell(count: Int, label: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** `39983 -> "39,983"`. 详情页多处数字 (收藏统计/评分人数/评论数) 按定稿千分组显示. */
 internal fun groupThousands(n: Int): String {
     val s = n.toString()
     val neg = s.startsWith("-")
@@ -109,13 +95,6 @@ internal fun groupThousands(n: Int): String {
     return if (neg) "-$grouped" else grouped
 }
 
-/**
- * 评分摘要块 (对齐定稿: 大分数 `8.4` + 右侧上下两行 [星星 / `#72 · 39,983 人评分`]).
- *
- * 用于双栏/三栏中栏评分行与三栏右栏"评分"卡.
- *
- * @param onClick 非 null 时整块可点击 (打开评分编辑, 见 `SubjectDetailsActions.requestEditRating`).
- */
 @Composable
 fun SubjectRatingSummary(
     ratingInfo: RatingInfo,
@@ -156,14 +135,6 @@ fun SubjectRatingSummary(
     }
 }
 
-/**
- * 角色区块: 标题行 (+"查看全部" -> 全量列表 sheet) + 横向头像条 (固定圆形头像 + 角色名 + CV).
- *
- * 头像为固定大小圆形, 图片 crop 顶部对齐 (角色图多为全身立绘, 顶部对齐保证露脸).
- * 尺寸对齐 Figma `CharacterCard`: 桌面 Large (头像 76, 间距 12), 手机 Small (头像 56, 间距 0).
- *
- * @param contentPadding 头像条与标题的水平内边距; 手机端传水平 16dp 可让头像条边到边滚动.
- */
 @Composable
 fun CharactersSection(
     exposedCharacters: LazyPagingItems<RelatedCharacterInfo>,
@@ -235,7 +206,7 @@ private fun CharacterAvatarCell(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        // 固定圆形, crop, 顶部对齐 (立绘顶部为脸部)
+
         Box(Modifier.size(avatarSize).clip(CircleShape)) {
             AvatarImage(
                 info.character.imageMedium,
@@ -263,13 +234,6 @@ private fun CharacterAvatarCell(
     }
 }
 
-/**
- * 制作人员区块: 标题行 (+"查看全部" -> 全量列表 sheet) + 内容.
- *
- * 内容形态 (对齐定稿):
- * - [gridColumns] 非 null: `职位 上 / 名字 下` 的网格 (双栏中栏单行 6 列, 手机 3 列两行);
- * - [gridColumns] 为 null: `职位 -> 名字` 竖排键值行 (三栏右栏卡, 显示 [maxItems] 个职位).
- */
 @Composable
 fun StaffSection(
     exposedStaff: LazyPagingItems<RelatedPersonInfo>,
@@ -320,7 +284,6 @@ fun StaffSection(
     }
 }
 
-/** `职位 上 / 名字 下` 单元格网格, 每行 [columns] 个, 最多 [maxItems] 个. */
 @Composable
 private fun StaffGrid(
     staff: LazyPagingItems<RelatedPersonInfo>,
@@ -361,7 +324,7 @@ private fun StaffGrid(
                 )
             }
         }
-        // 补齐末行空位, 保持列宽一致
+
         val remainder = count % columns
         if (remainder != 0) {
             repeat(columns - remainder) { Box(Modifier.weight(1f)) }
@@ -369,7 +332,6 @@ private fun StaffGrid(
     }
 }
 
-/** `职位 -> 名字` 竖排键值行, 最多 [maxItems] 个. */
 @Composable
 private fun StaffKeyValueList(
     staff: LazyPagingItems<RelatedPersonInfo>,

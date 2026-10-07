@@ -1,8 +1,8 @@
-package me.him188.ani.app.platform.features
+package com.wynime.app.platform.features
 
 import android.view.WindowManager
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.platform.findActivity
+import com.wynime.app.platform.Context
+import com.wynime.app.platform.findActivity
 import kotlin.math.roundToInt
 import android.media.AudioManager as SystemAudioManager
 
@@ -31,7 +31,7 @@ private class AndroidBrightnessManager(
         val current = window.attributes.screenBrightness
 
         if (current == WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE) {
-            // no override, use system settings
+
             return android.provider.Settings.System.getInt(
                 context.contentResolver,
                 android.provider.Settings.System.SCREEN_BRIGHTNESS,
@@ -40,24 +40,14 @@ private class AndroidBrightnessManager(
 
         return current
 
-//        return android.provider.Settings.System.getInt(
-//            context.contentResolver,
-//            android.provider.Settings.System.SCREEN_BRIGHTNESS
-//        ).toFloat() / 255
     }
 
     override fun setBrightness(level: Float) {
         val activity = context.findActivity() ?: return
         val window = activity.window ?: return
         window.attributes.screenBrightness = level
-        window.attributes = window.attributes // update
+        window.attributes = window.attributes
 
-        // system settings also requires permission
-//        android.provider.Settings.System.putInt(
-//            context.contentResolver,
-//            android.provider.Settings.System.SCREEN_BRIGHTNESS,
-//            (level * 255).toInt().coerceIn(minimumValue = 0, maximumValue = 255)
-//        )
     }
 }
 

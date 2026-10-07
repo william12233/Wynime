@@ -1,3 +1,3 @@
-package me.him188.ani.utils.platform
+package com.wynime.utils.platform
 
 expect fun currentTimeMillis(): Long

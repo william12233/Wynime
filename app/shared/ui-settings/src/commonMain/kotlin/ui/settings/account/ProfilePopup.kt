@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.account
+package com.wynime.app.ui.settings.account
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,21 +33,18 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.core.layout.WindowSizeClass
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_account_popup_cancel
-import me.him188.ani.app.ui.lang.settings_account_popup_logout_button
-import me.him188.ani.app.ui.lang.settings_account_popup_logout_confirm
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_account_popup_cancel
+import com.wynime.app.ui.lang.settings_account_popup_logout_button
+import com.wynime.app.ui.lang.settings_account_popup_logout_confirm
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 在右上角显示的个人信息弹窗
- */
 @Composable
 fun ProfilePopup(
     vm: ProfileViewModel,
@@ -99,7 +87,7 @@ fun ProfilePopup(
             properties = PopupProperties(),
             onDismissRequest = onDismissRequest,
         ) {
-            // 模拟点击外面关闭 popup, 否则事件会被广播到下层
+
             Box(
                 Modifier.fillMaxSize()
                     .clickable(interactionSource = null, indication = null, onClick = onDismissRequest)
@@ -107,13 +95,12 @@ fun ProfilePopup(
                 contentAlignment = Alignment.TopEnd,
             ) {
 
-                // 实际内容
                 Surface(
                     modifier = Modifier
-                        .windowInsetsPadding(AniWindowInsets.safeDrawing)
+                        .windowInsetsPadding(WynimeWindowInsets.safeDrawing)
                         .padding(horizontal = 24.dp)
                         .widthIn(max = 360.dp)
-                        .clickable(interactionSource = null, indication = null, onClick = {}), // 避免触发 onDismissRequest
+                        .clickable(interactionSource = null, indication = null, onClick = {}),
                     shape = MaterialTheme.shapes.extraLarge,
                     color = BottomSheetDefaults.ContainerColor,
                     contentColor = contentColorFor(BottomSheetDefaults.ContainerColor),
@@ -124,14 +111,6 @@ fun ProfilePopup(
             }
         }
 
-//                IconButton(
-//                    onDismiss,
-//                    Modifier.align(Alignment.TopEnd)
-//                        .padding(horizontal = 24.dp)
-//                        .padding(top = 24.dp),
-//                ) {
-//                    Icon(Icons.Default.Close, contentDescription = "关闭")
-//                }
     } else {
         BasicAlertDialog(onDismissRequest) {
             Surface(

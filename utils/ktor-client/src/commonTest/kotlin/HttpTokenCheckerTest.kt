@@ -1,27 +1,9 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.utils.ktor
 
-package me.him188.ani.utils.ktor
-
-import me.him188.ani.utils.ktor.HttpTokenChecker.isValidToken
+import com.wynime.utils.ktor.HttpTokenChecker.isValidToken
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
 
 class HttpTokenCheckerTest {
     @Test
@@ -56,13 +38,13 @@ class HttpTokenCheckerTest {
 
     @Test
     fun `test token exceeding max length`() {
-        val token = "a".repeat(256) // Exceeds the 255 character limit
+        val token = "a".repeat(256)
         assertFalse(isValidToken(token))
     }
 
     @Test
     fun `test token at max length`() {
-        val token = "a".repeat(255) // Exactly 255 characters
+        val token = "a".repeat(255)
         assertTrue(isValidToken(token))
     }
 
@@ -73,7 +55,7 @@ class HttpTokenCheckerTest {
 
     @Test
     fun `chinese unicode is not valid`() {
-        assertFalse(isValidToken("\u67DA")) // https://github.com/open-ani/animeko/issues/1242
+        assertFalse(isValidToken("\u67DA"))
     }
 
     @Test

@@ -1,23 +1,23 @@
-package me.him188.ani.app.ui.settings.tabs.media
+package com.wynime.app.ui.settings.tabs.media
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.data.models.preference.WebViewDriver
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.app.ui.settings.framework.components.DropdownItem
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.utils.platform.isDesktop
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.data.models.preference.WebViewDriver
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.app.ui.settings.framework.components.DropdownItem
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.utils.platform.isDesktop
 
 @Composable
 internal fun SettingsScope.VideoResolverGroup(
     videoResolverSettingsState: SettingsState<VideoResolverSettings>,
     modifier: Modifier = Modifier,
 ) {
-    // There are not many options for the player.
+
     if (!LocalPlatform.current.isDesktop()) {
         return
     }
@@ -69,11 +69,3 @@ internal fun SettingsScope.VideoResolverGroup(
     }
 }
 
-// TODO: More accurate icons
-//@Composable
-//private fun WebViewDriverIcon(driver: WebViewDriver) {
-////    when (driver) {
-////        else -> Icon(Icons.Rounded.TravelExplore, driver.toString())
-////    }
-//    Icon(Icons.Rounded.TravelExplore, driver.toString())
-//}

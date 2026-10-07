@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.episode
+package com.wynime.app.ui.episode
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,24 +56,24 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.DarkMode
-import me.him188.ani.app.ui.comment.CommentColumn
-import me.him188.ani.app.ui.comment.generateUiComment
-import me.him188.ani.app.ui.episode.AdaptivePlayerScreenLayoutParams.Mode
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.pagerTabIndicatorOffset
-import me.him188.ani.app.ui.foundation.theme.AniTheme
-import me.him188.ani.app.ui.foundation.input.touchHorizontalScrollOnly
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.episode_comments
-import me.him188.ani.app.ui.lang.episode_comments_with_count
-import me.him188.ani.app.ui.lang.subject_details_tab_details
-import me.him188.ani.app.ui.search.rememberTestLazyPagingItems
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.DarkMode
+import com.wynime.app.ui.comment.CommentColumn
+import com.wynime.app.ui.comment.generateUiComment
+import com.wynime.app.ui.episode.AdaptivePlayerScreenLayoutParams.Mode
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.pagerTabIndicatorOffset
+import com.wynime.app.ui.foundation.theme.WynimeTheme
+import com.wynime.app.ui.foundation.input.touchHorizontalScrollOnly
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.episode_comments
+import com.wynime.app.ui.lang.episode_comments_with_count
+import com.wynime.app.ui.lang.subject_details_tab_details
+import com.wynime.app.ui.search.rememberTestLazyPagingItems
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
 @Stable
@@ -98,16 +89,6 @@ class AdaptivePlayerScreenScaffoldState(
     }
 }
 
-/**
- * Slotting requirements:
- * - 每个组件必须 consume [AdaptivePlayerScreenScope.windowInsets].
- * - 组件无需有侧边 padding.
- *
- * @param topAppBar [AdaptivePlayerScreenScope.TopAppBar]
- * @param summary 播放器下方的简介, 不包含评论.
- * @param player 播放器, 需要 [Modifier.fillMaxSize].
- * @param supporting PC 右侧的信息栏, 数据源选择器, 选择剧集等.
- */
 @Composable
 fun AdaptivePlayerScreenScaffold(
     state: AdaptivePlayerScreenScaffoldState,
@@ -118,7 +99,7 @@ fun AdaptivePlayerScreenScaffold(
     supporting: @Composable AdaptivePlayerScreenScope.() -> Unit,
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLowest,
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     val layoutParamsState = rememberUpdatedState(
         AdaptivePlayerScreenLayoutParams.calculate(currentWindowAdaptiveInfo1().windowSizeClass, state.preferTheater),
@@ -243,7 +224,7 @@ fun AdaptivePlayerScreenScaffold(
                             .consumeWindowInsets(pageContentPaddings)
                             .padding(pageContentPaddings),
                     ) {
-                        // LHS Column
+
                         Column(Modifier.weight(1f)) {
                             Surface(Modifier.aspectRatio(16f / 9f).fillMaxWidth(), color = Color.Black) {
                                 movablePlayer()
@@ -279,9 +260,6 @@ fun AdaptivePlayerScreenScaffold(
 sealed class AdaptivePlayerScreenScope {
     abstract val layoutParams: AdaptivePlayerScreenLayoutParams
 
-    /**
-     * 该组件需要 consume 的 window insets.
-     */
     abstract val windowInsets: WindowInsets
 
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -316,7 +294,7 @@ sealed class AdaptivePlayerScreenScope {
 
             Mode.THEATER -> {
                 @Composable {
-                    AniTheme(darkModeOverride = DarkMode.DARK) {
+                    WynimeTheme(darkModeOverride = DarkMode.DARK) {
                         content()
                     }
                 }
@@ -328,19 +306,13 @@ sealed class AdaptivePlayerScreenScope {
 }
 
 enum class PlayerTopBarMode {
-    /**
-     * 承担 TopAppBar 的功能.
-     */
+
     FULL,
 
-    /**
-     * 只用来显示一些操作, 没有 navigation icon
-     */
     ACTIONS,
 }
 
 private abstract class AdaptivePlayerScreenScopeImpl : AdaptivePlayerScreenScope()
-
 
 @Composable
 private fun TabRow(
@@ -361,7 +333,7 @@ private fun TabRow(
         },
         containerColor = containerColor,
         contentColor = MaterialTheme.colorScheme.contentColorFor(containerColor),
-//        edgePadding = 0.dp,
+
         divider = {},
     ) {
         Tab(
@@ -391,11 +363,6 @@ private fun TabRow(
     }
 }
 
-
-///////////////////////////////////////////////////////////////////////////
-// layout params
-///////////////////////////////////////////////////////////////////////////
-
 @Immutable
 @ConsistentCopyVisibility
 data class AdaptivePlayerScreenLayoutParams private constructor(
@@ -404,19 +371,11 @@ data class AdaptivePlayerScreenLayoutParams private constructor(
     val pageVerticalPadding: Dp,
 ) {
     enum class Mode {
-        /**
-         * 手机竖屏, 平板竖屏
-         */
+
         COMPACT,
 
-        /**
-         * 手机横屏, PC, 横屏
-         */
         HORIZONTAL,
 
-        /**
-         * PC 剧场模式
-         */
         THEATER
     }
 
@@ -453,12 +412,6 @@ data class AdaptivePlayerScreenLayoutParams private constructor(
     }
 }
 
-
-///////////////////////////////////////////////////////////////////////////
-// previews
-///////////////////////////////////////////////////////////////////////////
-
-
 @Composable
 private fun DummyPlayerSurface(modifier: Modifier) {
     Surface(
@@ -473,7 +426,7 @@ private fun DummyPlayerSurface(modifier: Modifier) {
 @Preview(
     name = "Desktop",
     device = "id:pixel_tablet",
-//    device = "spec:width=1500dp,height=1200dp,dpi=240"
+
 )
 private fun PreviewEpisodePageLayout() {
     ProvideCompositionLocalsForPreview {

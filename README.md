@@ -22,8 +22,6 @@
 
 Wynime 支持云同步观看记录 ([Bangumi][Bangumi])、多视频数据源、缓存以及更多功能，提供尽可能简单且舒适的追番体验。
 
-> Wynime 曾用名 Wynime，现在也简称 Wynime。
-
 [立即下载](https://github.com/william12233/Wynime)
 
 https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
@@ -37,7 +35,7 @@ https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
 
 ### 丰富的检索方式：新番时间表、标签搜索
 
-> 由 Bangumi 和 Wynime 服务端共同提供的精确新番时间表
+> 新番時間表與季番資料由 Bangumi 提供。
 
 | <img src=".readme/images/features/anime-schedule.png" alt="" width="200"/> | <img src=".readme/images/features/search-by-tag.png" alt="" width="200"/> | 
 |:--------------------------------------------------------------------------:|:-------------------------------------------------------------------------:|
@@ -52,7 +50,7 @@ https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
 
 ### 聚合数据源
 
-- [聚合视频数据源](https://github.com/creamycake-anime/Wynime-subs)，全自动选择
+- [來源外掛](source/plugins)，依實際線路與媒體要求自動選擇
   > 还支持 Jellyfin、Emby、以及自定义源
 
 | <img src=".readme/images/features/mediaselector-simple.png" alt="" width="200"/> | <img src=".readme/images/features/mediaselector-detailed.png" alt="" width="200"/> |
@@ -91,7 +89,7 @@ https://github.com/user-attachments/assets/e63636c9-30b7-411c-aa6b-e5b78b900726
 
 ## 下载
 
-Wynime 支持所有主流平台：Android、iOS、Windows、macOS、Linux。
+Wynime 支援 Android 手機／平板及 Windows。
 
 - 稳定版本: 功能稳定  
   [下载稳定版本](https://github.com/william12233/Wynime/releases)
@@ -110,7 +108,7 @@ Wynime 支持所有主流平台：Android、iOS、Windows、macOS、Linux。
 - [Kotlin 多平台][Kotlin Multiplatform]架构；
 - 使用新一代响应式 UI 框架 [Compose Multiplatform][Compose Multiplatform] 构建
   UI；
-- 适配多平台的[视频播放器](https://github.com/open-ani/mediamp)，Android 底层为 [ExoPlayer][ExoPlayer]，PC 底层为 [VLC][VLC]；
+- 使用 [Mediamp](https://github.com/open-ani/mediamp)，Android 以 [ExoPlayer][ExoPlayer] 播放，Windows 使用 mpv／FFmpeg；
 - 多类型在线数据源适配，拥有强大的自定义数据源编辑器和自动数据源选择器。
 
 ### 参与开发
@@ -123,5 +121,4 @@ Wynime 支持所有主流平台：Android、iOS、Windows、macOS、Linux。
 ### 资源来源是什么?
 
 全部视频数据都来自网络, Wynime 本身不存储任何视频数据。
-Wynime 使用在线视频数据源，目前使用 [creamycake Wynime-subs](https://github.com/creamycake-anime/Wynime-subs)。Wynime
-本身并不提供任何视频资源。
+Wynime 使用可安裝的 [v3 來源外掛](source/plugins)，附帶七個來源的 Android Dex 與 Windows JVM 套件。來源網站提供媒體，App 負責搜尋、選擇、播放及下載。

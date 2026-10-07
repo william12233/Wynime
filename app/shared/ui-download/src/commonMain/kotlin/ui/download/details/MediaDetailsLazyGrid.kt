@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.details
+package com.wynime.app.ui.download.details
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -46,50 +37,50 @@ import androidx.compose.ui.unit.dp
 import io.ktor.http.Url
 import kotlinx.coroutines.launch
 import kotlinx.io.files.Path
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.features.getComponentAccessors
-import me.him188.ani.app.tools.formatDateTime
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_details_browse_file
-import me.him188.ani.app.ui.lang.cache_details_copied
-import me.him188.ani.app.ui.lang.cache_details_copy
-import me.him188.ani.app.ui.lang.cache_details_episode_range
-import me.him188.ani.app.ui.lang.cache_details_external_subtitle
-import me.him188.ani.app.ui.lang.cache_details_file_size
-import me.him188.ani.app.ui.lang.cache_details_file_type
-import me.him188.ani.app.ui.lang.cache_details_local_cache_path
-import me.him188.ani.app.ui.lang.cache_details_open_file_failed
-import me.him188.ani.app.ui.lang.cache_details_open_link
-import me.him188.ani.app.ui.lang.cache_details_original_download_link
-import me.him188.ani.app.ui.lang.cache_details_original_link
-import me.him188.ani.app.ui.lang.cache_details_publish_time
-import me.him188.ani.app.ui.lang.cache_details_resolution
-import me.him188.ani.app.ui.lang.cache_details_source
-import me.him188.ani.app.ui.lang.cache_details_source_local
-import me.him188.ani.app.ui.lang.cache_details_source_online
-import me.him188.ani.app.ui.lang.cache_details_subtitle_group
-import me.him188.ani.app.ui.lang.cache_details_subtitle_language
-import me.him188.ani.app.ui.lang.cache_unknown
-import me.him188.ani.app.ui.media.MediaDetailsRenderer
-import me.him188.ani.app.ui.media.rememberMediaDetailsStrings
-import me.him188.ani.app.ui.settings.rendering.MediaSourceIcon
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaExtraFiles
-import me.him188.ani.datasources.api.MediaProperties
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.datasources.api.topic.isSingleEpisode
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.features.getComponentAccessors
+import com.wynime.app.tools.formatDateTime
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_details_browse_file
+import com.wynime.app.ui.lang.cache_details_copied
+import com.wynime.app.ui.lang.cache_details_copy
+import com.wynime.app.ui.lang.cache_details_episode_range
+import com.wynime.app.ui.lang.cache_details_external_subtitle
+import com.wynime.app.ui.lang.cache_details_file_size
+import com.wynime.app.ui.lang.cache_details_file_type
+import com.wynime.app.ui.lang.cache_details_local_cache_path
+import com.wynime.app.ui.lang.cache_details_open_file_failed
+import com.wynime.app.ui.lang.cache_details_open_link
+import com.wynime.app.ui.lang.cache_details_original_download_link
+import com.wynime.app.ui.lang.cache_details_original_link
+import com.wynime.app.ui.lang.cache_details_publish_time
+import com.wynime.app.ui.lang.cache_details_resolution
+import com.wynime.app.ui.lang.cache_details_source
+import com.wynime.app.ui.lang.cache_details_source_local
+import com.wynime.app.ui.lang.cache_details_source_online
+import com.wynime.app.ui.lang.cache_details_subtitle_group
+import com.wynime.app.ui.lang.cache_details_subtitle_language
+import com.wynime.app.ui.lang.cache_unknown
+import com.wynime.app.ui.media.MediaDetailsRenderer
+import com.wynime.app.ui.media.rememberMediaDetailsStrings
+import com.wynime.app.ui.settings.rendering.MediaSourceIcon
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaExtraFiles
+import com.wynime.datasources.api.MediaProperties
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.datasources.api.topic.isSingleEpisode
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
@@ -102,18 +93,12 @@ data class MediaDetails(
     val properties: MediaProperties,
     val fileSize: FileSize,
     val publishedTimeMillis: Long,
-    /**
-     * 来源地址, 如 HTML 页面
-     */
+
     val contentOriginalUri: String,
     val fileType: ResourceLocation.LocalFile.FileType?,
-    /**
-     * 实际下载连接, 如 m3u8
-     */
+
     val contentDownloadUri: String?,
-    /**
-     * 如果此资源已缓存, 则为本地路径
-     */
+
     val localCacheFilePath: Path?,
     val extraFiles: MediaExtraFiles,
     val sourceInfo: MediaSourceInfo?,
@@ -226,7 +211,7 @@ fun MediaDetailsLazyGrid(
         }
         val browseFile = @Composable { url: Path ->
             if (fileRevealer == null) {
-                // noop
+
             } else {
                 IconButton(
                     {

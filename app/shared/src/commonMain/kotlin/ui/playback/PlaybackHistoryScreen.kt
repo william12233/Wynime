@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.playback
+package com.wynime.app.ui.playback
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -72,49 +63,49 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.player.EpisodeHistory
-import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepository
-import me.him188.ani.app.data.repository.player.PlaybackHistoryPendingOp
-import me.him188.ani.app.data.repository.player.PlaybackHistorySyncer
-import me.him188.ani.app.tools.formatDateTime
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.AniTopAppBarDefaults
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.navigation.BackHandler
-import me.him188.ani.app.ui.foundation.rememberAsyncHandler
-import me.him188.ani.app.ui.foundation.rememberCurrentTopAppBarContainerColor
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.widgets.PullToRefreshBox
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_subject_cancel
-import me.him188.ani.app.ui.lang.cache_subject_delete
-import me.him188.ani.app.ui.lang.playback_history_cover
-import me.him188.ani.app.ui.lang.playback_history_delete_confirmation
-import me.him188.ani.app.ui.lang.playback_history_delete_selected
-import me.him188.ani.app.ui.lang.playback_history_delete_title
-import me.him188.ani.app.ui.lang.playback_history_empty
-import me.him188.ani.app.ui.lang.playback_history_enter_selection_mode
-import me.him188.ani.app.ui.lang.playback_history_episode_label
-import me.him188.ani.app.ui.lang.playback_history_exit_selection
-import me.him188.ani.app.ui.lang.playback_history_progress_unknown_duration
-import me.him188.ani.app.ui.lang.playback_history_select_all
-import me.him188.ani.app.ui.lang.playback_history_selected_count
-import me.him188.ani.app.ui.lang.playback_history_sync_delete_all
-import me.him188.ani.app.ui.lang.playback_history_sync_delete_pending
-import me.him188.ani.app.ui.lang.playback_history_sync_empty
-import me.him188.ani.app.ui.lang.playback_history_sync_op_delete
-import me.him188.ani.app.ui.lang.playback_history_sync_op_upsert
-import me.him188.ani.app.ui.lang.playback_history_sync_pending_episode
-import me.him188.ani.app.ui.lang.playback_history_sync_pending_title
-import me.him188.ani.app.ui.lang.playback_history_sync_status_pending
-import me.him188.ani.app.ui.lang.playback_history_sync_status_synced
-import me.him188.ani.app.ui.lang.playback_history_sync_status_title
-import me.him188.ani.app.ui.lang.playback_history_title
-import me.him188.ani.app.ui.lang.playback_history_unknown_episode
-import me.him188.ani.app.ui.lang.playback_history_unknown_subject
+import com.wynime.app.data.models.player.EpisodeHistory
+import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
+import com.wynime.app.data.repository.player.PlaybackHistoryPendingOp
+import com.wynime.app.data.repository.player.PlaybackHistorySyncer
+import com.wynime.app.tools.formatDateTime
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.WynimeTopAppBarDefaults
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.navigation.BackHandler
+import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.foundation.rememberCurrentTopAppBarContainerColor
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.widgets.PullToRefreshBox
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_subject_cancel
+import com.wynime.app.ui.lang.cache_subject_delete
+import com.wynime.app.ui.lang.playback_history_cover
+import com.wynime.app.ui.lang.playback_history_delete_confirmation
+import com.wynime.app.ui.lang.playback_history_delete_selected
+import com.wynime.app.ui.lang.playback_history_delete_title
+import com.wynime.app.ui.lang.playback_history_empty
+import com.wynime.app.ui.lang.playback_history_enter_selection_mode
+import com.wynime.app.ui.lang.playback_history_episode_label
+import com.wynime.app.ui.lang.playback_history_exit_selection
+import com.wynime.app.ui.lang.playback_history_progress_unknown_duration
+import com.wynime.app.ui.lang.playback_history_select_all
+import com.wynime.app.ui.lang.playback_history_selected_count
+import com.wynime.app.ui.lang.playback_history_sync_delete_all
+import com.wynime.app.ui.lang.playback_history_sync_delete_pending
+import com.wynime.app.ui.lang.playback_history_sync_empty
+import com.wynime.app.ui.lang.playback_history_sync_op_delete
+import com.wynime.app.ui.lang.playback_history_sync_op_upsert
+import com.wynime.app.ui.lang.playback_history_sync_pending_episode
+import com.wynime.app.ui.lang.playback_history_sync_pending_title
+import com.wynime.app.ui.lang.playback_history_sync_status_pending
+import com.wynime.app.ui.lang.playback_history_sync_status_synced
+import com.wynime.app.ui.lang.playback_history_sync_status_title
+import com.wynime.app.ui.lang.playback_history_title
+import com.wynime.app.ui.lang.playback_history_unknown_episode
+import com.wynime.app.ui.lang.playback_history_unknown_subject
 import org.jetbrains.compose.resources.stringResource
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -180,7 +171,7 @@ fun PlaybackHistoryScreen(
     onOpenSyncStatus: () -> Unit,
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     val asyncHandler = rememberAsyncHandler()
     val histories by vm.stateFlow.collectAsStateWithLifecycle()
@@ -224,9 +215,9 @@ fun PlaybackHistoryScreen(
     onRefresh: () -> Unit = {},
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
-    val appBarColors = AniThemeDefaults.topAppBarColors()
+    val appBarColors = WynimeThemeDefaults.topAppBarColors()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val topAppBarContainerColor by rememberCurrentTopAppBarContainerColor(appBarColors, scrollBehavior)
     val listState = rememberLazyListState()
@@ -287,10 +278,10 @@ fun PlaybackHistoryScreen(
                 },
                 onDeleteSelected = { showDeleteDialog = true },
                 navigationIcon = navigationIcon,
-                windowInsets = AniWindowInsets.forTopAppBarWithoutDesktopTitle(),
+                windowInsets = WynimeWindowInsets.forTopAppBarWithoutDesktopTitle(),
             )
         },
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { padding ->
         PullToRefreshBox(
@@ -361,8 +352,8 @@ private fun PlaybackHistoryTopBar(
         val exitSelectionText = stringResource(Lang.playback_history_exit_selection)
         val selectAllText = stringResource(Lang.playback_history_select_all)
         val deleteSelectedText = stringResource(Lang.playback_history_delete_selected)
-        AniTopAppBar(
-            title = { AniTopAppBarDefaults.Title(selectedCountText) },
+        WynimeTopAppBar(
+            title = { WynimeTopAppBarDefaults.Title(selectedCountText) },
             navigationIcon = {
                 IconButton(onClick = onExitSelection) {
                     Icon(Icons.Rounded.Close, exitSelectionText)
@@ -378,7 +369,7 @@ private fun PlaybackHistoryTopBar(
                     Icon(Icons.Rounded.Delete, deleteSelectedText, tint = MaterialTheme.colorScheme.error)
                 }
             },
-            colors = AniThemeDefaults.topAppBarColors(),
+            colors = WynimeThemeDefaults.topAppBarColors(),
             windowInsets = windowInsets,
         )
     } else {
@@ -388,8 +379,8 @@ private fun PlaybackHistoryTopBar(
         } else {
             stringResource(Lang.playback_history_sync_status_synced)
         }
-        AniTopAppBar(
-            title = { AniTopAppBarDefaults.Title(stringResource(Lang.playback_history_title)) },
+        WynimeTopAppBar(
+            title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.playback_history_title)) },
             navigationIcon = navigationIcon,
             actions = {
                 IconButton(onClick = onOpenSyncStatus) {
@@ -410,7 +401,7 @@ private fun PlaybackHistoryTopBar(
                     Icon(Icons.Default.Checklist, enterSelectionText)
                 }
             },
-            colors = AniThemeDefaults.topAppBarColors(),
+            colors = WynimeThemeDefaults.topAppBarColors(),
             windowInsets = windowInsets,
         )
     }
@@ -422,7 +413,7 @@ fun PlaybackHistorySyncStatusScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     val pendingOps by vm.pendingOpsFlow.collectAsStateWithLifecycle()
     PlaybackHistorySyncStatusScreen(
@@ -442,13 +433,13 @@ fun PlaybackHistorySyncStatusScreen(
     onDeletePendingOps: (Collection<Long>) -> Unit,
     modifier: Modifier = Modifier,
     navigationIcon: @Composable () -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
-            AniTopAppBar(
-                title = { AniTopAppBarDefaults.Title(stringResource(Lang.playback_history_sync_status_title)) },
+            WynimeTopAppBar(
+                title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.playback_history_sync_status_title)) },
                 navigationIcon = navigationIcon,
                 actions = {
                     if (pendingOps.isNotEmpty()) {
@@ -461,11 +452,11 @@ fun PlaybackHistorySyncStatusScreen(
                         }
                     }
                 },
-                colors = AniThemeDefaults.topAppBarColors(),
-                windowInsets = AniWindowInsets.forTopAppBarWithoutDesktopTitle(),
+                colors = WynimeThemeDefaults.topAppBarColors(),
+                windowInsets = WynimeWindowInsets.forTopAppBarWithoutDesktopTitle(),
             )
         },
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { padding ->
         BackHandler {

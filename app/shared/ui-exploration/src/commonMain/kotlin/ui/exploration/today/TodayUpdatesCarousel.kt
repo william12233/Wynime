@@ -1,13 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(TestOnly::class)
 
-package me.him188.ani.app.ui.exploration.today
+package com.wynime.app.ui.exploration.today
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -34,18 +27,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.exploration.TodayUpdateSubjectInfo
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.CarouselAutoAdvanceEffect
-import me.him188.ani.app.ui.foundation.layout.CarouselItem
-import me.him188.ani.app.ui.foundation.layout.CarouselItemDefaults
-import me.him188.ani.app.ui.foundation.layout.minimumHairlineSize
-import me.him188.ani.app.ui.foundation.preview.PreviewSizeClasses
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.exploration.TodayUpdateSubjectInfo
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.CarouselAutoAdvanceEffect
+import com.wynime.app.ui.foundation.layout.CarouselItem
+import com.wynime.app.ui.foundation.layout.CarouselItemDefaults
+import com.wynime.app.ui.foundation.layout.minimumHairlineSize
+import com.wynime.app.ui.foundation.preview.PreviewSizeClasses
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.utils.platform.annotations.TestOnly
 
 @Composable
 fun TodayUpdatesCarousel(

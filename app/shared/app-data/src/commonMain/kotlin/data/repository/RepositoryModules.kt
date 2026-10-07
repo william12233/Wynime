@@ -1,62 +1,52 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository
+package com.wynime.app.data.repository
 
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.network.AutoSkipRepository
-import me.him188.ani.app.data.network.BangumiCalendarRepository
-import me.him188.ani.app.data.network.RecommendationRepository
-import me.him188.ani.app.data.network.TrendsRepository
-import me.him188.ani.app.data.persistent.dataStores
-import me.him188.ani.app.data.persistent.database.AniDatabase
-import me.him188.ani.app.data.repository.episode.AnimeScheduleRepository
-import me.him188.ani.app.data.repository.episode.BangumiCommentRepository
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.episode.EpisodeCommentRepository
-import me.him188.ani.app.data.repository.episode.EpisodeProgressRepository
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepository
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepositoryImpl
-import me.him188.ani.app.data.repository.media.MediaSourceInstanceRepository
-import me.him188.ani.app.data.repository.media.MediaSourceInstanceRepositoryImpl
-import me.him188.ani.app.data.repository.person.PersonCommentRepository
-import me.him188.ani.app.data.repository.person.PersonDetailsRepository
-import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepository
-import me.him188.ani.app.data.repository.player.EpisodePlayHistoryRepositoryImpl
-import me.him188.ani.app.data.repository.player.PlaybackHistorySyncer
-import me.him188.ani.app.data.repository.subject.DefaultSubjectRelationsRepository
-import me.him188.ani.app.data.repository.subject.FollowedSubjectsRepository
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepositoryImpl
-import me.him188.ani.app.data.repository.subject.BangumiTrackingMetadataRepository
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncEnqueuer
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncApi
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncApiImpl
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncRepository
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettingsStore
-import me.him188.ani.app.data.repository.subject.BangumiSyncCoordinator
-import me.him188.ani.app.data.repository.subject.SubjectRelationGraphRepository
-import me.him188.ani.app.data.repository.subject.SubjectRelationsRepository
-import me.him188.ani.app.data.repository.subject.SubjectSearchCompletionRepository
-import me.him188.ani.app.data.repository.subject.SubjectSearchHistoryRepository
-import me.him188.ani.app.data.repository.subject.SubjectSearchRepository
-import me.him188.ani.app.data.repository.user.PreferencesRepositoryImpl
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.UserRepository
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.platform.Context
+import com.wynime.app.data.network.BangumiCalendarRepository
+import com.wynime.app.data.network.RecommendationRepository
+import com.wynime.app.data.network.TrendsRepository
+import com.wynime.app.data.persistent.dataStores
+import com.wynime.app.data.persistent.database.WynimeDatabase
+import com.wynime.app.data.repository.episode.AnimeScheduleRepository
+import com.wynime.app.data.repository.episode.BangumiCommentRepository
+import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.episode.EpisodeCommentRepository
+import com.wynime.app.data.repository.episode.EpisodeProgressRepository
+import com.wynime.app.data.repository.media.EpisodePreferencesRepository
+import com.wynime.app.data.repository.media.EpisodePreferencesRepositoryImpl
+import com.wynime.app.data.repository.media.MediaSourceInstanceRepository
+import com.wynime.app.data.repository.media.MediaSourceInstanceRepositoryImpl
+import com.wynime.app.data.repository.person.PersonCommentRepository
+import com.wynime.app.data.repository.person.PersonDetailsRepository
+import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
+import com.wynime.app.data.repository.player.EpisodePlayHistoryRepositoryImpl
+import com.wynime.app.data.repository.player.PlaybackHistorySyncer
+import com.wynime.app.data.repository.subject.DefaultSubjectRelationsRepository
+import com.wynime.app.data.repository.subject.FollowedSubjectsRepository
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.subject.SubjectCollectionRepositoryImpl
+import com.wynime.app.data.repository.subject.BangumiTrackingMetadataRepository
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncEnqueuer
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncApi
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncApiImpl
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncRepository
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncSettingsStore
+import com.wynime.app.data.repository.subject.BangumiSyncCoordinator
+import com.wynime.app.data.repository.subject.SubjectRelationGraphRepository
+import com.wynime.app.data.repository.subject.SubjectRelationsRepository
+import com.wynime.app.data.repository.subject.SubjectSearchCompletionRepository
+import com.wynime.app.data.repository.subject.SubjectSearchHistoryRepository
+import com.wynime.app.data.repository.subject.SubjectSearchRepository
+import com.wynime.app.data.repository.user.PreferencesRepositoryImpl
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.UserRepository
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.platform.Context
 import org.koin.core.KoinApplication
 import org.koin.core.scope.Scope
 import org.koin.dsl.module
 
-private val Scope.database get() = get<AniDatabase>()
+private val Scope.database get() = get<WynimeDatabase>()
 private val Scope.settingsRepository get() = get<SettingsRepository>()
 
 @Suppress("UnusedReceiverParameter")
@@ -67,11 +57,6 @@ fun KoinApplication.repositoryModules(
         UserRepository(
             dataStore = getContext().dataStores.selfInfoStore,
             sessionStateProvider = get(),
-            userApi = null,
-            authApi = null,
-            profileApi = null,
-            bangumiApi = null,
-            oauthApi = null,
             sessionManager = get(),
             officialBangumiApi = get(),
         )
@@ -90,14 +75,9 @@ fun KoinApplication.repositoryModules(
         SubjectCollectionRepositoryImpl(
             subjectService = get(),
             subjectCollectionDao = database.subjectCollection(),
-//            characterDao = database.character(),
-//            characterActorDao = database.characterActor(),
-//            personDao = database.person(),
-//            subjectCharacterRelationDao = database.subjectCharacterRelation(),
-//            subjectPersonRelationDao = database.subjectPersonRelation(),
+
             subjectRelationsDao = database.subjectRelations(),
             episodeCollectionRepository = get(),
-            animeScheduleRepository = get(),
             episodeService = get(),
             episodeCollectionDao = database.episodeCollection(),
             sessionManager = get(),
@@ -143,7 +123,6 @@ fun KoinApplication.repositoryModules(
     single<FollowedSubjectsRepository> {
         FollowedSubjectsRepository(
             subjectCollectionRepository = get(),
-            animeScheduleRepository = get(),
             episodeCollectionRepository = get(),
             settingsRepository = get(),
             sessionManager = get(),
@@ -152,14 +131,14 @@ fun KoinApplication.repositoryModules(
 
     single<SubjectSearchRepository> {
         SubjectSearchRepository(
-            aniSubjectSearchService = get(),
+            wynimeSubjectSearchService = get(),
             subjectCollectionRepository = get(),
         )
     }
 
     single<SubjectSearchCompletionRepository> {
         SubjectSearchCompletionRepository(
-            aniSubjectSearchService = get(),
+            wynimeSubjectSearchService = get(),
             subjectCollectionRepository = get(),
             settingsRepository = get(),
         )
@@ -175,7 +154,7 @@ fun KoinApplication.repositoryModules(
             database.subjectRelations(),
             subjectService = get(),
             subjectCollectionRepository = get(),
-            aniSubjectRelationIndexService = get(),
+            wynimeSubjectRelationIndexService = get(),
         )
     }
     single<SubjectRelationGraphRepository> {
@@ -190,7 +169,7 @@ fun KoinApplication.repositoryModules(
 
     single<AnimeScheduleRepository> {
         AnimeScheduleRepository(
-            animeScheduleService = get(),
+            calendarRepository = get(),
             bangumiScheduleService = get(),
         )
     }
@@ -207,7 +186,6 @@ fun KoinApplication.repositoryModules(
             subjectDao = database.subjectCollection(),
             episodeCollectionDao = database.episodeCollection(),
             episodeService = get(),
-            animeScheduleRepository = get(),
             subjectCollectionRepository = inject(),
             getEpisodeTypeFiltersUseCase = get(),
         )
@@ -220,9 +198,9 @@ fun KoinApplication.repositoryModules(
         )
     }
 
-    single<EpisodeCommentRepository> { EpisodeCommentRepository(aniCommentService = get()) }
+    single<EpisodeCommentRepository> { EpisodeCommentRepository(wynimeCommentService = get()) }
 
-    single<PersonCommentRepository> { PersonCommentRepository(aniCommentService = get()) }
+    single<PersonCommentRepository> { PersonCommentRepository(wynimeCommentService = get()) }
 
     single<MediaSourceInstanceRepository> {
         MediaSourceInstanceRepositoryImpl(getContext().dataStores.mediaSourceSaveStore)
@@ -247,8 +225,6 @@ fun KoinApplication.repositoryModules(
             calendarRepository = get(),
         )
     }
-
-    single<AutoSkipRepository> { AutoSkipRepository() }
 
     single<SettingsRepository> { PreferencesRepositoryImpl(getContext().dataStores.preferencesStore) }
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings
+package com.wynime.app.ui.settings
 
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -19,56 +10,56 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import me.him188.ani.app.data.models.preference.AnalyticsSettings
-import me.him188.ani.app.data.models.preference.DebugSettings
-import me.him188.ani.app.data.models.preference.MediaCacheSettings
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.preference.OneshotActionConfig
-import me.him188.ani.app.data.models.preference.PlayerKernelConfig
-import me.him188.ani.app.data.models.preference.ProfileSettings
-import me.him188.ani.app.data.models.preference.ProxyMode
-import me.him188.ani.app.data.models.preference.ProxySettings
-import me.him188.ani.app.data.models.preference.ThemeSettings
-import me.him188.ani.app.data.models.preference.UISettings
-import me.him188.ani.app.data.models.preference.UpdateSettings
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.persistent.dataStores
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.sourceplugin.SourcePluginRegistry
-import me.him188.ani.app.domain.sourceplugin.SourcePluginRepositoryClient
-import me.him188.ani.app.domain.settings.ProxySettingsFlowProxyProvider
-import me.him188.ani.app.domain.settings.ProxyTester
-import me.him188.ani.app.domain.settings.ServiceConnectionTester
-import me.him188.ani.app.domain.settings.ServiceConnectionTesters
-import me.him188.ani.app.platform.PermissionManager
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.ui.foundation.launchInBackground
-import me.him188.ani.app.ui.settings.framework.AbstractSettingsViewModel
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.app.ui.settings.tabs.about.AboutTabInfo
-import me.him188.ani.app.ui.settings.tabs.app.SoftwareUpdateGroupState
-import me.him188.ani.app.ui.settings.tabs.media.CacheDirectoryGroupState
-import me.him188.ani.app.ui.settings.tabs.media.MediaSelectionGroupState
-import me.him188.ani.app.ui.settings.tabs.media.source.SourcePluginStoreState
-import me.him188.ani.app.ui.settings.tabs.network.ConfigureProxyState
-import me.him188.ani.app.ui.settings.tabs.network.ConfigureProxyUIState
-import me.him188.ani.app.ui.settings.tabs.network.ProxyTestCase
-import me.him188.ani.app.ui.settings.tabs.network.ProxyTestCaseState
-import me.him188.ani.app.ui.settings.tabs.network.ProxyTestItem
-import me.him188.ani.app.ui.settings.tabs.network.ProxyTestState
-import me.him188.ani.app.ui.settings.tabs.network.SystemProxyPresentation
-import me.him188.ani.app.ui.settings.tabs.network.toDataSettings
-import me.him188.ani.app.ui.settings.tabs.network.toUIConfig
-import me.him188.ani.app.ui.user.SelfInfoStateProducer
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.coroutines.SingleTaskExecutor
+import com.wynime.app.data.models.preference.AnalyticsSettings
+import com.wynime.app.data.models.preference.DebugSettings
+import com.wynime.app.data.models.preference.MediaCacheSettings
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.preference.OneshotActionConfig
+import com.wynime.app.data.models.preference.PlayerKernelConfig
+import com.wynime.app.data.models.preference.ProfileSettings
+import com.wynime.app.data.models.preference.ProxyMode
+import com.wynime.app.data.models.preference.ProxySettings
+import com.wynime.app.data.models.preference.ThemeSettings
+import com.wynime.app.data.models.preference.UISettings
+import com.wynime.app.data.models.preference.UpdateSettings
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.persistent.dataStores
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.domain.sourceplugin.SourcePluginRegistry
+import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryClient
+import com.wynime.app.domain.settings.ProxySettingsFlowProxyProvider
+import com.wynime.app.domain.settings.ProxyTester
+import com.wynime.app.domain.settings.ServiceConnectionTester
+import com.wynime.app.domain.settings.ServiceConnectionTesters
+import com.wynime.app.platform.PermissionManager
+import com.wynime.app.platform.Context
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.ui.foundation.launchInBackground
+import com.wynime.app.ui.settings.framework.AbstractSettingsViewModel
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.app.ui.settings.tabs.about.AboutTabInfo
+import com.wynime.app.ui.settings.tabs.app.SoftwareUpdateGroupState
+import com.wynime.app.ui.settings.tabs.media.CacheDirectoryGroupState
+import com.wynime.app.ui.settings.tabs.media.MediaSelectionGroupState
+import com.wynime.app.ui.settings.tabs.media.source.SourcePluginStoreState
+import com.wynime.app.ui.settings.tabs.network.ConfigureProxyState
+import com.wynime.app.ui.settings.tabs.network.ConfigureProxyUIState
+import com.wynime.app.ui.settings.tabs.network.ProxyTestCase
+import com.wynime.app.ui.settings.tabs.network.ProxyTestCaseState
+import com.wynime.app.ui.settings.tabs.network.ProxyTestItem
+import com.wynime.app.ui.settings.tabs.network.ProxyTestState
+import com.wynime.app.ui.settings.tabs.network.SystemProxyPresentation
+import com.wynime.app.ui.settings.tabs.network.toDataSettings
+import com.wynime.app.ui.settings.tabs.network.toUIConfig
+import com.wynime.app.ui.user.SelfInfoStateProducer
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.coroutines.SingleTaskExecutor
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -139,7 +130,6 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
         debugSettingsState.value.enabled
     }
 
-    // region ConfigureProxy
     private val proxyTester = ProxyTester(
         clientProvider = clientProvider,
         flowScope = backgroundScope,
@@ -178,7 +168,6 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
         },
         onRequestReTest = { proxyTester.restartTest() },
     )
-    // endregion
 
     val sourcePluginStoreState = SourcePluginStoreState(
         repositoryClient = sourcePluginRepositoryClient,
@@ -188,7 +177,7 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
     )
 
     val debugTriggerState = DebugTriggerState(debugSettingsState, backgroundScope)
-    val aboutTabInfo = AboutTabInfo(currentAniBuildConfig.versionName)
+    val aboutTabInfo = AboutTabInfo(currentWynimeBuildConfig.versionName)
 
     val selfInfoFlow = SelfInfoStateProducer(koin = getKoin()).flow
 
@@ -261,7 +250,7 @@ private fun Map<String, ServiceConnectionTester.TestState>.toUIState(): List<Pro
                 is ServiceConnectionTester.TestState.Testing -> ProxyTestCaseState.RUNNING
                 is ServiceConnectionTester.TestState.Success -> ProxyTestCaseState.SUCCESS
                 is ServiceConnectionTester.TestState.Failed -> ProxyTestCaseState.FAILED
-                is ServiceConnectionTester.TestState.Error -> ProxyTestCaseState.FAILED // todo
+                is ServiceConnectionTester.TestState.Error -> ProxyTestCaseState.FAILED
             }
             add(ProxyTestItem(case, result))
         }

@@ -1,17 +1,8 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.ui.settings.tabs.media
 
-package me.him188.ani.app.ui.settings.tabs.media
-
-import me.him188.ani.utils.selectorworkflow.HighlightRegion
-import me.him188.ani.utils.selectorworkflow.ResolveOutcome
-import me.him188.ani.utils.selectorworkflow.SelectMode
+import com.wynime.utils.selectorworkflow.HighlightRegion
+import com.wynime.utils.selectorworkflow.ResolveOutcome
+import com.wynime.utils.selectorworkflow.SelectMode
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -22,9 +13,6 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * 设置页里那块示意动画的联动规则: 动哪个设置项就只演它对应的那一段, 并且从头播.
- */
 class MediaSelectorWorkflowDemoStateTest {
 
     private fun state(eager: Boolean = true) = MediaSelectorWorkflowDemoState(eager)
@@ -60,8 +48,8 @@ class MediaSelectorWorkflowDemoStateTest {
     @Test
     fun `picking the resolve timeout plays only the resolve segment`() {
         val s = state()
-        s.onLowTierToleranceChanged(8.seconds)      // 先演高优先级
-        s.onResolveTimeoutChanged(15)               // 再动第三步
+        s.onLowTierToleranceChanged(8.seconds)
+        s.onResolveTimeoutChanged(15)
 
         assertTrue(s.playsResolveDemo)
         assertEquals(15.seconds, s.config.resolve.budget)
@@ -71,8 +59,8 @@ class MediaSelectorWorkflowDemoStateTest {
     @Test
     fun `picking a cache ttl plays only the cache segment`() {
         val s = state()
-        s.onResolveTimeoutChanged(15)               // 先演第三步
-        s.onWebSearchCacheTtlChanged(30.minutes)    // 再动缓存时长
+        s.onResolveTimeoutChanged(15)
+        s.onWebSearchCacheTtlChanged(30.minutes)
 
         assertTrue(s.playsCacheQuery)
         assertTrue(!s.playsResolveDemo, "动缓存时长就该把第三步那一段收起来")
@@ -81,7 +69,7 @@ class MediaSelectorWorkflowDemoStateTest {
 
     @Test
     fun `the cache segment only cares whether there is a cache at all`() {
-        // 动画讲的是"这次搜索没花时间", 缓 15 分钟还是 1 天在画面上没区别
+
         val s = state()
         s.onWebSearchCacheTtlChanged(15.minutes)
         val short = s.viewModel.state.duration
@@ -121,7 +109,7 @@ class MediaSelectorWorkflowDemoStateTest {
 
     @Test
     fun `degenerate wait times fall back to the plain flow`() {
-        // "不等待" 压根没有这道闸; "无限制" 永远不会到点, 计时器数不出东西来
+
         val s = state()
         s.onLowTierToleranceChanged(8.seconds)
         s.onLowTierToleranceChanged(Duration.ZERO)
@@ -134,7 +122,7 @@ class MediaSelectorWorkflowDemoStateTest {
 
     @Test
     fun `syncing the loaded setting does not restart or disturb the current segment`() {
-        // 设置是异步读出来的: 占位值先到, 真值后到. 真值到了只该悄悄对齐
+
         val s = state(eager = true)
         s.onLowTierToleranceChanged(8.seconds)
         s.viewModel.player.advance(1.seconds)
@@ -147,11 +135,11 @@ class MediaSelectorWorkflowDemoStateTest {
         assertEquals(SelectMode.WaitAll, s.config.selection.mode, "该跟上真值")
         assertEquals(8.seconds, s.config.selection.priorityWait, "正在演的那一段不该被打断")
         assertTrue(s.viewModel.player.playhead > Duration.ZERO, "不是用户操作, 不该拨回开头")
-        // 换了时间线长度也变了, 播放位置按比例保留, 不会跳
+
         assertTrue(abs(s.viewModel.state.progress - progress) < 0.02f)
 
         val after = s.viewModel.player.playhead
-        s.syncEagerSelect(false)   // 已经一致了, 什么都不该发生
+        s.syncEagerSelect(false)
         assertEquals(after, s.viewModel.player.playhead)
     }
 
@@ -173,7 +161,7 @@ class MediaSelectorWorkflowDemoStateTest {
 
     @Test
     fun `only one step is ever highlighted at a time`() {
-        // 抢先选源是常驻状态, 跟着它一直亮就成了背景板, 指不出"刚动的是哪个"
+
         val s = state(eager = true)
         s.onWebSearchCacheTtlChanged(30.minutes)
         assertEquals(setOf(HighlightRegion.Sources), s.viewModel.config.highlights)

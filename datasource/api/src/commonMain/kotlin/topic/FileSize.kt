@@ -1,39 +1,17 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("NOTHING_TO_INLINE", "KotlinRedundantDiagnosticSuppress")
 
-package me.him188.ani.datasources.api.topic
+package com.wynime.datasources.api.topic
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.reduce
 import kotlinx.serialization.Serializable
-import me.him188.ani.datasources.api.topic.FileSize.Companion.Unspecified
-import me.him188.ani.datasources.api.topic.FileSize.Companion.Zero
-import me.him188.ani.utils.platform.format1f
+import com.wynime.datasources.api.topic.FileSize.Companion.Unspecified
+import com.wynime.datasources.api.topic.FileSize.Companion.Zero
+import com.wynime.utils.platform.format1f
 import kotlin.jvm.JvmField
 import kotlin.jvm.JvmInline
 
-/**
- * 表示一个数据大小.
- *
- * ```
- * val size = 233.megaBytes
- * assertEquals("233 MB", size.toString())
- * ```
- *
- * 在进行操作时, 如 [plus], [Unspecified] 会被看作为 0.
- *
- * @see Unspecified
- * @see Zero
- */
 @JvmInline
 @Serializable
 value class FileSize private constructor(
@@ -85,9 +63,6 @@ value class FileSize private constructor(
 
         val Zero = 0.bytes
 
-        /**
-         * 特殊值
-         */
         val Unspecified = FileSize(Long.MIN_VALUE)
     }
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.network
+package com.wynime.app.data.network
 
 import androidx.paging.Pager
 import androidx.paging.PagingData
@@ -18,16 +9,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.LocalDate
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.recommend.RecommendedItemInfo
-import me.him188.ani.app.data.models.recommend.RecommendedSubjectInfo
-import me.him188.ani.app.data.models.trending.TrendingSubjectInfo
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.data.repository.runWrappingExceptionAsLoadResult
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.logging.error
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.recommend.RecommendedItemInfo
+import com.wynime.app.data.models.recommend.RecommendedSubjectInfo
+import com.wynime.app.data.models.trending.TrendingSubjectInfo
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.runWrappingExceptionAsLoadResult
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.logging.error
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ln
@@ -155,7 +146,6 @@ class RecommendationRepository(
     }
 }
 
-/** Candidate used by the deterministic local recommendation ranker. */
 internal data class BangumiRecommendationCandidate(
     val id: Int,
     val name: String,

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.collection.components
+package com.wynime.app.ui.subject.collection.components
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -28,12 +19,11 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.showLoadError
-import me.him188.ani.app.ui.lang.*
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.showLoadError
+import com.wynime.app.ui.lang.*
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import org.jetbrains.compose.resources.*
-
 
 @Composable
 fun EditCollectionTypeDropDown(
@@ -62,10 +52,6 @@ fun EditCollectionTypeDropDown(
     )
 }
 
-/**
- * A drop down menu to edit the collection type of a subject.
- * Also includes a dialog to set all episodes as watched when the user attempts to mark the subject as [UnifiedCollectionType.DONE].
- */
 @Composable
 fun EditCollectionTypeDropDown(
     currentType: UnifiedCollectionType?,

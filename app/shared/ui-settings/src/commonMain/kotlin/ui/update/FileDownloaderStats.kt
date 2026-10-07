@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.Stable
@@ -17,15 +8,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.io.files.Path
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.tools.update.FileDownloader
-import me.him188.ani.app.tools.update.FileDownloaderState
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.tools.update.FileDownloader
+import com.wynime.app.tools.update.FileDownloaderState
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.platform.annotations.TestOnly
 
-/**
- * 将 [FileDownloader] 状态收集为 Compose [State]
- */
 @Stable
 data class FileDownloaderStats(
     @param:FloatRange(from = 0.0, to = 1.0)

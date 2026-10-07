@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.account
+package com.wynime.app.ui.settings.account
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,78 +22,78 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import me.him188.ani.app.data.repository.subject.BangumiTrackingAccount
-import me.him188.ani.app.data.repository.subject.BangumiTrackingAutoSyncEvent
-import me.him188.ani.app.data.repository.subject.BangumiTrackingConnectionError
-import me.him188.ani.app.data.repository.subject.BangumiTrackingConnectionResult
-import me.him188.ani.app.data.repository.subject.BangumiTrackingConflictPolicy
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncRepository
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncResult
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettings
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettingsStore
-import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSummary
-import me.him188.ani.app.data.repository.subject.BangumiFullSyncSummary
-import me.him188.ani.app.data.repository.subject.BangumiSyncCoordinator
-import me.him188.ani.app.data.repository.subject.BangumiSyncOperation
-import me.him188.ani.app.data.repository.subject.BangumiSyncPhase
-import me.him188.ani.app.data.repository.subject.BangumiSyncProgress
-import me.him188.ani.app.data.repository.subject.BangumiSyncUiState
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.data.repository.subject.classifyBangumiTrackingError
-import me.him188.ani.app.domain.session.auth.OAuthPlatform
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_sync
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_sync_description
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_success
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_failed
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_bangumi_account
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_bangumi_first
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_bangumi_first_description
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_complete
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_connected
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_connection_success
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_conflict_when
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_description
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_latest_wins
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_latest_wins_description
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_last_success
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_local_count
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_local_first
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_local_first_description
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_login
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_login_expired
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_never
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_network_error
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_not_connected
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_now
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_preferences
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_applying
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_collections
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_connecting
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_episodes
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_failed
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_merging
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_partial
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_reloading
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_running
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_rate_limited
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_show_result
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_show_result_description
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_test_connection
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_title
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_unknown_error
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_remote_count
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_failed
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_full_summary
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_full_summary_partial
-import me.him188.ani.app.ui.settings.SettingsTab
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.framework.components.SingleSelectionElement
-import me.him188.ani.app.ui.settings.framework.components.SingleSelectionItem
-import me.him188.ani.app.ui.settings.framework.components.SwitchItem
-import me.him188.ani.app.ui.settings.framework.components.TextButtonItem
-import me.him188.ani.app.ui.settings.framework.components.TextItem
+import com.wynime.app.data.repository.subject.BangumiTrackingAccount
+import com.wynime.app.data.repository.subject.BangumiTrackingAutoSyncEvent
+import com.wynime.app.data.repository.subject.BangumiTrackingConnectionError
+import com.wynime.app.data.repository.subject.BangumiTrackingConnectionResult
+import com.wynime.app.data.repository.subject.BangumiTrackingConflictPolicy
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncRepository
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncResult
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncSettings
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncSettingsStore
+import com.wynime.app.data.repository.subject.BangumiTrackingSyncSummary
+import com.wynime.app.data.repository.subject.BangumiFullSyncSummary
+import com.wynime.app.data.repository.subject.BangumiSyncCoordinator
+import com.wynime.app.data.repository.subject.BangumiSyncOperation
+import com.wynime.app.data.repository.subject.BangumiSyncPhase
+import com.wynime.app.data.repository.subject.BangumiSyncProgress
+import com.wynime.app.data.repository.subject.BangumiSyncUiState
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.subject.classifyBangumiTrackingError
+import com.wynime.app.domain.session.auth.OAuthPlatform
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_sync
+import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_sync_description
+import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_success
+import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_failed
+import com.wynime.app.ui.lang.settings_account_tracking_sync_bangumi_account
+import com.wynime.app.ui.lang.settings_account_tracking_sync_bangumi_first
+import com.wynime.app.ui.lang.settings_account_tracking_sync_bangumi_first_description
+import com.wynime.app.ui.lang.settings_account_tracking_sync_complete
+import com.wynime.app.ui.lang.settings_account_tracking_sync_connected
+import com.wynime.app.ui.lang.settings_account_tracking_sync_connection_success
+import com.wynime.app.ui.lang.settings_account_tracking_sync_conflict_when
+import com.wynime.app.ui.lang.settings_account_tracking_sync_description
+import com.wynime.app.ui.lang.settings_account_tracking_sync_latest_wins
+import com.wynime.app.ui.lang.settings_account_tracking_sync_latest_wins_description
+import com.wynime.app.ui.lang.settings_account_tracking_sync_last_success
+import com.wynime.app.ui.lang.settings_account_tracking_sync_local_count
+import com.wynime.app.ui.lang.settings_account_tracking_sync_local_first
+import com.wynime.app.ui.lang.settings_account_tracking_sync_local_first_description
+import com.wynime.app.ui.lang.settings_account_tracking_sync_login
+import com.wynime.app.ui.lang.settings_account_tracking_sync_login_expired
+import com.wynime.app.ui.lang.settings_account_tracking_sync_never
+import com.wynime.app.ui.lang.settings_account_tracking_sync_network_error
+import com.wynime.app.ui.lang.settings_account_tracking_sync_not_connected
+import com.wynime.app.ui.lang.settings_account_tracking_sync_now
+import com.wynime.app.ui.lang.settings_account_tracking_sync_preferences
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_applying
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_collections
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_connecting
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_episodes
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_failed
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_merging
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_partial
+import com.wynime.app.ui.lang.settings_account_tracking_sync_progress_reloading
+import com.wynime.app.ui.lang.settings_account_tracking_sync_running
+import com.wynime.app.ui.lang.settings_account_tracking_sync_rate_limited
+import com.wynime.app.ui.lang.settings_account_tracking_sync_show_result
+import com.wynime.app.ui.lang.settings_account_tracking_sync_show_result_description
+import com.wynime.app.ui.lang.settings_account_tracking_sync_test_connection
+import com.wynime.app.ui.lang.settings_account_tracking_sync_title
+import com.wynime.app.ui.lang.settings_account_tracking_sync_unknown_error
+import com.wynime.app.ui.lang.settings_account_tracking_sync_remote_count
+import com.wynime.app.ui.lang.settings_account_tracking_sync_failed
+import com.wynime.app.ui.lang.settings_account_tracking_sync_full_summary
+import com.wynime.app.ui.lang.settings_account_tracking_sync_full_summary_partial
+import com.wynime.app.ui.settings.SettingsTab
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.SingleSelectionElement
+import com.wynime.app.ui.settings.framework.components.SingleSelectionItem
+import com.wynime.app.ui.settings.framework.components.SwitchItem
+import com.wynime.app.ui.settings.framework.components.TextButtonItem
+import com.wynime.app.ui.settings.framework.components.TextItem
 import org.jetbrains.compose.resources.stringResource
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -132,8 +125,7 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
     )
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
-    // Observe the coordinator directly so the tracking phase and the following full collection
-    // phase remain visible as one continuous operation.
+
     val syncState: StateFlow<BangumiSyncUiState> = syncCoordinator.state
     private val _isTestingConnection = MutableStateFlow(false)
     val isTestingConnection: StateFlow<Boolean> = _isTestingConnection.asStateFlow()
@@ -166,9 +158,7 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
                     state is BangumiSyncUiState.PartialFailure ||
                     state is BangumiSyncUiState.Failed
                 ) {
-                    // The full sync deliberately outlives this screen. Reload its terminal
-                    // result when returning from another settings page or after the screen
-                    // owner recreated the ViewModel.
+
                     loadStoredSyncResult()
                 }
             }
@@ -220,8 +210,7 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
             try {
                 val trackingResult = repository.syncNow()
                 _lastResult.value = trackingResult
-                // Tracking sync already reconciles every collection row from the list API. Only
-                // invalidate local paging data here; episode hydration remains an explicit path.
+
                 subjectCollectionRepository.invalidateAllCaches()
                 _summary.value = repository.summary()
             } catch (e: Throwable) {
@@ -546,8 +535,7 @@ internal fun BangumiTrackingSyncContent(
 private fun BangumiTrackingSyncProgressPanel(state: BangumiSyncUiState) {
     val progress = when (state) {
         is BangumiSyncUiState.Running -> state.progress
-        // The view model keeps the panel alive while the second half of the full sync is being
-        // claimed. Keep a visible connecting state instead of replacing it with a bare spinner.
+
         else -> BangumiSyncProgress(
             operation = BangumiSyncOperation.TRACKING,
             phase = BangumiSyncPhase.CONNECTING,

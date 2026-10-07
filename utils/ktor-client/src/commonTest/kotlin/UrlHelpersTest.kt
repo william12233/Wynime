@@ -1,19 +1,10 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.utils.ktor
 
-package me.him188.ani.utils.ktor
-
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.runDynamicTests
-import me.him188.ani.utils.ktor.UrlHelpers.computeAbsoluteUrl
-import me.him188.ani.utils.ktor.UrlHelpers.computeAbsoluteUrlOrNull
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.runDynamicTests
+import com.wynime.utils.ktor.UrlHelpers.computeAbsoluteUrl
+import com.wynime.utils.ktor.UrlHelpers.computeAbsoluteUrlOrNull
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -129,19 +120,5 @@ class UrlHelpersTest {
             "/Downloads/TVAnimeSeason/202410/?raw=true",
         )
 
-//        case(
-//            "/",
-//            "", "",
-//        )
-//
-//        case(
-//            "/test",
-//            "", "/test",
-//        )
-//
-//        case(
-//            "/test",
-//            "", "test",
-//        )
     }
 }

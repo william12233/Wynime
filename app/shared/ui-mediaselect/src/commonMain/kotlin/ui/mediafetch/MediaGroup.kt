@@ -1,22 +1,13 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import me.him188.ani.app.domain.media.selector.MaybeExcludedMedia
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason
-import me.him188.ani.app.domain.media.selector.UnsafeOriginalMediaAccess
-import me.him188.ani.datasources.api.Media
+import com.wynime.app.domain.media.selector.MaybeExcludedMedia
+import com.wynime.app.domain.media.selector.MediaExclusionReason
+import com.wynime.app.domain.media.selector.UnsafeOriginalMediaAccess
+import com.wynime.datasources.api.Media
 
-@Immutable // only after build
+@Immutable
 class MediaGroup(
     val groupId: MediaGroupId,
     val list: List<MaybeExcludedMedia>,
@@ -41,14 +32,14 @@ class MediaGroupBuilder(
         _list.add(media)
     }
 
-    fun build(): MediaGroup = MediaGroup(id, _list) // we don't copy it to save memory. This is called very frequently.
+    fun build(): MediaGroup = MediaGroup(id, _list)
 }
 
 internal typealias MediaGroupId = String
 
 object MediaGrouper {
     fun getGroupId(media: Media): String {
-        // 添加一个 prefix, 这样在 UI crash LazyColumn key 时能知道.
+
         return "media-group-${media.mediaId}"
     }
 
@@ -69,7 +60,7 @@ object MediaGrouper {
 
     @OptIn(UnsafeOriginalMediaAccess::class)
     fun buildGroups(list: List<MaybeExcludedMedia>): List<MediaGroup> {
-        val groups = LinkedHashMap<String, MediaGroupBuilder>() // keep order
+        val groups = LinkedHashMap<String, MediaGroupBuilder>()
         for (media in list) {
             val groupId = getGroupId(media.original)
             groups.getOrPut(groupId) { MediaGroupBuilder(groupId) }

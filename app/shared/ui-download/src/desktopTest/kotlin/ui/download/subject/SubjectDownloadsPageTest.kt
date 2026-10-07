@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,25 +14,25 @@ import androidx.compose.ui.test.performTouchInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.app.ui.download.DownloadManagementTestTags
-import me.him188.ani.app.ui.download.components.DownloadSelectionToolbarTestTags
-import me.him188.ani.app.ui.download.components.DownloadStatus
-import me.him188.ani.app.ui.download.components.createTestDownloadItem
-import me.him188.ani.app.ui.download.components.rememberDownloadSelectionState
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_episode_label
-import me.him188.ani.app.ui.lang.cache_management_select_all_action
-import me.him188.ani.app.ui.lang.cache_management_selected_count
-import me.him188.ani.app.ui.lang.cache_subject_cache
-import me.him188.ani.app.ui.lang.cache_subject_cancel
-import me.him188.ani.app.ui.lang.cache_subject_pause_all
-import me.him188.ani.app.ui.mediafetch.createTestMediaSourceInfoProvider
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.tools.toProgress
+import com.wynime.app.ui.download.DownloadManagementTestTags
+import com.wynime.app.ui.download.components.DownloadSelectionToolbarTestTags
+import com.wynime.app.ui.download.components.DownloadStatus
+import com.wynime.app.ui.download.components.createTestDownloadItem
+import com.wynime.app.ui.download.components.rememberDownloadSelectionState
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_episode_label
+import com.wynime.app.ui.lang.cache_management_select_all_action
+import com.wynime.app.ui.lang.cache_management_selected_count
+import com.wynime.app.ui.lang.cache_subject_cache
+import com.wynime.app.ui.lang.cache_subject_cancel
+import com.wynime.app.ui.lang.cache_subject_pause_all
+import com.wynime.app.ui.mediafetch.createTestMediaSourceInfoProvider
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.getString
 
 @OptIn(TestOnly::class)
@@ -53,7 +44,7 @@ class SubjectDownloadsPageTest {
     private val episode = EpisodeDownloadItem(4, EpisodeSort(4), "Episode 4", UnifiedCollectionType.DOING, true)
 
     @Test
-    fun `shows downloads and new episode and dispatches download and pause all`() = runAniComposeUiTest {
+    fun `shows downloads and new episode and dispatches download and pause all`() = runWynimeComposeUiTest {
         var requested: Int? = null
         var pauseAll = false
         setContent {
@@ -81,7 +72,7 @@ class SubjectDownloadsPageTest {
     }
 
     @Test
-    fun `busy request disables download buttons of other episodes`() = runAniComposeUiTest {
+    fun `busy request disables download buttons of other episodes`() = runWynimeComposeUiTest {
         val other = EpisodeDownloadItem(5, EpisodeSort(5), "Episode 5", UnifiedCollectionType.DOING, true)
         setContent {
             ProvideCompositionLocalsForPreview {
@@ -101,13 +92,13 @@ class SubjectDownloadsPageTest {
                 )
             }
         }
-        // 正在处理的剧集显示可用的取消按钮, 其他剧集的下载按钮置灰.
+
         onNodeWithContentDescription(runBlocking { getString(Lang.cache_subject_cancel) }).assertIsEnabled()
         onNodeWithContentDescription(runBlocking { getString(Lang.cache_subject_cache) }).assertIsNotEnabled()
     }
 
     @Test
-    fun `busy batch disables actions until the operation finishes`() = runAniComposeUiTest {
+    fun `busy batch disables actions until the operation finishes`() = runWynimeComposeUiTest {
         var currentDownloads by mutableStateOf(downloads)
         val commands = mutableListOf<Pair<String, Set<String>>>()
         setContent {
@@ -150,7 +141,7 @@ class SubjectDownloadsPageTest {
     }
 
     @Test
-    fun `partial deletion keeps failed item selected and completed deletion exits selection`() = runAniComposeUiTest {
+    fun `partial deletion keeps failed item selected and completed deletion exits selection`() = runWynimeComposeUiTest {
         var currentDownloads by mutableStateOf(downloads)
         var requestedIds: Set<String>? = null
         setContent {

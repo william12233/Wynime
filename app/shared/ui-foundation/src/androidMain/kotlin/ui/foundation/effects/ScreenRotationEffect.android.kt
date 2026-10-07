@@ -1,9 +1,8 @@
-package me.him188.ani.app.ui.foundation.effects
+package com.wynime.app.ui.foundation.effects
 
 import android.content.res.Configuration
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
-
 
 @Composable
 actual fun ScreenRotationEffectImpl(onChange: (isLandscape: Boolean) -> Unit) {

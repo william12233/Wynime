@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -61,37 +52,37 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.materialkolor.ktx.blend
 import kotlinx.coroutines.launch
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_details_source_online
-import me.him188.ani.app.ui.lang.media_source_results_captcha_required
-import me.him188.ani.app.ui.lang.media_source_results_rate_limited
-import me.him188.ani.app.ui.lang.media_source_results_click_retry
-import me.him188.ani.app.ui.lang.media_source_results_click_verify
-import me.him188.ani.app.ui.lang.media_source_results_data_sources_count
-import me.him188.ani.app.ui.lang.media_source_results_failed
-import me.him188.ani.app.ui.lang.media_source_results_no_match
-import me.him188.ani.app.ui.lang.media_source_results_subject_no_match
-import me.him188.ani.app.ui.lang.media_source_results_episode_no_match
-import me.him188.ani.app.ui.lang.media_source_results_http_error
-import me.him188.ani.app.ui.lang.media_source_results_challenge
-import me.him188.ani.app.ui.lang.media_source_results_parse_error
-import me.him188.ani.app.ui.lang.media_source_results_plugin_error
-import me.him188.ani.app.ui.lang.media_source_results_help
-import me.him188.ani.app.ui.lang.media_source_results_searched
-import me.him188.ani.app.ui.lang.media_source_results_searching
-import me.him188.ani.app.ui.lang.media_source_results_settings
-import me.him188.ani.app.ui.lang.media_source_results_success
-import me.him188.ani.app.ui.lang.media_source_results_temp_enable
-import me.him188.ani.app.ui.lang.media_source_results_verify
-import me.him188.ani.app.ui.lang.settings_mediasource_refresh
-import me.him188.ani.app.ui.settings.SettingsTab
-import me.him188.ani.app.ui.settings.rendering.MediaSourceIcons
-import me.him188.ani.app.ui.settings.rendering.SmallMediaSourceIcon
-import me.him188.ani.source.plugin.api.SourceResultStatus
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_details_source_online
+import com.wynime.app.ui.lang.media_source_results_captcha_required
+import com.wynime.app.ui.lang.media_source_results_rate_limited
+import com.wynime.app.ui.lang.media_source_results_click_retry
+import com.wynime.app.ui.lang.media_source_results_click_verify
+import com.wynime.app.ui.lang.media_source_results_data_sources_count
+import com.wynime.app.ui.lang.media_source_results_failed
+import com.wynime.app.ui.lang.media_source_results_no_match
+import com.wynime.app.ui.lang.media_source_results_subject_no_match
+import com.wynime.app.ui.lang.media_source_results_episode_no_match
+import com.wynime.app.ui.lang.media_source_results_http_error
+import com.wynime.app.ui.lang.media_source_results_challenge
+import com.wynime.app.ui.lang.media_source_results_parse_error
+import com.wynime.app.ui.lang.media_source_results_plugin_error
+import com.wynime.app.ui.lang.media_source_results_help
+import com.wynime.app.ui.lang.media_source_results_searched
+import com.wynime.app.ui.lang.media_source_results_searching
+import com.wynime.app.ui.lang.media_source_results_settings
+import com.wynime.app.ui.lang.media_source_results_success
+import com.wynime.app.ui.lang.media_source_results_temp_enable
+import com.wynime.app.ui.lang.media_source_results_verify
+import com.wynime.app.ui.lang.settings_mediasource_refresh
+import com.wynime.app.ui.settings.SettingsTab
+import com.wynime.app.ui.settings.rendering.MediaSourceIcons
+import com.wynime.app.ui.settings.rendering.SmallMediaSourceIcon
+import com.wynime.source.plugin.api.SourceResultStatus
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -180,14 +171,6 @@ fun MediaSourceResultsView(
                 Icon(Icons.Outlined.Settings, settingsText)
             }
 
-            // TODO: 允许展开的话可能要考虑需要把下面 FlowList 变成 Grid 
-//                    IconButton({ isShowDetails = !isShowDetails }) {
-//                        if (isShowDetails) {
-//                            Icon(Icons.Rounded.UnfoldLess, "展示更少")
-//                        } else {
-//                            Icon(Icons.Rounded.UnfoldMore, "展示更多")
-//                        }
-//                    }
         }
 
         Column(
@@ -224,8 +207,7 @@ fun MediaSourceResultsView(
                                 }
                             }
                         }
-//                            Icon(MediaSourceIcons.Web, null)
-//                            Text("在线", Modifier.padding(start = 4.dp))
+
                     },
                 )
             }

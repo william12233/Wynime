@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download
+package com.wynime.app.ui.download
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,20 +12,20 @@ import androidx.compose.ui.test.performClick
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.tools.toProgress
-import me.him188.ani.app.ui.download.components.DownloadSelectionToolbarTestTags
-import me.him188.ani.app.ui.download.components.DownloadStatus
-import me.him188.ani.app.ui.download.components.SubjectDownloadGroup
-import me.him188.ani.app.ui.download.components.createTestDownloadItem
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_enter_selection_mode
-import me.him188.ani.app.ui.lang.cache_management_select_all
-import me.him188.ani.app.ui.lang.cache_management_selected_count
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.tools.toProgress
+import com.wynime.app.ui.download.components.DownloadSelectionToolbarTestTags
+import com.wynime.app.ui.download.components.DownloadStatus
+import com.wynime.app.ui.download.components.SubjectDownloadGroup
+import com.wynime.app.ui.download.components.createTestDownloadItem
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_enter_selection_mode
+import com.wynime.app.ui.lang.cache_management_select_all
+import com.wynime.app.ui.lang.cache_management_selected_count
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.getString
 
 @OptIn(TestOnly::class)
@@ -62,7 +53,7 @@ class DownloadManagementSelectionTest {
     )
 
     @Test
-    fun `global selection disables actions while any selected download is busy`() = runAniComposeUiTest {
+    fun `global selection disables actions while any selected download is busy`() = runWynimeComposeUiTest {
         var currentState by mutableStateOf(state.copy(groups = state.groups.map { group ->
             group.copy(entries = group.entries.map { it.copy(isBusy = it.id == inProgress.id) })
         }))
@@ -87,7 +78,7 @@ class DownloadManagementSelectionTest {
     }
 
     @Test
-    fun `batch actions keep all selected ids until download state catches up`() = runAniComposeUiTest {
+    fun `batch actions keep all selected ids until download state catches up`() = runWynimeComposeUiTest {
         val enterSelectionText = runBlocking { getString(Lang.cache_management_enter_selection_mode) }
         val selectAllText = runBlocking { getString(Lang.cache_management_select_all) }
         val selectedCountText = runBlocking { getString(Lang.cache_management_selected_count, episodes.size) }
@@ -117,12 +108,10 @@ class DownloadManagementSelectionTest {
             }
         }
 
-        // 进入多选并全选
         onNodeWithContentDescription(enterSelectionText).performClick()
         onNodeWithContentDescription(selectAllText).performClick()
         onNodeWithText(selectedCountText).assertExists()
 
-        // UI 状态尚未更新时，连续操作都应提交完整选择范围，由 domain 检查执行时的状态。
         onNodeWithTag(DownloadSelectionToolbarTestTags.RESUME).performClick()
         runOnIdle {
             assertEquals(episodes.map { it.id }.toSet(), resumedIds)
@@ -133,7 +122,6 @@ class DownloadManagementSelectionTest {
             assertEquals(episodes.map { it.id }.toSet(), pausedIds)
         }
 
-        // 批量删除: 需要确认, 作用于所有选中项, 然后退出多选
         onNodeWithTag(DownloadSelectionToolbarTestTags.DELETE).performClick()
         onNodeWithTag(DownloadManagementTestTags.DELETE_CONFIRM_BUTTON).performClick()
         runOnIdle {

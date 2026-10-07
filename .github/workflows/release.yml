@@ -1,653 +1,590 @@
-# This file was generated using Kotlin DSL (.github/workflows/src.main.kts).
-# If you want to modify the workflow, please change the Kotlin file and regenerate this YAML file.
-# Generated with https://github.com/typesafegithub/github-workflows-kt
-
-name: 'Release'
-on:
+name: Release
+'on':
   push:
     tags:
-    - 'v*'
+    - v*
 permissions:
-  actions: 'write'
-  contents: 'write'
+  actions: write
+  contents: write
 jobs:
   consistency-check:
-    name: 'Workflow YAML Consistency Check'
-    runs-on: 'ubuntu-latest'
-    permissions: {}
+    name: Validate Android and Windows workflows
+    runs-on: ubuntu-latest
     steps:
-    - id: 'step-0'
-      uses: 'actions/checkout@v4'
-    - id: 'step-1'
-      run: 'pip3 install PyYAML'
-    - id: 'step-2'
-      run: 'cp ".github/workflows/release.yml" ".github/workflows/release.yml-check.yml" '
-    - id: 'step-3'
-      run: 'chmod +x .github/workflows/src.main.kts'
-    - id: 'step-4'
-      run: |-
-        for attempt in 1 2 3; do
-          if .github/workflows/src.main.kts; then exit 0; fi
-          echo "::warning::Workflow generation failed on attempt $attempt, retrying"
-          rm -rf ~/.m2/repository/io/github/typesafegithub
-          sleep 30
-        done
-        exit 1
-    - id: 'step-5'
-      run: 'python .github/workflows/check_yaml_equivalence.py .github/workflows/release.yml .github/workflows/release.yml-check.yml'
+    - uses: actions/checkout@v4
+    - run: python -m pip install PyYAML
+    - run: python .github/workflows/validate_platform_workflows.py
   create-release:
-    name: 'Create Release'
-    runs-on: 'ubuntu-latest'
+    name: Create Release
+    runs-on: ubuntu-latest
     outputs:
-      uploadUrl: '${{ steps.step-5.outputs.upload_url }}'
-      id: '${{ steps.step-5.outputs.id }}'
+      uploadUrl: ${{ steps.step-5.outputs.upload_url }}
+      id: ${{ steps.step-5.outputs.id }}
     steps:
-    - id: 'step-0'
-      uses: 'actions/checkout@v4'
-    - id: 'step-1'
-      name: 'Get Tag'
-      uses: 'dawidd6/action-get-tag@v1'
-    - id: 'step-2'
-      uses: 'bhowell2/github-substring-action@v1.0.0'
+    - id: step-0
+      uses: actions/checkout@v4
+    - id: step-1
+      name: Get Tag
+      uses: dawidd6/action-get-tag@v1
+    - id: step-2
+      uses: bhowell2/github-substring-action@v1.0.0
       with:
-        value: '${{ steps.step-1.outputs.tag }}'
-        index_of_str: 'v'
-        default_return_value: '${{ steps.step-1.outputs.tag }}'
-    - id: 'step-3'
-      name: 'Generate Release Notes'
+        value: ${{ steps.step-1.outputs.tag }}
+        index_of_str: v
+        default_return_value: ${{ steps.step-1.outputs.tag }}
+    - id: step-3
+      name: Generate Release Notes
       env:
-        GITHUB_REPOSITORY: '${{ github.repository }}'
-        GIT_TAG: '${{ steps.step-1.outputs.tag }}'
-        TAG_VERSION: '${{ steps.step-2.outputs.substring }}'
-      run: |-
-        set -euo pipefail
-
-        export RELEASE_NOTES="Wynime ${{ steps.step-2.outputs.substring }} release."
-
-        python3 - <<'PY' > "$RUNNER_TEMP/release-body.md"
-        import os
-        from pathlib import Path
-
-        body = Path("ci-helper/release-template.md").read_text()
-        replacements = {
-            "$RELEASE_NOTES": os.environ["RELEASE_NOTES"],
-            "$GIT_TAG": os.environ["GIT_TAG"],
-            "$TAG_VERSION": os.environ["TAG_VERSION"],
-        }
-        for key, value in replacements.items():
-            body = body.replace(key, value)
-        print(body, end="")
-        PY
-
-        echo "result<<EOF" >> "$GITHUB_OUTPUT"
-        cat "$RUNNER_TEMP/release-body.md" >> "$GITHUB_OUTPUT"
-        echo "EOF" >> "$GITHUB_OUTPUT"
-    - id: 'step-4'
-      name: 'Validate formal release signing configuration'
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GIT_TAG: ${{ steps.step-1.outputs.tag }}
+        TAG_VERSION: ${{ steps.step-2.outputs.substring }}
+      run: "set -euo pipefail\n\nexport RELEASE_NOTES=\"Wynime ${{ steps.step-2.outputs.substring }} release.\"\n\npython3\
+        \ - <<'PY' > \"$RUNNER_TEMP/release-body.md\"\nimport os\nfrom pathlib import Path\n\nbody = Path(\"ci-helper/release-template.md\"\
+        ).read_text()\nreplacements = {\n    \"$RELEASE_NOTES\": os.environ[\"RELEASE_NOTES\"],\n    \"$GIT_TAG\": os.environ[\"\
+        GIT_TAG\"],\n    \"$TAG_VERSION\": os.environ[\"TAG_VERSION\"],\n}\nfor key, value in replacements.items():\n    body\
+        \ = body.replace(key, value)\nprint(body, end=\"\")\nPY\n\necho \"result<<EOF\" >> \"$GITHUB_OUTPUT\"\ncat \"$RUNNER_TEMP/release-body.md\"\
+        \ >> \"$GITHUB_OUTPUT\"\necho \"EOF\" >> \"$GITHUB_OUTPUT\""
+    - id: step-4
+      name: Validate formal release signing configuration
       env:
-        SIGNING_RELEASE_STOREFILE: '${{ secrets.SIGNING_RELEASE_STOREFILE }}'
-        SIGNING_RELEASE_STOREPASSWORD: '${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}'
-        SIGNING_RELEASE_KEYALIAS: '${{ secrets.SIGNING_RELEASE_KEYALIAS }}'
-        SIGNING_RELEASE_KEYPASSWORD: '${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}'
-      run: |-
-        set -euo pipefail
-        for variable in \
-          SIGNING_RELEASE_STOREFILE \
-          SIGNING_RELEASE_STOREPASSWORD \
-          SIGNING_RELEASE_KEYALIAS \
-          SIGNING_RELEASE_KEYPASSWORD; do
-          if [ -z "${!variable:-}" ]; then
-            echo "$variable is required for an official release" >&2
-            exit 1
-          fi
-        done
-    - id: 'step-5'
-      name: 'Create Release'
-      uses: 'softprops/action-gh-release@v1'
+        SIGNING_RELEASE_STOREFILE: ${{ secrets.SIGNING_RELEASE_STOREFILE }}
+        SIGNING_RELEASE_STOREPASSWORD: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}
+        SIGNING_RELEASE_KEYALIAS: ${{ secrets.SIGNING_RELEASE_KEYALIAS }}
+        SIGNING_RELEASE_KEYPASSWORD: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}
+      run: "set -euo pipefail\nfor variable in \\\n  SIGNING_RELEASE_STOREFILE \\\n  SIGNING_RELEASE_STOREPASSWORD \\\n  SIGNING_RELEASE_KEYALIAS\
+        \ \\\n  SIGNING_RELEASE_KEYPASSWORD; do\n  if [ -z \"${!variable:-}\" ]; then\n    echo \"$variable is required for\
+        \ an official release\" >&2\n    exit 1\n  fi\ndone"
+    - id: step-5
+      name: Create Release
+      uses: softprops/action-gh-release@v1
       with:
-        body: '${{ steps.step-3.outputs.result }}'
-        name: '${{ steps.step-2.outputs.substring }}'
-        tag_name: '${{ steps.step-1.outputs.tag }}'
+        body: ${{ steps.step-3.outputs.result }}
+        name: ${{ steps.step-2.outputs.substring }}
+        tag_name: ${{ steps.step-1.outputs.tag }}
         draft: 'false'
-        prerelease: '${{ contains(steps.step-1.outputs.tag, ''-'') }}'
+        prerelease: ${{ contains(steps.step-1.outputs.tag, '-') }}
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   release_github-windows-2022:
-    name: 'Windows Server 2019 x86_64'
+    name: Windows Server 2019 x86_64
     runs-on:
-    - 'windows-2022'
+    - windows-2022
     needs:
-    - 'create-release'
+    - create-release
     steps:
-    - id: 'step-0'
-      uses: 'actions/checkout@v4'
+    - id: step-0
+      uses: actions/checkout@v4
       with:
-        submodules: 'recursive'
-    - id: 'step-1'
-      name: 'Get Tag'
-      uses: 'dawidd6/action-get-tag@v1'
-    - id: 'step-2'
-      uses: 'bhowell2/github-substring-action@v1.0.0'
+        submodules: recursive
+    - id: step-1
+      name: Get Tag
+      uses: dawidd6/action-get-tag@v1
+    - id: step-2
+      uses: bhowell2/github-substring-action@v1.0.0
       with:
-        value: '${{ steps.step-1.outputs.tag }}'
-        index_of_str: 'v'
-        default_return_value: '${{ steps.step-1.outputs.tag }}'
-    - id: 'step-3'
+        value: ${{ steps.step-1.outputs.tag }}
+        index_of_str: v
+        default_return_value: ${{ steps.step-1.outputs.tag }}
+    - id: step-3
       continue-on-error: true
-      run: 'rm local.properties'
-    - id: 'step-4'
+      run: rm local.properties
+    - id: step-4
       continue-on-error: true
-      run: |
-        echo "Wynime.android.abis=x86_64" >> local.properties
-        echo "Wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+      run: 'echo "wynime.android.abis=x86_64" >> local.properties
+
+        echo "wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+
         echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
-    - id: 'step-5'
+
+        '
+    - id: step-5
       continue-on-error: true
-      run: |
-        echo "Wynime.enable.firebase=true" >> local.properties
-        echo "firebase.ga.app.id=${{ secrets.FIREBASE_GA_APP_ID }}" >> local.properties
-        echo "firebase.ga.api.secret=${{ secrets.FIREBASE_GA_API_SECRET }}" >> local.properties
-      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-6'
-      name: 'Get JBR (Windows)'
+      run: "if ($env:FIREBASE_GA_APP_ID -and $env:FIREBASE_GA_API_SECRET) {\n  Add-Content -LiteralPath local.properties -Value\
+        \ \"wynime.enable.firebase=true\"\n  Add-Content -LiteralPath local.properties -Value \"firebase.ga.app.id=$env:FIREBASE_GA_APP_ID\"\
+        \n  Add-Content -LiteralPath local.properties -Value \"firebase.ga.api.secret=$env:FIREBASE_GA_API_SECRET\"\n}\n"
+      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
       env:
-        RUNNER_TOOL_CACHE: '${{ runner.tool_cache }}'
-        JBR_URL: 'https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-windows-x64-b1163.116.tar.gz'
-        JBR_CHECKSUM_URL: 'https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-windows-x64-b1163.116.tar.gz.checksum'
-      shell: 'cmd'
-      run: 'python .github/workflows/download_jbr.py'
-    - id: 'step-7'
-      name: 'Setup JBR 21 for Windows'
-      uses: 'gmitch215/setup-java@6d2c5e1f82f180ae79f799f0ed6e3e5efb4e664d'
+        FIREBASE_GA_APP_ID: ${{ secrets.FIREBASE_GA_APP_ID }}
+        FIREBASE_GA_API_SECRET: ${{ secrets.FIREBASE_GA_API_SECRET }}
+    - id: step-6
+      name: Get JBR (Windows)
+      env:
+        RUNNER_TOOL_CACHE: ${{ runner.tool_cache }}
+        JBR_URL: https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-windows-x64-b1163.116.tar.gz
+        JBR_CHECKSUM_URL: https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-windows-x64-b1163.116.tar.gz.checksum
+      shell: cmd
+      run: python .github/workflows/download_jbr.py
+    - id: step-7
+      name: Setup JBR 21 for Windows
+      uses: gmitch215/setup-java@6d2c5e1f82f180ae79f799f0ed6e3e5efb4e664d
       with:
         java-version: '21'
-        distribution: 'jdkfile'
-        jdkFile: '${{ steps.step-6.outputs.jbrLocation }}'
+        distribution: jdkfile
+        jdkFile: ${{ steps.step-6.outputs.jbrLocation }}
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-    - id: 'step-8'
-      name: 'Dump Local Properties'
-      run: 'echo "jvm.toolchain.version=21" >> local.properties'
-    - id: 'step-9'
-      name: 'Setup Gradle'
-      uses: 'gradle/actions/setup-gradle@v3'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - id: step-8
+      name: Dump Local Properties
+      run: echo "jvm.toolchain.version=21" >> local.properties
+    - id: step-9
+      name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
       with:
         cache-disabled: 'true'
-    - id: 'step-10'
+    - id: step-10
       name: 'Clean and download dependencies (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-    - id: 'step-11'
+      run: ./gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g
+        -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"
+    - id: step-11
       name: 'Clean and download dependencies (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-      if: '${{ steps.step-10.outcome == ''failure'' }}'
-    - id: 'step-12'
+      run: ./gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g
+        -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"
+      if: ${{ steps.step-10.outcome == 'failure' }}
+    - id: step-12
       name: 'Update Release Version Name (Attempt #1)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-    - id: 'step-13'
+      run: ./gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g"
+        "--parallel"
+    - id: step-13
       name: 'Update Release Version Name (Attempt #2)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-      if: '${{ steps.step-12.outcome == ''failure'' }}'
-    - id: 'step-14'
-      name: 'Prepare google-services.json'
+      run: ./gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g"
+        "--parallel"
+      if: ${{ steps.step-12.outcome == 'failure' }}
+    - id: step-14
+      name: Prepare google-services.json
       env:
-        BASE64_CONTENT: '${{ secrets.GOOGLE_SERVICES_JSON }}'
-        FILE_PATH: './app/android/google-services.json'
+        BASE64_CONTENT: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        FILE_PATH: ./app/android/google-services.json
       continue-on-error: true
-      shell: 'bash'
-      run: |-
-        set -euo pipefail
-
-        if [ -z "${BASE64_CONTENT:-}" ]; then
-          echo "BASE64_CONTENT is empty" >&2
-          exit 1
-        fi
-
-        mkdir -p "$(dirname "$FILE_PATH")"
-        if ! printf '%s' "$BASE64_CONTENT" | base64 --decode > "$FILE_PATH" 2>/dev/null; then
-          printf '%s' "$BASE64_CONTENT" | base64 -D > "$FILE_PATH"
-        fi
-        chmod 600 "$FILE_PATH"
-        echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-15'
+      shell: bash
+      run: "set -euo pipefail\n\nif [ -z \"${BASE64_CONTENT:-}\" ]; then\n  echo \"BASE64_CONTENT is empty\" >&2\n  exit 1\n\
+        fi\n\nmkdir -p \"$(dirname \"$FILE_PATH\")\"\nif ! printf '%s' \"$BASE64_CONTENT\" | base64 --decode > \"$FILE_PATH\"\
+        \ 2>/dev/null; then\n  printf '%s' \"$BASE64_CONTENT\" | base64 -D > \"$FILE_PATH\"\nfi\nchmod 600 \"$FILE_PATH\"\n\
+        echo \"filePath=$FILE_PATH\" >> \"$GITHUB_OUTPUT\""
+      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+    - id: step-15
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-    - id: 'step-16'
+      run: ./gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata
+        "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g"
+        "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"
+    - id: step-16
       name: 'Compile Kotlin (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-      if: '${{ steps.step-15.outcome == ''failure'' }}'
-    - id: 'step-17'
+      run: ./gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata
+        "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g"
+        "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"
+      if: ${{ steps.step-15.outcome == 'failure' }}
+    - id: step-17
       name: 'Compile Kotlin Android (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-    - id: 'step-18'
+      run: ./gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g"
+        "--parallel"
+    - id: step-18
       name: 'Compile Kotlin Android (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-      if: '${{ steps.step-17.outcome == ''failure'' }}'
-    - id: 'step-19'
+      run: ./gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g"
+        "--parallel"
+      if: ${{ steps.step-17.outcome == 'failure' }}
+    - id: step-19
       name: 'Upload Desktop Installers (Attempt #1)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
         UPLOAD_TO_S3: 'false'
-        AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-        AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-        AWS_BASEURL: '${{ secrets.AWS_BASEURL }}'
-        AWS_REGION: '${{ secrets.AWS_REGION }}'
-        AWS_BUCKET: '${{ secrets.AWS_BUCKET }}'
-        APPSTORE_API_KEY_ID: '${{ secrets.APPSTORE_API_KEY_ID }}'
-        APPSTORE_API_PRIVATE_KEY: '${{ secrets.APPSTORE_API_PRIVATE_KEY }}'
-        APPSTORE_ISSUER_ID: '${{ secrets.APPSTORE_ISSUER_ID }}'
-        APPLE_DEVELOPER_TEAM_ID: '${{ secrets.APPLE_DEVELOPER_TEAM_ID }}'
-        APPSTORE_PROVISIONING_PROFILE: '${{ secrets.APPSTORE_PROVISIONING_PROFILE }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}'
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_BASEURL: ${{ secrets.AWS_BASEURL }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_BUCKET: ${{ secrets.AWS_BUCKET }}
+        APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+        APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
+        APPSTORE_PROVISIONING_PROFILE: ${{ secrets.APPSTORE_PROVISIONING_PROFILE }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew :ci-helper:uploadDesktopInstallers "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-    - id: 'step-20'
+      run: ./gradlew :ci-helper:uploadDesktopInstallers "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g"
+        "--parallel"
+    - id: step-20
       name: 'Upload Desktop Installers (Attempt #2)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
         UPLOAD_TO_S3: 'false'
-        AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-        AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-        AWS_BASEURL: '${{ secrets.AWS_BASEURL }}'
-        AWS_REGION: '${{ secrets.AWS_REGION }}'
-        AWS_BUCKET: '${{ secrets.AWS_BUCKET }}'
-        APPSTORE_API_KEY_ID: '${{ secrets.APPSTORE_API_KEY_ID }}'
-        APPSTORE_API_PRIVATE_KEY: '${{ secrets.APPSTORE_API_PRIVATE_KEY }}'
-        APPSTORE_ISSUER_ID: '${{ secrets.APPSTORE_ISSUER_ID }}'
-        APPLE_DEVELOPER_TEAM_ID: '${{ secrets.APPLE_DEVELOPER_TEAM_ID }}'
-        APPSTORE_PROVISIONING_PROFILE: '${{ secrets.APPSTORE_PROVISIONING_PROFILE }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}'
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_BASEURL: ${{ secrets.AWS_BASEURL }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_BUCKET: ${{ secrets.AWS_BUCKET }}
+        APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+        APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
+        APPSTORE_PROVISIONING_PROFILE: ${{ secrets.APPSTORE_PROVISIONING_PROFILE }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew :ci-helper:uploadDesktopInstallers "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g" "--parallel"'
-      if: '${{ steps.step-19.outcome == ''failure'' }}'
-    - id: 'step-21'
-      name: 'Upload compose logs'
-      uses: 'actions/upload-artifact@v4'
+      run: ./gradlew :ci-helper:uploadDesktopInstallers "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g" "-Dkotlin.daemon.jvm.options=-Xmx4g"
+        "--parallel"
+      if: ${{ steps.step-19.outcome == 'failure' }}
+    - id: step-21
+      name: Upload compose logs
+      uses: actions/upload-artifact@v4
       with:
-        name: 'compose-logs-github-windows-2022'
-        path: 'app/desktop/build/compose/logs'
-      if: '${{ always() }}'
+        name: compose-logs-github-windows-2022
+        path: app/desktop/build/compose/logs
+      if: ${{ always() }}
   release_github-ubuntu-2404:
-    name: 'Ubuntu 24.04 Android arm64-v8a'
+    name: Ubuntu 24.04 Android arm64-v8a
     runs-on:
-    - 'ubuntu-24.04'
+    - ubuntu-24.04
     needs:
-    - 'create-release'
+    - create-release
     steps:
-    - id: 'step-0'
-      uses: 'actions/checkout@v4'
+    - id: step-0
+      uses: actions/checkout@v4
       with:
-        submodules: 'recursive'
-    - id: 'step-1'
-      name: 'Get Tag'
-      uses: 'dawidd6/action-get-tag@v1'
-    - id: 'step-2'
-      uses: 'bhowell2/github-substring-action@v1.0.0'
+        submodules: recursive
+    - id: step-1
+      name: Get Tag
+      uses: dawidd6/action-get-tag@v1
+    - id: step-2
+      uses: bhowell2/github-substring-action@v1.0.0
       with:
-        value: '${{ steps.step-1.outputs.tag }}'
-        index_of_str: 'v'
-        default_return_value: '${{ steps.step-1.outputs.tag }}'
-    - id: 'step-3'
-      name: 'Free space for Ubuntu'
-      uses: 'jlumbroso/free-disk-space@v1.3.1'
+        value: ${{ steps.step-1.outputs.tag }}
+        index_of_str: v
+        default_return_value: ${{ steps.step-1.outputs.tag }}
+    - id: step-3
+      name: Free space for Ubuntu
+      uses: jlumbroso/free-disk-space@v1.3.1
       with:
         android: 'false'
         large-packages: 'false'
         tool-cache: 'false'
-    - id: 'step-4'
-      name: 'Enable Swap'
-      run: |-
-        sudo fallocate -l 10G /swapfile
+    - id: step-4
+      name: Enable Swap
+      run: 'sudo fallocate -l 10G /swapfile
+
         sudo chmod 600 /swapfile
+
         sudo mkswap /swapfile
-        sudo swapon /swapfile
-    - id: 'step-5'
+
+        sudo swapon /swapfile'
+    - id: step-5
       continue-on-error: true
-      run: 'rm local.properties'
-    - id: 'step-6'
+      run: rm local.properties
+    - id: step-6
       continue-on-error: true
-      run: |
-        echo "Wynime.android.abis=arm64-v8a" >> local.properties
-        echo "Wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
-        echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
-    - id: 'step-7'
+      run: 'echo "wynime.android.abis=arm64-v8a" >> local.properties
+
+        echo "wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
+
+        '
+    - id: step-7
       continue-on-error: true
-      run: |
-        echo "Wynime.enable.firebase=true" >> local.properties
-        echo "firebase.ga.app.id=${{ secrets.FIREBASE_GA_APP_ID }}" >> local.properties
-        echo "firebase.ga.api.secret=${{ secrets.FIREBASE_GA_API_SECRET }}" >> local.properties
-      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-8'
-      name: 'Get JBR (Windows)'
+      run: "if [ -n \"$FIREBASE_GA_APP_ID\" ] && [ -n \"$FIREBASE_GA_API_SECRET\" ]; then\n  printf '%s\\n' 'wynime.enable.firebase=true'\
+        \ >> local.properties\n  printf '%s\\n' \"firebase.ga.app.id=$FIREBASE_GA_APP_ID\" >> local.properties\n  printf '%s\\\
+        n' \"firebase.ga.api.secret=$FIREBASE_GA_API_SECRET\" >> local.properties\nfi\n"
+      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
       env:
-        RUNNER_TOOL_CACHE: '${{ runner.tool_cache }}'
-        JBR_URL: 'https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-linux-x64-b1163.116.tar.gz'
-        JBR_CHECKSUM_URL: 'https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-linux-x64-b1163.116.tar.gz.checksum'
-      shell: 'bash'
-      run: 'python .github/workflows/download_jbr.py'
-    - id: 'step-9'
-      name: 'Setup JBR 21 for Ubuntu'
-      uses: 'gmitch215/setup-java@6d2c5e1f82f180ae79f799f0ed6e3e5efb4e664d'
+        FIREBASE_GA_APP_ID: ${{ secrets.FIREBASE_GA_APP_ID }}
+        FIREBASE_GA_API_SECRET: ${{ secrets.FIREBASE_GA_API_SECRET }}
+    - id: step-8
+      name: Get JBR (Windows)
+      env:
+        RUNNER_TOOL_CACHE: ${{ runner.tool_cache }}
+        JBR_URL: https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-linux-x64-b1163.116.tar.gz
+        JBR_CHECKSUM_URL: https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-linux-x64-b1163.116.tar.gz.checksum
+      shell: bash
+      run: python .github/workflows/download_jbr.py
+    - id: step-9
+      name: Setup JBR 21 for Ubuntu
+      uses: gmitch215/setup-java@6d2c5e1f82f180ae79f799f0ed6e3e5efb4e664d
       with:
         java-version: '21'
-        distribution: 'jdkfile'
-        jdkFile: '${{ steps.step-8.outputs.jbrLocation }}'
+        distribution: jdkfile
+        jdkFile: ${{ steps.step-8.outputs.jbrLocation }}
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-    - id: 'step-10'
-      name: 'Dump Local Properties'
-      run: 'echo "jvm.toolchain.version=21" >> local.properties'
-    - id: 'step-11'
-      run: 'chmod -R 777 .'
-    - id: 'step-12'
-      name: 'Setup Gradle'
-      uses: 'gradle/actions/setup-gradle@v3'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - id: step-10
+      name: Dump Local Properties
+      run: echo "jvm.toolchain.version=21" >> local.properties
+    - id: step-11
+      run: chmod -R 777 .
+    - id: step-12
+      name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
       with:
         cache-disabled: 'true'
-    - id: 'step-13'
+    - id: step-13
       name: 'Clean and download dependencies (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-14'
+      run: ./gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g
+        -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+    - id: step-14
       name: 'Clean and download dependencies (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-13.outcome == ''failure'' }}'
-    - id: 'step-15'
+      run: ./gradlew --scan "--stacktrace" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g
+        -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+      if: ${{ steps.step-13.outcome == 'failure' }}
+    - id: step-15
       name: 'Update Release Version Name (Attempt #1)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-16'
+      run: ./gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+    - id: step-16
       name: 'Update Release Version Name (Attempt #2)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-15.outcome == ''failure'' }}'
-    - id: 'step-17'
-      name: 'Prepare signing key'
+      run: ./gradlew updateReleaseVersionNameFromGit "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+      if: ${{ steps.step-15.outcome == 'failure' }}
+    - id: step-17
+      name: Prepare signing key
       env:
-        BASE64_CONTENT: '${{ secrets.SIGNING_RELEASE_STOREFILE }}'
-        FILE_PATH: './android_signing_key'
+        BASE64_CONTENT: ${{ secrets.SIGNING_RELEASE_STOREFILE }}
+        FILE_PATH: ./android_signing_key
       continue-on-error: false
-      shell: 'bash'
-      run: |-
-        set -euo pipefail
-
-        if [ -z "${BASE64_CONTENT:-}" ]; then
-          echo "BASE64_CONTENT is empty" >&2
-          exit 1
-        fi
-
-        mkdir -p "$(dirname "$FILE_PATH")"
-        if ! printf '%s' "$BASE64_CONTENT" | base64 --decode > "$FILE_PATH" 2>/dev/null; then
-          printf '%s' "$BASE64_CONTENT" | base64 -D > "$FILE_PATH"
-        fi
-        chmod 600 "$FILE_PATH"
-        echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-18'
-      name: 'Prepare google-services.json'
+      shell: bash
+      run: "set -euo pipefail\n\nif [ -z \"${BASE64_CONTENT:-}\" ]; then\n  echo \"BASE64_CONTENT is empty\" >&2\n  exit 1\n\
+        fi\n\nmkdir -p \"$(dirname \"$FILE_PATH\")\"\nif ! printf '%s' \"$BASE64_CONTENT\" | base64 --decode > \"$FILE_PATH\"\
+        \ 2>/dev/null; then\n  printf '%s' \"$BASE64_CONTENT\" | base64 -D > \"$FILE_PATH\"\nfi\nchmod 600 \"$FILE_PATH\"\n\
+        echo \"filePath=$FILE_PATH\" >> \"$GITHUB_OUTPUT\""
+      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+    - id: step-18
+      name: Prepare google-services.json
       env:
-        BASE64_CONTENT: '${{ secrets.GOOGLE_SERVICES_JSON }}'
-        FILE_PATH: './app/android/google-services.json'
+        BASE64_CONTENT: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        FILE_PATH: ./app/android/google-services.json
       continue-on-error: true
-      shell: 'bash'
-      run: |-
-        set -euo pipefail
-
-        if [ -z "${BASE64_CONTENT:-}" ]; then
-          echo "BASE64_CONTENT is empty" >&2
-          exit 1
-        fi
-
-        mkdir -p "$(dirname "$FILE_PATH")"
-        if ! printf '%s' "$BASE64_CONTENT" | base64 --decode > "$FILE_PATH" 2>/dev/null; then
-          printf '%s' "$BASE64_CONTENT" | base64 -D > "$FILE_PATH"
-        fi
-        chmod 600 "$FILE_PATH"
-        echo "filePath=$FILE_PATH" >> "$GITHUB_OUTPUT"
-      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-19'
+      shell: bash
+      run: "set -euo pipefail\n\nif [ -z \"${BASE64_CONTENT:-}\" ]; then\n  echo \"BASE64_CONTENT is empty\" >&2\n  exit 1\n\
+        fi\n\nmkdir -p \"$(dirname \"$FILE_PATH\")\"\nif ! printf '%s' \"$BASE64_CONTENT\" | base64 --decode > \"$FILE_PATH\"\
+        \ 2>/dev/null; then\n  printf '%s' \"$BASE64_CONTENT\" | base64 -D > \"$FILE_PATH\"\nfi\nchmod 600 \"$FILE_PATH\"\n\
+        echo \"filePath=$FILE_PATH\" >> \"$GITHUB_OUTPUT\""
+      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+    - id: step-19
       name: 'Compile Kotlin (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-20'
+      run: ./gradlew :app:android:compileDefaultDebugKotlin :app:android:compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+    - id: step-20
       name: 'Compile Kotlin (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew compileKotlin compileCommonMainKotlinMetadata compileJvmMainKotlinMetadata compileKotlinDesktop compileKotlinMetadata "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-19.outcome == ''failure'' }}'
-    - id: 'step-21'
+      run: ./gradlew :app:android:compileDefaultDebugKotlin :app:android:compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+      if: ${{ steps.step-19.outcome == 'failure' }}
+    - id: step-21
       name: 'Compile Kotlin Android (Attempt #1)'
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-22'
+      run: ./gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+    - id: step-22
       name: 'Compile Kotlin Android (Attempt #2)'
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-21.outcome == ''failure'' }}'
-    - id: 'step-23'
+      run: ./gradlew compileDefaultDebugKotlin compileDefaultReleaseKotlin "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+      if: ${{ steps.step-21.outcome == 'failure' }}
+    - id: step-23
       name: 'Build Android Release APKs (Attempt #1)'
       env:
-        signing_release_storeFileFromRoot: '${{ steps.step-17.outputs.filePath }}'
-        signing_release_storePassword: '${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}'
-        signing_release_keyAlias: '${{ secrets.SIGNING_RELEASE_KEYALIAS }}'
-        signing_release_keyPassword: '${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}'
+        signing_release_storeFileFromRoot: ${{ steps.step-17.outputs.filePath }}
+        signing_release_storePassword: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}
+        signing_release_keyAlias: ${{ secrets.SIGNING_RELEASE_KEYALIAS }}
+        signing_release_keyPassword: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ (github.repository == ''william12233/Wynime'') && (!(github.event_name == ''pull_request'')) }}'
-    - id: 'step-24'
+      run: ./gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g
+        -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+    - id: step-24
       name: 'Build Android Release APKs (Attempt #2)'
       env:
-        signing_release_storeFileFromRoot: '${{ steps.step-17.outputs.filePath }}'
-        signing_release_storePassword: '${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}'
-        signing_release_keyAlias: '${{ secrets.SIGNING_RELEASE_KEYALIAS }}'
-        signing_release_keyPassword: '${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}'
+        signing_release_storeFileFromRoot: ${{ steps.step-17.outputs.filePath }}
+        signing_release_storePassword: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}
+        signing_release_keyAlias: ${{ secrets.SIGNING_RELEASE_KEYALIAS }}
+        signing_release_keyPassword: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-23.outcome == ''failure'' }}'
-    - id: 'step-25'
+      run: ./gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g
+        -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+      if: ${{ steps.step-23.outcome == 'failure' }}
+    - id: step-25
       name: 'Upload Android Release APK arm64-v8a (Attempt #1)'
       continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
+      uses: actions/upload-artifact@v4
       with:
-        name: 'wynime-android-arm64-v8a-release'
-        path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
+        name: wynime-android-arm64-v8a-release
+        path: app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk
         overwrite: 'true'
-    - id: 'step-26'
+    - id: step-26
       name: 'Upload Android Release APK arm64-v8a (Attempt #2)'
       continue-on-error: true
-      uses: 'actions/upload-artifact@v4'
+      uses: actions/upload-artifact@v4
       with:
-        name: 'wynime-android-arm64-v8a-release'
-        path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
+        name: wynime-android-arm64-v8a-release
+        path: app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk
         overwrite: 'true'
-      if: '${{ steps.step-25.outcome == ''failure'' }}'
-    - id: 'step-27'
+      if: ${{ steps.step-25.outcome == 'failure' }}
+    - id: step-27
       name: 'Upload Android Release APK arm64-v8a (Attempt #3)'
       continue-on-error: false
-      uses: 'actions/upload-artifact@v4'
+      uses: actions/upload-artifact@v4
       with:
-        name: 'wynime-android-arm64-v8a-release'
-        path: 'app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk'
+        name: wynime-android-arm64-v8a-release
+        path: app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk
         overwrite: 'true'
-      if: '${{ steps.step-26.outcome == ''failure'' }}'
-    - id: 'step-28'
+      if: ${{ steps.step-26.outcome == 'failure' }}
+    - id: step-28
       name: 'Upload Android APK for Release (Attempt #1)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
         UPLOAD_TO_S3: 'false'
-        AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-        AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-        AWS_BASEURL: '${{ secrets.AWS_BASEURL }}'
-        AWS_REGION: '${{ secrets.AWS_REGION }}'
-        AWS_BUCKET: '${{ secrets.AWS_BUCKET }}'
-        APPSTORE_API_KEY_ID: '${{ secrets.APPSTORE_API_KEY_ID }}'
-        APPSTORE_API_PRIVATE_KEY: '${{ secrets.APPSTORE_API_PRIVATE_KEY }}'
-        APPSTORE_ISSUER_ID: '${{ secrets.APPSTORE_ISSUER_ID }}'
-        APPLE_DEVELOPER_TEAM_ID: '${{ secrets.APPLE_DEVELOPER_TEAM_ID }}'
-        APPSTORE_PROVISIONING_PROFILE: '${{ secrets.APPSTORE_PROVISIONING_PROFILE }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}'
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_BASEURL: ${{ secrets.AWS_BASEURL }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_BUCKET: ${{ secrets.AWS_BUCKET }}
+        APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+        APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
+        APPSTORE_PROVISIONING_PROFILE: ${{ secrets.APPSTORE_PROVISIONING_PROFILE }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}
       continue-on-error: true
       timeout-minutes: 180
-      run: './gradlew :ci-helper:uploadAndroidApk "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-    - id: 'step-29'
+      run: ./gradlew :ci-helper:uploadAndroidApk "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+    - id: step-29
       name: 'Upload Android APK for Release (Attempt #2)'
       env:
-        GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ secrets.GITHUB_REPOSITORY }}'
-        CI_RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        CI_TAG: '${{ steps.step-1.outputs.tag }}'
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ secrets.GITHUB_REPOSITORY }}
+        CI_RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        CI_TAG: ${{ steps.step-1.outputs.tag }}
         UPLOAD_TO_S3: 'false'
-        AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-        AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-        AWS_BASEURL: '${{ secrets.AWS_BASEURL }}'
-        AWS_REGION: '${{ secrets.AWS_REGION }}'
-        AWS_BUCKET: '${{ secrets.AWS_BUCKET }}'
-        APPSTORE_API_KEY_ID: '${{ secrets.APPSTORE_API_KEY_ID }}'
-        APPSTORE_API_PRIVATE_KEY: '${{ secrets.APPSTORE_API_PRIVATE_KEY }}'
-        APPSTORE_ISSUER_ID: '${{ secrets.APPSTORE_ISSUER_ID }}'
-        APPLE_DEVELOPER_TEAM_ID: '${{ secrets.APPLE_DEVELOPER_TEAM_ID }}'
-        APPSTORE_PROVISIONING_PROFILE: '${{ secrets.APPSTORE_PROVISIONING_PROFILE }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}'
-        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: '${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}'
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_BASEURL: ${{ secrets.AWS_BASEURL }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_BUCKET: ${{ secrets.AWS_BUCKET }}
+        APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+        APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
+        APPSTORE_PROVISIONING_PROFILE: ${{ secrets.APPSTORE_PROVISIONING_PROFILE }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX }}
+        APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD: ${{ secrets.APPLE_DISTRIBUTION_PRIVATE_KEY_PFX_IMPORT_PWD }}
       continue-on-error: false
       timeout-minutes: 180
-      run: './gradlew :ci-helper:uploadAndroidApk "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"'
-      if: '${{ steps.step-28.outcome == ''failure'' }}'
+      run: ./gradlew :ci-helper:uploadAndroidApk "--no-configuration-cache" "--scan" "-Porg.gradle.daemon.idletimeout=60000"
+        "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
+      if: ${{ steps.step-28.outcome == 'failure' }}
   verify-release-assets:
-    name: 'Verify official release assets'
-    runs-on: 'ubuntu-latest'
+    name: Verify official release assets
+    runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
+      contents: read
     needs:
-    - 'create-release'
-    - 'release_github-windows-2022'
-    - 'release_github-ubuntu-2404'
+    - create-release
+    - release_github-windows-2022
+    - release_github-ubuntu-2404
     steps:
-    - id: 'step-0'
-      uses: 'actions/checkout@v4'
-    - id: 'step-1'
-      name: 'Setup Android SDK for release verification'
-      uses: 'android-actions/setup-android@v3'
+    - id: step-0
+      uses: actions/checkout@v4
+    - id: step-1
+      name: Setup Android SDK for release verification
+      uses: android-actions/setup-android@v3
       with:
         accept-android-sdk-licenses: 'true'
-        packages: 'platform-tools platforms;android-37.0 build-tools;36.0.0'
-    - id: 'step-2'
-      name: 'Get Tag'
-      uses: 'dawidd6/action-get-tag@v1'
-    - id: 'step-3'
-      uses: 'bhowell2/github-substring-action@v1.0.0'
+        packages: platform-tools platforms;android-37.0 build-tools;36.0.0
+    - id: step-2
+      name: Get Tag
+      uses: dawidd6/action-get-tag@v1
+    - id: step-3
+      uses: bhowell2/github-substring-action@v1.0.0
       with:
-        value: '${{ steps.step-2.outputs.tag }}'
-        index_of_str: 'v'
-        default_return_value: '${{ steps.step-2.outputs.tag }}'
-    - id: 'step-4'
-      name: 'Verify release names, APK signature, ABI, and ZIP'
+        value: ${{ steps.step-2.outputs.tag }}
+        index_of_str: v
+        default_return_value: ${{ steps.step-2.outputs.tag }}
+    - id: step-4
+      name: Verify release names, APK signature, ABI, and ZIP
       env:
-        GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-        GITHUB_REPOSITORY: '${{ github.repository }}'
-        RELEASE_ID: '${{ needs.create-release.outputs.id }}'
-        TAG_VERSION: '${{ steps.step-3.outputs.substring }}'
-      run: |-
-        set -euo pipefail
-
-        expectedAndroid="wynime-$TAG_VERSION-arm64-v8a.apk"
-        expectedWindows="wynime-$TAG_VERSION-windows-x86_64.zip"
-        assetsUrl="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?per_page=100"
-        assetsJson="$(gh api "$assetsUrl")"
-        actualNames="$(printf '%s' "$assetsJson" | jq -r '.[].name' | sort)"
-        expectedNames="$(printf '%s\n%s\n' "$expectedAndroid" "$expectedWindows" | sort)"
-        assetCount="$(printf '%s\n' "$actualNames" | sed '/^$/d' | wc -l | tr -d ' ')"
-
-        if [ "$assetCount" -ne 2 ] || [ "$actualNames" != "$expectedNames" ]; then
-          echo "Official release must contain exactly these two assets:" >&2
-          printf '%s\n' "$expectedNames" >&2
-          echo "Actual assets:" >&2
-          printf '%s\n' "$actualNames" >&2
-          exit 1
-        fi
-
-        androidId="$(printf '%s' "$assetsJson" | jq -r --arg name "$expectedAndroid" '.[] | select(.name == $name) | .id')"
-        windowsId="$(printf '%s' "$assetsJson" | jq -r --arg name "$expectedWindows" '.[] | select(.name == $name) | .id')"
-        test -n "$androidId"
-        test -n "$windowsId"
-
-        sdkRoot="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
-        test -n "$sdkRoot"
-        apksigner="$(find "$sdkRoot/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
-        aapt2="$(find "$sdkRoot/build-tools" -type f -name aapt2 -print | sort -V | tail -n 1)"
-        test -n "$apksigner"
-        test -n "$aapt2"
-
-        apkPath="$RUNNER_TEMP/$expectedAndroid"
-        zipPath="$RUNNER_TEMP/$expectedWindows"
-        gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$androidId" --output "$apkPath"
-        gh api -H 'Accept: application/octet-stream' "repos/$GITHUB_REPOSITORY/releases/assets/$windowsId" --output "$zipPath"
-
-        "$apksigner" verify --verbose "$apkPath"
-        nativeCode="$("$aapt2" dump badging "$apkPath" | sed -n 's/^native-code: //p')"
-        printf '%s\n' "$nativeCode" | grep -Fxq "'arm64-v8a'"
-        if printf '%s\n' "$nativeCode" | grep -Eq "'(x86_64|armeabi-v7a|x86)'"; then
-          echo "The official APK contains an unexpected ABI: $nativeCode" >&2
-          exit 1
-        fi
-        unzip -t "$zipPath" >/dev/null
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        RELEASE_ID: ${{ needs.create-release.outputs.id }}
+        TAG_VERSION: ${{ steps.step-3.outputs.substring }}
+      run: "set -euo pipefail\n\nexpectedAndroid=\"wynime-$TAG_VERSION-arm64-v8a.apk\"\nexpectedWindows=\"wynime-$TAG_VERSION-windows-x86_64.zip\"\
+        \nassetsUrl=\"repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?per_page=100\"\nassetsJson=\"$(gh api \"$assetsUrl\"\
+        )\"\nactualNames=\"$(printf '%s' \"$assetsJson\" | jq -r '.[].name' | sort)\"\nexpectedNames=\"$(printf '%s\\n%s\\\
+        n' \"$expectedAndroid\" \"$expectedWindows\" | sort)\"\nassetCount=\"$(printf '%s\\n' \"$actualNames\" | sed '/^$/d'\
+        \ | wc -l | tr -d ' ')\"\n\nif [ \"$assetCount\" -ne 2 ] || [ \"$actualNames\" != \"$expectedNames\" ]; then\n  echo\
+        \ \"Official release must contain exactly these two assets:\" >&2\n  printf '%s\\n' \"$expectedNames\" >&2\n  echo\
+        \ \"Actual assets:\" >&2\n  printf '%s\\n' \"$actualNames\" >&2\n  exit 1\nfi\n\nandroidId=\"$(printf '%s' \"$assetsJson\"\
+        \ | jq -r --arg name \"$expectedAndroid\" '.[] | select(.name == $name) | .id')\"\nwindowsId=\"$(printf '%s' \"$assetsJson\"\
+        \ | jq -r --arg name \"$expectedWindows\" '.[] | select(.name == $name) | .id')\"\ntest -n \"$androidId\"\ntest -n\
+        \ \"$windowsId\"\n\nsdkRoot=\"${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}\"\ntest -n \"$sdkRoot\"\napksigner=\"$(find \"\
+        $sdkRoot/build-tools\" -type f -name apksigner -print | sort -V | tail -n 1)\"\naapt2=\"$(find \"$sdkRoot/build-tools\"\
+        \ -type f -name aapt2 -print | sort -V | tail -n 1)\"\ntest -n \"$apksigner\"\ntest -n \"$aapt2\"\n\napkPath=\"$RUNNER_TEMP/$expectedAndroid\"\
+        \nzipPath=\"$RUNNER_TEMP/$expectedWindows\"\ngh api -H 'Accept: application/octet-stream' \"repos/$GITHUB_REPOSITORY/releases/assets/$androidId\"\
+        \ --output \"$apkPath\"\ngh api -H 'Accept: application/octet-stream' \"repos/$GITHUB_REPOSITORY/releases/assets/$windowsId\"\
+        \ --output \"$zipPath\"\n\n\"$apksigner\" verify --verbose \"$apkPath\"\nnativeCode=\"$(\"$aapt2\" dump badging \"\
+        $apkPath\" | sed -n 's/^native-code: //p')\"\nprintf '%s\\n' \"$nativeCode\" | grep -Fxq \"'arm64-v8a'\"\nif printf\
+        \ '%s\\n' \"$nativeCode\" | grep -Eq \"'(x86_64|armeabi-v7a|x86)'\"; then\n  echo \"The official APK contains an unexpected\
+        \ ABI: $nativeCode\" >&2\n  exit 1\nfi\nunzip -t \"$zipPath\" >/dev/null"

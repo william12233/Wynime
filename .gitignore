@@ -13,23 +13,22 @@ local.properties
 /venv/
 /*.patch
 bin/
-Podfile.lock
 
-# Local verification output
+                           
 /*-launch.png
 /*-launch.xml
 /buildlanguage-initial.png
 /buildlanguage-initial.xml
 /emulator-*.log
 
-# Local source files
+                    
 **/local.kt
 
-# Android build outputs
+                       
 app/android/release
 app/android/debug
 
-### IntelliJ IDEA ###
+                     
 .idea/
 *.iws
 *.iml
@@ -39,10 +38,10 @@ out/
 !**/src/test/**/out/
 .run/Preview*.xml
 
-### VS Code ###
+               
 .vscode/
 
-### Mac OS ###
+              
 .DS_Store
 
 .env
@@ -54,7 +53,4 @@ out/
 *.key
 **/secrets/**
 kls_database.db
-/app/ios/Animeko/GoogleService-Info.plist
-/app/ios/12.4.0
-/app/ios/xcb2.log
-/app/ios/xcodebuild.log
+app/shared/app-data/src/*Main/composeResources/files/source-plugins/

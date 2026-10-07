@@ -1,14 +1,14 @@
 package tw.wynime.sources.girigiri
 
-import me.him188.ani.source.plugin.api.SourceChannel
-import me.him188.ani.source.plugin.api.SourceChannelEpisodes
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.SourceChannel
+import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractPlayerObjectUrl
@@ -33,8 +33,8 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
     iconUrl = "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
     description = "Girigiri 愛動漫公開番劇與分集來源",
 ) {
-    override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
-        val searchResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+    override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {
+        val searchResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         val variants = searchQueryVariants(request.query)
         for (variant in variants) {
             val apiResults = searchApi(variant, request.traceId, request.entryPoint)
@@ -51,7 +51,7 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
                 Regex("(?i)/(GV[^/?#]+)/?"),
             )
             searchResults += variantResults
-            // 查詢別名按優先順序嘗試；某個別名已找到結果時，後續別名不會再重複請求相同網站。
+
             if (variantResults.isNotEmpty()) break
             if (searchResults.distinctBy { it.id }.size >= request.limit) break
         }
@@ -74,12 +74,10 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
             .toList()
         if (categoryResults.isNotEmpty()) return categoryResults
 
-        // 站內搜尋與分類頁已涵蓋一般查詢；sitemap 只作為 re0 這個公開搜尋別名的退路，
-        // 避免每個語言別名都逐頁請求整份 sitemap 與詳情頁。
         if (variants.none { it.equals("re0", ignoreCase = true) }) return emptyList()
 
         val sitemap = requestPage("$rootUrl/rss/baidu.xml").html
-        val sitemapResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+        val sitemapResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (match in Regex("(?is)<loc>https?://[^<]*/(GV[^/<>]+?)/?</loc>").findAll(sitemap)) {
             val id = match.groupValues[1]
             val detail = requestPage("$rootUrl/$id/")
@@ -99,7 +97,7 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
         query: String,
         traceId: String,
         entryPoint: String,
-    ): List<me.him188.ani.source.plugin.api.SourceSubject> {
+    ): List<com.wynime.source.plugin.api.SourceSubject> {
         val page = requestPage(
             "$API_URL?ac=detail&wd=${urlEncode(query)}",
             headers = mapOf(
@@ -131,7 +129,7 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
             ?.ifBlank { null }
             ?: page.title.substringBefore("-").ifBlank { subjectId }
         val subject = subject(subjectId, title, page.finalUrl)
-        val groups = linkedMapOf<String, MutableList<me.him188.ani.source.plugin.api.SourceEpisode>>()
+        val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
         links(page.html).forEach { link ->
             val match = Regex("(?i)/play${Regex.escape(subjectId)}-(\\d+)-(\\d+)/?").find(link.href)
                 ?: return@forEach

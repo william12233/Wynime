@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.imageviewer
+package com.wynime.app.ui.foundation.imageviewer
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -71,33 +62,32 @@ import com.github.panpf.zoomimage.compose.zoom.ZoomableState
 import com.github.panpf.zoomimage.rememberSketchZoomState
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.launch
-import me.him188.ani.app.platform.ContextMP
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.files
-import me.him188.ani.app.ui.foundation.IMAGE_VIEWER_TEST_TAG
-import me.him188.ani.app.ui.foundation.LocalSketch
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.image_viewer_close
-import me.him188.ani.app.ui.lang.image_viewer_copied
-import me.him188.ani.app.ui.lang.image_viewer_copy
-import me.him188.ani.app.ui.lang.image_viewer_copy_failed
-import me.him188.ani.app.ui.lang.image_viewer_load_failed
-import me.him188.ani.app.ui.lang.image_viewer_reset_zoom
-import me.him188.ani.app.ui.lang.image_viewer_save
-import me.him188.ani.app.ui.lang.image_viewer_save_failed
-import me.him188.ani.app.ui.lang.image_viewer_saved
-import me.him188.ani.app.ui.lang.image_viewer_zoom_in
-import me.him188.ani.app.ui.lang.image_viewer_zoom_out
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.platform.ContextMP
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.files
+import com.wynime.app.ui.foundation.IMAGE_VIEWER_TEST_TAG
+import com.wynime.app.ui.foundation.LocalSketch
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.image_viewer_close
+import com.wynime.app.ui.lang.image_viewer_copied
+import com.wynime.app.ui.lang.image_viewer_copy
+import com.wynime.app.ui.lang.image_viewer_copy_failed
+import com.wynime.app.ui.lang.image_viewer_load_failed
+import com.wynime.app.ui.lang.image_viewer_reset_zoom
+import com.wynime.app.ui.lang.image_viewer_save
+import com.wynime.app.ui.lang.image_viewer_save_failed
+import com.wynime.app.ui.lang.image_viewer_saved
+import com.wynime.app.ui.lang.image_viewer_zoom_in
+import com.wynime.app.ui.lang.image_viewer_zoom_out
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.resolve
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
-/** 查看器内各控件的 test tag. */
 object ImageViewerTestTags {
     const val ZOOM_IN = "ImageViewer.ZoomIn"
     const val ZOOM_OUT = "ImageViewer.ZoomOut"
@@ -108,32 +98,10 @@ object ImageViewerTestTags {
     const val CLOSE = "ImageViewer.Close"
 }
 
-/** 每次点击放大/缩小按钮的倍率. */
 private const val ZOOM_STEP = 1.5f
 
 private val logger = logger<ImageViewerTestTags>()
 
-/**
- * 图片查看器的内容: 可缩放图片 + 底部工具栏 (缩小 / 缩放比例 / 放大 / 适应窗口 / 复制 / 保存 / 关闭).
- *
- * 快捷键: Ctrl/Cmd+C 复制图片.
- *
- * 缩放由 zoomimage 提供: 触摸双指缩放, 双击切换, 鼠标滚轮缩放, 键盘 `+`/`-` 缩放.
- * 图片加载成功后会在后台导出一份带扩展名的本地副本 ([ImageViewerExportedFile]), 供保存和拖拽使用.
- *
- * @param model 图片 URL. 为 `null` 时只显示黑底.
- * @param closeOnTap 单击图片是否关闭 (覆盖层模式为 `true`; 独立窗口为 `false`).
- * @param showCloseButton 工具栏是否显示关闭按钮.
- * @param fileSaver 点击保存时的保存方式, 默认弹系统对话框.
- * @param imageClipboard 复制图片的方式, `null` 表示不支持复制 (隐藏按钮).
- * @param platformImageModifier 平台相关的图片层扩展: 返回附加在图片上的 [Modifier] (例如桌面端把图片拖到其他应用),
- * 也可以在其中注册额外手势 (例如触摸板捏合缩放). 参数为当前已导出的本地副本 (未就绪时为 `null`) 和缩放状态.
- * @param exportDirectory 本地副本所在目录, 默认为 [imageViewerExportDirectory].
- * @param contentScale 初始 (最小) 缩放方式. 覆盖层用 [ContentScale.Fit] 填满屏幕; 独立窗口用 [ContentScale.Inside] 不放大小图.
- * @param decodeSize 解码尺寸上限 (px, 只按 2 的幂采样). 默认按显示区域解码; 独立窗口传屏幕的 2 倍, 让屏幕能放下的图片按原尺寸解码,
- * 这样 [ContentScale.Inside] 就能 1:1 显示.
- * @param onImageSizeAvailable 图片加载成功后回调解码后的像素尺寸 (独立窗口用来按图片大小调整窗口).
- */
 @Composable
 fun ImageViewerContent(
     model: String?,
@@ -165,7 +133,6 @@ fun ImageViewerContent(
         onImageSizeAvailableState.value(IntSize(image.width, image.height))
     }
 
-    // 图片加载成功后再导出, 此时 Sketch 的下载缓存已命中, 不会再下载一次.
     var exported by remember(model) { mutableStateOf<ImageViewerExportedFile?>(null) }
     LaunchedEffect(model, loaded) {
         if (model == null || !loaded) return@LaunchedEffect
@@ -199,15 +166,13 @@ fun ImageViewerContent(
         }
     }
 
-    // 图片加载后让图片获得焦点: 键盘缩放 (zoomimage) 和 Ctrl/Cmd+C 都依赖焦点
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(model, loaded) {
         if (loaded) runCatching { focusRequester.requestFocus() }
     }
 
     val imageModifier = platformImageModifier(exported, zoomState.zoomable)
-    // zoomimage 的 onTap 用 detectTapGestures 实现: 适应窗口时单指拖动没人消费, 抬起也会当成 tap 关掉查看器.
-    // 在 Initial 阶段记录这一次手势是否超过 touchSlop, 拖动过就不当 tap.
+
     val tapGuard = remember { ImageViewerTapGuard() }
     Box(
         modifier
@@ -299,10 +264,6 @@ fun ImageViewerContent(
     }
 }
 
-/**
- * 当前显示比例, 相对于原图像素: 100% 表示原图一个像素对应屏幕一个 dp.
- * Sketch 会按显示尺寸缩小解码, 所以要用分块加载拿到的原图尺寸换算.
- */
 @Composable
 private fun com.github.panpf.zoomimage.compose.ZoomState.currentScalePercent(): Int {
     val contentWidth = zoomable.contentSize.width
@@ -402,9 +363,6 @@ private const val SCALE_EPSILON = 0.001f
 
 private val exportDirectoryCleared = atomic(false)
 
-/**
- * 查看器导出副本所在目录 (`cacheDir/image-viewer`). 进程内首次使用时清空上次运行留下的文件.
- */
 fun imageViewerExportDirectory(context: ContextMP): SystemPath {
     val directory = context.files.cacheDir.resolve("image-viewer")
     if (exportDirectoryCleared.compareAndSet(expect = false, update = true)) {
@@ -414,19 +372,14 @@ fun imageViewerExportDirectory(context: ContextMP): SystemPath {
 }
 
 private class ImageViewerTapGuard {
-    /** 最近一次手势是否拖动过 (超过 touchSlop). Initial 阶段写, zoomimage 的 onTap (Main 阶段) 读. */
+
     var dragged: Boolean = false
 }
 
-/**
- * 查看器加载图片用的请求. 独立窗口预加载 (拿尺寸) 和显示都用同一个请求, 第二次直接命中内存缓存.
- *
- * @param decodeSize 解码尺寸上限 (px), 见 [ImageViewerContent].
- */
 fun imageViewerImageRequest(context: PlatformContext, model: String, decodeSize: IntSize?): ImageRequest {
     return ImageRequest(context, model) {
         if (decodeSize != null) {
-            // 只按 2 的幂采样, 不裁剪; 宽高都不超过 decodeSize
+
             size(decodeSize.width, decodeSize.height)
             precision(Precision.SMALLER_SIZE)
         }

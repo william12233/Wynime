@@ -1,22 +1,11 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models.bangumi
+package com.wynime.app.data.models.bangumi
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import me.him188.ani.client.models.AniCollectionType
-import me.him188.ani.client.models.AniEpisodeCollectionType
-import me.him188.ani.client.models.AniSelfRatingInfo
+import com.wynime.models.CollectionTypeDto
+import com.wynime.models.EpisodeCollectionTypeDto
+import com.wynime.models.SelfRatingInfoDto
 import kotlin.time.Instant
-
-// 注意, 这些 schema 都是对应 server v5.0.0 的, 不能修改参数名称.
 
 @Serializable
 data class BangumiSyncCommand(
@@ -31,8 +20,8 @@ sealed class BangumiSyncOp() {
     @Serializable
     data class UpdateCollection(
         val subjectId: Long,
-        @SerialName("collectionType") val type: AniCollectionType?,
-        val rating: AniSelfRatingInfo? = null,
+        @SerialName("collectionType") val type: CollectionTypeDto?,
+        val rating: SelfRatingInfoDto? = null,
     ) : BangumiSyncOp()
 
     @SerialName("DeleteCollection")
@@ -45,8 +34,8 @@ sealed class BangumiSyncOp() {
     @Serializable
     data class AddCollection(
         val subjectId: Long,
-        @SerialName("collectionType") val type: AniCollectionType,
-        val rating: AniSelfRatingInfo? = null,
+        @SerialName("collectionType") val type: CollectionTypeDto,
+        val rating: SelfRatingInfoDto? = null,
     ) : BangumiSyncOp()
 
     @SerialName("UpdateEpisodeCollection")
@@ -54,6 +43,6 @@ sealed class BangumiSyncOp() {
     data class UpdateEpisodeCollection(
         val subjectId: Long,
         val episodeId: Long,
-        @SerialName("episodeCollectionType") val type: AniEpisodeCollectionType?,
+        @SerialName("episodeCollectionType") val type: EpisodeCollectionTypeDto?,
     ) : BangumiSyncOp()
 }

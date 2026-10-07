@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.video.components
+package com.wynime.app.ui.subject.episode.video.components
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
@@ -24,9 +15,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.layout.isInLandscapeMode
-import me.him188.ani.utils.platform.isMobile
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.layout.isInLandscapeMode
+import com.wynime.utils.platform.isMobile
 
 @Composable
 fun rememberStatusBarHeightAsState(
@@ -37,8 +28,8 @@ fun rememberStatusBarHeightAsState(
         var statusBarHeight by rememberSaveable { mutableStateOf(0) }
         val density by rememberUpdatedState(LocalDensity.current)
         if (!isSystemInLandscapeMode) {
-            // TODO: 2024/12/28 We should actually consider insets from all sides and write a proper layout algorithm.
-            val insets = WindowInsets.displayCutout // composable
+
+            val insets = WindowInsets.displayCutout
             SideEffect {
                 statusBarHeight = insets.getTop(density)
             }

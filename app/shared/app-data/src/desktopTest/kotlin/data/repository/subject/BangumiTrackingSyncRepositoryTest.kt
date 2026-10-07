@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
@@ -21,25 +14,25 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.bangumi.BangumiSyncState
-import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
-import me.him188.ani.app.data.network.BatchSubjectRelations
-import me.him188.ani.app.data.network.SubjectService
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.persistent.createTestPreferencesDataStore
-import me.him188.ani.app.data.persistent.database.AniDatabase
-import me.him188.ani.app.data.persistent.database.AniDatabaseConstructor
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionEntity
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.client.models.AniSubjectCollection
-import me.him188.ani.client.models.AniSubjectRecommendation
-import me.him188.ani.client.models.AniUpdateSubjectCollectionRequest
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiSubjectCollectionType
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.data.models.bangumi.BangumiSyncState
+import com.wynime.app.data.models.subject.SubjectCollectionCounts
+import com.wynime.app.data.network.BatchSubjectRelations
+import com.wynime.app.data.network.SubjectService
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.persistent.createTestPreferencesDataStore
+import com.wynime.app.data.persistent.database.WynimeDatabase
+import com.wynime.app.data.persistent.database.WynimeDatabaseConstructor
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionEntity
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.models.SubjectCollectionDto
+import com.wynime.models.SubjectRecommendationDto
+import com.wynime.models.UpdateSubjectCollectionRequestDto
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.bangumi.models.BangumiSubjectCollectionType
+import com.wynime.utils.platform.currentTimeMillis
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
@@ -49,9 +42,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.flow
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.SubjectCollectionStats
 
 class BangumiTrackingSyncRepositoryTest {
     @Test
@@ -294,8 +287,78 @@ class BangumiTrackingSyncRepositoryTest {
         }
     }
 
+    @Test
+    fun `return from web keeps collection and pending operation until remote absence is verified`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            fixture.database.subjectCollection().upsert(subject(1, UnifiedCollectionType.WISH, 100))
+            fixture.api.page = { BangumiTrackingRemotePage(listOf(BangumiTrackingRemoteSnapshot(1, UnifiedCollectionType.WISH, 100)), 1) }
+            fixture.api.animeCollections(fixture.api.account.username, 100, 0)
+            fixture.metadata.markLocalDeletion(1, 300)
+            fixture.subjectService.failDelete = true
+            fixture.repository.confirmPendingWebRemovals()
+            assertEquals(UnifiedCollectionType.WISH, fixture.database.subjectCollection().findById(1).first()?.collectionType)
+            assertEquals(BangumiTrackingPendingOperation.DELETE_COLLECTION.name, fixture.metadata.find(1)?.pendingOperation)
+            assertNotNull(fixture.metadata.find(1)?.pendingError)
+            fixture.api.removeRemote(1)
+            fixture.repository.confirmPendingWebRemovals()
+            assertEquals(UnifiedCollectionType.NOT_COLLECTED, fixture.database.subjectCollection().findById(1).first()?.collectionType)
+            assertNull(fixture.metadata.find(1)?.pendingOperation)
+            assertTrue(fixture.api.deletes.isEmpty())
+            assertTrue(fixture.api.collectionCalls.get() >= 3)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `foreground confirmation does not flush ordinary changes with auto sync disabled`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            fixture.database.subjectCollection().upsert(subject(1, UnifiedCollectionType.WISH, 100))
+            fixture.metadata.markLocalChange(1, UnifiedCollectionType.WISH, 100)
+            fixture.repository.confirmPendingWebRemovals()
+            assertEquals(0, fixture.api.currentUserCalls.get())
+            assertTrue(fixture.api.upserts.isEmpty())
+            assertEquals(BangumiTrackingPendingOperation.UPSERT_COLLECTION.name, fixture.metadata.find(1)?.pendingOperation)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `account switch during removal query preserves both accounts pending operations`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            fixture.settings.update { copy(autoSyncTracking = false) }
+            val oldAccount = fixture.api.account
+            fixture.metadata.adoptAccount(oldAccount)
+            fixture.database.subjectCollection().upsert(subject(1, UnifiedCollectionType.WISH, 100))
+            fixture.metadata.markLocalDeletion(1, 200)
+            fixture.api.onCollection = {
+                fixture.api.onCollection = null
+                fixture.tokens.setRefreshToken("other-account-session")
+                fixture.api.account = BangumiTrackingAccount(200, "other")
+                fixture.metadata.adoptAccount(fixture.api.account)
+                fixture.metadata.markLocalChange(1, UnifiedCollectionType.DOING, 300)
+                fixture.database.subjectCollection().upsert(subject(1, UnifiedCollectionType.DOING, 300))
+            }
+            fixture.repository.confirmPendingWebRemovals()
+            val dao = fixture.database.bangumiTrackingMetadataDao()
+            assertEquals(BangumiTrackingPendingOperation.DELETE_COLLECTION.name, dao.find(oldAccount.key, 1)?.pendingOperation)
+            assertNotNull(dao.find(oldAccount.key, 1)?.pendingError)
+            assertEquals(BangumiTrackingPendingOperation.UPSERT_COLLECTION.name, dao.find(fixture.api.account.key, 1)?.pendingOperation)
+            assertEquals(null, dao.find(fixture.api.account.key, 1)?.pendingError)
+            assertEquals(UnifiedCollectionType.DOING, fixture.database.subjectCollection().findById(1).first()?.collectionType)
+            assertTrue(fixture.api.deletes.isEmpty())
+        } finally {
+            fixture.database.close()
+        }
+    }
+
     private data class Fixture(
-        val database: AniDatabase,
+        val database: WynimeDatabase,
+        val tokens: TokenRepository,
         val metadata: BangumiTrackingMetadataRepository,
         val settings: BangumiTrackingSyncSettingsStore,
         val api: FakeSyncApi,
@@ -304,19 +367,21 @@ class BangumiTrackingSyncRepositoryTest {
     )
 
     private fun fixture(scope: CoroutineScope): Fixture {
-        val database = Room.inMemoryDatabaseBuilder<AniDatabase> { AniDatabaseConstructor.initialize() }
+        val database = Room.inMemoryDatabaseBuilder<WynimeDatabase> { WynimeDatabaseConstructor.initialize() }
             .setDriver(BundledSQLiteDriver())
             .build()
         val settings = BangumiTrackingSyncSettingsStore(createTestPreferencesDataStore())
+        val tokens = TokenRepository(MemoryDataStore(TokenSave.Initial))
         val metadata = BangumiTrackingMetadataRepository(
             dao = database.bangumiTrackingMetadataDao(),
-            tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+            tokenRepository = tokens,
             accountBindingStore = settings,
         )
         val api = FakeSyncApi()
         val subjectService = FakeSubjectService(api)
         return Fixture(
             database = database,
+            tokens = tokens,
             metadata = metadata,
             settings = settings,
             api = api,
@@ -334,7 +399,8 @@ class BangumiTrackingSyncRepositoryTest {
     }
 
     private class FakeSyncApi : BangumiTrackingSyncApi {
-        val account = BangumiTrackingAccount(1060673, "1060673")
+        var account = BangumiTrackingAccount(1060673, "1060673")
+        var onCollection: (suspend () -> Unit)? = null
         val currentUserCalls = AtomicInteger()
         val pageRequests = CopyOnWriteArrayList<Pair<Int, Int>>()
         val upserts = CopyOnWriteArrayList<Pair<Int, UnifiedCollectionType>>()
@@ -364,6 +430,7 @@ class BangumiTrackingSyncRepositoryTest {
 
         override suspend fun collection(username: String, subjectId: Int): BangumiTrackingRemoteSnapshot? {
             collectionCalls.incrementAndGet()
+            onCollection?.invoke()
             return remoteCollections[subjectId]
         }
 
@@ -398,9 +465,9 @@ class BangumiTrackingSyncRepositoryTest {
             type: BangumiSubjectCollectionType?,
             offset: Int,
             limit: Int,
-        ): List<AniSubjectCollection> = emptyList()
+        ): List<SubjectCollectionDto> = emptyList()
 
-        override suspend fun getSubjectCollection(subjectId: Int): AniSubjectCollection? {
+        override suspend fun getSubjectCollection(subjectId: Int): SubjectCollectionDto? {
             detailCalls.incrementAndGet()
             return null
         }
@@ -408,9 +475,9 @@ class BangumiTrackingSyncRepositoryTest {
         override suspend fun getSubjectRelations(subjectId: Int, withCharacterActors: Boolean): BatchSubjectRelations =
             error("not needed")
 
-        override fun subjectCollectionById(subjectId: Int): Flow<AniSubjectCollection?> = flow { emit(null) }
+        override fun subjectCollectionById(subjectId: Int): Flow<SubjectCollectionDto?> = flow { emit(null) }
 
-        override suspend fun patchSubjectCollection(subjectId: Int, payload: AniUpdateSubjectCollectionRequest) =
+        override suspend fun patchSubjectCollection(subjectId: Int, payload: UpdateSubjectCollectionRequestDto) =
             error("not needed")
 
         override suspend fun deleteSubjectCollection(subjectId: Int) {
@@ -419,7 +486,7 @@ class BangumiTrackingSyncRepositoryTest {
             api.removeRemote(subjectId)
         }
 
-        override suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<AniSubjectRecommendation> =
+        override suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<SubjectRecommendationDto> =
             error("not needed")
 
         override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts> = error("not needed")

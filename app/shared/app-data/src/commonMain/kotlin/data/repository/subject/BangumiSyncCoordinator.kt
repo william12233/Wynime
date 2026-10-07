@@ -1,12 +1,4 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the
- * following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,11 +56,6 @@ sealed interface BangumiSyncUiState {
     ) : BangumiSyncUiState
 }
 
-/**
- * Serializes all Bangumi mutations and exposes one lifecycle for the settings and collection UIs.
- * A caller may report progress while the exclusive operation is running; terminal states remain
- * visible until the next operation starts.
- */
 class BangumiSyncCoordinator {
     private val mutex = Mutex()
     private val _state = MutableStateFlow<BangumiSyncUiState>(BangumiSyncUiState.Idle)
@@ -118,7 +105,7 @@ class BangumiSyncCoordinator {
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Throwable) {
-                        // A failed operation must not permanently block a later operation.
+
                     }
                 }
 

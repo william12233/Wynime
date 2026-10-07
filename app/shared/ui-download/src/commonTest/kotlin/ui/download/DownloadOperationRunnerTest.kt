@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download
+package com.wynime.app.ui.download
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,12 +11,12 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.download.DownloadOperation
-import me.him188.ani.app.domain.media.download.DownloadOperations
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.utils.coroutines.childScope
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.download.DownloadOperation
+import com.wynime.app.domain.media.download.DownloadOperations
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.utils.coroutines.childScope
 
 class DownloadOperationRunnerTest {
     private class Fixture(testScope: TestScope, caches: List<MediaCache>) {
@@ -33,9 +24,6 @@ class DownloadOperationRunnerTest {
         val downloadManager = MediaDownloadManager(listOf(storage), testScope.backgroundScope)
         val deleteCache = FakeDeleteCacheUseCase(downloadManager)
 
-        /**
-         * 操作的执行作用域. 提交操作会立即在其中创建协程, 因此检查 [pendingOperationCount] 即可判断是否提交了操作.
-         */
         private val operationJob = SupervisorJob(testScope.backgroundScope.coroutineContext.job)
         val operations = DownloadOperations(
             downloadManager, deleteCache,

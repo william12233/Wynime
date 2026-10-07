@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.progress
+package com.wynime.app.videoplayer.ui.progress
 
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
@@ -27,9 +18,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.foundation.dialogs.PlatformPopupProperties
-import me.him188.ani.app.ui.lang.*
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.foundation.dialogs.PlatformPopupProperties
+import com.wynime.app.ui.lang.*
 import org.openani.mediamp.metadata.AudioTrack
 import org.openani.mediamp.metadata.TrackGroup
 import org.jetbrains.compose.resources.*
@@ -49,7 +40,6 @@ class AudioTrackState(
         options.firstOrNull { it.audioTrack.id == current?.id }
     }.flowOn(Dispatchers.Default)
 }
-
 
 @Composable
 fun PlayerControllerDefaults.AudioSwitcher(
@@ -78,9 +68,6 @@ fun PlayerControllerDefaults.AudioSwitcher(
     )
 }
 
-/**
- * 选音轨.
- */
 @Composable
 fun PlayerControllerDefaults.AudioSwitcher(
     value: AudioPresentation?,
@@ -94,7 +81,7 @@ fun PlayerControllerDefaults.AudioSwitcher(
             optionsProviderUpdated() + null
         }
     }
-    if (options.size <= 2) return // 1 for `null`, 只有一个的时候也不要显示
+    if (options.size <= 2) return
     return OptionsSwitcher(
         value = value,
         onValueChange = onValueChange,

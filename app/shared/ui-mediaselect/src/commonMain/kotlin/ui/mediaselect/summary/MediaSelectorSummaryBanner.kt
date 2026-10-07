@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediaselect.summary
+package com.wynime.app.ui.mediaselect.summary
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -39,10 +30,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -52,7 +43,7 @@ fun MediaSelectorSummaryBanner(
     onClickSwitchSource: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val motionScheme = LocalAniMotionScheme.current
+    val motionScheme = LocalWynimeMotionScheme.current
     val transitionSpec: AnimatedContentTransitionScope<MediaSelectorSummary>.() -> ContentTransform = {
         val default = motionScheme.animatedContent.standard(this)
         if (initialState.typeId == targetState.typeId) {
@@ -165,7 +156,7 @@ fun MediaSelectorSummaryBanner(
 
 @Composable
 private fun MediaSelectorSummaryBannerSourceIcon(source: MediaSelectorSourceSummary, modifier: Modifier) {
-    me.him188.ani.app.ui.mediaselect.common.SourceIcon(
+    com.wynime.app.ui.mediaselect.common.SourceIcon(
         iconUrl = source.sourceIconUrl,
         sourceName = source.sourceName,
         modifier,

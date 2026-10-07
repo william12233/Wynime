@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details
+package com.wynime.app.ui.subject.details
 
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -88,98 +79,96 @@ import com.kmpalette.rememberPaletteState
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectProgressInfo
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.data.models.subject.TestSubjectInfo
-import me.him188.ani.app.data.models.subject.preferredDisplayName
-import me.him188.ani.app.domain.episode.SetEpisodeCollectionTypeRequest
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.ui.comment.CommentReportHost
-import me.him188.ani.app.ui.comment.UIComment
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.AniImageLoadSuccess
-import me.him188.ani.app.ui.foundation.ImageViewer
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.Tag
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.input.touchHorizontalScrollOnly
-import me.him188.ani.app.ui.foundation.interaction.WindowDragArea
-import me.him188.ani.app.ui.foundation.layout.NestedScrollableColumn
-import me.him188.ani.app.ui.foundation.layout.NestedScrollableColumnState
-import me.him188.ani.app.ui.foundation.layout.NestedScrollableScope
-import me.him188.ani.app.ui.foundation.layout.PaddingValuesSides
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isWidthCompact
-import me.him188.ani.app.ui.foundation.layout.only
-import me.him188.ani.app.ui.foundation.layout.paneHorizontalPadding
-import me.him188.ani.app.ui.foundation.layout.paneVerticalPadding
-import me.him188.ani.app.ui.foundation.layout.plus
-import me.him188.ani.app.ui.foundation.layout.rememberNestedScrollableColumnState
-import me.him188.ani.app.ui.foundation.ImageViewerBackHandler
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.pagerTabIndicatorOffset
-import me.him188.ani.app.ui.foundation.rememberImageViewerHandler
-import me.him188.ani.app.ui.foundation.stateOf
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.theme.LocalAppChromeHazeState
-import me.him188.ani.app.ui.foundation.theme.LocalThemeSettings
-import me.him188.ani.app.ui.foundation.theme.MaterialThemeFromPaletteAndImage
-import me.him188.ani.app.ui.foundation.theme.appChromeFrostedGlass
-import me.him188.ani.app.ui.foundation.theme.appChromeHazeSource
-import me.him188.ani.app.ui.foundation.theme.isAppChromeFrostedGlassActive
-import me.him188.ani.app.ui.foundation.widgets.BackNavigationIconButton
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.foundation.widgets.showLoadError
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
-import me.him188.ani.app.ui.lang.foundation_richtext_open_failed_prefix
-import me.him188.ani.app.ui.lang.subject_details_coming_soon
-import me.him188.ani.app.ui.lang.subject_details_login_to_collect
-import me.him188.ani.app.ui.lang.subject_details_tab_comments
-import me.him188.ani.app.ui.lang.subject_details_tab_details
-import me.him188.ani.app.ui.lang.subject_details_tab_discussions
-import me.him188.ani.app.ui.lang.subject_details_write_review
-import me.him188.ani.app.ui.rating.EditableRating
-import me.him188.ani.app.ui.rating.EditableRatingDialogsHost
-import me.him188.ani.app.ui.rating.EditableRatingActions
-import me.him188.ani.app.ui.rating.EditableRatingUiState
-import me.him188.ani.app.ui.richtext.RichTextDefaults
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.ui.subject.AiringLabelState
-import me.him188.ani.app.ui.subject.SubjectProgressState
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
-import me.him188.ani.app.ui.subject.details.components.CollectionData
-import me.him188.ani.app.ui.subject.details.components.SeasonTag
-import me.him188.ani.app.ui.subject.details.components.SelectEpisodeButtons
-import me.him188.ani.app.ui.subject.details.components.SubjectBlurredBackground
-import me.him188.ani.app.ui.subject.details.components.SubjectCommentColumn
-import me.him188.ani.app.ui.subject.details.components.SubjectDetailsDefaults
-import me.him188.ani.app.ui.subject.details.components.SubjectDetailsDefaults.MaximumContentWidth
-import me.him188.ani.app.ui.subject.details.components.SubjectDetailsHeader
-import me.him188.ani.app.ui.subject.details.layout.CompactDetailsTabContent
-import me.him188.ani.app.ui.subject.details.layout.SubjectDetailsLayoutParams
-import me.him188.ani.app.ui.subject.details.layout.SubjectDetailsMultiColumnPage
-import me.him188.ani.app.ui.subject.details.layout.SubjectDetailsMultiColumnPlaceholder
-import me.him188.ani.app.ui.subject.details.sections.SubjectCommentsSheet
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsState
-import me.him188.ani.app.ui.subject.details.state.createTestSubjectDetailsState
-import me.him188.ani.app.ui.subject.details.state.rememberAiringLabelState
-import me.him188.ani.app.ui.subject.details.state.rememberSubjectProgressState
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListDialog
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListItem
-import me.him188.ani.app.ui.subject.person.PeoplePreviewHost
-import me.him188.ani.app.ui.user.SelfInfoUiState
-import me.him188.ani.app.ui.user.TestSelfInfoUiState
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.toggleCollected
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.SubjectProgressInfo
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.data.models.subject.TestSubjectInfo
+import com.wynime.app.data.models.subject.preferredDisplayName
+import com.wynime.app.domain.episode.SetEpisodeCollectionTypeRequest
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.ui.comment.CommentReportHost
+import com.wynime.app.ui.comment.UIComment
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.WynimeImageLoadSuccess
+import com.wynime.app.ui.foundation.ImageViewer
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.Tag
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.input.touchHorizontalScrollOnly
+import com.wynime.app.ui.foundation.interaction.WindowDragArea
+import com.wynime.app.ui.foundation.layout.NestedScrollableColumn
+import com.wynime.app.ui.foundation.layout.NestedScrollableColumnState
+import com.wynime.app.ui.foundation.layout.NestedScrollableScope
+import com.wynime.app.ui.foundation.layout.PaddingValuesSides
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isWidthCompact
+import com.wynime.app.ui.foundation.layout.only
+import com.wynime.app.ui.foundation.layout.paneHorizontalPadding
+import com.wynime.app.ui.foundation.layout.paneVerticalPadding
+import com.wynime.app.ui.foundation.layout.plus
+import com.wynime.app.ui.foundation.layout.rememberNestedScrollableColumnState
+import com.wynime.app.ui.foundation.ImageViewerBackHandler
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.pagerTabIndicatorOffset
+import com.wynime.app.ui.foundation.rememberImageViewerHandler
+import com.wynime.app.ui.foundation.stateOf
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.theme.LocalAppChromeHazeState
+import com.wynime.app.ui.foundation.theme.LocalThemeSettings
+import com.wynime.app.ui.foundation.theme.MaterialThemeFromPaletteAndImage
+import com.wynime.app.ui.foundation.theme.appChromeFrostedGlass
+import com.wynime.app.ui.foundation.theme.appChromeHazeSource
+import com.wynime.app.ui.foundation.theme.isAppChromeFrostedGlassActive
+import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.showLoadError
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
+import com.wynime.app.ui.lang.foundation_richtext_open_failed_prefix
+import com.wynime.app.ui.lang.subject_details_coming_soon
+import com.wynime.app.ui.lang.subject_details_login_to_collect
+import com.wynime.app.ui.lang.subject_details_tab_comments
+import com.wynime.app.ui.lang.subject_details_tab_details
+import com.wynime.app.ui.lang.subject_details_tab_discussions
+import com.wynime.app.ui.lang.subject_details_write_review
+import com.wynime.app.ui.rating.EditableRating
+import com.wynime.app.ui.rating.EditableRatingDialogsHost
+import com.wynime.app.ui.rating.EditableRatingActions
+import com.wynime.app.ui.rating.EditableRatingUiState
+import com.wynime.app.ui.richtext.RichTextDefaults
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.subject.AiringLabelState
+import com.wynime.app.ui.subject.SubjectProgressState
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
+import com.wynime.app.ui.subject.details.components.CollectionData
+import com.wynime.app.ui.subject.details.components.SeasonTag
+import com.wynime.app.ui.subject.details.components.SelectEpisodeButtons
+import com.wynime.app.ui.subject.details.components.SubjectBlurredBackground
+import com.wynime.app.ui.subject.details.components.SubjectCommentColumn
+import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults
+import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults.MaximumContentWidth
+import com.wynime.app.ui.subject.details.components.SubjectDetailsHeader
+import com.wynime.app.ui.subject.details.layout.CompactDetailsTabContent
+import com.wynime.app.ui.subject.details.layout.SubjectDetailsLayoutParams
+import com.wynime.app.ui.subject.details.layout.SubjectDetailsMultiColumnPage
+import com.wynime.app.ui.subject.details.layout.SubjectDetailsMultiColumnPlaceholder
+import com.wynime.app.ui.subject.details.sections.SubjectCommentsSheet
+import com.wynime.app.ui.subject.details.state.SubjectDetailsState
+import com.wynime.app.ui.subject.details.state.createTestSubjectDetailsState
+import com.wynime.app.ui.subject.details.state.rememberAiringLabelState
+import com.wynime.app.ui.subject.details.state.rememberSubjectProgressState
+import com.wynime.app.ui.subject.episode.list.EpisodeListDialog
+import com.wynime.app.ui.subject.episode.list.EpisodeListItem
+import com.wynime.app.ui.subject.person.PeoplePreviewHost
+import com.wynime.app.ui.user.SelfInfoUiState
+import com.wynime.app.ui.user.TestSelfInfoUiState
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.toggleCollected
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
-
-// region screen
 
 @Composable
 fun SubjectDetailsScreen(
@@ -198,7 +187,6 @@ fun SubjectDetailsScreen(
     val toaster = LocalToaster.current
     val scope = rememberCoroutineScope()
 
-    // 每次进入组合 (含从播放页返回) 只是"确保已加载"; reload 会重新加载并闪一下占位, 只用于加载失败后重试.
     LaunchedEffect(Unit) {
         vm.load()
     }
@@ -244,8 +232,6 @@ fun SubjectDetailsScreen(
         uriHandler.openUri("https://bgm.tv/subject/${state.subjectId}")
     }
 
-    // 断点必须按本页面实际可用宽度决定, 不能按窗口宽度:
-    // 本页面会内嵌于播放页 ModalBottomSheet (最大 640dp) 与搜索页 list-detail 详情栏.
     BoxWithConstraints(modifier) {
         val layoutParams = SubjectDetailsLayoutParams.calculate(maxWidth)
         when (state) {
@@ -289,10 +275,6 @@ fun SubjectDetailsScreen(
     }
 }
 
-// endregion
-
-// region page
-
 @Composable
 private fun SubjectDetailsPage(
     state: SubjectDetailsState,
@@ -317,7 +299,6 @@ private fun SubjectDetailsPage(
 
     var showSelectEpisode by rememberSaveable { mutableStateOf(false) }
 
-    // image viewer
     val imageViewer = rememberImageViewerHandler()
     ImageViewerBackHandler(imageViewer)
 
@@ -332,7 +313,6 @@ private fun SubjectDetailsPage(
         )
     }
 
-    // 评论中的链接/图片点击 (手机"评价" tab 与桌面评论 sheet 共用)
     val onClickCommentUrl = { url: String ->
         RichTextDefaults.checkSanityAndOpen(
             url,
@@ -343,17 +323,17 @@ private fun SubjectDetailsPage(
         )
     }
     val onClickCommentImage = { url: String -> imageViewer.viewImage(url) }
-    // 封面点击放大 (与评论图片共用页面级查看器)
+
     val coverImageUrl = state.info?.imageLarge?.takeIf { it.isNotBlank() }
     val onClickCover: (() -> Unit)? = coverImageUrl?.let { url -> { imageViewer.viewImage(url) } }
-    // Bangumi 源评价的 "在 Bangumi 打开" 菜单项
+
     val onOpenCommentOriginal = { _: UIComment ->
         browserNavigator.openUri("https://bgm.tv/subject/${uiState.subjectId}")
     }
 
     val themeSettings = LocalThemeSettings.current
     var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
-    val onCoverImageSuccess = { success: AniImageLoadSuccess ->
+    val onCoverImageSuccess = { success: WynimeImageLoadSuccess ->
         success.bitmap?.let { bitmap = it }
         Unit
     }
@@ -379,12 +359,10 @@ private fun SubjectDetailsPage(
             )
         }
 
-        // 页面级唯一 Host: 评论 sheet 提交后立即关闭也能收到举报结果提示
         state.subjectCommentReportState?.let { CommentReportHost(it) }
 
         if (layoutParams.isMultiColumn && state.info != null) {
-            // 双栏 / 三栏: 全新自适应布局 (复用现有 SubjectDetailsState 数据).
-            // 桌面无"评价" tab, 完整评论流与"写评价"从评价预览/热门评价卡进入.
+
             var showComments by rememberSaveable { mutableStateOf(false) }
             EditableRatingDialogsHost(uiState.rating, state)
             if (showComments) {
@@ -398,7 +376,7 @@ private fun SubjectDetailsPage(
                     onOpenOriginal = onOpenCommentOriginal,
                 )
             }
-            // 中大屏点击人物/角色先打开右侧预览 (方案C), 手机上则直接导航到全页
+
             PeoplePreviewHost {
                 SubjectDetailsMultiColumnPage(
                     state = state,
@@ -523,15 +501,14 @@ private fun SubjectDetailsPage(
                             .nestedScrollWorkaround(state.commentTabLazyGridState),
                         gridState = state.commentTabLazyGridState,
                         contentPadding = tabContentPadding,
-                        // 下拉手势优先交给 NestedScrollableColumn 展开 header;
-                        // 只有整页在最顶部时才启用下拉刷新.
+
                         pullToRefreshEnabled = nestedScrollableColumnState.isHeaderFullyVisible,
                     )
                 },
                 discussionsTab = {
                     LazyColumn(
                         Modifier.fillMaxSize(),
-                        // TODO: Add nestedScrollWorkaround when we implement this tab
+
                     ) {
                         item {
                             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -558,7 +535,7 @@ private fun PlaceholderSubjectDetailsPage(
     onClickOpenExternal: () -> Unit = {},
 ) {
     if (layoutParams.isMultiColumn) {
-        // 与加载完成后的多栏布局几何对齐, 避免跳变.
+
         SubjectDetailsMultiColumnPlaceholder(
             subjectInfo,
             layoutParams,
@@ -655,29 +632,6 @@ private fun ErrorSubjectDetailsPage(
     }
 }
 
-// endregion
-
-// region layout
-
-/**
- * 单栏 (compact) 条目详情页布局.
- *
- * ### 滚动结构
- *
- * header (封面等信息 + [tabRow]) 与 [content] (pager) 位于同一个 [NestedScrollableColumn] 中:
- * 向上滚动时 header 逐渐滚出布局外, pager 高度随之增大直到占满;
- * 此后才由 pager 内部的 scrollable 消费滚动; 内部 scrollable 到顶后继续下拉, header 才滚回.
- *
- * 当 [tabRow] 的顶边到达顶栏底部 (anchor) 时, 显示粘性面板 (第二个 [TopAppBar] + 第二份 [tabRow]),
- * 覆盖在内容之上, 起到 pinned 的视觉效果而不阻塞 pager 内部滚动.
- * 整个滚动区域是毛玻璃的模糊来源, 粘性面板作为其 sibling 应用玻璃效果.
- *
- * @param info `null` 表示没加载完成
- * @param tabRow pager 的 TabRow. 会被调用两次: 一次随内容滚动, 一次在粘性面板中.
- * @param content pager 区域, 填满 [NestedScrollableColumn] 的 content slot.
- * 可通过 [NestedScrollableScope] 使用 [NestedScrollableScope.nestedScrollWorkaround] 为内部
- * scrollable 接线 (桌面鼠标滚轮).
- */
 @Composable
 fun SubjectDetailsSingleColumnPage(
     info: SubjectInfo?,
@@ -691,7 +645,7 @@ fun SubjectDetailsSingleColumnPage(
     showBlurredBackground: Boolean = true,
     windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
     navigationIcon: @Composable () -> Unit = {},
-    onCoverImageSuccess: (AniImageLoadSuccess) -> Unit = {},
+    onCoverImageSuccess: (WynimeImageLoadSuccess) -> Unit = {},
     onClickOpenExternal: () -> Unit = {},
     onClickCover: (() -> Unit)? = null,
     floatingActionButton: @Composable () -> Unit = {},
@@ -699,27 +653,26 @@ fun SubjectDetailsSingleColumnPage(
     nestedScrollableColumnState: NestedScrollableColumnState = rememberNestedScrollableColumnState(),
     content: @Composable NestedScrollableScope.(contentPadding: PaddingValues) -> Unit,
 ) {
-    val backgroundColor = AniThemeDefaults.pageContentBackgroundColor
-    val stickyTopBarColor = AniThemeDefaults.navigationContainerColor
+    val backgroundColor = WynimeThemeDefaults.pageContentBackgroundColor
+    val stickyTopBarColor = WynimeThemeDefaults.navigationContainerColor
     val topAppBarActions: @Composable RowScope.() -> Unit = {
         IconButton(onClickOpenExternal) {
             Icon(Icons.AutoMirrored.Outlined.OpenInNew, null)
         }
     }
-    // 详情页自带一个独立的毛玻璃作用域: 粘性面板模糊其下方滚动的内容.
+
     CompositionLocalProvider(LocalAppChromeHazeState provides rememberHazeState()) {
         val frostedGlassActive = isAppChromeFrostedGlassActive()
         Scaffold(
             topBar = {
                 if (showTopBar) {
                     WindowDragArea {
-                        // 透明背景的, 总是显示. 第二个 (粘性面板) 在 content 区域作为 overlay 绘制,
-                        // 以免 topBar 高度随其出现而变化.
+
                         TopAppBar(
                             title = {},
                             navigationIcon = navigationIcon,
                             actions = topAppBarActions,
-                            colors = AniThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent),
+                            colors = WynimeThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent),
                             windowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
                         )
                     }
@@ -730,11 +683,9 @@ fun SubjectDetailsSingleColumnPage(
             contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
             containerColor = backgroundColor,
         ) { scaffoldPadding ->
-            // 这个页面比较特殊. 背景需要绘制到 TopBar 等区域以内, 也就是要无视 scaffoldPadding.
 
-            // 在背景之上显示的封面和标题等信息
             val headerContentPadding = scaffoldPadding.only(PaddingValuesSides.Horizontal + PaddingValuesSides.Top)
-            // 从 tab row 开始的区域
+
             val remainingContentPadding = scaffoldPadding.only(PaddingValuesSides.Horizontal)
 
             Box(
@@ -743,13 +694,11 @@ fun SubjectDetailsSingleColumnPage(
             ) {
                 var tabRowHeightPx by remember { mutableStateOf(0) }
 
-                // 粘性面板: 第二个 TopAppBar + 第二份 TabRow.
-                // 作为模糊来源的 sibling 绘制在其上方, 毛玻璃可采样到下方滚动的内容.
                 val density = LocalDensity.current
                 val anchorHeightPx = rememberUpdatedState(
                     with(density) { scaffoldPadding.calculateTopPadding().roundToPx() },
                 )
-                // 触发条件: header 内的 tabRow 顶边滚动到顶栏底部 (anchor).
+
                 val stickyPanelVisible by remember(nestedScrollableColumnState) {
                     derivedStateOf {
                         val state = nestedScrollableColumnState
@@ -762,7 +711,7 @@ fun SubjectDetailsSingleColumnPage(
                     header = {
                         Column(Modifier.fillMaxWidth()) {
                             Box {
-                                // 虚化渐变背景, 需要绘制到 scaffoldPadding 以外区域
+
                                 if (showBlurredBackground) {
                                     SubjectBlurredBackground(
                                         coverImageUrl = info?.imageLarge,
@@ -771,8 +720,6 @@ fun SubjectDetailsSingleColumnPage(
                                     )
                                 }
 
-                                // 标题和封面, 以及收藏数据, 可向上滑动
-                                // 需要满足 scaffoldPadding 的 horizontal 和 top
                                 Column(
                                     Modifier
                                         .padding(headerContentPadding)
@@ -815,7 +762,7 @@ fun SubjectDetailsSingleColumnPage(
                     content = {
                         content(remainingContentPadding)
                     },
-                    // 毛玻璃的模糊来源: 覆盖整个滚动区域 (header 背景 + tabRow + pager 内容).
+
                     modifier = Modifier
                         .fillMaxSize()
                         .appChromeHazeSource(backgroundColor = backgroundColor),
@@ -823,8 +770,7 @@ fun SubjectDetailsSingleColumnPage(
                 )
 
                 if (showTopBar || tabRow != null) {
-                    // 面板底色/毛玻璃按分段应用: TopAppBar 段随 fade 渐入渐出,
-                    // TabRow 段直接 snap, 与 header 中 TabRow (同帧 alpha 隐藏/显示) 无缝交接.
+
                     val panelBackgroundModifier = Modifier
                         .appChromeFrostedGlass(
                             enabled = frostedGlassActive,
@@ -838,7 +784,7 @@ fun SubjectDetailsSingleColumnPage(
                             .fillMaxWidth(),
                     ) {
                         if (showTopBar) {
-                            AniAnimatedVisibility(
+                            WynimeAnimatedVisibility(
                                 stickyPanelVisible,
                                 enter = fadeIn(),
                                 exit = fadeOut(),
@@ -856,7 +802,7 @@ fun SubjectDetailsSingleColumnPage(
                                         modifier = panelBackgroundModifier,
                                         navigationIcon = navigationIcon,
                                         actions = topAppBarActions,
-                                        colors = AniThemeDefaults.topAppBarColors()
+                                        colors = WynimeThemeDefaults.topAppBarColors()
                                             .copy(containerColor = Color.Transparent),
                                         windowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
                                     )
@@ -880,14 +826,6 @@ fun SubjectDetailsSingleColumnPage(
     }
 }
 
-// endregion
-
-// region content pager
-
-/**
- * Pager 的 TabRow. 在 [SubjectDetailsSingleColumnPage] 中被调用两次:
- * 一次随内容滚动, 一次在粘性面板中 (背景由面板提供).
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SubjectDetailsContentTabRow(
@@ -932,10 +870,6 @@ private fun SubjectDetailsContentTabRow(
     }
 }
 
-/**
- * Pager 页面 (不含 TabRow, 见 [SubjectDetailsContentTabRow]).
- * 填满 [NestedScrollableColumn] 的 content slot.
- */
 @Composable
 private fun SubjectDetailsContentPager(
     pagerState: PagerState,
@@ -975,9 +909,6 @@ private fun SubjectDetailsContentPager(
     }
 }
 
-/**
- * Pager 占位页面
- */
 @Composable
 private fun PlaceholderSubjectDetailsContentPager(paddingValues: PaddingValues) {
     val density = LocalDensity.current
@@ -989,7 +920,7 @@ private fun PlaceholderSubjectDetailsContentPager(paddingValues: PaddingValues) 
             .padding(paddingValues)
             .consumeWindowInsets(paddingValues),
     ) {
-        // tab row
+
         Spacer(
             Modifier
                 .padding(horizontal = windowSizeClass.paneHorizontalPadding)
@@ -1001,7 +932,6 @@ private fun PlaceholderSubjectDetailsContentPager(paddingValues: PaddingValues) 
 
         Spacer(Modifier.height(16.dp))
 
-        // 条目描述
         val bodyMediumTextHeight = with(density) { MaterialTheme.typography.bodyMedium.lineHeight.toDp() }
         val timesDot8TextHeight = (bodyMediumTextHeight.value * 0.8).dp
         val timesDot8TextLinePadding = (bodyMediumTextHeight.value * 0.2).dp
@@ -1019,7 +949,6 @@ private fun PlaceholderSubjectDetailsContentPager(paddingValues: PaddingValues) 
 
         Spacer(Modifier.height(12.dp))
 
-        // 标签
         val labelMediumTextHeight = with(density) { MaterialTheme.typography.labelMedium.lineHeight.toDp() }
 
         FlowRow(
@@ -1101,8 +1030,6 @@ private fun PlaceholderSubjectDetailsContentPager(paddingValues: PaddingValues) 
     }
 }
 
-// endregion
-
 @Immutable
 @Serializable
 enum class SubjectDetailsTab {
@@ -1111,32 +1038,19 @@ enum class SubjectDetailsTab {
     DISCUSSIONS,
 }
 
-/**
- * UI state of the subject details page.
- */
 sealed interface SubjectDetailsLoadState {
     val subjectId: Int
 
-    /**
-     * Placeholder, data is still loading.
-     * If preview subject info is available, it will show first.
-     */
     data class Placeholder(
         override val subjectId: Int,
         val subjectInfo: SubjectInfo? = null
     ) : SubjectDetailsLoadState
 
-    /**
-     * Content ready.
-     */
     class Ok(
         override val subjectId: Int,
         val value: SubjectDetailsState
     ) : SubjectDetailsLoadState
 
-    /**
-     * Load error, if preview subject info is available, it will also show.
-     */
     class Err(
         override val subjectId: Int,
         val placeholder: SubjectInfo?,
@@ -1181,7 +1095,6 @@ internal fun PreviewPlaceholderSubjectDetails() = ProvideCompositionLocalsForPre
         state,
     )
 }
-
 
 @OptIn(TestOnly::class)
 @Preview

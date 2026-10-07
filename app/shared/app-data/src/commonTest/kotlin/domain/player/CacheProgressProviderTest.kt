@@ -1,21 +1,12 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.player
+package com.wynime.app.domain.player
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.MediaCacheProgressInfo
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.MediaCacheProgressInfo
 import org.openani.mediamp.ExperimentalMediampApi
 import org.openani.mediamp.metadata.MediaProperties
 import org.openani.mediamp.source.UriMediaData
@@ -93,7 +84,7 @@ class CacheProgressProviderTest {
 
             player.setMediaData(UriMediaData("https://example.com/second.m3u8"))
             advanceUntilIdle()
-            // 重新打开时播放器重置缓冲位置, 且 mediaData 切换, 两者都会产生 Empty.
+
             assertEquals(MediaCacheProgressInfo.Empty, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }

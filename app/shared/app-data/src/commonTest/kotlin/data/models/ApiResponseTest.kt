@@ -1,16 +1,7 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models
+package com.wynime.app.data.models
 
 import kotlinx.io.IOException
-import me.him188.ani.utils.coroutines.CancellationException
+import com.wynime.utils.coroutines.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -49,10 +40,6 @@ class ApiResponseTest {
         assertEquals(null, result.failureOrNull())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // getOrThrow
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `getOrThrow success`() {
         val result = ApiResponse.success(1)
@@ -66,10 +53,6 @@ class ApiResponseTest {
             result.getOrThrow()
         }
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // map
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `map success`() {
@@ -106,10 +89,6 @@ class ApiResponseTest {
         assertEquals(1.0, mapped.getOrNull())
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // valueOrElse
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `valueOrElse success`() {
         val result = ApiResponse.success(1)
@@ -140,10 +119,6 @@ class ApiResponseTest {
         assertEquals(1, result.valueOrElse { null })
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // fold
-    ///////////////////////////////////////////////////////////////////////////
-
     @Test
     fun `fold success`() {
         val result = ApiResponse.success(1)
@@ -173,10 +148,6 @@ class ApiResponseTest {
         val result = ApiResponse.success(null)
         assertEquals(1, result.fold({ 1 }, { 2 }))
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // flatMap
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `flatMap success`() {
@@ -219,10 +190,6 @@ class ApiResponseTest {
         val mapped = result.flatMap { ApiResponse.success(null) }
         assertEquals(ApiFailure.NetworkError, mapped.failureOrNull())
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // runApiRequest
-    ///////////////////////////////////////////////////////////////////////////
 
     @Test
     fun `runApiRequest success`() {

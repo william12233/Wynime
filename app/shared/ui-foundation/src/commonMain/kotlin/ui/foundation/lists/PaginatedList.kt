@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.lists
+package com.wynime.app.ui.foundation.lists
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,23 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_paginated_list_next_group
-import me.him188.ani.app.ui.lang.foundation_paginated_list_previous_group
-import me.him188.ani.app.ui.lang.foundation_paginated_list_select_group
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_paginated_list_next_group
+import com.wynime.app.ui.lang.foundation_paginated_list_previous_group
+import com.wynime.app.ui.lang.foundation_paginated_list_select_group
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 通用分页列表组件，支持分组显示和分页导航
- *
- * @param T 列表项数据类型
- * @param state 分页列表状态
- * @param modifier 修饰符
- * @param contentPadding 内容内边距
- * @param itemContent 列表项内容Composable
- * @param headerContent 分组标题内容Composable（可选）
- * @param onItemClick 列表项点击回调（可选）
- */
 @Composable
 fun <T> PaginatedList(
     state: PaginatedListState<T>,
@@ -68,13 +48,12 @@ fun <T> PaginatedList(
 ) {
 
     Column(modifier = modifier) {
-        // 分页导航条
+
         PaginatedListNavigation(
             state = state,
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // 分组列表内容
         LazyColumn(
             state = state.listState,
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -107,9 +86,6 @@ fun <T> PaginatedList(
     }
 }
 
-/**
- * 分页列表导航组件
- */
 @Composable
 private fun <T> PaginatedListNavigation(
     state: PaginatedListState<T>,
@@ -125,7 +101,7 @@ private fun <T> PaginatedListNavigation(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 上一组按钮
+
         IconButton(
             onClick = { state.navigateToPreviousGroup() },
             enabled = state.canNavigateToPreviousGroup,
@@ -141,7 +117,6 @@ private fun <T> PaginatedListNavigation(
             )
         }
 
-        // 分组选择器
         Box(
             modifier = Modifier.weight(1f),
             contentAlignment = Alignment.Center,
@@ -172,7 +147,6 @@ private fun <T> PaginatedListNavigation(
                 }
             }
 
-            // 分组下拉菜单
             DropdownMenu(
                 expanded = showGroupSelector,
                 onDismissRequest = { showGroupSelector = false },
@@ -198,7 +172,6 @@ private fun <T> PaginatedListNavigation(
             }
         }
 
-        // 下一组按钮
         IconButton(
             onClick = { state.navigateToNextGroup() },
             enabled = state.canNavigateToNextGroup,
@@ -216,9 +189,6 @@ private fun <T> PaginatedListNavigation(
     }
 }
 
-/**
- * 默认分组标题组件
- */
 @Composable
 fun DefaultGroupHeader(
     title: String,

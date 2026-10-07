@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.material3.TabPosition
 import androidx.compose.ui.Modifier
@@ -6,12 +6,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.lerp
 
-
-/**
- * A [Modifier] that offsets the tab indicator based on the current page and page offset of a [androidx.compose.foundation.pager.PagerState].
- *
- * Useful with [androidx.compose.material3.TabRow] to animate the tab indicator when scrolling through pages.
- */
 fun Modifier.pagerTabIndicatorOffset(
     pagerState: androidx.compose.foundation.pager.PagerState,
     tabPositions: List<TabPosition>,
@@ -33,7 +27,7 @@ private fun Modifier.pagerTabIndicatorOffset(
     pageIndexMapping: (Int) -> Int = { it },
 ): Modifier = layout { measurable, constraints ->
     if (tabPositions.isEmpty()) {
-        // If there are no pages, nothing to show
+
         layout(constraints.maxWidth, 0) {}
     } else {
         val currentPage = minOf(tabPositions.lastIndex, pageIndexMapping(pagerState.currentPage))

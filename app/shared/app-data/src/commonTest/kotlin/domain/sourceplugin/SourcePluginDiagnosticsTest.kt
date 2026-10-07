@@ -1,18 +1,11 @@
-/*
- * Copyright (C) 2026 OpenAni contributors.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CancellationException
-import me.him188.ani.source.plugin.api.SourceResultStatus
+import com.wynime.source.plugin.api.SourceResultStatus
 
 class SourcePluginDiagnosticsTest {
     @Test

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration.search
+package com.wynime.app.ui.exploration.search
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.focusGroup
@@ -65,43 +56,42 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
 import kotlinx.coroutines.flow.collectLatest
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.domain.search.SearchSort
-import me.him188.ani.app.ui.foundation.IconButton
-import me.him188.ani.app.ui.foundation.animation.AniMotionScheme
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.icons.BackgroundDotLarge
-import me.him188.ani.app.ui.foundation.icons.GalleryThumbnail
-import me.him188.ani.app.ui.foundation.interaction.keyboardDirectionToSelectItem
-import me.him188.ani.app.ui.foundation.interaction.keyboardPageToScroll
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.paneHorizontalPadding
-import me.him188.ani.app.ui.foundation.layout.paneVerticalPadding
-import me.him188.ani.app.ui.foundation.widgets.NsfwMask
-import me.him188.ani.app.ui.foundation.widgets.SelectableDropdownMenuItem
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_search_results_shown
-import me.him188.ani.app.ui.lang.exploration_search_sort_collection
-import me.him188.ani.app.ui.lang.exploration_search_sort_date
-import me.him188.ani.app.ui.lang.exploration_search_sort_match
-import me.him188.ani.app.ui.lang.exploration_search_sort_rank
-import me.him188.ani.app.ui.lang.foundation_load_error_no_results
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.app.ui.search.SearchDefaults.IconTextButton
-import me.him188.ani.app.ui.search.SearchResultLazyVerticalGrid
-import me.him188.ani.app.ui.search.hasFirstPage
-import me.him188.ani.app.ui.search.isFinishedAndEmpty
-import me.him188.ani.app.ui.subject.SubjectCoverCard
-import me.him188.ani.app.ui.subject.SubjectGridDefaults
-import me.him188.ani.app.ui.subject.SubjectGridLayoutParams
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.domain.search.SearchSort
+import com.wynime.app.ui.foundation.IconButton
+import com.wynime.app.ui.foundation.animation.WynimeMotionScheme
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.icons.BackgroundDotLarge
+import com.wynime.app.ui.foundation.icons.GalleryThumbnail
+import com.wynime.app.ui.foundation.interaction.keyboardDirectionToSelectItem
+import com.wynime.app.ui.foundation.interaction.keyboardPageToScroll
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.paneHorizontalPadding
+import com.wynime.app.ui.foundation.layout.paneVerticalPadding
+import com.wynime.app.ui.foundation.widgets.NsfwMask
+import com.wynime.app.ui.foundation.widgets.SelectableDropdownMenuItem
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_search_results_shown
+import com.wynime.app.ui.lang.exploration_search_sort_collection
+import com.wynime.app.ui.lang.exploration_search_sort_date
+import com.wynime.app.ui.lang.exploration_search_sort_match
+import com.wynime.app.ui.lang.exploration_search_sort_rank
+import com.wynime.app.ui.lang.foundation_load_error_no_results
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.search.SearchDefaults.IconTextButton
+import com.wynime.app.ui.search.SearchResultLazyVerticalGrid
+import com.wynime.app.ui.search.hasFirstPage
+import com.wynime.app.ui.search.isFinishedAndEmpty
+import com.wynime.app.ui.subject.SubjectCoverCard
+import com.wynime.app.ui.subject.SubjectGridDefaults
+import com.wynime.app.ui.subject.SubjectGridLayoutParams
 import org.jetbrains.compose.resources.stringResource
-
 
 @Composable
 internal fun SearchResultColumn(
     items: LazyPagingItems<SubjectPreviewItemInfo>,
     layoutKind: SearchResultLayoutKind,
-    summary: @Composable SearchResultColumnScope.() -> Unit, // 可在还没发起任何搜索时不展示
+    summary: @Composable SearchResultColumnScope.() -> Unit,
     selectedItemIndex: () -> Int,
     onSelect: (index: Int) -> Unit,
     onPlay: (info: SubjectPreviewItemInfo) -> Unit,
@@ -114,7 +104,7 @@ internal fun SearchResultColumn(
 ) {
     var height by rememberSaveable { mutableIntStateOf(0) }
     val bringIntoViewRequesters = remember { mutableStateMapOf<Int, BringIntoViewRequester>() }
-    val aniMotionScheme = LocalAniMotionScheme.current
+    val wynimeMotionScheme = LocalWynimeMotionScheme.current
 
     val itemsState = rememberUpdatedState(items)
 
@@ -124,7 +114,7 @@ internal fun SearchResultColumn(
             LoadErrorCard(
                 error = it,
                 onRetry = { items.retry() },
-                modifier = Modifier.fillMaxWidth(), // noop
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         modifier
@@ -149,8 +139,8 @@ internal fun SearchResultColumn(
         headers()
 
         item(span = { GridItemSpan(maxLineSpan) }) {
-            val scope = remember(this, itemsState, aniMotionScheme) {
-                SearchResultColumnScopeImpl(itemsState, aniMotionScheme)
+            val scope = remember(this, itemsState, wynimeMotionScheme) {
+                SearchResultColumnScopeImpl(itemsState, wynimeMotionScheme)
             }
 
             scope.summary()
@@ -172,7 +162,7 @@ internal fun SearchResultColumn(
 
             AnimatedContent(
                 layoutParams.kind,
-                transitionSpec = aniMotionScheme.animatedContent.topLevel,
+                transitionSpec = wynimeMotionScheme.animatedContent.topLevel,
             ) { targetKind ->
                 var nsfwMaskState: NsfwMode by rememberSaveable(info?.title) {
                     mutableStateOf(info?.nsfwMode ?: NsfwMode.DISPLAY)
@@ -190,9 +180,9 @@ internal fun SearchResultColumn(
                                 isPlaceholder = info == null,
                                 onClick = { onSelect(index) },
                                 Modifier.animateItem(
-                                    aniMotionScheme.feedItemFadeInSpec,
-                                    aniMotionScheme.feedItemPlacementSpec,
-                                    aniMotionScheme.feedItemFadeOutSpec,
+                                    wynimeMotionScheme.feedItemFadeInSpec,
+                                    wynimeMotionScheme.feedItemPlacementSpec,
+                                    wynimeMotionScheme.feedItemFadeOutSpec,
                                 ),
                                 shape = layoutParams.grid.cardShape,
                             )
@@ -201,7 +191,7 @@ internal fun SearchResultColumn(
                         SearchResultLayoutKind.PREVIEW -> {
                             if (info != null && !info.hide) {
                                 val requester = remember { BringIntoViewRequester() }
-                                // Shared transition disabled temporarily to avoid detach/lookahead crashes.
+
                                 DisposableEffect(requester) {
                                     bringIntoViewRequesters[info.subjectId] = requester
                                     onDispose {
@@ -217,9 +207,9 @@ internal fun SearchResultColumn(
                                     onPlay = onPlay,
                                     Modifier
                                         .animateItem(
-                                            aniMotionScheme.feedItemFadeInSpec,
-                                            aniMotionScheme.feedItemPlacementSpec,
-                                            aniMotionScheme.feedItemFadeOutSpec,
+                                            wynimeMotionScheme.feedItemFadeInSpec,
+                                            wynimeMotionScheme.feedItemPlacementSpec,
+                                            wynimeMotionScheme.feedItemFadeOutSpec,
                                         )
                                         .bringIntoViewRequester(requester),
                                     imageModifier = Modifier,
@@ -323,7 +313,7 @@ private fun SearchResultItem(
 @Suppress("FunctionName")
 private fun LazyGridItemScope.SearchResultColumnScopeImpl(
     itemsState: State<LazyPagingItems<SubjectPreviewItemInfo>>,
-    aniMotionScheme: AniMotionScheme,
+    wynimeMotionScheme: WynimeMotionScheme,
 ): SearchResultColumnScope = object : SearchResultColumnScope {
     @Composable
     override fun SearchSummary(
@@ -333,7 +323,7 @@ private fun LazyGridItemScope.SearchResultColumnScopeImpl(
         onSortChange: (SearchSort) -> Unit,
         modifier: Modifier
     ) {
-        val modifier1 = modifier // 不要加动画, #1901
+        val modifier1 = modifier
         val noResultsText = stringResource(Lang.foundation_load_error_no_results)
         when {
             itemsState.value.isFinishedAndEmpty -> {
@@ -374,7 +364,7 @@ private fun LazyGridItemScope.SearchResultColumnScopeImpl(
             }
 
             else -> {
-                Spacer(modifier1.height(Dp.Hairline)) // 如果空白内容, 它可能会有 bug
+                Spacer(modifier1.height(Dp.Hairline))
             }
         }
     }
@@ -408,16 +398,11 @@ private fun LayoutKindButton(
                 SearchResultLayoutKind.COVER -> Icons.Outlined.BackgroundDotLarge
                 SearchResultLayoutKind.PREVIEW -> Icons.Outlined.GalleryThumbnail
             },
-            layoutKind.name, // not good
+            layoutKind.name,
         )
     }
 }
 
-/**
- * 切换排序方式的按钮
- *
- * @see [SearchSort]
- */
 @Composable
 private fun SortButton(
     currentSort: SearchSort,

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.details
+package com.wynime.app.ui.subject.episode.details
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -75,51 +66,37 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.episode.preferredDisplayName
-import me.him188.ani.app.domain.media.cache.EpisodeCacheStatus
-import me.him188.ani.app.ui.foundation.LocalEpisodeProgressSettings
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.LongClickProgressFill
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.icons.PlayingIcon
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.theme.AniTheme
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_collapse
-import me.him188.ani.app.ui.lang.subject_episode_episode_list
-import me.him188.ani.app.ui.lang.subject_episode_expand
-import me.him188.ani.app.ui.lang.subject_episode_view_more_episodes
-import me.him188.ani.app.ui.subject.AiringLabel
-import me.him188.ani.app.ui.subject.AiringLabelState
-import me.him188.ani.app.ui.subject.createTestAiringLabelState
-import me.him188.ani.app.ui.subject.episode.details.components.EpisodeGrid
-import me.him188.ani.app.ui.subject.episode.list.EpisodeCellLabel
-import me.him188.ani.app.ui.subject.episode.list.EpisodePlayProgressBar
-import me.him188.ani.app.ui.subject.episode.list.EpisodeStillBackground
-import me.him188.ani.app.ui.subject.episode.list.EpisodeWatchedBadge
-import me.him188.ani.app.ui.subject.episode.list.EpisodeStillDefaults
-import me.him188.ani.app.ui.subject.episode.details.components.PaginatedEpisodeList
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.api.topic.isDoneOrDropped
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.episode.preferredDisplayName
+import com.wynime.app.domain.media.cache.EpisodeCacheStatus
+import com.wynime.app.ui.foundation.LocalEpisodeProgressSettings
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.LongClickProgressFill
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.icons.PlayingIcon
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.theme.WynimeTheme
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_collapse
+import com.wynime.app.ui.lang.subject_episode_episode_list
+import com.wynime.app.ui.lang.subject_episode_expand
+import com.wynime.app.ui.lang.subject_episode_view_more_episodes
+import com.wynime.app.ui.subject.AiringLabel
+import com.wynime.app.ui.subject.AiringLabelState
+import com.wynime.app.ui.subject.createTestAiringLabelState
+import com.wynime.app.ui.subject.episode.details.components.EpisodeGrid
+import com.wynime.app.ui.subject.episode.list.EpisodeCellLabel
+import com.wynime.app.ui.subject.episode.list.EpisodePlayProgressBar
+import com.wynime.app.ui.subject.episode.list.EpisodeStillBackground
+import com.wynime.app.ui.subject.episode.list.EpisodeWatchedBadge
+import com.wynime.app.ui.subject.episode.list.EpisodeStillDefaults
+import com.wynime.app.ui.subject.episode.details.components.PaginatedEpisodeList
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 剧集列表区域组件，根据屏幕尺寸自适应显示不同的UI布局。
- *
- * 在宽屏设备显示为可展开/收起的下拉列表，在窄屏设备显示为横向滚动的卡片列表配合底部弹窗。
- *
- * @param episodeCarouselState 剧集轮播状态，包含剧集列表、当前播放状态、选择和收藏操作等
- * @param expanded 宽屏布局专用：是否展开剧集列表（窄屏布局忽略此参数）
- * @param airingLabelState 播出标签状态，用于显示番剧的播出信息
- * @param onToggleExpanded 宽屏布局专用：切换展开/收起状态的回调（窄屏布局忽略此参数）
- *
- * ## 响应式布局差异
- * - **宽屏**（≥600.dp宽度）：垂直列表布局，支持展开/收起，超过100集时使用分页显示
- * - **窄屏**（<600.dp宽度）：横向滚动卡片布局，点击更多按钮弹出底部选择器
- */
 @Composable
 fun EpisodeListSection(
     episodeCarouselState: EpisodeCarouselState,
@@ -132,7 +109,7 @@ fun EpisodeListSection(
     val isWideLayout = windowAdaptiveInfo.isWidthAtLeastMedium
 
     if (isWideLayout) {
-        // 宽屏布局：下拉展开
+
         WideEpisodeListSection(
             episodeCarouselState = episodeCarouselState,
             expanded = expanded,
@@ -140,7 +117,7 @@ fun EpisodeListSection(
             modifier = modifier,
         )
     } else {
-        // 窄屏布局：横向滚动 + BottomSheet
+
         NarrowEpisodeListSection(
             episodeCarouselState = episodeCarouselState,
             airingLabelState = airingLabelState,
@@ -149,13 +126,6 @@ fun EpisodeListSection(
     }
 }
 
-/**
- * 宽屏剧集列表组件。
- *
- * 显示为可展开/收起的卡片式列表，点击标题栏可切换展开状态。
- * 展开时会自动滚动到当前播放的剧集。
- * 适用于宽度 ≥ 600dp 的屏幕。
- */
 @Composable
 private fun WideEpisodeListSection(
     episodeCarouselState: EpisodeCarouselState,
@@ -271,14 +241,6 @@ private fun WideEpisodeListSection(
     }
 }
 
-/**
- * 窄屏剧集列表组件。
- *
- * 显示为横向滚动的卡片列表，配合标题栏和更多按钮。
- * 点击更多按钮会弹出底部选择器，双击标题可快速滚动到当前播放的剧集。
- * 适用于宽度 < 600dp 的屏幕。
- *
- */
 @Composable
 private fun NarrowEpisodeListSection(
     episodeCarouselState: EpisodeCarouselState,
@@ -294,7 +256,7 @@ private fun NarrowEpisodeListSection(
     val showImages = LocalEpisodeProgressSettings.current.showEpisodeImages
 
     Column(modifier.padding(horizontal = 16.dp)) {
-        // 标题行
+
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -342,7 +304,7 @@ private fun NarrowEpisodeListSection(
         }
 
         val density = LocalDensity.current
-        // 初始滚动到正在播放的剧集
+
         LaunchedEffect(episodeCarouselState.episodes) {
             if (!hasInitialScrolled && episodeCarouselState.episodes.isNotEmpty()) {
                 val playingIndex = episodeCarouselState.episodes.indexOfFirst {
@@ -351,7 +313,7 @@ private fun NarrowEpisodeListSection(
                 if (playingIndex >= 0) {
                     horizontalListState.animateScrollToItem(
                         playingIndex,
-                        // 显示前半个卡片
+
                         with(density) {
                             -48.dp.roundToPx()
                         },
@@ -360,8 +322,6 @@ private fun NarrowEpisodeListSection(
                 }
             }
         }
-
-        // 横向滚动的剧集列表
 
         LazyRow(
             state = horizontalListState,
@@ -421,14 +381,6 @@ private fun NarrowEpisodeListSection(
     }
 }
 
-/**
- * 剧集卡片组件，用于移动端横向滚动列表中显示单个剧集。
- *
- * 卡片 72dp 高、16:9，集号与集名并排成一行 ([EpisodeCellLabel]) 贴在左下角，上方留给剧照画面。
- * 已看完 (DONE) 时右上角显示「已看完」角标 ([EpisodeWatchedBadge])，点击它与长按卡片一样触发 [onLongClick] 取消已看；
- * 未看完但有播放记录 ([playProgress] 非空) 时底边显示上次播放进度 ([EpisodePlayProgressBar])；从未播放则两者都没有。
- * 有剧照 (且 [showImage]) 时剧照作背景 ([EpisodeStillBackground])，亮度不随观看状态变化，文字改用深色配色前景 ([EpisodeStillDefaults])，播放中用 primary 描边表示；尺寸与有无图无关。
- */
 @Composable
 private fun EpisodeCard(
     episode: EpisodeCollectionInfo,
@@ -443,7 +395,7 @@ private fun EpisodeCard(
     val isDone = episode.collectionType == UnifiedCollectionType.DONE
     val interactionSource = remember { MutableInteractionSource() }
     val still = episode.episodeInfo.imageMedium?.takeIf { showImage }
-    // 播放中且有剧照时的描边宽度, 进度条按它内缩
+
     val stillBorder = if (still != null && isPlaying) 2.dp else 0.dp
     val sortColor = when {
         still != null -> EpisodeStillDefaults.contentColor
@@ -516,7 +468,7 @@ private fun EpisodeCard(
                 EpisodePlayProgressBar(
                     progress = playProgress,
                     onStill = still != null,
-                    // 播放中的有图卡片有 primary 描边, 进度条缩到描边内侧, 不被盖住
+
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(start = stillBorder, end = stillBorder, bottom = stillBorder),
@@ -526,9 +478,6 @@ private fun EpisodeCard(
     }
 }
 
-/**
- * 剧集详情页专用的列表项组件。
- */
 @Composable
 private fun EpisodeListSectionItem(
     episode: EpisodeCollectionInfo,
@@ -588,15 +537,12 @@ private fun EpisodeListSectionItem(
     }
 }
 
-/**
- * Preview - 窄屏剧集列表
- */
 @OptIn(TestOnly::class)
 @PreviewLightDark
 @Composable
 internal fun PreviewEpisodeListSectionNarrow() = ProvideCompositionLocalsForPreview {
     val scope = rememberCoroutineScope()
-    AniTheme {
+    WynimeTheme {
         Surface {
             EpisodeListSection(
                 episodeCarouselState = remember {

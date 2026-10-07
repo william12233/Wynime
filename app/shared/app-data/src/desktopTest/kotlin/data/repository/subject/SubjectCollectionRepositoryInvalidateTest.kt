@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import androidx.paging.PagingDataEvent
 import androidx.paging.PagingDataPresenter
@@ -27,57 +18,52 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import me.him188.ani.app.data.models.bangumi.BangumiSyncState
-import me.him188.ani.app.data.models.episode.EpisodeCollectionInfo
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
-import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
-import me.him188.ani.app.data.network.AnimeScheduleService
-import me.him188.ani.app.data.network.BatchSubjectRelations
-import me.him188.ani.app.data.network.BangumiApiProvider
-import me.him188.ani.app.data.network.EpisodeServiceImpl
-import me.him188.ani.app.data.network.EpisodeService
-import me.him188.ani.app.data.network.SubjectService
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.persistent.database.AniDatabase
-import me.him188.ani.app.data.persistent.database.createTestAniDatabase
-import me.him188.ani.app.data.persistent.database.dao.EpisodeCollectionEntity
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
-import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionEntity
-import me.him188.ani.app.data.repository.episode.AnimeScheduleRepository
-import me.him188.ani.app.data.repository.episode.EpisodeCollectionRepository
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.app.data.persistent.createTestPreferencesDataStore
-import me.him188.ani.app.domain.session.SessionEvent
-import me.him188.ani.app.domain.session.SessionState
-import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.client.apis.ScheduleAniApi
-import me.him188.ani.client.apis.SubjectsAniApi
-import me.him188.ani.client.models.AniCollectionType
-import me.him188.ani.client.models.AniEpisodeCollection
-import me.him188.ani.client.models.AniEpisodeCollectionType
-import me.him188.ani.client.models.AniEpisodeType
-import me.him188.ani.client.models.AniFavourite
-import me.him188.ani.client.models.AniSelfRatingInfo
-import me.him188.ani.client.models.AniSubjectCollection
-import me.him188.ani.client.models.AniSubjectRecommendation
-import me.him188.ani.client.models.AniSubjectRelations
-import me.him188.ani.client.models.AniSubjectType
-import me.him188.ani.client.models.AniUpdateSubjectCollectionRequest
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.paging.Paged
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiEpType
-import me.him188.ani.datasources.bangumi.models.BangumiSubjectCollectionType
-import me.him188.ani.utils.ktor.ApiInvoker
-import me.him188.ani.utils.ktor.asScopedHttpClient
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.app.data.models.bangumi.BangumiSyncState
+import com.wynime.app.data.models.episode.EpisodeCollectionInfo
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.SubjectCollectionCounts
+import com.wynime.app.data.models.subject.SubjectCollectionInfo
+import com.wynime.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.network.BatchSubjectRelations
+import com.wynime.app.data.network.BangumiApiProvider
+import com.wynime.app.data.network.EpisodeServiceImpl
+import com.wynime.app.data.network.EpisodeService
+import com.wynime.app.data.network.SubjectService
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.persistent.database.WynimeDatabase
+import com.wynime.app.data.persistent.database.createTestWynimeDatabase
+import com.wynime.app.data.persistent.database.dao.EpisodeCollectionEntity
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
+import com.wynime.app.data.persistent.database.dao.SubjectCollectionEntity
+import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.app.data.persistent.createTestPreferencesDataStore
+import com.wynime.app.domain.session.SessionEvent
+import com.wynime.app.domain.session.SessionState
+import com.wynime.app.domain.session.SessionStateProvider
+import com.wynime.models.CollectionTypeDto
+import com.wynime.models.EpisodeCollectionDto
+import com.wynime.models.EpisodeCollectionTypeDto
+import com.wynime.models.EpisodeTypeDto
+import com.wynime.models.FavouriteDto
+import com.wynime.models.SelfRatingInfoDto
+import com.wynime.models.SubjectCollectionDto
+import com.wynime.models.SubjectRecommendationDto
+import com.wynime.models.SubjectRelationsDto
+import com.wynime.models.SubjectTypeDto
+import com.wynime.models.UpdateSubjectCollectionRequestDto
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.paging.Paged
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.bangumi.models.BangumiEpType
+import com.wynime.datasources.bangumi.models.BangumiSubjectCollectionType
+import com.wynime.utils.ktor.asScopedHttpClient
+import com.wynime.utils.platform.currentTimeMillis
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
@@ -89,64 +75,34 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * 覆盖 [SubjectCollectionRepository.invalidateCache] 与 [SubjectCollectionRepository.invalidateAllCaches],
- * 使用真实的内存 Room 库与 [SubjectCollectionRepositoryImpl].
- *
- * 覆盖: 服务端没有该条目时删除 / 保留其他条目并重置 lastFetched / 剧集级联删除 / 空列表与未知 id / 全部失效 /
- * 失效后条目页重新拉取 / 服务端仍有收藏时重新拉取覆盖 / 未收藏时删除 / 网络失败保留 / 已在展示的分页器跟着更新 / 失效事件 /
- * 重新拉取的并行度上限与首次失败后不再发起新的拉取.
- */
 class SubjectCollectionRepositoryInvalidateTest {
 
     private class FakeSubjectService : SubjectService {
-        /**
-         * 服务端上的条目 (含用户收藏状态), 按 id. [getSubjectCollection] 与 [getSubjectCollections] 都从这里取;
-         * 不在其中的 id 视为条目不存在 (返回 `null`).
-         */
-        val serverSubjects = mutableMapOf<Int, AniSubjectCollection>()
+
+        val serverSubjects = mutableMapOf<Int, SubjectCollectionDto>()
 
         val patchedSubjectIds = mutableListOf<Int>()
         val deletedSubjectIds = mutableListOf<Int>()
 
-        /**
-         * [getSubjectCollection] 对这些 id 抛出异常 (模拟网络失败). 若设置了 [gate], 在放行之后才抛出.
-         */
         val failingSubjectIds = mutableSetOf<Int>()
 
-        /**
-         * [getSubjectCollection] 被调用的 subjectId, 按调用顺序 (并行拉取时顺序不确定).
-         */
         val fetchedSubjectIds = CopyOnWriteArrayList<Int>()
         val firstFetch = CompletableDeferred<Int>()
 
-        /**
-         * 非空时每次 [getSubjectCollection] 记录调用后挂起, 直到放行. 用于观察并行度.
-         */
         @Volatile
         var gate: CompletableDeferred<Unit>? = null
 
-        /**
-         * 非空时**第一个** [getSubjectCollection] 调用 (无论 id) 等待它放行后抛出异常, 不受 [gate] 影响.
-         * 用于确定性地制造 "已有请求在途时发生首次失败".
-         */
         @Volatile
         var failFirstFetchGate: CompletableDeferred<Unit>? = null
 
-        /**
-         * 因 [failFirstFetchGate] 而失败的 subjectId.
-         */
         @Volatile
         var failedSubjectId: Int? = null
 
-        /**
-         * 已开始的调用数 / 当前在途调用数 / 在途调用数的峰值.
-         */
         val started = AtomicInteger(0)
         val inFlight = AtomicInteger(0)
         val maxInFlight = AtomicInteger(0)
 
-        override suspend fun getSubjectCollection(subjectId: Int): AniSubjectCollection? {
+        override suspend fun getSubjectCollection(subjectId: Int): SubjectCollectionDto? {
             fetchedSubjectIds += subjectId
             val index = started.incrementAndGet()
             firstFetch.complete(subjectId)
@@ -167,14 +123,11 @@ class SubjectCollectionRepositoryInvalidateTest {
             }
         }
 
-        /**
-         * 分页器的 RemoteMediator 用: 返回服务端已收藏的条目 (不按类型过滤, 测试里只放同一类型). 超出范围返回空 (分页结束).
-         */
         override suspend fun getSubjectCollections(
             type: BangumiSubjectCollectionType?,
             offset: Int,
             limit: Int,
-        ): List<AniSubjectCollection> = serverSubjects.values
+        ): List<SubjectCollectionDto> = serverSubjects.values
             .filter { it.collectionType != null }
             .sortedByDescending { it.id }
             .drop(offset)
@@ -185,14 +138,14 @@ class SubjectCollectionRepositoryInvalidateTest {
             withCharacterActors: Boolean,
         ): BatchSubjectRelations = throw UnsupportedOperationException()
 
-        override fun subjectCollectionById(subjectId: Int): Flow<AniSubjectCollection?> =
+        override fun subjectCollectionById(subjectId: Int): Flow<SubjectCollectionDto?> =
             throw UnsupportedOperationException()
 
-        override suspend fun patchSubjectCollection(subjectId: Int, payload: AniUpdateSubjectCollectionRequest) {
+        override suspend fun patchSubjectCollection(subjectId: Int, payload: UpdateSubjectCollectionRequestDto) {
             patchedSubjectIds += subjectId
         }
 
-        override suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<AniSubjectRecommendation> =
+        override suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<SubjectRecommendationDto> =
             throw UnsupportedOperationException()
 
         override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts> =
@@ -201,18 +154,6 @@ class SubjectCollectionRepositoryInvalidateTest {
         override suspend fun performBangumiFullSync() = throw UnsupportedOperationException()
 
         override suspend fun getBangumiFullSyncState(): BangumiSyncState? = throw UnsupportedOperationException()
-    }
-
-    private object UnusedSubjectsApi : ApiInvoker<SubjectsAniApi> {
-        override suspend fun <R> invoke(action: suspend SubjectsAniApi.() -> R): R {
-            error("ApiInvoker not expected in tests")
-        }
-    }
-
-    private object UnusedScheduleApi : ApiInvoker<ScheduleAniApi> {
-        override suspend fun <R> invoke(action: suspend ScheduleAniApi.() -> R): R {
-            error("ApiInvoker not expected in tests")
-        }
     }
 
     private val unusedEpisodeService: EpisodeService = EpisodeServiceImpl(
@@ -228,7 +169,7 @@ class SubjectCollectionRepositoryInvalidateTest {
     }
 
     private class Fixture(
-        val database: AniDatabase,
+        val database: WynimeDatabase,
         val service: FakeSubjectService,
         val repository: SubjectCollectionRepository,
         val enqueuedSubjectIds: MutableList<Int>,
@@ -240,11 +181,10 @@ class SubjectCollectionRepositoryInvalidateTest {
         autoSync: Boolean = false,
         block: suspend Fixture.() -> Unit,
     ) = runBlocking {
-        val database = createTestAniDatabase()
+        val database = createTestWynimeDatabase()
         try {
             val service = FakeSubjectService()
             val episodeService = unusedEpisodeService
-            val animeScheduleRepository = AnimeScheduleRepository(AnimeScheduleService(UnusedScheduleApi))
             val getEpisodeTypeFiltersUseCase = GetEpisodeTypeFiltersUseCase { flowOf(EpisodeType.entries) }
             val trackingSettingsStore = BangumiTrackingSyncSettingsStore(createTestPreferencesDataStore())
             if (autoSync) trackingSettingsStore.setAutoSyncTracking(true)
@@ -258,7 +198,6 @@ class SubjectCollectionRepositoryInvalidateTest {
                 subjectDao = database.subjectCollection(),
                 episodeCollectionDao = database.episodeCollection(),
                 episodeService = episodeService,
-                animeScheduleRepository = animeScheduleRepository,
                 subjectCollectionRepository = lazy { repository },
                 getEpisodeTypeFiltersUseCase = getEpisodeTypeFiltersUseCase,
             )
@@ -267,7 +206,6 @@ class SubjectCollectionRepositoryInvalidateTest {
                 subjectCollectionDao = database.subjectCollection(),
                 subjectRelationsDao = database.subjectRelations(),
                 episodeCollectionRepository = episodeCollectionRepository,
-                animeScheduleRepository = animeScheduleRepository,
                 episodeService = episodeService,
                 episodeCollectionDao = database.episodeCollection(),
                 sessionManager = FakeSessionStateProvider(),
@@ -315,55 +253,46 @@ class SubjectCollectionRepositoryInvalidateTest {
         cachedCharactersUpdated = 0,
     )
 
-    /**
-     * 服务端返回的条目. [type] 为 `null` 表示条目存在但用户未收藏.
-     */
     private fun serverSubject(
         subjectId: Int,
-        type: AniCollectionType? = AniCollectionType.DOING,
+        type: CollectionTypeDto? = CollectionTypeDto.DOING,
         score: Int = 0,
         episodeIds: List<Int> = emptyList(),
-    ) = AniSubjectCollection(
+    ) = SubjectCollectionDto(
         id = subjectId.toLong(),
-        type = AniSubjectType.ANIME,
+        type = SubjectTypeDto.ANIME,
         name = "subject-$subjectId",
         nameCn = "条目 $subjectId (服务端)",
         summary = "",
         nsfw = false,
         airDate = "2024-01-01",
         aliases = emptyList(),
-        favorite = AniFavourite(wish = 0, done = 0, doing = 0, onHold = 0, dropped = 0),
+        favorite = FavouriteDto(wish = 0, done = 0, doing = 0, onHold = 0, dropped = 0),
         tags = emptyList(),
         metaTags = emptyList(),
         scoreDetails = emptyMap(),
-        selfRating = AniSelfRatingInfo(score = score, tags = emptyList(), isPrivate = false, comment = null),
+        selfRating = SelfRatingInfoDto(score = score, tags = emptyList(), isPrivate = false, comment = null),
         episodes = episodeIds.mapIndexed { index, episodeId ->
-            AniEpisodeCollection(
+            EpisodeCollectionDto(
                 episodeId = episodeId.toLong(),
                 subjectId = subjectId.toLong(),
                 sort = (index + 1).toString(),
-                type = AniEpisodeType.MAIN,
+                type = EpisodeTypeDto.MAIN,
                 name = "ep",
                 nameCn = "第 ${index + 1} 集",
                 description = "",
-                collectionType = AniEpisodeCollectionType.DONE,
+                collectionType = EpisodeCollectionTypeDto.DONE,
             )
         },
-        relations = AniSubjectRelations(subjectId.toLong(), emptyList(), emptyList(), emptyList(), emptyList()),
+        relations = SubjectRelationsDto(subjectId.toLong(), emptyList(), emptyList(), emptyList(), emptyList()),
         imageLarge = "",
         imageThumb = "",
         collectionType = type,
         updatedAt = "2024-01-02T00:00:00Z",
     )
 
-    /**
-     * 像收藏页一样持续收集分页器: Room 失效时分页器发出新一代 [androidx.paging.PagingData], 这里跟着切换, 快照始终是最新一代.
-     * 分页器的 RemoteMediator 只在创建时判断是否从服务端刷新, 所以能验证 "已在展示的列表" 对失效的反应.
-     */
     private class PagerProbe(context: CoroutineContext) : PagingDataPresenter<SubjectCollectionInfo>(mainContext = context) {
-        /**
-         * 收到的分页事件数. Room 失效后分页器发出新一代数据, 至少带来一个 Refresh 事件.
-         */
+
         val events = AtomicInteger(0)
 
         override suspend fun presentPagingDataEvent(event: PagingDataEvent<SubjectCollectionInfo>) {
@@ -372,9 +301,6 @@ class SubjectCollectionRepositoryInvalidateTest {
 
         val items: List<SubjectCollectionInfo> get() = snapshot().items
 
-        /**
-         * 等待快照满足 [predicate] (真实时间, 最多 10 秒).
-         */
         suspend fun awaitItems(predicate: (List<SubjectCollectionInfo>) -> Boolean): List<SubjectCollectionInfo> =
             withTimeout(10.seconds) {
                 var current = items
@@ -385,26 +311,17 @@ class SubjectCollectionRepositoryInvalidateTest {
                 current
             }
 
-        /**
-         * 等待事件数超过 [before] (即分页器已经因 Room 失效重新加载了一代).
-         */
         suspend fun awaitEventsAfter(before: Int) = withTimeout(10.seconds) {
             while (events.get() <= before) delay(20)
         }
     }
 
-    /**
-     * 等待 fake 服务端已开始的调用数达到 [count] (真实时间, 最多 10 秒).
-     */
     private suspend fun FakeSubjectService.awaitStarted(count: Int) = withTimeout(10.seconds) {
         while (started.get() < count) delay(10)
     }
 
-    /**
-     * 在当前作用域内持续收集 [CollectionsFilterQuery.type] 为 DOING 的分页器, 返回探针; 调用方负责取消 [Job].
-     */
     private suspend fun Fixture.collectDoingPager(): Pair<PagerProbe, Job> {
-        // 只传调度器, 不带 Job: 否则 presenter 内的 withContext 会脱离收集协程, 取消不了.
+
         val probe = PagerProbe(coroutineContext.minusKey(Job))
         val job = CoroutineScope(coroutineContext).launch {
             repository.subjectCollectionsPager(CollectionsFilterQuery(UnifiedCollectionType.DOING))
@@ -433,8 +350,6 @@ class SubjectCollectionRepositoryInvalidateTest {
         selfCollectionType = UnifiedCollectionType.DONE,
         lastFetched = lastFetched,
     )
-
-    // region invalidateCache
 
     @Test
     fun `INV-01 服务端没有该条目 (404) 时 invalidateCache 删除本地行并保留其他条目`() = runRepositoryTest {
@@ -466,7 +381,6 @@ class SubjectCollectionRepositoryInvalidateTest {
         assertEquals("条目 1", remaining.nameCn)
         assertEquals(1L, remaining.lastUpdated)
 
-        // 分页器依据最新的 lastFetched 判断是否刷新
         assertEquals(0, dao.lastFetched(null))
         assertEquals(0, dao.lastFetched(UnifiedCollectionType.DONE))
     }
@@ -535,7 +449,7 @@ class SubjectCollectionRepositoryInvalidateTest {
                 episode(1, 12, sort = 2, lastFetched = now),
             ),
         )
-        service.serverSubjects[1] = serverSubject(1, type = AniCollectionType.DONE, score = 9, episodeIds = listOf(11, 13))
+        service.serverSubjects[1] = serverSubject(1, type = CollectionTypeDto.DONE, score = 9, episodeIds = listOf(11, 13))
 
         repository.invalidateCache(listOf(1))
 
@@ -543,9 +457,9 @@ class SubjectCollectionRepositoryInvalidateTest {
         assertEquals(UnifiedCollectionType.DONE, row.collectionType)
         assertEquals(9, row.selfRatingInfo.score)
         assertEquals("条目 1 (服务端)", row.nameCn)
-        // 重新拉取后仍统一置 0: 下次创建分页器时整体刷新
+
         assertEquals(0, row.lastFetched)
-        // 剧集按服务端更新: 12 被删, 13 新增
+
         assertEquals(listOf(11, 13), database.episodeCollection().listIdBySubjectId(1).first().sorted())
 
         val untouched = assertNotNull(dao.findById(2).first())
@@ -595,7 +509,7 @@ class SubjectCollectionRepositoryInvalidateTest {
         service.serverSubjects[1] = serverSubject(1, score = 9)
         service.serverSubjects[2] = serverSubject(2, score = 7)
         service.failingSubjectIds += 1
-        // 三个拉取并行在途 (并行度 4), 放行后 1 失败: 已在途的 2 / 3 照常完成
+
         val gate = CompletableDeferred<Unit>()
         service.gate = gate
 
@@ -604,7 +518,6 @@ class SubjectCollectionRepositoryInvalidateTest {
         gate.complete(Unit)
         job.join()
 
-        // 1 失败保留旧值; 2 成功更新; 3 服务端没有, 删除
         assertEquals(0, assertNotNull(dao.findById(1).first()).selfRatingInfo.score)
         assertEquals(7, assertNotNull(dao.findById(2).first()).selfRatingInfo.score)
         assertNull(dao.findById(3).first())
@@ -623,7 +536,7 @@ class SubjectCollectionRepositoryInvalidateTest {
 
         val job = CoroutineScope(coroutineContext).launch { repository.invalidateCache(ids) }
         service.awaitStarted(4)
-        // 前 4 个在途时第 5 个必须等待 (若不限并行度, 8 个会立刻全部发出)
+
         delay(200)
         assertEquals(4, service.started.get())
         assertEquals(4, service.inFlight.get())
@@ -652,9 +565,9 @@ class SubjectCollectionRepositoryInvalidateTest {
         service.failFirstFetchGate = failGate
 
         val job = CoroutineScope(coroutineContext).launch { repository.invalidateCache(ids) }
-        // 4 个在途: 1 个等待失败, 3 个等待放行
+
         service.awaitStarted(4)
-        // 断网: 第一个失败, 它释放的名额不再用来发起新的拉取
+
         failGate.complete(Unit)
         delay(200)
         assertEquals(4, service.started.get())
@@ -669,14 +582,10 @@ class SubjectCollectionRepositoryInvalidateTest {
         for (id in ids) {
             val row = assertNotNull(dao.findById(id).first(), "row $id must be kept")
             assertEquals(0, row.lastFetched)
-            // 失败的与未拉取的保留旧值; 在途完成的 3 个是服务端的新值
+
             assertEquals(if (id in fetched && id != failedId) 9 else 0, row.selfRatingInfo.score, "subject $id")
         }
     }
-
-    // endregion
-
-    // region invalidateAllCaches
 
     @Test
     fun `INV-07 invalidateAllCaches 保留所有条目与剧集, 只将 lastFetched 置 0`() = runRepositoryTest {
@@ -719,10 +628,6 @@ class SubjectCollectionRepositoryInvalidateTest {
         assertNull(dao.findById(1).first())
     }
 
-    // endregion
-
-    // region 收藏狀態寫入
-
     @Test
     fun `COL-01 existing local row updates collection type without refetch`() = runRepositoryTest {
         dao.upsert(subject(1, currentTimeMillis(), type = UnifiedCollectionType.WISH))
@@ -737,7 +642,7 @@ class SubjectCollectionRepositoryInvalidateTest {
 
     @Test
     fun `COL-02 successful first collection hydrates a missing local row`() = runRepositoryTest {
-        service.serverSubjects[2] = serverSubject(2, type = AniCollectionType.DOING, episodeIds = listOf(201))
+        service.serverSubjects[2] = serverSubject(2, type = CollectionTypeDto.DOING, episodeIds = listOf(201))
 
         repository.setSubjectCollectionTypeOrDelete(2, UnifiedCollectionType.DOING)
 
@@ -749,20 +654,20 @@ class SubjectCollectionRepositoryInvalidateTest {
     }
 
     @Test
-    fun `COL-03 cancel keeps local row as NOT_COLLECTED without remote delete`() = runRepositoryTest {
+    fun `COL-03 pending cancel preserves known collection without remote delete`() = runRepositoryTest {
         dao.upsert(subject(3, currentTimeMillis(), type = UnifiedCollectionType.DROPPED))
 
         repository.setSubjectCollectionTypeOrDelete(3, null)
 
-        assertEquals(UnifiedCollectionType.NOT_COLLECTED, assertNotNull(dao.findById(3).first()).collectionType)
+        assertEquals(UnifiedCollectionType.DROPPED, assertNotNull(dao.findById(3).first()).collectionType)
         assertTrue(service.deletedSubjectIds.isEmpty())
         assertTrue(service.patchedSubjectIds.isEmpty())
     }
 
     @Test
-    fun `COL-04 cancel persists account scoped tombstone and refetch cannot resurrect collection`() = runRepositoryTest {
+    fun `COL-04 pending cancel retains known collection across refetch and its account scoped operation`() = runRepositoryTest {
         dao.upsert(subject(4, currentTimeMillis(), type = UnifiedCollectionType.DOING))
-        service.serverSubjects[4] = serverSubject(4, type = AniCollectionType.DOING)
+        service.serverSubjects[4] = serverSubject(4, type = CollectionTypeDto.DOING)
 
         repository.setSubjectCollectionTypeOrDelete(4, null)
 
@@ -770,11 +675,11 @@ class SubjectCollectionRepositoryInvalidateTest {
             database.bangumiTrackingMetadataDao().find(BangumiTrackingMetadataRepository.GUEST_ACCOUNT_KEY, 4),
         )
         assertNotNull(tombstone.localDeletedAt)
-        assertEquals(UnifiedCollectionType.NOT_COLLECTED, assertNotNull(dao.findById(4).first()).collectionType)
+        assertEquals(UnifiedCollectionType.DOING, assertNotNull(dao.findById(4).first()).collectionType)
 
         repository.invalidateCache(listOf(4))
 
-        assertEquals(UnifiedCollectionType.NOT_COLLECTED, assertNotNull(dao.findById(4).first()).collectionType)
+        assertEquals(UnifiedCollectionType.DOING, assertNotNull(dao.findById(4).first()).collectionType)
         assertTrue(service.deletedSubjectIds.isEmpty())
         assertTrue(service.patchedSubjectIds.isEmpty())
     }
@@ -808,10 +713,6 @@ class SubjectCollectionRepositoryInvalidateTest {
         assertEquals(listOf(6), enqueuedSubjectIds)
     }
 
-    // endregion
-
-    // region 失效后重新拉取
-
     @Test
     fun `INV-09 未失效的缓存不会触发网络拉取`() = runRepositoryTest {
         dao.upsert(subject(1, currentTimeMillis()))
@@ -831,7 +732,7 @@ class SubjectCollectionRepositoryInvalidateTest {
         repository.invalidateAllCaches()
 
         repository.subjectCollectionFlow(1).test {
-            // 过期缓存仍先展示, 保证离线可用
+
             assertEquals(1, awaitItem().subjectId)
             assertEquals(1, withTimeout(5.seconds) { service.firstFetch.await() })
             assertEquals(listOf(1), service.fetchedSubjectIds)
@@ -845,7 +746,7 @@ class SubjectCollectionRepositoryInvalidateTest {
         dao.upsert(listOf(subject(1, now), subject(2, now)))
 
         repository.invalidateCache(listOf(2))
-        // 失效时已重新拉取过 2 (服务端没有 → 删除)
+
         assertEquals(listOf(2), service.fetchedSubjectIds)
 
         repository.subjectCollectionFlow(1).test {
@@ -858,15 +759,11 @@ class SubjectCollectionRepositoryInvalidateTest {
         }
     }
 
-    // endregion
-
-    // region 已在展示的收藏列表
-
     @Test
     fun `INV-16 已在展示的分页器 - invalidateCache 后条目仍在列表中且为服务端的新值`() = runRepositoryTest {
         val now = currentTimeMillis()
         dao.upsert(listOf(subject(1, now, score = 3), subject(2, now)))
-        service.serverSubjects[1] = serverSubject(1, type = AniCollectionType.DOING, score = 9, episodeIds = listOf(11))
+        service.serverSubjects[1] = serverSubject(1, type = CollectionTypeDto.DOING, score = 9, episodeIds = listOf(11))
         service.serverSubjects[2] = serverSubject(2)
 
         val (probe, job) = collectDoingPager()
@@ -876,7 +773,6 @@ class SubjectCollectionRepositoryInvalidateTest {
 
             repository.invalidateCache(listOf(1))
 
-            // 分页器没有重建 (RemoteMediator 不会再刷新), 但 Room 失效后重新加载, 条目 1 必须还在且是新值
             val after = probe.awaitItems { items -> items.singleOrNull { it.subjectId == 1 }?.selfRatingInfo?.score == 9 }
             assertEquals(setOf(1, 2), after.map { it.subjectId }.toSet())
             assertEquals(UnifiedCollectionType.DOING, after.single { it.subjectId == 1 }.collectionType)
@@ -920,7 +816,6 @@ class SubjectCollectionRepositoryInvalidateTest {
 
             repository.invalidateCache(listOf(1))
 
-            // resetAllLastFetched 改写了两行, Room 失效后分页器重新加载一代; 等到这一代到达再断言, 不靠固定等待
             assertEquals(listOf(1), service.fetchedSubjectIds)
             probe.awaitEventsAfter(eventsBefore)
             assertEquals(setOf(1, 2), probe.items.map { it.subjectId }.toSet())
@@ -929,10 +824,6 @@ class SubjectCollectionRepositoryInvalidateTest {
             job.cancel()
         }
     }
-
-    // endregion
-
-    // region 失效事件
 
     @Test
     fun `INV-19 两种失效完成后都发出 collectionsInvalidated, 空列表不发出`() = runRepositoryTest {
@@ -962,10 +853,9 @@ class SubjectCollectionRepositoryInvalidateTest {
             awaitItem()
             cancelAndIgnoreRemainingEvents()
         }
-        // 行保留, lastFetched 已置 0
+
         assertEquals(0, assertNotNull(dao.findById(1).first()).lastFetched)
         assertEquals(0, dao.lastFetched(null))
     }
 
-    // endregion
 }

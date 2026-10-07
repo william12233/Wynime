@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.layout
+package com.wynime.app.ui.foundation.layout
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,9 +23,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowSizeClass
-import me.him188.ani.app.ui.foundation.text.ProvideTextStyleContentColor
-import me.him188.ani.app.ui.foundation.theme.LocalDarkOnSurface
-import me.him188.ani.app.ui.foundation.theme.appColorScheme
+import com.wynime.app.ui.foundation.text.ProvideTextStyleContentColor
+import com.wynime.app.ui.foundation.theme.LocalDarkOnSurface
+import com.wynime.app.ui.foundation.theme.appColorScheme
 
 @Stable
 private val carouselBrush = Brush.verticalGradient(
@@ -45,13 +36,7 @@ private val carouselBrush = Brush.verticalGradient(
     ),
 )
 
-/**
- * @param label see [CarouselItemDefaults.Text]
- * @param supportingText see [CarouselItemDefaults.Text]
- *
- * @see CarouselItemDefaults.itemSize
- */
-@Composable // Preview: PreviewTodayUpdatesCarousel
+@Composable
 fun CarouselItemScope.CarouselItem(
     label: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -73,13 +58,7 @@ fun CarouselItemScope.CarouselItem(
     )
 }
 
-/**
- * @param label see [CarouselItemDefaults.Text]
- * @param supportingText see [CarouselItemDefaults.Text]
- *
- * @see CarouselItemDefaults.itemSize
- */
-@Composable // Preview: PreviewTodayUpdatesCarousel
+@Composable
 fun BasicCarouselItem(
     label: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -121,7 +100,6 @@ fun BasicCarouselItem(
     }
 }
 
-
 @Immutable
 data class CarouselItemColors(
     val titleColor: Color,
@@ -134,9 +112,6 @@ object CarouselItemDefaults {
         @Composable
         get() = MaterialTheme.shapes.extraLarge
 
-    /**
-     * 文字盖在 [carouselBrush] 的深色遮罩上, 恒定取深色配色的前景色, 与当前明暗无关.
-     */
     @Composable
     fun colors(): CarouselItemColors {
         val provided = LocalDarkOnSurface.current
@@ -172,7 +147,7 @@ object CarouselItemDefaults {
             }
         return CarouselItemSize(
             preferredWidth = preferredWidth,
-            imageHeight = 213.dp, // 120.dp / 9 * 16
+            imageHeight = 213.dp,
         )
     }
 }

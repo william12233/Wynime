@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 
-package me.him188.ani.app.videoplayer.videoenhancement
+package com.wynime.app.videoplayer.videoenhancement
 
 import android.content.Context
 import android.opengl.GLES20
@@ -20,15 +11,13 @@ import androidx.media3.common.util.Size
 import androidx.media3.effect.BaseGlShaderProgram
 import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
-import me.him188.ani.utils.video.enhancement.shader.provider.VideoEnhancementShaderProvider
+import com.wynime.utils.video.enhancement.shader.provider.VideoEnhancementShaderProvider
 
-/** Official Anime4K Restore CNN M used by the quality profile. */
 internal object Anime4kRestoreQualityEffect : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
         Anime4kMediumShaderProgram(context, anime4kRestoreMediumAsset, upscale = false)
 }
 
-/** Official Anime4K Upscale CNN x2 M used by the quality profile. */
 internal object Anime4kUpscaleQualityEffect : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
         Anime4kMediumShaderProgram(context, anime4kUpscaleMediumAsset, upscale = true)
@@ -39,8 +28,8 @@ private class Anime4kMediumShaderProgram(
     asset: String,
     private val upscale: Boolean,
 ) : BaseGlShaderProgram(
-    /* useHighPrecisionColorComponents = */ true,
-    /* texturePoolCapacity = */ 1,
+                                            true,
+                                1,
 ) {
     private val profileName = if (upscale) "Anime4K Upscale CNN x2 M" else "Anime4K Restore CNN M"
     private val shaderSources = Anime4kQualityShaderSources(context)
@@ -89,7 +78,7 @@ private class Anime4kMediumShaderProgram(
                     intermediateTextures[index] = GlUtil.createTexture(
                         inputWidth,
                         inputHeight,
-                        /* useHighPrecisionColorComponents = */ true,
+                                                                true,
                     )
                     intermediateFramebuffers[index] = GlUtil.createFboForTexture(intermediateTextures[index])
                 }
@@ -128,11 +117,11 @@ private class Anime4kMediumShaderProgram(
                 program.setSamplerTexIdUniform(
                     "uFeatureSampler",
                     intermediateTextures[convolutionPassCount],
-                    /* texUnitIndex = */ 0,
+                                         0,
                 )
-                program.setSamplerTexIdUniform("uOriginalSampler", inputTexId, /* texUnitIndex = */ 1)
+                program.setSamplerTexIdUniform("uOriginalSampler", inputTexId,                      1)
                 program.bindAttributesAndUniforms()
-                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first = */ 0, /* count = */ 4)
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,               0,               4)
                 GlUtil.checkGlError()
             }
         } catch (e: GlUtil.GlException) {
@@ -150,7 +139,7 @@ private class Anime4kMediumShaderProgram(
             combineProgram.setSamplerTexIdUniform("uOriginalSampler", inputTexId, convolutionPassCount)
         }
         combineProgram.bindAttributesAndUniforms()
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first = */ 0, /* count = */ 4)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,               0,               4)
         GlUtil.checkGlError()
     }
 
@@ -189,9 +178,9 @@ private fun drawSingleInputPass(
 ) {
     GlUtil.focusFramebufferUsingCurrentContext(outputFramebuffer, width, height)
     program.use()
-    program.setSamplerTexIdUniform("uTexSampler", inputTexId, /* texUnitIndex = */ 0)
+    program.setSamplerTexIdUniform("uTexSampler", inputTexId,                      0)
     program.bindAttributesAndUniforms()
-    GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first = */ 0, /* count = */ 4)
+    GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,               0,               4)
     GlUtil.checkGlError()
 }
 

@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.icons
+package com.wynime.app.ui.foundation.icons
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.Color

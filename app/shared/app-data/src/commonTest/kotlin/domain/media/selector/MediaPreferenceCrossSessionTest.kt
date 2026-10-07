@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -23,17 +14,17 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.persistent.createTestPreferencesDataStore
-import me.him188.ani.app.data.persistent.database.dao.createMemoryPreferredWebMediaSourceDao
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepository
-import me.him188.ani.app.data.repository.media.EpisodePreferencesRepositoryImpl
-import me.him188.ani.app.domain.media.selector.testFramework.MediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_PRIMARY_WEB
-import me.him188.ani.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_SECONDARY_WEB
-import me.him188.ani.app.domain.media.selector.testFramework.SimpleMediaSelectorTestSuite
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.test.TestContainer
+import com.wynime.app.data.persistent.createTestPreferencesDataStore
+import com.wynime.app.data.persistent.database.dao.createMemoryPreferredWebMediaSourceDao
+import com.wynime.app.data.repository.media.EpisodePreferencesRepository
+import com.wynime.app.data.repository.media.EpisodePreferencesRepositoryImpl
+import com.wynime.app.domain.media.selector.testFramework.MediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_PRIMARY_WEB
+import com.wynime.app.domain.media.selector.testFramework.MediaSelectorTestSuite.Companion.SOURCE_SECONDARY_WEB
+import com.wynime.app.domain.media.selector.testFramework.SimpleMediaSelectorTestSuite
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.test.TestContainer
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -69,9 +60,6 @@ class MediaPreferenceCrossSessionTest {
         cachingScope = cachingScope,
     )
 
-    /**
-     * 会话 A: 挂载 savePreferenceOnSelect, 手动选择 [target] 后推进 debounce, 使偏好落到 store 上.
-     */
     private suspend fun TestScope.runSessionA(
         suite: SimpleMediaSelectorTestSuite,
         repository: EpisodePreferencesRepository,
@@ -146,8 +134,7 @@ class MediaPreferenceCrossSessionTest {
 
         assertEquals(setOf(competitor, target), selectorB.filteredCandidatesMedia.first().toSet())
         assertEquals(listOf(target), selectorB.preferredCandidatesMedia.first())
-        // 四个字段逐一断言: preferredCandidatesMedia 只需任一维度生效就能滤掉 competitor,
-        // 逐字段断言才能把 "只有部分字段被持久化" 的回归归因到具体字段.
+
         assertEquals(SOURCE_SECONDARY_WEB, selectorB.mediaSourceId.finalSelected.first())
         assertEquals("桜都字幕组", selectorB.alliance.finalSelected.first())
         assertEquals("720P", selectorB.resolution.finalSelected.first())
@@ -156,10 +143,6 @@ class MediaPreferenceCrossSessionTest {
         assertEquals(target, selectorB.selected.value)
     }
 
-    /**
-     * 生产两处接线点 (CreateMediaFetchSelectBundleFlowUseCaseImpl / MediaSelectorFactory) 都不传 `enableCaching`,
-     * 即生产默认走 `enableCaching = true` 的缓存路径. 这里把会话 B 在生产默认配置下再跑一遍.
-     */
     @Test
     fun `A11 会话B在生产默认 enableCaching 为 true 下同样读回存档并按四字段过滤`() = runTest {
         val store = createTestPreferencesDataStore()

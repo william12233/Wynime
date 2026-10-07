@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.relations
+package com.wynime.app.ui.subject.relations
 
 import androidx.compose.runtime.Immutable
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,18 +7,15 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
-import me.him188.ani.app.data.models.subject.SubjectRelationGraph
-import me.him188.ani.app.data.repository.subject.SubjectRelationGraphRepository
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.utils.coroutines.flows.FlowRestarter
-import me.him188.ani.utils.coroutines.flows.restartable
+import com.wynime.app.data.models.subject.SubjectRelationGraph
+import com.wynime.app.data.repository.subject.SubjectRelationGraphRepository
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.utils.coroutines.flows.FlowRestarter
+import com.wynime.utils.coroutines.flows.restartable
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-/**
- * 系列关系图页面的状态. [graph] 和 [error] 均为 `null` 表示加载中.
- */
 @Immutable
 data class SubjectRelationGraphUiState(
     val graph: SubjectRelationGraph?,

@@ -1,23 +1,11 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.data.persistent.database
 
-package me.him188.ani.app.data.persistent.database
-
-import me.him188.ani.app.data.models.subject.SubjectTmdbArt
-import me.him188.ani.app.data.models.subject.TmdbImage
+import com.wynime.app.data.models.subject.SubjectTmdbArt
+import com.wynime.app.data.models.subject.TmdbImage
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-/**
- * [SubjectTmdbArt] 在 Room 列 (BLOB, 可空) 中原样往返.
- */
 class SubjectTmdbArtConverterTest {
     private val converter = ProtoConverters.SubjectTmdbArtConverter
 

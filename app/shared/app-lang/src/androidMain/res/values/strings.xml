@@ -1,13 +1,6 @@
-<!--
-  ~ Copyright (C) 2024-2026 OpenAni and contributors.
-  ~
-  ~ 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
-  ~ Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
-  ~
-  ~ https://github.com/open-ani/ani/blob/main/LICENSE
-  -->
 
-<!--@formatter:off-->
+
+
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="developer_list">Developers List</string>
@@ -189,7 +182,7 @@
     <string name="settings_developers_organization">Organization</string>
     <string name="settings_developers_view_more_on_github">View more on GitHub</string>
 
-    <!-- Comment -->
+    
     <string name="comment_empty_title">No comments yet</string>
 
     <string name="settings_acknowledgements_bangumi">Bangumi</string>
@@ -403,7 +396,7 @@
     <string name="settings_mediasource_auto_save_hint">Hint: changes are saved automatically</string>
     <string name="settings_copied_to_clipboard">Copied to clipboard</string>
 
-    <!-- NewVersionPopupCard -->
+    
     <string name="settings_update_popup_new_version">New Version</string>
     <string name="settings_update_popup_see_details">See details</string>
     <string name="settings_update_popup_auto_update">Auto-update</string>
@@ -418,7 +411,7 @@
     <string name="settings_update_popup_restart_update">Restart to Update</string>
     <string name="settings_update_popup_download_complete">Download Complete</string>
 
-    <!-- Version Expired Overlay -->
+    
     <string name="settings_update_version_expired_title">Version expired</string>
     <string name="settings_update_version_expired_message">The current version is too old. For the best experience, please update to the latest version.\nThe latest version will be shown at the bottom-right; you can click to auto-update. If you cannot update, please download from the official website:</string>
     <string name="settings_update_version_expired_message_with_latest">The current version is too old. For the best experience, please update to the latest version %1$s.\nThe latest version will be shown at the bottom-right; you can click to auto-update. If you cannot update, please download from the official website:</string>
@@ -426,7 +419,7 @@
     <string name="settings_update_version_expired_copied_to_clipboard">Copied to clipboard. In the new version, click Import</string>
     <string name="settings_update_version_expired_export_settings">Export settings</string>
 
-    <!-- ExplorationScreen -->
+    
     <string name="exploration_title">Explore</string>
     <string name="exploration_settings">Settings</string>
     <string name="exploration_search">Search</string>
@@ -450,13 +443,13 @@
     <string name="exploration_recommendations">Recommendations</string>
     <string name="exploration_horizontal_scroll_tip">Hold Shift + mouse wheel to scroll horizontally</string>
 
-    <!-- MainScreenPage -->
+    
     <string name="main_network_check_failed">Failed to connect to the Wynime server. Check your network, or configure a proxy in Settings.</string>
     <string name="main_screen_page_exploration">Explore</string>
     <string name="main_screen_page_collection">Collection</string>
     <string name="main_screen_page_cache_management">Downloads</string>
 
-    <!-- ThemePreferences -->
+    
     <string name="settings_theme_title">Theme</string>
     <string name="settings_theme_dynamic_colors">Dynamic Colors</string>
     <string name="settings_theme_dynamic_colors_description">Use system accent color</string>
@@ -475,18 +468,18 @@
     <string name="settings_theme_mode_dark">Dark</string>
     <string name="settings_theme_mode_auto">Auto</string>
 
-    <!-- ServerSelectionGroup -->
+    
 
     <string name="settings_confirm">Confirm</string>
     <string name="settings_cancel">Cancel</string>
     <string name="settings_input_invalid">Invalid input</string>
 
-    <!-- ConnectionTesterResultIndicator -->
+    
     <string name="settings_framework_timeout">Timeout</string>
     <string name="settings_framework_not_enabled">Not enabled</string>
     <string name="settings_framework_waiting_for_test">Waiting for test</string>
 
-    <!-- GlobalProxyGroup -->
+    
     <string name="settings_network_proxy_title">Global Proxy Settings</string>
     <string name="settings_network_proxy_description">Applied to all data sources and Bangumi</string>
     <string name="settings_network_proxy_type">Proxy Type</string>
@@ -517,7 +510,7 @@
     <string name="settings_network_proxy_save_and_test">Save and test</string>
 
 
-    <!-- AutoCacheGroup -->
+    
     <string name="settings_media_auto_cache_title">Auto Cache</string>
     <string name="settings_media_auto_cache_description">Automatically cache unwatched episodes in the \"Watching\" category</string>
     <string name="settings_media_auto_cache_enable">Enable auto cache</string>
@@ -533,30 +526,30 @@
     <string name="settings_tab_account">Account</string>
 
 
-    <!-- Login -->
+    
     <string name="login_sign_in">Sign In</string>
     <string name="login_sign_up">Sign Up</string>
     <string name="login_sign_in_or_sign_up">Sign In / Sign Up</string>
     <string name="login_bind_email">Bind Email</string>
     <string name="login_change_email">Change Email</string>
-    <string name="login_email_address_title">Your Email Address</string>
-    <string name="login_email_address_description">We will send you a verification email</string>
-    <string name="login_email_label">Email</string>
+    
+    
+    
     <string name="login_clear">Clear</string>
     <string name="login_continue">Continue</string>
-    <string name="login_email_already_used">This email address is already in use</string>
-    <string name="login_invalid_otp">The verification code is invalid or expired. Please resend it.</string>
-    <string name="login_verify_title">Enter Verification Code</string>
-    <string name="login_verify_check_email">Please check your email: %1$s</string>
-    <string name="login_verify_signing_in_existing">Signing in to your existing account</string>
-    <string name="login_verify_signing_up_new">Registering a new account</string>
-    <string name="login_verification_code">Verification Code</string>
-    <string name="login_six_digit_number">6 digits</string>
-    <string name="login_resend_otp">Resend verification code</string>
-    <string name="login_resend_after_seconds">Resend available in %1$d seconds</string>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <string name="login_other_methods">Other sign-in methods</string>
 
-    <!-- OAuth -->
+    
     <string name="oauth_bangumi_description">Authorize your Bangumi account to sync your watch history to Bangumi or sign in to Wynime more conveniently.</string>
     <string name="oauth_authorize_title">Authorize %1$s Sign-In</string>
     <string name="oauth_bind_account">Bind %1$s Account</string>
@@ -580,7 +573,7 @@
     <string name="oauth_bangumi_help_activation_failed_content">Delete the last character of the activation code, then type that character manually, or try another browser.</string>
     <string name="oauth_bangumi_help_others_content">Can\'t solve your issue? You can also get help through the following channels.</string>
 
-    <!-- Video Player -->
+    
     <string name="video_player_aspect_fit">Fit</string>
     <string name="video_player_aspect_stretch">Stretch</string>
     <string name="video_player_aspect_crop">Crop</string>
@@ -625,7 +618,7 @@
     <string name="video_player_stats_dropped_video_frames">Dropped %1$s</string>
     <string name="video_player_stats_dropped_audio_buffers">Audio lost %1$s</string>
 
-    <!-- Subject Collection -->
+    
     <string name="subject_collection_wish">Want to Watch</string>
     <string name="subject_collection_doing">Watching</string>
     <string name="subject_collection_done">Watched</string>
@@ -655,7 +648,7 @@
     <string name="subject_details_collection_dropped"> / %1$s dropped</string>
     <string name="subject_rendering_season_year_month">%1$s/%2$s</string>
 
-    <!-- Subject Episode -->
+    
     <string name="subject_episode_unwatch">Unmark Watched</string>
     <string name="subject_episode_watched">Watched</string>
     <string name="subject_episode_dropped">Dropped</string>
@@ -766,14 +759,14 @@
     <string name="settings_account_settings">Settings</string>
     <string name="settings_account_logout">Logout</string>
     <string name="settings_account_confirm_logout">Are you sure you want to sign out?</string>
-    <!-- Bangumi Session Expired Prompt -->
+    
     <string name="bangumi_session_expired">Bangumi login expired</string>
     <string name="bangumi_session_expired_login_again">Bangumi login expired. Please log in again.</string>
     <string name="bangumi_session_expired_view">View</string>
     <string name="bangumi_session_expired_login">Log in</string>
     <string name="bangumi_session_expired_unbind">Unbind Bangumi</string>
 
-    <!-- Account Popup -->
+    
     <string name="settings_account_popup_not_logged_in">Not logged in</string>
     <string name="settings_account_popup_edit_profile">Edit profile</string>
     <string name="settings_account_popup_login_register">Login / Register</string>
@@ -787,57 +780,57 @@
     <string name="settings_account_bangumi_sync_queue">Sync Queue</string>
     <string name="settings_account_bangumi_sync_title">Bangumi Sync</string>
     <string name="settings_account_bangumi_conflict_handling">Conflict Resolution</string>
-    <string name="bangumi_merge_title">Merge Collections</string>
-    <string name="bangumi_merge_title_conflicts">Merge Collections · %1$d conflicts</string>
-    <string name="bangumi_merge_entry_description">Resolve collections modified on both Wynime and Bangumi</string>
-    <string name="bangumi_merge_entry_conflict_count">%1$d conflicts</string>
-    <string name="bangumi_merge_conflict_notification">Found %1$d Bangumi collection conflict(s)</string>
-    <string name="bangumi_merge_conflict_notification_action">Resolve</string>
-    <string name="bangumi_merge_headline">%1$d conflicts need confirmation</string>
-    <string name="bangumi_merge_info">Items changed on both sides need confirmation. ● marks the newer side; the other %1$d differences were merged automatically.</string>
-    <string name="bangumi_merge_info_no_auto">Items changed on both sides need confirmation. ● marks the newer side.</string>
-    <string name="bangumi_merge_adopt_newer">Use newer</string>
-    <string name="bangumi_merge_select_all">Select all</string>
-    <string name="bangumi_merge_resolved">Resolved</string>
-    <string name="bangumi_merge_pending_count">%1$d pending</string>
-    <string name="bangumi_merge_auto_merged">Auto-merged %1$d non-conflicting differences</string>
-    <string name="bangumi_merge_auto_merged_more">%1$d more…</string>
-    <string name="bangumi_merge_confirmed_progress">Confirmed %1$d / %2$d</string>
-    <string name="bangumi_merge_apply">Apply merge</string>
-    <string name="bangumi_merge_apply_success">Merged %1$d change(s)</string>
-    <string name="bangumi_merge_apply_partial">Merged %1$d change(s), %2$d still pending</string>
-    <string name="bangumi_merge_sync_in_progress">Full sync in progress, please try again later</string>
-    <string name="bangumi_merge_sync_in_progress_notice">Full sync in progress; the conflict list may be incomplete</string>
-    <string name="bangumi_merge_syncing_title">Syncing collections…</string>
-    <string name="bangumi_merge_syncing_description">Conflicts that need your attention will show up here once the first sync completes.</string>
-    <string name="bangumi_merge_synced">Fully in sync</string>
-    <string name="bangumi_merge_synced_description">There are no collection conflicts between Wynime and Bangumi.</string>
-    <string name="bangumi_merge_last_synced">Last synced: %1$s</string>
-    <string name="bangumi_merge_deleted_collection">Collection deleted</string>
-    <string name="bangumi_merge_score">Score %1$d</string>
-    <string name="bangumi_merge_no_rating">Not rated</string>
-    <string name="bangumi_merge_no_comment">No comment</string>
-    <string name="bangumi_merge_tags">Tags: %1$s</string>
-    <string name="bangumi_merge_no_tags">No tags</string>
-    <string name="bangumi_merge_private">Private</string>
-    <string name="bangumi_merge_public">Public</string>
-    <string name="bangumi_merge_field_collection">Collection</string>
-    <string name="bangumi_merge_field_status">Status</string>
-    <string name="bangumi_merge_field_rating">Rating</string>
-    <string name="bangumi_merge_field_comment">Comment</string>
-    <string name="bangumi_merge_subject_column">Subject</string>
-    <string name="bangumi_merge_field_column">Field</string>
-    <string name="bangumi_merge_yesterday">Yst</string>
-    <string name="bangumi_merge_from_animeko">from Wynime</string>
-    <string name="bangumi_merge_from_bangumi">from Bangumi</string>
-    <string name="bangumi_merge_auto_new_collection">New collection · %1$s</string>
-    <string name="bangumi_merge_auto_collection_type">Status · %1$s</string>
-    <string name="bangumi_merge_auto_rating">Score %1$d</string>
-    <string name="bangumi_merge_auto_comment">Comment “%1$s”</string>
-    <string name="bangumi_merge_auto_rating_cleared">Rating cleared</string>
-    <string name="bangumi_merge_auto_watched">Progress → %1$s</string>
-    <string name="bangumi_merge_auto_unwatched">Unwatched %1$s</string>
-    <string name="bangumi_merge_episode">EP%1$s</string>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <string name="settings_account_bangumi_pending_sync_ops">Pending sync operations</string>
     <string name="settings_account_bangumi_execute_all">Execute All</string>
     <string name="settings_account_loading">Loading...</string>
@@ -1235,7 +1228,7 @@
     <string name="subject_episode_expand_sidebar">Expand sidebar</string>
     <string name="subject_episode_preview_mode">Preview mode</string>
 
-    <!-- Person / character details pages -->
+    
     <string name="person_details_basic_info">Basic info</string>
     <string name="person_details_voice_actors">Voice actors</string>
     <string name="person_details_casts">Characters</string>
@@ -1270,7 +1263,7 @@
     <string name="people_career_singer">Singer</string>
     <string name="people_career_director">Director</string>
 
-    <!-- Image viewer -->
+    
     <string name="image_viewer_window_title">Image</string>
     <string name="image_viewer_zoom_in">Zoom in</string>
     <string name="image_viewer_zoom_out">Zoom out</string>
@@ -1283,7 +1276,7 @@
     <string name="image_viewer_copied">Image copied</string>
     <string name="image_viewer_copy_failed">Failed to copy image</string>
     <string name="image_viewer_close">Close</string>
-    <!-- Shared playback captcha messages -->
+    
     <string name="media_captcha_required_message">Complete %1$s to continue</string>
     <string name="media_captcha_image">image verification</string>
     <string name="media_captcha_cloudflare">Cloudflare verification</string>
@@ -1320,32 +1313,32 @@
     <string name="downloads_episode_picker_current">Current</string>
     <string name="downloads_episode_picker_selected_count">%1$d episodes selected</string>
     <string name="downloads_episode_picker_back">Back</string>
-    <string name="qr_login_title">Scan to sign in</string>
-    <string name="qr_login_settings_description">Sign in to this account on a TV or another device</string>
-    <string name="qr_login_scan_hint">Point the camera at the QR code on your TV</string>
-    <string name="qr_login_scan_invalid">This is not an Wynime sign-in QR code</string>
-    <string name="qr_login_scan_torch">Flashlight</string>
-    <string name="qr_login_camera_permission">Camera access is needed to scan the QR code</string>
-    <string name="qr_login_camera_permission_grant">Allow camera access</string>
-    <string name="qr_login_confirm_title">Confirm sign-in</string>
-    <string name="qr_login_confirm_headline">Sign in on a new device?</string>
-    <string name="qr_login_confirm_as">The device below will be signed in as %1$s</string>
-    <string name="qr_login_confirm_as_current">The device below will be signed in to your account</string>
-    <string name="qr_login_confirm_unknown_device">Unknown device</string>
-    <string name="qr_login_confirm_device_requesting">Requesting to sign in</string>
-    <string name="qr_login_confirm_warning">Only confirm if you are looking at this device right now. Never scan a sign-in QR code that someone sent you.</string>
-    <string name="qr_login_confirm_approve">Confirm sign-in</string>
-    <string name="qr_login_confirm_reject">Decline</string>
-    <string name="qr_login_approved_title">Signed in</string>
-    <string name="qr_login_approved_description">%1$s is now signed in to your account. You can put your phone down.</string>
-    <string name="qr_login_rejected_title">Sign-in declined</string>
-    <string name="qr_login_expired">This QR code has expired. Refresh it on the TV and try again.</string>
-    <string name="qr_login_already_handled">This QR code has already been used</string>
-    <string name="qr_login_requires_login">Sign in to Wynime on this device first</string>
-    <string name="qr_login_failed">Something went wrong. Check your network and try again.</string>
-    <string name="qr_login_retry">Retry</string>
-    <string name="qr_login_done">Done</string>
-    <string name="qr_login_close">Close</string>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 </resources>
 
-<!--@formatter:on-->
+

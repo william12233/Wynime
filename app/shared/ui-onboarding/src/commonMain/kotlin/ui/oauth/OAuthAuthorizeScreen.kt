@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.oauth
+package com.wynime.app.ui.oauth
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,11 +8,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.session.auth.OAuthPlatform
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.navigation.rememberAsyncBrowserNavigator
-import me.him188.ani.app.ui.lang.*
-import me.him188.ani.app.ui.login.EmailLoginScreenLayout
+import com.wynime.app.domain.session.auth.OAuthPlatform
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.navigation.rememberAsyncBrowserNavigator
+import com.wynime.app.ui.lang.*
+
 import org.jetbrains.compose.resources.*
 
 @Composable
@@ -32,7 +23,7 @@ fun OAuthAuthorizeScreen(
     onAuthorizeSuccess: () -> Unit,
     contactActions: @Composable () -> Unit,
 ) {
-    val state by vm.state.collectAsStateWithLifecycle(AuthState.NoAniAccount)
+    val state by vm.state.collectAsStateWithLifecycle(AuthState.NoBangumiAccount)
     val scope = rememberCoroutineScope()
     val browserNavigator = rememberAsyncBrowserNavigator()
     val context = LocalContext.current
@@ -46,7 +37,7 @@ fun OAuthAuthorizeScreen(
     suspend fun startOAuth(currentState: AuthState) {
         if (currentState is AuthState.AwaitingResult) return
         vm.doOAuth(
-            currentState is AuthState.NoAniAccount || (currentState is AuthState.Failed && !currentState.loggedIn),
+            currentState is AuthState.NoBangumiAccount || (currentState is AuthState.Failed && !currentState.loggedIn),
         ) {
             browserNavigator.openBrowser(context, it)
         }
@@ -54,7 +45,7 @@ fun OAuthAuthorizeScreen(
 
     if (vm.platform.startsAuthorizationImmediately) {
         LaunchedEffect(vm) {
-            // 等到真实的登录状态 (而不是 collectAsState 的初始值) 才能决定是注册还是绑定
+
             startOAuth(vm.state.first { it is AuthState.Idle })
         }
     }
@@ -82,8 +73,7 @@ internal fun OAuthAuthorizeScreen(
     onNavigateBack: () -> Unit,
     contactActions: @Composable () -> Unit,
 ) {
-    EmailLoginScreenLayout(
-        onThirdPartyLoginClick = {},
+    AuthorizationScreenLayout(
         onNavigateSettings = onNavigateSettings,
         onNavigateBack = onNavigateBack,
         title = { Text(stringResource(Lang.oauth_authorize_title, platform.displayName)) },
@@ -99,9 +89,5 @@ internal fun OAuthAuthorizeScreen(
     }
 }
 
-/**
- * 进入页面就打开浏览器开始授权, 不需要用户再点一次. 页面只用于展示等待、失败与取消.
- * Bangumi 例外: 它的说明与帮助问答对不熟悉 Bangumi 的用户有用, 保留手动开始.
- */
 private val OAuthPlatform.startsAuthorizationImmediately: Boolean
     get() = this != OAuthPlatform.BANGUMI

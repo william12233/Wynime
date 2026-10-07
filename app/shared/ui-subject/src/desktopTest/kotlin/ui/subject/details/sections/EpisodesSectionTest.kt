@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.sections
+package com.wynime.app.ui.subject.details.sections
 
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
@@ -21,24 +12,24 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.app.ui.subject.episode.list.EPISODE_STILL_TAG
-import me.him188.ani.app.ui.subject.episode.list.EPISODE_PROGRESS_TAG
-import me.him188.ani.app.ui.subject.episode.list.EPISODE_WATCHED_BADGE_TAG
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListItem
-import me.him188.ani.app.ui.subject.episode.list.TestEpisodeStillUrl
-import me.him188.ani.app.ui.subject.episode.list.createTestEpisodeListItem
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.subject.episode.list.EPISODE_STILL_TAG
+import com.wynime.app.ui.subject.episode.list.EPISODE_PROGRESS_TAG
+import com.wynime.app.ui.subject.episode.list.EPISODE_WATCHED_BADGE_TAG
+import com.wynime.app.ui.subject.episode.list.EpisodeListItem
+import com.wynime.app.ui.subject.episode.list.TestEpisodeStillUrl
+import com.wynime.app.ui.subject.episode.list.createTestEpisodeListItem
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @OptIn(TestOnly::class)
 class EpisodesSectionTest {
     @Test
-    fun `episode grid cell handles click and long click separately`() = runAniComposeUiTest {
+    fun `episode grid cell handles click and long click separately`() = runWynimeComposeUiTest {
         var clickCount = 0
         var longClickCount = 0
 
@@ -68,7 +59,7 @@ class EpisodesSectionTest {
     }
 
     @Test
-    fun `episode grid cell with still shows the image keeps text and handles clicks`() = runAniComposeUiTest {
+    fun `episode grid cell with still shows the image keeps text and handles clicks`() = runWynimeComposeUiTest {
         var clickCount = 0
         var longClickCount = 0
 
@@ -102,7 +93,7 @@ class EpisodesSectionTest {
     }
 
     @Test
-    fun `episode grid cell without still has no image layer`() = runAniComposeUiTest {
+    fun `episode grid cell without still has no image layer`() = runWynimeComposeUiTest {
         setContent {
             ProvideCompositionLocalsForPreview {
                 EpisodeGridCell(
@@ -121,7 +112,7 @@ class EpisodesSectionTest {
     }
 
     @Test
-    fun `episode grid cell hides the still when images are disabled`() = runAniComposeUiTest {
+    fun `episode grid cell hides the still when images are disabled`() = runWynimeComposeUiTest {
         setContent {
             ProvideCompositionLocalsForPreview {
                 EpisodeGridCell(
@@ -141,7 +132,7 @@ class EpisodesSectionTest {
     }
 
     @Test
-    fun `done cell shows the watched badge and badge click toggles without cell click`() = runAniComposeUiTest {
+    fun `done cell shows the watched badge and badge click toggles without cell click`() = runWynimeComposeUiTest {
         var clickCount = 0
         var toggleCount = 0
 
@@ -167,7 +158,7 @@ class EpisodesSectionTest {
     }
 
     @Test
-    fun `unfinished cell with play record shows progress bar without badge`() = runAniComposeUiTest {
+    fun `unfinished cell with play record shows progress bar without badge`() = runWynimeComposeUiTest {
         setContent {
             ProvideCompositionLocalsForPreview {
                 EpisodeGridCell(
@@ -186,7 +177,7 @@ class EpisodesSectionTest {
     }
 
     @Test
-    fun `never played cell shows neither badge nor progress bar`() = runAniComposeUiTest {
+    fun `never played cell shows neither badge nor progress bar`() = runWynimeComposeUiTest {
         setContent {
             ProvideCompositionLocalsForPreview {
                 EpisodeGridCell(
@@ -205,7 +196,7 @@ class EpisodesSectionTest {
     }
 
     @Test
-    fun `episodes row renders cells with and without stills`() = runAniComposeUiTest {
+    fun `episodes row renders cells with and without stills`() = runWynimeComposeUiTest {
         setContent {
             ProvideCompositionLocalsForPreview {
                 EpisodesRow(

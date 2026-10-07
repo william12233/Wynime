@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -19,36 +10,31 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.onEach
-import me.him188.ani.app.data.models.preference.MediaPreference.Companion.ANY_FILTER
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.app.domain.media.fetch.isFinal
-import me.him188.ani.app.domain.media.selector.MatchMetadata.SubjectMatchKind
-import me.him188.ani.app.domain.mediasource.MediaSourceTier
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.data.models.preference.MediaPreference.Companion.ANY_FILTER
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.domain.media.fetch.isFinal
+import com.wynime.app.domain.media.selector.MatchMetadata.SubjectMatchKind
+import com.wynime.app.domain.mediasource.MediaSourceTier
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * Owns one automatic selection: source subscriptions, deadlines, decisions and the final write.
- * Startup and player-error replacement share this entry point. Each call has its own lifecycle.
- */
 internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
     data class Config(
         val preferredSourceId: String? = null,
-        /** Select available local caches first; otherwise wait for their lookups before considering network media. */
+
         val selectCache: Boolean = true,
         val blacklist: Set<String> = emptySet(),
-        /** Null waits for the preferred supported source kind to complete. */
+
         val web: Web? = null,
-        /** Startup may fall back to another supported kind; player-error replacement stays within WEB. */
+
         val fallbackToOtherKinds: Boolean = false,
     )
 
-    /** Web deadlines start only after the remembered source has finished without a selection. */
     data class Web(
         val sourceTiers: MediaSelectorSourceTiers,
         val fastSelect: Boolean = true,
@@ -63,7 +49,6 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
         }
     }
 
-    /** A selection made while suspended ends this call; only [expectedSelection] may be replaced. */
     suspend fun select(
         session: MediaFetchSession,
         config: Config = Config(),
@@ -120,12 +105,9 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
     private fun sourceSnapshots(session: MediaFetchSession): Flow<List<MediaSourceSelectionSnapshot>> {
         if (session.mediaSourceResults.isEmpty()) return flowOf(emptyList())
         return combine(session.mediaSourceResults.map { source ->
-            // Keep a stable subscription to results: these subscriptions also drive lazy source queries.
+
             combine(source.state, source.results) { state, results ->
-                // combine can observe a terminal state before delivering the corresponding results event.
-                // Fetcher publishes terminal state after results have entered its replay cache, so read
-                // that cache while our stable subscription is still alive. Never pair Succeed with an
-                // older result list (including an empty list).
+
                 val currentResults = if (state.isFinal) source.results.first() else results
                 val currentState = source.state.value
                 MediaSourceSelectionSnapshot(
@@ -146,7 +128,6 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
         data class Select(val media: Media, val reason: String) : Decision
     }
 
-    /** Pure decision over a coherent snapshot. Only [select] advances time or writes selection. */
     private fun decide(snapshot: MediaAutoSelectSnapshot, config: Config, stage: Stage): Decision {
         val preferredSource = snapshot.sources.firstOrNull {
             it.kind == MediaSourceKind.WEB && it.mediaSourceId == config.preferredSourceId
@@ -154,9 +135,8 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
         val candidates = snapshot.candidates.filter { it.result.mediaId !in config.blacklist }
         val preferred = snapshot.preferred.filter { it.result.mediaId !in config.blacklist }
 
-        // A ready cache wins immediately, even over a completed remembered WEB source.
         if (config.selectCache) {
-            // Caches of the whole subject are candidates until the episode is known, so wait for it.
+
             if (!snapshot.context.hasEpisode) return Decision.Wait
             (preferred.firstOrNull { it.result.kind == MediaSourceKind.LocalCache }
                 ?: candidates.firstOrNull { it.result.kind == MediaSourceKind.LocalCache })?.let {
@@ -190,7 +170,7 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
         snapshot: MediaAutoSelectSnapshot,
         preferred: List<MaybeExcludedMedia.Included>,
     ): Decision {
-        // With no enabled sources of the preferred kind, wait for every source (CompletedConditions semantics).
+
         val preferredSources = snapshot.sources.filter {
             it.kind == snapshot.settings.preferKind && it.state !is MediaSourceFetchState.Disabled
         }
@@ -230,7 +210,7 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
                 Stage.PreferredSource -> error("Handled before Web fallback")
             }
         }
-        // Preferences apply within each match/tier group, never ahead of match quality or tier.
+
         val groups = eligible.groupBy {
             Pair(
                 it.metadata.subjectMatchKind != SubjectMatchKind.EXACT,
@@ -250,7 +230,6 @@ internal class MediaAutoSelector(private val mediaSelector: MediaSelector) {
             }
         }
 
-        // Empty final results can finish early; candidates belonging to a later phase must wait.
         if (allCompleted && webCandidates.isEmpty()) {
             return if (config.fallbackToOtherKinds) {
                 decideOnCompletion(snapshot, preferred.filter { it.result.kind != MediaSourceKind.WEB })

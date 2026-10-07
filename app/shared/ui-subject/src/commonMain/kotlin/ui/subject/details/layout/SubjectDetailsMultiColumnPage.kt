@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.layout
+package com.wynime.app.ui.subject.details.layout
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
@@ -67,65 +58,59 @@ import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
 import com.kmpalette.color
 import com.kmpalette.palette.graphics.Palette
 import kotlinx.collections.immutable.toImmutableList
-import me.him188.ani.app.data.models.subject.RelatedSubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.models.subject.Tag
-import me.him188.ani.app.data.models.subject.preferredDisplayName
-import me.him188.ani.app.tools.ColorUtils
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.AniImageLoadSuccess
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.rating_self_score
-import me.him188.ani.app.ui.lang.subject_details_episodes
-import me.him188.ani.app.ui.lang.subject_details_info
-import me.him188.ani.app.ui.lang.subject_details_login_to_collect
-import me.him188.ani.app.ui.lang.subject_details_rate
-import me.him188.ani.app.ui.lang.subject_details_rating
-import me.him188.ani.app.ui.lang.subject_details_related_subjects
-import me.him188.ani.app.ui.subject.AiringLabel
-import me.him188.ani.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
-import me.him188.ani.app.ui.subject.collection.progress.SubjectProgressButton
-import me.him188.ani.app.ui.subject.details.components.AnimatedGradientBackground
-import me.him188.ani.app.ui.subject.details.components.COVER_WIDTH_TO_HEIGHT_RATIO
-import me.him188.ani.app.ui.subject.details.components.RatingHistogram
-import me.him188.ani.app.ui.subject.details.components.SUBJECT_COVER_IMAGE_TEST_TAG
-import me.him188.ani.app.ui.subject.details.components.RelatedSubjectsGrid
-import me.him188.ani.app.ui.subject.details.components.rememberNavigateToRelatedSubject
-import me.him188.ani.app.ui.subject.details.components.rememberNavigateToRelationGraph
-import me.him188.ani.app.ui.subject.details.sections.CharactersSection
-import me.him188.ani.app.ui.subject.details.sections.HotReviewsCardContent
-import me.him188.ani.app.ui.subject.details.sections.PagedEpisodesGrid
-import me.him188.ani.app.ui.subject.details.sections.ReviewsPreviewSection
-import me.him188.ani.app.ui.subject.details.sections.SectionHeader
-import me.him188.ani.app.ui.subject.details.sections.SectionHeaderRelationGraphButton
-import me.him188.ani.app.ui.subject.details.sections.SectionHeaderCacheButton
-import me.him188.ani.app.ui.subject.details.sections.StaffSection
-import me.him188.ani.app.ui.subject.details.sections.SubjectCollectionStatsRow
-import me.him188.ani.app.ui.subject.details.sections.SubjectInfoTable
-import me.him188.ani.app.ui.subject.details.sections.SubjectRatingSummary
-import me.him188.ani.app.ui.subject.details.sections.SubjectSummarySection
-import me.him188.ani.app.ui.subject.details.sections.SubjectTagsSection
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsState
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsUiState
-import me.him188.ani.app.ui.subject.details.state.rememberAiringLabelState
-import me.him188.ani.app.ui.subject.details.state.rememberSubjectProgressState
-import me.him188.ani.app.ui.subject.episode.list.EpisodeListItem
-import me.him188.ani.app.ui.subject.renderSubjectSeason
-import me.him188.ani.app.ui.user.SelfInfoUiState
+import com.wynime.app.data.models.subject.RelatedSubjectInfo
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.models.subject.Tag
+import com.wynime.app.data.models.subject.preferredDisplayName
+import com.wynime.app.tools.ColorUtils
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.WynimeImageLoadSuccess
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.rating_self_score
+import com.wynime.app.ui.lang.subject_details_episodes
+import com.wynime.app.ui.lang.subject_details_info
+import com.wynime.app.ui.lang.subject_details_login_to_collect
+import com.wynime.app.ui.lang.subject_details_rate
+import com.wynime.app.ui.lang.subject_details_rating
+import com.wynime.app.ui.lang.subject_details_related_subjects
+import com.wynime.app.ui.subject.AiringLabel
+import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
+import com.wynime.app.ui.subject.collection.progress.SubjectProgressButton
+import com.wynime.app.ui.subject.details.components.AnimatedGradientBackground
+import com.wynime.app.ui.subject.details.components.COVER_WIDTH_TO_HEIGHT_RATIO
+import com.wynime.app.ui.subject.details.components.RatingHistogram
+import com.wynime.app.ui.subject.details.components.SUBJECT_COVER_IMAGE_TEST_TAG
+import com.wynime.app.ui.subject.details.components.RelatedSubjectsGrid
+import com.wynime.app.ui.subject.details.components.rememberNavigateToRelatedSubject
+import com.wynime.app.ui.subject.details.components.rememberNavigateToRelationGraph
+import com.wynime.app.ui.subject.details.sections.CharactersSection
+import com.wynime.app.ui.subject.details.sections.HotReviewsCardContent
+import com.wynime.app.ui.subject.details.sections.PagedEpisodesGrid
+import com.wynime.app.ui.subject.details.sections.ReviewsPreviewSection
+import com.wynime.app.ui.subject.details.sections.SectionHeader
+import com.wynime.app.ui.subject.details.sections.SectionHeaderRelationGraphButton
+import com.wynime.app.ui.subject.details.sections.SectionHeaderCacheButton
+import com.wynime.app.ui.subject.details.sections.StaffSection
+import com.wynime.app.ui.subject.details.sections.SubjectCollectionStatsRow
+import com.wynime.app.ui.subject.details.sections.SubjectInfoTable
+import com.wynime.app.ui.subject.details.sections.SubjectRatingSummary
+import com.wynime.app.ui.subject.details.sections.SubjectSummarySection
+import com.wynime.app.ui.subject.details.sections.SubjectTagsSection
+import com.wynime.app.ui.subject.details.state.SubjectDetailsState
+import com.wynime.app.ui.subject.details.state.SubjectDetailsUiState
+import com.wynime.app.ui.subject.details.state.rememberAiringLabelState
+import com.wynime.app.ui.subject.details.state.rememberSubjectProgressState
+import com.wynime.app.ui.subject.episode.list.EpisodeListItem
+import com.wynime.app.ui.subject.renderSubjectSeason
+import com.wynime.app.ui.user.SelfInfoUiState
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 桌面双栏/三栏条目详情页 (对应 Figma 定稿双栏 1505:335 / 三栏 1515:336).
- *
- * 数据沿用现有 [SubjectDetailsState] (复用其交互 state holder); 本文件只负责布局.
- * Compact(手机) 走另一条路径 (复用现有 Header + TabRow), 见 SubjectDetailsPage.
- */
 @Composable
 internal fun SubjectDetailsMultiColumnPage(
     state: SubjectDetailsState,
@@ -143,13 +128,13 @@ internal fun SubjectDetailsMultiColumnPage(
     backgroundPalette: Palette? = null,
     navigationIcon: @Composable () -> Unit = {},
     onClickOpenExternal: () -> Unit = {},
-    onCoverImageSuccess: (AniImageLoadSuccess) -> Unit = {},
+    onCoverImageSuccess: (WynimeImageLoadSuccess) -> Unit = {},
     onClickCover: (() -> Unit)? = null,
 ) {
     val info = state.info ?: return
     val uiState by state.uiState.collectAsStateWithLifecycle()
     val episodes = uiState.episodeListUiState.mainEpisodes
-    // "当前/下一集": 第一集未看(非 DONE/DROPPED)者, 用于选集高亮与初始分页页.
+
     val currentEpisodeId = remember(episodes) { episodes.firstOrNull { !it.isDoneOrDropped }?.episodeId }
 
     val exposedCharacters = state.exposedCharactersPager.collectAsLazyPagingItemsWithLifecycle()
@@ -187,7 +172,7 @@ internal fun SubjectDetailsMultiColumnPage(
 
         },
     ) {
-        // 左侧信息栏
+
         SubjectSidebar(
             state = state,
             uiState = uiState,
@@ -203,8 +188,6 @@ internal fun SubjectDetailsMultiColumnPage(
             onClickCover = onClickCover,
         )
 
-        // 中栏内容流. 区块序 (定稿): 标题 → 评分 → 简介 → 选集 → 角色
-        // → (双栏: 制作人员) → 关联作品 → (双栏: 评价预览)
         Column(
             Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(layoutParams.sectionSpacing),
@@ -228,7 +211,7 @@ internal fun SubjectDetailsMultiColumnPage(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             SectionHeaderCacheButton(onClickCache, showLabel = layoutParams.showCacheButtonLabel)
-                            // 分页时分页控件替代集数文案; 不足一页时恢复 (定稿 1610:1003)
+
                             pager?.invoke() ?: ProvideContentColor(MaterialTheme.colorScheme.onSurfaceVariant) {
                                 AiringLabel(
                                     uiState.rememberAiringLabelState(),
@@ -257,7 +240,6 @@ internal fun SubjectDetailsMultiColumnPage(
             }
         }
 
-        // 右栏 (仅三栏): 评分卡 / 热门评价卡 / 制作人员卡
         if (layoutParams.showRail) {
             Column(
                 Modifier.width(layoutParams.railWidth),
@@ -290,12 +272,6 @@ internal fun SubjectDetailsMultiColumnPage(
     }
 }
 
-/**
- * 双栏/三栏共用的 Scaffold, 亦用于加载占位骨架.
- *
- * 整页统一滚动 (侧栏/中栏/右栏不各自滚动), 顶部留白随内容滚出;
- * 页内标题滚过顶栏后, 顶栏按 M3 规范渐显 [topBarTitle] 并加底色 (与手机版 SubjectDetailsLayout 行为一致).
- */
 @Composable
 private fun MultiColumnScaffold(
     layoutParams: SubjectDetailsLayoutParams,
@@ -310,7 +286,7 @@ private fun MultiColumnScaffold(
     content: @Composable RowScope.() -> Unit,
 ) {
     val density = LocalDensity.current
-    // 页内标题位于中栏顶部 (contentTopPadding 之下); 其滚出可视区后切换到粘性标题栏.
+
     val stickyTopBarVisible by remember(scrollState, density, layoutParams) {
         derivedStateOf {
             scrollState.value >
@@ -329,24 +305,24 @@ private fun MultiColumnScaffold(
         topBar = {
             if (showTopBar) {
                 Box {
-                    // 透明背景的, 总是显示
+
                     TopAppBar(
                         title = {},
                         navigationIcon = navigationIcon,
                         actions = topAppBarActions,
-                        colors = AniThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent),
+                        colors = WynimeThemeDefaults.topAppBarColors().copy(containerColor = Color.Transparent),
                         windowInsets = topAppBarWindowInsets,
                     )
-                    // 有背景和标题的, 仅在页内标题滚出后显示
-                    AniAnimatedVisibility(stickyTopBarVisible && topBarTitle != null) {
+
+                    WynimeAnimatedVisibility(stickyTopBarVisible && topBarTitle != null) {
                         TopAppBar(
                             title = {
                                 Text(topBarTitle ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis)
                             },
                             navigationIcon = navigationIcon,
                             actions = topAppBarActions,
-                            colors = AniThemeDefaults.topAppBarColors(
-                                containerColor = AniThemeDefaults.navigationContainerColor,
+                            colors = WynimeThemeDefaults.topAppBarColors(
+                                containerColor = WynimeThemeDefaults.navigationContainerColor,
                             ),
                             windowInsets = topAppBarWindowInsets,
                         )
@@ -354,7 +330,7 @@ private fun MultiColumnScaffold(
                 }
             }
         },
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         contentWindowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { scaffoldPadding ->
         backgroundOverlay(scaffoldPadding)
@@ -365,7 +341,7 @@ private fun MultiColumnScaffold(
                 .verticalScroll(scrollState),
         ) {
             Row(
-                // 留白放在滚动容器内, 随内容一起滚出
+
                 Modifier.padding(
                     start = layoutParams.contentHorizontalPadding,
                     end = layoutParams.contentHorizontalPadding,
@@ -379,15 +355,8 @@ private fun MultiColumnScaffold(
     }
 }
 
-/** 页内标题 (headlineSmall) 约一行的高度, 用于估算标题滚出的时机. */
 private val TITLE_LINE_HEIGHT = 32.dp
 
-/**
- * 多栏加载占位骨架: 几何对齐 [SubjectDetailsMultiColumnPage] (侧栏封面/按钮 + 中栏标题/文本行),
- * 避免宽屏下从单列占位跳变为多栏内容.
- *
- * [subjectInfo] (导航占位) 可用时直接展示真实封面与标题.
- */
 @Composable
 internal fun SubjectDetailsMultiColumnPlaceholder(
     subjectInfo: SubjectInfo?,
@@ -478,12 +447,12 @@ private fun SubjectSidebar(
     onClickTag: (Tag) -> Unit,
     onClickLogin: () -> Unit,
     itemSpacing: Dp,
-    onCoverImageSuccess: (AniImageLoadSuccess) -> Unit,
+    onCoverImageSuccess: (WynimeImageLoadSuccess) -> Unit,
     modifier: Modifier = Modifier,
     onClickCover: (() -> Unit)? = null,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(itemSpacing)) {
-        // 封面: 固定海报比例 (849:1200) + 圆角 16, 对齐定稿 340×482, 不随图片本征尺寸变形.
+
         AsyncImage(
             info.imageLarge,
             contentDescription = null,
@@ -496,13 +465,13 @@ private fun SubjectSidebar(
             contentScale = ContentScale.Crop,
             onSuccess = onCoverImageSuccess,
         )
-        // 播放按钮 (定稿: 全宽 Filled; 无选集列表小按钮, 选集操作走中栏网格)
+
         SubjectProgressButton(
             uiState.rememberSubjectProgressState(),
             onPlay = { uiState.progressInfo?.nextEpisodeIdToPlay?.let(onPlay) },
             Modifier.fillMaxWidth(),
         )
-        // 收藏 (定稿: 全宽 Tonal)
+
         if (selfInfo.isSessionValid == false) {
             OutlinedButton(onClickLogin, Modifier.fillMaxWidth()) {
                 Text(stringResource(Lang.subject_details_login_to_collect))
@@ -514,18 +483,16 @@ private fun SubjectSidebar(
                 Modifier.fillMaxWidth(),
             )
         }
-        // 收藏统计三格 (收藏 / 在看 / 想看)
+
         SubjectCollectionStatsRow(info.collectionStats)
 
         HorizontalDivider()
 
-        // 作品信息
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(Lang.subject_details_info), style = MaterialTheme.typography.titleMedium)
             SubjectInfoTable(info, mainEpisodeCount = mainEpisodeCount.takeIf { it > 0 })
         }
 
-        // 标签
         SubjectTagsSection(info.tags, onClickTag)
     }
 }
@@ -555,7 +522,7 @@ private fun SubjectTitleBlock(info: SubjectInfo, uiState: SubjectDetailsUiState)
                 }
             }
         }
-        // 元数据行 (对齐定稿的内联文本, 非 chip): 季度 · 播出状态 · 总集数
+
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically),
@@ -575,9 +542,6 @@ private fun SubjectTitleBlock(info: SubjectInfo, uiState: SubjectDetailsUiState)
     }
 }
 
-/**
- * 评分行: 评分摘要靠左 (点击打开评分编辑); [showHistogram] 时直方图右对齐 (定宽, 定稿 274×90 Size=Large).
- */
 @Composable
 private fun SubjectRatingRow(state: SubjectDetailsState, showHistogram: Boolean) {
     val info = state.info ?: return
@@ -598,10 +562,6 @@ private fun SubjectRatingRow(state: SubjectDetailsState, showHistogram: Boolean)
 
 private val RATING_HISTOGRAM_WIDTH = 274.dp
 
-/**
- * 三栏右栏"评分"卡的显式打分入口: 未打分显示"打分", 已打分显示"你的评分: N"
- * (复用手机版同款 [Lang.rating_self_score] 文案); 点击打开评分编辑.
- */
 @Composable
 private fun EditRatingButton(selfScore: Int, onClick: () -> Unit) {
     TextButton(onClick) {
@@ -638,8 +598,7 @@ private fun RailCard(content: @Composable () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
-        // 对齐设计稿 rail 卡 (视觉: 标题字形距顶 ~21, 距侧 20): 卡内首行 SectionHeader
-        // 的 TextButton (min 40dp) 居中 + 行框留白自带 ~17dp 顶空 (截图实测), 故 top=4.
+
         Column(Modifier.padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 18.dp)) {
             content()
         }

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.rating
+package com.wynime.app.ui.rating
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -55,36 +46,36 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.icons.EditSquare
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.rating_comment_hint
-import me.him188.ani.app.ui.lang.rating_comment_label
-import me.him188.ani.app.ui.lang.rating_comment_optional
-import me.him188.ani.app.ui.lang.rating_discard
-import me.him188.ani.app.ui.lang.rating_discard_edit_message
-import me.him188.ani.app.ui.lang.rating_discard_edit_title
-import me.him188.ani.app.ui.lang.rating_edit_title
-import me.him188.ani.app.ui.lang.rating_private_only
-import me.him188.ani.app.ui.lang.rating_score_class_average
-import me.him188.ani.app.ui.lang.rating_score_class_bad
-import me.him188.ani.app.ui.lang.rating_score_class_highly_recommended
-import me.him188.ani.app.ui.lang.rating_score_class_legendary_caution
-import me.him188.ani.app.ui.lang.rating_score_class_masterpiece
-import me.him188.ani.app.ui.lang.rating_score_class_okay
-import me.him188.ani.app.ui.lang.rating_score_class_poor
-import me.him188.ani.app.ui.lang.rating_score_class_recommended
-import me.him188.ani.app.ui.lang.rating_score_class_terrible_caution
-import me.him188.ani.app.ui.lang.rating_score_class_very_bad
-import me.him188.ani.app.ui.lang.settings_confirm
-import me.him188.ani.app.ui.lang.settings_media_source_continue_editing
-import me.him188.ani.app.ui.lang.settings_mediasource_cancel
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.icons.EditSquare
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.rating_comment_hint
+import com.wynime.app.ui.lang.rating_comment_label
+import com.wynime.app.ui.lang.rating_comment_optional
+import com.wynime.app.ui.lang.rating_discard
+import com.wynime.app.ui.lang.rating_discard_edit_message
+import com.wynime.app.ui.lang.rating_discard_edit_title
+import com.wynime.app.ui.lang.rating_edit_title
+import com.wynime.app.ui.lang.rating_private_only
+import com.wynime.app.ui.lang.rating_score_class_average
+import com.wynime.app.ui.lang.rating_score_class_bad
+import com.wynime.app.ui.lang.rating_score_class_highly_recommended
+import com.wynime.app.ui.lang.rating_score_class_legendary_caution
+import com.wynime.app.ui.lang.rating_score_class_masterpiece
+import com.wynime.app.ui.lang.rating_score_class_okay
+import com.wynime.app.ui.lang.rating_score_class_poor
+import com.wynime.app.ui.lang.rating_score_class_recommended
+import com.wynime.app.ui.lang.rating_score_class_terrible_caution
+import com.wynime.app.ui.lang.rating_score_class_very_bad
+import com.wynime.app.ui.lang.settings_confirm
+import com.wynime.app.ui.lang.settings_media_source_continue_editing
+import com.wynime.app.ui.lang.settings_mediasource_cancel
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.max
 
 @Stable
 class RatingEditorState(
-    initialScore: Int, // 0 if not rated
+    initialScore: Int,
     initialComment: String,
     initialIsPrivate: Boolean,
 ) {
@@ -192,13 +183,13 @@ fun RatingEditorDialog(
             }
         },
         properties = DialogProperties(
-            // 当有修改之后必须点击 "取消" 才能关闭
+
             dismissOnBackPress = !state.hasModified,
             dismissOnClickOutside = !state.hasModified,
         ),
         modifier = modifier
             .clickable(remember { MutableInteractionSource() }, indication = null) {
-                focusManager.clearFocus() // 点击编辑框外面关闭键盘
+                focusManager.clearFocus()
             },
     )
 }
@@ -304,7 +295,7 @@ fun RatingEditor(
 
 @Composable
 private fun TenRatingStars(
-    score: Int, // range 1..10
+    score: Int,
     onScoreChange: (Int) -> Unit,
     scoreLabels: RatingScoreLabels,
     color: Color = MaterialTheme.colorScheme.primary,
@@ -402,7 +393,6 @@ fun scoreColor(score: Float): Color {
         else -> MaterialTheme.colorScheme.onSurface
     }
 }
-
 
 @Composable
 @Preview

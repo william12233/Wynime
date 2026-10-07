@@ -1,23 +1,14 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.session
+package com.wynime.app.domain.session
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.repository.user.AccessTokenSession
-import me.him188.ani.app.data.repository.user.GuestSession
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.repository.user.AccessTokenSession
+import com.wynime.app.data.repository.user.GuestSession
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Clock
@@ -34,7 +25,7 @@ class SessionManagerTest {
                 refreshToken = "refresh",
                 accessTokens = TokenSave.AccessTokens(
                     bangumiAccessToken = "bangumi",
-                    aniAccessToken = "ani",
+                    legacyServiceAccessToken = "ani",
                     expiresAtMillis = nowMillis,
                 ),
             ),
@@ -54,7 +45,7 @@ class SessionManagerTest {
             refreshToken = "refresh",
             accessTokens = TokenSave.AccessTokens(
                 bangumiAccessToken = "bangumi",
-                aniAccessToken = "ani",
+                legacyServiceAccessToken = "ani",
                 expiresAtMillis = nowMillis + 2.hours.inWholeMilliseconds,
             ),
         )
@@ -68,7 +59,7 @@ class SessionManagerTest {
         assertEquals(
             AccessTokenSession(
                 AccessTokenPair(
-                    aniAccessToken = "ani",
+                    legacyServiceAccessToken = "ani",
                     expiresAtMillis = nowMillis + 2.hours.inWholeMilliseconds,
                     bangumiAccessToken = "bangumi",
                 ),

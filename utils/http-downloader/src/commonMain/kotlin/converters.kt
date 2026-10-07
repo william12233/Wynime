@@ -1,14 +1,6 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
 @file:Suppress("unused")
 
-package me.him188.ani.utils.httpdownloader
+package com.wynime.utils.httpdownloader
 
 import androidx.room.TypeConverter
 import kotlinx.serialization.KSerializer
@@ -18,7 +10,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import me.him188.ani.utils.serialization.DatabaseProtoBuf
+import com.wynime.utils.serialization.DatabaseProtoBuf
 
 class DownloadIdConverter {
     @TypeConverter
@@ -67,7 +59,7 @@ object SegmentInfoListConverter {
 
         @Serializable
         private data class LegacyNode(val value: List<LegacySegmentInfo>)
-        
+
         override val descriptor: SerialDescriptor = LegacyNode.serializer().descriptor
 
         override fun serialize(encoder: Encoder, value: Node) {

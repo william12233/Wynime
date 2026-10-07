@@ -1,1 +1,27 @@
-{"id":"2rk","name":"2RK","version":"1.0.25","pluginApiVersion":2,"minHostVersion":"0.1.3","entryClass":"tw.wynime.sources.rk2.Rk2EntryPoint","website":"https://www.2rk.cc/","icon":"https://www.2rk.cc/logo.png","description":"2RK 動畫來源；依目前頁面公開播放器請求動態解析媒體。","platforms":["desktop","android"],"artifacts":{"desktop":{"url":"artifacts/source-2rk.jar","sha256":"0aaa0dd710dc24bb1431377663822882b7381bce416e0d737a21e68a9fc11229","format":"jar"},"android":{"url":"artifacts/source-2rk-android.jar","sha256":"07dd9b1395199047cea2ebf5635db514ab8a9ca117f40a77b94b6c3fa4a36f8b","format":"jar"}}}
+{
+  "id": "2rk",
+  "name": "2RK",
+  "version": "1.0.26",
+  "pluginApiVersion": 3,
+  "minHostVersion": "0.1.3",
+  "entryClass": "tw.wynime.sources.rk2.Rk2EntryPoint",
+  "website": "https://www.2rk.cc/",
+  "icon": "https://www.2rk.cc/logo.png",
+  "description": "2RK 動畫來源；依目前頁面公開播放器請求動態解析媒體。",
+  "platforms": [
+    "desktop",
+    "android"
+  ],
+  "artifacts": {
+    "desktop": {
+      "url": "artifacts/source-2rk.jar",
+      "sha256": "5f145eb19963605be4cdf0f32bb85cd11a77bf31a34d1b2c7b9288b77cd83621",
+      "format": "jar"
+    },
+    "android": {
+      "url": "artifacts/source-2rk-android.jar",
+      "sha256": "beff9d1ba07600a4dcc0fbe2bc81d79f16ae179e4ad8adfd2d8f37b9ca8e693a",
+      "format": "jar"
+    }
+  }
+}

@@ -1,25 +1,12 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models.subject
+package com.wynime.app.data.models.subject
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.room.Embedded
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.annotations.TestOnly
 
-/**
- * 一个条目的评分信息, 包含评分人数, 评分分数, 评分人数等
- * @see SubjectInfo.ratingInfo
- */
 @Immutable
 @Serializable
 data class RatingInfo(
@@ -27,7 +14,7 @@ data class RatingInfo(
     val total: Int,
     @Embedded(prefix = "count_")
     val count: RatingCounts,
-    val score: String, // big decimal
+    val score: String,
 ) {
     val scoreFloat get() = score.toFloatOrNull() ?: 0f
 

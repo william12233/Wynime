@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.adaptive
+package com.wynime.app.ui.adaptive
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,18 +20,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.preview.PreviewSizeClasses
-import me.him188.ani.utils.platform.isMobile
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.preview.PreviewSizeClasses
+import com.wynime.utils.platform.isMobile
 
-/**
- * @see PopupSearchBar
- * @see SearchBar
- */
 @Composable
 fun AdaptiveSearchBar(
     inputField: @Composable () -> Unit,
@@ -50,11 +37,11 @@ fun AdaptiveSearchBar(
     colors: SearchBarColors = SearchBarDefaults.colors(),
     tonalElevation: Dp = SearchBarDefaults.TonalElevation,
     shadowElevation: Dp = SearchBarDefaults.ShadowElevation,
-    windowInsets: WindowInsets = AniWindowInsets.forSearchBar(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forSearchBar(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (currentWindowAdaptiveInfo1().windowSizeClass.isWidthAtLeastMedium
-        && !LocalPlatform.current.isMobile() // #1104
+        && !LocalPlatform.current.isMobile()
     ) {
         PopupSearchBar(
             inputField,

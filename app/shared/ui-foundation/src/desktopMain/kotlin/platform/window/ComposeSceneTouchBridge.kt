@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("INVISIBLE_REFERENCE", "INVISIBLE_MEMBER")
 
-package me.him188.ani.app.platform.window
+package com.wynime.app.platform.window
 
 import androidx.compose.ui.InternalComposeUiApi
 import androidx.compose.ui.awt.ComposeWindow
@@ -20,8 +11,8 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.scene.ComposeScene
 import androidx.compose.ui.scene.ComposeScenePointer
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import java.awt.Component
 import java.awt.EventQueue
 import java.awt.Point
@@ -31,16 +22,8 @@ import java.lang.reflect.Method
 
 private val logger = logger("ComposeSceneTouchBridge")
 
-/** AWT reports the mouse as pointer 0; Windows touch ids never collide with it. */
 private const val HOVERING_CURSOR_POINTER_ID = 0L
 
-/**
- * Injects native Windows touch events into [ComposeScene].
- *
- * Compose Desktop does not expose a supported API for this injection, so this bridge resolves its
- * internal scene and methods through reflection once at creation time. If that lookup fails after a
- * Compose Desktop change, [create] returns null and the caller keeps the default AWT mouse path.
- */
 @OptIn(InternalComposeUiApi::class)
 internal class ComposeSceneTouchBridge private constructor(
     private val scene: ComposeScene,
@@ -86,20 +69,12 @@ internal class ComposeSceneTouchBridge private constructor(
                 event.pointer.eventTimeMillis,
                 null,
                 null,
-                1f, // scaleGestureFactor
-                Offset.Zero.packedValue, // panGestureOffset
+                1f,
+                Offset.Zero.packedValue,
             )
         }
     }
 
-    /**
-     * Ends the AWT mouse hover before the first injected touch of a sequence.
-     *
-     * CMP resolves an injected pointer against the scene's current cursor input source. While the
-     * mouse is still hovering, the touch PRESS arrives as [PointerType.Mouse] and only the RELEASE
-     * reports [PointerType.Touch]; the tap is then discarded because down and up disagree, so the
-     * first touch after using the mouse does nothing at all.
-     */
     private fun exitHoveringCursor(position: Offset, eventTimeMillis: Long) {
         val cursor = ComposeScenePointer(
             id = PointerId(HOVERING_CURSOR_POINTER_ID),
@@ -118,8 +93,8 @@ internal class ComposeSceneTouchBridge private constructor(
             eventTimeMillis,
             null,
             null,
-            1f, // scaleGestureFactor
-            Offset.Zero.packedValue, // panGestureOffset
+            1f,
+            Offset.Zero.packedValue,
         )
     }
 
@@ -237,12 +212,6 @@ internal class ComposeSceneTouchBridge private constructor(
     }
 }
 
-/**
- * Converts Win32 screen-pixel coordinates to [ComposeScene]-local coordinates.
- *
- * [contentLocationOnScreen] locates the AWT host in screen space; [sceneBoundsInPx] accounts for
- * the scene's offset inside that host.
- */
 internal fun windowsScreenPositionToScenePosition(
     screenX: Int,
     screenY: Int,

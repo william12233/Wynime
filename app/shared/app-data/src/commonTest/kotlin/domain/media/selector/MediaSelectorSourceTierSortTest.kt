@@ -1,33 +1,19 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(UnsafeOriginalMediaAccess::class)
 
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
-import me.him188.ani.app.domain.media.selector.testFramework.MediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.assertMedias
-import me.him188.ani.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.setChannelTiers
-import me.him188.ani.app.domain.media.selector.testFramework.setSourceTiers
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceKind.WEB
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.test.DisabledOnNative
+import com.wynime.app.domain.media.selector.testFramework.MediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.assertMedias
+import com.wynime.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.setChannelTiers
+import com.wynime.app.domain.media.selector.testFramework.setSourceTiers
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceKind.WEB
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.test.DisabledOnNative
 import kotlin.test.Test
 
-/**
- * @see DefaultMediaSelector.filteredCandidates
- * @see MediaSelectorSourceTiers
- * @see me.him188.ani.app.domain.mediasource.MediaSourceTier
- */
-@DisabledOnNative // TODO: ContextParameters crashes on Native
+@DisabledOnNative
 class MediaSelectorSourceTierSortTest {
     @Test
     fun `tier - basic sorting`() = runSimpleMediaSelectorTestSuite {
@@ -101,7 +87,6 @@ class MediaSelectorSourceTierSortTest {
             "t3" to 3u,
         )
 
-
         assertMedias {
             next().assert(sourceId = "t0")
             next().assert(sourceId = "t1")
@@ -157,7 +142,7 @@ class MediaSelectorSourceTierSortTest {
             "s",
             "channel-a" to 0u,
             "channel-b" to 2u,
-            // channel-c falls back to source tier 1
+
         )
 
         assertMedias {
@@ -170,7 +155,7 @@ class MediaSelectorSourceTierSortTest {
 
     @Test
     fun `channel tier - channel tier participates in cross-source sorting`() = runSimpleMediaSelectorTestSuite {
-        // 用户场景: A 源的 channel A/B 是 tier 0, B 源的 channel C 是 tier 1
+
         initSubject()
         mediaApi.addMedia(
             media(sourceId = "B", kind = WEB, alliance = "channel-c", mediaId = "B.c"),
@@ -185,7 +170,7 @@ class MediaSelectorSourceTierSortTest {
         setChannelTiers("B", "channel-c" to 1u)
 
         assertMedias {
-            // A 源的两个 tier 0 channel 在前 (稳定排序保持加入顺序), B 源的 tier 1 channel 其次
+
             next().assert(mediaId = "A.a")
             next().assert(mediaId = "A.b")
             next().assert(mediaId = "B.c")
@@ -195,7 +180,7 @@ class MediaSelectorSourceTierSortTest {
 
     @Test
     fun `channel tier - demoted channel ranks after other source`() = runSimpleMediaSelectorTestSuite {
-        // 数据源整体 tier 0, 但单个 channel 被降级到 2, 应排在 tier 1 的其他源之后
+
         initSubject()
         mediaApi.addMedia(
             media(sourceId = "A", kind = WEB, alliance = "bad-channel", mediaId = "A.bad"),

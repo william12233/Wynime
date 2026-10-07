@@ -1,4 +1,4 @@
-package me.him188.ani.test
+package com.wynime.test
 
 fun <T> List<T>.permutedSequence(): Sequence<List<T>> {
     if (size == 1) return sequenceOf(this)

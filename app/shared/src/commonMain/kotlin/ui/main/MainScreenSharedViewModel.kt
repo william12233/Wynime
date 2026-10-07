@@ -1,23 +1,13 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.main
+package com.wynime.app.ui.main
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.user.SelfInfoStateProducer
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.user.SelfInfoStateProducer
 import org.koin.core.component.KoinComponent
 
 open class MainScreenSharedViewModel : AbstractViewModel(), KoinComponent {
     val selfInfo = SelfInfoStateProducer(koin = getKoin()).flow
 
-    /** 網路診斷由設定頁的官方 Bangumi 連線測試提供。 */
     val networkCheckFailed: Flow<Unit> = emptyFlow()
 }

@@ -1,12 +1,8 @@
-package me.him188.ani.utils.platform.collections
+package com.wynime.utils.platform.collections
 
 import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.toImmutableMap
 
-/**
- * 每个元素 [K] 一定有值.
- * @see ImmutableEnumMap
- */
 interface EnumMap<K : Enum<K>, V> : Map<K, V> {
     override fun get(key: K): V
     override fun containsKey(key: K): Boolean = true

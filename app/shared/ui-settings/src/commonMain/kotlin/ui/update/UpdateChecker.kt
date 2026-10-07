@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -18,14 +9,14 @@ import io.ktor.http.isSuccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import me.him188.ani.app.data.network.protocol.ReleaseClass
-import me.him188.ani.app.platform.WynimeBrand
-import me.him188.ani.app.tools.update.UpdatePackageDescriptor
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.platform.Arch
-import me.him188.ani.utils.platform.Platform
-import me.him188.ani.utils.platform.currentPlatform
+import com.wynime.app.data.network.protocol.ReleaseClass
+import com.wynime.app.platform.WynimeBrand
+import com.wynime.app.tools.update.UpdatePackageDescriptor
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.platform.Arch
+import com.wynime.utils.platform.Platform
+import com.wynime.utils.platform.currentPlatform
 import kotlin.coroutines.cancellation.CancellationException
 
 class UpdateChecker(
@@ -33,12 +24,10 @@ class UpdateChecker(
     private val releasesUrl: String = WynimeBrand.githubReleasesApi,
     private val platformProvider: () -> Platform = ::currentPlatform,
 ) {
-    /**
-     * 检查是否有更新的版本. 返回最新版本的信息, 或者 `null` 表示没有新版本.
-     */
+
     suspend fun checkLatestVersion(
         releaseClass: ReleaseClass,
-        currentVersion: String = currentAniBuildConfig.versionName,
+        currentVersion: String = currentWynimeBuildConfig.versionName,
     ): NewVersion? {
         val responseBody = client.use {
             val response = get(releasesUrl) {
@@ -122,7 +111,7 @@ class UpdateChecker(
             Arch.X86_64 -> listOf("wynime-$version-x86_64.apk")
         }
 
-        is Platform.MacOS, is Platform.Linux, Platform.Ios -> emptyList()
+        else -> emptyList()
     }
 
     @Serializable

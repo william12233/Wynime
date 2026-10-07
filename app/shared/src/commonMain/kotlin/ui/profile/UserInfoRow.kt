@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.profile
+package com.wynime.app.ui.profile
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,14 +25,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.UserInfo
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.avatar.AvatarImage
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings
+import com.wynime.app.data.models.UserInfo
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.avatar.AvatarImage
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings
 import org.jetbrains.compose.resources.stringResource
-
 
 @Composable
 fun UserInfoRow(
@@ -84,30 +74,13 @@ fun UserInfoRow(
                     modifier = Modifier.placeholder(self?.nickname == null),
                 )
 
-//                Box(
-//                    modifier = Modifier
-//                        .padding(start = 12.dp)
-//                        .size(20.dp)
-//                        .clickable(onClick = onClickEditNickname)
-//                ) {
-//                    Icon(
-//                        Icons.Default.Edit,
-//                        contentDescription = "Edit",
-//                        tint = MaterialTheme.colorScheme.primary,
-//                    )
-//                }
             }
 
             Row(
                 Modifier,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-//                Icon(
-//                    Icons.Default.SimCard, null,
-//                    Modifier
-//                        .padding(end = 4.dp)
-//                        .size(iconHeight),
-//                )
+
                 val density = LocalDensity.current
                 Text(
                     text = self?.username ?: "Loading...",
@@ -127,7 +100,6 @@ fun UserInfoRow(
         }
     }
 }
-
 
 private val sampleUser = UserInfo(
     username = "username",

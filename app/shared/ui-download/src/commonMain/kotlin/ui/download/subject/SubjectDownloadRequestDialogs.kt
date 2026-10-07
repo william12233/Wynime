@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.clickable
@@ -55,43 +46,39 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.download.DownloadEpisodeOption
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.fetch.MediaSourceResultsFilterer
-import me.him188.ani.app.domain.media.fetch.restart
-import me.him188.ani.app.domain.media.selector.MediaSelector
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBar
-import me.him188.ani.app.ui.foundation.layout.desktopTitleBarPadding
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_management_episode_label
-import me.him188.ani.app.ui.lang.cache_subject_cache
-import me.him188.ani.app.ui.lang.cache_subject_cancel
-import me.him188.ani.app.ui.lang.downloads_create_failed
-import me.him188.ani.app.ui.lang.downloads_episode_picker_all
-import me.him188.ani.app.ui.lang.downloads_episode_picker_back
-import me.him188.ani.app.ui.lang.downloads_episode_picker_current
-import me.him188.ani.app.ui.lang.downloads_episode_picker_downloaded
-import me.him188.ani.app.ui.lang.downloads_episode_picker_from_current
-import me.him188.ani.app.ui.lang.downloads_episode_picker_line
-import me.him188.ani.app.ui.lang.downloads_episode_picker_only_current
-import me.him188.ani.app.ui.lang.downloads_episode_picker_selected_count
-import me.him188.ani.app.ui.lang.downloads_episode_picker_title
-import me.him188.ani.app.ui.lang.downloads_episode_picker_unmatched
-import me.him188.ani.app.ui.mediafetch.MediaSelectorView
-import me.him188.ani.app.ui.mediafetch.MediaSourceInfoProvider
-import me.him188.ani.app.ui.mediafetch.rememberMediaSelectorState
-import me.him188.ani.datasources.api.Media
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.download.DownloadEpisodeOption
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.fetch.MediaSourceResultsFilterer
+import com.wynime.app.domain.media.fetch.restart
+import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.app.ui.foundation.layout.desktopTitleBar
+import com.wynime.app.ui.foundation.layout.desktopTitleBarPadding
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_management_episode_label
+import com.wynime.app.ui.lang.cache_subject_cache
+import com.wynime.app.ui.lang.cache_subject_cancel
+import com.wynime.app.ui.lang.downloads_create_failed
+import com.wynime.app.ui.lang.downloads_episode_picker_all
+import com.wynime.app.ui.lang.downloads_episode_picker_back
+import com.wynime.app.ui.lang.downloads_episode_picker_current
+import com.wynime.app.ui.lang.downloads_episode_picker_downloaded
+import com.wynime.app.ui.lang.downloads_episode_picker_from_current
+import com.wynime.app.ui.lang.downloads_episode_picker_line
+import com.wynime.app.ui.lang.downloads_episode_picker_only_current
+import com.wynime.app.ui.lang.downloads_episode_picker_selected_count
+import com.wynime.app.ui.lang.downloads_episode_picker_title
+import com.wynime.app.ui.lang.downloads_episode_picker_unmatched
+import com.wynime.app.ui.mediafetch.MediaSelectorView
+import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
+import com.wynime.app.ui.mediafetch.rememberMediaSelectorState
+import com.wynime.datasources.api.Media
 import org.jetbrains.compose.resources.stringResource
 
 data class DownloadRequestDialogState(
-    /**
-     * 选源与选集共用的弹窗; 为 `null` 时不显示弹窗.
-     */
+
     val selection: DownloadMediaPickerState? = null,
-    /**
-     * 非 `null` 时弹窗处于选集步骤.
-     */
+
     val episodePicker: DownloadEpisodePickerState? = null,
     val failed: Boolean = false,
 )
@@ -102,9 +89,6 @@ class DownloadMediaPickerState(
     val selector: MediaSelector,
 )
 
-/**
- * 选集步骤: 用户已在 [DownloadMediaPickerState] 中选定 [chosen].
- */
 class DownloadEpisodePickerState(
     val episodeId: Int,
     val chosen: Media,
@@ -160,9 +144,6 @@ internal fun SubjectDownloadRequestDialogs(
     }
 }
 
-/**
- * 同一个底部弹窗内在选源与选集两步之间切换.
- */
 @Composable
 private fun DownloadRequestSheet(
     selection: DownloadMediaPickerState,
@@ -225,9 +206,6 @@ private fun DownloadMediaPicker(
     )
 }
 
-/**
- * 选集: 列出条目的全部剧集, 可下载的集可勾选; 默认勾选本话及之后.
- */
 @Composable
 internal fun DownloadEpisodePicker(
     state: DownloadEpisodePickerState,

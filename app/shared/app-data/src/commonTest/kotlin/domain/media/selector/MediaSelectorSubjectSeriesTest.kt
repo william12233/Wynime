@@ -1,31 +1,19 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("SameParameterValue")
 
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import kotlinx.coroutines.flow.first
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason.FromSequelSeason
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason.FromSeriesSeason
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason.SubjectNameMismatch
-import me.him188.ani.app.domain.media.selector.testFramework.SimpleMediaSelectorTestSuite
-import me.him188.ani.app.domain.media.selector.testFramework.addSimpleMediaSelectorTest
-import me.him188.ani.test.TestContainer
-import me.him188.ani.test.TestFactory
-import me.him188.ani.test.runDynamicTests
+import com.wynime.app.domain.media.selector.MediaExclusionReason.FromSequelSeason
+import com.wynime.app.domain.media.selector.MediaExclusionReason.FromSeriesSeason
+import com.wynime.app.domain.media.selector.MediaExclusionReason.SubjectNameMismatch
+import com.wynime.app.domain.media.selector.testFramework.SimpleMediaSelectorTestSuite
+import com.wynime.app.domain.media.selector.testFramework.addSimpleMediaSelectorTest
+import com.wynime.test.TestContainer
+import com.wynime.test.TestFactory
+import com.wynime.test.runDynamicTests
 import kotlin.test.assertEquals
 import kotlin.test.fail
 
-/**
- * 测试过滤掉其他季度的资源
- */
 @TestContainer
 class MediaSelectorSubjectSeriesTest {
     @TestFactory
@@ -43,7 +31,7 @@ class MediaSelectorSubjectSeriesTest {
                     )
                     seriesInfo(seasonSort = 1) {
                         series(
-                            // 第一季:
+
                             "香格里拉边境~粪作猎人向神作游戏发起挑战~",
                             "香格里拉・开拓异境～粪作猎手挑战神作～",
                             "香格里拉・開拓異境～糞作獵手挑戰神作～",
@@ -69,7 +57,7 @@ class MediaSelectorSubjectSeriesTest {
                         SubjectNameMismatch,
                         null,
                     ),
-                    "香格里拉" to SubjectNameMismatch, // 这确实是另一个番
+                    "香格里拉" to SubjectNameMismatch,
                     "香格里拉·弗陇提亚～屎作猎人向神作发起挑战～" to tentatively(
                         SubjectNameMismatch,
                         FromSeriesSeason,
@@ -82,7 +70,7 @@ class MediaSelectorSubjectSeriesTest {
                         SubjectNameMismatch,
                         FromSeriesSeason,
                     ),
-                    "香格里拉2009" to SubjectNameMismatch, // 这确实是另一个番
+                    "香格里拉2009" to SubjectNameMismatch,
                     "香格里拉·开拓异境～粪作猎手挑战神作" to FromSeriesSeason,
                     "这儿是香格里拉" to SubjectNameMismatch,
                 )
@@ -131,7 +119,7 @@ class MediaSelectorSubjectSeriesTest {
                         null,
                         SubjectNameMismatch,
                     ),
-                    "香格里拉" to SubjectNameMismatch, // 这确实是另一个番
+                    "香格里拉" to SubjectNameMismatch,
                     "香格里拉·弗陇提亚～屎作猎人向神作发起挑战～" to tentatively(
                         SubjectNameMismatch,
                         FromSeriesSeason,
@@ -144,7 +132,7 @@ class MediaSelectorSubjectSeriesTest {
                         SubjectNameMismatch,
                         null,
                     ),
-                    "香格里拉2009" to SubjectNameMismatch, // 这确实是另一个番
+                    "香格里拉2009" to SubjectNameMismatch,
                     "香格里拉·开拓异境～粪作猎手挑战神作" to null,
                     "这儿是香格里拉" to SubjectNameMismatch,
                 )
@@ -203,7 +191,6 @@ class MediaSelectorSubjectSeriesTest {
     }
 }
 
-
 class SubjectExclusionApi(
     private val suite: SimpleMediaSelectorTestSuite,
 ) {
@@ -220,11 +207,6 @@ class SubjectExclusionApi(
         }
     }
 
-    /**
-     * 特殊标记, 用于标注该值是错误的, 但是目前算法没法做到区分这个.
-     * @param current 目前算法的结果
-     * @param actual 未来修复算法后, 应当得到的结果
-     */
     fun <T> tentatively(current: T, @Suppress("UNUSED_PARAMETER") actual: T): T = current
 
     @OptIn(UnsafeOriginalMediaAccess::class)

@@ -1,63 +1,21 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update.devbuild
+package com.wynime.app.ui.update.devbuild
 
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 
-/**
- * 用户在「安装指定版本」输入框中粘贴的内容解析后的结果.
- */
 sealed interface DevBuildInput {
-    /**
-     * commit 链接或 sha (完整或缩写, 至少 7 位).
-     */
+
     data class Commit(val sha: String) : DevBuildInput
 
-    /**
-     * PR 链接或 `#123`.
-     */
     data class PullRequest(val number: Int) : DevBuildInput
 
-    /**
-     * Build workflow 某次运行的链接.
-     */
     data class WorkflowRun(val runId: Long) : DevBuildInput
 
-    /**
-     * GitHub Actions artifact 的链接, 网页链接或 API 的下载地址均可.
-     */
     data class Artifact(val artifactId: Long) : DevBuildInput
 
-    /**
-     * 安装包的直接下载地址, 例如 Release 附件. [fileName] 是地址路径的最后一段, 已解码.
-     */
     data class PackageUrl(val url: String, val fileName: String) : DevBuildInput
 }
 
-/**
- * 解析 [text]. 识别以下形式, 无法识别时返回 `null`:
- *
- * - commit sha: 7 到 40 位十六进制
- * - PR 编号: `123` 或 `#123`
- * - `https://github.com/{repository}/commit/{sha}`
- * - `https://github.com/{repository}/pull/{number}[/...]`
- * - `https://github.com/{repository}/pull/{number}/commits/{sha}`
- * - `https://github.com/{repository}/actions/runs/{runId}[/...]`
- * - `https://github.com/{repository}/actions/runs/{runId}/artifacts/{artifactId}`
- * - `https://api.github.com/repos/{repository}/commits/{sha}`, `.../pulls/{number}`, `.../actions/runs/{runId}`,
- *   `.../actions/artifacts/{artifactId}[/zip]`
- * - 其他 http(s) 地址 (包括 GitHub Release 附件), 且路径最后一段带扩展名: 视为安装包直链
- *
- * 指向其他仓库的 commit / PR / artifact 链接视为无法识别.
- */
 fun parseDevBuildInput(text: String, repository: String): DevBuildInput? {
     val input = text.trim()
     if (input.isEmpty()) return null
@@ -68,7 +26,7 @@ fun parseDevBuildInput(text: String, repository: String): DevBuildInput? {
     if (url.protocol != URLProtocol.HTTP && url.protocol != URLProtocol.HTTPS) return null
     val segments = url.segments.filter { it.isNotEmpty() }
     return when (url.host.lowercase()) {
-        // Release 附件也在 github.com 下 (`/releases/download/...`), 不是已知页面时按直链处理
+
         "github.com", "www.github.com" -> parseGitHubPath(segments, repository) ?: parsePackageUrl(input, segments)
         "api.github.com" -> parseGitHubApiPath(segments, repository)
         else -> parsePackageUrl(input, segments)

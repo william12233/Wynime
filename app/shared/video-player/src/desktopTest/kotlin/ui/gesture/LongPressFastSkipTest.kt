@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui.gesture
+package com.wynime.app.videoplayer.ui.gesture
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -26,9 +17,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
-import me.him188.ani.app.ui.framework.AniComposeUiTest
-import me.him188.ani.app.ui.framework.assertScreenshot
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
+import com.wynime.app.ui.framework.WynimeComposeUiTest
+import com.wynime.app.ui.framework.assertScreenshot
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
 import org.openani.mediamp.InternalForInheritanceMediampApi
 import org.openani.mediamp.features.PlaybackSpeed
 import kotlin.test.Test
@@ -63,7 +54,7 @@ class LongPressFastSkipTest {
         }
     }
 
-    private fun runGestureTest(block: AniComposeUiTest.(Fixture) -> Unit) = runAniComposeUiTest {
+    private fun runGestureTest(block: WynimeComposeUiTest.(Fixture) -> Unit) = runWynimeComposeUiTest {
         val fixture = Fixture()
         setContent {
             MaterialTheme {
@@ -82,7 +73,7 @@ class LongPressFastSkipTest {
         block(fixture)
     }
 
-    private fun AniComposeUiTest.startLongPress(fixture: Fixture) {
+    private fun WynimeComposeUiTest.startLongPress(fixture: Fixture) {
         onNodeWithTag("target").performTouchInput { down(center) }
         mainClock.advanceTimeBy(600)
         runOnIdle {
@@ -103,8 +94,7 @@ class LongPressFastSkipTest {
         startLongPress(fixture)
         mainClock.advanceTimeBy(1_000)
         onNodeWithText("2.50x").assertIsDisplayed()
-        // Skiko's TouchInjectionScope.cancel() is a no-op. Changing the pointerInput key
-        // actually cancels its coroutine, as density/view-configuration changes also do.
+
         runOnIdle { fixture.pointerType.value = PointerType.Mouse }
         mainClock.advanceTimeBy(2_000)
         runOnIdle { fixture.assertRestored(listOf(2.5f, 1.3f)) }

@@ -1,27 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.models.subject
+package com.wynime.app.data.models.subject
 
 import androidx.collection.mutableIntObjectMapOf
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import me.him188.ani.app.data.models.subject.CharacterRole.Companion.GUEST
-import me.him188.ani.app.data.models.subject.CharacterRole.Companion.MAIN
-import me.him188.ani.app.data.models.subject.CharacterRole.Companion.SUPPORTING
+import com.wynime.app.data.models.subject.CharacterRole.Companion.GUEST
+import com.wynime.app.data.models.subject.CharacterRole.Companion.MAIN
+import com.wynime.app.data.models.subject.CharacterRole.Companion.SUPPORTING
 import kotlin.jvm.JvmInline
 
 @Immutable
 data class RelatedCharacterInfo(
-    /**
-     * 在条目中的序号, 每个条目的第一个角色为 `0`.
-     */
+
     val index: Int,
     val character: CharacterInfo,
     val role: CharacterRole,
@@ -60,19 +49,11 @@ value class CharacterRole(
     val id: Int
 ) {
     companion object {
-        /**
-         * 主角
-         */
+
         val MAIN = CharacterRole(1)
 
-        /**
-         * 配角
-         */
         val SUPPORTING = CharacterRole(2)
 
-        /**
-         * 客串
-         */
         val GUEST = CharacterRole(3)
     }
 }
@@ -143,7 +124,7 @@ value class PersonType(
 }
 
 @Immutable
-enum class PersonCareer { // TODO: 在进数据库之前, 改为 value class
+enum class PersonCareer {
     PRODUCER,
     MANGAKA,
     ARTIST,

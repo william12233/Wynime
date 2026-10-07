@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.rating
+package com.wynime.app.ui.rating
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,18 +25,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.TestRatingInfo
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.rating_self_score
-import me.him188.ani.app.ui.lang.rating_summary
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.TestRatingInfo
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.rating_self_score
+import com.wynime.app.ui.lang.rating_summary
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 展示自己的评分和评分信息
- */
 @Composable
 fun Rating(
     rating: RatingInfo,
@@ -113,7 +101,7 @@ internal fun RatingScoreText(
 
 @Composable
 fun FiveRatingStars(
-    score: Int, // range 0..10
+    score: Int,
     starSize: Dp = 22.dp,
     color: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier,
@@ -172,7 +160,6 @@ fun FiveRatingStars(
         }
     }
 }
-
 
 @OptIn(TestOnly::class)
 @Composable

@@ -1,26 +1,17 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.player
+package com.wynime.app.domain.player
 
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import me.him188.ani.app.domain.episode.EpisodeFetchSelectPlayState
-import me.him188.ani.app.domain.episode.EpisodeSession
-import me.him188.ani.app.domain.episode.UnsafeEpisodeSessionApi
-import me.him188.ani.app.domain.episode.getCurrentEpisodeId
-import me.him188.ani.app.domain.episode.player
-import me.him188.ani.app.domain.player.extension.EpisodePlayerExtensionFactory
-import me.him188.ani.app.domain.player.extension.PlayerExtension
-import me.him188.ani.app.domain.player.extension.PlayerExtensionContext
-import me.him188.ani.app.domain.player.extension.PlayerExtensionEvent
+import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
+import com.wynime.app.domain.episode.EpisodeSession
+import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
+import com.wynime.app.domain.episode.getCurrentEpisodeId
+import com.wynime.app.domain.episode.player
+import com.wynime.app.domain.player.extension.EpisodePlayerExtensionFactory
+import com.wynime.app.domain.player.extension.PlayerExtension
+import com.wynime.app.domain.player.extension.PlayerExtensionContext
+import com.wynime.app.domain.player.extension.PlayerExtensionEvent
 import org.koin.core.Koin
 import org.openani.mediamp.MediampPlayer
 import kotlin.coroutines.cancellation.CancellationException

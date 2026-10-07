@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(UnsafeScopedHttpClientApi::class)
 
-package me.him188.ani.app.domain.foundation
+package com.wynime.app.domain.foundation
 
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
@@ -19,12 +10,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.models.preference.ProxyConfig
-import me.him188.ani.app.domain.foundation.DefaultHttpClientProvider.HoldingInstanceMatrix
-import me.him188.ani.app.domain.settings.ProxyProvider
-import me.him188.ani.test.DisabledOnAndroid
-import me.him188.ani.test.TestContainer
-import me.him188.ani.utils.ktor.UnsafeScopedHttpClientApi
+import com.wynime.app.data.models.preference.ProxyConfig
+import com.wynime.app.domain.foundation.DefaultHttpClientProvider.HoldingInstanceMatrix
+import com.wynime.app.domain.settings.ProxyProvider
+import com.wynime.test.DisabledOnAndroid
+import com.wynime.test.TestContainer
+import com.wynime.utils.ktor.UnsafeScopedHttpClientApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -32,7 +23,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 
-@DisabledOnAndroid // Need Android permission but we don't have such foundational support
+@DisabledOnAndroid
 @Suppress("CanSealedSubClassBeObject")
 sealed class DefaultHttpClientProviderTest {
     @TestContainer
@@ -71,9 +62,6 @@ sealed class DefaultHttpClientProviderTest {
         }
     }
 
-    /**
-     * A fake [ProxyProvider] that you can manually control by setting [proxyState].
-     */
     protected class FakeProxyProvider : ProxyProvider {
         private val _proxy = MutableStateFlow<ProxyConfig?>(null)
         override val proxy: Flow<ProxyConfig?> = _proxy
@@ -106,15 +94,13 @@ sealed class DefaultHttpClientProviderTest {
         val testProxyProvider = FakeProxyProvider()
         val provider = createProvider(testProxyProvider)
 
-        val client1 = provider.get(ScopedHttpClientUserAgent.ANI).borrow()
-        val client2 = provider.get(ScopedHttpClientUserAgent.ANI).borrow()
+        val client1 = provider.get(ScopedHttpClientUserAgent.WYNIME).borrow()
+        val client2 = provider.get(ScopedHttpClientUserAgent.WYNIME).borrow()
 
-        // They should be the same underlying reference because of the pool reuse
         assertEquals(client1, client2, "Expected equal HttpClient instance for the same user agent")
 
-        // Clean up
-        provider.get(ScopedHttpClientUserAgent.ANI).returnClient(client1)
-        provider.get(ScopedHttpClientUserAgent.ANI).returnClient(client2)
+        provider.get(ScopedHttpClientUserAgent.WYNIME).returnClient(client1)
+        provider.get(ScopedHttpClientUserAgent.WYNIME).returnClient(client2)
         provider.forceReleaseAll()
     }
 
@@ -125,18 +111,16 @@ sealed class DefaultHttpClientProviderTest {
             proxyProvider = testProxyProvider,
         )
 
-        val aniClient = provider.get(ScopedHttpClientUserAgent.ANI).borrow()
+        val wynimeClient = provider.get(ScopedHttpClientUserAgent.WYNIME).borrow()
         val browserClient = provider.get(ScopedHttpClientUserAgent.BROWSER).borrow()
 
-        // They should not be the same reference
         assertNotSame(
-            aniClient,
+            wynimeClient,
             browserClient,
             "Expected different HttpClient instances for different user agents",
         )
 
-        // Clean up
-        provider.get(ScopedHttpClientUserAgent.ANI).returnClient(aniClient)
+        provider.get(ScopedHttpClientUserAgent.WYNIME).returnClient(wynimeClient)
         provider.get(ScopedHttpClientUserAgent.BROWSER).returnClient(browserClient)
         provider.forceReleaseAll()
     }
@@ -148,14 +132,11 @@ sealed class DefaultHttpClientProviderTest {
             proxyProvider = testProxyProvider,
         )
 
-        // Initially false
         assertFalse(provider.getProxyListeningStarted())
 
-        // Call once
         provider.startProxyListening()
         assertTrue(provider.getProxyListeningStarted(), "Expected proxyListeningStarted to be true after first call")
 
-        // Call again
         assertFailsWith<IllegalStateException> {
             provider.startProxyListening()
         }
@@ -166,7 +147,6 @@ sealed class DefaultHttpClientProviderTest {
         provider.forceReleaseAll()
     }
 
-    // this test is manually written
     @Test
     fun `test startProxyListening suspends and reads the first proxy`() = runTest {
         val testProxyProvider = FakeProxyProvider()
@@ -176,12 +156,10 @@ sealed class DefaultHttpClientProviderTest {
             proxyProvider = testProxyProvider,
         )
 
-        // Initially false
         assertFalse(provider.getProxyListeningStarted())
 
-        // Call once
         provider.startProxyListening()
-        // no runCurrent, so background coroutine will not run.
+
         assertEquals(
             proxyConfig,
             provider.getCurrentProxyConfig(),
@@ -197,35 +175,27 @@ sealed class DefaultHttpClientProviderTest {
             proxyProvider = testProxyProvider,
         )
 
-        // Start listening
         provider.startProxyListening()
         assertEquals(null, provider.getCurrentProxyConfig())
 
-        // Borrow a client so that it is subscribed to the proxy flow
-        val aniWrapper = provider.get(ScopedHttpClientUserAgent.ANI)
-        val aniClientBefore = aniWrapper.borrow()
+        val wynimeWrapper = provider.get(ScopedHttpClientUserAgent.WYNIME)
+        val wynimeClientBefore = wynimeWrapper.borrow()
 
-        // Now let's emit a new proxy config; the existing borrowed client
-        // will get its scope cancelled once the new config arrives and cause a new client to be created
         val newConfig = ProxyConfig(url = "http://localhost:9999")
         testProxyProvider.emit(newConfig)
         runCurrent()
         assertEquals(newConfig, provider.getCurrentProxyConfig())
 
-        // Borrow again. This should be a new instance (because the old one is effectively replaced).
-        val aniClientAfter = aniWrapper.borrow()
+        val wynimeClientAfter = wynimeWrapper.borrow()
 
-        // We want to confirm that the old instance differs from the new
-        // (meaning the code actually re-borrowed or replaced the existing reference).
         assertNotSame(
-            aniClientBefore,
-            aniClientAfter,
+            wynimeClientBefore,
+            wynimeClientAfter,
             "Expected a new HttpClient instance once the proxy config changes",
         )
 
-        // Clean up
-        aniWrapper.returnClient(aniClientBefore)
-        aniWrapper.returnClient(aniClientAfter)
+        wynimeWrapper.returnClient(wynimeClientBefore)
+        wynimeWrapper.returnClient(wynimeClientAfter)
         provider.forceReleaseAll()
     }
 
@@ -236,25 +206,21 @@ sealed class DefaultHttpClientProviderTest {
             proxyProvider = testProxyProvider,
         )
 
-        // Start listening so that it subscribes to the proxy flow
         provider.startProxyListening()
 
-        val wrapper = provider.get(ScopedHttpClientUserAgent.ANI)
+        val wrapper = provider.get(ScopedHttpClientUserAgent.WYNIME)
         val firstClient = wrapper.borrow()
 
-        // Emit first change
         testProxyProvider.emit(ProxyConfig(url = "http://first-change:8080"))
         runCurrent()
         val secondClient = wrapper.borrow()
 
-        // The first client should have been replaced
         assertNotSame(
             firstClient,
             secondClient,
             "Expected new client after the first proxy update",
         )
 
-        // Emit second change
         testProxyProvider.emit(ProxyConfig(url = "http://second-change:9090"))
         runCurrent()
         val thirdClient = wrapper.borrow()
@@ -265,7 +231,6 @@ sealed class DefaultHttpClientProviderTest {
             "Expected new client after the second proxy update",
         )
 
-        // Clean up
         wrapper.returnClient(firstClient)
         wrapper.returnClient(secondClient)
         wrapper.returnClient(thirdClient)

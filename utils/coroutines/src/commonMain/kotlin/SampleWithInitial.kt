@@ -1,4 +1,4 @@
-package me.him188.ani.utils.coroutines
+package com.wynime.utils.coroutines
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -16,12 +16,8 @@ import kotlinx.coroutines.selects.select
 import kotlin.jvm.JvmField
 import kotlin.time.Duration
 
-
 fun <T> Flow<T>.sampleWithInitial(period: Duration): Flow<T> = sampleWithInitial(period.inWholeMilliseconds)
 
-/**
- * @see sample
- */
 fun <T> Flow<T>.sampleWithInitial(periodMillis: Long): Flow<T> {
     require(periodMillis > 0) { "Sample period should be positive" }
     return scopedFlow { downstream ->
@@ -52,7 +48,7 @@ fun <T> Flow<T>.sampleWithInitial(periodMillis: Long): Flow<T> {
 
                 ticker.onReceive {
                     val value = lastValue ?: return@onReceive
-                    lastValue = null // Consume the value
+                    lastValue = null
                     downstream.emit(NULL.unbox(value))
                 }
             }
@@ -60,9 +56,6 @@ fun <T> Flow<T>.sampleWithInitial(periodMillis: Long): Flow<T> {
     }
 }
 
-/**
- * @see sample
- */
 fun <T> Flow<T>.sampleWithInitialUnless(periodMillis: Long, shouldEmitImmediately: (T) -> Boolean): Flow<T> {
     require(periodMillis > 0) { "Sample period should be positive" }
     return scopedFlow { downstream ->
@@ -99,7 +92,7 @@ fun <T> Flow<T>.sampleWithInitialUnless(periodMillis: Long, shouldEmitImmediatel
 
                 ticker.onReceive {
                     val value = lastValue ?: return@onReceive
-                    lastValue = null // Consume the value
+                    lastValue = null
                     downstream.emit(NULL.unbox(value))
                 }
             }
@@ -117,17 +110,9 @@ internal fun <R> scopedFlow(@BuilderInference block: suspend CoroutineScope.(Flo
 @JvmField
 internal val NULL = Symbol("NULL")
 
-/**
- * Symbol to indicate that the value is not yet initialized.
- * It should never leak to the outside world.
- */
 @JvmField
 internal val UNINITIALIZED = Symbol("UNINITIALIZED")
 
-/*
- * Symbol used to indicate that the flow is complete.
- * It should never leak to the outside world.
- */
 @JvmField
 internal val DONE = Symbol("DONE")
 

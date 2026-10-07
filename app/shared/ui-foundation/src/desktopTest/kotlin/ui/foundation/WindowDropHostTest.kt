@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
@@ -22,8 +13,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import kotlinx.io.files.Path
-import me.him188.ani.app.ui.framework.runAniComposeUiTest
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.utils.platform.annotations.TestOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -46,7 +37,7 @@ class WindowDropHostTest {
     }
 
     @Test
-    fun `shows the handler preview while dragging and hides it afterwards`() = runAniComposeUiTest {
+    fun `shows the handler preview while dragging and hides it afterwards`() = runWynimeComposeUiTest {
         val state = WindowDropHostState()
         val handlers = listOf(PlayHandler())
         setContent {
@@ -71,7 +62,7 @@ class WindowDropHostTest {
     }
 
     @Test
-    fun `rejected files show the file name and the handlers' supported hints`() = runAniComposeUiTest {
+    fun `rejected files show the file name and the handlers' supported hints`() = runWynimeComposeUiTest {
         val state = WindowDropHostState()
         val handlers = listOf(PlayHandler())
         setContent {
@@ -90,7 +81,7 @@ class WindowDropHostTest {
     }
 
     @Test
-    fun `handlers registered by the content take part while composed`() = runAniComposeUiTest {
+    fun `handlers registered by the content take part while composed`() = runWynimeComposeUiTest {
         val state = WindowDropHostState()
         val pageHandler = PlayHandler()
         var showPage by mutableStateOf(true)
@@ -109,7 +100,6 @@ class WindowDropHostTest {
         waitForIdle()
         assertEquals(listOf<WindowDropHandler>(pageHandler), registry!!.handlers)
 
-        // 提示层列出的是 host 内生效的处理者, 包括页面注册的
         state.onDragStarted(DragAndDropContent.FileList(listOf(Path("/downloads/notes.txt"))), registry!!.handlers)
         waitForIdle()
         onNodeWithText("video files", substring = true).assertIsDisplayed()
@@ -121,7 +111,7 @@ class WindowDropHostTest {
     }
 
     @Test
-    fun `registering a handler outside a host has no effect`() = runAniComposeUiTest {
+    fun `registering a handler outside a host has no effect`() = runWynimeComposeUiTest {
         setContent {
             ProvideCompositionLocalsForPreview {
                 WindowDropHandlerEffect(PlayHandler())

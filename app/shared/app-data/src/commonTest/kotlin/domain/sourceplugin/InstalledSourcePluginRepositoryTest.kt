@@ -1,14 +1,9 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.source.plugin.api.SourcePluginPlatform
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

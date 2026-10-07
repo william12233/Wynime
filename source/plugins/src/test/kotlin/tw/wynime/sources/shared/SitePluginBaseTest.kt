@@ -3,13 +3,13 @@ package tw.wynime.sources.shared
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginLogger
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginLogger
+import com.wynime.source.plugin.api.SourcePluginPlatform
+import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.dida.DidaEntryPoint
 
 class SitePluginBaseTest {

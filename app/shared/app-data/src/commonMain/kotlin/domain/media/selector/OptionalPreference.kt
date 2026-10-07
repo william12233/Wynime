@@ -1,45 +1,21 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.selector
+package com.wynime.app.domain.media.selector
 
 import androidx.compose.runtime.Stable
-import me.him188.ani.utils.coroutines.Symbol
+import com.wynime.utils.coroutines.Symbol
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.jvm.JvmInline
 
-/**
- * 一个可选的偏好, 有三个状态:
- *
- * - 偏好一个值, 例如: 使用简体中文过滤
- * - 偏好没有值, 例如: 不要用字幕语言过滤
- * - 没有偏好, 例如: 使用默认设置
- */
 @Stable
 @JvmInline
 value class OptionalPreference<@Suppress("unused") T : Any> private constructor(
     @PublishedApi internal val rawValue: Any
 ) {
-    /**
-     * 当偏好一个值时返回 `true`, 例如: 使用简体中文过滤
-     */
+
     val isPreferValue: Boolean get() = rawValue !== PREFER_NO_VALUE && rawValue !== NO_PREFERENCE
 
-    /**
-     * 当偏好没有值时返回 `true`, 例如: 不要用字幕语言过滤
-     */
     val isPreferNoValue: Boolean get() = rawValue === PREFER_NO_VALUE
 
-    /**
-     * 当有偏好时返回 `true`, 可以是偏好一个值 [isPreferValue] 也可以是偏好没有值 [isPreferNoValue]
-     */
     val hasPreference: Boolean get() = rawValue !== NO_PREFERENCE
 
     val hasNoPreference: Boolean get() = rawValue === NO_PREFERENCE
@@ -67,9 +43,6 @@ inline val <T : Any> OptionalPreference<T>.preferredValueOrFail: T
         @Suppress("UNCHECKED_CAST")
         if (isPreferValue) rawValue as T else throw IllegalStateException("No value is preferred")
 
-/**
- * 返回偏好的值, 当[无偏好][OptionalPreference.hasNoPreference]时使用 [default].
- */
 inline fun <T : R, R> OptionalPreference<T & Any>.orElse(default: () -> R): R? {
     contract { callsInPlace(default, InvocationKind.AT_MOST_ONCE) }
     return when {
@@ -79,9 +52,6 @@ inline fun <T : R, R> OptionalPreference<T & Any>.orElse(default: () -> R): R? {
     }
 }
 
-/**
- * 返回偏好的值, 当[无偏好][OptionalPreference.hasNoPreference]时使用 [default].
- */
 inline fun <T : Any> OptionalPreference<T>.flatMapNoPreference(
     default: () -> OptionalPreference<T>
 ): OptionalPreference<T> {

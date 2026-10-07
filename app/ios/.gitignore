@@ -1,5 +1,0 @@
-**/*.xcworkspace
-**/xcuserdata
-Pods/
-Frameworks/*
-!Frameworks/.gitkeep

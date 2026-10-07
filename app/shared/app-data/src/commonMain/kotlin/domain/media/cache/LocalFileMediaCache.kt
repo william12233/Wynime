@@ -1,44 +1,23 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache
+package com.wynime.app.domain.media.cache
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngine
-import me.him188.ani.app.domain.media.cache.storage.MediaCacheStorage
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.tools.Progress
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.deleteRecursively
-import me.him188.ani.utils.io.length
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
+import com.wynime.app.domain.media.cache.storage.MediaCacheStorage
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.tools.Progress
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.length
 
-/**
- * 存储于本地文件的 [MediaCache], [MediaCacheEngine] 在[恢复][MediaCacheEngine.restore] 时可以根据其参数
- * [Media] 和 [MediaCacheMetadata] 判断是否需要返回此类型的 MediaCache.
- *
- * [MediaCacheStorage] 可能会特殊处理此类型的 MediaCache.
- *
- * 调用 [LocalFileMediaCache] 的 [pause], [close] 和 [resume] 没有效果.
- * 调用 [closeAndDeleteFiles] 默认后会删除 [file] 对应的文件, 通过 [onCloseAndDeleteFiles] 来实现其他逻辑.
- * 其他缓存引擎可通过 [onCloseAndDeleteFiles] 实现额外清理逻辑.
- *
- * @see MediaCacheEngine.restore
- */
 class LocalFileMediaCache(
     override val origin: Media,
     override val metadata: MediaCacheMetadata,

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.comment
+package com.wynime.app.ui.comment
 
 import androidx.annotation.UiThread
 import androidx.compose.runtime.Immutable
@@ -20,9 +11,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import me.him188.ani.app.domain.comment.CommentContext
-import me.him188.ani.app.domain.comment.CommentSendResult
-import me.him188.ani.app.tools.MonoTasker
+import com.wynime.app.domain.comment.CommentContext
+import com.wynime.app.domain.comment.CommentSendResult
+import com.wynime.app.tools.MonoTasker
 import org.jetbrains.compose.resources.DrawableResource
 import kotlin.coroutines.CoroutineContext
 
@@ -58,13 +49,10 @@ class CommentEditorState(
     var showStickerPanel: Boolean by mutableStateOf(false)
         private set
     val stickers by stickers
-    
+
     var sendResult: CommentSendResult? by mutableStateOf(null)
         private set
 
-    /**
-     * 连续开关为同一个评论的编辑框将保存编辑内容和编辑框状态
-     */
     fun startEdit(newTarget: CommentContext) {
         if (newTarget != currentSendTarget) {
             editor.override(TextFieldValue(""))
@@ -83,16 +71,10 @@ class CommentEditorState(
         editor.override(value)
     }
 
-    /**
-     * @see CommentEditorTextState.wrapSelectionWith
-     */
     fun wrapSelectionWith(value: String, secondSliceIndex: Int) {
         editor.wrapSelectionWith(value, secondSliceIndex)
     }
 
-    /**
-     * @see CommentEditorTextState.insertTextAt
-     */
     fun insertTextAt(value: String, cursorOffset: Int = value.length) {
         editor.insertTextAt(value, cursorOffset)
     }
@@ -108,9 +90,6 @@ class CommentEditorState(
         previewContent = rendered
     }
 
-    /**
-     * @return `true` if comment was sent successfully
-     */
     suspend fun send(
         context: CoroutineContext = Dispatchers.Default
     ): Boolean {

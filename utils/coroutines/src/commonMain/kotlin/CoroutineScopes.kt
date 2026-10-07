@@ -1,4 +1,4 @@
-package me.him188.ani.utils.coroutines
+package com.wynime.utils.coroutines
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -20,4 +20,4 @@ fun CoroutineScope.childScopeContext(coroutineContext: CoroutineContext = EmptyC
     this.coroutineContext.childScopeContext(coroutineContext)
 
 fun CoroutineScope.childScope(coroutineContext: CoroutineContext = EmptyCoroutineContext): CoroutineScope =
-    this.coroutineContext.childScope(coroutineContext) 
+    this.coroutineContext.childScope(coroutineContext)

@@ -1,11 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.network
+package com.wynime.app.data.network
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -23,19 +16,19 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.repository.RepositoryAuthorizationException
-import me.him188.ani.app.data.repository.RepositoryNetworkException
-import me.him188.ani.app.data.repository.RepositoryRateLimitedException
-import me.him188.ani.app.data.repository.RepositoryRequestError
-import me.him188.ani.app.data.repository.user.AccessTokenSession
-import me.him188.ani.app.data.repository.user.TokenRepository
-import me.him188.ani.app.data.repository.user.TokenSave
-import me.him188.ani.app.domain.session.AccessTokenPair
-import me.him188.ani.client.models.AniCollectionType
-import me.him188.ani.client.models.AniSelfRatingInfo
-import me.him188.ani.client.models.AniUpdateSubjectCollectionRequest
-import me.him188.ani.utils.ktor.asScopedHttpClient
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.repository.RepositoryAuthorizationException
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.data.repository.RepositoryRateLimitedException
+import com.wynime.app.data.repository.RepositoryRequestError
+import com.wynime.app.data.repository.user.AccessTokenSession
+import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.app.domain.session.AccessTokenPair
+import com.wynime.models.CollectionTypeDto
+import com.wynime.models.SelfRatingInfoDto
+import com.wynime.models.UpdateSubjectCollectionRequestDto
+import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -44,22 +37,22 @@ import kotlin.test.assertTrue
 class BangumiSubjectServiceCollectionTest {
     @Test
     fun `not collected wish uses POST upsert`() = runBlocking {
-        assertPostCollection(AniCollectionType.WISH)
+        assertPostCollection(CollectionTypeDto.WISH)
     }
 
     @Test
     fun `not collected doing uses POST upsert`() = runBlocking {
-        assertPostCollection(AniCollectionType.DOING)
+        assertPostCollection(CollectionTypeDto.DOING)
     }
 
     @Test
     fun `existing wish to doing uses POST upsert`() = runBlocking {
-        assertPostCollection(AniCollectionType.DOING)
+        assertPostCollection(CollectionTypeDto.DOING)
     }
 
     @Test
     fun `existing collection to dropped uses POST upsert`() = runBlocking {
-        assertPostCollection(AniCollectionType.DROPPED)
+        assertPostCollection(CollectionTypeDto.DROPPED)
     }
 
     @Test
@@ -68,9 +61,9 @@ class BangumiSubjectServiceCollectionTest {
         try {
             fixture.service.patchSubjectCollection(
                 subjectId = 456,
-                payload = AniUpdateSubjectCollectionRequest(
-                    collectionType = AniCollectionType.ON_HOLD,
-                    selfRating = AniSelfRatingInfo(
+                payload = UpdateSubjectCollectionRequestDto(
+                    collectionType = CollectionTypeDto.ON_HOLD,
+                    selfRating = SelfRatingInfoDto(
                         score = 8,
                         comment = "值得重看",
                         isPrivate = true,
@@ -117,7 +110,7 @@ class BangumiSubjectServiceCollectionTest {
             assertFailsWith<RepositoryNetworkException> {
                 service.patchSubjectCollection(
                     123,
-                    AniUpdateSubjectCollectionRequest(collectionType = AniCollectionType.WISH),
+                    UpdateSubjectCollectionRequestDto(collectionType = CollectionTypeDto.WISH),
                 )
             }
         } finally {
@@ -125,12 +118,12 @@ class BangumiSubjectServiceCollectionTest {
         }
     }
 
-    private suspend fun assertPostCollection(type: AniCollectionType) {
+    private suspend fun assertPostCollection(type: CollectionTypeDto) {
         val fixture = fixture()
         try {
             fixture.service.patchSubjectCollection(
                 subjectId = 123,
-                payload = AniUpdateSubjectCollectionRequest(collectionType = type),
+                payload = UpdateSubjectCollectionRequestDto(collectionType = type),
             )
             val request = fixture.requests.single()
             assertEquals(HttpMethod.Post, request.method)
@@ -146,7 +139,7 @@ class BangumiSubjectServiceCollectionTest {
         try {
             fixture.service.patchSubjectCollection(
                 123,
-                AniUpdateSubjectCollectionRequest(collectionType = AniCollectionType.WISH),
+                UpdateSubjectCollectionRequestDto(collectionType = CollectionTypeDto.WISH),
             )
         } finally {
             fixture.close()
@@ -179,7 +172,7 @@ class BangumiSubjectServiceCollectionTest {
         repository.setSession(
             AccessTokenSession(
                 AccessTokenPair(
-                    aniAccessToken = "ani-test-token",
+                    legacyServiceAccessToken = "ani-test-token",
                     expiresAtMillis = Long.MAX_VALUE,
                     bangumiAccessToken = "bgm-test-token",
                 ),

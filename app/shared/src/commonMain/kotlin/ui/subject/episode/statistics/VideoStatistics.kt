@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.statistics
+package com.wynime.app.ui.subject.episode.statistics
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,23 +36,23 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.media.fetch.MediaFetcher
-import me.him188.ani.app.domain.media.player.data.filenameOrNull
-import me.him188.ani.app.domain.media.selector.MediaSelector
-import me.him188.ani.app.domain.player.VideoLoadingState
-import me.him188.ani.app.ui.foundation.setClipEntryText
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_select_media_source
-import me.him188.ani.app.ui.lang.subject_episode_statistics_error_message
-import me.him188.ani.app.ui.lang.subject_episode_statistics_now_playing
-import me.him188.ani.app.ui.lang.subject_episode_statistics_show_less
-import me.him188.ani.app.ui.lang.subject_episode_statistics_show_more
-import me.him188.ani.app.ui.media.rememberMediaDetailsStrings
-import me.him188.ani.app.ui.media.renderProperties
-import me.him188.ani.app.ui.mediafetch.MediaSourceInfoProvider
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceInfo
+import com.wynime.app.domain.media.fetch.MediaFetcher
+import com.wynime.app.domain.media.player.data.filenameOrNull
+import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.app.domain.player.VideoLoadingState
+import com.wynime.app.ui.foundation.setClipEntryText
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_select_media_source
+import com.wynime.app.ui.lang.subject_episode_statistics_error_message
+import com.wynime.app.ui.lang.subject_episode_statistics_now_playing
+import com.wynime.app.ui.lang.subject_episode_statistics_show_less
+import com.wynime.app.ui.lang.subject_episode_statistics_show_more
+import com.wynime.app.ui.media.rememberMediaDetailsStrings
+import com.wynime.app.ui.media.renderProperties
+import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceInfo
 import org.jetbrains.compose.resources.stringResource
 import org.openani.mediamp.MediampPlayer
 
@@ -95,26 +86,14 @@ class VideoStatisticsCollector(
     }
 }
 
-
-/**
- * 視頻統計資訊，用於取得目前播放器正在播放的來源 [Media] 與檔名。
- */
 data class VideoStatistics(
-    /**
-     * 从 [MediaSelector] 选择后就有
-     */
+
     val playingMedia: Media?,
-    /**
-     * [playingMedia] 所属的 [MediaSourceInfo]
-     */
+
     val playingMediaSourceInfo: MediaSourceInfo?,
-    /**
-     * 要播放器获取到视频文件后才有
-     */
+
     val playingFilename: String?,
-    /**
-     * [MediaFetcher] 的所有数据源是否都已经加载完成.
-     */
+
     val mediaSourceLoading: Boolean,
     val videoLoadingState: VideoLoadingState,
     val isPlaceholder: Boolean = false,
@@ -165,9 +144,6 @@ fun VideoStatistics(
     }
 }
 
-/**
- * 显示正在播放的那行字
- */
 @Composable
 private fun NowPlayingLabel(
     playingMedia: String?,

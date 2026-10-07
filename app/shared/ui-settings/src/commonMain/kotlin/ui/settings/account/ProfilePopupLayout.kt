@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.account
+package com.wynime.app.ui.settings.account
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -43,25 +34,26 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.user.calculateDisplay
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.IconButton
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.foundation.avatar.AvatarImage
-import me.him188.ani.app.ui.foundation.interaction.hoverable
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.app.ui.foundation.widgets.HeroIcon
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.playback_history_title
-import me.him188.ani.app.ui.lang.settings
-import me.him188.ani.app.ui.lang.settings_account_popup_edit_profile
-import me.him188.ani.app.ui.lang.settings_account_popup_login_register
-import me.him188.ani.app.ui.lang.settings_account_popup_logout
-import me.him188.ani.app.ui.lang.settings_account_popup_not_logged_in
-import me.him188.ani.app.ui.settings.SettingsTab
-import me.him188.ani.app.ui.settings.framework.components.TextItem
-import me.him188.ani.app.ui.user.SelfInfoUiState
+import com.wynime.app.data.models.user.calculateDisplay
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.IconButton
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.foundation.avatar.AvatarImage
+import com.wynime.app.ui.foundation.interaction.hoverable
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.foundation.widgets.HeroIcon
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.playback_history_title
+import com.wynime.app.ui.lang.settings
+import com.wynime.app.ui.lang.settings_account_popup_edit_profile
+import com.wynime.app.ui.lang.settings_account_popup_login_register
+import com.wynime.app.ui.lang.settings_account_popup_logout
+import com.wynime.app.ui.lang.settings_account_popup_not_logged_in
+import com.wynime.app.ui.settings.SettingsTab
+import com.wynime.app.ui.settings.framework.components.TextItem
+import com.wynime.app.ui.user.SelfInfoUiState
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -215,7 +207,7 @@ private fun EditableSelfAvatar(
                 .clip(CircleShape)
                 .placeholder(selfInfo.isLoading),
         )
-        AniAnimatedVisibility(
+        WynimeAnimatedVisibility(
             showEditAvatarScrim,
         ) {
             Box(
@@ -242,6 +234,7 @@ private fun EditableSelfAvatar(
     }
 }
 
+@OptIn(TestOnly::class)
 @Composable
 @Preview
 private fun PreviewAccountSettingsPopupLayout() {

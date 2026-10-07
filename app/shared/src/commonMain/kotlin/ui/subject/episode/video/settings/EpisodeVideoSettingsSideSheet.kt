@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.video.settings
+package com.wynime.app.ui.subject.episode.video.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,17 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.text.ProvideTextStyleContentColor
-import me.him188.ani.app.videoplayer.ui.LocalVideoScaffoldSheetWindowInsets
+import com.wynime.app.ui.foundation.text.ProvideTextStyleContentColor
+import com.wynime.app.videoplayer.ui.LocalVideoScaffoldSheetWindowInsets
 
-/**
- * 全屏播放时的右侧侧边栏.
- *
- * 背景铺满整个高度并贴到屏幕末端边缘, 盖住系统栏和屏幕圆角; 只有内容按 [windowInsets] 的末端和上下方向内缩.
- * 如果整块面板都避开 insets, 它会悬浮在离屏幕边缘一段距离的地方, 四周露出视频 (iOS 横屏尤其明显, 两侧各有几十 dp).
- *
- * @param windowInsets 侧边栏所在区域的 window insets, 默认取 [LocalVideoScaffoldSheetWindowInsets].
- */
 @Composable
 fun SideSheetLayout(
     title: @Composable () -> Unit,
@@ -60,8 +43,6 @@ fun SideSheetLayout(
     closeButton: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
-    // Compose does not yet support side sheets
-    // https://m3.material.io/components/side-sheets/overview
 
     BoxWithConstraints(
         Modifier.fillMaxSize()
@@ -72,8 +53,6 @@ fun SideSheetLayout(
             ),
         contentAlignment = Alignment.TopEnd,
     ) {
-        // Layout guideline:
-        // https://m3.material.io/components/side-sheets/guidelines#96245186-bae4-4a33-b41f-17833bb2e2d7
 
         val layoutDirection = LocalLayoutDirection.current
         val horizontalInsets = windowInsets.only(WindowInsetsSides.Horizontal).asPaddingValues()
@@ -84,7 +63,7 @@ fun SideSheetLayout(
         Surface(
             modifier
                 .clickable(
-                    onClick = { }, // just to intercept clicks
+                    onClick = { },
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 )

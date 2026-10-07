@@ -1,25 +1,8 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.player
+package com.wynime.app.domain.media.player
 
 import androidx.collection.MutableFloatList
-import me.him188.ani.app.domain.media.player.prefetch.PrefetchSegmentInfo
+import com.wynime.app.domain.media.player.prefetch.PrefetchSegmentInfo
 
-/**
- * 由若干带状态的时间范围构造进度条的缓存进度信息.
- *
- * 范围可以重叠, 重叠处取 "更完成" 的状态 ([ChunkState.DONE] > [ChunkState.DOWNLOADING] > [ChunkState.NOT_AVAILABLE] > [ChunkState.NONE]).
- * 未被任何范围覆盖的部分为 [ChunkState.NONE]. 相邻同状态的区块会合并.
- *
- * @param durationMillis 媒体总时长. 非正数时返回 [MediaCacheProgressInfo.Empty].
- */
 fun buildRangeCacheProgressInfo(
     durationMillis: Long,
     ranges: List<PrefetchSegmentInfo>,

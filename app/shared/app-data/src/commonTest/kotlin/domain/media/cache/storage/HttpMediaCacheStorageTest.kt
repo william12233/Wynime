@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.storage
+package com.wynime.app.domain.media.cache.storage
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -19,30 +10,30 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.data.persistent.database.dao.HttpCacheDownloadStateDao
-import me.him188.ani.app.domain.media.cache.DownloaderStatus
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.MediaCacheState
-import me.him188.ani.app.domain.media.cache.TestMediaCache
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngineKey
-import me.him188.ani.app.domain.media.cache.engine.MediaStats
-import me.him188.ani.app.domain.media.createTestDefaultMedia
-import me.him188.ani.app.domain.media.createTestMediaProperties
-import me.him188.ani.app.domain.media.download.MediaDownloadManager
-import me.him188.ani.app.domain.media.resolver.EpisodeMetadata
-import me.him188.ani.datasources.api.CachedMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.httpdownloader.DownloadId
-import me.him188.ani.utils.httpdownloader.DownloadState
-import me.him188.ani.utils.httpdownloader.DownloadStatus
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.data.persistent.database.dao.HttpCacheDownloadStateDao
+import com.wynime.app.domain.media.cache.DownloaderStatus
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.MediaCacheState
+import com.wynime.app.domain.media.cache.TestMediaCache
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngineKey
+import com.wynime.app.domain.media.cache.engine.MediaStats
+import com.wynime.app.domain.media.createTestDefaultMedia
+import com.wynime.app.domain.media.createTestMediaProperties
+import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.datasources.api.CachedMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.httpdownloader.DownloadId
+import com.wynime.utils.httpdownloader.DownloadState
+import com.wynime.utils.httpdownloader.DownloadStatus
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -175,7 +166,7 @@ class HttpMediaCacheStorageTest {
         val saved = metadataStore.data.first().single()
         assertEquals(media.mediaId, saved.origin.mediaId)
         assertEquals(metadata, saved.metadata)
-        // 引擎创建完成后, 占位记录转发引擎的诊断信息.
+
         assertEquals(DelayedHttpCacheEngine.DOWNLOADER_STATUS, pending.downloaderStatus.first())
     }
 }

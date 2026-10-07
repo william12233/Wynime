@@ -1,26 +1,17 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform.window
+package com.wynime.app.platform.window
 
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
 import com.sun.jna.platform.win32.WinDef.HWND
 import com.sun.jna.platform.win32.WinDef.POINT
 import com.sun.jna.platform.win32.WinDef.WPARAM
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import java.awt.EventQueue
 
 private val logger = logger("WindowsPointerInput")
 
-internal const val WINDOWS_NATIVE_TOUCH_DEBUG_PROPERTY = "ani.windows.nativeTouch.debug"
+internal const val WINDOWS_NATIVE_TOUCH_DEBUG_PROPERTY = "wynime.windows.nativeTouch.debug"
 
 internal const val PT_TOUCH: Int = 0x00000002
 
@@ -29,9 +20,6 @@ internal const val WM_POINTERDOWN: Int = 0x0246
 internal const val WM_POINTERUP: Int = 0x0247
 internal const val WM_POINTERCAPTURECHANGED: Int = 0x024C
 
-// Touches that hit-test into the non-client area (our Compose-drawn caption buttons report
-// HTMINBUTTON/HTMAXBUTTON/HTCLOSE) are delivered as WM_NCPOINTER* instead of WM_POINTER*.
-// They carry the same pointer id and screen coordinates, so they are injected identically.
 internal const val WM_NCPOINTERUPDATE: Int = 0x0241
 internal const val WM_NCPOINTERDOWN: Int = 0x0242
 internal const val WM_NCPOINTERUP: Int = 0x0243
@@ -135,17 +123,6 @@ internal enum class WindowsPointerSequenceState {
     DRAINING,
 }
 
-/**
- * Owns one complete native touch sequence for the bridge.
- *
- * Once the primary contact is sent to Compose, every related native message must be consumed until
- * the sequence ends or is cancelled; otherwise Windows can also deliver the same interaction through
- * its default mouse path.
- *
- * This is a single-touch MVP. Desktop interactions are currently predominantly single-touch; pinch
- * gestures such as image zoom are intentionally out of scope. Secondary pointers are tracked only so
- * their native messages can be consumed consistently until the sequence drains, never promoted.
- */
 internal class WindowsPointerSequenceStateMachine {
     var state: WindowsPointerSequenceState = WindowsPointerSequenceState.IDLE
         private set
@@ -156,8 +133,7 @@ internal class WindowsPointerSequenceStateMachine {
     private val suppressedPointerIds = mutableSetOf<Long>()
 
     fun handle(message: WindowsPointerMessage, pointer: WindowsPointerData): WindowsPointerDispatch {
-        // TODO: Read PT_PEN details through JNA and inject Stylus/Eraser into ComposeScene instead
-        //  of letting Windows synthesize the current AWT mouse sequence.
+
         if (pointer.pointerType != PT_TOUCH) return WindowsPointerDispatch.Pass
 
         if (pointer.isCanceled) {
@@ -296,7 +272,6 @@ internal class WindowsPointerSequenceStateMachine {
     }
 }
 
-/** A copy of the Win32 POINTER_INFO structure that is safe to read synchronously. */
 @Suppress("SpellCheckingInspection")
 internal class POINTER_INFO : Structure() {
     @JvmField var pointerType: Int = 0
@@ -345,13 +320,6 @@ internal class POINTER_INFO : Structure() {
     )
 }
 
-/**
- * Bridges native Win32 pointer messages into [WindowsTouchEvent]s owned by a single sequence state
- * machine.
- *
- * Instances are confined to the wndproc thread of their owning hook; a single [POINTER_INFO] is
- * reused across messages to keep the hot path allocation-free.
- */
 internal class WindowsPointerInputHandler(
     private val readPointerInfo: (pointerId: Int, pointerInfo: POINTER_INFO) -> Boolean,
     private val dispatch: (WindowsTouchEvent) -> Unit,
@@ -362,8 +330,6 @@ internal class WindowsPointerInputHandler(
     private var closed = false
     private var disabled = false
 
-    // Reused across messages; safe because the handler is confined to one wndproc thread and the
-    // data is copied into WindowsPointerData before dispatch.
     private val reusedPointerInfo = POINTER_INFO()
 
     fun handleMessage(uMsg: Int, wParam: WPARAM, callbackWindow: HWND? = null): Boolean {
@@ -400,9 +366,7 @@ internal class WindowsPointerInputHandler(
             sequence.cancel()
             runCatching(cancel)
             disabled = true
-            // Keep consuming an already owned sequence even if cancellation or
-            // scene injection itself failed. This prevents the same touch from
-            // being synthesized as a second mouse sequence after a bridge error.
+
             ownedBeforeHandling
         }
     }

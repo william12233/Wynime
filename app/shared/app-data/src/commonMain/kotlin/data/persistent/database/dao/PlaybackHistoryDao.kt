@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.persistent.database.dao
+package com.wynime.app.data.persistent.database.dao
 
 import androidx.room.Dao
 import androidx.room.ColumnInfo
@@ -22,9 +13,9 @@ import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
-import me.him188.ani.app.data.models.player.EpisodeHistory
-import me.him188.ani.app.data.repository.player.PlaybackHistoryPendingOp
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.player.EpisodeHistory
+import com.wynime.app.data.repository.player.PlaybackHistoryPendingOp
+import com.wynime.utils.platform.annotations.TestOnly
 
 @Entity(
     tableName = "playback_history_record",
@@ -82,7 +73,6 @@ interface PlaybackHistoryDao {
     @Query("SELECT * FROM playback_history_record WHERE episodeId = :episodeId LIMIT 1")
     suspend fun getRecordByEpisodeId(episodeId: Int): PlaybackHistoryRecordEntity?
 
-    /** 只取给定剧集的未删除记录, 剧集列表按需订阅, 不用把全表读进内存. `episodeId` 是主键, 走索引. */
     @Query("SELECT * FROM playback_history_record WHERE episodeId IN (:episodeIds) AND deletedAtMillis IS NULL")
     fun activeRecordsFlowByEpisodeIds(episodeIds: Collection<Int>): Flow<List<PlaybackHistoryRecordEntity>>
 

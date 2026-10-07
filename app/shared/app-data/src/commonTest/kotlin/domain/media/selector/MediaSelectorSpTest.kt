@@ -1,35 +1,23 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.media.selector
 
-package me.him188.ani.app.domain.media.selector
-
-import me.him188.ani.app.domain.media.selector.testFramework.assertMedias
-import me.him188.ani.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.test.DisabledOnNative
-import me.him188.ani.test.TestContainer
+import com.wynime.app.domain.media.selector.testFramework.assertMedias
+import com.wynime.app.domain.media.selector.testFramework.runSimpleMediaSelectorTestSuite
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.test.DisabledOnNative
+import com.wynime.test.TestContainer
 import kotlin.test.Test
 
-/**
- * 测试 [me.him188.ani.datasources.api.EpisodeType.SP]
- */
 @TestContainer
-@DisabledOnNative // TODO: ContextParameters crashes on Native
+@DisabledOnNative
 class MediaSelectorSpTest {
     @Test
     fun `when watching SP23 - match SP23`() = runSimpleMediaSelectorTestSuite(
         buildTest = {
             initSubject("A") {
                 episodeSort = EpisodeSort(23, EpisodeType.SP)
-                episodeEp = EpisodeSort(0) // This is a normal scenario!
+                episodeEp = EpisodeSort(0)
             }
             mediaApi.addSimpleWebMedia(
                 subjectName = "A",
@@ -47,7 +35,7 @@ class MediaSelectorSpTest {
         buildTest = {
             initSubject("玉子市场") {
                 episodeSort = EpisodeSort(23, EpisodeType.SP)
-                episodeEp = EpisodeSort(0) // This is a normal scenario!
+                episodeEp = EpisodeSort(0)
             }
             mediaApi.addSimpleWebMedia(
                 subjectName = "玉子市场",
@@ -65,7 +53,7 @@ class MediaSelectorSpTest {
         buildTest = {
             initSubject("玉子市场") {
                 episodeSort = EpisodeSort(23, EpisodeType.SP)
-                episodeEp = EpisodeSort(0) // This is a normal scenario!
+                episodeEp = EpisodeSort(0)
             }
             mediaApi.addSimpleWebMedia(
                 subjectName = "玉子市场",

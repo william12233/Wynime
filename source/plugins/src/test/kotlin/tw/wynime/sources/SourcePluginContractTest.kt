@@ -4,14 +4,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.source.plugin.api.SourceConnectionState
-import me.him188.ani.source.plugin.api.SourceHttpClient
-import me.him188.ani.source.plugin.api.SourceHttpRequest
-import me.him188.ani.source.plugin.api.SourceHttpResponse
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePluginLogger
-import me.him188.ani.source.plugin.api.SourcePluginPlatform
+import com.wynime.source.plugin.api.SourceConnectionState
+import com.wynime.source.plugin.api.SourceHttpClient
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.SourceHttpResponse
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePluginLogger
+import com.wynime.source.plugin.api.SourcePluginPlatform
 import tw.wynime.sources.dida.DidaEntryPoint
 import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
@@ -52,8 +52,8 @@ class SourcePluginContractTest {
             val plugin = entryPoint.create(FakeContext(id))
             try {
                 assertEquals(id, plugin.metadata.id)
-                assertEquals("1.0.25", plugin.metadata.version)
-                assertEquals(2, plugin.metadata.pluginApiVersion)
+                assertEquals("1.0.26", plugin.metadata.version)
+                assertEquals(3, plugin.metadata.pluginApiVersion)
                 assertEquals(website, plugin.metadata.website)
                 assertTrue(plugin.metadata.iconUrl.orEmpty().startsWith("https://"))
                 assertTrue(SourcePluginPlatform.DESKTOP in plugin.metadata.supportedPlatforms)

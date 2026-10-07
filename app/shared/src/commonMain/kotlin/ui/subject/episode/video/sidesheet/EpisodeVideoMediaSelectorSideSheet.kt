@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.video.sidesheet
+package com.wynime.app.ui.subject.episode.video.sidesheet
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -23,19 +14,19 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_close_selector
-import me.him188.ani.app.ui.lang.subject_episode_select_media_source
-import me.him188.ani.app.ui.mediafetch.MediaSelectorState
-import me.him188.ani.app.ui.mediafetch.MediaSelectorView
-import me.him188.ani.app.ui.mediafetch.rememberTestMediaSelectorState
-import me.him188.ani.app.ui.mediafetch.request.TestMediaFetchRequest
-import me.him188.ani.app.ui.subject.episode.TAG_MEDIA_SELECTOR_SHEET
-import me.him188.ani.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
-import me.him188.ani.app.ui.subject.episode.video.settings.SideSheetLayout
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_close_selector
+import com.wynime.app.ui.lang.subject_episode_select_media_source
+import com.wynime.app.ui.mediafetch.MediaSelectorState
+import com.wynime.app.ui.mediafetch.MediaSelectorView
+import com.wynime.app.ui.mediafetch.rememberTestMediaSelectorState
+import com.wynime.app.ui.mediafetch.request.TestMediaFetchRequest
+import com.wynime.app.ui.subject.episode.TAG_MEDIA_SELECTOR_SHEET
+import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
+import com.wynime.app.ui.subject.episode.video.settings.SideSheetLayout
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
 @Suppress("UnusedReceiverParameter")
@@ -76,7 +67,6 @@ fun EpisodeVideoSideSheets.MediaSelectorSheet(
         )
     }
 }
-
 
 @OptIn(TestOnly::class)
 @Composable

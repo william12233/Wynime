@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 
-package me.him188.ani.app.videoplayer.videoenhancement
+package com.wynime.app.videoplayer.videoenhancement
 
 import android.content.Context
 import android.opengl.GLES20
@@ -20,9 +11,8 @@ import androidx.media3.common.util.Size
 import androidx.media3.effect.BaseGlShaderProgram
 import androidx.media3.effect.GlEffect
 import androidx.media3.effect.GlShaderProgram
-import me.him188.ani.utils.video.enhancement.shader.provider.VideoEnhancementShaderProvider
+import com.wynime.utils.video.enhancement.shader.provider.VideoEnhancementShaderProvider
 
-/** Official Anime4K Restore CNN S executed at the source frame size with two FP16 ping-pong textures. */
 internal object Anime4kRestoreEffect : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
         Anime4kRestoreShaderProgram(context)
@@ -31,8 +21,8 @@ internal object Anime4kRestoreEffect : GlEffect {
 private class Anime4kRestoreShaderProgram(
     context: Context,
 ) : BaseGlShaderProgram(
-    /* useHighPrecisionColorComponents = */ true,
-    /* texturePoolCapacity = */ 1,
+                                            true,
+                                1,
 ) {
     private val shaderSources = Anime4kRestoreShaderSources(context)
     private val programs: List<GlProgram> = readPassBodies(context).mapIndexed { index, body ->
@@ -66,7 +56,7 @@ private class Anime4kRestoreShaderProgram(
                 intermediateTextures[index] = GlUtil.createTexture(
                     inputWidth,
                     inputHeight,
-                    /* useHighPrecisionColorComponents = */ true,
+                                                            true,
                 )
                 intermediateFramebuffers[index] = GlUtil.createFboForTexture(intermediateTextures[index])
             }
@@ -104,12 +94,12 @@ private class Anime4kRestoreShaderProgram(
     ) {
         GlUtil.focusFramebufferUsingCurrentContext(outputFramebuffer, width, height)
         program.use()
-        program.setSamplerTexIdUniform("uTexSampler", inputTexId, /* texUnitIndex = */ 0)
+        program.setSamplerTexIdUniform("uTexSampler", inputTexId,                      0)
         originalTexId?.let {
-            program.setSamplerTexIdUniform("uOriginalSampler", it, /* texUnitIndex = */ 1)
+            program.setSamplerTexIdUniform("uOriginalSampler", it,                      1)
         }
         program.bindAttributesAndUniforms()
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first = */ 0, /* count = */ 4)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP,               0,               4)
         GlUtil.checkGlError()
     }
 

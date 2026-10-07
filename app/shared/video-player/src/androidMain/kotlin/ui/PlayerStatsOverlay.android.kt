@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.videoplayer.ui
+package com.wynime.app.videoplayer.ui
 
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
@@ -29,12 +20,6 @@ import org.openani.mediamp.features.PlaybackSpeed
 import java.lang.reflect.Field
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * 通过反射读取 [ExoPlayer] 未公开的实时信息 (网速估计, 实际解码器名).
- *
- * 反射目标在 proguard 规则中保留 (见 app/shared/proguard-rules.pro). 任一目标解析或读取失败时,
- * 对应访问器被置空, 后续轮询不再重试, 相应字段保持为 null.
- */
 @OptIn(UnstableApi::class)
 private class ExoPlayerReflectionStats(private val exoPlayer: ExoPlayer) {
     private var bandwidthMeter: BandwidthMeter? = try {
@@ -97,7 +82,6 @@ actual fun rememberPlayerStatsState(player: MediampPlayer): State<PlayerStatsSna
     }
 }
 
-/** Also usable by ViewModels; collection controls the lifetime of stats polling. */
 @OptIn(UnstableApi::class)
 fun androidPlayerStatsFlow(player: MediampPlayer): Flow<PlayerStatsSnapshot> = flow {
     val reflectionStats = (player.impl as? ExoPlayer)?.let { ExoPlayerReflectionStats(it) }

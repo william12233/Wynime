@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details.components
+package com.wynime.app.ui.subject.details.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,32 +26,26 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
-import me.him188.ani.app.data.models.subject.RelatedSubjectInfo
-import me.him188.ani.app.data.models.subject.SubjectRelation
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.navigation.SubjectDetailPlaceholder
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_details_relation_compilation
-import me.him188.ani.app.ui.lang.subject_details_relation_derived
-import me.him188.ani.app.ui.lang.subject_details_relation_main_story
-import me.him188.ani.app.ui.lang.subject_details_relation_prequel
-import me.him188.ani.app.ui.lang.subject_details_relation_sequel
-import me.him188.ani.app.ui.lang.subject_details_relation_special
-import me.him188.ani.app.ui.search.createTestPager
-import me.him188.ani.app.ui.subject.details.TestRelatedSubjects
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.subject.RelatedSubjectInfo
+import com.wynime.app.data.models.subject.SubjectRelation
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.navigation.SubjectDetailPlaceholder
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_details_relation_compilation
+import com.wynime.app.ui.lang.subject_details_relation_derived
+import com.wynime.app.ui.lang.subject_details_relation_main_story
+import com.wynime.app.ui.lang.subject_details_relation_prequel
+import com.wynime.app.ui.lang.subject_details_relation_sequel
+import com.wynime.app.ui.lang.subject_details_relation_special
+import com.wynime.app.ui.search.createTestPager
+import com.wynime.app.ui.subject.details.TestRelatedSubjects
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 关联作品卡 (对齐 Figma `RelatedCard` 1559:8082): 海报封面 (圆角 12) + 下方标题 + 关系文案.
- *
- * - 桌面 (双栏/三栏): [RelatedSubjectsGrid], 定宽 `Large150` 卡换行排列;
- * - 手机: [RelatedSubjectsLazyRow], `Small96` 卡横滑.
- */
 @Composable
 fun RelatedSubjectsGrid(
     items: LazyPagingItems<RelatedSubjectInfo>,
@@ -81,7 +66,6 @@ fun RelatedSubjectsGrid(
     }
 }
 
-/** 手机横滑变体, 见 [RelatedSubjectsGrid]. */
 @Composable
 fun RelatedSubjectsLazyRow(
     items: LazyPagingItems<RelatedSubjectInfo>,
@@ -104,7 +88,6 @@ fun RelatedSubjectsLazyRow(
     }
 }
 
-/** 单张关联作品卡; 供横滑/网格与"查看全部" sheet 复用. */
 @Composable
 fun RelatedSubjectCard(
     info: RelatedSubjectInfo,
@@ -125,7 +108,7 @@ fun RelatedSubjectCard(
                 contentDescription = null,
                 Modifier.fillMaxWidth(),
                 contentScale = ContentScale.Crop,
-                placeholder = if (currentAniBuildConfig.isDebug) remember { ColorPainter(Color.Gray) } else null,
+                placeholder = if (currentWynimeBuildConfig.isDebug) remember { ColorPainter(Color.Gray) } else null,
             )
         }
         Column {
@@ -147,7 +130,6 @@ fun RelatedSubjectCard(
     }
 }
 
-/** 点击关联作品 -> 跳转其详情页 (带 placeholder 以便秒开). 双栏/三栏与手机共用. */
 @Composable
 fun rememberNavigateToRelatedSubject(): (RelatedSubjectInfo) -> Unit {
     val navigator = LocalNavigator.current
@@ -166,7 +148,6 @@ fun rememberNavigateToRelatedSubject(): (RelatedSubjectInfo) -> Unit {
     }
 }
 
-/** 点击 "关系图" -> 打开 [subjectId] 所在系列的关系图. */
 @Composable
 fun rememberNavigateToRelationGraph(subjectId: Int): () -> Unit {
     val navigator = LocalNavigator.current

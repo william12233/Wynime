@@ -1,13 +1,6 @@
-<!--
-  ~ Copyright (C) 2024-2026 OpenAni and contributors.
-  ~
-  ~ 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
-  ~ Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
-  ~
-  ~ https://github.com/open-ani/ani/blob/main/LICENSE
-  -->
 
-<!--@formatter:off-->
+
+
 
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="developer_list">開發者名單</string>
@@ -177,7 +170,7 @@
     <string name="settings_build_info_copy_all">複製全部</string>
     <string name="settings_build_info_copied">已複製</string>
 
-    <!-- DevelopersTab -->
+    
     <string name="settings_developers_main_contributors">主要貢獻者</string>
     <string name="settings_developers_project_initiator">專案發起者</string>
     <string name="settings_developers_daily_maintenance">日常維護</string>
@@ -191,11 +184,11 @@
     <string name="settings_developers_organization">Organization</string>
     <string name="settings_developers_view_more_on_github">在 GitHub 上查看更多</string>
 
-    <!-- Comment -->
+    
     <string name="comment_empty_title">暫無評論</string>
 
 
-    <!-- AcknowledgementsTab -->
+    
     <string name="settings_acknowledgements_bangumi">Bangumi</string>
     <string name="settings_acknowledgements_bangumi_description">條目資料與收藏服務</string>
     <string name="settings_acknowledgements_tmdb">TMDB</string>
@@ -205,7 +198,7 @@
     <string name="settings_oss_licenses_homepage">主頁</string>
     <string name="settings_oss_licenses_license">許可證</string>
 
-    <!-- AppSettingsTab -->
+    
     <string name="settings_app_initial_page">初始頁面</string>
     <string name="settings_app_initial_page_description">啟動 APP 時進入的頁面</string>
     <string name="settings_app_search">搜尋</string>
@@ -234,7 +227,7 @@
     <string name="always_on_top">視窗置頂</string>
     <string name="always_on_top_disable">取消視窗置頂</string>
 
-    <!-- SoftwareUpdateGroup -->
+    
     <string name="settings_update_software">軟體更新</string>
     <string name="settings_update_current_version">目前版本</string>
     <string name="settings_update_view_changelog">查看更新日誌</string>
@@ -263,7 +256,7 @@
     <string name="settings_update_new_version">有新版本: %1$s</string>
     <string name="settings_update_check">檢查更新</string>
 
-    <!-- PlayerGroup -->
+    
     <string name="settings_player">播放器</string>
     <string name="settings_player_fullscreen_always_show">總是顯示</string>
     <string name="settings_player_fullscreen_auto_hide">顯示五秒後隱藏</string>
@@ -301,7 +294,7 @@
     <string name="settings_player_mpv_options_count">已設定 %1$d 個選項</string>
     <string name="settings_player_mpv_options_placeholder">hwdec=auto\nprofile=fast</string>
 
-    <!-- Storage Settings -->
+    
     <string name="settings_storage_title">儲存設定</string>
     <string name="settings_storage_media_cache_location">影片快取位置</string>
     <string name="settings_storage_media_cache_location_description">修改後不會自動遷移資料，也不會自動刪除舊資料。\n如需刪除舊資料，請在修改之前點擊 &quot;打開媒體快取目錄&quot; 並刪除該目錄下的所有檔案。\n\n重新啟動生效</string>
@@ -312,7 +305,7 @@
     <string name="settings_storage_path_is_invalid">該路徑無效</string>
     <string name="settings_storage_directory_create_failed">無法建立目錄</string>
 
-    <!-- MediaSourceGroup -->
+    
     <string name="settings_media_source_list">資料源列表 (%1$d)</string>
     <string name="settings_media_source_list_description">在播放時，停用的資料源不會自動查詢，但可手動點擊臨時啟用。注意，排序將優先採用雲端順序，同資料源訂閱之內的手動排序可能無效</string>
     <string name="settings_media_source_cancel_sort">取消排序</string>
@@ -347,7 +340,7 @@
     <string name="settings_media_source_delete_selected_confirmation">確定刪除選中的 %1$d 個資料源嗎？刪除後將遺失自訂設定，重新添加時需要再次設定。</string>
     <string name="settings_media_source_select_template">選擇模板</string>
 
-    <!-- MediaSourceSubscriptionGroup -->
+    
     <string name="settings_media_source_subscription">資料源訂閱</string>
     <string name="settings_media_source_subscription_description">可透過訂閱添加多個資料源，並自動定時更新訂閱</string>
     <string name="settings_media_source_subscription_add">添加</string>
@@ -372,17 +365,17 @@
     <string name="settings_media_source_subscription_service_unavailable">服務暫不可用，請稍後重試</string>
     <string name="settings_media_source_subscription_unauthorized">服務禁止訪問，請聯絡服務提供者</string>
 
-    <!-- ConfimExitDialog -->
+    
     <string name="settings_media_source_discard_changes">捨棄更改?</string>
     <string name="settings_media_source_discard">捨棄</string>
     <string name="settings_media_source_continue_editing">繼續編輯</string>
 
-    <!-- EditMediaSourceLayout -->
+    
     <string name="settings_media_source_no_config">無配置項</string>
     <string name="settings_media_source_add_button">添加</string>
     <string name="settings_media_source_save_button">儲存</string>
 
-    <!-- MediaSourceConfigurationDefaults -->
+    
     <string name="settings_mediasource_import_from_clipboard">從剪貼簿匯入配置</string>
     <string name="settings_mediasource_import_title">匯入配置</string>
     <string name="settings_mediasource_import_warning">將會覆蓋現有配置，且不能復原</string>
@@ -398,7 +391,7 @@
     <string name="settings_mediasource_export_failed">目前無法匯出，請稍後再試</string>
     <string name="settings_mediasource_export_single">匯出單個配置 (僅限開發者)</string>
 
-    <!-- RefreshIndicatedHeadlineRow -->
+    
     <string name="settings_mediasource_refresh">重新整理</string>
     <string name="settings_mediasource_unauthorized">未授權</string>
     <string name="settings_mediasource_network_error">網路錯誤</string>
@@ -416,14 +409,14 @@
 
     <string name="settings_mediasource_auto_save_hint">提示：修改自動儲存</string>
 
-    <!-- OutlinedMatchTag -->
+    
 
-    <!-- OverviewTab -->
+    
     <string name="settings_copied_to_clipboard">已複製到剪貼簿</string>
 
 
 
-    <!-- NewVersionPopupCard -->
+    
     <string name="settings_update_popup_new_version">新版本</string>
     <string name="settings_update_popup_see_details">查看詳情</string>
     <string name="settings_update_popup_auto_update">自動更新</string>
@@ -438,7 +431,7 @@
     <string name="settings_update_popup_restart_update">重啟更新</string>
     <string name="settings_update_popup_download_complete">下載完成</string>
 
-    <!-- ExplorationScreen -->
+    
     <string name="exploration_title">探索</string>
     <string name="exploration_settings">設定</string>
     <string name="exploration_search">搜尋</string>
@@ -462,13 +455,13 @@
     <string name="exploration_recommendations">推薦</string>
     <string name="exploration_horizontal_scroll_tip">按住 Shift + 滑鼠滾輪 同樣可以水平滾動</string>
 
-    <!-- MainScreenPage -->
+    
     <string name="main_network_check_failed">無法連接到 Wynime 伺服器, 請檢查網路, 或在設定中配置代理</string>
     <string name="main_screen_page_exploration">探索</string>
     <string name="main_screen_page_collection">追番</string>
     <string name="main_screen_page_cache_management">下載</string>
 
-    <!-- ThemePreferences -->
+    
     <string name="settings_theme_title">主題</string>
     <string name="settings_theme_dynamic_colors">動態色彩</string>
     <string name="settings_theme_dynamic_colors_description">使用系統強調色</string>
@@ -487,18 +480,18 @@
     <string name="settings_theme_mode_dark">深色</string>
     <string name="settings_theme_mode_auto">自動</string>
 
-    <!-- ServerSelectionGroup -->
+    
 
     <string name="settings_confirm">確認</string>
     <string name="settings_cancel">取消</string>
     <string name="settings_input_invalid">輸入無效</string>
 
-    <!-- ConnectionTesterResultIndicator -->
+    
     <string name="settings_framework_timeout">超時</string>
     <string name="settings_framework_not_enabled">未啟用</string>
     <string name="settings_framework_waiting_for_test">等待測試</string>
 
-    <!-- GlobalProxyGroup -->
+    
     <string name="settings_network_proxy_title">全域代理設定</string>
     <string name="settings_network_proxy_description">應用於所有資料源以及 Bangumi</string>
     <string name="settings_network_proxy_type">代理類型</string>
@@ -529,7 +522,7 @@
     <string name="settings_network_proxy_save_and_test">儲存並測試</string>
 
 
-    <!-- AutoCacheGroup -->
+    
     <string name="settings_media_auto_cache_title">自動快取</string>
     <string name="settings_media_auto_cache_description">自動快取 \"在看\" 分類中未觀看的劇集</string>
     <string name="settings_media_auto_cache_enable">啟用自動快取</string>
@@ -542,30 +535,30 @@
     <string name="settings_media_auto_cache_manage">管理下載</string><string name="settings_debug_logout">登出</string><string name="settings_debug_logged_out">已登出</string><string name="settings_tab_account">賬戶</string>
 
 
-    <!-- Login -->
+    
     <string name="login_sign_in">登入</string>
     <string name="login_sign_up">註冊</string>
     <string name="login_sign_in_or_sign_up">登入 / 註冊</string>
     <string name="login_bind_email">綁定電子郵件</string>
     <string name="login_change_email">更改電子郵件</string>
-    <string name="login_email_address_title">你的電子郵件地址</string>
-    <string name="login_email_address_description">我們會寄送一封驗證碼郵件</string>
-    <string name="login_email_label">電子郵件</string>
+    
+    
+    
     <string name="login_clear">清空</string>
     <string name="login_continue">繼續</string>
-    <string name="login_email_already_used">該電子郵件已被使用</string>
-    <string name="login_invalid_otp">驗證碼無效或已過期，請重新發送</string>
-    <string name="login_verify_title">輸入驗證碼</string>
-    <string name="login_verify_check_email">請檢查電子郵件 %1$s</string>
-    <string name="login_verify_signing_in_existing">正在登入現有帳號</string>
-    <string name="login_verify_signing_up_new">正在註冊新帳號</string>
-    <string name="login_verification_code">驗證碼</string>
-    <string name="login_six_digit_number">6 位數字</string>
-    <string name="login_resend_otp">重新發送驗證碼</string>
-    <string name="login_resend_after_seconds">%1$d 秒後可重新發送</string>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <string name="login_other_methods">其他登入方式</string>
 
-    <!-- OAuth -->
+    
     <string name="oauth_bangumi_description">授權 Bangumi 帳號後，可以同步你的觀看紀錄到 Bangumi，或更方便地登入 Wynime。</string>
     <string name="oauth_authorize_title">授權 %1$s 登入</string>
     <string name="oauth_bind_account">綁定 %1$s 帳號</string>
@@ -589,7 +582,7 @@
     <string name="oauth_bangumi_help_activation_failed_content">刪除啟用碼的最後一個字，然後手動輸入刪掉的字，或改用其他瀏覽器。</string>
     <string name="oauth_bangumi_help_others_content">仍然無法解決你的問題？還可以透過以下管道取得幫助。</string>
 
-    <!-- Video Player -->
+    
     <string name="video_player_aspect_fit">適應</string>
     <string name="video_player_aspect_stretch">填充</string>
     <string name="video_player_aspect_crop">裁切</string>
@@ -634,7 +627,7 @@
     <string name="video_player_stats_dropped_video_frames">丟幀 %1$s</string>
     <string name="video_player_stats_dropped_audio_buffers">音訊丟包 %1$s</string>
 
-    <!-- Subject Collection -->
+    
     <string name="subject_collection_wish">想看</string>
     <string name="subject_collection_doing">在看</string>
     <string name="subject_collection_done">看過</string>
@@ -664,7 +657,7 @@
     <string name="subject_details_collection_dropped"> / %1$s 拋棄</string>
     <string name="subject_rendering_season_year_month">%1$s 年 %2$s 月</string>
 
-    <!-- Subject Episode -->
+    
     <string name="subject_episode_unwatch">取消看過</string>
     <string name="subject_episode_watched">已看過</string>
     <string name="subject_episode_dropped">已拋棄</string>
@@ -776,14 +769,14 @@
     <string name="settings_account_logout">退出登入</string>
     <string name="settings_account_confirm_logout">確定要退出登入嗎?</string>
 
-    <!-- Bangumi Session Expired Prompt -->
+    
     <string name="bangumi_session_expired">Bangumi 登入過期</string>
     <string name="bangumi_session_expired_login_again">Bangumi 登入過期，請重新登入</string>
     <string name="bangumi_session_expired_view">查看</string>
     <string name="bangumi_session_expired_login">登入</string>
     <string name="bangumi_session_expired_unbind">解除綁定 Bangumi</string>
 
-    <!-- Account Popup -->
+    
     <string name="settings_account_popup_not_logged_in">未登入</string>
     <string name="settings_account_popup_edit_profile">編輯個人資料</string>
     <string name="settings_account_popup_login_register">登入 / 註冊</string>
@@ -797,57 +790,57 @@
     <string name="settings_account_bangumi_sync_queue">同步佇列</string>
     <string name="settings_account_bangumi_sync_title">Bangumi 同步</string>
     <string name="settings_account_bangumi_conflict_handling">衝突處理</string>
-    <string name="bangumi_merge_title">合併收藏</string>
-    <string name="bangumi_merge_title_conflicts">合併收藏 · %1$d 項衝突</string>
-    <string name="bangumi_merge_entry_description">處理 Wynime 與 Bangumi 兩側都修改過的收藏</string>
-    <string name="bangumi_merge_entry_conflict_count">%1$d 項衝突</string>
-    <string name="bangumi_merge_conflict_notification">偵測到 %1$d 項 Bangumi 收藏衝突</string>
-    <string name="bangumi_merge_conflict_notification_action">處理</string>
-    <string name="bangumi_merge_headline">%1$d 項衝突需要確認</string>
-    <string name="bangumi_merge_info">兩側都修改過的條目需要確認，● 標記較新的一側；其餘 %1$d 項已自動合併。</string>
-    <string name="bangumi_merge_info_no_auto">兩側都修改過的條目需要確認，● 標記較新的一側。</string>
-    <string name="bangumi_merge_adopt_newer">採用較新的</string>
-    <string name="bangumi_merge_select_all">全選</string>
-    <string name="bangumi_merge_resolved">已解決</string>
-    <string name="bangumi_merge_pending_count">%1$d 待選</string>
-    <string name="bangumi_merge_auto_merged">已自動合併 %1$d 項無衝突差異</string>
-    <string name="bangumi_merge_auto_merged_more">另有 %1$d 項…</string>
-    <string name="bangumi_merge_confirmed_progress">已確認 %1$d / %2$d</string>
-    <string name="bangumi_merge_apply">套用合併</string>
-    <string name="bangumi_merge_apply_success">已合併 %1$d 項變更</string>
-    <string name="bangumi_merge_apply_partial">已合併 %1$d 項，還有 %2$d 項待處理</string>
-    <string name="bangumi_merge_sync_in_progress">全量同步進行中，請稍後再試</string>
-    <string name="bangumi_merge_sync_in_progress_notice">全量同步進行中，衝突列表可能不完整</string>
-    <string name="bangumi_merge_syncing_title">正在同步收藏…</string>
-    <string name="bangumi_merge_syncing_description">首次同步完成後，需要處理的衝突會顯示在這裡。</string>
-    <string name="bangumi_merge_synced">收藏已完全同步</string>
-    <string name="bangumi_merge_synced_description">Wynime 與 Bangumi 兩側沒有需要處理的收藏衝突。</string>
-    <string name="bangumi_merge_last_synced">上次同步：%1$s</string>
-    <string name="bangumi_merge_deleted_collection">已刪除收藏</string>
-    <string name="bangumi_merge_score">%1$d 分</string>
-    <string name="bangumi_merge_no_rating">未評分</string>
-    <string name="bangumi_merge_no_comment">無短評</string>
-    <string name="bangumi_merge_tags">標籤: %1$s</string>
-    <string name="bangumi_merge_no_tags">無標籤</string>
-    <string name="bangumi_merge_private">私密</string>
-    <string name="bangumi_merge_public">公開</string>
-    <string name="bangumi_merge_field_collection">收藏</string>
-    <string name="bangumi_merge_field_status">狀態</string>
-    <string name="bangumi_merge_field_rating">評分</string>
-    <string name="bangumi_merge_field_comment">短評</string>
-    <string name="bangumi_merge_subject_column">條目</string>
-    <string name="bangumi_merge_field_column">欄位</string>
-    <string name="bangumi_merge_yesterday">昨</string>
-    <string name="bangumi_merge_from_animeko">來自 Wynime</string>
-    <string name="bangumi_merge_from_bangumi">來自 Bangumi</string>
-    <string name="bangumi_merge_auto_new_collection">新增收藏 · %1$s</string>
-    <string name="bangumi_merge_auto_collection_type">狀態 · %1$s</string>
-    <string name="bangumi_merge_auto_rating">評分 %1$d</string>
-    <string name="bangumi_merge_auto_comment">短評「%1$s」</string>
-    <string name="bangumi_merge_auto_rating_cleared">清除評分</string>
-    <string name="bangumi_merge_auto_watched">觀看進度 → %1$s</string>
-    <string name="bangumi_merge_auto_unwatched">取消已看 %1$s</string>
-    <string name="bangumi_merge_episode">EP%1$s</string>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <string name="settings_account_bangumi_pending_sync_ops">待執行的同步操作</string>
     <string name="settings_account_bangumi_execute_all">執行全部</string>
     <string name="settings_account_loading">載入中...</string>
@@ -1245,7 +1238,7 @@
     <string name="subject_episode_expand_sidebar">展開側邊欄</string>
     <string name="subject_episode_preview_mode">預覽模式</string>
 
-    <!-- 人物/角色詳情頁 -->
+    
     <string name="person_details_basic_info">基本資訊</string>
     <string name="person_details_voice_actors">聲優</string>
     <string name="person_details_casts">出演角色</string>
@@ -1279,7 +1272,7 @@
     <string name="people_bangumi_unavailable">Bangumi 討論暫時無法載入</string>
     <string name="people_career_singer">歌手</string>
     <string name="people_career_director">導演</string>
-    <!-- Image viewer -->
+    
     <string name="image_viewer_window_title">圖片</string>
     <string name="image_viewer_zoom_in">放大</string>
     <string name="image_viewer_zoom_out">縮小</string>
@@ -1292,7 +1285,7 @@
     <string name="image_viewer_copied">圖片已複製</string>
     <string name="image_viewer_copy_failed">複製圖片失敗</string>
     <string name="image_viewer_close">關閉</string>
-    <!-- Shared playback captcha messages -->
+    
     <string name="media_captcha_required_message">需要處理%1$s</string>
     <string name="media_captcha_image">圖片驗證碼</string>
     <string name="media_captcha_cloudflare">Cloudflare 驗證</string>
@@ -1329,32 +1322,32 @@
     <string name="downloads_episode_picker_current">目前</string>
     <string name="downloads_episode_picker_selected_count">已選 %1$d 集</string>
     <string name="downloads_episode_picker_back">返回</string>
-    <string name="qr_login_title">掃碼登入</string>
-    <string name="qr_login_settings_description">在電視等裝置上登入此帳號</string>
-    <string name="qr_login_scan_hint">對準電視上的 QR Code</string>
-    <string name="qr_login_scan_invalid">這不是 Wynime 登入 QR Code</string>
-    <string name="qr_login_scan_torch">手電筒</string>
-    <string name="qr_login_camera_permission">需要相機權限才能掃碼</string>
-    <string name="qr_login_camera_permission_grant">允許使用相機</string>
-    <string name="qr_login_confirm_title">確認登入</string>
-    <string name="qr_login_confirm_headline">在新裝置上登入?</string>
-    <string name="qr_login_confirm_as">將以 %1$s 的身分登入以下裝置</string>
-    <string name="qr_login_confirm_as_current">將以你的帳號登入以下裝置</string>
-    <string name="qr_login_confirm_unknown_device">未知裝置</string>
-    <string name="qr_login_confirm_device_requesting">正在請求登入</string>
-    <string name="qr_login_confirm_warning">只在你本人正看著這台裝置時確認。不要掃描他人傳來的登入 QR Code。</string>
-    <string name="qr_login_confirm_approve">確認登入</string>
-    <string name="qr_login_confirm_reject">拒絕</string>
-    <string name="qr_login_approved_title">已登入</string>
-    <string name="qr_login_approved_description">%1$s 已登入你的帳號, 可以放下手機了</string>
-    <string name="qr_login_rejected_title">已拒絕登入</string>
-    <string name="qr_login_expired">QR Code 已過期, 請在電視上重新整理後再試</string>
-    <string name="qr_login_already_handled">這個 QR Code 已被使用</string>
-    <string name="qr_login_requires_login">請先在此裝置上登入 Wynime</string>
-    <string name="qr_login_failed">操作失敗, 請檢查網路後再試</string>
-    <string name="qr_login_retry">重試</string>
-    <string name="qr_login_done">完成</string>
-    <string name="qr_login_close">關閉</string>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 </resources>
 
-<!--@formatter:on-->
+

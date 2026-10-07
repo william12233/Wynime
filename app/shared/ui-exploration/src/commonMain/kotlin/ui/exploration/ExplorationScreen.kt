@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration
+package com.wynime.app.ui.exploration
 
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Column
@@ -58,66 +49,62 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.recommend.RecommendedItemInfo
-import me.him188.ani.app.data.models.recommend.RecommendedSubjectInfo
-import me.him188.ani.app.data.models.recommend.TestRecommendedItemInfos
-import me.him188.ani.app.data.models.subject.FollowedSubjectInfo
-import me.him188.ani.app.data.models.subject.TestFollowedSubjectInfos
-import me.him188.ani.app.data.models.subject.subjectInfo
-import me.him188.ani.app.data.models.subject.toNavPlaceholder
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.navigation.SubjectDetailPlaceholder
-import me.him188.ani.app.ui.adaptive.AniTopAppBar
-import me.him188.ani.app.ui.adaptive.AniTopAppBarDefaults
-import me.him188.ani.app.ui.adaptive.HorizontalScrollControlScaffoldOnDesktop
-import me.him188.ani.app.ui.adaptive.NavTitleHeader
-import me.him188.ani.app.ui.exploration.followed.FollowedSubjectsDefaults
-import me.him188.ani.app.ui.exploration.followed.FollowedSubjectsLazyRow
-import me.him188.ani.app.ui.exploration.recommend.RecommendationDefaults
-import me.him188.ani.app.ui.exploration.recommend.recommendationItems
-import me.him188.ani.app.ui.exploration.today.TestTodayUpdateSubjectInfos
-import me.him188.ani.app.ui.exploration.today.TodayUpdatesCarousel
-import me.him188.ani.app.ui.foundation.HorizontalScrollControlState
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.ifNotNullThen
-import me.him188.ani.app.ui.foundation.layout.AniWindowInsets
-import me.him188.ani.app.ui.foundation.layout.CarouselItemDefaults
-import me.him188.ani.app.ui.foundation.layout.currentWindowAdaptiveInfo1
-import me.him188.ani.app.ui.foundation.layout.isHeightAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.isWidthAtLeastMedium
-import me.him188.ani.app.ui.foundation.layout.paneHorizontalPadding
-import me.him188.ani.app.ui.foundation.layout.plus
-import me.him188.ani.app.ui.foundation.rememberHorizontalScrollControlState
-import me.him188.ani.app.ui.foundation.session.SelfAvatar
-import me.him188.ani.app.ui.foundation.theme.AniThemeDefaults
-import me.him188.ani.app.ui.foundation.theme.appChromeHazeSource
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.exploration_continue_watching
-import me.him188.ani.app.ui.lang.exploration_horizontal_scroll_tip
-import me.him188.ani.app.ui.lang.exploration_recommendations
-import me.him188.ani.app.ui.lang.exploration_schedule
-import me.him188.ani.app.ui.lang.exploration_search
-import me.him188.ani.app.ui.lang.exploration_settings
-import me.him188.ani.app.ui.lang.exploration_title
-import me.him188.ani.app.ui.lang.exploration_today_updates
-import me.him188.ani.app.ui.search.createTestPager
-import me.him188.ani.app.ui.search.rememberLoadErrorState
-import me.him188.ani.app.ui.user.SelfInfoUiState
-import me.him188.ani.app.ui.user.TestSelfInfoUiState
-import me.him188.ani.utils.analytics.Analytics
-import me.him188.ani.utils.analytics.AnalyticsEvent.Companion.SubjectEnter
-import me.him188.ani.utils.analytics.recordEvent
-import me.him188.ani.utils.platform.annotations.TestOnly
-import me.him188.ani.utils.platform.hasScrollingBug
+import com.wynime.app.data.models.recommend.RecommendedItemInfo
+import com.wynime.app.data.models.recommend.RecommendedSubjectInfo
+import com.wynime.app.data.models.recommend.TestRecommendedItemInfos
+import com.wynime.app.data.models.subject.FollowedSubjectInfo
+import com.wynime.app.data.models.subject.TestFollowedSubjectInfos
+import com.wynime.app.data.models.subject.subjectInfo
+import com.wynime.app.data.models.subject.toNavPlaceholder
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.navigation.SubjectDetailPlaceholder
+import com.wynime.app.ui.adaptive.WynimeTopAppBar
+import com.wynime.app.ui.adaptive.WynimeTopAppBarDefaults
+import com.wynime.app.ui.adaptive.HorizontalScrollControlScaffoldOnDesktop
+import com.wynime.app.ui.adaptive.NavTitleHeader
+import com.wynime.app.ui.exploration.followed.FollowedSubjectsDefaults
+import com.wynime.app.ui.exploration.followed.FollowedSubjectsLazyRow
+import com.wynime.app.ui.exploration.recommend.RecommendationDefaults
+import com.wynime.app.ui.exploration.recommend.recommendationItems
+import com.wynime.app.ui.exploration.today.TestTodayUpdateSubjectInfos
+import com.wynime.app.ui.exploration.today.TodayUpdatesCarousel
+import com.wynime.app.ui.foundation.HorizontalScrollControlState
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.ifNotNullThen
+import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
+import com.wynime.app.ui.foundation.layout.CarouselItemDefaults
+import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
+import com.wynime.app.ui.foundation.layout.isHeightAtLeastMedium
+import com.wynime.app.ui.foundation.layout.isWidthAtLeastMedium
+import com.wynime.app.ui.foundation.layout.paneHorizontalPadding
+import com.wynime.app.ui.foundation.layout.plus
+import com.wynime.app.ui.foundation.rememberHorizontalScrollControlState
+import com.wynime.app.ui.foundation.session.SelfAvatar
+import com.wynime.app.ui.foundation.theme.WynimeThemeDefaults
+import com.wynime.app.ui.foundation.theme.appChromeHazeSource
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.exploration_continue_watching
+import com.wynime.app.ui.lang.exploration_horizontal_scroll_tip
+import com.wynime.app.ui.lang.exploration_recommendations
+import com.wynime.app.ui.lang.exploration_schedule
+import com.wynime.app.ui.lang.exploration_search
+import com.wynime.app.ui.lang.exploration_settings
+import com.wynime.app.ui.lang.exploration_title
+import com.wynime.app.ui.lang.exploration_today_updates
+import com.wynime.app.ui.search.createTestPager
+import com.wynime.app.ui.search.rememberLoadErrorState
+import com.wynime.app.ui.user.SelfInfoUiState
+import com.wynime.app.ui.user.TestSelfInfoUiState
+import com.wynime.utils.analytics.Analytics
+import com.wynime.utils.analytics.AnalyticsEvent.Companion.SubjectEnter
+import com.wynime.utils.analytics.recordEvent
+import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.hasScrollingBug
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * @param horizontalScrollTipFlow 探索界面有横向滚动的列表, 是否显示点击辅助滚动按钮后的提示.
- * @param onSetDisableHorizontalScrollTip 探索界面有横向滚动的列表, 在第一次点击列表左右测的辅助滚动按钮后调用.
- */
 @Stable
 class ExplorationPageState(
     val todayUpdatesState: StateFlow<TodayUpdatesUiState>,
@@ -128,7 +115,6 @@ class ExplorationPageState(
     private val onSetDisableHorizontalScrollTip: () -> Unit,
 ) {
     val followedSubjectsLazyRowState = LazyListState()
-
 
     val pageScrollState = LazyGridState()
 
@@ -150,25 +136,25 @@ fun ExplorationScreen(
     onClickSettings: () -> Unit,
     modifier: Modifier = Modifier,
     actions: @Composable () -> Unit = {},
-    windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
+    windowInsets: WindowInsets = WynimeWindowInsets.forPageContent(),
 ) {
     val isHeightAtLeastMedium = currentWindowAdaptiveInfo1().windowSizeClass.isHeightAtLeastMedium
     val scrollBehavior = if (LocalPlatform.current.hasScrollingBug() || isHeightAtLeastMedium) {
         TopAppBarDefaults.pinnedScrollBehavior()
     } else {
-        // 在紧凑高度时收起 Top bar
+
         TopAppBarDefaults.enterAlwaysScrollBehavior()
     }
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = AniThemeDefaults.pageContentBackgroundColor,
+        containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         topBar = {
-            AniTopAppBar(
-                title = { AniTopAppBarDefaults.Title(stringResource(Lang.exploration_title)) },
+            WynimeTopAppBar(
+                title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.exploration_title)) },
                 Modifier.fillMaxWidth(),
                 actions = {
                     actions()
-                    if (selfInfo.isSessionValid == false // #1269 游客模式下无法打开设置界面
+                    if (selfInfo.isSessionValid == false
                         || currentWindowAdaptiveInfo1().windowSizeClass.isWidthAtLeastMedium
                     ) {
                         IconButton(onClick = onClickSettings) {
@@ -193,7 +179,7 @@ fun ExplorationScreen(
                         Icon(Icons.Rounded.Search, stringResource(Lang.exploration_search))
                     }
                 },
-                windowInsets = AniWindowInsets.forTopAppBarWithoutDesktopTitle(),
+                windowInsets = WynimeWindowInsets.forTopAppBarWithoutDesktopTitle(),
                 scrollBehavior = scrollBehavior,
             )
         },
@@ -220,13 +206,13 @@ fun ExplorationScreen(
         }
         val recommendationPager = state.recommendationPager.collectAsLazyPagingItemsWithLifecycle()
         val recommendationPagerLoadError by recommendationPager.rememberLoadErrorState()
-        val aniMotionScheme = LocalAniMotionScheme.current
+        val wynimeMotionScheme = LocalWynimeMotionScheme.current
         val layoutParams = RecommendationDefaults.layoutParameters()
         LazyVerticalGrid(
             layoutParams.gridCells,
             Modifier
-                // 毛玻璃 app chrome 的模糊来源. 内容通过 contentPadding 延伸到 chrome 下方.
-                .appChromeHazeSource(backgroundColor = AniThemeDefaults.pageContentBackgroundColor)
+
+                .appChromeHazeSource(backgroundColor = WynimeThemeDefaults.pageContentBackgroundColor)
                 .fillMaxWidth()
                 .wrapContentWidth()
                 .widthIn(max = 1300.dp)

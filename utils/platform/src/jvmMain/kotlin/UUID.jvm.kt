@@ -1,4 +1,4 @@
-package me.him188.ani.utils.platform
+package com.wynime.utils.platform
 
 import java.util.UUID
 import kotlin.random.Random

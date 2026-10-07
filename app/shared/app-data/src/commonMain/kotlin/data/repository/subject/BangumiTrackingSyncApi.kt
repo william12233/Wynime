@@ -1,27 +1,15 @@
-/*
- * Copyright (C) 2026 Wynime contributors.
- *
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- * https://github.com/william12233/Wynime/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
-import me.him188.ani.app.data.network.BangumiApiProvider
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiSubjectCollectionType
-import me.him188.ani.datasources.bangumi.models.BangumiSubjectType
-import me.him188.ani.datasources.bangumi.models.BangumiUserSubjectCollectionModifyPayload
+import com.wynime.app.data.network.BangumiApiProvider
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.bangumi.models.BangumiSubjectCollectionType
+import com.wynime.datasources.bangumi.models.BangumiSubjectType
+import com.wynime.datasources.bangumi.models.BangumiUserSubjectCollectionModifyPayload
 import kotlin.coroutines.cancellation.CancellationException
 
-/**
- * The small authenticated API surface used by the local tracking synchronizer.
- * Keeping this boundary separate from the repository makes request counts testable and keeps the
- * feature independent from the legacy Animeko sync queue.
- */
 interface BangumiTrackingSyncApi {
     suspend fun currentUser(): BangumiTrackingAccount?
 
@@ -31,7 +19,6 @@ interface BangumiTrackingSyncApi {
         offset: Int,
     ): BangumiTrackingRemotePage
 
-    /** Reads one collection record after a remote mutation; null means Bangumi has no record. */
     suspend fun collection(username: String, subjectId: Int): BangumiTrackingRemoteSnapshot?
 
     suspend fun upsertCollectionType(subjectId: Int, type: UnifiedCollectionType)

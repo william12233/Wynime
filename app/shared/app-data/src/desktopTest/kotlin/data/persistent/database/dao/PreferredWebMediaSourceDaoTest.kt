@@ -1,25 +1,16 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.persistent.database.dao
+package com.wynime.app.data.persistent.database.dao
 
 import androidx.sqlite.SQLiteException
 import app.cash.turbine.test
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.app.data.models.subject.RatingInfo
-import me.him188.ani.app.data.models.subject.SelfRatingInfo
-import me.him188.ani.app.data.models.subject.SubjectCollectionStats
-import me.him188.ani.app.data.persistent.database.AniDatabase
-import me.him188.ani.app.data.persistent.database.createTestAniDatabase
-import me.him188.ani.datasources.api.PackedDate
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.data.models.subject.RatingInfo
+import com.wynime.app.data.models.subject.SelfRatingInfo
+import com.wynime.app.data.models.subject.SubjectCollectionStats
+import com.wynime.app.data.persistent.database.WynimeDatabase
+import com.wynime.app.data.persistent.database.createTestWynimeDatabase
+import com.wynime.datasources.api.PackedDate
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -27,8 +18,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class PreferredWebMediaSourceDaoTest {
-    private fun runDatabaseTest(block: suspend (AniDatabase) -> Unit) = runBlocking {
-        val database = createTestAniDatabase()
+    private fun runDatabaseTest(block: suspend (WynimeDatabase) -> Unit) = runBlocking {
+        val database = createTestWynimeDatabase()
         try {
             block(database)
         } finally {
@@ -77,7 +68,6 @@ class PreferredWebMediaSourceDaoTest {
     fun `ROOM-03 subjectId 不在收藏表时 upsert 抛 FK 异常`() = runDatabaseTest { database ->
         val dao = database.preferredWebMediaSourceDao()
 
-        // PINNED: ROOM-03
         val exception = assertFailsWith<SQLiteException> {
             dao.setPreferredMediaSource(PreferredWebMediaSource(subjectId = 42, mediaSourceId = "source-a"))
         }
@@ -96,7 +86,6 @@ class PreferredWebMediaSourceDaoTest {
 
             database.subjectCollection().delete(1)
 
-            // PINNED: ROOM-03
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }

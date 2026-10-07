@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.list
+package com.wynime.app.ui.subject.episode.list
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
@@ -18,8 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.foundation.FilledTonalCombinedClickButton
-
+import com.wynime.app.ui.foundation.FilledTonalCombinedClickButton
 
 @Composable
 internal fun EpisodeSortSquareButton(
@@ -31,8 +21,8 @@ internal fun EpisodeSortSquareButton(
 ) {
     val containerColor = when {
         item.isDoneOrDropped -> colors.doneOrDroppedColor
-        !item.isBroadcast -> colors.notPublishedColor // 未开播
-        else -> colors.canWatchColor // 还没看
+        !item.isBroadcast -> colors.notPublishedColor
+        else -> colors.canWatchColor
     }
     FilledTonalCombinedClickButton(
         onClick = onClick,

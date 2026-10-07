@@ -1,31 +1,22 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
+package com.wynime.app.domain.media
 
-package me.him188.ani.app.domain.media
-
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.MediaExtraFiles
-import me.him188.ani.datasources.api.MediaProperties
-import me.him188.ani.datasources.api.Subtitle
-import me.him188.ani.datasources.api.SubtitleKind
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.datasources.api.topic.SubtitleLanguage.ChineseSimplified
-import me.him188.ani.datasources.api.topic.SubtitleLanguage.ChineseTraditional
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.MediaExtraFiles
+import com.wynime.datasources.api.MediaProperties
+import com.wynime.datasources.api.Subtitle
+import com.wynime.datasources.api.SubtitleKind
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.datasources.api.topic.SubtitleLanguage.ChineseSimplified
+import com.wynime.datasources.api.topic.SubtitleLanguage.ChineseTraditional
+import com.wynime.utils.platform.annotations.TestOnly
 
 @TestOnly
 const val SOURCE_WEB_PRIMARY = "web-primary"
@@ -46,11 +37,11 @@ fun createTestDefaultMedia(
     extraFiles: MediaExtraFiles = MediaExtraFiles.EMPTY,
     location: MediaSourceLocation,
     kind: MediaSourceKind,
-//    mediaSourceInstanceId: String = mediaSourceId,
+
 ): DefaultMedia = DefaultMedia(
     mediaId = mediaId,
     mediaSourceId = mediaSourceId,
-//    mediaSourceInstanceId = mediaSourceInstanceId,
+
     originalUrl = originalUrl,
     download = download,
     originalTitle = originalTitle,
@@ -80,8 +71,6 @@ fun createTestMediaProperties(
     subtitleKind = subtitleKind,
 )
 
-// Used by many test, don't change it. 
-// If you want to change it, copy it instead.
 @TestOnly
 val TestMediaList = listOf(
     createTestDefaultMedia(
@@ -111,7 +100,7 @@ val TestMediaList = listOf(
             ),
         ),
     ),
-    // exactly same properties as the first one, except for the ids.
+
     createTestDefaultMedia(
         mediaId = "$SOURCE_WEB_SECONDARY.1",
         mediaSourceId = SOURCE_WEB_SECONDARY,

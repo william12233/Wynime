@@ -7,6 +7,8 @@ import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.security.MessageDigest
 import java.util.zip.ZipFile
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -14,7 +16,7 @@ plugins {
 }
 
 group = "tw.wynime.sources"
-version = "1.0.25"
+version = "1.0.26"
 
 dependencies {
     compileOnly(project(":source:plugin-api"))
@@ -41,10 +43,6 @@ tasks.test {
     exclude("**/SourcePluginLiveSmokeTest.class")
 }
 
-/**
- * Runs the real executable plugins against their current websites. External sites are not a
- * deterministic build input, so the process is deliberately non-blocking for release checks.
- */
 tasks.register<JavaExec>("sourcePluginLiveSmokeTest") {
     description = "Runs the non-blocking live smoke report for all published source plugins"
     group = "verification"
@@ -53,6 +51,9 @@ tasks.register<JavaExec>("sourcePluginLiveSmokeTest") {
     mainClass.set("tw.wynime.sources.SourcePluginLiveSmokeTestKt")
     isIgnoreExitValue = true
 }
+
+val pluginProjectDir = layout.projectDirectory.asFile
+val pluginBuildDir = layout.buildDirectory.get().asFile
 
 val pluginIds = listOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus")
 val pluginPackageNames = mapOf("2rk" to "rk2")
@@ -67,8 +68,9 @@ pluginIds.forEach { pluginId ->
             include("tw/wynime/sources/shared/**")
             include("tw/wynime/sources/${pluginPackageNames[pluginId] ?: pluginId}/**")
         }
+        val trackedArtifact = File(pluginProjectDir, "artifacts/source-$pluginId.jar")
         doLast {
-            val artifact = layout.projectDirectory.file("artifacts/source-$pluginId.jar").asFile
+            val artifact = trackedArtifact
             artifact.parentFile.mkdirs()
             archiveFile.get().asFile.copyTo(artifact, overwrite = true)
         }
@@ -79,13 +81,9 @@ tasks.register("packageAllPlugins") {
     dependsOn(pluginIds.map { "package${it.replaceFirstChar { c -> c.uppercase() }}Plugin" })
 }
 
-/**
- * Produces Android-compatible plugin jars containing classes.dex.
- * The JVM jars remain the desktop artifacts; Android's DexClassLoader cannot
- * load a jar that only contains JVM class files on recent Android releases.
- */
 tasks.register("packageAndroidPlugins") {
-    dependsOn(tasks.named("classes"))
+    dependsOn(tasks.named("packageAllPlugins"))
+    notCompatibleWithConfigurationCache("D8 packaging invokes Android SDK tools during task execution.")
 
     doLast {
         val sdkPath = sequenceOf(
@@ -105,11 +103,12 @@ tasks.register("packageAndroidPlugins") {
             ?: error("D8 was not found under ${buildTools.absolutePath}")
 
         pluginIds.forEach { pluginId ->
-            val jvmArtifact = layout.projectDirectory.file("artifacts/source-$pluginId.jar").asFile
+            val jvmArtifact = File(pluginProjectDir, "artifacts/source-$pluginId.jar")
             require(jvmArtifact.isFile) { "Missing desktop artifact: ${jvmArtifact.absolutePath}" }
 
-            val dexDirectory = layout.buildDirectory.dir("android-dex/$pluginId").get().asFile
-            project.delete(dexDirectory)
+            val dexDirectory = File(pluginBuildDir, "android-dex/$pluginId")
+            check(dexDirectory.toPath().normalize().startsWith(pluginBuildDir.toPath().normalize()))
+            dexDirectory.deleteRecursively()
             dexDirectory.mkdirs()
             val d8Process = ProcessBuilder(
                 d8.absolutePath,
@@ -121,13 +120,9 @@ tasks.register("packageAndroidPlugins") {
 
             val dexFile = File(dexDirectory, "classes.dex")
             require(dexFile.isFile) { "D8 did not produce classes.dex for $pluginId" }
-            val androidArtifact = layout.projectDirectory.file("artifacts/source-$pluginId-android.jar").asFile
+            val androidArtifact = File(pluginProjectDir, "artifacts/source-$pluginId-android.jar")
             androidArtifact.parentFile.mkdirs()
-            JarOutputStream(androidArtifact.outputStream().buffered()).use { output ->
-                output.putNextEntry(JarEntry("classes.dex").apply { time = 0L })
-                dexFile.inputStream().use { it.copyTo(output) }
-                output.closeEntry()
-            }
+            writeDexJar(dexFile, androidArtifact)
             ZipFile(androidArtifact).use { zip ->
                 require(zip.getEntry("classes.dex") != null) {
                     "Android artifact for $pluginId does not contain classes.dex"
@@ -157,7 +152,7 @@ private fun sha256(file: File): String {
 }
 
 private fun manifestSha256(pluginId: String, platform: String): String {
-    val manifest = layout.projectDirectory.file("manifests/$pluginId.json").asFile
+    val manifest = File(pluginProjectDir, "manifests/$pluginId.json")
     val value = Regex("\\\"$platform\\\"\\s*:\\s*\\{[^}]*\\\"sha256\\\"\\s*:\\s*\\\"([0-9a-fA-F]{64})\\\"")
         .find(manifest.readText())
         ?.groupValues
@@ -169,10 +164,19 @@ private fun manifestSha256(pluginId: String, platform: String): String {
 
 private fun writeDexJar(dexFile: File, outputFile: File) {
     outputFile.parentFile.mkdirs()
-    JarOutputStream(outputFile.outputStream().buffered()).use { output ->
-        output.putNextEntry(JarEntry("classes.dex").apply { time = 0L })
-        dexFile.inputStream().use { it.copyTo(output) }
-        output.closeEntry()
+    val temporary = File.createTempFile("source-plugin-dex-", ".jar", outputFile.parentFile)
+    try {
+        JarOutputStream(temporary.outputStream().buffered()).use { output ->
+            output.putNextEntry(JarEntry("classes.dex").apply { time = 0L })
+            dexFile.inputStream().use { it.copyTo(output) }
+            output.closeEntry()
+        }
+        Files.move(
+            temporary.toPath(), outputFile.toPath(),
+            StandardCopyOption.REPLACE_EXISTING,
+        )
+    } finally {
+        temporary.delete()
     }
 }
 
@@ -188,11 +192,6 @@ val freshnessDesktopTasks = pluginIds.associateWith { pluginId ->
     }
 }
 
-/**
- * Rebuilds both artifact formats in an isolated build directory and compares them with the
- * repository metadata and checked-in bytes. This is intentionally separate from the packaging
- * tasks, which are allowed to update repository artifacts for a release commit.
- */
 val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshness") {
     dependsOn(freshnessDesktopTasks.values)
     notCompatibleWithConfigurationCache(
@@ -200,22 +199,22 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
     )
 
     doLast {
-        val indexFile = layout.projectDirectory.file("index.json").asFile
+        val indexFile = File(pluginProjectDir, "index.json")
         val indexText = indexFile.readText()
-        check(Regex("\\\"pluginApiVersion\\\"\\s*:\\s*2").containsMatchIn(indexText)) {
-            "source/plugins/index.json must declare pluginApiVersion=2"
+        check(Regex("\\\"pluginApiVersion\\\"\\s*:\\s*3").containsMatchIn(indexText)) {
+            "source/plugins/index.json must declare pluginApiVersion=3"
         }
         pluginIds.forEach { pluginId ->
-            val manifestFile = layout.projectDirectory.file("manifests/$pluginId.json").asFile
+            val manifestFile = File(pluginProjectDir, "manifests/$pluginId.json")
             check(manifestFile.isFile) { "Missing manifest for $pluginId" }
             val manifestText = manifestFile.readText()
             check(Regex("\\\"id\\\"\\s*:\\s*\\\"$pluginId\\\"").containsMatchIn(manifestText)) {
                 "Manifest id mismatch for $pluginId"
             }
-            check(Regex("\\\"version\\\"\\s*:\\s*\\\"1\\.0\\.25\\\"").containsMatchIn(manifestText)) {
+            check(Regex("\\\"version\\\"\\s*:\\s*\\\"1\\.0\\.26\\\"").containsMatchIn(manifestText)) {
                 "Manifest version mismatch for $pluginId"
             }
-            check(Regex("\\\"pluginApiVersion\\\"\\s*:\\s*2").containsMatchIn(manifestText)) {
+            check(Regex("\\\"pluginApiVersion\\\"\\s*:\\s*3").containsMatchIn(manifestText)) {
                 "Manifest API version mismatch for $pluginId"
             }
             check(Regex("\\\"minHostVersion\\\"\\s*:\\s*\\\"0\\.1\\.3\\\"").containsMatchIn(manifestText)) {
@@ -223,7 +222,7 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
             }
 
             val freshDesktop = freshnessDesktopTasks.getValue(pluginId).get().archiveFile.get().asFile
-            val trackedDesktop = layout.projectDirectory.file("artifacts/source-$pluginId.jar").asFile
+            val trackedDesktop = File(pluginProjectDir, "artifacts/source-$pluginId.jar")
             check(sha256(freshDesktop) == manifestSha256(pluginId, "desktop")) {
                 "Fresh desktop artifact is stale relative to $manifestFile"
             }
@@ -253,8 +252,9 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
             val d8 = listOf(File(buildTools, "d8.bat"), File(buildTools, "d8"))
                 .firstOrNull(File::isFile)
                 ?: error("D8 was not found under ${buildTools.absolutePath}")
-            val dexDirectory = layout.buildDirectory.dir("freshness/dex/$pluginId").get().asFile
-            project.delete(dexDirectory)
+            val dexDirectory = File(pluginBuildDir, "freshness/dex/$pluginId")
+            check(dexDirectory.toPath().normalize().startsWith(pluginBuildDir.toPath().normalize()))
+            dexDirectory.deleteRecursively()
             dexDirectory.mkdirs()
             val d8Process = ProcessBuilder(
                 d8.absolutePath,
@@ -265,9 +265,9 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
             check(d8Process.waitFor() == 0) { "D8 failed for fresh $pluginId artifact" }
             val dexFile = File(dexDirectory, "classes.dex")
             check(dexFile.isFile) { "Fresh Android artifact for $pluginId has no classes.dex" }
-            val freshAndroid = layout.buildDirectory.file("freshness/android/source-$pluginId-android.jar").get().asFile
+            val freshAndroid = File(pluginBuildDir, "freshness/android/source-$pluginId-android.jar")
             writeDexJar(dexFile, freshAndroid)
-            val trackedAndroid = layout.projectDirectory.file("artifacts/source-$pluginId-android.jar").asFile
+            val trackedAndroid = File(pluginProjectDir, "artifacts/source-$pluginId-android.jar")
             check(sha256(freshAndroid) == manifestSha256(pluginId, "android")) {
                 "Fresh Android artifact is stale relative to $manifestFile"
             }

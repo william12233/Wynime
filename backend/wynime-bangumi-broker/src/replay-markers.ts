@@ -9,6 +9,7 @@ import type {
   SessionRecord,
 } from "./protocol";
 import { isPlaybackChangeNewer } from "./playback-policy";
+import type { CollectionRemoval } from "./collection-removal";
 
 interface StoredPlaybackRecord extends PlaybackServerChange {
   deviceId: string;
@@ -16,6 +17,8 @@ interface StoredPlaybackRecord extends PlaybackServerChange {
 }
 
 type RpcCommand =
+  | { op: "putCollectionRemoval"; userKey: string; record: CollectionRemoval }
+  | { op: "getCollectionRemoval"; userKey: string; subjectId: number; now: number }
   | {
       op: "oauthStart";
       stateHash: string;
@@ -92,6 +95,18 @@ export class ReplayMarker {
 
   private async execute(command: RpcCommand): Promise<unknown> {
     switch (command.op) {
+      case "putCollectionRemoval":
+        await this.state.storage.put("collection-removal:" + storageKeyPart(command.userKey) + ":" + command.record.subjectId, command.record);
+        return null;
+      case "getCollectionRemoval": {
+        const key = "collection-removal:" + storageKeyPart(command.userKey) + ":" + command.subjectId;
+        const record = await this.state.storage.get<CollectionRemoval>(key);
+        if (!record || record.expiresAt <= command.now) {
+          await this.state.storage.delete(key);
+          return null;
+        }
+        return record;
+      }
       case "oauthStart":
         await this.state.storage.put(stateKey(command.stateHash), command.record);
         return null;
@@ -216,8 +231,8 @@ export class ReplayMarker {
     for (const change of request.changes) {
       const recordKey = playbackRecordKey(user, change.subjectId, change.episodeId);
       const current = await this.state.storage.get<StoredPlaybackRecord>(recordKey);
-      // Revision identifies the version the client edited from; it must not let an older
-      // offline timestamp overwrite a newer server state when both happen to share a base.
+                                                                                         
+                                                                                           
       if (!current || isPlaybackChangeNewer(change, current, request.deviceId)) {
         cursor += 1;
         const next: StoredPlaybackRecord = {
@@ -259,8 +274,8 @@ export class ReplayMarker {
       const current = await this.state.storage.get<StoredPlaybackRecord>(
         playbackRecordKey(user, change.subjectId, change.episodeId),
       );
-      // Return the winning record for every submitted identity. This also reports a
-      // same-revision conflict rejected by the timestamp policy to the losing device.
+                                                                                    
+                                                                                      
       if (current) {
         const serverChange = toServerChange(current);
         serverChanges.set(changeIdentity(serverChange), serverChange);

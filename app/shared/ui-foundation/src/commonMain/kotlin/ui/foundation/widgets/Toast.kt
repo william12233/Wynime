@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -39,21 +30,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.tools.MonoTasker
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_load_error_network
-import me.him188.ani.app.ui.lang.foundation_load_error_no_results
-import me.him188.ani.app.ui.lang.foundation_load_error_rate_limited
-import me.him188.ani.app.ui.lang.foundation_load_error_request_error
-import me.him188.ani.app.ui.lang.foundation_load_error_requires_login
-import me.him188.ani.app.ui.lang.foundation_load_error_service_unavailable
-import me.him188.ani.app.ui.lang.foundation_load_error_unknown_feedback
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.tools.MonoTasker
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_load_error_network
+import com.wynime.app.ui.lang.foundation_load_error_no_results
+import com.wynime.app.ui.lang.foundation_load_error_rate_limited
+import com.wynime.app.ui.lang.foundation_load_error_request_error
+import com.wynime.app.ui.lang.foundation_load_error_requires_login
+import com.wynime.app.ui.lang.foundation_load_error_service_unavailable
+import com.wynime.app.ui.lang.foundation_load_error_unknown_feedback
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.getString
 import kotlin.math.max
 import kotlin.math.min
@@ -67,7 +58,6 @@ val LocalToaster: ProvidableCompositionLocal<Toaster> = staticCompositionLocalOf
 interface Toaster {
     fun toast(text: String)
 
-    // AI 喜欢补这个
     fun show(text: String) {
         toast(text)
     }
@@ -147,7 +137,7 @@ fun Toast(
 
     val currentContent by rememberUpdatedState(content)
 
-    AniAnimatedVisibility(
+    WynimeAnimatedVisibility(
         visible = showing(),
         enter = fadeIn(tween(350, easing = LinearEasing)),
         exit = fadeOut(tween(350, easing = LinearEasing)),

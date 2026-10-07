@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.selectorworkflow
+package com.wynime.utils.selectorworkflow
 
 import kotlin.math.abs
 import kotlin.test.Test
@@ -34,8 +25,6 @@ class SelectorWorkflowTimelineTest {
         base.copy(selection = base.selection.copy(demoBothPriorityPaths = demoBothPaths))
     }
 
-    // ------------------------------------------------------------------ 选源规则
-
     @Test
     fun `wait all picks the first candidate in grid order`() {
         val c = config(mode = SelectMode.WaitAll)
@@ -46,7 +35,7 @@ class SelectorWorkflowTimelineTest {
             step = c.pacing.cursorStep,
             stagger = c.pacing.cursorStep,
         )
-        // 源 B 的第一条 = 整体第四条候选
+
         assertEquals(ResultKey(1, 0), plan.winner)
         assertEquals(1, plan.cursors.size, "等待全部只有一个全局 cursor")
         assertNull(plan.cursors.single().owner)
@@ -108,8 +97,6 @@ class SelectorWorkflowTimelineTest {
         assertEquals(first, SelectionEngine.nextCandidateAfter(c, second), "到尾了要绕回开头")
     }
 
-    // ------------------------------------------------------------------ 时间线
-
     @Test
     fun `timeline is sampleable and deterministic`() {
         val timeline = config().buildTimeline()
@@ -154,8 +141,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `lines that have been drawn stay drawn until the pass resets`() {
-        // 回归: 收线/重画的关键帧如果直接写在远期时刻, 轨道会从"画满那一帧"一路插值下来,
-        // 于是整段演出里那条线都在慢慢缩回去 —— 取值始终在 0..1 之内, 范围检查发现不了.
+
         val timeline = config(outcomes = ALL_OUTCOMES).buildTimeline()
         var t = Duration.ZERO
         val step = timeline.duration / 600.0
@@ -198,8 +184,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `results that arrive after the selection keep their own pace`() {
-        // 回归: 选定时 mute 所有落选结果, 而 mute 走 ramp、ramp 会截断后面的关键帧,
-        // 于是"还没返回的源"的结果被连累着在选定那一刻一股脑冒出来.
+
         val c = config(mode = SelectMode.Eager)
         val timeline = c.buildTimeline()
         val ready = c.readyTimes()
@@ -207,18 +192,15 @@ class SelectorWorkflowTimelineTest {
             c, SelectMode.Eager, ready, c.pacing.cursorStep, c.pacing.cursorStep,
         ).winnerAt
 
-        // 选定之后才返回的源
         val lateSource = c.sources.indices.first { ready[it] > selectAt }
         val lateKeys = c.results.filter { it.source == lateSource }.toSet()
         assertTrue(lateKeys.isNotEmpty())
 
-        // 选定的那一刻 (以及之后的一小会儿) 它们必须还没出现
         val justAfter = timeline.sampleAt(selectAt + c.pacing.fade * 0.5)
         justAfter.results.filter { it.key in lateKeys }.forEach {
             assertTrue(it.alpha < 0.05f, "${it.key} 在选定后立刻就冒出来了: alpha=${it.alpha}")
         }
 
-        // 到了它自己该出现的时候才出现, 而且一出场就是落选的暗色
         val ownTime = ready[lateSource] + c.pacing.fade
         val atOwnTime = timeline.sampleAt(ownTime)
         atOwnTime.results.filter { it.key in lateKeys }.forEach {
@@ -245,11 +227,9 @@ class SelectorWorkflowTimelineTest {
         assertTrue(others.all { it.alpha < 0.99f }, "落选的结果应该暗下去")
     }
 
-    // ------------------------------------------------------------------ 高优先级标记
-
     @Test
     fun `priority marks are hidden until the gate is switched on`() {
-        val off = config()                                   // 没开高优先级等待
+        val off = config()
         val on = config(priorityWait = 5.seconds, demoBothPaths = true)
         val prio = assertNotNull(off.priorityIndex, "预设里本来就有一个高优先级源")
 
@@ -281,7 +261,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `candidate marks do not depend on the gate`() {
-        // 候选圆点是选源规则的一部分, 跟高优先级开关无关
+
         val off = config()
         val on = config(priorityWait = 5.seconds, demoBothPaths = true)
         assertEquals(
@@ -294,8 +274,6 @@ class SelectorWorkflowTimelineTest {
         )
     }
 
-    // ------------------------------------------------------------------ 计时器
-
     @Test
     fun `intercept clock stop position is derived from the sweep duration`() {
         val base = config()
@@ -304,14 +282,14 @@ class SelectorWorkflowTimelineTest {
             slow.interceptStopFraction() < base.interceptStopFraction(),
             "指针转一圈越久, 拦到时停得越靠前",
         )
-        // 一圈的时长翻倍, 指针刚好停在一半的位置
+
         assertTrue(abs(slow.interceptStopFraction() * 2 - base.interceptStopFraction()) < 1e-3f)
     }
 
     @Test
     fun `clockSweepForInterceptStop round trips`() {
         val base = config()
-        val target = 7.5f / 12f // 钟面 7 点半
+        val target = 7.5f / 12f
         val sized = base.copy(
             pacing = base.pacing.copy(clockSweep = base.clockSweepForInterceptStop(target)),
         )
@@ -320,8 +298,6 @@ class SelectorWorkflowTimelineTest {
             "算出来的一圈时长应该让指针恰好停在 7 点半, 实际 ${sized.interceptStopFraction()}",
         )
     }
-
-    // ------------------------------------------------------------------ 配置的秒数只影响读数
 
     @Test
     fun `configured seconds do not change the animation at all`() {
@@ -334,7 +310,6 @@ class SelectorWorkflowTimelineTest {
         val b = other.buildTimeline()
         assertEquals(a.duration, b.duration, "改设置项不该让动画变长变短")
 
-        // 逐帧比对: 除了读数, 每个单元的取值必须一模一样
         var t = Duration.ZERO
         val step = a.duration / 300.0
         while (t <= a.duration) {
@@ -354,14 +329,12 @@ class SelectorWorkflowTimelineTest {
             .let { it.copy(resolve = it.resolve.copy(budget = 12.seconds)) }
         val timeline = c.buildTimeline()
 
-        // 高优先级那条超时的路径: 指针走满一圈, 读数必须正好数到配置的秒数
         val expired = firstStateWhen(timeline) { it.clocks.getValue(ClockId.PriorityWait).tone == ClockTone.Expired }
         assertNotNull(expired)
         val prio = expired.clocks.getValue(ClockId.PriorityWait)
         assertEquals(20f, prio.budgetSeconds, 1e-3f)
         assertTrue(abs(prio.elapsedSeconds - 20f) < 0.2f, "超时时读数该数到 20.0, 实际 ${prio.elapsedSeconds}")
 
-        // 拦截成功那次: 读数 = 配置秒数 × 指针走过的比例
         val stopped = firstStateWhen(timeline) {
             it.clocks.getValue(ClockId.InterceptBudget).tone == ClockTone.Stopped
         }
@@ -420,7 +393,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `too short a sweep is rejected with an actionable message`() {
-        // 只在真有计时器时才管 —— 不演超时的话一圈多长根本无所谓
+
         val base = config(outcomes = ALL_OUTCOMES)
         val broken = base.copy(pacing = base.pacing.copy(clockSweep = 100.milliseconds))
         val error = runCatching { broken.buildTimeline() }.exceptionOrNull()
@@ -429,10 +402,8 @@ class SelectorWorkflowTimelineTest {
 
         val withoutClock = config().copy(pacing = base.pacing.copy(clockSweep = 100.milliseconds))
         assertTrue(!withoutClock.showInterceptClock)
-        withoutClock.buildTimeline()   // 没有表就不该拦着
+        withoutClock.buildTimeline()
     }
-
-    // ------------------------------------------------------------------ 高优先级门
 
     @Test
     fun `priority gate demo plays both paths and they select different candidates`() {
@@ -466,7 +437,7 @@ class SelectorWorkflowTimelineTest {
         while (t < gateEnd) {
             val s = timeline.sampleAt(t)
             val prioritySource = c.priorityIndex!!
-            // 等待期内: 只有高优先级源自己的 cursor 允许出现
+
             s.cursors.filter { it.alpha > 0.01f }.forEach {
                 assertEquals(prioritySource, it.owner, "等待期内非高优先级源不该有 cursor, t=$t")
             }
@@ -483,14 +454,12 @@ class SelectorWorkflowTimelineTest {
             s.clocks.getValue(ClockId.PriorityWait).tone == ClockTone.Stopped
         }
         assertNotNull(stopped)
-        // 路径一里高优先级源用了 wait * 0.7
+
         assertTrue(
             abs(stopped.clocks.getValue(ClockId.PriorityWait).sweep - 0.7f) < 0.03f,
             "指针该停在 70% 处, 实际 ${stopped.clocks.getValue(ClockId.PriorityWait).sweep}",
         )
     }
-
-    // ------------------------------------------------------------------ 第三步三种结局
 
     @Test
     fun `resolve demo plays hit then timeout then a fallback hit`() {
@@ -515,7 +484,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `the hit row gets the same treatment as a selected result`() {
-        // 第三步命中该和第二步选中一样: 变色 + 图标弹一下 + 扩一圈涟漪
+
         val c = config()
         val timeline = c.buildTimeline()
         val hitAt = firstTimeWhen(timeline) { it.requestRows.any { r -> r.tone == RequestTone.Hit } }
@@ -531,7 +500,6 @@ class SelectorWorkflowTimelineTest {
         }
         assertNotNull(rippled, "命中该扩一圈涟漪")
 
-        // 其它行不该跟着弹
         val atPop = timeline.sampleAt(popped)
         atPop.requestRows.filter { it.index != c.resolve.hitRow }.forEach {
             assertEquals(1f, it.iconScale, 1e-3f, "第 ${it.index} 行不该跟着弹")
@@ -601,7 +569,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `a hit only run still plays the whole third step`() {
-        // 没有表不代表第三步缩水: 请求照样进场、照样滚动、照样命中
+
         val timeline = config(outcomes = listOf(ResolveOutcome.Hit)).buildTimeline()
         assertNotNull(
             firstTimeWhen(timeline) { it.requestRows.any { r -> r.tone == RequestTone.Hit } },
@@ -616,8 +584,6 @@ class SelectorWorkflowTimelineTest {
             "只演成功时窗口不该变红",
         )
     }
-
-    // ------------------------------------------------------------------ 可配置性
 
     @Test
     fun `changing the number of sources changes the grid without touching the script`() {
@@ -644,14 +610,11 @@ class SelectorWorkflowTimelineTest {
         assertTrue(slow.buildTimeline().duration > fast.buildTimeline().duration)
     }
 
-    // ------------------------------------------------------------------ 第一步走缓存
-
     @Test
     fun `cache query lets every source return at the same instant`() {
         val plain = config(mode = SelectMode.Eager)
         val cached = plain.copy(cachedQuery = true)
 
-        // 三个源的耗时本来差着好几秒, 走缓存后一起就位
         assertEquals(1, cached.effectiveLatencies.toSet().size, "走缓存时每个源的耗时该是同一个值")
         assertTrue(plain.effectiveLatencies.toSet().size > 1)
 
@@ -714,7 +677,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `cache query does not pulse the searching halo`() {
-        // 走缓存压根没有"搜索中"这回事, 光环转起来只会让人以为它真的搜了
+
         val timeline = config().copy(cachedQuery = true).buildTimeline()
         var t = Duration.ZERO
         val step = timeline.duration / 600.0
@@ -726,11 +689,9 @@ class SelectorWorkflowTimelineTest {
         }
     }
 
-    // ------------------------------------------------------------------ 高亮框
-
     @Test
     fun `nothing is highlighted unless someone asks for it`() {
-        // 高亮框是"看这里"的手指, 不是"这个特性开着"的指示灯 —— 数据层不去猜
+
         val c = config(mode = SelectMode.Eager, outcomes = ALL_OUTCOMES).copy(cachedQuery = true)
         assertEquals(emptySet(), c.highlights)
         assertEquals(emptySet(), c.buildTimeline().sampleAt(Duration.ZERO).highlights)
@@ -766,7 +727,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `the highlight stays put for the whole run`() {
-        // 它说的是"改的是这一步", 不是演出的一部分, 所以整条时间线上都该在
+
         val timeline = config().copy(highlights = setOf(HighlightRegion.Resolve)).buildTimeline()
         var t = Duration.ZERO
         val step = timeline.duration / 200.0
@@ -794,11 +755,9 @@ class SelectorWorkflowTimelineTest {
         }
     }
 
-    // ------------------------------------------------------------------ 语义色的过渡
-
     @Test
     fun `a visible tone never snaps it always eases in`() {
-        // 语义色一变, 过渡进度就得是从头起步的; 要是变的那一帧 blend 已经满了, 颜色就"啪"地跳了一下
+
         val timeline = config(
             mode = SelectMode.Eager, priorityWait = 6.seconds,
             demoBothPaths = true, outcomes = ALL_OUTCOMES,
@@ -825,7 +784,7 @@ class SelectorWorkflowTimelineTest {
             now.clocks.forEach { (id, clock) ->
                 check("计时器 $id", clock.tone != previous.clocks.getValue(id).tone, clock.alpha > 0.01f, clock.toneBlend)
             }
-            // 窗口边框自始至终都看得见
+
             check("窗口", now.window.tone != previous.window.tone, true, now.window.toneBlend)
             previous = now
             t += step
@@ -834,7 +793,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `the hit row starts turning green the moment its ripple appears`() {
-        // 涟漪那圈绿环正好套在图标上, 转绿要是晚一步, 看起来就成了"图标先绿、横条后绿"
+
         val timeline = config(outcomes = ALL_OUTCOMES).buildTimeline()
         val hitRow = timeline.config.resolve.hitRow
 
@@ -852,7 +811,7 @@ class SelectorWorkflowTimelineTest {
 
     @Test
     fun `the icon and the bar of a row always read the same tone`() {
-        // 两者共用一路 tone —— 这条一破, 就会出现一半绿一半灰
+
         val timeline = config(outcomes = ALL_OUTCOMES).buildTimeline()
         val hit = firstStateWhen(timeline) { it.requestRows.any { row -> row.tone == RequestTone.Hit } }
         assertNotNull(hit)
@@ -878,7 +837,6 @@ class SelectorWorkflowTimelineTest {
         assertTrue(blends.any { it in 0.2f..0.8f }, "过渡必须经过中间值, 拿到的是 $blends")
     }
 
-    /** 剧本里 cursor 用的是折算过的动画时间, 测试也得按同一把尺子. */
     private fun SelectorWorkflowConfig.readyTimes(): List<Duration> =
         sources.map { pacing.scaled(it.latency) }
 

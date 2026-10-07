@@ -1,37 +1,25 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.oauth
+package com.wynime.app.ui.oauth
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
-import me.him188.ani.app.data.network.WynimeCloudClient
-import me.him188.ani.app.domain.session.SessionEvent
-import me.him188.ani.app.domain.session.SessionManager
-import me.him188.ani.app.domain.session.SessionState
-import me.him188.ani.app.domain.session.SessionStateProvider
-import me.him188.ani.app.domain.session.auth.OAuthConfigurator
-import me.him188.ani.app.domain.session.auth.OAuthPlatform
-import me.him188.ani.app.domain.session.auth.WynimeBangumiOAuthClient
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.utils.coroutines.SingleTaskExecutor
+import com.wynime.app.data.network.WynimeCloudClient
+import com.wynime.app.domain.session.SessionEvent
+import com.wynime.app.domain.session.SessionManager
+import com.wynime.app.domain.session.SessionState
+import com.wynime.app.domain.session.SessionStateProvider
+import com.wynime.app.domain.session.auth.OAuthConfigurator
+import com.wynime.app.domain.session.auth.OAuthPlatform
+import com.wynime.app.domain.session.auth.WynimeBangumiOAuthClient
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.utils.coroutines.SingleTaskExecutor
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-/**
- * 使用第三方账号 [platform] 登录 / 注册, 或为当前用户绑定该账号.
- */
 class OAuthAuthorizeViewModel(
     requestedPlatform: OAuthPlatform,
 ) : AbstractViewModel(), KoinComponent {
-    /** The only account provider supported by the application. */
+
     val platform: OAuthPlatform = OAuthPlatform.BANGUMI
 
     private val wynimeCloudClient: WynimeCloudClient by inject()
@@ -51,9 +39,9 @@ class OAuthAuthorizeViewModel(
             when (authState) {
                 is OAuthConfigurator.State.Idle -> {
                     if (sessionState is SessionState.Valid) {
-                        AuthState.LoggedInAni(sessionState.bangumiConnected)
+                        AuthState.LoggedInBangumi(sessionState.bangumiConnected)
                     } else {
-                        AuthState.NoAniAccount
+                        AuthState.NoBangumiAccount
                     }
                 }
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update.devbuild
+package com.wynime.app.ui.update.devbuild
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -24,10 +15,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import me.him188.ani.app.platform.Context
-import me.him188.ani.app.tools.update.InstallationResult
-import me.him188.ani.app.tools.update.UpdateInstaller
-import me.him188.ani.utils.io.SystemPath
+import com.wynime.app.platform.Context
+import com.wynime.app.tools.update.InstallationResult
+import com.wynime.app.tools.update.UpdateInstaller
+import com.wynime.utils.io.SystemPath
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -84,9 +75,6 @@ internal fun artifactsJson(name: String) = """
 }
 """
 
-/**
- * PR [number] 的 head 是 [headSha], 分支所在仓库为 [headRepo] (`null` 表示 fork 已删除).
- */
 internal fun pullRequestJson(
     number: Int,
     headSha: String,
@@ -108,17 +96,11 @@ private fun JsonArray.filterObjects(predicate: (JsonObject) -> Boolean): JsonArr
 
 private fun JsonObject.string(key: String): String? = this[key]?.jsonPrimitive?.content
 
-/**
- * 从 [COMMITS_JSON] 中按 sha 前缀取出一个 commit, 没有时返回 `null`.
- */
 internal fun commitJsonOrNull(shaPrefix: String): String? =
     fixtureJson.parseToJsonElement(COMMITS_JSON).jsonArray
         .firstOrNull { it.jsonObject.string("sha")?.startsWith(shaPrefix) == true }
         ?.toString()
 
-/**
- * [RUNS_JSON] 中 head 为 [sha] 的运行记录.
- */
 internal fun runsJsonForSha(sha: String): String {
     val runs = fixtureJson.parseToJsonElement(RUNS_JSON).jsonObject["workflow_runs"]!!.jsonArray
         .filterObjects { it.string("head_sha") == sha }
@@ -130,9 +112,6 @@ internal fun runJsonOrNull(id: Long): String? =
         .firstOrNull { it.jsonObject.string("id") == id.toString() }
         ?.toString()
 
-/**
- * [artifactsJson] 中属于运行 [runId] 的 artifacts.
- */
 internal fun artifactsJsonForRun(name: String, runId: Long): String {
     val artifacts = fixtureJson.parseToJsonElement(artifactsJson(name)).jsonObject["artifacts"]!!.jsonArray
         .filterObjects { it["workflow_run"]?.jsonObject?.string("id") == runId.toString() }
@@ -159,9 +138,6 @@ internal fun zipBytes(vararg entries: Pair<String, ByteArray>): ByteArray {
 internal fun MockRequestHandleScope.respondJson(json: String, status: HttpStatusCode = HttpStatusCode.OK): HttpResponseData =
     respond(json, status, headersOf(HttpHeaders.ContentType, "application/json"))
 
-/**
- * 模拟 GitHub API 的 [HttpClient], 配置与 [DevBuildsViewModel] 中一致.
- */
 internal fun gitHubMockClient(
     handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
 ): HttpClient = HttpClient(MockEngine { request -> handler(request) }) {
@@ -169,10 +145,6 @@ internal fun gitHubMockClient(
     expectSuccess = false
 }
 
-/**
- * 模拟完整的 GitHub 交互: 列表和单项查询接口返回 [COMMITS_JSON], [RUNS_JSON] 和 [artifactsJson] 中的固定数据,
- * PR 42 的 head 是 [SHA_A]; artifact 10 的下载重定向到 [downloadUrl], 该地址返回 [archive].
- */
 internal fun fullGitHubMockClient(
     artifactName: String,
     archive: ByteArray,

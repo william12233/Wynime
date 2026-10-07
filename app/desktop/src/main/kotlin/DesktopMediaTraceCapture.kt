@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.desktop
+package com.wynime.app.desktop
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,33 +6,32 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.domain.episode.CreateMediaFetchSelectBundleFlowUseCase
-import me.him188.ani.app.domain.media.selector.trace.MediaSelectionTraceRecorder
-import me.him188.ani.app.navigation.AniNavigator
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.domain.episode.CreateMediaFetchSelectBundleFlowUseCase
+import com.wynime.app.domain.media.selector.trace.MediaSelectionTraceRecorder
+import com.wynime.app.navigation.WynimeNavigator
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import org.koin.core.Koin
 import org.koin.dsl.module
 import java.io.File
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-/** Developer-only capture is opt-in via environment variables; normal launches install nothing. */
 internal class DesktopMediaTraceCapture private constructor(
     private val scope: CoroutineScope,
     private val duration: Duration,
     private val episodes: List<Pair<Int, Int>>,
     private val subjects: SubjectCollectionRepository,
 ) {
-    fun start(navigator: AniNavigator) {
+    fun start(navigator: WynimeNavigator) {
         if (episodes.isEmpty()) return
         scope.launch(Dispatchers.Main) {
             navigator.awaitBackStack()
             delay(2.seconds)
             for ((subjectId, episodeId) in episodes) {
-                // Match entering playback from a loaded subject page, including its episode list.
+
                 val metadata = withTimeoutOrNull(30.seconds) {
                     subjects.subjectCollectionFlow(subjectId).first { subject ->
                         subject.episodes.any { it.episodeId == episodeId }

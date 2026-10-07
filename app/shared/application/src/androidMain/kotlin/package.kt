@@ -1,2 +1,2 @@
-package me.him188.ani.app
+package com.wynime.app
 

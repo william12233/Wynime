@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -47,9 +38,6 @@ class KtorNetworkHlsProxyServerTest {
         }
     }
 
-    /**
-     * iOS 会在应用挂起期间回收监听 socket. 播放器持有的地址带着端口号, 所以必须在原端口上恢复.
-     */
     @Test
     fun `recovers on the same port after the listener breaks`() = runBlocking {
         val server = startEchoServer()
@@ -73,7 +61,7 @@ class KtorNetworkHlsProxyServerTest {
         val url = "http://127.0.0.1:${server.port}/playlist.m3u8"
         awaitServing(url)
         server.close()
-        delay(1_500) // 超过重绑定的重试间隔
+        delay(1_500)
         assertFailsWith<Exception> { httpGet(url) }
         Unit
     }

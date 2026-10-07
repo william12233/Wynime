@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.fetch
+package com.wynime.app.domain.media.fetch
 
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -23,68 +14,54 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.json.JsonElement
-import me.him188.ani.app.data.models.preference.ProxyAuthorization
-import me.him188.ani.app.data.models.preference.ProxyConfig
-import me.him188.ani.app.data.repository.media.MediaSourceInstanceRepository
-import me.him188.ani.app.data.repository.media.updateConfig
-import me.him188.ani.app.domain.foundation.HttpClientProvider
-import me.him188.ani.app.domain.foundation.ScopedHttpClientUserAgent
-import me.him188.ani.app.domain.foundation.get
-import me.him188.ani.app.domain.media.download.MediaDownloadManager.Companion.LOCAL_FS_MEDIA_SOURCE_ID
-import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceInstance
-import me.him188.ani.app.domain.mediasource.instance.MediaSourceSave
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceCookieJar
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
-import me.him188.ani.app.domain.settings.ProxyProvider
-import me.him188.ani.app.platform.getAniUserAgent
-import me.him188.ani.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
-import me.him188.ani.datasources.api.source.FactoryId
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceConfig
-import me.him188.ani.datasources.api.source.MediaSourceFactory
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.serializeArguments
-import me.him188.ani.datasources.ikaros.IkarosMediaSource
-import me.him188.ani.datasources.jellyfin.EmbyMediaSource
-import me.him188.ani.datasources.jellyfin.JellyfinMediaSource
-import me.him188.ani.utils.coroutines.onReplacement
-import me.him188.ani.utils.ktor.ClientProxyConfig
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.data.models.preference.ProxyAuthorization
+import com.wynime.app.data.models.preference.ProxyConfig
+import com.wynime.app.data.repository.media.MediaSourceInstanceRepository
+import com.wynime.app.data.repository.media.updateConfig
+import com.wynime.app.domain.foundation.HttpClientProvider
+import com.wynime.app.domain.foundation.ScopedHttpClientUserAgent
+import com.wynime.app.domain.foundation.get
+import com.wynime.app.domain.media.download.MediaDownloadManager.Companion.LOCAL_FS_MEDIA_SOURCE_ID
+import com.wynime.app.domain.media.selector.MediaSelectorSourceTiers
+import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
+import com.wynime.app.domain.mediasource.instance.MediaSourceSave
+import com.wynime.app.domain.mediasource.web.captcha.WebSourceCookieJar
+import com.wynime.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
+import com.wynime.app.domain.settings.ProxyProvider
+import com.wynime.app.platform.getWynimeUserAgent
+import com.wynime.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
+import com.wynime.datasources.api.source.FactoryId
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceConfig
+import com.wynime.datasources.api.source.MediaSourceFactory
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.serializeArguments
+import com.wynime.datasources.ikaros.IkarosMediaSource
+import com.wynime.datasources.jellyfin.EmbyMediaSource
+import com.wynime.datasources.jellyfin.JellyfinMediaSource
+import com.wynime.utils.coroutines.onReplacement
+import com.wynime.utils.ktor.ClientProxyConfig
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.coroutines.CoroutineContext
 
-interface MediaSourceManager { // available by inject
-    /**
-     * 全部 [MediaSourceInstance] 列表.
-     */
+interface MediaSourceManager {
+
     val allInstances: Flow<List<MediaSourceInstance>>
 
-    /**
-     * 全部的 [MediaSource], 包括那些设置里关闭的, 包括本地的.
-     */
     val allFactories: List<MediaSourceFactory>
 
-    /**
-     * 全部的 [MediaSource], 包括那些设置里关闭的, 包括本地的.
-     */
     val allFactoryIds: List<FactoryId>
 
-    /**
-     * 全部的 [MediaSource], 包括那些设置里关闭的, 但不包括本地的.
-     */
     val allFactoryIdsExceptLocal: List<FactoryId>
         get() = allFactoryIds.filter { !isLocal(it) }
 
-    /**
-     * 根据启用的 [MediaSourceInstance] 创建的 [MediaSourceMediaFetcher].
-     */
     val mediaFetcher: Flow<MediaFetcher>
 
     val webVideoMatcherLoader: MediaSourceWebVideoMatcherLoader
@@ -94,7 +71,6 @@ interface MediaSourceManager { // available by inject
         return mediaSourceId == LOCAL_FS_MEDIA_SOURCE_ID
     }
 
-    // null means not found
     fun instanceConfigFlow(instanceId: String): Flow<MediaSourceConfig?>
 
     fun findInfoByFactoryId(factoryId: FactoryId): MediaSourceInfo? {
@@ -102,7 +78,7 @@ interface MediaSourceManager { // available by inject
     }
 
     fun infoFlowByMediaSourceId(mediaSourceId: String): Flow<MediaSourceInfo?> {
-        if (mediaSourceId == "Bangumi") { // workaround for bangumi connectivity testing
+        if (mediaSourceId == "Bangumi") {
             return flowOf(
                 MediaSourceInfo(
                     "Bangumi",
@@ -127,28 +103,16 @@ interface MediaSourceManager { // available by inject
 
     suspend fun getListBySubscriptionId(subscriptionId: String): List<MediaSourceSave>
 
-    /**
-     * @see MediaSourceInstanceRepository.partiallyReorder
-     */
     suspend fun partiallyReorderInstances(instanceIds: List<String>)
 
-    /**
-     * deprecated.
-     */
     suspend fun updateConfig(instanceId: String, config: MediaSourceConfig): Boolean
     suspend fun setEnabled(instanceId: String, enabled: Boolean)
     suspend fun removeInstance(instanceId: String)
 
-    /**
-     * 批量启用或禁用数据源. 实现应当只触发一次 [allInstances] 更新.
-     */
     suspend fun setEnabled(instanceIds: Collection<String>, enabled: Boolean) {
         instanceIds.forEach { setEnabled(it, enabled) }
     }
 
-    /**
-     * 批量移除数据源. 实现应当只触发一次 [allInstances] 更新.
-     */
     suspend fun removeInstances(instanceIds: Collection<String>) {
         instanceIds.forEach { removeInstance(it) }
     }
@@ -186,26 +150,12 @@ suspend fun <T> MediaSourceManager.updateMediaSourceArguments(
     arguments: T
 ) = updateMediaSourceArguments(instanceId, MediaSourceConfig.serializeArguments(serializer, arguments))
 
-/**
- * 根据请求创建 [MediaFetchSession].
- *
- * The session is frozen to the current [MediaFetcher] snapshot. Source-list changes should not
- * rebuild the same playback query; callers need to explicitly create a new session when that is desired.
- *
- * @param requestLazy 相当于 [lazy]. 只有第一个元素会被使用. 必须至少 emit 一个元素.
- *
- * @see MediaFetchRequest.Companion.create
- */
 suspend fun MediaSourceManager.createFetchFetchSession(requestLazy: Flow<MediaFetchRequest>): MediaFetchSession =
     mediaFetcher.first().newSession(requestLazy)
 
 class MediaSourceManagerImpl(
-    /**
-     * 必须是 Factory:MediaSource:Instance = 1:1:1 的关系.
-     *
-     * @see LOCAL_FS_MEDIA_SOURCE_ID
-     */
-    additionalSources: () -> List<MediaSource>, // local sources, calculated only once
+
+    additionalSources: () -> List<MediaSource>,
     private val pluginSources: Flow<List<MediaSource>> = flowOf(emptyList()),
     private val flowCoroutineContext: CoroutineContext = Dispatchers.Default,
 ) : MediaSourceManager, KoinComponent {
@@ -217,7 +167,7 @@ class MediaSourceManagerImpl(
 
     private val scope = CoroutineScope(
         CoroutineExceptionHandler { _, throwable ->
-            // log error
+
             logger.error(throwable) { "DownloadProviderManager scope error" }
         },
     )
@@ -240,7 +190,7 @@ class MediaSourceManagerImpl(
     }
     override val allInstances =
         combine(instances.flow, proxyProvider.proxy.distinctUntilChanged(), pluginSources) { saves, config, plugins ->
-            // 一定要 additionalSources 在前面, local sources 需要优先使用
+
             this.additionalSources + plugins.map { plugin ->
                 MediaSourceInstance(
                     instanceId = plugin.mediaSourceId,
@@ -270,7 +220,7 @@ class MediaSourceManagerImpl(
                     config,
                     save.mediaSourceId,
                     save.config,
-                    // web 源共享 cookie jar 与 per-host UA 对齐, 保证 HTTP 侧身份与浏览器一致
+
                     clientProvider.get(
                         ScopedHttpClientUserAgent.BROWSER,
                         cookieJar = webSourceCookieJar,
@@ -364,7 +314,7 @@ class MediaSourceManagerImpl(
         @Suppress("DEPRECATION")
         val mediaSourceConfig = config.copy(
             proxy = config.proxy ?: proxyConfig?.toClientProxyConfig(),
-            userAgent = getAniUserAgent(),
+            userAgent = getWynimeUserAgent(),
         )
         return create(mediaSourceId, mediaSourceConfig, client)
     }

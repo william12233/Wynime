@@ -10,8 +10,8 @@
     void traceEventEnd();
 }
 
-# Kotlinx Coroutines Rules
-# https://github.com/Kotlin/kotlinx.coroutines/blob/master/kotlinx-coroutines-core/jvm/resources/META-INF/proguard/coroutines.pro
+                          
+                                                                                                                                 
 
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
 -keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
@@ -28,10 +28,10 @@
 -dontwarn java.lang.ClassValue
 -dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 
-# https://github.com/Kotlin/kotlinx.coroutines/issues/2046
+                                                          
 -dontwarn android.annotation.SuppressLint
 
-# https://github.com/JetBrains/compose-jb/issues/2393
+                                                     
 -dontnote kotlin.coroutines.jvm.internal.**
 -dontnote kotlin.internal.**
 -dontnote kotlin.jvm.internal.**
@@ -43,7 +43,7 @@
 -keep class kotlinx.coroutines.channels.Channel
 -keep class kotlinx.coroutines.CoroutineDispatcher
 -keep class kotlinx.coroutines.CoroutineScope
-# this is a weird one, but breaks build on some combinations of OS and JDK (reproduced on Windows 10 + Corretto 16)
+                                                                                                                   
 -dontwarn org.graalvm.compiler.core.aarch64.AArch64NodeMatchRules_MatchStatementSet*
 
 -dontnote com.sun.javafx.**
@@ -52,42 +52,42 @@
 -keep class org.slf4j.** { *; }
 -keep class org.slf4j2.** { *; }
 -keep class * implements com.github.panpf.sketch.util.ComponentProvider { *; }
--keep class org.apache.logging.log4j.** { *; } # class org.apache.logging.log4j.spi.StandardLevel not an enum
+-keep class org.apache.logging.log4j.** { *; }                                                               
 
 -keep class kotlinx.coroutines.** { *; }
 -keep class sun.misc.Unsafe { *; }
 -keep class androidx.datastore.** { *; }
 
--keep class com.sun.jna.** { *; } # native binding
--keep class ** implements com.sun.jna.Callback { *; } # JNA callbacks are invoked via native reflection; ProGuard optimization must not remove or inline them
+-keep class com.sun.jna.** { *; }                 
+-keep class ** implements com.sun.jna.Callback { *; }                                                                                                        
 
--keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; } # JNI binds native methods by name; shrink/optimize must not remove or alter them
--keep class org.openani.mediamp.mpv.** { *; } # libmediampv calls back into Java via FindClass/GetMethodID by name
-# libmediampv (mediamp-mpv/src/cpp/method_cache.cpp) also resolves this interface from
-# the mediamp-api `io` package via FindClass and invokes read([BII)I / seekTo(J)V /
-# close()V through GetMethodID — outside the mpv.** rule above. Keeping the interface
-# members also pins the override names in implementing classes.
+-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }                                                                                  
+-keep class org.openani.mediamp.mpv.** { *; }                                                                     
+                                                                                      
+                                                                                   
+                                                                                     
+                                                               
 -keep class org.openani.mediamp.io.SeekableInput { *; }
 
--keep class ** extends me.him188.ani.datasources.api.subject.SubjectProvider { *; }
--keep class ** extends me.him188.ani.datasources.api.source.MediaSource { *; }
--keep class ** extends me.him188.ani.datasources.api.source.MediaSourceFactory { *; }
+-keep class ** extends com.wynime.datasources.api.subject.SubjectProvider { *; }
+-keep class ** extends com.wynime.datasources.api.source.MediaSource { *; }
+-keep class ** extends com.wynime.datasources.api.source.MediaSourceFactory { *; }
 -keep class ** extends io.ktor.client.HttpClientEngineContainer { *; }
 
-# Service loaders
+                 
 
--keep class me.him188.ani.datasources.** { *; } # has service config
+-keep class com.wynime.datasources.** { *; }                     
 -keep class org.apache.logging.slf4j.SLF4JServiceProvider { *; }
 -keep class ** extends org.slf4j.spi.SLF4JServiceProvider { *; }
--keep class org.freedesktop.dbus.** { *; } # dbus-java uses ServiceLoader and extensive reflection
+-keep class org.freedesktop.dbus.** { *; }                                                        
 
-# Ktor related
+              
 
 -keep class io.ktor.** { *; } 
 -keep class kotlin.reflect.jvm.internal.** { *; } 
 
 
-# Access to compileOnly dependencies
+                                    
 -dontwarn aQute.bnd.**
 -dontwarn okhttp3.internal.**
 -dontwarn org.apache.logging.log4j.**	
@@ -97,46 +97,46 @@
 -dontwarn com.sun.jna.internal.**
 -dontwarn **
 
--dontnote ** # the configuration keeps the entry point...
+-dontnote **                                             
 
--keep class me.him188.ani.app.data.persistent.database.AniDatabase_Impl # ClassNotFoundError
--keep class androidx.compose.runtime.SnapshotStateKt__DerivedStateKt { *; } # VerifyError
--keep class okio.Okio__JvmOkioKt { *; } # VerifyError
--keep class okio.Okio__OkioKt { *; } # VerifyError
--keep class okio.** # VerifyError
--keep class kotlinx.serialization.json.** { *; } # SerializationException: Serializer for class 'JsonLiteral' is not found.
+-keep class com.wynime.app.data.persistent.database.WynimeDatabase_Impl
+-keep class androidx.compose.runtime.SnapshotStateKt__DerivedStateKt { *; }              
+-keep class okio.Okio__JvmOkioKt { *; }              
+-keep class okio.Okio__OkioKt { *; }              
+-keep class okio.**              
+-keep class kotlinx.serialization.json.** { *; }                                                                           
 
 -keep class kotlin.Metadata { *; }
 -keepattributes Kotlin
 -keepattributes Annotation
 -keepattributes RuntimeVisibleAnnotations
 
--keep @kotlinx.serialization.Serializable class * {*;} # Somehow kotlinx-serialization 官方的规则仍然会导致 Serializer not found, 所以干脆直接都 keep
+-keep @kotlinx.serialization.Serializable class * {*;}                                                                              
 
 -keep class ** implements org.openani.mediamp.MediampPlayerFactory { *; }
-# ServiceLoader looks up META-INF/services/<interface binary name>; the interfaces must
-# keep their original names (mediamp-mpv registers MpvMediampPlayerSurfaceProvider and
-# MpvMediampPlayerFactory through these).
+                                                                                       
+                                                                                      
+                                         
 -keep interface org.openani.mediamp.MediampPlayerFactory
 -keep interface org.openani.mediamp.compose.MediampPlayerSurfaceProvider
 -keep class ** implements org.openani.mediamp.compose.MediampPlayerSurfaceProvider { *; }
 
--keep class ** extends com.sun.jna.Structure { *; } # JNA C struct
--keep class ** extends com.sun.jna.Library { *; } # JNA
+-keep class ** extends com.sun.jna.Structure { *; }               
+-keep class ** extends com.sun.jna.Library { *; }      
 
--keep enum com.sun.jna.** { *; } # ProGuard bug https://github.com/Guardsquare/proguard/issues/450
--keep class com.jthemedetecor.** { *; } #1404 OsThemeDetector
--keep class oshi.** { *; } #1404 OsThemeDetector
+-keep enum com.sun.jna.** { *; }                                                                  
+-keep class com.jthemedetecor.** { *; }                      
+-keep class oshi.** { *; }                      
 
-# ComposeSceneTouchBridge ProGuard rules
+                                        
 -keep class androidx.compose.ui.awt.ComposeWindow { *; }
 -keep class androidx.compose.ui.awt.ComposePanel { *; }
 -keep class androidx.compose.ui.scene.ComposeContainer { *; }
 -keep class androidx.compose.ui.scene.ComposeSceneMediator { *; }
 -keep interface androidx.compose.ui.scene.ComposeScene { *; }
 
-# LayoutHitTestOwner ProGuard rules
-# 保持被反射调用的类
+                                   
+           
 -keep class androidx.compose.foundation.HoverableNode { *; }
 -keep class androidx.compose.foundation.gestures.ScrollableNode { *; }
 
@@ -144,28 +144,28 @@
 -keep class androidx.compose.ui.scene.CanvasLayersComposeSceneImpl { *; }
 -keep class androidx.compose.ui.scene.CanvasLayersComposeSceneImpl$AttachedComposeSceneLayer { *; }
 
-# 保持被反射访问的字段和方法
+               
 -keepclassmembers class androidx.compose.ui.scene.PlatformLayersComposeSceneImpl {
-    private *** getMainOwner();  # 反射调用的方法
+    private *** getMainOwner();           
 }
 
 -keepclassmembers class androidx.compose.ui.scene.CanvasLayersComposeSceneImpl {
-    private *** mainOwner;       # 反射访问的字段
+    private *** mainOwner;                
     private *** _layersCopyCache;
     private *** focusedLayer;
 }
 
 -keepclassmembers class androidx.compose.ui.scene.CanvasLayersComposeSceneImpl$AttachedComposeSceneLayer {
-    private *** owner;           # 反射访问的字段
-    private *** isInBounds(...); # 反射调用的方法
+    private *** owner;                    
+    private *** isInBounds(...);          
 }
 
-# ByteBuddy, for disabling Paging logging
+                                         
 -keep class net.bytebuddy.agent.VirtualMachine$ForHotSpot { *; }
 -keep class net.bytebuddy.** { *; }
 
 -verbose
 
-# CMP 1.10.0-alpha01
-# Caused by: java.lang.NoSuchMethodError: Method androidx.sqlite.driver.bundled.BundledSQLiteDriverKt.nativeThreadSafeMode()I not found
+                    
+                                                                                                                                       
 -keep class androidx.sqlite.driver.bundled.** { *; }

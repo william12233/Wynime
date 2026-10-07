@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.player.extension
+package com.wynime.app.domain.player.extension
 
 import androidx.annotation.VisibleForTesting
 import kotlin.time.Duration.Companion.seconds
@@ -23,29 +14,24 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
-import me.him188.ani.app.domain.episode.EpisodeSession
-import me.him188.ani.app.domain.episode.MediaFetchSelectBundle
-import me.him188.ani.app.domain.media.DroppedFileMedia
-import me.him188.ani.app.domain.media.fetch.MediaFetchSession
-import me.him188.ani.app.domain.media.selector.MediaAutoSelector
-import me.him188.ani.app.domain.media.selector.MediaSelector
-import me.him188.ani.app.domain.media.selector.MediaSelectorSourceTiers
-import me.him188.ani.app.domain.mediasource.GetMediaSelectorSourceTiersUseCase
-import me.him188.ani.app.domain.player.VideoLoadingState
-import me.him188.ani.app.domain.settings.GetMediaSelectorSettingsFlowUseCase
-import me.him188.ani.app.domain.settings.GetVideoScaffoldConfigUseCase
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.domain.episode.EpisodeSession
+import com.wynime.app.domain.episode.MediaFetchSelectBundle
+import com.wynime.app.domain.media.DroppedFileMedia
+import com.wynime.app.domain.media.fetch.MediaFetchSession
+import com.wynime.app.domain.media.selector.MediaAutoSelector
+import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.app.domain.media.selector.MediaSelectorSourceTiers
+import com.wynime.app.domain.mediasource.GetMediaSelectorSourceTiersUseCase
+import com.wynime.app.domain.player.VideoLoadingState
+import com.wynime.app.domain.settings.GetMediaSelectorSettingsFlowUseCase
+import com.wynime.app.domain.settings.GetVideoScaffoldConfigUseCase
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import org.koin.core.Koin
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.PlayerState
 
-/**
- * 当播放失败时, 自动切换到下一个可选择的 media.
- *
- * 用户拖入的本地文件 ([DroppedFileMedia]) 播放失败时不切换, 保留报错.
- */
 class SwitchMediaOnPlayerErrorExtension(
     private val context: PlayerExtensionContext,
     koin: Koin
@@ -53,7 +39,6 @@ class SwitchMediaOnPlayerErrorExtension(
     private val getVideoScaffoldConfigUseCase: GetVideoScaffoldConfigUseCase by koin.inject()
     private val getMediaSelectorSettingsFlowUseCase: GetMediaSelectorSettingsFlowUseCase by koin.inject()
     private val getSourceTiersUseCase: GetMediaSelectorSourceTiersUseCase by koin.inject()
-
 
     override fun onStart(
         episodeSession: EpisodeSession,
@@ -70,12 +55,6 @@ class SwitchMediaOnPlayerErrorExtension(
         }
     }
 
-    /**
-     * 启动播放失败处理逻辑。
-     *
-     * 此函数监听当前播放会话流、视频加载状态和播放器状态，并在发生错误时触发自动切换。
-     * 同时也监听媒体选择事件，当用户手动切换媒体时，将先前选中的媒体加入黑名单，避免自动选择时回退。
-     */
     private suspend fun invoke(
         mediaFetchSessionFlow: Flow<MediaFetchSelectBundle?>,
         videoLoadingStateFlow: Flow<VideoLoadingState>,
@@ -86,12 +65,10 @@ class SwitchMediaOnPlayerErrorExtension(
             getSourceTiers = { getSourceTiersUseCase().first() },
         )
 
-        // 播放失败时自动切换下一个 media.
-        // 播放失败时尝试切换到下一个 WEB 数据源.
         getVideoScaffoldConfigUseCase().map { it.autoSwitchMediaOnPlayerError }
             .collectLatest { autoSwitchMediaOnPlayerError ->
                 if (!autoSwitchMediaOnPlayerError) {
-                    // 设置关闭, 不要自动切换
+
                     return@collectLatest
                 }
 
@@ -122,15 +99,15 @@ class SwitchMediaOnPlayerErrorExtension(
             if (bundle == null) return@collectLatest
 
             combine(
-                videoLoadingStateFlow, // 解析链接出错 (未匹配到链接)
-                playerStateFlow, // 解析成功, 但播放器出错 (无法链接到链接, 例如链接错误)
+                videoLoadingStateFlow,
+                playerStateFlow,
             ) { videoLoadingState, playerState ->
                 videoLoadingState is VideoLoadingState.Failed || playerState.mediaStatus is MediaStatus.Error
             }.distinctUntilChanged()
                 .collectLatest { isError ->
                     if (isError) {
                         handleError(bundle.mediaFetchSession, bundle.mediaSelector)
-                    } // else: cancel selection
+                    }
                 }
         }
     }
@@ -166,23 +143,20 @@ internal class PlayerLoadErrorHandler(
     ) {
         val failedMedia = mediaSelector.selected.value
         if (failedMedia != null && DroppedFileMedia.isDroppedFile(failedMedia)) {
-            // 用户拖入的本地文件: 用户明确要播放这个文件, 保留报错, 不替换为其他资源
+
             logger.info { "Player errored on a dropped file, skip automatic switch" }
             return
         }
 
-        // 播放出错了
         logger.info { "Player errored, automatically switching to next media" }
 
-        // 将当前播放的 mediaId 加入黑名单
         failedMedia?.let {
-            blacklistedMediaIds = blacklistedMediaIds.add(it.mediaId) // thread-safe
+            blacklistedMediaIds = blacklistedMediaIds.add(it.mediaId)
         }
 
-        delay(1.seconds) // 稍等让用户看到播放出错
+        delay(1.seconds)
         if (mediaSelector.selected.value != failedMedia) return
 
-        // Load data in parallel
         val (preferKind, sourceTiers) = combine(
             getPreferKind.asFlow(),
             getSourceTiers.asFlow(),
@@ -200,7 +174,7 @@ internal class PlayerLoadErrorHandler(
                 blacklist = blacklistedMediaIds,
                 web = MediaAutoSelector.Web(
                     sourceTiers = sourceTiers,
-                    // 错误切换不需要等太长时间。
+
                     exactMatchAfter = 1.seconds,
                     fuzzyMatchAfter = 1.seconds,
                     waitForPendingSources = false,

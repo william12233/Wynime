@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.relations
+package com.wynime.app.ui.subject.relations
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,27 +39,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphBranch
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphMainNode
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphPlatform
-import me.him188.ani.app.data.models.subject.SubjectRelationGraphSubject
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.ui.foundation.AsyncImage
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_collection_doing
-import me.him188.ani.app.ui.lang.subject_collection_done
-import me.him188.ani.app.ui.lang.subject_collection_dropped
-import me.him188.ani.app.ui.lang.subject_collection_on_hold
-import me.him188.ani.app.ui.lang.subject_collection_wish
-import me.him188.ani.app.ui.lang.subject_relation_graph_episodes
-import me.him188.ani.app.ui.lang.subject_relation_graph_label_current
-import me.him188.ani.app.ui.lang.subject_relation_graph_ordinal
-import me.him188.ani.app.ui.lang.subject_relation_graph_platform_movie
-import me.him188.ani.app.ui.lang.subject_relation_graph_platform_special
-import me.him188.ani.app.ui.lang.subject_relation_graph_show_less
-import me.him188.ani.app.ui.lang.subject_relation_graph_show_more
-import me.him188.ani.app.ui.subject.details.components.renderSubjectRelation
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.data.models.subject.SubjectRelationGraphBranch
+import com.wynime.app.data.models.subject.SubjectRelationGraphMainNode
+import com.wynime.app.data.models.subject.SubjectRelationGraphPlatform
+import com.wynime.app.data.models.subject.SubjectRelationGraphSubject
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.ui.foundation.AsyncImage
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_collection_doing
+import com.wynime.app.ui.lang.subject_collection_done
+import com.wynime.app.ui.lang.subject_collection_dropped
+import com.wynime.app.ui.lang.subject_collection_on_hold
+import com.wynime.app.ui.lang.subject_collection_wish
+import com.wynime.app.ui.lang.subject_relation_graph_episodes
+import com.wynime.app.ui.lang.subject_relation_graph_label_current
+import com.wynime.app.ui.lang.subject_relation_graph_ordinal
+import com.wynime.app.ui.lang.subject_relation_graph_platform_movie
+import com.wynime.app.ui.lang.subject_relation_graph_platform_special
+import com.wynime.app.ui.lang.subject_relation_graph_show_less
+import com.wynime.app.ui.lang.subject_relation_graph_show_more
+import com.wynime.app.ui.subject.details.components.renderSubjectRelation
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import org.jetbrains.compose.resources.stringResource
 
 @Immutable
@@ -88,26 +79,20 @@ internal object SubjectRelationGraphDefaults {
         surface = MaterialTheme.colorScheme.surface,
     )
 
-    /** 宽屏海报尺寸 */
     val PosterWidth = 176.dp
     val PosterHeight = 248.dp
 
-    /** 手机上主线条目的海报尺寸 */
     val CompactPosterWidth = 96.dp
     val CompactPosterHeight = 136.dp
     val CompactCardPadding = 8.dp
 
-    /** 相关条目的小封面尺寸 */
     val BranchCoverWidth = 40.dp
     val BranchCoverHeight = 56.dp
 
-    /** 支线的位置, 相对相关条目列表的左边缘. 列表左边缘与主线海报对齐, 因此支线从海报下方垂下 */
     val BranchRailX = 12.dp
 
-    /** 有支线时相关条目的缩进: 支线和折线之后才是封面 */
     val BranchIndent = 32.dp
 
-    /** 相关条目超过这个数量时, 其余的折叠 */
     const val COLLAPSED_BRANCH_COUNT_COMPACT = 3
     const val COLLAPSED_BRANCH_COUNT_WIDE = 4
 }
@@ -116,12 +101,6 @@ internal enum class TimelineDot { CURRENT, REACHED, UPCOMING }
 
 internal enum class TimelineLine { NONE, REACHED, UPCOMING }
 
-/**
- * 在左侧画纵向时间线: 一条贯穿整个高度的线, 位于 [dotCenterY] 的节点圆点, 以及从圆点向右连到条目的横线.
- * 横线让条目挂在时间线上, 与条目下方挂着相关条目的支线构成同一棵树.
- *
- * @param tickEndX 横线的右端, 即条目的左边缘
- */
 internal fun Modifier.timelineVertical(
     colors: TimelineColors,
     dotCenterY: Dp,
@@ -139,9 +118,6 @@ internal fun Modifier.timelineVertical(
     drawTimelineDot(colors, dot, center)
 }
 
-/**
- * 画横向时间线: 一条贯穿整个宽度的线, 以及位于 [dotCenterX] 的节点圆点.
- */
 internal fun Modifier.timelineHorizontal(
     colors: TimelineColors,
     dotCenterX: Dp,
@@ -155,14 +131,6 @@ internal fun Modifier.timelineHorizontal(
     drawTimelineDot(colors, dot, center)
 }
 
-/**
- * 在相关条目左侧画支线: 从上方垂下的竖线, 在条目的垂直中心以圆角折向右侧的封面.
- *
- * 每个条目只画自己的一段, 各段首尾相接成一条从主线条目延伸下来的支线.
- *
- * @param topExtent 竖线向上超出这个条目的距离: 与上一个条目的间距, 第一个条目则是到主线海报底部的距离
- * @param isLast 最后一个条目的竖线止于折角, 否则贯穿到底部
- */
 private fun Modifier.branchConnector(color: Color, topExtent: Dp, isLast: Boolean): Modifier = drawBehind {
     val railX = SubjectRelationGraphDefaults.BranchRailX.toPx()
     val endX = (SubjectRelationGraphDefaults.BranchIndent - 6.dp).toPx()
@@ -178,7 +146,7 @@ private fun Modifier.branchConnector(color: Color, topExtent: Dp, isLast: Boolea
             lineTo(railX, size.height)
         }
     }
-    // 平头线帽: 相邻两段首尾相接而不重叠, 半透明颜色不会在接缝处叠深
+
     drawPath(path, color, style = Stroke(1.5.dp.toPx()))
 }
 
@@ -206,10 +174,6 @@ private fun DrawScope.drawTimelineDot(colors: TimelineColors, dot: TimelineDot, 
     }
 }
 
-/**
- * 宽屏的主线条目: 大海报, 下方是 "第几部", 标题和信息. 收藏状态显示为海报左上角的角标.
- * 当前条目的海报有主色描边.
- */
 @Composable
 internal fun SubjectRelationGraphPoster(
     node: SubjectRelationGraphMainNode,
@@ -252,9 +216,6 @@ internal fun SubjectRelationGraphPoster(
     }
 }
 
-/**
- * 手机的主线条目: 左侧海报, 右侧文字. 当前条目有浅色底.
- */
 @Composable
 internal fun SubjectRelationGraphCompactCard(
     node: SubjectRelationGraphMainNode,
@@ -309,9 +270,6 @@ internal fun SubjectRelationGraphCompactCard(
     }
 }
 
-/**
- * "第 N 部", 非正片条目为 "剧场版", "OVA" 或 "特别篇". 当前条目后接 "· 当前" 并使用主色.
- */
 @Composable
 private fun MainNodeLabel(node: SubjectRelationGraphMainNode, ordinal: Int?, isCurrent: Boolean) {
     val label = when {
@@ -331,16 +289,6 @@ private fun MainNodeLabel(node: SubjectRelationGraphMainNode, ordinal: Int?, isC
     )
 }
 
-/**
- * 一个主线条目下的相关条目列表: 每行是小封面, 名称, 以及 "关系 · 年份 · 收藏状态".
- *
- * 超过 [collapsedCount] 个时只显示前 [collapsedCount] 个, 其余需点击展开. 用户查看的条目在被折叠的部分时默认展开.
- *
- * @param seriesName 系列名称. 以它开头的条目名称只显示后面的部分, 例如 "雪之回忆".
- * @param nameMaxLines 窄列中名称可以换行
- * @param connectorTopExtent 非 `null` 时条目向右缩进, 左侧画一条从主线条目延伸下来的支线连接每个条目.
- * 值为列表顶部到主线海报底部的距离.
- */
 @Composable
 internal fun SubjectRelationGraphBranchList(
     branches: List<SubjectRelationGraphBranch>,
@@ -358,7 +306,7 @@ internal fun SubjectRelationGraphBranchList(
         mutableStateOf(branches.drop(collapsedCount).any { it.subject.subjectId == currentSubjectId })
     }
     val spacing = 6.dp
-    // 与主时间线未到达的部分同色, 但更细
+
     val connectorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(spacing)) {
         val visible = if (canCollapse && !expanded) branches.take(collapsedCount) else branches
@@ -379,7 +327,7 @@ internal fun SubjectRelationGraphBranchList(
         if (canCollapse) {
             TextButton(
                 { expanded = !expanded },
-                // 按钮文字与条目封面对齐
+
                 if (connectorTopExtent == null) Modifier else Modifier.padding(
                     start = SubjectRelationGraphDefaults.BranchIndent - TEXT_BUTTON_HORIZONTAL_PADDING,
                 ),
@@ -453,9 +401,6 @@ private fun BranchRow(
     }
 }
 
-/**
- * 名称以 "系列名 + 空格" 开头时去掉这部分. 只按完整的系列名匹配, 因此不会把名称截成半句.
- */
 internal fun String.removeSeriesPrefix(seriesName: String): String {
     if (seriesName.isEmpty() || !startsWith(seriesName)) return this
     val rest = substring(seriesName.length)
@@ -470,12 +415,11 @@ private fun SubjectCover(subject: SubjectRelationGraphSubject, modifier: Modifie
             subject.image,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            placeholder = if (currentAniBuildConfig.isDebug) remember { ColorPainter(Color.Gray) } else null,
+            placeholder = if (currentWynimeBuildConfig.isDebug) remember { ColorPainter(Color.Gray) } else null,
         )
     }
 }
 
-/** 海报角标: 深色半透明底, 在任何封面上都清晰 */
 @Composable
 private fun CollectionTypeBadge(type: UnifiedCollectionType, modifier: Modifier = Modifier) {
     val text = renderCollectionType(type) ?: return
@@ -500,7 +444,6 @@ private fun CollectionTypeText(type: UnifiedCollectionType) {
     )
 }
 
-/** 未收藏时为 `null` */
 @Composable
 private fun renderCollectionType(type: UnifiedCollectionType): String? = when (type) {
     UnifiedCollectionType.WISH -> stringResource(Lang.subject_collection_wish)
@@ -514,11 +457,6 @@ private fun renderCollectionType(type: UnifiedCollectionType): String? = when (t
 internal fun renderYear(subject: SubjectRelationGraphSubject): String? =
     subject.airDate.takeIf { it.isValid }?.year?.toString()
 
-/**
- * 例如 "TV · 25 话". 未知的部分省略; 只有一集 (剧场版, OVA) 时不显示集数.
- *
- * @param omitLabeledPlatform 不显示 "剧场版" 和 "OVA". 主线上的非正片条目已经用它们代替了 "第几部".
- */
 @Composable
 private fun renderPlatformAndEpisodes(subject: SubjectRelationGraphSubject, omitLabeledPlatform: Boolean): String {
     val isLabeled = subject.platform == SubjectRelationGraphPlatform.MOVIE ||
@@ -538,5 +476,4 @@ private fun renderPlatformAndEpisodes(subject: SubjectRelationGraphSubject, omit
 
 private val PosterBadgeColor = Color(0xC7141218)
 
-/** [TextButton] 内容的水平内边距 */
 private val TEXT_BUTTON_HORIZONTAL_PADDING = 12.dp

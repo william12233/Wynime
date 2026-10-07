@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.platform.window
+package com.wynime.app.platform.window
 
 import androidx.annotation.Keep
 import androidx.compose.ui.geometry.Rect
@@ -44,15 +35,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import me.him188.ani.app.platform.PlatformWindow
-import me.him188.ani.app.platform.SavedWindowsWindowState
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.MONITOR_DEFAULTTONEAREST
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.SC_RESTORE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.SWP_NOACTIVATE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WS_EX_CLIENTEDGE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WS_EX_DLGMODALFRAME
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WS_EX_STATICEDGE
-import me.him188.ani.app.platform.window.ExtendedUser32.Companion.WS_EX_WINDOWEDGE
+import com.wynime.app.platform.PlatformWindow
+import com.wynime.app.platform.SavedWindowsWindowState
+import com.wynime.app.platform.window.ExtendedUser32.Companion.MONITOR_DEFAULTTONEAREST
+import com.wynime.app.platform.window.ExtendedUser32.Companion.SC_RESTORE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.SWP_NOACTIVATE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WS_EX_CLIENTEDGE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WS_EX_DLGMODALFRAME
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WS_EX_STATICEDGE
+import com.wynime.app.platform.window.ExtendedUser32.Companion.WS_EX_WINDOWEDGE
 import kotlin.math.roundToInt
 
 @OptIn(UnsafePlatformWindowApi::class)
@@ -60,7 +51,6 @@ class WindowsWindowUtils : AwtWindowUtils() {
     private val dwmAPi: Dwmapi = Native.load("dwmapi", Dwmapi::class.java, W32APIOptions.DEFAULT_OPTIONS)
     private val extendedUser32: ExtendedUser32 =
         Native.load("user32", ExtendedUser32::class.java, W32APIOptions.DEFAULT_OPTIONS)
-
 
     override fun setTitleBarColor(hwnd: Long, color: Color): Boolean {
         return setTitleBarColor(HWND(Pointer.createConstant(hwnd)), argbToRgb(color.toArgb()))
@@ -74,7 +64,7 @@ class WindowsWindowUtils : AwtWindowUtils() {
         val r = (argb shr 16) and 0xFF
         val g = (argb shr 8) and 0xFF
         val b = argb and 0xFF
-        // Windows COLORREF = 0x00BBGGRR
+
         return (b shl 16) or (g shl 8) or r
     }
 
@@ -164,20 +154,17 @@ class WindowsWindowUtils : AwtWindowUtils() {
         ).toIntOrNull()
     }.getOrElse { null }
 
-    // https://learn.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
     override suspend fun setUndecoratedFullscreen(
         window: PlatformWindow,
         windowState: WindowState,
         undecorated: Boolean
     ) {
-        // copied from vlcj
-        // uk.co.caprica.vlcj.player.embedded.fullscreen.windows.Win32FullScreenHandler
 
         val hwnd = HWND(Pointer.createConstant(window.windowHandle))
         if (undecorated) {
             val maximised = extendedUser32.IsZoomed(hwnd)
             if (maximised) {
-                // 解除最大化，以便获取原始窗口大小
+
                 extendedUser32.SendMessage(
                     hwnd,
                     User32.WM_SYSCOMMAND,
@@ -185,14 +172,13 @@ class WindowsWindowUtils : AwtWindowUtils() {
                     WinDef.LPARAM(0),
                 )
             }
-            // Remove window borders and title bar
+
             val currentStyle = User32.INSTANCE.GetWindowLong(hwnd, WinUser.GWL_STYLE)
             if (currentStyle and WinUser.WS_CAPTION == 0) {
-                // 目前没有标题, 说明已经是全屏了
+
                 return
             }
 
-            // 保存原始窗口状态
             window.savedWindowsWindowState = SavedWindowsWindowState(
                 style = currentStyle,
                 exStyle = User32.INSTANCE.GetWindowLong(hwnd, WinUser.GWL_EXSTYLE),
@@ -210,7 +196,6 @@ class WindowsWindowUtils : AwtWindowUtils() {
                 currentStyle and (WinUser.WS_CAPTION or WinUser.WS_THICKFRAME).inv(),
             )
 
-            // Remove extended window styles
             User32.INSTANCE.SetWindowLong(
                 hwnd, WinUser.GWL_EXSTYLE,
                 User32.INSTANCE.GetWindowLong(hwnd, WinUser.GWL_EXSTYLE)
@@ -230,10 +215,10 @@ class WindowsWindowUtils : AwtWindowUtils() {
             )
             window.onWindowsUndecoratedFullscreenStateChange(true)
         } else {
-            // Restore window borders and title bar
+
             val style = User32.INSTANCE.GetWindowLong(hwnd, WinUser.GWL_STYLE)
             if (style and WinUser.WS_CAPTION != 0) {
-                // 目前有标题, 说明不是全屏
+
                 return
             }
 
@@ -295,16 +280,8 @@ private fun RECT.toComposeRect(): Rect {
 internal interface Dwmapi : StdCallLibrary {
     fun DwmSetWindowAttribute(hwnd: HWND, dwAttribute: Int, pvAttribute: Pointer, cbAttribute: Int): Int
 
-    /**
-     * Extends the window frame into the client area.
-     *
-     * @param hwnd The handle to the window in which the frame will be extended into the client area.
-     * @param margins A MARGINS structure that describes the margins to use when extending the frame into the client area.
-     * @return If this function succeeds, it returns S_OK. Otherwise, it returns an HRESULT error code.
-     */
     fun DwmExtendFrameIntoClientArea(hwnd: HWND, margins: WindowMargins): LRESULT
 
-    // See https://stackoverflow.com/q/62240901
     @Structure.FieldOrder(
         "leftBorderWidth",
         "rightBorderWidth",
@@ -319,9 +296,7 @@ internal interface Dwmapi : StdCallLibrary {
     ) : Structure(), Structure.ByReference
 
     companion object {
-        // Windows 10 attribute constant for enabling Immersive Dark Mode
-        // Note that this constant is not in official headers for all versions,
-        // and might be considered undocumented for some builds.
+
         const val DWMWA_USE_IMMERSIVE_DARK_MODE: Int = 20
         const val DWMWA_CAPTION_COLOR: Int = 35
     }
@@ -330,148 +305,34 @@ internal interface Dwmapi : StdCallLibrary {
 internal interface ExtendedUser32 : User32 {
     fun GetPointerInfo(pointerId: Int, pointerInfo: POINTER_INFO): Boolean
 
-    /**
-     * Is the window zoomed (maximised) or not?
-     *
-     * @param hWnd native window handle
-     * @return `true` if the window is zoomed; `false` if it is not
-     */
     fun IsZoomed(hWnd: HWND?): Boolean
 
-    /**
-     * Get a native monitor handle from a window handle.
-     *
-     * @param hWnd native window handle
-     * @param dwFlags flags
-     * @return native monitor handle
-     */
     fun MonitorFromWindow(hWnd: HWND?, dwFlags: DWORD?): Pointer?
 
-    /**
-     * Get native monitor information.
-     *
-     * @param hMonitor native monitor handle
-     * @param lpMonitorInfo structure to receive monitor information
-     * @return `true` on success; `false` otherwise
-     */
     fun GetMonitorInfoA(hMonitor: Pointer?, lpMonitorInfo: MONITORINFO?): Boolean
 
-    /**
-     * Send a message to a native window.
-     *
-     * @param hWnd native window handle
-     * @param Msg message identifier
-     * @param wParam message parameter
-     * @param lParam message parameter
-     * @return result
-     */
     override fun SendMessage(hWnd: HWND, Msg: Int, wParam: WinDef.WPARAM, lParam: WinDef.LPARAM): LRESULT
 
-    /**
-     * Converts the screen coordinates of a specified point on the screen to client-area coordinates.
-     *
-     * @param hWnd A handle to the window whose client area will be used for the conversion.
-     * @param lpPoint A POINT structure that specifies the screen coordinates to be converted.
-     * @return If the function succeeds, the return value is true, else the return value is false.
-     */
     fun ScreenToClient(
         hWnd: HWND,
         lpPoint: POINT,
     ): Boolean
 
-    /**
-     * Retrieves the specified system metric or system configuration setting taking into account a provided DPI.
-     *
-     * @param nIndex The system metric or configuration setting to be retrieved. See GetSystemMetrics for the possible values.
-     * @param dpi The DPI to use for scaling the metric.
-     * @return If the function succeeds, the return value is nonzero, else the return value is zero
-     */
     fun GetSystemMetricsForDpi(
         nIndex: Int,
         dpi: UINT,
     ): Int
 
-    /**
-     * Returns the dots per inch (dpi) value for the specified window.
-     *
-     * @param hWnd The window that you want to get information about.
-     * @return The DPI for the window, which depends on the DPI_AWARENESS of the window. See the Remarks section for more information. An invalid hwnd value will result in a return value of 0.
-     */
     fun GetDpiForWindow(hWnd: HWND): UINT
 
-    /**
-     * Retrieves a handle to the system menu of the specified window.
-     *
-     * The system menu is the menu that appears when the user clicks on the icon in the title bar of the window
-     * or presses ALT+SPACE. This function allows the application to access and modify the system menu.
-     *
-     * @param hWnd A handle to the window that will own the system menu.
-     * @param bRevert The action to be taken. If this parameter is FALSE, the function returns a handle
-     * to the copy of the system menu currently in use. The copy is initially identical to the default system menu,
-     * but it can be modified. If this parameter is TRUE, the function resets the system menu back to the default state.
-     * @return If the bRevert parameter is FALSE, the return value is a handle to the copy of the system menu.
-     * If the bRevert parameter is TRUE, the return value is NULL.
-     */
     fun GetSystemMenu(hWnd: HWND, bRevert: Boolean): HMENU?
 
-    /**
-     * Changes information about a menu item.
-     *
-     * This function allows you to modify various attributes of a menu item, such as its text, state, and ID.
-     *
-     * @param hMenu A handle to the menu that contains the item.
-     * @param uItem The identifier or position of the menu item to change. The meaning of this parameter
-     * depends on the value of `fByPosition`.
-     * @param fByPosition If this parameter is TRUE, `uItem` is a zero-based relative position. If it is FALSE,
-     * `uItem` is a menu item identifier.
-     * @param lpmii A pointer to a `MENUITEMINFO` structure that contains information about the menu item
-     * and specifies which attributes to change.
-     * @return If the function succeeds, the return value is nonzero.
-     * If the function fails, the return value is zero. To get extended error information, call `GetLastError`.
-     */
     fun SetMenuItemInfo(hMenu: HMENU, uItem: Int, fByPosition: Boolean, lpmii: MENUITEMINFO): Boolean
 
-    /**
-     * Displays a shortcut menu at the specified location and tracks the selection of items on the menu.
-     *
-     * This function is used to display a context menu (usually triggered by a right-click) and allows
-     * the user to select an option from the menu. The menu is displayed as a pop-up window.
-     *
-     * @param hMenu A handle to the shortcut menu to be displayed.
-     * @param uFlags The function options. Use a combination of the following flags:
-     * - `TPM_LEFTALIGN`: Aligns the menu horizontally so that the left side is at the x-coordinate.
-     * - `TPM_RIGHTALIGN`: Aligns the menu horizontally so that the right side is at the x-coordinate.
-     * - `TPM_TOPALIGN`: Aligns the menu vertically so that the top is at the y-coordinate.
-     * - `TPM_BOTTOMALIGN`: Aligns the menu vertically so that the bottom is at the y-coordinate.
-     * - `TPM_RETURNCMD`: Returns the menu item identifier of the user's selection instead of sending a message.
-     * @param x The horizontal position of the menu, in screen coordinates.
-     * @param y The vertical position of the menu, in screen coordinates.
-     * @param nReserved Reserved; must be zero.
-     * @param hWnd A handle to the window that owns the shortcut menu.
-     * @param prcRect A pointer to a `RECT` structure that specifies an area of the screen the menu should not overlap.
-     * If this parameter is null, the function ignores it.
-     * @return If the `TPM_RETURNCMD` flag is specified, the return value is the menu item identifier of the item selected by the user.
-     * If the user cancels the menu without making a selection or an error occurs, the return value is zero.
-     */
     fun TrackPopupMenu(hMenu: HMENU, uFlags: Int, x: Int, y: Int, nReserved: Int, hWnd: HWND, prcRect: RECT?): Int
 
-    /**
-     * Sets the default menu item for the specified menu.
-     *
-     * The default menu item is typically displayed in bold and is activated when the user double-clicks
-     * on the menu or presses the Enter key while the menu is open.
-     *
-     * @param hMenu A handle to the menu whose default item is to be set.
-     * @param uItem The identifier or position of the new default menu item. The meaning of this parameter
-     * depends on the value of `fByPosition`.
-     * @param fByPos If this parameter is TRUE, `uItem` is a zero-based relative position. If it is FALSE,
-     * `uItem` is a menu item identifier.
-     * @return If the function succeeds, the return value is nonzero.
-     * If the function fails, the return value is zero. To get extended error information, call `GetLastError`.
-     */
     fun SetMenuDefaultItem(hMenu: HMENU, uItem: Int, fByPos: Boolean): Boolean
 
-    // Contains information about a menu item.
     @Suppress("SpellCheckingInspection", "unused")
     class MENUITEMINFO : Structure() {
         @JvmField
@@ -526,53 +387,40 @@ internal interface ExtendedUser32 : User32 {
 
         const val WINT_MAX: Int = 0xFFFF
 
-        const val MIIM_STATE: Int = 0x00000001 // The `fState` member is valid.
+        const val MIIM_STATE: Int = 0x00000001
 
-        const val MFT_STRING: Int = 0x00000000 // The item is a text string.b
+        const val MFT_STRING: Int = 0x00000000
 
         const val TPM_RETURNCMD: Int =
-            0x0100 // Returns the menu item identifier of the user's selection instead of sending a message.
+            0x0100
 
-        const val MFS_ENABLED: Int = 0x00000000 // The item is enabled.
+        const val MFS_ENABLED: Int = 0x00000000
 
-        const val MFS_DISABLED: Int = 0x00000003 // The item is disabled.
+        const val MFS_DISABLED: Int = 0x00000003
 
-        // calculate non client area size message
         const val WM_NCCALCSIZE: Int = 0x0083
 
-        // non client area hit test message
         const val WM_NCHITTEST: Int = 0x0084
 
-        // mouse move message
         const val WM_MOUSEMOVE: Int = 0x0200
 
-        // left mouse button down message
         const val WM_LBUTTONDOWN: Int = 0x0201
 
-        // left mouse button up message
         const val WM_LBUTTONUP: Int = 0x0202
 
-        // non client area mouse move message
         const val WM_NCMOUSEMOVE: Int = 0x00A0
 
-        // non client area left mouse down message
         const val WM_NCLBUTTONDOWN: Int = 0x00A1
 
-        // non client area left mouse up message
         const val WM_NCLBUTTONUP: Int = 0x00A2
 
-        // non client area right mouse up message
         val WM_NCRBUTTONUP: Int = 0x00A5
 
-        // window active event
         const val WM_ACTIVATE: Int = 0x0006
 
-        // setting changed message
         const val WM_SETTINGCHANGE: Int = 0x001A
 
-        // window is deactivated
         const val WA_INACTIVE: Int = 0x00000000
-
 
         const val WS_EX_DLGMODALFRAME: Int = 0x00000001
         const val WS_EX_WINDOWEDGE: Int = 0x00000100

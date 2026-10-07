@@ -1,53 +1,43 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.sourceplugin
+package com.wynime.app.domain.sourceplugin
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flow
-import me.him188.ani.datasources.api.DefaultMedia
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.MediaProperties
-import me.him188.ani.datasources.api.matcher.WebVideo
-import me.him188.ani.datasources.api.matcher.WebVideoMatcher
-import me.him188.ani.datasources.api.matcher.WebVideoMatcherContext
-import me.him188.ani.datasources.api.matcher.WebVideoMatcherProvider
-import me.him188.ani.datasources.api.paging.SinglePagePagedSource
-import me.him188.ani.datasources.api.paging.SizedSource
-import me.him188.ani.datasources.api.source.BrowseChannel
-import me.him188.ani.datasources.api.source.BrowseEpisode
-import me.him188.ani.datasources.api.source.BrowseSubject
-import me.him188.ani.datasources.api.source.ConnectionStatus
-import me.him188.ani.datasources.api.source.MatchKind
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.datasources.api.source.MediaMatch
-import me.him188.ani.datasources.api.source.MediaSource
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.source.plugin.api.SourceConnectionState
-import me.him188.ani.source.plugin.api.SourceDiagnostics
-import me.him188.ani.source.plugin.api.SourceResultStatus
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceMediaIdentity
-import me.him188.ani.source.plugin.api.SourceSubject
-import me.him188.ani.source.plugin.api.SourceTracePhase
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.platform.Uuid
+import com.wynime.datasources.api.DefaultMedia
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.MediaProperties
+import com.wynime.datasources.api.matcher.WebVideo
+import com.wynime.datasources.api.matcher.WebVideoMatcher
+import com.wynime.datasources.api.matcher.WebVideoMatcherContext
+import com.wynime.datasources.api.matcher.WebVideoMatcherProvider
+import com.wynime.datasources.api.paging.SinglePagePagedSource
+import com.wynime.datasources.api.paging.SizedSource
+import com.wynime.datasources.api.source.BrowseChannel
+import com.wynime.datasources.api.source.BrowseEpisode
+import com.wynime.datasources.api.source.BrowseSubject
+import com.wynime.datasources.api.source.ConnectionStatus
+import com.wynime.datasources.api.source.MatchKind
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.datasources.api.source.MediaMatch
+import com.wynime.datasources.api.source.MediaSource
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.source.plugin.api.SourceConnectionState
+import com.wynime.source.plugin.api.SourceDiagnostics
+import com.wynime.source.plugin.api.SourceResultStatus
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceMediaIdentity
+import com.wynime.source.plugin.api.SourceSubject
+import com.wynime.source.plugin.api.SourceTracePhase
+import com.wynime.source.plugin.api.SourceWebResourceMatch
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.platform.Uuid
 
-/** Adapts one executable plugin to the host media-source contract. */
 class SourcePluginMediaSource(
     private val plugin: SourcePlugin,
 ) : MediaSource, WebVideoMatcherProvider {
@@ -409,11 +399,6 @@ internal data class SelectedSourceSubject(
     val score: Int,
 )
 
-/**
- * Chooses one matching site detail page for a host request. A site search can return several
- * seasons or spin-offs with the same base words; selecting one detail page prevents their
- * episodes from being merged, while the caller keeps every channel listed on that page.
- */
 internal fun selectBestSourceSubject(
     subjects: List<SourceSubject>,
     queryNames: List<String>,

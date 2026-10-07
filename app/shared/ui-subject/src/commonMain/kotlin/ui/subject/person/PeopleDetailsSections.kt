@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.person
+package com.wynime.app.ui.subject.person
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
@@ -18,8 +9,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.testTag
-import me.him188.ani.app.ui.comment.EditCommentSheet
-import me.him188.ani.app.ui.lang.person_details_write_comment
+import com.wynime.app.ui.comment.EditCommentSheet
+import com.wynime.app.ui.lang.person_details_write_comment
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,53 +42,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
-import me.him188.ani.app.data.models.person.InfoboxRowInfo
-import me.him188.ani.app.data.models.person.PersonSubjectSummary
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.navigation.SubjectDetailPlaceholder
-import me.him188.ani.app.tools.formatDateTime
-import me.him188.ani.app.ui.comment.CommentState
-import me.him188.ani.app.ui.comment.UIComment
-import me.him188.ani.app.ui.external.placeholder.placeholder
-import me.him188.ani.app.ui.foundation.ImageViewer
-import me.him188.ani.app.ui.foundation.avatar.AvatarImage
-import me.him188.ani.app.ui.foundation.layout.rememberConnectedScrollState
-import me.him188.ani.app.ui.foundation.rememberImageViewerHandler
-import me.him188.ani.app.ui.foundation.widgets.LocalToaster
-import me.him188.ani.app.ui.richtext.RichTextDefaults
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
-import me.him188.ani.app.ui.lang.foundation_richtext_open_failed_prefix
-import me.him188.ani.app.ui.lang.person_details_career_actor
-import me.him188.ani.app.ui.lang.person_details_career_artist
-import me.him188.ani.app.ui.lang.person_details_career_illustrator
-import me.him188.ani.app.ui.lang.person_details_career_mangaka
-import me.him188.ani.app.ui.lang.person_details_career_producer
-import me.him188.ani.app.ui.lang.person_details_career_seiyu
-import me.him188.ani.app.ui.lang.person_details_career_writer
-import me.him188.ani.app.ui.lang.person_details_comments
-import me.him188.ani.app.ui.lang.person_details_comments_count
-import me.him188.ani.app.ui.lang.person_details_meta
-import me.him188.ani.app.ui.lang.person_details_no_comments
-import me.him188.ani.app.ui.lang.person_details_person
-import me.him188.ani.app.ui.lang.person_details_role_character
-import me.him188.ani.app.ui.lang.person_details_role_mecha
-import me.him188.ani.app.ui.lang.person_details_role_organization
-import me.him188.ani.app.ui.lang.person_details_role_ship
-import me.him188.ani.app.ui.lang.subject_details_view_all
-import me.him188.ani.app.ui.subject.details.components.COVER_WIDTH_TO_HEIGHT_RATIO
-import me.him188.ani.app.ui.subject.details.components.SubjectCommentColumn
-import me.him188.ani.app.ui.subject.details.components.SubjectDetailsDefaults
-import me.him188.ani.app.ui.subject.details.sections.SectionHeader
-import me.him188.ani.app.ui.subject.details.sections.groupThousands
-import me.him188.ani.app.ui.subject.details.sections.toPlainText
+import com.wynime.app.data.models.person.InfoboxRowInfo
+import com.wynime.app.data.models.person.PersonSubjectSummary
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.navigation.SubjectDetailPlaceholder
+import com.wynime.app.tools.formatDateTime
+import com.wynime.app.ui.comment.CommentState
+import com.wynime.app.ui.comment.UIComment
+import com.wynime.app.ui.external.placeholder.placeholder
+import com.wynime.app.ui.foundation.ImageViewer
+import com.wynime.app.ui.foundation.avatar.AvatarImage
+import com.wynime.app.ui.foundation.layout.rememberConnectedScrollState
+import com.wynime.app.ui.foundation.rememberImageViewerHandler
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.richtext.RichTextDefaults
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
+import com.wynime.app.ui.lang.foundation_richtext_open_failed_prefix
+import com.wynime.app.ui.lang.person_details_career_actor
+import com.wynime.app.ui.lang.person_details_career_artist
+import com.wynime.app.ui.lang.person_details_career_illustrator
+import com.wynime.app.ui.lang.person_details_career_mangaka
+import com.wynime.app.ui.lang.person_details_career_producer
+import com.wynime.app.ui.lang.person_details_career_seiyu
+import com.wynime.app.ui.lang.person_details_career_writer
+import com.wynime.app.ui.lang.person_details_comments
+import com.wynime.app.ui.lang.person_details_comments_count
+import com.wynime.app.ui.lang.person_details_meta
+import com.wynime.app.ui.lang.person_details_no_comments
+import com.wynime.app.ui.lang.person_details_person
+import com.wynime.app.ui.lang.person_details_role_character
+import com.wynime.app.ui.lang.person_details_role_mecha
+import com.wynime.app.ui.lang.person_details_role_organization
+import com.wynime.app.ui.lang.person_details_role_ship
+import com.wynime.app.ui.lang.subject_details_view_all
+import com.wynime.app.ui.subject.details.components.COVER_WIDTH_TO_HEIGHT_RATIO
+import com.wynime.app.ui.subject.details.components.SubjectCommentColumn
+import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults
+import com.wynime.app.ui.subject.details.sections.SectionHeader
+import com.wynime.app.ui.subject.details.sections.groupThousands
+import com.wynime.app.ui.subject.details.sections.toPlainText
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 人物/角色详情内各处点击的导航行为.
- *
- * @param onBeforeNavigate 任何导航前调用 (侧边预览 sheet 用它先关闭自己).
- */
 @Immutable
 class PeopleDetailsNavigation(
     val onClickPerson: (personId: Int) -> Unit,
@@ -134,7 +120,6 @@ fun rememberPeopleDetailsNavigation(onBeforeNavigate: () -> Unit = {}): PeopleDe
     }
 }
 
-/** 人物职业/角色类型文案, 用于 `声优 · 518 人收藏` meta 行. */
 @Composable
 internal fun personKindLabel(career: List<String>): String {
     for (c in career) {
@@ -167,11 +152,6 @@ internal fun characterRoleLabel(role: Int): String = stringResource(
 internal fun peopleMetaLine(kindLabel: String, collects: Int): String =
     stringResource(Lang.person_details_meta, kindLabel, remember(collects) { groupThousands(collects) })
 
-/**
- * 头部行: 竖版立绘/照片 (固定 110x147, crop 顶部对齐) + 名字/原名/meta 行. 用于单栏与侧边预览.
- *
- * @param onClickImage 点击图片的回调 (如打开大图查看器). 为 `null` 时图片不可点击.
- */
 @Composable
 internal fun PeopleHeaderRow(
     imageUrl: String?,
@@ -231,7 +211,6 @@ internal fun PeopleHeaderRow(
     }
 }
 
-/** 多栏中栏的标题块: 大标题 + 原名 + meta 行 (对应 Figma `Title` 96 高). */
 @Composable
 internal fun PeopleTitleBlock(
     displayName: String,
@@ -268,7 +247,6 @@ internal fun PeopleTitleBlock(
     }
 }
 
-/** 基本信息键值表, 结构同条目详情的作品信息表. */
 @Composable
 internal fun PeopleInfoTable(
     rows: List<InfoboxRowInfo>,
@@ -297,7 +275,6 @@ internal fun PeopleInfoTable(
     }
 }
 
-/** 横向条目卡: 2:3 封面 + 标题 + 说明 (职位/主配角). */
 @Composable
 internal fun PeopleSubjectCard(
     subject: PersonSubjectSummary,
@@ -335,13 +312,8 @@ internal fun PeopleSubjectCard(
     }
 }
 
-/** Figma 组件 `PersonCastCard` 的头像宽度; 头像高按 3:4 (96x128). */
 internal val PersonCastCardWidth = 96.dp
 
-/**
- * 人物卡, 对应 Figma 组件 `PersonCastCard`: 头像固定 96x128 (crop, 顶部对齐) + 角色名 + 作品名 (左对齐).
- * [circleCrop] 用于真人照片 (声优条): 圆形头像 + 居中文本.
- */
 @Composable
 internal fun PeoplePortraitCard(
     imageUrl: String?,
@@ -398,7 +370,6 @@ internal fun PeoplePortraitCard(
     }
 }
 
-/** 通用横滑条区块: 标题 (+可选 查看全部) + LazyRow 内容. */
 @Composable
 internal fun <T : Any> PeopleStripSection(
     title: String,
@@ -424,9 +395,6 @@ internal fun <T : Any> PeopleStripSection(
     }
 }
 
-/**
- * 评论区块: 标题 (+`N 条` 入口) + 前几条预览 (纯文本, 同条目评价预览). 无评分.
- */
 @Composable
 internal fun PersonCommentsSection(
     state: CommentState,
@@ -462,7 +430,6 @@ internal fun PersonCommentsSection(
     }
 }
 
-/** 单条评论预览: `头像 名字 时间` + 纯文本摘要 (截断). */
 @Composable
 private fun PersonCommentPreviewItem(
     comment: UIComment,
@@ -503,14 +470,6 @@ private fun PersonCommentPreviewItem(
     }
 }
 
-/**
- * 全量评论 sheet: 复用剧集/条目评论列 ([SubjectCommentColumn]), 支持 BBCode 表情/图片/链接.
- * 与条目评论 sheet 的差别: 人物评论无评分. 头部提供 "写评论" 入口, Ani 评论可回复/贴纸回应/点赞/举报,
- * Bangumi 评论只读, 可在 Bangumi 打开.
- *
- * 编辑器 ([EditCommentSheet]) 挂在本 sheet 的内容里 (而不是页面级): 它是 Popup, 必须与本 sheet 处于同一窗口才能盖在上面.
- * 举报弹层则由页面级的 [PeopleCommentsHost] 承载.
- */
 @Composable
 internal fun PersonCommentsSheet(
     comments: PeopleCommentsState,
@@ -531,9 +490,6 @@ internal fun PersonCommentsSheet(
     ImageViewer(imageViewer) { imageViewer.clear() }
 }
 
-/**
- * [PersonCommentsSheet] 的内容: 标题行 (评论数 + "写评论") + 评论列 + 编辑器. 拆出来是为了能脱离 [ModalBottomSheet] 测试.
- */
 @Composable
 internal fun PersonCommentsSheetContent(
     comments: PeopleCommentsState,
@@ -545,7 +501,7 @@ internal fun PersonCommentsSheetContent(
     val toaster = LocalToaster.current
     val externalAppLinkWarningPrefix = stringResource(Lang.foundation_richtext_external_app_link_warning_prefix)
     val openLinkFailedPrefix = stringResource(Lang.foundation_richtext_open_failed_prefix)
-    // 不用 rememberSaveable: 编辑目标存在 view model 里, 进程重建后 sheet 也不会自动恢复
+
     var showEditor by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxWidth()) {

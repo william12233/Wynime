@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -24,31 +15,25 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.domain.media.TestMediaList
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchResult
-import me.him188.ani.app.domain.media.fetch.MediaSourceFetchState
-import me.him188.ani.app.domain.media.fetch.MediaSourceResultsFilterer
-import me.him188.ani.app.domain.media.fetch.isCaptchaRequired
-import me.him188.ani.app.domain.media.fetch.isDisabled
-import me.him188.ani.app.domain.media.fetch.isFailedOrAbandoned
-import me.him188.ani.app.domain.media.fetch.isRateLimited
-import me.him188.ani.app.domain.media.fetch.isWorking
-import me.him188.ani.app.domain.mediasource.web.SolveRequest
-import me.him188.ani.app.domain.mediasource.web.WebCaptchaKind
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.source.MediaSourceInfo
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.source.plugin.api.SourceResultStatus
-import me.him188.ani.utils.coroutines.flows.flowOfEmptyList
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.fetch.MediaSourceFetchResult
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.domain.media.fetch.MediaSourceResultsFilterer
+import com.wynime.app.domain.media.fetch.isCaptchaRequired
+import com.wynime.app.domain.media.fetch.isDisabled
+import com.wynime.app.domain.media.fetch.isFailedOrAbandoned
+import com.wynime.app.domain.media.fetch.isRateLimited
+import com.wynime.app.domain.media.fetch.isWorking
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceInfo
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.source.plugin.api.SourceResultStatus
+import com.wynime.utils.coroutines.flows.flowOfEmptyList
+import com.wynime.utils.platform.annotations.TestOnly
 
-/**
- * 单个数据源的搜索结果.
- *
- * @see MediaSourceFetchResult
- * @see MediaSourceResultListPresentation
- */
 @Stable
 data class MediaSourceResultPresentation(
     val instanceId: String,
@@ -78,11 +63,6 @@ data class MediaSourceResultPresentation(
     val captchaKind: WebCaptchaKind? get() = captchaRequest?.kind
 }
 
-/**
- * 在 [MediaSelectorView] 使用, 管理多个 [MediaSourceResultPresentation] 的结果
- *
- * 對應 UI 是線上資料源列表，列表包含 [MediaSourceResultPresentation]
- */
 @Immutable
 data class MediaSourceResultListPresentation(
     val list: List<MediaSourceResultPresentation>,
@@ -90,17 +70,13 @@ data class MediaSourceResultListPresentation(
     val anyLoading: Boolean = list.any { it.isWorking }
     val webSources: List<MediaSourceResultPresentation> = list.filter { it.kind == MediaSourceKind.WEB }
     val enabledSourceCount: Int = list.count { !it.isDisabled && it.kind != MediaSourceKind.LocalCache }
-    val totalSourceCount: Int = list.count { it.kind != MediaSourceKind.LocalCache } // 缓存数据源属于内部的, 用户应当无感
+    val totalSourceCount: Int = list.count { it.kind != MediaSourceKind.LocalCache }
 
     companion object {
         val Empty = MediaSourceResultListPresentation(emptyList())
     }
 }
 
-/**
- * @param includedMediaFlow 通过选择器过滤的资源 ([me.him188.ani.app.domain.media.selector.MediaSelector.filteredCandidatesMedia]).
- * 提供时, 每个数据源卡片的计数是该源通过过滤 (属于当前剧集等) 的资源数; 为 `null` 时计数为该源返回的全部资源数.
- */
 class MediaSourceResultListPresenter(
     resultListFlow: Flow<List<MediaSourceFetchResult>>,
     preferredWebMediaSourceIdFlow: Flow<String?> = flowOf(null),
@@ -149,11 +125,6 @@ class MediaSourceResultListPresenter(
             isPreferred = isPreferred,
         )
 }
-
-
-///////////////////////////////////////////////////////////////////////////
-// Testing
-///////////////////////////////////////////////////////////////////////////
 
 @TestOnly
 fun createTestMediaSourceResultsPresenter(

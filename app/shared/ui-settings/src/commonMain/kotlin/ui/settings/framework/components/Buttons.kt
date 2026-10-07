@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.settings.framework.components
+package com.wynime.app.ui.settings.framework.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.LocalContentColor
@@ -10,9 +10,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
-/**
- * 一个 [TextButton] 在最右侧
- */
 @SettingsDsl
 @Composable
 fun SettingsScope.TextButtonItem(
@@ -41,9 +38,6 @@ fun SettingsScope.TextButtonItem(
     )
 }
 
-/**
- * 一行字作为按钮, 对齐在左边
- */
 @SettingsDsl
 @Composable
 fun SettingsScope.RowButtonItem(

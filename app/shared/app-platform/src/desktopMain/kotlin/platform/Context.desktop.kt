@@ -1,25 +1,16 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:Suppress("NOTHING_TO_INLINE")
 
-package me.him188.ani.app.platform
+package com.wynime.app.platform
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.window.WindowState
-import me.him188.ani.utils.io.SystemPath
-import me.him188.ani.utils.io.inSystem
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.io.toKtPath
+import com.wynime.utils.io.SystemPath
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.toKtPath
 import java.io.File
 import kotlin.contracts.contract
 

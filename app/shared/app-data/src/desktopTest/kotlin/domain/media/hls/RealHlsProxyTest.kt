@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.hls
+package com.wynime.app.domain.media.hls
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,13 +9,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import me.him188.ani.app.domain.foundation.DefaultHttpClientProvider
-import me.him188.ani.app.domain.media.player.ChunkState
-import me.him188.ani.app.domain.media.player.prefetch.MediaTimeRange
-import me.him188.ani.app.domain.media.player.prefetch.PrefetchSegmentInfo
-import me.him188.ani.app.domain.settings.NoProxyProvider
-import me.him188.ani.utils.httpdownloader.m3u.DefaultM3u8Parser
-import me.him188.ani.utils.httpdownloader.m3u.M3u8Playlist
+import com.wynime.app.domain.foundation.DefaultHttpClientProvider
+import com.wynime.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.player.prefetch.MediaTimeRange
+import com.wynime.app.domain.media.player.prefetch.PrefetchSegmentInfo
+import com.wynime.app.domain.settings.NoProxyProvider
+import com.wynime.utils.httpdownloader.m3u.DefaultM3u8Parser
+import com.wynime.utils.httpdownloader.m3u.M3u8Playlist
 import org.openani.mediamp.source.UriMediaData
 import java.io.File
 import java.net.ConnectException
@@ -46,14 +37,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-/**
- * 用 ffmpeg 生成的真实 HLS 流 (见 `src/androidDeviceTest/assets/hls/generate.sh`, 与 Android 设备测试共用) 端到端测试 [PlatformHlsPlaybackPreparer] 的本地代理:
- * 播放列表改写、分片转发、Range、错误透传、以及按时间范围预缓存.
- *
- * 源站是 [HlsFixtureOrigin]; 代理对外的行为通过 JDK HTTP 客户端观察, 不依赖任何播放器.
- *
- * 夹具时间轴: `vod` 96 秒, 3 秒一片 (seg000..seg031); 其余变体 60 秒, 6 秒一片.
- */
 abstract class AbstractRealHlsProxyTest internal constructor(
     private val serverFactory: HlsProxyServerFactory,
 ) {
@@ -114,8 +97,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
 
     private fun vodRange(index: Int) = MediaTimeRange(index * 3_000L, (index + 1) * 3_000L)
 
-    // ---------------- 播放列表改写与分片转发 ----------------
-
     @Test
     fun `vod playlist is rewritten to local segment routes and keeps tags and durations`() = withFixture {
         val result = prepare("/hls/vod/index.m3u8", headers = mapOf("Referer" to "https://site.example/watch/1"))
@@ -139,10 +120,10 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             val uris = localText.segmentUris()
             assertEquals(32, uris.size)
             uris.forEach { assertLocal(it); assertTrue(it.contains("/segment/"), it) }
-            // FFmpeg 的 HLS 解复用器按扩展名白名单校验分片地址, 本地路由必须保留原扩展名
+
             uris.forEach { assertTrue(it.endsWith(".ts"), it) }
             assertEquals(uris.size, uris.distinct().size, "segment routes must be unique")
-            // 播放器再次请求播放列表也应得到同样的内容
+
             assertEquals(localText, text(httpGet(result.data.uri)))
         } finally {
             session.close()
@@ -224,7 +205,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             assertEquals(10, highUris.size)
             assertContentEquals(origin.bytesOf("/hls/high/seg003.ts"), httpGet(highUris[3]).body)
 
-            // 最近提供的是 high, 预缓存应作用于 high 的时间轴 (6 秒一片): [7s, 13s) -> seg001, seg002
             session.setPrefetchRange(MediaTimeRange(7_000, 13_000))
             val done = session.awaitAllDone(2)
             assertEquals(listOf(MediaTimeRange(6_000, 12_000), MediaTimeRange(12_000, 18_000)), done.map { it.range })
@@ -257,7 +237,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             val cipherBytes = httpGet(uris[4]).body
             assertContentEquals(origin.bytesOf("/hls/aes/seg004.ts"), cipherBytes)
 
-            // 播放器会自己拿密钥解密; 这里模拟一遍, 证明转发的密文是完整的
             val key = origin.bytesOf("/hls/aes/key.bin")
             assertEquals(16, key.size)
             val iv = ByteArray(16) { it.toByte() }
@@ -343,7 +322,7 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             origin.failPaths["/hls/vod/seg006.ts"] = 500
             assertEquals(404, httpGet(uris[5]).status)
             assertEquals(500, httpGet(uris[6]).status)
-            // 源站恢复后可以正常取到
+
             origin.failPaths.clear()
             assertContentEquals(origin.bytesOf("/hls/vod/seg005.ts"), httpGet(uris[5]).body)
         } finally {
@@ -376,11 +355,9 @@ abstract class AbstractRealHlsProxyTest internal constructor(
         session.close()
         assertFailsWith<ConnectException> { httpGet(result.data.uri) }
         assertFailsWith<ConnectException> { httpGet(uris[0]) }
-        // 重复 close 无副作用
+
         session.close()
     }
-
-    // ---------------- 预缓存 ----------------
 
     @Test
     fun `prefetch downloads exactly the overlapping segments in order and serves them from cache`() = withFixture {
@@ -390,7 +367,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
         try {
             val uris = text(httpGet(result.data.uri)).segmentUris()
 
-            // [20s, 27.5s) 与 seg006 [18,21) seg007 seg008 seg009 [27,30) 重叠
             session.setPrefetchRange(MediaTimeRange(20_000, 27_500))
             val done = session.awaitAllDone(4)
             assertEquals((6..9).map { vodRange(it) }, done.map { it.range })
@@ -398,7 +374,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             for (index in 6..9) assertEquals(1, origin.count("/hls/vod/seg%03d.ts".format(index)), "seg $index")
             for (index in listOf(0, 5, 10, 31)) assertEquals(0, origin.count("/hls/vod/seg%03d.ts".format(index)), "seg $index")
 
-            // 进度按顺序完成: 第一次出现 DONE 的必须是 seg006, 且 DONE 数量单调不减
             val snapshots = recorder.snapshots()
             assertTrue(snapshots.first().all { it.state == ChunkState.DOWNLOADING }, "first emission should be all DOWNLOADING")
             val doneCounts = snapshots.map { list -> list.count { it.state == ChunkState.DONE } }
@@ -413,14 +388,13 @@ abstract class AbstractRealHlsProxyTest internal constructor(
                 }
             }
 
-            // 播放器请求预缓存过的分片时直接命中缓存
             for (index in 6..9) {
                 val response = httpGet(uris[index])
                 assertEquals(200, response.status)
                 assertContentEquals(origin.bytesOf("/hls/vod/seg%03d.ts".format(index)), response.body)
                 assertEquals(1, origin.count("/hls/vod/seg%03d.ts".format(index)), "seg $index must be served from cache")
             }
-            // 未预缓存的仍走源站
+
             httpGet(uris[10])
             assertEquals(1, origin.count("/hls/vod/seg010.ts"))
         } finally {
@@ -444,11 +418,9 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             assertEquals(1, origin.count("/hls/vod/seg000.ts"))
             assertEquals(1, origin.count("/hls/vod/seg010.ts"))
 
-            // 上一次预缓存的分片仍在缓存里 (未超出上限)
             httpGet(uris[0])
             assertEquals(1, origin.count("/hls/vod/seg000.ts"))
 
-            // 设置相同范围不会重新下载
             session.setPrefetchRange(vodRange(10))
             session.awaitAllDone(1)
             assertEquals(1, origin.count("/hls/vod/seg010.ts"))
@@ -462,12 +434,12 @@ abstract class AbstractRealHlsProxyTest internal constructor(
         val result = prepare("/hls/master.m3u8")
         val session = result.session()
         try {
-            // 主播放列表阶段还不知道分片时间轴
+
             session.setPrefetchRange(MediaTimeRange(0, 3_000))
             assertEquals(emptyList(), session.prefetchProgress.first())
 
             val variants = text(httpGet(result.data.uri)).segmentUris()
-            httpGet(variants[0]) // vod
+            httpGet(variants[0])
             val done = session.awaitAllDone(1)
             assertEquals(listOf(vodRange(0)), done.map { it.range })
             assertEquals(1, origin.count("/hls/vod/seg000.ts"))
@@ -478,18 +450,17 @@ abstract class AbstractRealHlsProxyTest internal constructor(
 
     @Test
     fun `re-requesting the playlist while prefetch is in flight does not stall it`() = withFixture {
-        // 真实播放器会重复请求同一个变体播放列表. 早期实现每次都重启预缓存, 被取消的下载会连带让新任务退出,
-        // 预缓存从此停摆, 进度一直停在 DOWNLOADING (在真实 App 里发现).
+
         origin.segmentLatencyMillis = 300
         val result = prepare("/hls/master.m3u8")
         val session = result.session()
         try {
             val variants = text(httpGet(result.data.uri)).segmentUris()
             httpGet(variants[0])
-            session.setPrefetchRange(MediaTimeRange(30_000, 45_000)) // seg010..seg014
+            session.setPrefetchRange(MediaTimeRange(30_000, 45_000))
             repeat(5) {
                 Thread.sleep(60)
-                httpGet(variants[0]) // 播放列表被再次请求, 下载正在进行中
+                httpGet(variants[0])
             }
             val done = session.awaitAllDone(5)
             assertEquals((10..14).map { vodRange(it) }, done.map { it.range })
@@ -506,9 +477,9 @@ abstract class AbstractRealHlsProxyTest internal constructor(
         val session = result.session()
         try {
             httpGet(result.data.uri)
-            session.setPrefetchRange(MediaTimeRange(30_000, 39_000)) // seg010..seg012
-            Thread.sleep(100) // seg010 正在下载
-            session.setPrefetchRange(MediaTimeRange(30_000, 36_000)) // 目标变了: seg010, seg011; 与被取消的任务共用 seg010
+            session.setPrefetchRange(MediaTimeRange(30_000, 39_000))
+            Thread.sleep(100)
+            session.setPrefetchRange(MediaTimeRange(30_000, 36_000))
             val done = session.awaitAllDone(2)
             assertEquals(listOf(vodRange(10), vodRange(11)), done.map { it.range })
         } finally {
@@ -518,25 +489,22 @@ abstract class AbstractRealHlsProxyTest internal constructor(
 
     @Test
     fun `clearing the request lets the in-flight segment finish for the player but starts no new ones`() = withFixture {
-        // 自动跳过发生时请求会被清除, 而正在下载的那个分片往往就是播放器跳过去后马上要的 (在限速的真实 App 里观察到:
-        // 直接取消导致播放器把快下完的分片从头重下了一遍).
+
         origin.segmentLatencyMillis = 600
         val result = prepare("/hls/vod/index.m3u8")
         val session = result.session()
         try {
             val uris = text(httpGet(result.data.uri)).segmentUris()
-            session.setPrefetchRange(MediaTimeRange(30_000, 39_000)) // seg010, seg011, seg012
-            Thread.sleep(150) // seg010 正在下载
+            session.setPrefetchRange(MediaTimeRange(30_000, 39_000))
+            Thread.sleep(150)
             session.setPrefetchRange(null)
             assertEquals(emptyList(), session.prefetchProgress.first())
 
-            // 播放器跳过来请求 seg010: 直接等正在进行的下载, 不再访问源站
             val response = httpGet(uris[10])
             assertEquals(200, response.status)
             assertContentEquals(origin.bytesOf("/hls/vod/seg010.ts"), response.body)
             assertEquals(1, origin.count("/hls/vod/seg010.ts"), "in-flight segment must not be downloaded twice")
 
-            // 后面的分片不应再被预缓存
             Thread.sleep(1_000)
             assertEquals(0, origin.count("/hls/vod/seg011.ts"))
             assertEquals(0, origin.count("/hls/vod/seg012.ts"))
@@ -571,12 +539,11 @@ abstract class AbstractRealHlsProxyTest internal constructor(
         try {
             val uris = text(httpGet(result.data.uri)).segmentUris()
             origin.failPaths["/hls/vod/seg007.ts"] = 500
-            session.setPrefetchRange(MediaTimeRange(18_000, 27_000)) // seg006, seg007, seg008
+            session.setPrefetchRange(MediaTimeRange(18_000, 27_000))
             val done = session.awaitAllDone(2)
             assertEquals(listOf(vodRange(6), vodRange(8)), done.map { it.range })
             assertEquals(1, origin.count("/hls/vod/seg007.ts"))
 
-            // 源站恢复后播放器请求该分片, 从源站取
             origin.failPaths.clear()
             val response = httpGet(uris[7])
             assertEquals(200, response.status)
@@ -593,12 +560,12 @@ abstract class AbstractRealHlsProxyTest internal constructor(
         val session = result.session()
         try {
             val uris = text(httpGet(result.data.uri)).segmentUris()
-            session.setPrefetchRange(MediaTimeRange(0, 6_000)) // seg000, seg001 (被当前请求引用, 不淘汰)
+            session.setPrefetchRange(MediaTimeRange(0, 6_000))
             session.awaitAllDone(2)
             httpGet(uris[0])
             assertEquals(1, origin.count("/hls/vod/seg000.ts"), "pinned segment served from cache")
 
-            session.setPrefetchRange(vodRange(10)) // seg000/seg001 不再被引用, 超限后淘汰
+            session.setPrefetchRange(vodRange(10))
             session.awaitAllDone(1)
             httpGet(uris[0])
             assertEquals(2, origin.count("/hls/vod/seg000.ts"), "evicted segment is fetched from origin again")
@@ -611,7 +578,7 @@ abstract class AbstractRealHlsProxyTest internal constructor(
 
     @Test
     fun `prefetch follows the filtered timeline when ad filtering is enabled`() = withFixture {
-        // 不过滤: 播放列表含 34 片, [48s, 51s) 落在第一片广告上
+
         val unfiltered = prepare("/hls/withads.m3u8", HlsPlaybackOptions(filterSegments = false, proxySegments = true))
         val unfilteredSession = unfiltered.session()
         try {
@@ -625,7 +592,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             unfilteredSession.close()
         }
 
-        // 过滤: 广告组被移除, 时间轴连续, [48s, 51s) 对应正片 seg016
         val filtered = prepare("/hls/withads.m3u8", HlsPlaybackOptions(filterSegments = true, proxySegments = true))
         val filteredSession = filtered.session()
         try {
@@ -642,7 +608,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
             assertEquals(1, origin.count("/hls/vod/seg016.ts"))
             assertEquals(1, origin.count("/hls/ads/ad000.ts"), "filtered session must not touch ad segments")
 
-            // 过滤后第 16 片对应 seg016, 内容一致
             assertContentEquals(origin.bytesOf("/hls/vod/seg016.ts"), httpGet(uris[16]).body)
         } finally {
             filteredSession.close()
@@ -689,8 +654,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
         }
     }
 
-    // ---------------- helpers ----------------
-
     private class ProgressRecorder(val job: Job, private val list: MutableList<List<PrefetchSegmentInfo>>) {
         fun snapshots(): List<List<PrefetchSegmentInfo>> = synchronized(list) { list.toList() }
     }
@@ -720,8 +683,6 @@ abstract class AbstractRealHlsProxyTest internal constructor(
     private fun neverCalled(): Nothing = fail("unreachable")
 }
 
-/** Android 和桌面端实际使用的 socket 实现. */
 class RealHlsProxyTest : AbstractRealHlsProxyTest(PlatformHlsProxyServerFactory)
 
-/** iOS 使用的 socket 实现 ([KtorNetworkHlsProxyServer]). 它本身与平台无关, 在这里用同一套真实夹具验证. */
 class KtorNetworkRealHlsProxyTest : AbstractRealHlsProxyTest(KtorNetworkHlsProxyServer.Factory)

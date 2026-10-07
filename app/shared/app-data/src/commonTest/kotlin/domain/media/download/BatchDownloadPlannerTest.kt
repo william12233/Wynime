@@ -1,22 +1,13 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:OptIn(TestOnly::class)
 
-package me.him188.ani.app.domain.media.download
+package com.wynime.app.domain.media.download
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.EpisodeType
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.utils.platform.annotations.TestOnly
 
 class BatchDownloadPlannerTest {
     private val episodes = (1..6).map { requestTestEpisode(it) }
@@ -79,7 +70,7 @@ class BatchDownloadPlannerTest {
         val plan = BatchDownloadPlanner.plan(episodes.take(3), listOf(season, single2), emptyList(), pinned = season, pinnedEpisodeId = 1)
         assertEquals(EpisodeDownloadPlan.Create(season), plan.getValue(1))
         assertEquals(EpisodeDownloadPlan.Create(single2), plan.getValue(2))
-        // 只知道整季的合集未必真含第 3 集
+
         assertEquals(EpisodeDownloadPlan.Uncovered, plan.getValue(3))
     }
 

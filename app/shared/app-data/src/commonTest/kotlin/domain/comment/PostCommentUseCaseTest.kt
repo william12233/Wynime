@@ -1,23 +1,10 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.comment
+package com.wynime.app.domain.comment
 
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
-import me.him188.ani.app.data.models.person.PersonCommentTarget
-import me.him188.ani.app.data.network.AniEpisodeCommentService
-import me.him188.ani.app.data.network.AniPersonCommentService
-import me.him188.ani.client.apis.CharactersAniApi
-import me.him188.ani.client.apis.EpisodesAniApi
-import me.him188.ani.client.apis.PersonsAniApi
-import me.him188.ani.utils.ktor.ApiInvoker
+import com.wynime.app.data.models.person.PersonCommentTarget
+import com.wynime.app.data.network.WynimeEpisodeCommentService
+import com.wynime.app.data.network.WynimePersonCommentService
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -150,8 +137,8 @@ class PostCommentUseCaseTest {
     private fun createPersonCommentService(
         onCreateComment: suspend (target: PersonCommentTarget, content: String) -> Unit = { _, _ -> },
         onCreateReply: suspend (target: PersonCommentTarget, commentId: String, content: String) -> Unit = { _, _, _ -> },
-    ): AniPersonCommentService {
-        return object : AniPersonCommentService(UnusedPersonsApi, UnusedCharactersApi) {
+    ): WynimePersonCommentService {
+        return object : WynimePersonCommentService() {
             override suspend fun createComment(target: PersonCommentTarget, contentBbcode: String) {
                 onCreateComment(target, contentBbcode)
             }
@@ -165,8 +152,8 @@ class PostCommentUseCaseTest {
     private fun createCommentService(
         onCreateEpisodeComment: suspend (episodeId: Long, content: String) -> Unit = { _, _ -> },
         onCreateEpisodeReply: suspend (episodeId: Long, commentId: String, content: String) -> Unit = { _, _, _ -> },
-    ): AniEpisodeCommentService {
-        return object : AniEpisodeCommentService(UnusedEpisodesApi) {
+    ): WynimeEpisodeCommentService {
+        return object : WynimeEpisodeCommentService() {
             override suspend fun createEpisodeComment(episodeId: Long, contentBbcode: String) {
                 onCreateEpisodeComment(episodeId, contentBbcode)
             }
@@ -182,20 +169,3 @@ class PostCommentUseCaseTest {
     }
 }
 
-private object UnusedEpisodesApi : ApiInvoker<EpisodesAniApi> {
-    override suspend fun <R> invoke(action: suspend EpisodesAniApi.() -> R): R {
-        error("Unused in test")
-    }
-}
-
-private object UnusedPersonsApi : ApiInvoker<PersonsAniApi> {
-    override suspend fun <R> invoke(action: suspend PersonsAniApi.() -> R): R {
-        error("Unused in test")
-    }
-}
-
-private object UnusedCharactersApi : ApiInvoker<CharactersAniApi> {
-    override suspend fun <R> invoke(action: suspend CharactersAniApi.() -> R): R {
-        error("Unused in test")
-    }
-}

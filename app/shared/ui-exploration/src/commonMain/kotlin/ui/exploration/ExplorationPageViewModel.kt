@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.exploration
+package com.wynime.app.ui.exploration
 
 import androidx.compose.runtime.Stable
 import androidx.paging.cachedIn
@@ -28,17 +19,17 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import me.him188.ani.app.data.models.preference.NsfwMode
-import me.him188.ani.app.data.models.subject.subjectInfo
-import me.him188.ani.app.data.network.BangumiCalendarDay
-import me.him188.ani.app.data.network.BangumiCalendarRepository
-import me.him188.ani.app.data.network.RecommendationRepository
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.data.repository.subject.FollowedSubjectsRepository
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.usecase.GlobalKoin
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.utils.logging.info
+import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.models.subject.subjectInfo
+import com.wynime.app.data.network.BangumiCalendarDay
+import com.wynime.app.data.network.BangumiCalendarRepository
+import com.wynime.app.data.network.RecommendationRepository
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.data.repository.subject.FollowedSubjectsRepository
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.usecase.GlobalKoin
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.utils.logging.info
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -113,9 +104,7 @@ open class ExplorationPageViewModel(private val koin: Koin = GlobalKoin) : Abstr
                 settingsRepository.oneshotActionConfig.update { copy(horizontalScrollTip = false) }
             }
         },
-//            .onStart<List<FollowedSubjectInfo?>> {
-//                emit(arrayOfNulls<FollowedSubjectInfo>(10).toList())
-//            }
+
     )
 
 }

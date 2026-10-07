@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch
+package com.wynime.app.ui.mediafetch
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -47,26 +38,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.domain.media.selector.MediaExclusionReason
-import me.him188.ani.app.domain.media.selector.UnsafeOriginalMediaAccess
-import me.him188.ani.app.platform.currentAniBuildConfig
-import me.him188.ani.app.tools.formatDateTime
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_unknown
-import me.him188.ani.app.ui.lang.media_selector_item_episode_mismatch
-import me.him188.ani.app.ui.lang.media_selector_item_no_subtitle
-import me.him188.ani.app.ui.lang.media_selector_item_season_mismatch
-import me.him188.ani.app.ui.lang.media_selector_item_single_episode_resource
-import me.him188.ani.app.ui.lang.media_selector_item_subject_title_mismatch
-import me.him188.ani.app.ui.lang.media_selector_item_unsupported_playback
-import me.him188.ani.app.ui.media.rememberMediaDetailsStrings
-import me.him188.ani.app.ui.media.renderSubtitleLanguage
-import me.him188.ani.app.ui.settings.rendering.MediaSourceIcon
-import me.him188.ani.app.ui.settings.rendering.MediaSourceIcons
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.topic.FileSize
+import com.wynime.app.domain.media.selector.MediaExclusionReason
+import com.wynime.app.domain.media.selector.UnsafeOriginalMediaAccess
+import com.wynime.app.platform.currentWynimeBuildConfig
+import com.wynime.app.tools.formatDateTime
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_unknown
+import com.wynime.app.ui.lang.media_selector_item_episode_mismatch
+import com.wynime.app.ui.lang.media_selector_item_no_subtitle
+import com.wynime.app.ui.lang.media_selector_item_season_mismatch
+import com.wynime.app.ui.lang.media_selector_item_single_episode_resource
+import com.wynime.app.ui.lang.media_selector_item_subject_title_mismatch
+import com.wynime.app.ui.lang.media_selector_item_unsupported_playback
+import com.wynime.app.ui.media.rememberMediaDetailsStrings
+import com.wynime.app.ui.media.renderSubtitleLanguage
+import com.wynime.app.ui.settings.rendering.MediaSourceIcon
+import com.wynime.app.ui.settings.rendering.MediaSourceIcons
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.topic.FileSize
 import org.jetbrains.compose.resources.stringResource
-
 
 @OptIn(UnsafeOriginalMediaAccess::class)
 @Composable
@@ -82,7 +72,7 @@ internal fun MediaSelectorItem(
     onPreferSubtitleLanguageId: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // We use the first media for display because the group has the same info.
+
     val media: Media = group.first.original
     val mediaDetailsStrings = rememberMediaDetailsStrings()
     val noSubtitleText = stringResource(Lang.media_selector_item_no_subtitle)
@@ -92,9 +82,8 @@ internal fun MediaSelectorItem(
     val subjectTitleMismatchText = stringResource(Lang.media_selector_item_subject_title_mismatch)
     val episodeMismatchText = stringResource(Lang.media_selector_item_episode_mismatch)
 
-    // Determine the reason text, if any
     val reasonText = group.exclusionReason?.let { reason ->
-        if (currentAniBuildConfig.isDebug) {
+        if (currentWynimeBuildConfig.isDebug) {
             reason.toString()
         } else {
             when (reason) {
@@ -109,28 +98,27 @@ internal fun MediaSelectorItem(
         }
     }
 
-    // Now we call the stateless layout, passing only the data and callbacks
     MediaSelectorItemLayout(
         selected = selected,
         onClick = { onSelect(media) },
         title = { Text(media.originalTitle) },
         labels = {
-            // Size chip
+
             if (media.properties.size != FileSize.Zero && media.properties.size != FileSize.Unspecified) {
                 InputChip(
                     selected = false,
-                    onClick = { /* no-op */ },
+                    onClick = {             },
                     label = { Text(media.properties.size.toString()) },
                 )
             }
-            // Resolution chip
+
             InputChip(
                 selected = false,
                 onClick = { onPreferResolution(media.properties.resolution) },
                 label = { Text(media.properties.resolution) },
                 enabled = preferredResolution() != media.properties.resolution,
             )
-            // Subtitle chips
+
             media.properties.subtitleLanguageIds.forEach { languageId ->
                 InputChip(
                     selected = false,
@@ -139,11 +127,11 @@ internal fun MediaSelectorItem(
                     enabled = preferredSubtitleLanguageId() != languageId,
                 )
             }
-            // Exclusion reason chip
+
             reasonText?.let {
                 InputChip(
                     selected = false,
-                    onClick = { /* no-op */ },
+                    onClick = {             },
                     label = { Text(it) },
                     colors = InputChipDefaults.inputChipColors(
                         labelColor = MaterialTheme.colorScheme.error,
@@ -156,7 +144,7 @@ internal fun MediaSelectorItem(
                 )
             }
         },
-        // The FlowRow chips in the top area become a slot
+
         exposedMediaSourceMenu = {
             ExposedMediaSourceMenu(
                 group = group,
@@ -184,11 +172,6 @@ internal fun MediaSelectorItem(
     )
 }
 
-/**
- * A "stateless" layout composable that receives slots ([labels], [bottomRow])
- * and just focuses on how to present them. It knows nothing about the actual
- * Media/State classes.
- */
 @Composable
 fun MediaSelectorItemLayout(
     selected: Boolean,
@@ -220,14 +203,13 @@ fun MediaSelectorItemLayout(
         Column(
             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
         ) {
-            // Title
+
             ProvideTextStyle(MaterialTheme.typography.titleSmall) {
                 Row(Modifier.padding(horizontal = horizontalPadding)) {
                     title()
                 }
             }
 
-            // Top chips
             FlowRow(
                 modifier = Modifier
                     .padding(horizontal = horizontalPadding)
@@ -237,7 +219,6 @@ fun MediaSelectorItemLayout(
                 content = labels,
             )
 
-            // Bottom row
             ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
                 Row(
                     modifier = Modifier
@@ -288,7 +269,7 @@ private fun ExposedMediaSourceMenu(
             value = currentSourceInfo?.displayName ?: unknownText,
             onValueChange = {},
             Modifier
-                .widthIn(min = 48.dp) // override default
+                .widthIn(min = 48.dp)
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
             readOnly = true,
             maxLines = 1,

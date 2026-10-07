@@ -1,15 +1,15 @@
 package tw.wynime.sources.eacg
 
-import me.him188.ani.source.plugin.api.SourceChannel
-import me.him188.ani.source.plugin.api.SourceChannelEpisodes
-import me.him188.ani.source.plugin.api.SourcePluginContext
-import me.him188.ani.source.plugin.api.SourcePluginEntryPoint
-import me.him188.ani.source.plugin.api.SourcePlugin
-import me.him188.ani.source.plugin.api.SourceResolveRequest
-import me.him188.ani.source.plugin.api.SourceSearchRequest
-import me.him188.ani.source.plugin.api.SourceSubjectDetails
-import me.him188.ani.source.plugin.api.SourceWebResourceMatch
-import me.him188.ani.source.plugin.api.ResolvedMediaFormat
+import com.wynime.source.plugin.api.SourceChannel
+import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourcePluginContext
+import com.wynime.source.plugin.api.SourcePluginEntryPoint
+import com.wynime.source.plugin.api.SourcePlugin
+import com.wynime.source.plugin.api.SourceResolveRequest
+import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceSubjectDetails
+import com.wynime.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.ResolvedMediaFormat
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.decodePlayerUrl
@@ -34,10 +34,10 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
         const val XHS_SPECTRUM_PREFIX = "https://sns-video-bd.xhscdn.com/spectrum/"
     }
 
-    override suspend fun search(request: SourceSearchRequest): List<me.him188.ani.source.plugin.api.SourceSubject> {
+    override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {
         val detailPattern = Regex("(?i)/voddetails-([^/?#]+)\\.html")
         val variants = searchQueryVariants(request.query)
-        val searchResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+        val searchResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (variant in variants) {
             searchResults += dynamicSearchLinks(
                 requestPage(
@@ -61,7 +61,7 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
             "$rootUrl/vodshow/21--------2---.html",
             "$rootUrl/vodshow/21--------3---.html",
         )
-        val fallbackResults = mutableListOf<me.him188.ani.source.plugin.api.SourceSubject>()
+        val fallbackResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
         for (url in fallbackUrls) {
             val html = requestPage(url, traceId = request.traceId, entryPoint = request.entryPoint).html
             for (variant in variants) {
@@ -75,7 +75,7 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun getSubject(subjectId: String): SourceSubjectDetails {
         val page = requestPage("$rootUrl/voddetails-${subjectId}.html")
         val subject = subject(subjectId, page.title.substringBefore("_").ifBlank { subjectId }, page.finalUrl)
-        val groups = linkedMapOf<String, MutableList<me.him188.ani.source.plugin.api.SourceEpisode>>()
+        val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
         links(page.html).forEach { link ->
             val match = Regex("(?i)/Comicplay/([^/-]+)-(\\d+)-(\\d+)\\.html").find(link.href) ?: return@forEach
             if (match.groupValues[1] != subjectId) return@forEach

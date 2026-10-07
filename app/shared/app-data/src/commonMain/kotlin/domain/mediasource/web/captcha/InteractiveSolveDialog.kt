@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.mediasource.web.captcha
+package com.wynime.app.domain.mediasource.web.captcha
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -38,18 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
-/**
- * app 根部唯一的交互解决对话框 host. 消费 [WebSessionManager.interactiveUi].
- */
 @Composable
 fun WebCaptchaDialogHost(manager: WebSessionManager) {
     val ui by manager.interactiveUi.collectAsState()
     ui?.let { InteractiveSolveDialog(it) }
 }
 
-/**
- * 交互解决对话框外壳: 黑底 + 顶栏 (返回 / 刷新 / ✓ 手动确认), 内容为平台浏览器视图.
- */
 @Composable
 fun InteractiveSolveDialog(ui: InteractiveSolveUi) {
     Dialog(

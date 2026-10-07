@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation.icons
+package com.wynime.app.ui.foundation.icons
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.Color
@@ -34,11 +25,7 @@ public val Icons.Filled.BangumiNext: ImageVector
             viewportWidth = 145.0f,
             viewportHeight = 145.0f,
         ).apply {
-            //
-            // Main pink path (fill="#F09199").
-            // Using pathFillType = EvenOdd because the original used fill-rule="evenodd".
-            // If you prefer non-zero winding, you can switch to NonZero.
-            //
+
             path(
                 fill = SolidColor(Color(0xFFF09199)),
                 stroke = null,
@@ -48,12 +35,6 @@ public val Icons.Filled.BangumiNext: ImageVector
                 strokeLineMiter = 4.0f,
                 pathFillType = EvenOdd,
             ) {
-                // Below is a direct translation of the large "d" attribute:
-                // M 84.803 38.7817 ...
-                // into moveTo / curveTo / lineTo calls.
-                // Note: The path is quite complex. Shown here is a version
-                // converted via an automated SVG-to-Compose-path tool or
-                // by parsing the d-attribute carefully.
 
                 moveTo(84.803f, 38.7817f)
                 curveTo(84.803f, 38.7817f, 72.5f, 34.332f, 60.197f, 38.7817f)
@@ -96,11 +77,6 @@ public val Icons.Filled.BangumiNext: ImageVector
                 curveTo(83.9242f, 40.5616f, 84.803f, 38.7817f, 84.803f, 38.7817f)
                 close()
 
-                // The small bits near the bottom:
-                // M92.2727 50.351C92.2727 50.351 92.4514 50.3025 ...
-                // In this particular SVG, those sub-motions are effectively 
-                // the same overall path. Sometimes they’re separate subpaths.
-
                 moveTo(92.2727f, 50.351f)
                 curveTo(92.2727f, 50.351f, 92.4514f, 50.3025f, 92.7731f, 50.1821f)
                 lineTo(92.2727f, 50.351f)
@@ -111,7 +87,6 @@ public val Icons.Filled.BangumiNext: ImageVector
                 curveTo(52.6048f, 50.3162f, 52.7273f, 50.351f, 52.7273f, 50.351f)
                 close()
 
-                // … Subpath for the details around 89.5087 / 98.4082, etc.
                 moveTo(53.606f, 89.5087f)
                 curveTo(62.8333f, 89.7312f, 65.6894f, 97.0733f, 65.9091f, 98.4082f)
                 lineTo(64.5909f, 97.5182f)

@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.subject.episode.video.topbar
+package com.wynime.app.ui.subject.episode.video.topbar
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
-import me.him188.ani.app.ui.foundation.TextWithBorder
+import com.wynime.app.ui.foundation.TextWithBorder
 
 @Composable
 fun EpisodePlayerTitle(
@@ -29,7 +29,7 @@ fun EpisodePlayerTitle(
         }
         ProvideTextStyle(MaterialTheme.typography.titleSmall) {
             Row(Modifier, verticalAlignment = Alignment.CenterVertically) {
-                // 过长时隐藏标题, 保留序号
+
                 TextWithBorder(
                     remember(ep, episodeTitle) { (ep ?: "01") + "  " + episodeTitle },
                     softWrap = false, maxLines = 1, overflow = TextOverflow.Ellipsis,

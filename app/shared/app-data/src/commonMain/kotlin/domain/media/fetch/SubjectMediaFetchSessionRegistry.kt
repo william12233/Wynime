@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.fetch
+package com.wynime.app.domain.media.fetch
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -17,19 +8,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.utils.platform.currentTimeMillis
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.utils.platform.currentTimeMillis
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-/**
- * Shares one active subject-level discovery session between playback and download.
- *
- * Entries are deliberately short-lived. This is a discovery snapshot, not a permanent cache:
- * a provider session can be reused while the user moves between play/download actions, and it is
- * rebuilt after expiry or explicit invalidation. The session keeps collecting so a slow provider
- * cannot disappear just because the selector UI changed collectors.
- */
 class SubjectMediaFetchSessionRegistry(
     private val scope: CoroutineScope,
     private val createSession: suspend (MediaFetchRequest) -> MediaFetchSession,
@@ -57,7 +40,6 @@ class SubjectMediaFetchSessionRegistry(
         require(expiry.isPositive()) { "expiry must be positive" }
     }
 
-    /** Returns an active snapshot for the same subject query, or starts one. */
     suspend fun get(request: MediaFetchRequest): MediaFetchSession = lock.withLock {
         val now = nowMillis()
         evictExpiredLocked(now)
@@ -78,7 +60,6 @@ class SubjectMediaFetchSessionRegistry(
         session
     }
 
-    /** Keeps a snapshot alive for the remainder of the short expiry window. */
     fun release(session: MediaFetchSession) {
         scope.launch {
             lock.withLock {
@@ -87,7 +68,6 @@ class SubjectMediaFetchSessionRegistry(
         }
     }
 
-    /** Forces a new discovery snapshot for the subject query. */
     suspend fun invalidate(request: MediaFetchRequest) = lock.withLock {
         val removed = entries.filter { it.request.isSameSubjectQuery(request) }
         entries.removeAll(removed.toSet())

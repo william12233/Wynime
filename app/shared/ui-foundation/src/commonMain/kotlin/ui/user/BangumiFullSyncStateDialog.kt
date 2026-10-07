@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.user
+package com.wynime.app.ui.user
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,21 +13,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import me.him188.ani.app.data.models.bangumi.BangumiSyncState
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_continue_background
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_description
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_failed
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_fetching_episodes
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_fetching_metadata
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_fetching_subjects
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_finishing
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_in_progress
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_inserting
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_preparing
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_success
-import me.him188.ani.app.ui.lang.foundation_bangumi_sync_title
+import com.wynime.app.data.models.bangumi.BangumiSyncState
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.foundation_bangumi_sync_continue_background
+import com.wynime.app.ui.lang.foundation_bangumi_sync_description
+import com.wynime.app.ui.lang.foundation_bangumi_sync_failed
+import com.wynime.app.ui.lang.foundation_bangumi_sync_fetching_episodes
+import com.wynime.app.ui.lang.foundation_bangumi_sync_fetching_metadata
+import com.wynime.app.ui.lang.foundation_bangumi_sync_fetching_subjects
+import com.wynime.app.ui.lang.foundation_bangumi_sync_finishing
+import com.wynime.app.ui.lang.foundation_bangumi_sync_in_progress
+import com.wynime.app.ui.lang.foundation_bangumi_sync_inserting
+import com.wynime.app.ui.lang.foundation_bangumi_sync_preparing
+import com.wynime.app.ui.lang.foundation_bangumi_sync_success
+import com.wynime.app.ui.lang.foundation_bangumi_sync_title
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -151,7 +142,6 @@ private fun PreviewBangumiFullSyncDialogSaved() {
         )
     }
 }
-
 
 @Composable
 @Preview

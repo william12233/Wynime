@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.tools
+package com.wynime.app.tools
 
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
@@ -26,11 +17,6 @@ class WeekFormatter(
         return format(instance.toLocalDateTime(timeZone).date)
     }
 
-    /**
-     * 如果是本周内, 则显示周几;
-     * 如果是下周, 则显示 "下周几";
-     * 其他情况, 包括任意过去时间, 都显示为 "年-月-日", 会尽量省略年份.
-     */
     fun format(
         targetDate: LocalDate,
         timeZone: TimeZone = TimeZone.currentSystemDefault(),

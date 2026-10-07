@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.person
+package com.wynime.app.ui.subject.person
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,32 +30,25 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.compose.collectAsLazyPagingItems
-import me.him188.ani.app.navigation.LocalNavigator
-import me.him188.ani.app.ui.foundation.ImageViewer
-import me.him188.ani.app.ui.foundation.ImageViewerBackHandler
-import me.him188.ani.app.ui.foundation.ImageViewerHandler
-import me.him188.ani.app.ui.foundation.rememberImageViewerHandler
-import me.him188.ani.app.ui.foundation.widgets.ModalSideSheet
-import me.him188.ani.app.ui.foundation.widgets.rememberModalSideSheetState
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.person_details_open_full_page
+import com.wynime.app.navigation.LocalNavigator
+import com.wynime.app.ui.foundation.ImageViewer
+import com.wynime.app.ui.foundation.ImageViewerBackHandler
+import com.wynime.app.ui.foundation.ImageViewerHandler
+import com.wynime.app.ui.foundation.rememberImageViewerHandler
+import com.wynime.app.ui.foundation.widgets.ModalSideSheet
+import com.wynime.app.ui.foundation.widgets.rememberModalSideSheetState
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.person_details_open_full_page
 import org.jetbrains.compose.resources.stringResource
 
-/** 点击人物/角色时要打开的目标. */
 @Immutable
 sealed class PeoplePreviewTarget {
     data class Person(val personId: Int) : PeoplePreviewTarget()
     data class Character(val characterId: Int) : PeoplePreviewTarget()
 }
 
-/**
- * 非 null 时, 点击人物/角色先打开侧边预览 (中大屏, 方案C); 为 null 时直接导航到全页.
- *
- * 由 [PeoplePreviewHost] 在多栏布局下提供.
- */
 val LocalPeoplePreviewHandler = staticCompositionLocalOf<((PeoplePreviewTarget) -> Unit)?> { null }
 
-/** 统一的人物/角色点击行为: 有预览环境则开侧边预览, 否则导航到全页. */
 @Composable
 fun rememberPeopleClickHandler(): (PeoplePreviewTarget) -> Unit {
     val preview = LocalPeoplePreviewHandler.current
@@ -80,10 +64,6 @@ fun rememberPeopleClickHandler(): (PeoplePreviewTarget) -> Unit {
     }
 }
 
-/**
- * 在 [content] 范围内启用人物/角色侧边预览: 提供 [LocalPeoplePreviewHandler],
- * 并在有目标时渲染右侧 modal side sheet. 仅应在中大屏布局使用.
- */
 @Composable
 fun PeoplePreviewHost(content: @Composable () -> Unit) {
     var target by remember { mutableStateOf<PeoplePreviewTarget?>(null) }
@@ -95,9 +75,6 @@ fun PeoplePreviewHost(content: @Composable () -> Unit) {
     }
 }
 
-/**
- * 右侧 modal side sheet, 内容复用单栏详情列; 头部提供「打开完整页面」与关闭.
- */
 @Composable
 private fun PeoplePreviewSideSheet(
     target: PeoplePreviewTarget,
@@ -112,7 +89,7 @@ private fun PeoplePreviewSideSheet(
         state = state,
         shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        // 必须放在 sheet (Dialog) 内, 否则覆盖层会被 Dialog 挡住; 用 overlay 让移动端的查看器覆盖整个窗口而不只是 sheet
+
         overlay = {
             ImageViewer(imageViewer) { imageViewer.clear() }
             ImageViewerBackHandler(imageViewer)
@@ -162,7 +139,7 @@ private fun PersonPreviewContent(
                 works = vm.worksPager.collectAsLazyPagingItems(),
                 comments = vm.comments,
                 modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
-                // 预览内点击跳转前先关闭预览
+
                 navigation = rememberPeopleDetailsNavigation(onBeforeNavigate = onDismissRequest),
                 imageViewer = imageViewer,
             )
@@ -191,7 +168,7 @@ private fun CharacterPreviewContent(
                 subjects = vm.subjectsPager.collectAsLazyPagingItems(),
                 comments = vm.comments,
                 modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 16.dp),
-                // 预览内点击跳转前先关闭预览
+
                 navigation = rememberPeopleDetailsNavigation(onBeforeNavigate = onDismissRequest),
                 imageViewer = imageViewer,
             )

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.user
+package com.wynime.app.data.repository.user
 
 import androidx.compose.runtime.Stable
 import androidx.datastore.core.DataStore
@@ -20,41 +11,30 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
-import me.him188.ani.app.data.models.preference.AnalyticsSettings
-import me.him188.ani.app.data.models.preference.DebugSettings
-import me.him188.ani.app.data.models.preference.MediaCacheSettings
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.preference.OneshotActionConfig
-import me.him188.ani.app.data.models.preference.PlayerKernelConfig
-import me.him188.ani.app.data.models.preference.ProfileSettings
-import me.him188.ani.app.data.models.preference.ProxySettings
-import me.him188.ani.app.data.models.preference.ThemeSettings
-import me.him188.ani.app.data.models.preference.UISettings
-import me.him188.ani.app.data.models.preference.UpdateSettings
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
-import me.him188.ani.app.data.persistent.DataStoreJson
-import me.him188.ani.utils.logging.debug
-import me.him188.ani.utils.logging.error
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.data.models.preference.AnalyticsSettings
+import com.wynime.app.data.models.preference.DebugSettings
+import com.wynime.app.data.models.preference.MediaCacheSettings
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.preference.OneshotActionConfig
+import com.wynime.app.data.models.preference.PlayerKernelConfig
+import com.wynime.app.data.models.preference.ProfileSettings
+import com.wynime.app.data.models.preference.ProxySettings
+import com.wynime.app.data.models.preference.ThemeSettings
+import com.wynime.app.data.models.preference.UISettings
+import com.wynime.app.data.models.preference.UpdateSettings
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.persistent.DataStoreJson
+import com.wynime.utils.logging.debug
+import com.wynime.utils.logging.error
+import com.wynime.utils.logging.logger
 
-/**
- * 所有设置
- */
 interface SettingsRepository {
     val mediaSelectorSettings: Settings<MediaSelectorSettings>
 
-    /**
-     * 全局默认选择资源的偏好设置
-     *
-     * @see EpisodePreferencesRepository
-     */
     val defaultMediaPreference: Settings<MediaPreference>
 
-    /**
-     * @since 3.5
-     */
     val profileSettings: Settings<ProfileSettings>
     val proxySettings: Settings<ProxySettings>
     val mediaCacheSettings: Settings<MediaCacheSettings>
@@ -63,11 +43,6 @@ interface SettingsRepository {
     val updateSettings: Settings<UpdateSettings>
     val videoScaffoldConfig: Settings<VideoScaffoldConfig>
 
-    /**
-     * 播放器内核配置.
-     *
-     * @since 6.1.0
-     */
     val playerKernelConfig: Settings<PlayerKernelConfig>
 
     val videoResolverSettings: Settings<VideoResolverSettings>

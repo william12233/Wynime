@@ -1,15 +1,6 @@
-/*
- * Copyright (C) 2024 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
 @file:androidx.annotation.OptIn(UnstableApi::class)
 
-package me.him188.ani.app.videoplayer.media
+package com.wynime.app.videoplayer.media
 
 import android.net.Uri
 import androidx.media3.common.C
@@ -18,20 +9,15 @@ import androidx.media3.datasource.BaseDataSource
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import kotlinx.coroutines.runBlocking
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
-import me.him188.ani.utils.logging.warn
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import org.openani.mediamp.io.SeekableInput
 import org.openani.mediamp.source.SeekableInputMediaData
 import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.measureTimedValue
 
-/**
- * Wrap of an Ani [VideoData] into a ExoPlayer [DataSource].
- *
- * This class will not close [videoData].
- */
 @androidx.annotation.OptIn(UnstableApi::class)
 class VideoDataDataSource(
     private val videoData: SeekableInputMediaData,
@@ -49,11 +35,10 @@ class VideoDataDataSource(
     private var opened = false
 
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
-        // 性能提示: 这个函数会被非常频繁调用 (一个 byte 一次), 速度会直接影响视频首帧延迟
 
         if (length == 0) return 0
 
-        if (ENABLE_READ_LOG) { // const val, optimized out
+        if (ENABLE_READ_LOG) {
             logger.warn { "VideoDataDataSource read: offset=$offset, length=$length" }
         }
 

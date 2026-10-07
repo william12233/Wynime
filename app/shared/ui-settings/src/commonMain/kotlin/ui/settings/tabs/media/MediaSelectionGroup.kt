@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.media
+package com.wynime.app.ui.settings.tabs.media
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
@@ -23,80 +14,79 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.util.fastAll
-import me.him188.ani.app.data.models.preference.MediaPreference
-import me.him188.ani.app.data.models.preference.MediaSelectorSettings
-import me.him188.ani.app.data.models.preference.VideoResolverSettings
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.animation.AniAnimatedVisibility
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_media_advanced_settings
-import me.him188.ani.app.ui.lang.settings_media_advanced_settings_description
-import me.him188.ani.app.ui.lang.settings_media_alliance
-import me.him188.ani.app.ui.lang.settings_media_alliance_description
-import me.him188.ani.app.ui.lang.settings_media_any
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_all
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_none
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_partial
-import me.him188.ani.app.ui.lang.settings_media_auto_cache_space
-import me.him188.ani.app.ui.lang.settings_media_auto_enable_last
-import me.him188.ani.app.ui.lang.settings_media_auto_enable_last_description
-import me.him188.ani.app.ui.lang.settings_media_cache_ttl_15min
-import me.him188.ani.app.ui.lang.settings_media_cache_ttl_1d
-import me.him188.ani.app.ui.lang.settings_media_cache_ttl_1h
-import me.him188.ani.app.ui.lang.settings_media_cache_ttl_30min
-import me.him188.ani.app.ui.lang.settings_media_cache_ttl_5min
-import me.him188.ani.app.ui.lang.settings_media_cache_ttl_6h
-import me.him188.ani.app.ui.lang.settings_media_cache_ttl_none
-import me.him188.ani.app.ui.lang.settings_media_fast_select_web
-import me.him188.ani.app.ui.lang.settings_media_fast_select_web_description
-import me.him188.ani.app.ui.lang.settings_media_hide_no_subtitle
-import me.him188.ani.app.ui.lang.settings_media_hide_no_subtitle_description
-import me.him188.ani.app.ui.lang.settings_media_image_captcha_auto_solve
-import me.him188.ani.app.ui.lang.settings_media_image_captcha_auto_solve_description
-import me.him188.ani.app.ui.lang.settings_media_max_wait_time
-import me.him188.ani.app.ui.lang.settings_media_max_wait_time_description
-import me.him188.ani.app.ui.lang.settings_media_none
-import me.him188.ani.app.ui.lang.settings_media_prefer_source_type
-import me.him188.ani.app.ui.lang.settings_media_preference_description
-import me.him188.ani.app.ui.lang.settings_media_preference_override_notice
-import me.him188.ani.app.ui.lang.settings_media_preference_title
-import me.him188.ani.app.ui.lang.settings_media_resolution
-import me.him188.ani.app.ui.lang.settings_media_resolution_description
-import me.him188.ani.app.ui.lang.settings_media_show_disabled
-import me.him188.ani.app.ui.lang.settings_media_show_disabled_description
-import me.him188.ani.app.ui.lang.settings_media_sort_tip
-import me.him188.ani.app.ui.lang.settings_media_source_no_preference
-import me.him188.ani.app.ui.lang.settings_media_source_web
-import me.him188.ani.app.ui.lang.settings_media_subtitle_language
-import me.him188.ani.app.ui.lang.settings_media_video_link_resolve_timeout
-import me.him188.ani.app.ui.lang.settings_media_video_link_resolve_timeout_description
-import me.him188.ani.app.ui.lang.settings_media_wait_time_10s
-import me.him188.ani.app.ui.lang.settings_media_wait_time_15s
-import me.him188.ani.app.ui.lang.settings_media_wait_time_20s
-import me.him188.ani.app.ui.lang.settings_media_wait_time_30s
-import me.him188.ani.app.ui.lang.settings_media_wait_time_3s
-import me.him188.ani.app.ui.lang.settings_media_wait_time_5s
-import me.him188.ani.app.ui.lang.settings_media_wait_time_8s
-import me.him188.ani.app.ui.lang.settings_media_wait_time_infinite
-import me.him188.ani.app.ui.lang.settings_media_wait_time_none
-import me.him188.ani.app.ui.lang.settings_media_web_search_cache_ttl
-import me.him188.ani.app.ui.lang.settings_media_web_search_cache_ttl_description
-import me.him188.ani.app.ui.media.rememberMediaDetailsStrings
-import me.him188.ani.app.ui.media.renderResolution
-import me.him188.ani.app.ui.media.renderSubtitleLanguage
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.app.ui.settings.framework.components.DropdownItem
-import me.him188.ani.app.ui.settings.framework.components.SelectableItem
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.framework.components.SorterItem
-import me.him188.ani.app.ui.settings.framework.components.SwitchItem
-import me.him188.ani.app.ui.settings.framework.components.TextFieldItem
-import me.him188.ani.app.ui.settings.rendering.MediaSourceIcons
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.topic.FileSize.Companion.megaBytes
-import me.him188.ani.datasources.api.topic.Resolution
-import me.him188.ani.datasources.api.topic.SubtitleLanguage
-import me.him188.ani.utils.platform.isIos
+import com.wynime.app.data.models.preference.MediaPreference
+import com.wynime.app.data.models.preference.MediaSelectorSettings
+import com.wynime.app.data.models.preference.VideoResolverSettings
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_media_advanced_settings
+import com.wynime.app.ui.lang.settings_media_advanced_settings_description
+import com.wynime.app.ui.lang.settings_media_alliance
+import com.wynime.app.ui.lang.settings_media_alliance_description
+import com.wynime.app.ui.lang.settings_media_any
+import com.wynime.app.ui.lang.settings_media_auto_cache_all
+import com.wynime.app.ui.lang.settings_media_auto_cache_none
+import com.wynime.app.ui.lang.settings_media_auto_cache_partial
+import com.wynime.app.ui.lang.settings_media_auto_cache_space
+import com.wynime.app.ui.lang.settings_media_auto_enable_last
+import com.wynime.app.ui.lang.settings_media_auto_enable_last_description
+import com.wynime.app.ui.lang.settings_media_cache_ttl_15min
+import com.wynime.app.ui.lang.settings_media_cache_ttl_1d
+import com.wynime.app.ui.lang.settings_media_cache_ttl_1h
+import com.wynime.app.ui.lang.settings_media_cache_ttl_30min
+import com.wynime.app.ui.lang.settings_media_cache_ttl_5min
+import com.wynime.app.ui.lang.settings_media_cache_ttl_6h
+import com.wynime.app.ui.lang.settings_media_cache_ttl_none
+import com.wynime.app.ui.lang.settings_media_fast_select_web
+import com.wynime.app.ui.lang.settings_media_fast_select_web_description
+import com.wynime.app.ui.lang.settings_media_hide_no_subtitle
+import com.wynime.app.ui.lang.settings_media_hide_no_subtitle_description
+import com.wynime.app.ui.lang.settings_media_image_captcha_auto_solve
+import com.wynime.app.ui.lang.settings_media_image_captcha_auto_solve_description
+import com.wynime.app.ui.lang.settings_media_max_wait_time
+import com.wynime.app.ui.lang.settings_media_max_wait_time_description
+import com.wynime.app.ui.lang.settings_media_none
+import com.wynime.app.ui.lang.settings_media_prefer_source_type
+import com.wynime.app.ui.lang.settings_media_preference_description
+import com.wynime.app.ui.lang.settings_media_preference_override_notice
+import com.wynime.app.ui.lang.settings_media_preference_title
+import com.wynime.app.ui.lang.settings_media_resolution
+import com.wynime.app.ui.lang.settings_media_resolution_description
+import com.wynime.app.ui.lang.settings_media_show_disabled
+import com.wynime.app.ui.lang.settings_media_show_disabled_description
+import com.wynime.app.ui.lang.settings_media_sort_tip
+import com.wynime.app.ui.lang.settings_media_source_no_preference
+import com.wynime.app.ui.lang.settings_media_source_web
+import com.wynime.app.ui.lang.settings_media_subtitle_language
+import com.wynime.app.ui.lang.settings_media_video_link_resolve_timeout
+import com.wynime.app.ui.lang.settings_media_video_link_resolve_timeout_description
+import com.wynime.app.ui.lang.settings_media_wait_time_10s
+import com.wynime.app.ui.lang.settings_media_wait_time_15s
+import com.wynime.app.ui.lang.settings_media_wait_time_20s
+import com.wynime.app.ui.lang.settings_media_wait_time_30s
+import com.wynime.app.ui.lang.settings_media_wait_time_3s
+import com.wynime.app.ui.lang.settings_media_wait_time_5s
+import com.wynime.app.ui.lang.settings_media_wait_time_8s
+import com.wynime.app.ui.lang.settings_media_wait_time_infinite
+import com.wynime.app.ui.lang.settings_media_wait_time_none
+import com.wynime.app.ui.lang.settings_media_web_search_cache_ttl
+import com.wynime.app.ui.lang.settings_media_web_search_cache_ttl_description
+import com.wynime.app.ui.media.rememberMediaDetailsStrings
+import com.wynime.app.ui.media.renderResolution
+import com.wynime.app.ui.media.renderSubtitleLanguage
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.app.ui.settings.framework.components.DropdownItem
+import com.wynime.app.ui.settings.framework.components.SelectableItem
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.SorterItem
+import com.wynime.app.ui.settings.framework.components.SwitchItem
+import com.wynime.app.ui.settings.framework.components.TextFieldItem
+import com.wynime.app.ui.settings.rendering.MediaSourceIcons
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
+import com.wynime.datasources.api.topic.Resolution
+import com.wynime.datasources.api.topic.SubtitleLanguage
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -122,9 +112,6 @@ class MediaSelectionGroupState(
         defaultMediaPreference.fallbackResolutions.extendTo(allResolutionIds)
     }
 
-    /**
-     * 将 [this] 扩展到 [all]，并保持顺序.
-     */
     private fun List<String>?.extendTo(
         all: List<String>
     ): List<SelectableItem<String>> {
@@ -271,7 +258,7 @@ internal fun SettingsScope.MediaSelectionGroup(
                             when (it) {
                                 MediaSourceKind.WEB -> stringResource(Lang.settings_media_source_web)
                                 null -> stringResource(Lang.settings_media_source_no_preference)
-                                MediaSourceKind.LocalCache -> "" // not possible
+                                MediaSourceKind.LocalCache -> ""
                             },
                         )
                     },
@@ -291,10 +278,9 @@ internal fun SettingsScope.MediaSelectionGroup(
                 HorizontalDividerItem()
             }
 
-            // 只在偏好在线源时才有意义 —— 整段动画讲的就是 web 源的搜/选/解析
             val workflowDemo = rememberMediaSelectorWorkflowDemoState(mediaSelectorSettings.fastSelectWebKind)
 
-            AniAnimatedVisibility(mediaSelectorSettings.preferKind == MediaSourceKind.WEB) {
+            WynimeAnimatedVisibility(mediaSelectorSettings.preferKind == MediaSourceKind.WEB) {
                 Column {
                     MediaSelectorWorkflowItem(workflowDemo)
 
@@ -335,7 +321,7 @@ internal fun SettingsScope.MediaSelectionGroup(
                                     10.seconds -> stringResource(Lang.settings_media_wait_time_10s)
                                     15.seconds -> stringResource(Lang.settings_media_wait_time_15s)
                                     Duration.INFINITE -> stringResource(Lang.settings_media_wait_time_infinite)
-                                    else -> duration.toString() // non-reachable
+                                    else -> duration.toString()
                                 },
                             )
                         },
@@ -408,7 +394,7 @@ internal fun SettingsScope.MediaSelectionGroup(
                                     1.hours -> stringResource(Lang.settings_media_cache_ttl_1h)
                                     6.hours -> stringResource(Lang.settings_media_cache_ttl_6h)
                                     1.days -> stringResource(Lang.settings_media_cache_ttl_1d)
-                                    else -> duration.toString() // non-reachable
+                                    else -> duration.toString()
                                 },
                             )
                         },
@@ -424,10 +410,6 @@ internal fun SettingsScope.MediaSelectionGroup(
 
                     HorizontalDividerItem()
 
-                    // iOS 上暂不暴露该开关: iOS 注入的是 UnsupportedCaptchaBrowserFactory, 没有交互式验证码
-                    // 填写入口, 一旦关闭自动识别, 带图片验证码的数据源将没有任何兜底手段而直接不可用.
-                    // 设置项本身仍然存在且默认开启, 等 iOS 支持交互式验证码后再放开这里即可.
-                    if (!LocalPlatform.current.isIos()) {
                         SwitchItem(
                             checked = mediaSelectorSettings.enableImageCaptchaAutoSolve,
                             onCheckedChange = {
@@ -442,7 +424,7 @@ internal fun SettingsScope.MediaSelectionGroup(
                         )
 
                         HorizontalDividerItem()
-                    }
+
                 }
             }
 

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.utils.coroutines
+package com.wynime.utils.coroutines
 
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
@@ -56,20 +47,20 @@ class RestartableCoroutineScopeTest {
         val isRunning = CompletableDeferred<Boolean>()
 
         val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            started.complete(Unit) // signal that this job has started
+            started.complete(Unit)
             try {
                 awaitCancellation()
             } catch (_: Exception) {
                 isRunning.complete(false)
             }
         }
-        // Ensure the job has started
+
         started.await()
         assertTrue(job.isActive)
 
         scope.restart()
         assertFalse(job.isActive)
-        // The job's catch block should have set `isRunning` to false
+
         assertFalse(isRunning.await())
 
         scope.close()
@@ -77,7 +68,7 @@ class RestartableCoroutineScopeTest {
 
     @Test
     fun `can launch new coroutines after cancel`() = testScope.runTest {
-        // Start and cancel initial coroutines
+
         val job1Started = CompletableDeferred<Unit>()
         val job1 = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             job1Started.complete(Unit)
@@ -88,7 +79,6 @@ class RestartableCoroutineScopeTest {
         scope.restart()
         assertFalse(job1.isActive)
 
-        // Launch a new coroutine after cancellation
         val result = CompletableDeferred<Int>()
         val job2 = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             result.complete(42)
@@ -112,7 +102,6 @@ class RestartableCoroutineScopeTest {
         scope.close()
         assertFalse(job1.isActive)
 
-        // Attempt to launch after close should return an already-cancelled job
         val job2 = scope.launch(start = CoroutineStart.UNDISPATCHED) {
             awaitCancellation()
         }
@@ -131,7 +120,6 @@ class RestartableCoroutineScopeTest {
         }
         scope.restart()
 
-        // The parent should remain active
         assertEquals(initialActiveState, parentJob.isActive)
 
         scope.close()
@@ -139,7 +127,7 @@ class RestartableCoroutineScopeTest {
 
     @Test
     fun `multiple launches work independently`() = testScope.runTest {
-        // We'll just launch 5 coroutines, each completes its own Deferred
+
         val results = List(5) { CompletableDeferred<Int>() }
 
         results.forEachIndexed { index, deferred ->
@@ -159,25 +147,21 @@ class RestartableCoroutineScopeTest {
         val beforeCancelResult = CompletableDeferred<Int>()
         val afterCancelResult = CompletableDeferred<Int>()
 
-        // This job never completes unless not cancelled
         val job1Started = CompletableDeferred<Unit>()
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
             job1Started.complete(Unit)
             awaitCancellation()
         }
 
-        // Cancel before the first job "completes"
         job1Started.await()
         scope.restart()
 
-        // Launch a new job after cancellation
         scope.launch(start = CoroutineStart.UNDISPATCHED) {
             afterCancelResult.complete(2)
         }
 
-        // First job should be cancelled
         assertFalse(beforeCancelResult.isCompleted)
-        // Second job should complete
+
         assertEquals(2, afterCancelResult.await())
 
         scope.close()
@@ -190,7 +174,7 @@ class RestartableCoroutineScopeTest {
         val lock = SynchronizedObject()
 
         List(100) {
-            // Use async here just to start them in parallel
+
             launch(start = CoroutineStart.UNDISPATCHED) {
                 synchronized(lock) {
                     completed++
@@ -201,40 +185,36 @@ class RestartableCoroutineScopeTest {
             }
         }
 
-        // Wait for all increments
         assertEquals(100, completedJobs.await())
         scope.close()
     }
 
     @Test
     fun `thread-safety - concurrent cancellations`() = testScope.runTest {
-        // Create 50 tasks that will be cancelled by restarts
+
         val results = List(50) { CompletableDeferred<Boolean>() }
         results.forEach { deferred ->
             scope.launch(start = CoroutineStart.UNDISPATCHED) {
                 try {
                     awaitCancellation()
                 } catch (_: Exception) {
-                    // do nothing
+
                 }
             }
         }
 
-        // Launch multiple restarts concurrently, then new jobs
         val cancellationJobs = List(10) {
             launch(start = CoroutineStart.UNDISPATCHED) {
                 scope.restart()
-                // Launch a new job that should be active in the new scope
+
                 scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                    // do nothing, just verify we can still launch
+
                 }
             }
         }
 
-        // Wait for all the restarts to finish
         cancellationJobs.forEach { it.join() }
 
-        // Original jobs should remain uncompleted
         results.forEach { deferred ->
             assertFalse(deferred.isCompleted)
         }
@@ -255,7 +235,6 @@ class RestartableCoroutineScopeTest {
             result2.complete(2)
         }
 
-        // Cancel just job1
         job1.cancel()
 
         job2Run.complete(Unit)
@@ -268,7 +247,6 @@ class RestartableCoroutineScopeTest {
     fun `cancelled scope doesnt leak memory`() = testScope.runTest {
         val deferreds = mutableListOf<CompletableDeferred<Unit>>()
 
-        // Launch coroutines that awaitCancellation forever
         repeat(100) {
             val deferred = CompletableDeferred<Unit>()
             deferreds.add(deferred)
@@ -285,7 +263,6 @@ class RestartableCoroutineScopeTest {
 
         scope.closeAndJoin()
 
-        // All coroutines should have their final blocks executed
         deferreds.forEach { deferred ->
             assertTrue(deferred.isCompleted)
         }

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -40,23 +31,23 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import me.him188.ani.app.ui.download.components.DownloadItem
-import me.him188.ani.app.ui.download.components.DownloadRow
-import me.him188.ani.app.ui.download.components.DownloadSelectionState
-import me.him188.ani.app.ui.foundation.LocalSubjectAppearanceSettings
-import me.him188.ani.app.ui.foundation.theme.stronglyWeaken
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.cache_filter_collection_done
-import me.him188.ani.app.ui.lang.cache_filter_collection_dropped
-import me.him188.ani.app.ui.lang.cache_management_episode_label
-import me.him188.ani.app.ui.lang.cache_subject_cache
-import me.him188.ani.app.ui.lang.cache_subject_cancel
-import me.him188.ani.app.ui.lang.downloads_empty
-import me.him188.ani.app.ui.lang.downloads_load_failed
-import me.him188.ani.app.ui.lang.settings_mediasource_retry
-import me.him188.ani.app.ui.mediafetch.MediaSourceInfoProvider
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
-import me.him188.ani.datasources.api.topic.isDoneOrDropped
+import com.wynime.app.ui.download.components.DownloadItem
+import com.wynime.app.ui.download.components.DownloadRow
+import com.wynime.app.ui.download.components.DownloadSelectionState
+import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
+import com.wynime.app.ui.foundation.theme.stronglyWeaken
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.cache_filter_collection_done
+import com.wynime.app.ui.lang.cache_filter_collection_dropped
+import com.wynime.app.ui.lang.cache_management_episode_label
+import com.wynime.app.ui.lang.cache_subject_cache
+import com.wynime.app.ui.lang.cache_subject_cancel
+import com.wynime.app.ui.lang.downloads_empty
+import com.wynime.app.ui.lang.downloads_load_failed
+import com.wynime.app.ui.lang.settings_mediasource_retry
+import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
+import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
 import org.jetbrains.compose.resources.stringResource
 
 class SubjectDownloadActions(
@@ -70,9 +61,7 @@ class SubjectDownloadActions(
     val reload: () -> Unit,
 ) {
     companion object {
-        /**
-         * 所有操作都不做任何事, 供没有 presenter 的加载态使用.
-         */
+
         val None = SubjectDownloadActions({}, {}, {}, {}, {}, {}, {}, {})
     }
 }
@@ -125,7 +114,7 @@ fun SubjectDownloadsContent(
             when (item) {
                 is SubjectDownloadListItem.Episode -> EpisodeDownloadRow(
                     episode = item.episode,
-                    // 会话正在准备或持久化时, 其他剧集的请求会被忽略, 因此它们的下载按钮置灰.
+
                     enabled = !selection.inSelection && !(state.request.busy && item.episode.episodeId !in state.request.episodeIds),
                     busy = state.request.busy && item.episode.episodeId in state.request.episodeIds,
                     canCancel = state.request.canCancel,

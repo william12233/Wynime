@@ -1,23 +1,11 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.mediafetch.request
+package com.wynime.app.ui.mediafetch.request
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.saveable.Saver
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.source.MediaFetchRequest
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.source.MediaFetchRequest
+import com.wynime.utils.platform.annotations.TestOnly
 
-/**
- * @see me.him188.ani.datasources.api.source.MediaFetchRequest
- */
 data class EditingMediaFetchRequest(
     val subjectId: String,
     val episodeId: String,
@@ -71,14 +59,11 @@ fun MediaFetchRequest.toEditingMediaFetchRequest(): EditingMediaFetchRequest {
     )
 }
 
-/**
- * @param episodes 条目的全部剧集, 编辑器不展示, 沿用原请求的.
- */
 fun EditingMediaFetchRequest.toMediaFetchRequestOrNull(
     episodes: List<MediaFetchRequest.Episode> = emptyList(),
 ): MediaFetchRequest? {
     return MediaFetchRequest(
-        subjectId = subjectId.toIntOrNull()?.toString() ?: return null, // ensure valid
+        subjectId = subjectId.toIntOrNull()?.toString() ?: return null,
         episodeId = episodeId.toIntOrNull()?.toString() ?: return null,
         subjectNameCN = primaryName,
         subjectNames = listOf(primaryName) + complementaryNames,
@@ -104,7 +89,6 @@ val TestEditingMediaFetchRequest
         episodeName = "恶魔与阴谋",
         episodeEp = "01",
     )
-
 
 @TestOnly
 val TestMediaFetchRequest

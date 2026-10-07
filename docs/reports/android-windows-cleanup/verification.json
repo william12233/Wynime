@@ -1,0 +1,124 @@
+{
+  "verificationScope": "自動檢查與相容契約紀錄；發布提交的完整重建及公開資產精確值記錄於 GitHub v1.0.9 發行說明。",
+  "gradleCheckAndAndroidWindowsReleaseBuild": "PASS",
+  "gradleResult": "BUILD SUCCESSFUL in 8m 16s; 2272 tasks",
+  "generation": {
+    "cloudOpenApi": "PASS",
+    "bangumiOpenApi": "PASS",
+    "bbcodeGrammar": "PASS"
+  },
+  "worker": {
+    "typecheck": "PASS",
+    "tests": 19,
+    "failed": 0,
+    "deploymentVersion": "e949d609-0a84-4274-b04c-115cbf567882",
+    "unauthenticatedRemovalGetAndPost": 401
+  },
+  "criticalRegressionSuites": [
+    {
+      "suite": "com.wynime.app.desktop.KoinStartupWiringTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-07T18:38:37.871Z"
+    },
+    {
+      "suite": "BundledSourcePluginMigrationTest[desktop]",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-07T18:19:00.782Z"
+    },
+    {
+      "suite": "SourcePluginInstallerTest[desktop]",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-07T18:19:05.495Z"
+    },
+    {
+      "suite": "BangumiTrackingSyncRepositoryTest[desktop]",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-07T18:18:29.620Z"
+    },
+    {
+      "suite": "WynimeDatabaseMigrationTest[desktop]",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "timestamp": "2026-10-07T18:18:28.104Z"
+    }
+  ],
+  "commentScans": {
+    "kotlinFiles": 1941,
+    "configurationPythonXmlFiles": 95,
+    "shellJavaShaderFiles": 36,
+    "embeddedWorkflowFiles": 3,
+    "typeScriptJsoncFiles": 11,
+    "powershellFiles": 3,
+    "antlrGrammarFiles": 1,
+    "comments": 0
+  },
+  "android": {
+    "package": "com.wynime.app",
+    "versionName": "1.0.9",
+    "versionCode": 5,
+    "previousVersionCode": 4,
+    "abi": [
+      "arm64-v8a"
+    ],
+    "v2Signature": true,
+    "certificateMatchesPreviousPublicRelease": true,
+    "certificateSha256": "57f26d84a33c10a73b429e9520d72a93654e90ae1fe8298d479ee342d63833bd",
+    "previousPublicBytes": 35040715,
+    "packagedCopyrightNotices": 1579,
+    "excludedBuildToolNotices": "AAPT 的預設資產規則略過 .github／.run 目錄中的 5 份建置工具聲明；它們保留於 Git 與 Windows 發布包。"
+  },
+  "windows": {
+    "entry": "com.wynime.app.desktop.WynimeDesktop",
+    "version": "1.0.9",
+    "runtimeJarCount": 247,
+    "productionTestJars": [],
+    "copyrightNoticesIncluded": true,
+    "previousPublicZipBytes": 314720486,
+    "retainedTransitiveDependency": "jsystemthemedetector 仍傳遞依賴 DBus；本次僅移除自有 Linux DBus 程式及直接相依，保留第三方套件契約。"
+  },
+  "compatibility": {
+    "roomSchemasUnchanged": 31,
+    "databaseVersion": 31,
+    "databaseFilename": "ani_room_database_main.db",
+    "bundledPluginIds": [
+      "eacg",
+      "dm1",
+      "next",
+      "girigiri",
+      "2rk",
+      "dida",
+      "dmbus"
+    ],
+    "pluginApiVersion": 3,
+    "pluginVersion": "1.0.26"
+  },
+  "buildCacheLimitation": "ABI 與套件 freshness 的執行驗證任務會使完整 check 的 configuration cache 捨棄；建置及檢查成功，未停用全域 configuration cache。",
+  "manualAcceptance": {
+    "deviceAndEmulatorInteraction": "WAIVED_BY_USER",
+    "nativePlayerExecution": "WAIVED_BY_USER",
+    "bangumiRemoteRemoval": "USER_WILL_TEST; subject 701779 was not modified"
+  },
+  "artifactSizeExplanation": "Android 附帶七個 Dex 遷移套件及完整授權聲明，體積增加；測試框架移出正式 Windows 相依。不同 cache 狀態的建置時間不作效能比較。",
+  "shaderContracts": {
+    "resources": 20,
+    "executionDirectives": 540,
+    "originalProgramTokenEquality": "PASS",
+    "orderedDirectiveHashes": "PASS",
+    "androidAndDesktopCompilation": "PASS",
+    "representation": "一般註解從來源移除；MPV 執行指令以 properties 設定保存，於建置產生播放器所需程式語法。"
+  }
+}

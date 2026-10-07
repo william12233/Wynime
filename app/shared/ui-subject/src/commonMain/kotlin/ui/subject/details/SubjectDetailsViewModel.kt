@@ -1,23 +1,14 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.details
+package com.wynime.app.ui.subject.details
 
 import androidx.compose.runtime.Stable
-import me.him188.ani.app.data.models.subject.SubjectInfo
-import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
-import me.him188.ani.app.domain.episode.SetEpisodeCollectionTypeUseCase
-import me.him188.ani.app.ui.foundation.AbstractViewModel
-import me.him188.ani.app.ui.rating.RateRequest
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsStateFactory
-import me.him188.ani.app.ui.subject.details.state.SubjectDetailsStateLoader
-import me.him188.ani.app.ui.user.SelfInfoStateProducer
+import com.wynime.app.data.models.subject.SubjectInfo
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.domain.episode.SetEpisodeCollectionTypeUseCase
+import com.wynime.app.ui.foundation.AbstractViewModel
+import com.wynime.app.ui.rating.RateRequest
+import com.wynime.app.ui.subject.details.state.SubjectDetailsStateFactory
+import com.wynime.app.ui.subject.details.state.SubjectDetailsStateLoader
+import com.wynime.app.ui.user.SelfInfoStateProducer
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -34,16 +25,10 @@ open class SubjectDetailsViewModel(
     val state get() = stateLoader.state
     val authState = SelfInfoStateProducer(koin = getKoin()).flow
 
-    /**
-     * 确保已加载. 已加载且仍在更新时不做任何事, 见 [SubjectDetailsStateLoader.load].
-     */
     fun load() {
         stateLoader.load(subjectId, placeholder)
     }
 
-    /**
-     * 强制重新加载, 用于加载失败后重试.
-     */
     fun reload() {
         stateLoader.load(subjectId, placeholder, force = true)
     }

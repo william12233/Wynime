@@ -1,11 +1,6 @@
-/*
- * Copyright (C) 2026 OpenAni contributors.
- * Use of this source code is governed by the GNU AGPLv3 license.
- */
+package com.wynime.app.domain.sourceplugin
 
-package me.him188.ani.app.domain.sourceplugin
-
-import me.him188.ani.source.plugin.api.SourceSubject
+import com.wynime.source.plugin.api.SourceSubject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

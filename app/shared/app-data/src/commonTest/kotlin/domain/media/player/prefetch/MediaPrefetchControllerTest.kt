@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.player.prefetch
+package com.wynime.app.domain.media.player.prefetch
 
 import app.cash.turbine.test
 import kotlinx.coroutines.flow.Flow
@@ -15,18 +6,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import me.him188.ani.app.domain.media.hls.HlsPlaybackProxySession
-import me.him188.ani.app.domain.media.player.ChunkState
+import com.wynime.app.domain.media.hls.HlsPlaybackProxySession
+import com.wynime.app.domain.media.player.ChunkState
 import org.openani.mediamp.source.UriMediaData
 import org.openani.mediamp.test.TestMediampPlayer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/**
- * 注意: 控制器在 `backgroundScope` 中收集, 而 `advanceUntilIdle` 只在有前台任务时才顺带执行后台任务,
- * 因此这里用 `runCurrent` 推进.
- */
 class MediaPrefetchControllerTest {
     private class FakeHlsSession : HlsPlaybackProxySession {
         val ranges = mutableListOf<MediaTimeRange?>()
@@ -69,7 +56,6 @@ class MediaPrefetchControllerTest {
         player.setMediaData(UriMediaData("http://127.0.0.1:1/playlist.m3u8"))
         runCurrent()
 
-        // 慢网: 只缓冲到 20s, 而 OP 在 37s 开始. 此时预缓存会和正片抢带宽, 不能启动
         player.injectBufferedPosition(20_000)
         controller.setPrefetchRequest(request(122_000, 152_000, bufferedUntil = 37_000))
         runCurrent()
@@ -79,7 +65,6 @@ class MediaPrefetchControllerTest {
         runCurrent()
         assertTrue(session.ranges.all { it == null }, "prefetch must not start: ${session.ranges}")
 
-        // 缓冲越过 OP 开头 (允许 1 秒误差): 之后播放器下载的都是要被跳过的内容, 可以启动
         player.injectBufferedPosition(36_500)
         runCurrent()
         assertEquals(MediaTimeRange(122_000, 152_000), session.ranges.last())
@@ -128,7 +113,6 @@ class MediaPrefetchControllerTest {
         runCurrent()
         assertEquals(MediaTimeRange(1_000, 2_000), session.ranges.last())
 
-        // 切换媒体后, 旧请求不再作用于新媒体
         player.setMediaData(UriMediaData("http://127.0.0.1:1/b.m3u8"))
         player.injectBufferedPosition(5_000)
         runCurrent()

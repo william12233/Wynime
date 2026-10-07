@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.subject.episode.video.loading
+package com.wynime.app.ui.subject.episode.video.loading
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -24,36 +15,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
-import me.him188.ani.app.domain.player.VideoLoadingState
-import me.him188.ani.app.domain.player.downloadSpeedFlow
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.foundation.TextWithBorder
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_auto_selecting
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_buffering
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_buffering_too_long
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_cancelled
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_network_error
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_no_matching_file
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_resolution_timed_out
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_error
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_source_verification
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_unknown_error
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_cause_unsupported_media
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_decoding_data
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_failed_prefix
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_player_error
-import me.him188.ani.app.ui.lang.subject_episode_video_loading_resolving_source
-import me.him188.ani.app.videoplayer.ui.VideoLoadingIndicator
-import me.him188.ani.datasources.api.topic.FileSize
-import me.him188.ani.datasources.api.topic.FileSize.Companion.Unspecified
-import me.him188.ani.datasources.api.topic.FileSize.Companion.bytes
+import com.wynime.app.domain.player.VideoLoadingState
+import com.wynime.app.domain.player.downloadSpeedFlow
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.foundation.TextWithBorder
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_video_loading_auto_selecting
+import com.wynime.app.ui.lang.subject_episode_video_loading_buffering
+import com.wynime.app.ui.lang.subject_episode_video_loading_buffering_too_long
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_cancelled
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_network_error
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_no_matching_file
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_resolution_timed_out
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_source_error
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_source_verification
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_unknown_error
+import com.wynime.app.ui.lang.subject_episode_video_loading_cause_unsupported_media
+import com.wynime.app.ui.lang.subject_episode_video_loading_decoding_data
+import com.wynime.app.ui.lang.subject_episode_video_loading_failed_prefix
+import com.wynime.app.ui.lang.subject_episode_video_loading_player_error
+import com.wynime.app.ui.lang.subject_episode_video_loading_resolving_source
+import com.wynime.app.videoplayer.ui.VideoLoadingIndicator
+import com.wynime.datasources.api.topic.FileSize
+import com.wynime.datasources.api.topic.FileSize.Companion.Unspecified
+import com.wynime.datasources.api.topic.FileSize.Companion.bytes
 import org.jetbrains.compose.resources.stringResource
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.MediampPlayer
 import kotlin.time.Duration.Companion.seconds
 
-@Composable // see preview
+@Composable
 fun EpisodeVideoLoadingIndicator(
     playerState: MediampPlayer,
     videoLoadingState: VideoLoadingState,

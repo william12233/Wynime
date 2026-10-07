@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.widgets
+package com.wynime.app.ui.foundation.widgets
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -47,25 +47,6 @@ import androidx.savedstate.findViewTreeSavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import java.util.UUID
 
-/**
- * Popup specific for modal bottom ime aware sheet.
- *
- * Taken from ModalBottomSheet.android.kt
- *
- * ### 为什么不用 [Popup]?
- *
- * 在安卓平台的实现中, [Popup] 使用的 Android window 无法配置为完整的屏幕大小. 其 window 总是排除
- * 了 systemBar padding 和 navigationBar padding. 可能与 [WindowManager.LayoutParams.type] 有关.
- *
- * [ModalBottomImeAwareSheet] 需要默认可以显示完整的屏幕大小.
- *
- * ### 为什么不直接用 [ModalBottomSheet]?
- *
- * 在安卓平台的实现中, [ModalBottomSheet] 背后的 `ModalBottomSheetPopup` 强制添加了 [imePadding].
- *
- * [ModalBottomImeAwareSheet] 需要默认不包含任何 [WindowInsets] 和 padding.
- * 
- */
 @Composable
 actual fun ModalBottomImeAwareSheetPopup(
     popupPositionProvider: PopupPositionProvider,
@@ -106,7 +87,6 @@ actual fun ModalBottomImeAwareSheetPopup(
     }
 }
 
-/** Custom compose view for [ModalBottomImeAwareSheetWindow] */
 @SuppressLint("ViewConstructor")
 private class ModalBottomImeAwareSheetWindow(
     private val properties: PopupProperties,
@@ -122,12 +102,12 @@ private class ModalBottomImeAwareSheetWindow(
 
     init {
         id = android.R.id.content
-        // Set up view owners
+
         setViewTreeLifecycleOwner(composeView.findViewTreeLifecycleOwner())
         setViewTreeViewModelStoreOwner(composeView.findViewTreeViewModelStoreOwner())
         setViewTreeSavedStateRegistryOwner(composeView.findViewTreeSavedStateRegistryOwner())
         setTag(androidx.compose.ui.R.id.compose_view_saveable_id_tag, "Popup:$saveId")
-        // Enable children to draw their shadow by not clipping them
+
         clipChildren = false
     }
 
@@ -139,25 +119,22 @@ private class ModalBottomImeAwareSheetWindow(
 
     private val params: WindowManager.LayoutParams =
         WindowManager.LayoutParams().apply {
-            // Position bottom sheet from the bottom of the screen
+
             gravity = Gravity.BOTTOM or Gravity.START
-            // Application panel window
+
             type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL
-            // Fill up the entire app view
+
             width = displayWidth
             height = WindowManager.LayoutParams.MATCH_PARENT
 
-            // Format of screen pixels
             format = PixelFormat.TRANSLUCENT
-            // Title used as fallback for a11y services
-            // TODO: Provide bottom sheet window resource
+
             title = composeView.context.resources.getString(
                 androidx.compose.ui.R.string.default_popup_window_title,
             )
-            // Get the Window token from the parent view
+
             token = composeView.applicationWindowToken
 
-            // Flags specific to modal bottom sheet.
             flags = flags and (
                     WindowManager.LayoutParams.FLAG_IGNORE_CHEEK_PRESSES or
                             WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM
@@ -165,7 +142,6 @@ private class ModalBottomImeAwareSheetWindow(
 
             flags = flags or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 
-            // Security flag
             val secureFlagEnabled =
                 properties.securePolicy.shouldApplySecureFlag(composeView.isFlagSecureEnabled())
             if (secureFlagEnabled) {
@@ -174,7 +150,6 @@ private class ModalBottomImeAwareSheetWindow(
                 flags = flags and (WindowManager.LayoutParams.FLAG_SECURE.inv())
             }
 
-            // Focusable
             if (!properties.focusable) {
                 flags = flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
             } else {
@@ -212,9 +187,6 @@ private class ModalBottomImeAwareSheetWindow(
         windowManager.removeViewImmediate(this)
     }
 
-    /**
-     * Taken from PopupWindow. Calls [onDismissRequest] when back button is pressed.
-     */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_BACK && properties.dismissOnBackPress) {
             if (keyDispatcherState == null) {
@@ -265,15 +237,13 @@ private class ModalBottomImeAwareSheetWindow(
     }
 
     override fun onGlobalLayout() {
-        // No-op
+
     }
 
     override fun setLayoutDirection(layoutDirection: Int) {
-        // Do nothing. ViewRootImpl will call this method attempting to set the layout direction
-        // from the context's locale, but we have one already from the parent composition.
+
     }
 
-    // Sets the "real" layout direction for our content that we obtain from the parent composition.
     fun superSetLayoutDirection(layoutDirection: LayoutDirection) {
         val direction = when (layoutDirection) {
             LayoutDirection.Ltr -> android.util.LayoutDirection.LTR
@@ -310,7 +280,6 @@ private class ModalBottomImeAwareSheetWindow(
     }
 }
 
-// Taken from AndroidPopup.android.kt
 private fun View.isFlagSecureEnabled(): Boolean {
     val windowParams = rootView.layoutParams as? WindowManager.LayoutParams
     if (windowParams != null) {
@@ -319,7 +288,6 @@ private fun View.isFlagSecureEnabled(): Boolean {
     return false
 }
 
-// Taken from AndroidPopup.android.kt
 private fun SecureFlagPolicy.shouldApplySecureFlag(isSecureFlagSetOnParent: Boolean): Boolean {
     return when (this) {
         SecureFlagPolicy.SecureOff -> false

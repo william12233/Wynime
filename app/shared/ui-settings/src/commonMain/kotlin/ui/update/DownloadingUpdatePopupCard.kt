@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.update
+package com.wynime.app.ui.update
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,21 +29,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastRoundToInt
-import me.him188.ani.app.domain.foundation.LoadError
-import me.him188.ani.app.tools.update.FileDownloaderState
-import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_update_popup_cancel
-import me.him188.ani.app.ui.lang.settings_update_popup_cancel_download
-import me.him188.ani.app.ui.lang.settings_update_popup_cancel_install
-import me.him188.ani.app.ui.lang.settings_update_popup_continue_download
-import me.him188.ani.app.ui.lang.settings_update_popup_continue_update
-import me.him188.ani.app.ui.lang.settings_update_popup_download_complete
-import me.him188.ani.app.ui.lang.settings_update_popup_downloading
-import me.him188.ani.app.ui.lang.settings_update_popup_installing
-import me.him188.ani.app.ui.lang.settings_update_popup_restart_update
-import me.him188.ani.app.ui.search.LoadErrorCard
-import me.him188.ani.utils.platform.annotations.TestOnly
+import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.tools.update.FileDownloaderState
+import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_update_popup_cancel
+import com.wynime.app.ui.lang.settings_update_popup_cancel_download
+import com.wynime.app.ui.lang.settings_update_popup_cancel_install
+import com.wynime.app.ui.lang.settings_update_popup_continue_download
+import com.wynime.app.ui.lang.settings_update_popup_continue_update
+import com.wynime.app.ui.lang.settings_update_popup_download_complete
+import com.wynime.app.ui.lang.settings_update_popup_downloading
+import com.wynime.app.ui.lang.settings_update_popup_installing
+import com.wynime.app.ui.lang.settings_update_popup_restart_update
+import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -69,7 +60,7 @@ fun DownloadingUpdatePopupCard(
 ) {
     var showConfirmCancel by rememberSaveable { mutableStateOf(false) }
     val onRequestCancel = {
-        // 下载或安装仍在进行时需要确认取消；其余下载终态没有活动任务，直接关闭卡片即可。
+
         if (isInstalling) {
             showConfirmCancel = true
         } else when (fileDownloaderStats.state) {
@@ -164,23 +155,7 @@ fun DownloadingUpdatePopupCard(
                     onRetry = onRetryClick,
                     elevation = CardDefaults.cardElevation(),
                 )
-//                ListItem(
-//                    headlineContent = {
-//                        Text("下载失败")
-//                    },
-//                    supportingContent = {
-//                        Text(
-//                            error ?: "未知错误",
-//                            color = MaterialTheme.colorScheme.error,
-//                        )
-//                    },
-//                    leadingContent = {
-//                        Icon(
-//                            Icons.Rounded.ErrorOutline, null,
-//                            tint = MaterialTheme.colorScheme.error,
-//                        )
-//                    },
-//                )
+
             }
 
             else -> {
@@ -202,7 +177,7 @@ fun DownloadingUpdatePopupCard(
                             Box(Modifier.padding(start = 16.dp), contentAlignment = Alignment.CenterEnd) {
                                 Text(
                                     "${999}%",
-                                    Modifier.alpha(0f), // 占位
+                                    Modifier.alpha(0f),
                                 )
                                 Text(
                                     "${(progress * 100).fastRoundToInt()}%",
@@ -245,7 +220,6 @@ private fun PreviewDownloadingUpdatePopupCardError() = ProvideCompositionLocalsF
         {}, {}, {},
     )
 }
-
 
 @OptIn(TestOnly::class)
 @Composable

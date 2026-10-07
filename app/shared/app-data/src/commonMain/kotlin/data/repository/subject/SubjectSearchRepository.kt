@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.data.repository.subject
+package com.wynime.app.data.repository.subject
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -19,32 +10,27 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import me.him188.ani.app.data.models.schedule.AnimeSeasonId
-import me.him188.ani.app.data.models.schedule.yearMonths
-import me.him188.ani.app.data.network.AniSubjectSearchService
-import me.him188.ani.app.data.network.BatchSubjectDetails
-import me.him188.ani.app.data.network.SubjectSearchField
-import me.him188.ani.app.data.network.SubjectSearchFilters
-import me.him188.ani.app.data.repository.Repository
-import me.him188.ani.app.data.repository.RepositoryException
-import me.him188.ani.app.domain.search.RatingRange
-import me.him188.ani.app.domain.search.SearchSort
-import me.him188.ani.app.domain.search.SubjectSearchQuery
-import me.him188.ani.datasources.api.topic.UnifiedCollectionType
+import com.wynime.app.data.models.schedule.AnimeSeasonId
+import com.wynime.app.data.models.schedule.yearMonths
+import com.wynime.app.data.network.WynimeSubjectSearchService
+import com.wynime.app.data.network.BatchSubjectDetails
+import com.wynime.app.data.network.SubjectSearchField
+import com.wynime.app.data.network.SubjectSearchFilters
+import com.wynime.app.data.repository.Repository
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.domain.search.RatingRange
+import com.wynime.app.domain.search.SearchSort
+import com.wynime.app.domain.search.SubjectSearchQuery
+import com.wynime.datasources.api.topic.UnifiedCollectionType
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 
 class SubjectSearchRepository(
-    private val aniSubjectSearchService: AniSubjectSearchService,
+    private val wynimeSubjectSearchService: WynimeSubjectSearchService,
     private val subjectCollectionRepository: SubjectCollectionRepository,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
 ) : Repository(defaultDispatcher) {
 
-    /**
-     * 使用 [searchQuery] 搜索条目.
-     *
-     * 注意, 此方法返回的数据总是会包含 NSFW 条目. 调用方需要自行根据用户设置考虑过滤.
-     */
     fun searchSubjects(
         searchQuery: SubjectSearchQuery,
         ignoreDoneAndDropped: suspend () -> Boolean = { false },
@@ -69,7 +55,7 @@ class SubjectSearchRepository(
             val offset = params.key
                 ?: return@withContext LoadResult.Error(IllegalArgumentException("Key is null"))
             return@withContext try {
-                val subjects = aniSubjectSearchService.searchSubjects(
+                val subjects = wynimeSubjectSearchService.searchSubjects(
                     searchQuery.keywords,
                     offset = offset,
                     limit = params.loadSize,
@@ -88,7 +74,6 @@ class SubjectSearchRepository(
                     subjects
                 }
 
-                // 在分页源中直接过滤掉不符合条件的数据 #2380
                 val subjectInfos = filterSubjectsBySort(
                     filteredSubjects,
                     searchQuery.sort,
@@ -123,9 +108,6 @@ class SubjectSearchRepository(
             )
         }
 
-        /**
-         * 将数据过滤从View提升到分页层，不然会导致 #2380
-         */
         private fun filterSubjectsBySort(
             subjects: List<BatchSubjectDetails>,
             sort: SearchSort
@@ -141,7 +123,7 @@ class SubjectSearchRepository(
 
     private companion object {
         private val bangumiSearchPagingConfig = PagingConfig(
-            pageSize = 20, // Bangumi API 实际最多返回 20 个结果 #2417
+            pageSize = 20,
             initialLoadSize = 20,
         )
 
@@ -161,15 +143,6 @@ class SubjectSearchRepository(
     }
 }
 
-/**
- * 年份/季度筛选对应的 Bangumi airDates 区间.
- *
- * 仅年份: 该自然年全年. 年份+季度: 该季度覆盖的月份 (如冬季从上年 12 月到本年 2 月).
- * 无年份: null (不限).
- *
- * 上界统一取区间后的下一天 (开区间), 避免 "MM-31" 这类不存在的日期;
- * 月份统一补零为两位数.
- */
 internal fun SubjectSearchQuery.toBangumiAirDates(): List<String>? {
     val y = year ?: return null
     val q = season
@@ -177,8 +150,7 @@ internal fun SubjectSearchQuery.toBangumiAirDates(): List<String>? {
         return listOf(">=$y-01-01", "<${y + 1}-01-01")
     }
     val (begin, _, end) = AnimeSeasonId(y, q).yearMonths
-    // 季末次月 1 日为开区间上界. 现有 yearMonths 的季末月 ∈ {2, 5, 8, 11}, 次月不跨年;
-    // 若未来某季的末月是 12 月, 上界需改为次年 1 月 (此处假设由测试兜底).
+
     fun Int.twoDigits(): String = toString().padStart(2, '0')
     return listOf(
         ">=${begin.first}-${begin.second.twoDigits()}-01",

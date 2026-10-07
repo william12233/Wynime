@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.desktop.window
+package com.wynime.app.desktop.window
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -70,24 +61,24 @@ import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import me.him188.ani.app.platform.PlatformWindow
-import me.him188.ani.app.platform.window.LayoutHitTestOwner
-import me.him188.ani.app.platform.window.LocalTitleBarThemeController
-import me.him188.ani.app.platform.window.TitleBarThemeController
-import me.him188.ani.app.platform.window.WindowsWindowHitResult
-import me.him188.ani.app.platform.window.WindowsWindowUtils
-import me.him188.ani.app.ui.foundation.ifThen
-import me.him188.ani.app.ui.foundation.layout.LocalCaptionButtonInsets
-import me.him188.ani.app.ui.foundation.layout.LocalPlatformWindow
-import me.him188.ani.app.ui.foundation.layout.LocalTitleBarInsets
-import me.him188.ani.app.ui.foundation.layout.ZeroInsets
-import me.him188.ani.app.ui.foundation.layout.isSystemInFullscreen
-import me.him188.ani.desktop.generated.resources.Res
-import me.him188.ani.desktop.generated.resources.ic_fluent_arrow_minimize_28_regular
-import me.him188.ani.desktop.generated.resources.ic_fluent_dismiss_48_regular
-import me.him188.ani.desktop.generated.resources.ic_fluent_square_48_regular
-import me.him188.ani.desktop.generated.resources.ic_fluent_square_multiple_48_regular
-import me.him188.ani.desktop.generated.resources.ic_fluent_subtract_48_filled
+import com.wynime.app.platform.PlatformWindow
+import com.wynime.app.platform.window.LayoutHitTestOwner
+import com.wynime.app.platform.window.LocalTitleBarThemeController
+import com.wynime.app.platform.window.TitleBarThemeController
+import com.wynime.app.platform.window.WindowsWindowHitResult
+import com.wynime.app.platform.window.WindowsWindowUtils
+import com.wynime.app.ui.foundation.ifThen
+import com.wynime.app.ui.foundation.layout.LocalCaptionButtonInsets
+import com.wynime.app.ui.foundation.layout.LocalPlatformWindow
+import com.wynime.app.ui.foundation.layout.LocalTitleBarInsets
+import com.wynime.app.ui.foundation.layout.ZeroInsets
+import com.wynime.app.ui.foundation.layout.isSystemInFullscreen
+import com.wynime.desktop.generated.resources.Res
+import com.wynime.desktop.generated.resources.ic_fluent_arrow_minimize_28_regular
+import com.wynime.desktop.generated.resources.ic_fluent_dismiss_48_regular
+import com.wynime.desktop.generated.resources.ic_fluent_square_48_regular
+import com.wynime.desktop.generated.resources.ic_fluent_square_multiple_48_regular
+import com.wynime.desktop.generated.resources.ic_fluent_subtract_48_filled
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import kotlin.time.Duration.Companion.seconds
@@ -108,7 +99,6 @@ internal fun FrameWindowScope.WindowsWindowFrame(
     val windowUtils = WindowsWindowUtils.instance
     val scope = rememberCoroutineScope()
 
-    //Keep 1px for showing float window top area border.
     val topBorderFixedInsets by remember(platformWindow, windowState) {
         derivedStateOf {
             val isFloatingWindow =
@@ -117,12 +107,11 @@ internal fun FrameWindowScope.WindowsWindowFrame(
         }
     }
     Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(topBorderFixedInsets)) {
-        //Control the visibility of the title bar. initial value is !isFullScreen.
+
         LaunchedEffect(platformWindow.isUndecoratedFullscreen) {
             frameState.isTitleBarVisible = !platformWindow.isUndecoratedFullscreen
         }
 
-        // Window content
         CompositionLocalProvider(
             LocalTitleBarInsets provides frameState.titleBarInsets,
             LocalCaptionButtonInsets provides frameState.captionButtonsInsets,
@@ -130,7 +119,6 @@ internal fun FrameWindowScope.WindowsWindowFrame(
             content = content,
         )
 
-        // Hide title bar if window is full screen mode and title bar is not hovered.
         val titleBarInteractionSource = remember(platformWindow.isUndecoratedFullscreen) { MutableInteractionSource() }
         val titleBarHovered by titleBarInteractionSource.collectIsHoveredAsState()
         LaunchedEffect(titleBarInteractionSource, titleBarHovered, platformWindow.isUndecoratedFullscreen) {
@@ -139,9 +127,9 @@ internal fun FrameWindowScope.WindowsWindowFrame(
                 frameState.isTitleBarVisible = false
             }
         }
-        //Extend window content to title bar.
+
         ExtendToTitleBar(frameState)
-        //Draw Compose Windows title bar.
+
         AnimatedVisibility(
             visible = frameState.isTitleBarVisible,
             modifier = Modifier
@@ -183,7 +171,6 @@ internal fun FrameWindowScope.WindowsWindowFrame(
             }
         }
 
-        //Auto hoverable area that can be used to show title bar when title bar is hidden.
         if (!frameState.isTitleBarVisible) {
             val awareAreaInteractionSource = remember { MutableInteractionSource() }
             val isAwareHovered by awareAreaInteractionSource.collectIsHoveredAsState()
@@ -216,7 +203,6 @@ internal class WindowsWindowFrameState(
 
     var isTitleBarVisible by mutableStateOf(true)
 
-    //0 is minimize, 1 is maximize, 2 is close
     private val captionButtonsRect = Array(3) { Rect.Zero }
 
     private val _titleBarInsets = MutableWindowInsets()
@@ -305,7 +291,7 @@ private fun WindowsWindowFrameState.collectCaptionButtonColors(): CaptionButtonC
 @Composable
 private fun rememberFontIconFamily(): State<FontFamily?> {
     val fontIconFamily = remember { mutableStateOf<FontFamily?>(null) }
-    // Get windows system font icon, if get failed fall back to fluent svg icon.
+
     val fontFamilyResolver = LocalFontFamilyResolver.current
     LaunchedEffect(fontFamilyResolver) {
         fontIconFamily.value = sequenceOf("Segoe Fluent Icons", "Segoe MDL2 Assets")

@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.effects
+package com.wynime.app.ui.foundation.effects
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect

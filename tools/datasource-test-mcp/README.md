@@ -7,7 +7,7 @@
 
 ## 工具
 
-- `probe_video`：檢查影片 URL 的 HTTP 可達性，並可用 Animeko 桌面端同款 mpv 播放器實際播放；也可以擷取播放畫面。
+- `probe_video`：檢查影片 URL 的 HTTP 可達性，並可用 Wynime 桌面端同款 mpv 播放器實際播放；也可以擷取播放畫面。
 - `detect_hls_ads`：下載並分析 HLS master/media playlist，套用 App 的 HLS 廣告過濾器，回報疑似廣告區段。
 
 source plugin 的搜尋、條目詳情、網站實際列出的線路、集數、播放 URL 及下載驗證，位於

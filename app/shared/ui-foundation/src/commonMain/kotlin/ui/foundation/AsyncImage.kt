@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.foundation
+package com.wynime.app.ui.foundation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -59,24 +50,20 @@ import com.github.panpf.sketch.util.Size
 import com.github.panpf.sketch.util.asComposeImageBitmap
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.app.platform.files
-import me.him188.ani.utils.io.absolutePath
-import me.him188.ani.utils.io.resolve
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.platform.currentPlatform
-import me.him188.ani.utils.platform.isDesktop
-import me.him188.ani.utils.platform.isIos
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.files
+import com.wynime.utils.io.absolutePath
+import com.wynime.utils.io.resolve
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.platform.currentPlatform
+import com.wynime.utils.platform.isDesktop
 import okio.Path
 import okio.Path.Companion.toPath
 import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
 
 private const val MEBIBYTE = 1024L * 1024L
 private const val IMAGE_DOWNLOAD_CACHE_SIZE = 100L * MEBIBYTE
-/**
- * 解码后位图的 LRU 上限. 列表封面按布局尺寸的 2 倍解码, 手机上一张约 1.3 MB, 一屏 9 到 12 张;
- * 放下四五屏, 来回滚动和页面返回时不必重新读盘解码. iOS 上 Skia 没有采样解码, 重新解码尤其昂贵.
- */
+
 private const val IMAGE_MEMORY_CACHE_SIZE = 64L * MEBIBYTE
 private const val ANI_IMAGE_CACHE_DIRECTORY = "image-cache"
 
@@ -84,15 +71,14 @@ val LocalSketch = staticCompositionLocalOf<Sketch> {
     error("No Ani image loader provided")
 }
 
-/** A library-neutral successful image load result exposed to feature UI modules. */
 @Immutable
-data class AniImageLoadSuccess(
+data class WynimeImageLoadSuccess(
     val bitmap: ImageBitmap?,
     val width: Int,
     val height: Int,
 )
 
-internal fun ImageResult.Success.toAniImageLoadSuccess(): AniImageLoadSuccess = AniImageLoadSuccess(
+internal fun ImageResult.Success.toWynimeImageLoadSuccess(): WynimeImageLoadSuccess = WynimeImageLoadSuccess(
     bitmap = image.asBitmapOrNull()?.asComposeImageBitmap(),
     width = imageInfo.width,
     height = imageInfo.height,
@@ -102,9 +88,8 @@ internal fun ImageResult.Success.toAniImageLoadSuccess(): AniImageLoadSuccess = 
 inline val defaultFilterQuality: FilterQuality
     get() = if (currentPlatform().isDesktop()) FilterQuality.High else FilterQuality.Low
 
-/** Owns the application Sketch instance and keeps Sketch types inside ui-foundation. */
 @Composable
-fun rememberAniSketchInstance(client: ScopedHttpClient): Sketch {
+fun rememberWynimeSketchInstance(client: ScopedHttpClient): Sketch {
     val context = LocalPlatformContext.current
     val imageCacheDirectory = LocalContext.current.files.cacheDir
         .resolve(ANI_IMAGE_CACHE_DIRECTORY)
@@ -128,7 +113,7 @@ fun AsyncImage(
     error: Painter? = null,
     fallback: Painter? = error,
     onLoading: (() -> Unit)? = null,
-    onSuccess: ((AniImageLoadSuccess) -> Unit)? = null,
+    onSuccess: ((WynimeImageLoadSuccess) -> Unit)? = null,
     onError: ((Throwable?) -> Unit)? = null,
     alignment: Alignment = Alignment.Center,
     contentScale: ContentScale = ContentScale.Fit,
@@ -140,7 +125,7 @@ fun AsyncImage(
     crossfadeDurationMillis: Int? = null,
 ) {
     val state = rememberAsyncImageState()
-    AniAsyncImage(
+    WynimeAsyncImage(
         model = model,
         contentDescription = contentDescription,
         state = state,
@@ -163,7 +148,7 @@ fun AsyncImage(
 }
 
 @Composable
-internal fun AniAsyncImage(
+internal fun WynimeAsyncImage(
     model: String?,
     contentDescription: String?,
     state: AsyncImageState,
@@ -172,7 +157,7 @@ internal fun AniAsyncImage(
     error: Painter? = null,
     fallback: Painter? = error,
     onLoading: (() -> Unit)? = null,
-    onSuccess: ((AniImageLoadSuccess) -> Unit)? = null,
+    onSuccess: ((WynimeImageLoadSuccess) -> Unit)? = null,
     onError: ((Throwable?) -> Unit)? = null,
     alignment: Alignment = Alignment.Center,
     contentScale: ContentScale = ContentScale.Fit,
@@ -194,13 +179,13 @@ internal fun AniAsyncImage(
         if (errorStateImage != null) error(errorStateImage)
         if (fallbackStateImage != null) fallback(fallbackStateImage)
 
-        configureAniImageRequest(
+        configureWynimeImageRequest(
             contentScale = contentScale,
             alignment = alignment,
             requestSize = requestSize,
         )
 
-        configureAniImageCrossfade(crossfade, crossfadeDurationMillis)
+        configureWynimeImageCrossfade(crossfade, crossfadeDurationMillis)
     }
 
     ImageLoadStateEffect(state, onLoading, onSuccess, onError)
@@ -209,7 +194,7 @@ internal fun AniAsyncImage(
         sketch = LocalSketch.current,
         contentDescription = contentDescription,
         modifier = modifier.onSizeChanged { size ->
-            val roundedSize = size.toAniImageRequestSize()
+            val roundedSize = size.toWynimeImageRequestSize()
             if (requestSize != roundedSize) requestSize = roundedSize
         },
         state = state,
@@ -222,12 +207,12 @@ internal fun AniAsyncImage(
     )
 }
 
-internal fun ImageRequest.Builder.configureAniImageCrossfade(
+internal fun ImageRequest.Builder.configureWynimeImageCrossfade(
     crossfade: Boolean?,
     crossfadeDurationMillis: Int? = null,
 ) {
     when {
-        // Sketch's crossfade(false) sets null, which inherits the global crossfade again.
+
         crossfade == false -> transitionFactory(NoImageTransitionFactory)
         crossfadeDurationMillis != null -> crossfade(crossfadeDurationMillis)
         crossfade == true -> crossfade(true)
@@ -235,7 +220,7 @@ internal fun ImageRequest.Builder.configureAniImageCrossfade(
 }
 
 private data object NoImageTransitionFactory : Transition.Factory {
-    override val key: String = "AniNoImageTransition"
+    override val key: String = "WynimeNoImageTransition"
 
     override fun create(sketch: Sketch, request: ImageRequest, target: Target, result: ImageResult): Transition? = null
 }
@@ -244,7 +229,7 @@ private data object NoImageTransitionFactory : Transition.Factory {
 private fun ImageLoadStateEffect(
     state: AsyncImageState,
     onLoading: (() -> Unit)?,
-    onSuccess: ((AniImageLoadSuccess) -> Unit)?,
+    onSuccess: ((WynimeImageLoadSuccess) -> Unit)?,
     onError: ((Throwable?) -> Unit)?,
 ) {
     val currentOnLoading by rememberUpdatedState(onLoading)
@@ -266,14 +251,14 @@ private fun ImageLoadStateEffect(
 internal fun dispatchImageLoadState(
     loadState: LoadState?,
     onLoading: (() -> Unit)?,
-    onSuccess: ((AniImageLoadSuccess) -> Unit)?,
+    onSuccess: ((WynimeImageLoadSuccess) -> Unit)?,
     onError: ((Throwable?) -> Unit)?,
 ) {
     if (loadState == null) return
 
     when (loadState) {
         is LoadState.Started -> onLoading?.invoke()
-        is LoadState.Success -> onSuccess?.invoke(loadState.result.toAniImageLoadSuccess())
+        is LoadState.Success -> onSuccess?.invoke(loadState.result.toWynimeImageLoadSuccess())
         is LoadState.Error -> onError?.invoke(loadState.result.throwable)
         is LoadState.Canceled -> Unit
     }
@@ -288,7 +273,7 @@ private fun rememberStateImage(painter: Painter?, role: String): StateImage? =
     }
 
 @Composable
-internal fun rememberAniAsyncImagePainter(
+internal fun rememberWynimeAsyncImagePainter(
     model: String?,
     contentScale: ContentScale,
     requestSize: IntSize?,
@@ -298,7 +283,7 @@ internal fun rememberAniAsyncImagePainter(
     val rememberedState = rememberAsyncImageState()
     val finalState = state ?: rememberedState
     val request = ComposableImageRequest(model) {
-        configureAniImageRequest(
+        configureWynimeImageRequest(
             contentScale = contentScale,
             alignment = Alignment.Center,
             requestSize = requestSize,
@@ -313,13 +298,7 @@ internal fun rememberAniAsyncImagePainter(
     )
 }
 
-/**
- * Sketch's default [Precision.LESS_PIXELS] only matches the target's total pixel count. When a
- * portrait source is drawn into a landscape crop (or vice versa), that can decode one dimension
- * below the target and force Compose to upscale it. Crop to the target aspect while decoding so
- * both displayed dimensions have enough pixels.
- */
-internal fun ImageRequest.Builder.configureAniImageRequest(
+internal fun ImageRequest.Builder.configureWynimeImageRequest(
     contentScale: ContentScale,
     alignment: Alignment,
     requestSize: IntSize? = null,
@@ -327,11 +306,10 @@ internal fun ImageRequest.Builder.configureAniImageRequest(
     if (requestSize != null && requestSize.width > 0 && requestSize.height > 0) {
         size(requestSize.width * 2, requestSize.height * 2)
     }
-    scale(aniScaleDecider(contentScale, alignment))
+    scale(wynimeScaleDecider(contentScale, alignment))
     when (contentScale) {
         ContentScale.Crop -> precision(
-            // Sketch only understands start/center/end crop. Preserve the source aspect
-            // for a custom alignment so Compose can position the crop without losing pixels.
+
             if (alignment in listOf(
                     Alignment.TopStart, Alignment.TopCenter, Alignment.TopEnd,
                     Alignment.CenterStart, Alignment.Center, Alignment.CenterEnd,
@@ -342,12 +320,7 @@ internal fun ImageRequest.Builder.configureAniImageRequest(
     }
 }
 
-/**
- * Sketch's built-in alignment conversion only considers the horizontal component. For example,
- * [Alignment.TopCenter] becomes [Scale.CENTER_CROP], which discards the top before Compose draws
- * the image. Select the relevant alignment component after Sketch knows the source aspect ratio.
- */
-private fun aniScaleDecider(contentScale: ContentScale, alignment: Alignment): ScaleDecider {
+private fun wynimeScaleDecider(contentScale: ContentScale, alignment: Alignment): ScaleDecider {
     if (
         contentScale == ContentScale.FillBounds ||
         contentScale == ContentScale.FillWidth ||
@@ -368,14 +341,14 @@ private fun aniScaleDecider(contentScale: ContentScale, alignment: Alignment): S
         Alignment.BottomEnd -> Scale.END_CROP to Scale.END_CROP
         else -> Scale.CENTER_CROP to Scale.CENTER_CROP
     }
-    return AniAlignmentScaleDecider(horizontalScale, verticalScale)
+    return WynimeAlignmentScaleDecider(horizontalScale, verticalScale)
 }
 
-private data class AniAlignmentScaleDecider(
+private data class WynimeAlignmentScaleDecider(
     val horizontalScale: Scale,
     val verticalScale: Scale,
 ) : ScaleDecider {
-    override val key: String = "AniAlignment($horizontalScale,$verticalScale)"
+    override val key: String = "WynimeAlignment($horizontalScale,$verticalScale)"
 
     override fun get(imageSize: Size, targetSize: Size): Scale {
         if (
@@ -395,11 +368,7 @@ private data class AniAlignmentScaleDecider(
     }
 }
 
-/**
- * Keep decoded dimensions at or above the layout size while avoiding a new request for every pixel
- * of a desktop window resize.
- */
-internal fun IntSize.toAniImageRequestSize(): IntSize = IntSize(
+internal fun IntSize.toWynimeImageRequestSize(): IntSize = IntSize(
     width = width.roundUpImageRequestDimension(),
     height = height.roundUpImageRequestDimension(),
 )
@@ -420,7 +389,7 @@ internal fun createDefaultSketch(
     cacheDirectory: Path? = null,
 ): Sketch = Sketch.Builder(context).apply {
     componentLoaderEnabled(false)
-    // 让刚显示过的图片 (翻页、列表滚回、页面返回) 无需重新读盘解码即可立即显示.
+
     memoryCache(LruMemoryCache(IMAGE_MEMORY_CACHE_SIZE))
     downloadCacheOptions(
         DiskCache.Options(
@@ -437,10 +406,9 @@ internal fun createDefaultSketch(
         ImageOptions {
             downloadCachePolicy(CachePolicy.ENABLED)
             memoryCachePolicy(CachePolicy.ENABLED)
-            // Result cache re-encodes transformed images. Keep the original bytes in the LRU
-            // download cache instead so disk caching cannot reduce image quality.
+
             resultCachePolicy(CachePolicy.DISABLED)
-            crossfade(!currentPlatform().isIos())
+            crossfade(true)
         },
     )
     addComponents {
@@ -449,7 +417,6 @@ internal fun createDefaultSketch(
     }
 }.build()
 
-/** Keeps the network-free preview loader from retaining decoded images. */
 private data object DisabledMemoryCache : MemoryCache {
     private val mutex = Mutex()
 
@@ -478,10 +445,9 @@ private data object DisabledMemoryCache : MemoryCache {
     ): R = mutex.withLock { action(this) }
 }
 
-/** Provides a deterministic, network-free image loader for previews and screenshot tests. */
 @PublishedApi
 @Composable
-internal fun rememberAniPreviewSketch(previewPainter: Painter): Sketch {
+internal fun rememberWynimePreviewSketch(previewPainter: Painter): Sketch {
     val context = LocalPlatformContext.current
     val sketch = remember(context, previewPainter) {
         val previewStateImage = PainterStateImage(

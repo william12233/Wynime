@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.resolver
+package com.wynime.app.domain.media.resolver
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -27,27 +18,23 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import me.him188.ani.app.data.repository.user.SettingsRepository
-import me.him188.ani.app.domain.media.player.data.MediaDataProvider
-import me.him188.ani.app.domain.media.resolver.WebViewVideoExtractor.Instruction
-import me.him188.ani.app.domain.mediasource.web.captcha.WebSessionManager
-import me.him188.ani.app.platform.LocalContext
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
-import me.him188.ani.datasources.api.matcher.WebVideoMatcher
-import me.him188.ani.datasources.api.matcher.WebVideoMatcherContext
-import me.him188.ani.datasources.api.matcher.WebViewConfig
-import me.him188.ani.datasources.api.matcher.videoOrNull
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.data.repository.user.SettingsRepository
+import com.wynime.app.domain.media.player.data.MediaDataProvider
+import com.wynime.app.domain.media.resolver.WebViewVideoExtractor.Instruction
+import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
+import com.wynime.app.platform.LocalContext
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.matcher.MediaSourceWebVideoMatcherLoader
+import com.wynime.datasources.api.matcher.WebVideoMatcher
+import com.wynime.datasources.api.matcher.WebVideoMatcherContext
+import com.wynime.datasources.api.matcher.WebViewConfig
+import com.wynime.datasources.api.matcher.videoOrNull
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import java.io.ByteArrayInputStream
 import java.util.concurrent.ConcurrentSkipListSet
 
-
-/**
- * 用 WebView 加载网站, 拦截 WebView 加载资源, 用各数据源提供的 [WebVideoMatcher]
- */
 class AndroidWebMediaResolver(
     private val matcherLoader: MediaSourceWebVideoMatcherLoader,
     private val settingsRepository: SettingsRepository,
@@ -149,8 +136,7 @@ class AndroidWebViewVideoExtractor(
         config: WebViewConfig,
         resourceMatcher: (String) -> Instruction,
     ): WebResource? {
-        // WebView requires same thread
-//        Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+
         return withContext(Dispatchers.Main) {
             val deferred = CompletableDeferred<WebResource>()
             val loadedNestedUrls = ConcurrentSkipListSet<String>()
@@ -163,9 +149,6 @@ class AndroidWebViewVideoExtractor(
                 logger.error("Failed to set cookie", exception)
             }
 
-            /**
-             * @return if the url has been consumed
-             */
             fun handleUrl(webView: WebView, url: String): Boolean {
                 val matched = resourceMatcher(url)
                 when (matched) {
@@ -178,11 +161,11 @@ class AndroidWebViewVideoExtractor(
                     Instruction.LoadPage -> {
                         logger.info { "WebView loading nested page: $url" }
                         launch(Dispatchers.Main) {
-                            if (webView.url == url) return@launch // avoid infinite loop
+                            if (webView.url == url) return@launch
                             if (!loadedNestedUrls.add(url)) return@launch
                             logger.info { "WebView navigating to new url: $url" }
                             webView.loadUrl(url)
-//                            createWebView(context, deferred, ::handleUrl).loadUrl(url)
+
                         }
                         return false
                     }
@@ -192,20 +175,6 @@ class AndroidWebViewVideoExtractor(
             loadedNestedUrls.add(pageUrl)
             createWebView(context, deferred, ::handleUrl).loadUrl(pageUrl)
 
-            //            webView.webChromeClient = object : WebChromeClient() {
-            //                override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-            //                    consoleMessage ?: return false
-            //                    val message = consoleMessage.message() ?: return false
-            //                    // HTTPS 页面加载 HTTP 的视频时会有日志
-            //                    for (matchResult in consoleMessageUrlRegex.findAll(message)) {
-            //                        val url = matchResult.value.removeSurrounding("'")
-            //                        logger.info { "WebView console get url: $url" }
-            //                        handleUrl(url)
-            //                    }
-            //                    return false
-            //                }
-            //            }
-
             try {
                 withTimeoutOrNull(timeoutMillis) {
                     deferred.await()
@@ -214,7 +183,7 @@ class AndroidWebViewVideoExtractor(
                 deferred.cancel()
             }
         }
-//        }
+
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -241,7 +210,7 @@ class AndroidWebViewVideoExtractor(
                 val url = request.url ?: return super.shouldInterceptRequest(view, request)
                 if (handleUrl(view, url.toString())) {
                     logger.info { "Found video resource via shouldInterceptRequest: $url" }
-                    // 拦截, 以防资源只能加载一次
+
                     return WebResourceResponse(
                         "text/plain",
                         "UTF-8", 500,

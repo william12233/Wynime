@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.settings.tabs.network
+package com.wynime.app.ui.settings.tabs.network
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -47,44 +38,44 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
-import me.him188.ani.app.data.models.preference.ProxyAuthorization
-import me.him188.ani.app.data.models.preference.ProxySettings
-import me.him188.ani.app.ui.foundation.LocalPlatform
-import me.him188.ani.app.ui.foundation.animation.LocalAniMotionScheme
-import me.him188.ani.app.ui.foundation.text.ProvideContentColor
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.settings_media_source_edit
-import me.him188.ani.app.ui.lang.settings_network_proxy_address
-import me.him188.ani.app.ui.lang.settings_network_proxy_address_example
-import me.him188.ani.app.ui.lang.settings_network_proxy_current_disabled
-import me.him188.ani.app.ui.lang.settings_network_proxy_current_using
-import me.him188.ani.app.ui.lang.settings_network_proxy_custom
-import me.him188.ani.app.ui.lang.settings_network_proxy_detecting
-import me.him188.ani.app.ui.lang.settings_network_proxy_detection_result
-import me.him188.ani.app.ui.lang.settings_network_proxy_disabled
-import me.him188.ani.app.ui.lang.settings_network_proxy_none
-import me.him188.ani.app.ui.lang.settings_network_proxy_not_detected
-import me.him188.ani.app.ui.lang.settings_network_proxy_optional
-import me.him188.ani.app.ui.lang.settings_network_proxy_overall_detecting
-import me.him188.ani.app.ui.lang.settings_network_proxy_overall_failed_not_proxied
-import me.him188.ani.app.ui.lang.settings_network_proxy_overall_failed_proxied
-import me.him188.ani.app.ui.lang.settings_network_proxy_overall_success
-import me.him188.ani.app.ui.lang.settings_network_proxy_password
-import me.him188.ani.app.ui.lang.settings_network_proxy_retest
-import me.him188.ani.app.ui.lang.settings_network_proxy_save_and_test
-import me.him188.ani.app.ui.lang.settings_network_proxy_service_collection
-import me.him188.ani.app.ui.lang.settings_network_proxy_service_comment
-import me.him188.ani.app.ui.lang.settings_network_proxy_system
-import me.him188.ani.app.ui.lang.settings_network_proxy_test_failed
-import me.him188.ani.app.ui.lang.settings_network_proxy_test_success
-import me.him188.ani.app.ui.lang.settings_network_proxy_title
-import me.him188.ani.app.ui.lang.settings_network_proxy_username
-import me.him188.ani.app.ui.settings.framework.SettingsState
-import me.him188.ani.app.ui.settings.framework.components.SettingsScope
-import me.him188.ani.app.ui.settings.framework.components.TextFieldItem
-import me.him188.ani.app.ui.settings.framework.components.TextItem
-import me.him188.ani.utils.ktor.ClientProxyConfigValidator
-import me.him188.ani.utils.platform.isAndroid
+import com.wynime.app.data.models.preference.ProxyAuthorization
+import com.wynime.app.data.models.preference.ProxySettings
+import com.wynime.app.ui.foundation.LocalPlatform
+import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
+import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.settings_media_source_edit
+import com.wynime.app.ui.lang.settings_network_proxy_address
+import com.wynime.app.ui.lang.settings_network_proxy_address_example
+import com.wynime.app.ui.lang.settings_network_proxy_current_disabled
+import com.wynime.app.ui.lang.settings_network_proxy_current_using
+import com.wynime.app.ui.lang.settings_network_proxy_custom
+import com.wynime.app.ui.lang.settings_network_proxy_detecting
+import com.wynime.app.ui.lang.settings_network_proxy_detection_result
+import com.wynime.app.ui.lang.settings_network_proxy_disabled
+import com.wynime.app.ui.lang.settings_network_proxy_none
+import com.wynime.app.ui.lang.settings_network_proxy_not_detected
+import com.wynime.app.ui.lang.settings_network_proxy_optional
+import com.wynime.app.ui.lang.settings_network_proxy_overall_detecting
+import com.wynime.app.ui.lang.settings_network_proxy_overall_failed_not_proxied
+import com.wynime.app.ui.lang.settings_network_proxy_overall_failed_proxied
+import com.wynime.app.ui.lang.settings_network_proxy_overall_success
+import com.wynime.app.ui.lang.settings_network_proxy_password
+import com.wynime.app.ui.lang.settings_network_proxy_retest
+import com.wynime.app.ui.lang.settings_network_proxy_save_and_test
+import com.wynime.app.ui.lang.settings_network_proxy_service_collection
+import com.wynime.app.ui.lang.settings_network_proxy_service_comment
+import com.wynime.app.ui.lang.settings_network_proxy_system
+import com.wynime.app.ui.lang.settings_network_proxy_test_failed
+import com.wynime.app.ui.lang.settings_network_proxy_test_success
+import com.wynime.app.ui.lang.settings_network_proxy_title
+import com.wynime.app.ui.lang.settings_network_proxy_username
+import com.wynime.app.ui.settings.framework.SettingsState
+import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.TextFieldItem
+import com.wynime.app.ui.settings.framework.components.TextItem
+import com.wynime.utils.ktor.ClientProxyConfigValidator
+import com.wynime.utils.platform.isAndroid
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -119,7 +110,7 @@ fun SettingsScope.ConfigureProxyGroup(
     onRequestReTest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val motionScheme = LocalAniMotionScheme.current
+    val motionScheme = LocalWynimeMotionScheme.current
     var editingProxy by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier) {
@@ -309,7 +300,7 @@ private fun SettingsScope.ProxyConfigGroup(
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val motionScheme = LocalAniMotionScheme.current
+    val motionScheme = LocalWynimeMotionScheme.current
 
     val currentConfig = remember(state.config) {
         mutableStateOf(state.config).let { config ->
@@ -367,7 +358,7 @@ private fun SettingsScope.ProxyConfigGroup(
                         }
 
                         ProxyUIMode.CUSTOM -> {
-                            // workaround for re-use CustomProxyConfig: Settings UI has no data layer of UI.
+
                             val workaroundDataConfig = remember(currentConfig) {
                                 SettingsState(
                                     valueState = derivedStateOf { currentConfig.value.toDataSettings() },
@@ -443,8 +434,7 @@ class ConfigureProxyUIState(
     val systemProxy: SystemProxyPresentation,
     val testState: ProxyTestState,
 ) {
-    // when any of params in constructor changes, this will always be recalculated
-    // since this class is immutable
+
     val overallState by derivedStateOf {
         if (testState.testRunning) {
             ProxyOverallTestState.RUNNING
@@ -475,7 +465,6 @@ class ConfigureProxyUIState(
     }
 }
 
-
 @Composable
 private fun SettingsScope.SystemProxyConfig(
     proxyConfig: SystemProxyPresentation,
@@ -496,7 +485,6 @@ private fun renderSystemProxyPresentation(systemProxy: SystemProxyPresentation):
         SystemProxyPresentation.NotDetected -> stringResource(Lang.settings_network_proxy_not_detected)
     }
 }
-
 
 @Composable
 private fun SettingsScope.CustomProxyConfig(

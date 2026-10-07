@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.storage
+package com.wynime.app.domain.media.cache.storage
 
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
@@ -15,21 +6,21 @@ import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.files.Path
-import me.him188.ani.app.data.persistent.MemoryDataStore
-import me.him188.ani.app.domain.media.cache.LocalFileMediaCache
-import me.him188.ani.app.domain.media.cache.MediaCache
-import me.him188.ani.app.domain.media.cache.engine.DummyMediaCacheEngine
-import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngine
-import me.him188.ani.app.domain.media.createTestDefaultMedia
-import me.him188.ani.app.domain.media.createTestMediaProperties
-import me.him188.ani.datasources.api.EpisodeSort
-import me.him188.ani.datasources.api.Media
-import me.him188.ani.datasources.api.MediaCacheMetadata
-import me.him188.ani.datasources.api.source.MediaSourceKind
-import me.him188.ani.datasources.api.source.MediaSourceLocation
-import me.him188.ani.datasources.api.topic.EpisodeRange
-import me.him188.ani.datasources.api.topic.ResourceLocation
-import me.him188.ani.utils.io.inSystem
+import com.wynime.app.data.persistent.MemoryDataStore
+import com.wynime.app.domain.media.cache.LocalFileMediaCache
+import com.wynime.app.domain.media.cache.MediaCache
+import com.wynime.app.domain.media.cache.engine.DummyMediaCacheEngine
+import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
+import com.wynime.app.domain.media.createTestDefaultMedia
+import com.wynime.app.domain.media.createTestMediaProperties
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
+import com.wynime.datasources.api.source.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceLocation
+import com.wynime.datasources.api.topic.EpisodeRange
+import com.wynime.datasources.api.topic.ResourceLocation
+import com.wynime.utils.io.inSystem
 
 class AbstractDataStoreMediaCacheStorageRestoreTest {
     @Test
@@ -38,7 +29,6 @@ class AbstractDataStoreMediaCacheStorageRestoreTest {
         assertEquals(listOf("1", "2"), storage.refreshCache().map { it.metadata.episodeId }.sorted())
         assertEquals(listOf("1", "2"), storage.listFlow.first().map { it.metadata.episodeId }.sorted())
 
-        // 已恢复的不再恢复, 也不丢
         assertEquals(emptyList(), storage.refreshCache())
         assertEquals(listOf("1", "2"), storage.listFlow.first().map { it.metadata.episodeId }.sorted())
     }
@@ -56,9 +46,6 @@ class AbstractDataStoreMediaCacheStorageRestoreTest {
         override suspend fun restorePersistedCaches() = Unit
     }
 
-    /**
-     * 每条记录都恢复为已完成的本地文件.
-     */
     private object LocalFileEngine : MediaCacheEngine by DummyMediaCacheEngine("test-storage") {
         override suspend fun restore(origin: Media, metadata: MediaCacheMetadata, parentContext: CoroutineContext): MediaCache =
             LocalFileMediaCache(origin, metadata, Path("/cache/${metadata.episodeId}.mkv").inSystem) {}

@@ -1,4 +1,4 @@
-package me.him188.ani.app.testFramework
+package com.wynime.app.testFramework
 
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences

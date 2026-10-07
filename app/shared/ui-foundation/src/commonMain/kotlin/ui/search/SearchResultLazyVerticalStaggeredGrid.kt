@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2025 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.search
+package com.wynime.app.ui.search
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,13 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
-import me.him188.ani.app.domain.foundation.LoadError
+import com.wynime.app.domain.foundation.LoadError
 
-/**
- * 显示搜索结果的 [LazyVerticalStaggeredGrid]. 支持显示加载中的进度条, 错误时显示错误卡片.
- *
- * @param error 当有错误时调用. 内容可以是 [LoadErrorCard].
- */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun <T : Any> SearchResultLazyVerticalGrid(
@@ -70,7 +56,7 @@ fun <T : Any> SearchResultLazyVerticalGrid(
                 Box(
                     Modifier
                         .sizeIn(
-                            minHeight = Dp.Hairline,// 保证最小大小, 否则 LazyColumn 滑动可能有 bug
+                            minHeight = Dp.Hairline,
                             minWidth = Dp.Hairline,
                         )
                         .padding(vertical = 8.dp),
@@ -90,7 +76,6 @@ fun <T : Any> SearchResultLazyVerticalGrid(
             ) {
                 content()
 
-                // 在加载第一页时不显示, 避免有两个, #1835
                 if (items.loadState.refresh is LoadState.Loading) {
                     if (showLoadingIndicatorInFirstPage || !items.isLoadingFirstPage) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -105,8 +90,7 @@ fun <T : Any> SearchResultLazyVerticalGrid(
                         }
                     }
                 }
-                
-                // 显示下一页加载指示器，否则加载速度慢用户不知道是否在更新
+
                 if (items.loadState.append is LoadState.Loading) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         ListItem(
@@ -123,7 +107,6 @@ fun <T : Any> SearchResultLazyVerticalGrid(
         }
     }
 }
-
 
 @Stable
 object SearchDefaults {

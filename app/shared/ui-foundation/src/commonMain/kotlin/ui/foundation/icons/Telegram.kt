@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.icons
+package com.wynime.app.ui.foundation.icons
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -11,10 +11,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-
 private var _TelegramIcon: ImageVector? = null
 
-public val AniIcons.Telegram: ImageVector
+public val WynimeIcons.Telegram: ImageVector
     get() {
         if (_TelegramIcon != null) {
             return _TelegramIcon!!

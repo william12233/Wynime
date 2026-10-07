@@ -1,20 +1,4 @@
-/*
- * Copyright 2021 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package me.him188.ani.app.ui.external.placeholder
+package com.wynime.app.ui.external.placeholder
 
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.InfiniteRepeatableSpec
@@ -49,13 +33,8 @@ import androidx.compose.ui.node.Ref
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
 
-/**
- * Contains default values used by [Modifier.basicPlaceholder] and [PlaceholderHighlight].
- */
 object PlaceholderDefaults {
-    /**
-     * The default [InfiniteRepeatableSpec] to use for [fade].
-     */
+
     val fadeAnimationSpec: InfiniteRepeatableSpec<Float> by lazy {
         infiniteRepeatable(
             animation = tween(delayMillis = 200, durationMillis = 600),
@@ -63,9 +42,6 @@ object PlaceholderDefaults {
         )
     }
 
-    /**
-     * The default [InfiniteRepeatableSpec] to use for [shimmer].
-     */
     val shimmerAnimationSpec: InfiniteRepeatableSpec<Float> by lazy {
         infiniteRepeatable(
             animation = tween(durationMillis = 1700, delayMillis = 200),
@@ -74,33 +50,6 @@ object PlaceholderDefaults {
     }
 }
 
-/**
- * Draws some skeleton UI which is typically used whilst content is 'loading'.
- *
- * A version of this modifier which uses appropriate values for Material themed apps is available
- * in the 'Placeholder Material' library.
- *
- * You can provide a [PlaceholderHighlight] which runs an highlight animation on the placeholder.
- * The [shimmer] and [fade] implementations are provided for easy usage.
- *
- * A cross-fade transition will be applied to the content and placeholder UI when the [visible]
- * value changes. The transition can be customized via the [contentFadeTransitionSpec] and
- * [placeholderFadeTransitionSpec] parameters.
- *
- * You can find more information on the pattern at the Material Theming
- * [Placeholder UI](https://material.io/design/communication/launch-screen.html#placeholder-ui)
- * guidelines.
- *
- *
- * @param visible whether the placeholder should be visible or not.
- * @param color the color used to draw the placeholder UI.
- * @param shape desired shape of the placeholder. Defaults to [RectangleShape].
- * @param highlight optional highlight animation.
- * @param placeholderFadeTransitionSpec The transition spec to use when fading the placeholder
- * on/off screen. The boolean parameter defined for the transition is [visible].
- * @param contentFadeTransitionSpec The transition spec to use when fading the content
- * on/off screen. The boolean parameter defined for the transition is [visible].
- */
 fun Modifier.basicPlaceholder(
     visible: Boolean,
     color: Color,
@@ -118,15 +67,13 @@ fun Modifier.basicPlaceholder(
         properties["shape"] = shape
     },
 ) {
-    // Values used for caching purposes
+
     val lastSize = remember { Ref<Size>() }
     val lastLayoutDirection = remember { Ref<LayoutDirection>() }
     val lastOutline = remember { Ref<Outline>() }
 
-    // The current highlight animation progress
     var highlightProgress: Float by remember { mutableStateOf(0f) }
 
-    // This is our crossfade transition
     val transitionState = remember { MutableTransitionState(visible) }.apply {
         targetState = visible
     }
@@ -145,7 +92,7 @@ fun Modifier.basicPlaceholder(
 
     @Suppress("NAME_SHADOWING")
     val highlight = highlight?.invoke()
-    // Run the optional animation spec and update the progress if the placeholder is visible
+
     val animationSpec = highlight?.animationSpec
     if (animationSpec != null && (visible || placeholderAlpha >= 0.01f)) {
         val infiniteTransition = rememberInfiniteTransition()
@@ -159,10 +106,9 @@ fun Modifier.basicPlaceholder(
     val paint = remember { Paint() }
     remember(color, shape, highlight) {
         drawWithContent {
-            // Draw the composable content first
+
             if (contentAlpha in 0.01f..0.99f) {
-                // If the content alpha is between 1% and 99%, draw it in a layer with
-                // the alpha applied
+
                 paint.alpha = contentAlpha
                 withLayer(paint) {
                     with(this@drawWithContent) {
@@ -170,13 +116,12 @@ fun Modifier.basicPlaceholder(
                     }
                 }
             } else if (contentAlpha >= 0.99f) {
-                // If the content alpha is > 99%, draw it with no alpha
+
                 drawContent()
             }
 
             if (placeholderAlpha in 0.01f..0.99f) {
-                // If the placeholder alpha is between 1% and 99%, draw it in a layer with
-                // the alpha applied
+
                 paint.alpha = placeholderAlpha
                 withLayer(paint) {
                     lastOutline.value = drawPlaceholder(
@@ -190,7 +135,7 @@ fun Modifier.basicPlaceholder(
                     )
                 }
             } else if (placeholderAlpha >= 0.99f) {
-                // If the placeholder alpha is > 99%, draw it with no alpha
+
                 lastOutline.value = drawPlaceholder(
                     shape = shape,
                     color = color,
@@ -202,7 +147,6 @@ fun Modifier.basicPlaceholder(
                 )
             }
 
-            // Keep track of the last size & layout direction
             lastSize.value = size
             lastLayoutDirection.value = layoutDirection
         }
@@ -218,9 +162,9 @@ private fun DrawScope.drawPlaceholder(
     lastLayoutDirection: LayoutDirection?,
     lastSize: Size?,
 ): Outline? {
-    // shortcut to avoid Outline calculation and allocation
+
     if (shape === RectangleShape) {
-        // Draw the initial background color
+
         drawRect(color = color)
 
         if (highlight != null) {
@@ -229,16 +173,14 @@ private fun DrawScope.drawPlaceholder(
                 alpha = highlight.alpha(progress),
             )
         }
-        // We didn't create an outline so return null
+
         return null
     }
 
-    // Otherwise we need to create an outline from the shape
     val outline = lastOutline.takeIf {
         size == lastSize && layoutDirection == lastLayoutDirection
     } ?: shape.createOutline(size, layoutDirection, this)
 
-    // Draw the placeholder color
     drawOutline(outline = outline, color = color)
 
     if (highlight != null) {
@@ -249,7 +191,6 @@ private fun DrawScope.drawPlaceholder(
         )
     }
 
-    // Return the outline we used
     return outline
 }
 

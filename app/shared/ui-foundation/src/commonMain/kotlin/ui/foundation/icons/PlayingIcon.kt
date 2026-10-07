@@ -1,4 +1,4 @@
-package me.him188.ani.app.ui.foundation.icons
+package com.wynime.app.ui.foundation.icons
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -25,13 +25,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
-import me.him188.ani.app.ui.lang.Lang
-import me.him188.ani.app.ui.lang.subject_episode_now_playing
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_now_playing
 import org.jetbrains.compose.resources.stringResource
 
-/**
- * 三个矩形垂直运动 (高度变化)
- */
 @Composable
 fun PlayingIcon(
     modifier: Modifier = Modifier,
@@ -54,10 +51,8 @@ fun PlayingIcon(
     var line1Height by remember { mutableFloatStateOf(reservedHeightPx + calc(offset1 * heightPx, heightPx)) }
     var line2Height by remember { mutableFloatStateOf(reservedHeightPx + calc(offset2 * heightPx, heightPx)) }
     var line3Height by remember { mutableFloatStateOf(reservedHeightPx + calc(offset3 * heightPx, heightPx)) }
-//    var line4Height by remember { mutableFloatStateOf(0f) }
 
     val lineCount = 3
-
 
     LaunchedEffect(density, height) {
         animate(
@@ -70,7 +65,7 @@ fun PlayingIcon(
             line1Height = reservedHeightPx + calc((value + offset1) * heightPx, heightPx)
             line2Height = reservedHeightPx + calc((value + offset2) * heightPx, heightPx)
             line3Height = reservedHeightPx + calc((value + offset3) * heightPx, heightPx)
-//            line4Height = reservedHeightPx + calc((value + 0.5f) * heightPx, heightPx)
+
         }
     }
 
@@ -91,7 +86,7 @@ fun PlayingIcon(
             Modifier.height(height).width(width),
             resolvedContentDescription,
         ) {
-            // draw there vertical lines, separated evenly
+
             drawRoundRect(
                 color = color,
                 topLeft = Offset(spacingPx * 1 - thicknessPx / 2, totalHeightPx - line1Height),
@@ -110,11 +105,7 @@ fun PlayingIcon(
                 size = Size(thicknessPx, line3Height),
                 cornerRadius = cornerRadius,
             )
-//        drawRoundRect(
-//            color = color,
-//            topLeft = Offset((spacingPx * 4) - (thicknessPx), heightPx - line4Height),
-//            size = Size(thicknessPx, line4Height),
-//        )
+
         }
     }
 }

@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.domain.media.cache.engine
+package com.wynime.app.domain.media.cache.engine
 
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
@@ -17,25 +8,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.files.FileSystem
 import kotlinx.io.files.Path
-import me.him188.ani.app.data.persistent.database.dao.HttpCacheDownloadStateDao
-import me.him188.ani.utils.coroutines.IO_
-import me.him188.ani.utils.httpdownloader.DownloadId
-import me.him188.ani.utils.httpdownloader.DownloadState
-import me.him188.ani.utils.httpdownloader.DownloadStatus
-import me.him188.ani.utils.httpdownloader.KtorHttpDownloader
-import me.him188.ani.utils.httpdownloader.m3u.DefaultM3u8Parser
-import me.him188.ani.utils.httpdownloader.m3u.M3u8Parser
-import me.him188.ani.utils.ktor.ScopedHttpClient
-import me.him188.ani.utils.logging.info
-import me.him188.ani.utils.logging.logger
+import com.wynime.app.data.persistent.database.dao.HttpCacheDownloadStateDao
+import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.httpdownloader.DownloadId
+import com.wynime.utils.httpdownloader.DownloadState
+import com.wynime.utils.httpdownloader.DownloadStatus
+import com.wynime.utils.httpdownloader.KtorHttpDownloader
+import com.wynime.utils.httpdownloader.m3u.DefaultM3u8Parser
+import com.wynime.utils.httpdownloader.m3u.M3u8Parser
+import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Clock
 
-/**
- * A persistent version of [me.him188.ani.utils.httpdownloader.KtorHttpDownloader] that automatically:
- * - Loads saved download states from [dao] on construction.
- * - Saves new/updated states whenever [_downloadStatesFlow] changes.
- */
 class KtorPersistentHttpDownloader(
     private val dao: HttpCacheDownloadStateDao,
     client: ScopedHttpClient,
@@ -59,10 +45,6 @@ class KtorPersistentHttpDownloader(
         restoreStates()
     }
 
-    /**
-     * Replaces the current in-memory map with data loaded from [dataStore], but does not resume them.
-     * To resume downloads, call [resume] for each entry in the restored map.
-     */
     private suspend fun restoreStates() {
         val savedList: List<DownloadState> = dao.getAll().first()
         stateMutex.withLock {
@@ -73,7 +55,7 @@ class KtorPersistentHttpDownloader(
                     job = null,
                     state = st.copy(
                         status = when (val status = st.status) {
-                            // 恢复时必须将原本的下载中状态设置为 PAUSED, 否则无法 resume.
+
                             DownloadStatus.INITIALIZING,
                             DownloadStatus.DOWNLOADING,
                             DownloadStatus.MERGING -> DownloadStatus.PAUSED

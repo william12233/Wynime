@@ -1,13 +1,4 @@
-/*
- * Copyright (C) 2024-2026 OpenAni and contributors.
- *
- * 此源代码的使用受 GNU AFFERO GENERAL PUBLIC LICENSE version 3 许可证的约束, 可以在以下链接找到该许可证.
- * Use of this source code is governed by the GNU AGPLv3 license, which can be found at the following link.
- *
- * https://github.com/open-ani/ani/blob/main/LICENSE
- */
-
-package me.him188.ani.app.ui.download.subject
+package com.wynime.app.ui.download.subject
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.MaterialTheme
@@ -16,13 +7,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import kotlinx.coroutines.flow.flowOf
-import me.him188.ani.app.ui.download.components.DownloadItem
-import me.him188.ani.app.ui.download.components.DownloadSelectionState
-import me.him188.ani.app.ui.mediafetch.MediaSourceInfoProvider
+import com.wynime.app.ui.download.components.DownloadItem
+import com.wynime.app.ui.download.components.DownloadSelectionState
+import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
 
-/**
- * [presenter] 为 `null` 时显示以 [loadingTitle] 为标题的加载态, 与实例就绪后的首个状态一致; 全局页切换条目时用它填补实例创建前的那一帧.
- */
 @Composable
 fun SubjectDownloadsDetailPane(
     presenter: SubjectDownloadsPresenter?,

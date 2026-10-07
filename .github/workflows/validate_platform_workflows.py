@@ -3,6 +3,10 @@ import re
 import yaml
 
 directory = Path(__file__).resolve().parent
+for path in directory.glob("*.yml"):
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert "on" in document and True not in document, path.name
+    assert isinstance(document["on"], (dict, list, str)), path.name
 for filename in ("build.yml", "release.yml"):
     document = yaml.safe_load((directory / filename).read_text(encoding="utf-8"))
     jobs = document["jobs"]

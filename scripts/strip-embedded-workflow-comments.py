@@ -21,6 +21,8 @@ comments = 0
 for path in sorted((ROOT / '.github/workflows').glob('*.yml')):
     source = path.read_text(encoding='utf-8')
     document = yaml.safe_load(source)
+    if True in document:
+        document['on'] = document.pop(True)
     changed = False
     for job in document.get('jobs', {}).values():
         runner = str(job.get('runs-on', '')).lower()

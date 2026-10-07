@@ -85,7 +85,7 @@ val verifyPublicAbiSnapshot = tasks.register("verifyPublicAbiSnapshot") {
             "Missing public plugin API ABI snapshot: ${publicAbiSnapshot.absolutePath}. " +
                 "Run :source:plugin-api:writePublicAbiSnapshot and review the result."
         }
-        val expected = publicAbiSnapshot.readText(StandardCharsets.UTF_8)
+        val expected = publicAbiSnapshot.readText(StandardCharsets.UTF_8).replace("\r\n", "\n")
         val actual = publicAbiSnapshotText()
         if (expected != actual) {
             val snapshotVersion = Regex("^pluginApiVersion=(\\d+)", RegexOption.MULTILINE)

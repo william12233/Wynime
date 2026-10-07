@@ -88,6 +88,26 @@ class BangumiTrackingSyncApiTest {
                     respond("", HttpStatusCode.NoContent)
                 }
 
+                "/v0/users/1060673/collections/123" -> respond(
+                    """
+                    {
+                      "subject_id": 123,
+                      "subject_type": 2,
+                      "rate": 8,
+                      "type": 2,
+                      "tags": [],
+                      "ep_status": 2,
+                      "vol_status": 0,
+                      "updated_at": "2026-01-01T00:00:01Z",
+                      "private": false,
+                      "comment": "",
+                      "subject": null
+                    }
+                    """.trimIndent(),
+                    HttpStatusCode.OK,
+                    headersOf("Content-Type", "application/json"),
+                )
+
                 else -> error("Unexpected Bangumi request: ${request.method} ${request.url}")
             }
         }) {
@@ -108,6 +128,7 @@ class BangumiTrackingSyncApiTest {
             assertEquals(1, page.total)
             assertEquals(UnifiedCollectionType.DOING, page.collections.single().type)
             api.upsertCollectionType(123, UnifiedCollectionType.DONE)
+            assertEquals(UnifiedCollectionType.DONE, api.collection("1060673", 123)?.type)
 
             val collectionRequest = requests.first { it.url.encodedPath == "/v0/users/1060673/collections" }
             assertEquals(HttpMethod.Get, collectionRequest.method)

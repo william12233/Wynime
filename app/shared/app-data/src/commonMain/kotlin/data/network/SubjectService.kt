@@ -30,6 +30,7 @@ import me.him188.ani.app.data.models.subject.RelatedPersonInfo
 import me.him188.ani.app.data.models.subject.SelfRatingInfo
 import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
 import me.him188.ani.app.data.models.subject.SubjectInfo
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.app.domain.session.SessionStateProvider
 import me.him188.ani.app.domain.session.checkAccessAniApiNow
 import me.him188.ani.app.platform.getAniUserAgent
@@ -95,6 +96,11 @@ interface SubjectService {
     fun subjectCollectionById(subjectId: Int): Flow<AniSubjectCollection?>
 
     suspend fun patchSubjectCollection(subjectId: Int, payload: AniUpdateSubjectCollectionRequest)
+
+    /** Removes the complete subject collection through the authenticated Ani backend route. */
+    suspend fun deleteSubjectCollection(subjectId: Int) {
+        throw RepositoryRequestError("Subject collection deletion is not available")
+    }
 
     suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<AniSubjectRecommendation>
 
@@ -211,6 +217,17 @@ class RemoteSubjectService(
                     subjectId.toLong(),
                     payload,
                 )
+                Unit
+            }
+        }
+        subjectCountStatsRestarter.restart()
+    }
+
+    override suspend fun deleteSubjectCollection(subjectId: Int) {
+        sessionManager.checkAccessAniApiNow()
+        withContext(ioDispatcher) {
+            subjectApi {
+                deleteSubjectCollection(subjectId.toLong())
                 Unit
             }
         }

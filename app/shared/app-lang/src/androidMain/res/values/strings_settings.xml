@@ -58,9 +58,8 @@
     <string name="settings_account_tracking_sync_progress_failed">Sync failed: %1$s</string>
     <string name="settings_account_tracking_sync_full_summary">Full sync: %1$d / %2$d subjects, %3$d episodes, %4$d watched; %5$d ms</string>
     <string name="settings_account_tracking_sync_full_summary_partial">Full sync: %1$d / %2$d subjects, %3$d episodes, %4$d watched; failed %5$d; %6$d ms</string>
-    <string name="settings_account_tracking_sync_complete">Sync complete · local %1$d · Bangumi %2$d · unchanged %3$d · conflicts %4$d · remote cancel unsupported %5$d</string>
+    <string name="settings_account_tracking_sync_complete">Sync complete · uploaded %1$d · downloaded %2$d · deleted %3$d · unchanged %4$d · conflicts %5$d · failed %6$d</string>
     <string name="settings_account_tracking_sync_failed">Bangumi sync failed: %1$s</string>
     <string name="settings_account_tracking_sync_auto_success">Synced to Bangumi</string>
     <string name="settings_account_tracking_sync_auto_failed">Bangumi sync failed: %1$s</string>
-    <string name="settings_account_tracking_sync_remote_delete_unsupported">Bangumi does not support remote cancellation; kept local cancellation.</string>
 </resources>

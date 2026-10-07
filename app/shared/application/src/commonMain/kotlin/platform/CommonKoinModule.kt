@@ -247,7 +247,11 @@ private fun KoinApplication.otherModules(
 
     // Data layer network services
     single<SubjectService> {
-        BangumiSubjectService(get())
+        BangumiSubjectService(
+            bangumiApi = get(),
+            aniApi = get(),
+            sessionManager = get(),
+        )
     }
     single<EpisodeService> { EpisodeServiceImpl(get()) }
 

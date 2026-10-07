@@ -7,6 +7,8 @@
 
 package me.him188.ani.app.data.repository.subject
 
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.http.HttpStatusCode
 import me.him188.ani.app.data.network.BangumiApiProvider
 import me.him188.ani.app.data.repository.RepositoryException
 import me.him188.ani.datasources.api.topic.UnifiedCollectionType
@@ -28,6 +30,9 @@ interface BangumiTrackingSyncApi {
         limit: Int,
         offset: Int,
     ): BangumiTrackingRemotePage
+
+    /** Reads one collection record after a remote mutation; null means Bangumi has no record. */
+    suspend fun collection(username: String, subjectId: Int): BangumiTrackingRemoteSnapshot?
 
     suspend fun upsertCollectionType(subjectId: Int, type: UnifiedCollectionType)
 }
@@ -67,6 +72,25 @@ class BangumiTrackingSyncApiImpl(
                 },
                 total = page.total,
             )
+        }
+    }
+
+    override suspend fun collection(
+        username: String,
+        subjectId: Int,
+    ): BangumiTrackingRemoteSnapshot? = request {
+        try {
+            provider.request {
+                getUserCollection(username = username, subjectId = subjectId)
+            }.let { collection ->
+                BangumiTrackingRemoteSnapshot(
+                    subjectId = collection.subjectId,
+                    type = collection.type.toUnifiedCollectionType(),
+                    updatedAt = collection.updatedAt.toEpochMilliseconds(),
+                )
+            }
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.NotFound) null else throw e
         }
     }
 

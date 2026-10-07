@@ -7,22 +7,21 @@
 
 package me.him188.ani.app.data.repository.subject
 
+import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.sync.withPermit
 import me.him188.ani.app.data.persistent.database.dao.BangumiTrackingAccountEntity
 import me.him188.ani.app.data.persistent.database.dao.BangumiTrackingMetadataDao
 import me.him188.ani.app.data.persistent.database.dao.BangumiTrackingMetadataEntity
@@ -37,6 +36,10 @@ import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.app.data.network.SubjectService
 import me.him188.ani.datasources.api.topic.UnifiedCollectionType
 import me.him188.ani.utils.platform.currentTimeMillis
+import me.him188.ani.utils.logging.debug
+import me.him188.ani.utils.logging.info
+import me.him188.ani.utils.logging.logger
+import me.him188.ani.utils.logging.warn
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Instant
@@ -46,6 +49,11 @@ data class BangumiTrackingAccount(
     val username: String,
 ) {
     val key: String get() = "id:$id"
+}
+
+enum class BangumiTrackingPendingOperation {
+    UPSERT_COLLECTION,
+    DELETE_COLLECTION,
 }
 
 class BangumiTrackingMetadataRepository(
@@ -119,6 +127,7 @@ class BangumiTrackingMetadataRepository(
                 localDeletedAt = null,
                 lastLocalModifiedAt = modifiedAt,
                 pendingType = type.name,
+                pendingOperation = BangumiTrackingPendingOperation.UPSERT_COLLECTION.name,
                 pendingError = null,
             ),
         )
@@ -132,26 +141,73 @@ class BangumiTrackingMetadataRepository(
                 localDeletedAt = deletedAt,
                 lastLocalModifiedAt = deletedAt,
                 pendingType = null,
+                pendingOperation = BangumiTrackingPendingOperation.DELETE_COLLECTION.name,
                 pendingError = null,
             ),
         )
     }
 
-    suspend fun markRemoteObserved(subjectId: Int, remoteUpdatedAt: Long, syncedAt: Long = currentTimeMillis()) {
+    suspend fun markRemoteObserved(
+        subjectId: Int,
+        remoteUpdatedAt: Long?,
+        remoteType: UnifiedCollectionType? = null,
+        syncedAt: Long = currentTimeMillis(),
+        clearPending: Boolean = false,
+    ) {
         val key = accountKey()
         val old = dao.find(key, subjectId)
         dao.upsert(
             (old ?: BangumiTrackingMetadataEntity(accountKey = key, subjectId = subjectId)).copy(
                 remoteUpdatedAt = remoteUpdatedAt,
                 lastSyncedAt = syncedAt,
+                lastSyncedType = remoteType?.name,
+                localDeletedAt = if (clearPending) null else old?.localDeletedAt,
+                pendingType = if (clearPending) null else old?.pendingType,
+                pendingOperation = if (clearPending) null else old?.pendingOperation,
+                pendingError = if (clearPending) null else old?.pendingError,
             ),
         )
     }
 
-    suspend fun clearTombstone(subjectId: Int, remoteUpdatedAt: Long? = null) {
+    suspend fun clearTombstone(
+        subjectId: Int,
+        remoteUpdatedAt: Long? = null,
+        remoteType: UnifiedCollectionType? = null,
+    ) {
         val key = accountKey()
         val old = dao.find(key, subjectId) ?: return
-        dao.upsert(old.copy(localDeletedAt = null, remoteUpdatedAt = remoteUpdatedAt ?: old.remoteUpdatedAt))
+        dao.upsert(
+            old.copy(
+                localDeletedAt = null,
+                remoteUpdatedAt = remoteUpdatedAt,
+                lastSyncedType = remoteType?.name,
+                lastSyncedAt = currentTimeMillis(),
+                pendingType = null,
+                pendingOperation = null,
+                pendingError = null,
+            ),
+        )
+    }
+
+    suspend fun markMutationSucceeded(
+        subjectId: Int,
+        remoteType: UnifiedCollectionType?,
+        remoteUpdatedAt: Long?,
+        syncedAt: Long = currentTimeMillis(),
+    ) {
+        val key = accountKey()
+        val old = dao.find(key, subjectId)
+        dao.upsert(
+            (old ?: BangumiTrackingMetadataEntity(accountKey = key, subjectId = subjectId)).copy(
+                localDeletedAt = null,
+                remoteUpdatedAt = remoteUpdatedAt,
+                lastSyncedType = remoteType?.name,
+                lastSyncedAt = syncedAt,
+                pendingType = null,
+                pendingOperation = null,
+                pendingError = null,
+            ),
+        )
     }
 
     suspend fun markPendingError(subjectId: Int, error: Throwable) {
@@ -190,7 +246,7 @@ data class BangumiTrackingSyncResult(
     val bangumiUpdated: Int,
     val unchanged: Int,
     val conflictsResolved: Int,
-    val remoteDeleteUnsupported: Int,
+    val deletedRemote: Int = 0,
     val fetchedCollectionCount: Int = 0,
     val expectedCollectionCount: Int? = null,
     val fetchedEpisodeSubjectCount: Int = 0,
@@ -218,7 +274,7 @@ sealed interface BangumiTrackingAutoSyncEvent {
         val error: BangumiTrackingConnectionError,
     ) : BangumiTrackingAutoSyncEvent
 
-    data class RemoteDeleteUnsupported(
+    data class Deleted(
         val subjectId: Int,
     ) : BangumiTrackingAutoSyncEvent
 }
@@ -281,7 +337,9 @@ class BangumiTrackingSyncRepository(
             pendingLock.withLock {
                 pendingJobs.remove(subjectId)?.cancel()
                 pendingJobs[subjectId] = serviceScope.launch {
-                    delay(AUTO_SYNC_DEBOUNCE_MILLIS)
+                    // Let a burst of local writes finish committing. This is a scheduling yield,
+                    // not a wall-clock throttle; the latest durable operation is read below.
+                    yield()
                     flushPending(subjectId)
                 }
             }
@@ -310,7 +368,9 @@ class BangumiTrackingSyncRepository(
         val accountKey = metadataRepository.adoptAccount(account)
         metadataDao.list(accountKey)
             .asSequence()
-            .filter { it.pendingType != null }
+            .filter {
+                it.pendingOperation != null || it.pendingType != null || it.localDeletedAt != null
+            }
             .map { it.subjectId }
             .forEach(::enqueueLocalChange)
     }
@@ -333,7 +393,7 @@ class BangumiTrackingSyncRepository(
     }
 
     private suspend fun flushPending(subjectId: Int) {
-        var attemptedType: UnifiedCollectionType? = null
+        var attemptedOperation: BangumiTrackingPendingOperation? = null
         var accountKey: String? = null
         try {
             val settings = settingsStore.flow.first()
@@ -342,27 +402,57 @@ class BangumiTrackingSyncRepository(
             val resolvedAccountKey = metadataRepository.adoptAccount(user)
             accountKey = resolvedAccountKey
             val metadata = metadataDao.find(resolvedAccountKey, subjectId) ?: return
-            if (metadata.localDeletedAt != null) {
-                _autoSyncEvents.tryEmit(BangumiTrackingAutoSyncEvent.RemoteDeleteUnsupported(subjectId))
-                return
-            }
-            val type = metadata.pendingType
-                ?.let { runCatching { UnifiedCollectionType.valueOf(it) }.getOrNull() }
-                ?.takeUnless { it == UnifiedCollectionType.NOT_COLLECTED }
-                ?: return
-            attemptedType = type
+            val operation = metadata.pendingOperation
+                ?.let { runCatching { BangumiTrackingPendingOperation.valueOf(it) }.getOrNull() }
+                ?: when {
+                    metadata.localDeletedAt != null -> BangumiTrackingPendingOperation.DELETE_COLLECTION
+                    metadata.pendingType != null -> BangumiTrackingPendingOperation.UPSERT_COLLECTION
+                    else -> return
+                }
+            attemptedOperation = operation
             syncCoordinator.withExclusive(BangumiSyncOperation.AUTO) {
-                upsertRemoteType(subjectId, type)
-            }
-            val latest = metadataDao.find(resolvedAccountKey, subjectId)
-            if (latest?.localDeletedAt == null && latest?.pendingType == type.name) {
-                metadataDao.upsert(
-                    latest.copy(
-                        pendingType = null,
-                        pendingError = null,
-                        lastSyncedAt = currentTimeMillis(),
-                    ),
-                )
+                when (operation) {
+                    BangumiTrackingPendingOperation.DELETE_COLLECTION -> {
+                        val before = readRemoteCollection(user.username, subjectId)
+                        if (before != null) {
+                            timedRemoteMutation("DELETE", "/v2/subjects/{subjectId}") {
+                                subjectService.deleteSubjectCollection(subjectId)
+                            }
+                        }
+                        val after = readRemoteCollection(user.username, subjectId)
+                        check(after == null) {
+                            "Bangumi collection still exists after DELETE_COLLECTION"
+                        }
+                        metadataRepository.markMutationSucceeded(
+                            subjectId = subjectId,
+                            remoteType = null,
+                            remoteUpdatedAt = null,
+                        )
+                        _autoSyncEvents.tryEmit(BangumiTrackingAutoSyncEvent.Deleted(subjectId))
+                    }
+
+                    BangumiTrackingPendingOperation.UPSERT_COLLECTION -> {
+                        val type = metadata.pendingType
+                            ?.let { runCatching { UnifiedCollectionType.valueOf(it) }.getOrNull() }
+                            ?.takeUnless { it == UnifiedCollectionType.NOT_COLLECTED }
+                            ?: throw RepositoryRequestError(
+                                "Invalid UPSERT_COLLECTION pending type for subject=$subjectId",
+                            )
+                        timedRemoteMutation("POST", "/v0/users/{username}/collections/{subjectId}") {
+                            upsertRemoteType(subjectId, type)
+                        }
+                        val after = readRemoteCollection(user.username, subjectId)
+                        check(after?.type == type) {
+                            "Bangumi collection verification mismatch after UPSERT_COLLECTION"
+                        }
+                        metadataRepository.markMutationSucceeded(
+                            subjectId = subjectId,
+                            remoteType = after.type,
+                            remoteUpdatedAt = after.updatedAt,
+                        )
+                        _autoSyncEvents.tryEmit(BangumiTrackingAutoSyncEvent.Succeeded(subjectId, type))
+                    }
+                }
                 val previousSummary = metadataRepository.accountSummary(resolvedAccountKey)
                 metadataRepository.saveAccountSummary(
                     accountKey = resolvedAccountKey,
@@ -371,13 +461,16 @@ class BangumiTrackingSyncRepository(
                         ?: subjectCollectionDao.listAll().count { it.collectionType != UnifiedCollectionType.NOT_COLLECTED },
                     remoteCount = previousSummary?.remoteCount ?: 0,
                 )
-                _autoSyncEvents.tryEmit(BangumiTrackingAutoSyncEvent.Succeeded(subjectId, type))
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             val latest = accountKey?.let { metadataDao.find(it, subjectId) }
-            val isCurrentAttempt = attemptedType == null || latest?.pendingType == attemptedType.name
+            val attemptedOperationName = attemptedOperation?.name
+            val isCurrentAttempt = attemptedOperation == null ||
+                latest?.pendingOperation == attemptedOperationName ||
+                (attemptedOperation == BangumiTrackingPendingOperation.DELETE_COLLECTION &&
+                    latest?.localDeletedAt != null)
             if (isCurrentAttempt) {
                 metadataRepository.markPendingError(subjectId, e)
                 _autoSyncEvents.tryEmit(
@@ -409,22 +502,46 @@ class BangumiTrackingSyncRepository(
         val fetched = fetchAllCollections(user.username)
         val remote = fetched.items.associateBy { it.subjectId }
         val subjectIds = (local.keys + remote.keys + metadata.keys).toSortedSet()
-        var localUpdated = 0
-        var bangumiUpdated = 0
-        var unchanged = 0
-        var conflicts = 0
-        var remoteDeleteUnsupported = 0
+        logger.info {
+            "BangumiSync start strategy=${settings.conflictPolicy} local=${local.size} " +
+                "remote=${remote.size} baseline=${metadata.count { it.value.lastSyncedAt > 0 }} " +
+                "pending=${metadata.count { it.value.pendingOperation != null || it.value.localDeletedAt != null }}"
+        }
+        logger.info {
+            "BangumiSync fetched remote=${remote.size} pullRequests=${fetched.requestCount}"
+        }
         val plans = subjectIds.map { subjectId ->
-            val tombstone = metadata[subjectId]?.localDeletedAt?.let(::BangumiTrackingTombstoneSnapshot)
+            val metadataRow = metadata[subjectId]
             BangumiTrackingSyncEngine.plan(
                 policy = settings.conflictPolicy,
                 local = local[subjectId],
                 remote = remote[subjectId],
-                tombstone = tombstone,
+                tombstone = metadataRow?.localDeletedAt?.let(::BangumiTrackingTombstoneSnapshot),
+                baseline = metadataRow
+                    ?.takeIf { it.lastSyncedAt > 0 }
+                    ?.let {
+                        BangumiTrackingBaselineSnapshot(
+                            type = it.lastSyncedType?.let { name ->
+                                runCatching { UnifiedCollectionType.valueOf(name) }.getOrNull()
+                            },
+                            syncedAt = it.lastSyncedAt,
+                            remoteUpdatedAt = it.remoteUpdatedAt,
+                        )
+                    },
             )
         }
-        conflicts = plans.count { it.conflict }
-        remoteDeleteUnsupported = plans.count { it.remoteDeleteUnsupported }
+        plans.filter { it.action !is BangumiTrackingSyncAction.NoOp }.forEach { plan ->
+            val localState = local[plan.subjectId]?.type?.name ?: "ABSENT"
+            val remoteState = remote[plan.subjectId]?.type?.name ?: "NOT_COLLECTED"
+            val localModifiedAt = local[plan.subjectId]?.lastUpdated
+            val remoteUpdatedAt = remote[plan.subjectId]?.updatedAt
+            logger.debug {
+                "BangumiSync change subjectId=${plan.subjectId} localState=$localState " +
+                    "remoteState=$remoteState localModifiedAt=$localModifiedAt " +
+                    "remoteUpdatedAt=$remoteUpdatedAt winner=${plan.action::class.simpleName} " +
+                    "conflict=${plan.conflict}"
+            }
+        }
 
         syncCoordinator.report(
             operation = BangumiSyncOperation.TRACKING,
@@ -432,32 +549,18 @@ class BangumiTrackingSyncRepository(
             current = 0,
             total = subjectIds.size,
         )
-        val upserts = plans.mapNotNull { plan ->
-            (plan.action as? BangumiTrackingSyncAction.UpsertRemote)?.let { plan.subjectId to it.type }
-        }
-        val semaphore = Semaphore(MAX_PARALLEL_MUTATIONS)
         val mutationResults = coroutineScope {
-            upserts.map { (subjectId, type) ->
+            plans.filter {
+                it.action is BangumiTrackingSyncAction.UpsertRemote ||
+                    it.action is BangumiTrackingSyncAction.DeleteRemote
+            }.map { plan ->
                 async {
-                    semaphore.withPermit {
-                        try {
-                            upsertRemoteType(subjectId, type)
-                            metadataDao.find(accountKey, subjectId)?.let { metadataRow ->
-                                metadataDao.upsert(
-                                    metadataRow.copy(
-                                        pendingType = null,
-                                        pendingError = null,
-                                        lastSyncedAt = currentTimeMillis(),
-                                        remoteUpdatedAt = currentTimeMillis(),
-                                    ),
-                                )
-                            }
-                            MutationResult.Success(subjectId)
-                        } catch (e: Throwable) {
-                            if (e is CancellationException) throw e
-                            metadataRepository.markPendingError(subjectId, e)
-                            MutationResult.Failure(subjectId, e)
-                        }
+                    try {
+                        executeRemoteMutation(user.username, plan)
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        metadataRepository.markPendingError(plan.subjectId, e)
+                        MutationResult.Failure(plan.subjectId, e)
                     }
                 }
             }.awaitAll()
@@ -468,7 +571,13 @@ class BangumiTrackingSyncRepository(
         val failureMessages = mutationResults.filterIsInstance<MutationResult.Failure>()
             .mapNotNull { it.error.message }
             .toMutableList()
-        bangumiUpdated = mutationResults.count { it is MutationResult.Success }
+        var localUpdated = 0
+        val bangumiUpdated = mutationResults.count { it is MutationResult.UpsertSuccess }
+        val deletedRemote = mutationResults.count { it is MutationResult.DeleteSuccess }
+        val conflictsResolved = plans.count {
+            it.conflict && it.action !is BangumiTrackingSyncAction.Conflict
+        }
+        var unchanged = 0
 
         for (index in plans.indices) {
             val plan = plans[index]
@@ -482,7 +591,14 @@ class BangumiTrackingSyncRepository(
             when (val action = plan.action) {
                 BangumiTrackingSyncAction.NoOp -> {
                     unchanged++
-                    remote[plan.subjectId]?.let { metadataRepository.markRemoteObserved(plan.subjectId, it.updatedAt) }
+                    remote[plan.subjectId].let { remoteSubject ->
+                        metadataRepository.markRemoteObserved(
+                            subjectId = plan.subjectId,
+                            remoteUpdatedAt = remoteSubject?.updatedAt,
+                            remoteType = remoteSubject?.type,
+                            clearPending = true,
+                        )
+                    }
                 }
 
                 is BangumiTrackingSyncAction.ApplyRemote -> {
@@ -497,14 +613,6 @@ class BangumiTrackingSyncRepository(
                     }
                 }
 
-                BangumiTrackingSyncAction.KeepLocalUntracked -> {
-                    val remoteSubject = remote[plan.subjectId]
-                    if (remoteSubject != null) {
-                        metadataRepository.markRemoteObserved(plan.subjectId, remoteSubject.updatedAt)
-                    }
-                    localUpdated++
-                }
-
                 BangumiTrackingSyncAction.MarkLocalUntracked -> {
                     val deletedAt = currentTimeMillis()
                     subjectCollectionDao.updateType(
@@ -513,12 +621,29 @@ class BangumiTrackingSyncRepository(
                         lastUpdated = deletedAt,
                         lastFetched = deletedAt,
                     )
-                    metadataRepository.markLocalDeletion(plan.subjectId, deletedAt)
+                    metadataRepository.markRemoteObserved(
+                        subjectId = plan.subjectId,
+                        remoteUpdatedAt = null,
+                        remoteType = null,
+                        syncedAt = deletedAt,
+                        clearPending = true,
+                    )
                     localUpdated++
                 }
 
                 is BangumiTrackingSyncAction.UpsertRemote -> {
-                    if (remote[plan.subjectId]?.type == action.type) unchanged++
+                    if (mutationResults.any { it is MutationResult.UpsertSuccess && it.subjectId == plan.subjectId }) {
+                        // The remote mutation is counted separately; there is no local write here.
+                    }
+                }
+
+                BangumiTrackingSyncAction.DeleteRemote -> {
+                    // The verified remote deletion is counted in deletedRemote.
+                }
+
+                BangumiTrackingSyncAction.Conflict -> {
+                    failedSubjectIds += plan.subjectId
+                    failureMessages += "subject=${plan.subjectId} 兩側同時變更但沒有可判定的勝者"
                 }
             }
         }
@@ -546,12 +671,18 @@ class BangumiTrackingSyncRepository(
                 detail = "${failedSubjectIds.size} 個條目同步失敗",
             )
         }
+        logger.info {
+            "BangumiSync finish pullRequests=${fetched.requestCount} " +
+                "pushRequests=$bangumiUpdated deleteRequests=$deletedRemote " +
+                "localUpdates=$localUpdated success=$complete failed=${failedSubjectIds.size} " +
+                "totalElapsedMs=${currentTimeMillis() - startedAt}"
+        }
         return BangumiTrackingSyncResult(
             localUpdated = localUpdated,
             bangumiUpdated = bangumiUpdated,
             unchanged = unchanged,
-            conflictsResolved = conflicts,
-            remoteDeleteUnsupported = remoteDeleteUnsupported,
+            conflictsResolved = conflictsResolved,
+            deletedRemote = deletedRemote,
             fetchedCollectionCount = fetched.items.size,
             expectedCollectionCount = fetched.total,
             elapsedMillis = currentTimeMillis() - startedAt,
@@ -563,8 +694,11 @@ class BangumiTrackingSyncRepository(
     private suspend fun fetchAllCollections(username: String): TrackingCollectionFetch {
         val limit = 100
         val seenSubjectIds = HashSet<Int>()
-        val first = syncRequestThrottle.run { bangumiApi.animeCollections(username, limit, 0) }
+        val first = timedRemoteMutation("GET", "/v0/users/{username}/collections") {
+            bangumiApi.animeCollections(username, limit, 0)
+        }
         val expectedTotal = first.total
+        var requestCount = 1
         val result = ArrayList<BangumiTrackingRemoteSnapshot>(expectedTotal ?: first.collections.size)
         if (expectedTotal != null && first.collections.size > expectedTotal) {
             throw RepositoryRequestError("Bangumi 收藏第一頁超過 total=$expectedTotal")
@@ -591,17 +725,17 @@ class BangumiTrackingSyncRepository(
         }
         if (expectedTotal != null) {
             val offsets = (limit until expectedTotal step limit).toList()
-            offsets.chunked(MAX_PARALLEL_READS).forEach { batch ->
-                val pages = coroutineScope {
-                    batch.map { offset ->
-                        async {
-                            offset to syncRequestThrottle.run {
-                                bangumiApi.animeCollections(username, limit, offset)
-                            }
+            val pages = coroutineScope {
+                offsets.map { offset ->
+                    async {
+                        offset to timedRemoteMutation("GET", "/v0/users/{username}/collections") {
+                            bangumiApi.animeCollections(username, limit, offset)
                         }
-                    }.awaitAll()
-                }.sortedBy { it.first }
-                pages.forEach { (offset, page) ->
+                    }
+                }.awaitAll()
+            }.sortedBy { it.first }
+            requestCount += pages.size
+            pages.forEach { (offset, page) ->
                     if (page.collections.isEmpty() && offset < expectedTotal) {
                         throw RepositoryRequestError("Bangumi 收藏缺少 offset=$offset 的資料")
                     }
@@ -624,7 +758,6 @@ class BangumiTrackingSyncRepository(
                         current = result.size.coerceAtMost(expectedTotal),
                         total = expectedTotal,
                     )
-                }
             }
             val distinctCount = result.distinctBy { it.subjectId }.size
             if (result.size < expectedTotal || distinctCount < expectedTotal) {
@@ -635,7 +768,10 @@ class BangumiTrackingSyncRepository(
         } else {
             var offset = first.collections.size
             while (first.collections.size >= limit) {
-                val page = syncRequestThrottle.run { bangumiApi.animeCollections(username, limit, offset) }
+                val page = timedRemoteMutation("GET", "/v0/users/{username}/collections") {
+                    bangumiApi.animeCollections(username, limit, offset)
+                }
+                requestCount++
                 if (page.collections.isEmpty()) break
                 page.collections.forEach { collection ->
                     if (!seenSubjectIds.add(collection.subjectId)) {
@@ -655,11 +791,77 @@ class BangumiTrackingSyncRepository(
                 if (page.collections.size < limit) break
             }
         }
-        return TrackingCollectionFetch(result.distinctBy { it.subjectId }, expectedTotal)
+        return TrackingCollectionFetch(result.distinctBy { it.subjectId }, expectedTotal, requestCount)
     }
 
     private suspend fun upsertRemoteType(subjectId: Int, type: UnifiedCollectionType) {
         bangumiApi.upsertCollectionType(subjectId, type)
+    }
+
+    private suspend fun <T> timedRemoteMutation(
+        method: String,
+        endpoint: String,
+        block: suspend () -> T,
+    ): T {
+        val startedAt = currentTimeMillis()
+        return try {
+            block().also {
+                logger.info {
+                    "Bangumi network method=$method endpoint=$endpoint status=success " +
+                        "elapsedMs=${currentTimeMillis() - startedAt}"
+                }
+            }
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            val status = (e as? ClientRequestException)?.response?.status?.value?.toString() ?: "error"
+            logger.warn(e) {
+                "Bangumi network method=$method endpoint=$endpoint status=$status " +
+                    "elapsedMs=${currentTimeMillis() - startedAt}"
+            }
+            throw e
+        }
+    }
+
+    private suspend fun executeRemoteMutation(
+        username: String,
+        plan: BangumiTrackingSyncPlan,
+    ): MutationResult {
+        return when (val action = plan.action) {
+            is BangumiTrackingSyncAction.UpsertRemote -> {
+                timedRemoteMutation("POST", "/v0/users/{username}/collections/{subjectId}") {
+                    upsertRemoteType(plan.subjectId, action.type)
+                }
+                val verified = readRemoteCollection(username, plan.subjectId)
+                check(verified?.type == action.type) {
+                    "Bangumi collection verification mismatch after UPSERT_COLLECTION"
+                }
+                metadataRepository.markMutationSucceeded(
+                    subjectId = plan.subjectId,
+                    remoteType = verified.type,
+                    remoteUpdatedAt = verified.updatedAt,
+                )
+                MutationResult.UpsertSuccess(plan.subjectId)
+            }
+
+            BangumiTrackingSyncAction.DeleteRemote -> {
+                if (readRemoteCollection(username, plan.subjectId) != null) {
+                    timedRemoteMutation("DELETE", "/v2/subjects/{subjectId}") {
+                        subjectService.deleteSubjectCollection(plan.subjectId)
+                    }
+                }
+                check(readRemoteCollection(username, plan.subjectId) == null) {
+                    "Bangumi collection still exists after DELETE_COLLECTION"
+                }
+                metadataRepository.markMutationSucceeded(
+                    subjectId = plan.subjectId,
+                    remoteType = null,
+                    remoteUpdatedAt = null,
+                )
+                MutationResult.DeleteSuccess(plan.subjectId)
+            }
+
+            else -> error("Not a remote mutation: ${plan.action}")
+        }
     }
 
     private suspend fun applyRemoteType(subjectId: Int, type: UnifiedCollectionType, remoteUpdatedAt: Long) {
@@ -675,8 +877,22 @@ class BangumiTrackingSyncRepository(
                 subjectCollectionDao.upsert(hydrated.toEntity(currentTimeMillis()).copy(lastUpdated = remoteUpdatedAt))
             }
         }
-        metadataRepository.clearTombstone(subjectId, remoteUpdatedAt)
-        metadataRepository.markRemoteObserved(subjectId, remoteUpdatedAt)
+        metadataRepository.markRemoteObserved(
+            subjectId = subjectId,
+            remoteUpdatedAt = remoteUpdatedAt,
+            remoteType = type,
+            clearPending = true,
+        )
+    }
+
+    private suspend fun readRemoteCollection(
+        username: String,
+        subjectId: Int,
+    ): BangumiTrackingRemoteSnapshot? = timedRemoteMutation(
+        method = "GET",
+        endpoint = "/v0/users/{username}/collections/{subjectId}",
+    ) {
+        bangumiApi.collection(username, subjectId)
     }
 
     private suspend fun currentBangumiUser(): BangumiTrackingAccount? = bangumiApi.currentUser()
@@ -688,38 +904,18 @@ class BangumiTrackingSyncRepository(
     private sealed interface MutationResult {
         val subjectId: Int
 
-        data class Success(override val subjectId: Int) : MutationResult
+        data class UpsertSuccess(override val subjectId: Int) : MutationResult
+        data class DeleteSuccess(override val subjectId: Int) : MutationResult
         data class Failure(override val subjectId: Int, val error: Throwable) : MutationResult
     }
 
     private data class TrackingCollectionFetch(
         val items: List<BangumiTrackingRemoteSnapshot>,
         val total: Int?,
+        val requestCount: Int,
     )
 
     private companion object {
-        const val MAX_PARALLEL_MUTATIONS = 4
-        const val MAX_PARALLEL_READS = 3
-        const val AUTO_SYNC_DEBOUNCE_MILLIS = 500L
-    }
-
-    private val syncRequestThrottle = BangumiTrackingSyncRequestThrottle()
-}
-
-private class BangumiTrackingSyncRequestThrottle(
-    private val intervalMillis: Long = 200L,
-) {
-    private val mutex = Mutex()
-    private var nextStartAt = 0L
-
-    suspend fun <T> run(block: suspend () -> T): T {
-        val waitMillis = mutex.withLock {
-            val now = currentTimeMillis()
-            val startAt = maxOf(now, nextStartAt)
-            nextStartAt = startAt + intervalMillis
-            startAt - now
-        }
-        if (waitMillis > 0) delay(waitMillis)
-        return block()
+        private val logger = logger<BangumiTrackingSyncRepository>()
     }
 }

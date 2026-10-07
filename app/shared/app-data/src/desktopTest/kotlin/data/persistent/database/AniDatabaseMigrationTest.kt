@@ -252,6 +252,48 @@ class AniDatabaseMigrationTest {
     }
 
     @Test
+    fun `MIG-10 v30到v31保留tombstone并增加operation與remote baseline欄位`() {
+        val helper = createHelper()
+        helper.createDatabase(30).use { connection ->
+            connection.execSQL(
+                """
+                INSERT INTO `bangumi_tracking_metadata`
+                    (`accountKey`, `subjectId`, `localDeletedAt`, `lastLocalModifiedAt`, `lastSyncedAt`,
+                     `remoteUpdatedAt`, `pendingType`, `pendingError`)
+                VALUES ('id:1', 123, 1700000000000, 1700000000000, 1690000000000,
+                        1680000000000, NULL, NULL)
+                """.trimIndent(),
+            )
+        }
+        helper.runMigrationsAndValidate(31, emptyList()).use { connection ->
+            assertEquals(
+                setOf(
+                    "accountKey",
+                    "subjectId",
+                    "localDeletedAt",
+                    "lastLocalModifiedAt",
+                    "lastSyncedAt",
+                    "remoteUpdatedAt",
+                    "pendingType",
+                    "pendingError",
+                    "lastSyncedType",
+                    "pendingOperation",
+                ),
+                connection.columnNames("bangumi_tracking_metadata"),
+            )
+            connection.prepare(
+                "SELECT `localDeletedAt`, `pendingOperation`, `lastSyncedType` " +
+                    "FROM `bangumi_tracking_metadata` WHERE `accountKey` = 'id:1' AND `subjectId` = 123",
+            ).use { statement ->
+                assertTrue(statement.step())
+                assertEquals(1700000000000L, statement.getLong(0))
+                assertTrue(statement.isNull(1))
+                assertTrue(statement.isNull(2))
+            }
+        }
+    }
+
+    @Test
     fun `MIG-04 缺失手动19-20迁移时从v16迁移到v21失败`() {
         val helper = createHelper()
         helper.createDatabase(16).use {}

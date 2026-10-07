@@ -80,7 +80,7 @@ import me.him188.ani.utils.httpdownloader.DownloadState
         BangumiTrackingMetadataEntity::class,
         BangumiTrackingAccountEntity::class,
     ],
-    version = 30,
+    version = 31,
     autoMigrations = [
         AutoMigration(from = 1, to = 2, spec = Migrations.Migration_1_2::class),
         AutoMigration(from = 2, to = 3, spec = Migrations.Migration_2_3::class),
@@ -110,6 +110,7 @@ import me.him188.ani.utils.httpdownloader.DownloadState
         AutoMigration(from = 27, to = 28),
         AutoMigration(from = 28, to = 29, spec = Migrations.Migration_28_29::class),
         AutoMigration(from = 29, to = 30, spec = Migrations.Migration_29_30::class),
+        AutoMigration(from = 30, to = 31, spec = Migrations.Migration_30_31::class),
     ],
     exportSchema = true,
 )
@@ -430,6 +431,12 @@ internal object Migrations {
 
     /** Adds account-scoped Bangumi tracking tombstones and sync metadata. */
     class Migration_29_30 : AutoMigrationSpec {
+        override fun onPostMigrate(connection: SQLiteConnection) {
+        }
+    }
+
+    /** Adds explicit pending-operation and verified remote-baseline columns. */
+    class Migration_30_31 : AutoMigrationSpec {
         override fun onPostMigrate(connection: SQLiteConnection) {
         }
     }

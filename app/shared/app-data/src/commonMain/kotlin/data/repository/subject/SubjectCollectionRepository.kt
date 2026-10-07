@@ -696,8 +696,8 @@ class SubjectCollectionRepositoryImpl(
         return withContext(defaultDispatcher) {
             val now = currentTimeMillis()
             if (type == null || type == UnifiedCollectionType.NOT_COLLECTED) {
-                // Bangumi has no public DELETE collection endpoint. Keep the subject row so the
-                // detail flow updates immediately, and persist a tombstone before any refresh.
+                // Keep the local row as NOT_COLLECTED for immediate UI updates and persist a
+                // durable DELETE_COLLECTION tombstone for the authenticated sync route.
                 subjectCollectionDao.updateType(
                     subjectId = subjectId,
                     collectionType = UnifiedCollectionType.NOT_COLLECTED,

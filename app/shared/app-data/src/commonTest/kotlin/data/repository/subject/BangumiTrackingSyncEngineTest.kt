@@ -71,15 +71,15 @@ class BangumiTrackingSyncEngineTest {
     }
 
     @Test
-    fun newerTombstoneKeepsSubjectUntracked() {
+    fun newerTombstonePlansTrueRemoteDelete() {
         val plan = BangumiTrackingSyncEngine.plan(
             BangumiTrackingConflictPolicy.LATEST_WINS,
             local(UnifiedCollectionType.NOT_COLLECTED, updatedAt = 300),
             remote(UnifiedCollectionType.DOING, updatedAt = 200),
             BangumiTrackingTombstoneSnapshot(300),
         )
-        assertEquals(BangumiTrackingSyncAction.KeepLocalUntracked, plan.action)
-        assertEquals(true, plan.remoteDeleteUnsupported)
+        assertEquals(BangumiTrackingSyncAction.DeleteRemote, plan.action)
+        assertEquals(false, plan.conflict)
     }
 
     @Test
@@ -94,15 +94,59 @@ class BangumiTrackingSyncEngineTest {
     }
 
     @Test
-    fun equalTimestampKeepsLocalSide() {
+    fun equalTimestampIsAnUnresolvedConflict() {
         val plan = BangumiTrackingSyncEngine.plan(
             BangumiTrackingConflictPolicy.LATEST_WINS,
             local(UnifiedCollectionType.DONE, updatedAt = 100),
             remote(UnifiedCollectionType.WISH, updatedAt = 100),
             null,
         )
-        assertIs<BangumiTrackingSyncAction.UpsertRemote>(plan.action)
-        assertEquals(UnifiedCollectionType.DONE, plan.action.type)
+        assertEquals(BangumiTrackingSyncAction.Conflict, plan.action)
+        assertEquals(true, plan.conflict)
+    }
+
+    @Test
+    fun latestWinsUsesBaselineWhenRemoteDeleteHasNoTimestamp() {
+        val plan = BangumiTrackingSyncEngine.plan(
+            BangumiTrackingConflictPolicy.LATEST_WINS,
+            local(UnifiedCollectionType.WISH, updatedAt = 100),
+            null,
+            null,
+            BangumiTrackingBaselineSnapshot(
+                type = UnifiedCollectionType.WISH,
+                syncedAt = 200,
+                remoteUpdatedAt = 100,
+            ),
+        )
+        assertEquals(BangumiTrackingSyncAction.MarkLocalUntracked, plan.action)
+    }
+
+    @Test
+    fun latestWinsLocalChangeBeatsRemoteAbsence() {
+        val plan = BangumiTrackingSyncEngine.plan(
+            BangumiTrackingConflictPolicy.LATEST_WINS,
+            local(UnifiedCollectionType.WISH, updatedAt = 300),
+            null,
+            null,
+            BangumiTrackingBaselineSnapshot(
+                type = UnifiedCollectionType.WISH,
+                syncedAt = 200,
+                remoteUpdatedAt = 100,
+            ),
+        )
+        assertEquals(BangumiTrackingSyncAction.UpsertRemote(UnifiedCollectionType.WISH), plan.action)
+    }
+
+    @Test
+    fun droppedAndNotCollectedRemainDifferentStates() {
+        val plan = BangumiTrackingSyncEngine.plan(
+            BangumiTrackingConflictPolicy.LOCAL_FIRST,
+            local(UnifiedCollectionType.NOT_COLLECTED, updatedAt = 300),
+            remote(UnifiedCollectionType.DROPPED, updatedAt = 200),
+            BangumiTrackingTombstoneSnapshot(300),
+        )
+        assertEquals(BangumiTrackingSyncAction.DeleteRemote, plan.action)
+        assertIs<BangumiTrackingSyncAction.DeleteRemote>(plan.action)
     }
 
     @Test

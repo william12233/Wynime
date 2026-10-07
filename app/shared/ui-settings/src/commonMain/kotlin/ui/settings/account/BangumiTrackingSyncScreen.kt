@@ -54,7 +54,6 @@ import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_sync
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_sync_description
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_success
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_auto_failed
-import me.him188.ani.app.ui.lang.settings_account_tracking_sync_remote_delete_unsupported
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_bangumi_account
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_bangumi_first
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_bangumi_first_description
@@ -213,7 +212,7 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
     }
 
     fun syncNow() {
-        if (_isSyncing.value || _connection.value !is BangumiTrackingConnectionUiState.Connected) return
+        if (_connection.value !is BangumiTrackingConnectionUiState.Connected) return
         backgroundScope.launch {
             _isSyncing.value = true
             _lastError.value = null
@@ -221,23 +220,9 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
             try {
                 val trackingResult = repository.syncNow()
                 _lastResult.value = trackingResult
-                // Tracking sync resolves collection conflicts first. The full collection pass then
-                // fetches all five tabs and every episode snapshot, including watched state.
-                try {
-                    subjectCollectionRepository.performBangumiFullSync()
-                } finally {
-                    val fullSummary = subjectCollectionRepository.getBangumiFullSyncSummary()
-                    _fullSyncSummary.value = fullSummary
-                    if (fullSummary != null) {
-                        _lastResult.value = trackingResult.copy(
-                            fetchedEpisodeSubjectCount = fullSummary.savedSubjectCount,
-                            episodeCount = fullSummary.episodeCount,
-                            episodeUpdated = fullSummary.episodeSnapshotCount,
-                            failedSubjectIds = fullSummary.failedSubjectIds,
-                            elapsedMillis = trackingResult.elapsedMillis + fullSummary.elapsedMillis,
-                        )
-                    }
-                }
+                // Tracking sync already reconciles every collection row from the list API. Only
+                // invalidate local paging data here; episode hydration remains an explicit path.
+                subjectCollectionRepository.invalidateAllCaches()
                 _summary.value = repository.summary()
             } catch (e: Throwable) {
                 _lastError.value = classifyBangumiTrackingError(e)
@@ -478,9 +463,10 @@ internal fun BangumiTrackingSyncContent(
                                 Lang.settings_account_tracking_sync_complete,
                                 it.localUpdated,
                                 it.bangumiUpdated,
+                                it.deletedRemote,
                                 it.unchanged,
                                 it.conflictsResolved,
-                                it.remoteDeleteUnsupported,
+                                it.failedSubjectIds.size,
                             )
                         } else {
                             stringResource(
@@ -539,8 +525,8 @@ internal fun BangumiTrackingSyncContent(
                                     connectionErrorText(event.error),
                                 )
 
-                            is BangumiTrackingAutoSyncEvent.RemoteDeleteUnsupported ->
-                                stringResource(Lang.settings_account_tracking_sync_remote_delete_unsupported)
+                            is BangumiTrackingAutoSyncEvent.Deleted ->
+                                stringResource(Lang.settings_account_tracking_sync_auto_success)
                         },
                     )
                 },

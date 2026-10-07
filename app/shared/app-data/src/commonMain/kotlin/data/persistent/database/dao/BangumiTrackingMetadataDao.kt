@@ -35,6 +35,10 @@ data class BangumiTrackingMetadataEntity(
     val remoteUpdatedAt: Long? = null,
     val pendingType: String? = null,
     val pendingError: String? = null,
+    /** Remote collection state captured by the last verified reconciliation; null means absent. */
+    val lastSyncedType: String? = null,
+    /** UPSERT_COLLECTION or DELETE_COLLECTION. Kept as data so mutations survive process death. */
+    val pendingOperation: String? = null,
 )
 
 @Entity(tableName = "bangumi_tracking_account")

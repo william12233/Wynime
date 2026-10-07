@@ -39,6 +39,8 @@ import me.him188.ani.app.data.repository.RepositoryAuthorizationException
 import me.him188.ani.app.data.repository.RepositoryException
 import me.him188.ani.app.data.repository.RepositoryRateLimitedException
 import me.him188.ani.app.data.repository.RepositoryRequestError
+import me.him188.ani.app.domain.session.SessionStateProvider
+import me.him188.ani.app.domain.session.checkAccessAniApiNow
 import me.him188.ani.utils.platform.currentTimeMillis
 import me.him188.ani.client.models.AniCollectionType
 import me.him188.ani.client.models.AniEpisodeCollection
@@ -81,6 +83,8 @@ import kotlin.coroutines.CoroutineContext
 class BangumiSubjectService(
     private val bangumiApi: BangumiApiProvider,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
+    private val aniApi: AniApiProvider? = null,
+    private val sessionManager: SessionStateProvider? = null,
 ) : SubjectService {
     private val logger = logger<BangumiSubjectService>()
     val subjectCountStatsRestarter = FlowRestarter()
@@ -245,6 +249,22 @@ class BangumiSubjectService(
                         tags = selfRating?.tags,
                     ),
                 )
+            }
+            subjectCountStatsRestarter.restart()
+        } catch (throwable: Throwable) {
+            throw wrapBangumiCollectionException(throwable)
+        }
+    }
+
+    override suspend fun deleteSubjectCollection(subjectId: Int) = withContext(ioDispatcher) {
+        try {
+            val aniApi = aniApi ?: throw RepositoryRequestError("Ani API is required to delete a collection")
+            val sessionManager = sessionManager
+                ?: throw RepositoryRequestError("Ani session is required to delete a collection")
+            sessionManager.checkAccessAniApiNow()
+            aniApi.subjectApi {
+                deleteSubjectCollection(subjectId.toLong())
+                Unit
             }
             subjectCountStatsRestarter.restart()
         } catch (throwable: Throwable) {

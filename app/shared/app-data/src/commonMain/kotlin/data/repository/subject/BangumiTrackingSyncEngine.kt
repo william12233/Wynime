@@ -31,19 +31,25 @@ data class BangumiTrackingTombstoneSnapshot(
     val deletedAt: Long,
 )
 
+data class BangumiTrackingBaselineSnapshot(
+    val type: UnifiedCollectionType?,
+    val syncedAt: Long,
+    val remoteUpdatedAt: Long?,
+)
+
 sealed interface BangumiTrackingSyncAction {
     data object NoOp : BangumiTrackingSyncAction
     data class UpsertRemote(val type: UnifiedCollectionType) : BangumiTrackingSyncAction
     data class ApplyRemote(val type: UnifiedCollectionType) : BangumiTrackingSyncAction
+    data object DeleteRemote : BangumiTrackingSyncAction
     data object MarkLocalUntracked : BangumiTrackingSyncAction
-    data object KeepLocalUntracked : BangumiTrackingSyncAction
+    data object Conflict : BangumiTrackingSyncAction
 }
 
 data class BangumiTrackingSyncPlan(
     val subjectId: Int,
     val action: BangumiTrackingSyncAction,
     val conflict: Boolean,
-    val remoteDeleteUnsupported: Boolean,
 )
 
 /**
@@ -56,21 +62,15 @@ object BangumiTrackingSyncEngine {
         local: BangumiTrackingLocalSnapshot?,
         remote: BangumiTrackingRemoteSnapshot?,
         tombstone: BangumiTrackingTombstoneSnapshot?,
+        baseline: BangumiTrackingBaselineSnapshot? = null,
     ): BangumiTrackingSyncPlan {
         val subjectId = local?.subjectId ?: remote?.subjectId ?: error("A sync plan needs a subject id")
         val localTracked = local?.takeUnless { it.type == UnifiedCollectionType.NOT_COLLECTED }
 
-        if (tombstone != null && (remote == null || remote.updatedAt <= tombstone.deletedAt)) {
-            return BangumiTrackingSyncPlan(
-                subjectId = subjectId,
-                action = BangumiTrackingSyncAction.KeepLocalUntracked,
-                conflict = remote != null,
-                remoteDeleteUnsupported = remote != null,
-            )
-        }
-
         val action = when (policy) {
             BangumiTrackingConflictPolicy.LOCAL_FIRST -> when {
+                tombstone != null -> BangumiTrackingSyncAction.DeleteRemote
+
                 localTracked != null && localTracked.type != remote?.type ->
                     BangumiTrackingSyncAction.UpsertRemote(localTracked.type)
 
@@ -97,14 +97,15 @@ object BangumiTrackingSyncEngine {
                 local = localTracked,
                 remote = remote,
                 tombstone = tombstone,
+                baseline = baseline,
             )
         }
 
         return BangumiTrackingSyncPlan(
             subjectId = subjectId,
             action = action,
-            conflict = localTracked != null && remote != null && localTracked.type != remote.type,
-            remoteDeleteUnsupported = false,
+            conflict = action is BangumiTrackingSyncAction.Conflict ||
+                (localTracked != null && remote != null && localTracked.type != remote.type),
         )
     }
 
@@ -112,17 +113,42 @@ object BangumiTrackingSyncEngine {
         local: BangumiTrackingLocalSnapshot?,
         remote: BangumiTrackingRemoteSnapshot?,
         tombstone: BangumiTrackingTombstoneSnapshot?,
+        baseline: BangumiTrackingBaselineSnapshot?,
     ): BangumiTrackingSyncAction {
         if (local == null && remote == null) return BangumiTrackingSyncAction.NoOp
-        if (local == null) return BangumiTrackingSyncAction.ApplyRemote(remote!!.type)
-        if (remote == null) return BangumiTrackingSyncAction.UpsertRemote(local.type)
 
-        val localUpdatedAt = maxOf(local.lastUpdated, tombstone?.deletedAt ?: Long.MIN_VALUE)
-        return if (localUpdatedAt >= remote.updatedAt) {
-            if (local.type == remote.type) BangumiTrackingSyncAction.NoOp
-            else BangumiTrackingSyncAction.UpsertRemote(local.type)
-        } else {
-            BangumiTrackingSyncAction.ApplyRemote(remote.type)
+        if (tombstone != null) {
+            if (remote == null || tombstone.deletedAt > remote.updatedAt) {
+                return BangumiTrackingSyncAction.DeleteRemote
+            }
+            if (tombstone.deletedAt < remote.updatedAt) {
+                return BangumiTrackingSyncAction.ApplyRemote(remote.type)
+            }
+            return BangumiTrackingSyncAction.Conflict
+        }
+
+        if (local == null) return BangumiTrackingSyncAction.ApplyRemote(remote!!.type)
+        if (remote == null) {
+            val localChangedAfterBaseline = baseline == null ||
+                baseline.type != local.type ||
+                local.lastUpdated > baseline.syncedAt
+            return if (localChangedAfterBaseline) {
+                BangumiTrackingSyncAction.UpsertRemote(local.type)
+            } else {
+                // A collection that was present in the baseline and disappeared remotely has no
+                // remote timestamp. The baseline is the evidence that Bangumi won this change.
+                BangumiTrackingSyncAction.MarkLocalUntracked
+            }
+        }
+
+        if (local.type == remote.type) return BangumiTrackingSyncAction.NoOp
+
+        return when {
+            local.lastUpdated > remote.updatedAt -> BangumiTrackingSyncAction.UpsertRemote(local.type)
+            local.lastUpdated < remote.updatedAt -> BangumiTrackingSyncAction.ApplyRemote(remote.type)
+            // Equal timestamps cannot establish a winner. Preserve the conflict instead of
+            // overwriting either side, including when no baseline exists.
+            else -> BangumiTrackingSyncAction.Conflict
         }
     }
 }

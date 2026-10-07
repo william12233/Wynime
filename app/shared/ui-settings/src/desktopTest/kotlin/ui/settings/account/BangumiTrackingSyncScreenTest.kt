@@ -122,7 +122,7 @@ class BangumiTrackingSyncScreenTest {
         render(
             BangumiTrackingConnectionUiState.Connected(BangumiTrackingAccount(1060673, "william")),
             callbacks,
-            result = BangumiTrackingSyncResult(1, 2, 3, 4, 0),
+            result = BangumiTrackingSyncResult(1, 2, 3, 4, 1),
         )
 
         onNodeWithTag("bangumi-tracking-account").assertIsDisplayed()
@@ -131,6 +131,7 @@ class BangumiTrackingSyncScreenTest {
         // The result is rendered in the page's lower summary section and may be
         // below the initial viewport in the desktop test harness.
         onNodeWithTag("bangumi-tracking-sync-result").assertTextContains("同步", substring = true)
+            .assertTextContains("刪除收藏", substring = true)
         waitForIdle()
 
         assertEquals(listOf(true), callbacks.autoSyncValues)

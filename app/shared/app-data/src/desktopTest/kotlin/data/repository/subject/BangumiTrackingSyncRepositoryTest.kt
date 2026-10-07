@@ -18,7 +18,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -45,6 +44,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertNotNull
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.flow
@@ -86,11 +87,88 @@ class BangumiTrackingSyncRepositoryTest {
             fixture.repository.enqueueLocalChange(1)
 
             runCurrent()
-            advanceTimeBy(501)
-            runCurrent()
+            advanceUntilIdle()
             assertIs<BangumiTrackingAutoSyncEvent.Succeeded>(event.await())
 
             assertEquals(listOf(1 to UnifiedCollectionType.DONE), fixture.api.upserts)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `local deletion persists as a durable delete operation across repository restart`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            fixture.metadata.markLocalChange(1, UnifiedCollectionType.WISH, 100)
+            fixture.metadata.markLocalDeletion(1, 200)
+
+            val restartedMetadata = BangumiTrackingMetadataRepository(
+                dao = fixture.database.bangumiTrackingMetadataDao(),
+                tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+                accountBindingStore = fixture.settings,
+            )
+            val persisted = restartedMetadata.find(1)
+
+            assertEquals(200, persisted?.localDeletedAt)
+            assertEquals(BangumiTrackingPendingOperation.DELETE_COLLECTION.name, persisted?.pendingOperation)
+            assertNull(persisted?.pendingType)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `verified remote deletion clears the tombstone`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            fixture.api.page = {
+                BangumiTrackingRemotePage(
+                    listOf(BangumiTrackingRemoteSnapshot(1, UnifiedCollectionType.WISH, 100)),
+                    1,
+                )
+            }
+            fixture.database.subjectCollection().upsert(subject(1, UnifiedCollectionType.NOT_COLLECTED, 300))
+            fixture.metadata.markLocalDeletion(1, 300)
+
+            val result = fixture.repository.syncNow()
+            val persisted = fixture.metadata.find(1)
+
+            assertEquals(listOf(1), fixture.api.deletes)
+            assertTrue(fixture.api.collectionCalls.get() >= 2)
+            assertNull(fixture.api.collection(fixture.api.account.username, 1))
+            assertEquals(1, result.deletedRemote)
+            assertNull(persisted?.localDeletedAt)
+            assertNull(persisted?.pendingOperation)
+            assertNull(persisted?.pendingError)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `failed remote deletion keeps the tombstone for retry`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            fixture.api.page = {
+                BangumiTrackingRemotePage(
+                    listOf(BangumiTrackingRemoteSnapshot(1, UnifiedCollectionType.WISH, 100)),
+                    1,
+                )
+            }
+            fixture.subjectService.failDelete = true
+            fixture.database.subjectCollection().upsert(subject(1, UnifiedCollectionType.NOT_COLLECTED, 300))
+            fixture.metadata.markLocalDeletion(1, 300)
+
+            val result = fixture.repository.syncNow()
+            val persisted = assertNotNull(fixture.metadata.find(1))
+
+            assertEquals(emptyList(), fixture.api.deletes)
+            assertEquals(listOf(1), result.failedSubjectIds)
+            assertEquals(0, result.deletedRemote)
+            assertEquals(BangumiTrackingPendingOperation.DELETE_COLLECTION.name, persisted.pendingOperation)
+            assertEquals(300, persisted.localDeletedAt)
+            assertNotNull(persisted.pendingError)
         } finally {
             fixture.database.close()
         }
@@ -113,6 +191,28 @@ class BangumiTrackingSyncRepositoryTest {
             fixture.repository.syncNow()
 
             assertEquals(listOf(0 to 100, 100 to 100), fixture.api.pageRequests)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `full sync uses the collection list without per-subject detail requests`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            val remote = (1..47).map {
+                BangumiTrackingRemoteSnapshot(it, UnifiedCollectionType.WISH, 100)
+            }
+            fixture.api.page = { BangumiTrackingRemotePage(remote, remote.size) }
+            fixture.database.subjectCollection().upsert(
+                remote.map { subject(it.subjectId, UnifiedCollectionType.WISH, 100) },
+            )
+
+            fixture.repository.syncNow()
+
+            assertEquals(listOf(0 to 100), fixture.api.pageRequests)
+            assertEquals(0, fixture.api.collectionCalls.get())
+            assertEquals(0, fixture.subjectService.detailCalls.get())
         } finally {
             fixture.database.close()
         }
@@ -178,17 +278,17 @@ class BangumiTrackingSyncRepositoryTest {
     }
 
     @Test
-    fun `full sync limits remote mutations to four concurrent requests`() = runTest {
+    fun `full sync sends independent remote mutations without an application concurrency cap`() = runTest {
         val fixture = fixture(backgroundScope)
         try {
-            fixture.api.upsertDelayMillis = 1
+            fixture.api.upsertDelayMillis = 100
             fixture.database.subjectCollection().upsert(
                 (1..8).map { subject(it, UnifiedCollectionType.DOING, it.toLong()) },
             )
 
             fixture.repository.syncNow()
             assertEquals(8, fixture.api.upserts.size)
-            assertTrue(fixture.api.maxUpserts.get() <= 4)
+            assertTrue(fixture.api.maxUpserts.get() > 4)
         } finally {
             fixture.database.close()
         }
@@ -199,6 +299,7 @@ class BangumiTrackingSyncRepositoryTest {
         val metadata: BangumiTrackingMetadataRepository,
         val settings: BangumiTrackingSyncSettingsStore,
         val api: FakeSyncApi,
+        val subjectService: FakeSubjectService,
         val repository: BangumiTrackingSyncRepository,
     )
 
@@ -213,16 +314,18 @@ class BangumiTrackingSyncRepositoryTest {
             accountBindingStore = settings,
         )
         val api = FakeSyncApi()
+        val subjectService = FakeSubjectService(api)
         return Fixture(
             database = database,
             metadata = metadata,
             settings = settings,
             api = api,
+            subjectService = subjectService,
             repository = BangumiTrackingSyncRepository(
                 subjectCollectionDao = database.subjectCollection(),
                 metadataDao = database.bangumiTrackingMetadataDao(),
                 metadataRepository = metadata,
-                subjectService = EmptySubjectService,
+                subjectService = subjectService,
                 bangumiApi = api,
                 settingsStore = settings,
                 serviceScope = scope,
@@ -235,6 +338,9 @@ class BangumiTrackingSyncRepositoryTest {
         val currentUserCalls = AtomicInteger()
         val pageRequests = CopyOnWriteArrayList<Pair<Int, Int>>()
         val upserts = CopyOnWriteArrayList<Pair<Int, UnifiedCollectionType>>()
+        val deletes = CopyOnWriteArrayList<Int>()
+        val collectionCalls = AtomicInteger()
+        private val remoteCollections = java.util.concurrent.ConcurrentHashMap<Int, BangumiTrackingRemoteSnapshot>()
         val inFlightUpserts = AtomicInteger()
         val maxUpserts = AtomicInteger()
         var page: (Int) -> BangumiTrackingRemotePage = { BangumiTrackingRemotePage(emptyList(), 0) }
@@ -251,11 +357,27 @@ class BangumiTrackingSyncRepositoryTest {
             pageRequests += offset to limit
             pageStarted.complete(Unit)
             pageGate?.await()
-            return page(offset)
+            return page(offset).also { result ->
+                result.collections.forEach { remoteCollections[it.subjectId] = it }
+            }
+        }
+
+        override suspend fun collection(username: String, subjectId: Int): BangumiTrackingRemoteSnapshot? {
+            collectionCalls.incrementAndGet()
+            return remoteCollections[subjectId]
+        }
+
+        fun removeRemote(subjectId: Int) {
+            remoteCollections.remove(subjectId)
         }
 
         override suspend fun upsertCollectionType(subjectId: Int, type: UnifiedCollectionType) {
             upserts += subjectId to type
+            remoteCollections[subjectId] = BangumiTrackingRemoteSnapshot(
+                subjectId = subjectId,
+                type = type,
+                updatedAt = currentTimeMillis(),
+            )
             val inFlight = inFlightUpserts.incrementAndGet()
             maxUpserts.updateAndGet { maxOf(it, inFlight) }
             try {
@@ -266,14 +388,22 @@ class BangumiTrackingSyncRepositoryTest {
         }
     }
 
-    private object EmptySubjectService : SubjectService {
+    private class FakeSubjectService(
+        private val api: FakeSyncApi,
+    ) : SubjectService {
+        val detailCalls = AtomicInteger()
+        var failDelete = false
+
         override suspend fun getSubjectCollections(
             type: BangumiSubjectCollectionType?,
             offset: Int,
             limit: Int,
         ): List<AniSubjectCollection> = emptyList()
 
-        override suspend fun getSubjectCollection(subjectId: Int): AniSubjectCollection? = null
+        override suspend fun getSubjectCollection(subjectId: Int): AniSubjectCollection? {
+            detailCalls.incrementAndGet()
+            return null
+        }
 
         override suspend fun getSubjectRelations(subjectId: Int, withCharacterActors: Boolean): BatchSubjectRelations =
             error("not needed")
@@ -282,6 +412,12 @@ class BangumiTrackingSyncRepositoryTest {
 
         override suspend fun patchSubjectCollection(subjectId: Int, payload: AniUpdateSubjectCollectionRequest) =
             error("not needed")
+
+        override suspend fun deleteSubjectCollection(subjectId: Int) {
+            if (failDelete) throw RepositoryRequestError("simulated DELETE failure")
+            api.deletes += subjectId
+            api.removeRemote(subjectId)
+        }
 
         override suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<AniSubjectRecommendation> =
             error("not needed")

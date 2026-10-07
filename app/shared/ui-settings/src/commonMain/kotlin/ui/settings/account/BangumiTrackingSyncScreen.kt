@@ -8,7 +8,9 @@
 package me.him188.ani.app.ui.settings.account
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -37,6 +39,13 @@ import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncResult
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettings
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettingsStore
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSummary
+import me.him188.ani.app.data.repository.subject.BangumiFullSyncSummary
+import me.him188.ani.app.data.repository.subject.BangumiSyncCoordinator
+import me.him188.ani.app.data.repository.subject.BangumiSyncOperation
+import me.him188.ani.app.data.repository.subject.BangumiSyncPhase
+import me.him188.ani.app.data.repository.subject.BangumiSyncProgress
+import me.him188.ani.app.data.repository.subject.BangumiSyncUiState
+import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
 import me.him188.ani.app.data.repository.subject.classifyBangumiTrackingError
 import me.him188.ani.app.domain.session.auth.OAuthPlatform
 import me.him188.ani.app.ui.foundation.AbstractViewModel
@@ -67,6 +76,14 @@ import me.him188.ani.app.ui.lang.settings_account_tracking_sync_network_error
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_not_connected
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_now
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_preferences
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_applying
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_collections
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_connecting
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_episodes
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_failed
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_merging
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_partial
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_progress_reloading
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_running
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_rate_limited
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_show_result
@@ -76,6 +93,8 @@ import me.him188.ani.app.ui.lang.settings_account_tracking_sync_title
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_unknown_error
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_remote_count
 import me.him188.ani.app.ui.lang.settings_account_tracking_sync_failed
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_full_summary
+import me.him188.ani.app.ui.lang.settings_account_tracking_sync_full_summary_partial
 import me.him188.ani.app.ui.settings.SettingsTab
 import me.him188.ani.app.ui.settings.framework.components.SettingsScope
 import me.him188.ani.app.ui.settings.framework.components.SingleSelectionElement
@@ -99,6 +118,8 @@ sealed interface BangumiTrackingConnectionUiState {
 @Stable
 class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
     private val repository: BangumiTrackingSyncRepository by inject()
+    private val subjectCollectionRepository: SubjectCollectionRepository by inject()
+    private val syncCoordinator: BangumiSyncCoordinator by inject()
     private val settingsStore: BangumiTrackingSyncSettingsStore by inject()
 
     private val _connection = MutableStateFlow<BangumiTrackingConnectionUiState>(
@@ -112,6 +133,9 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
     )
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+    // Observe the coordinator directly so the tracking phase and the following full collection
+    // phase remain visible as one continuous operation.
+    val syncState: StateFlow<BangumiSyncUiState> = syncCoordinator.state
     private val _isTestingConnection = MutableStateFlow(false)
     val isTestingConnection: StateFlow<Boolean> = _isTestingConnection.asStateFlow()
     private val _lastResult = MutableStateFlow<BangumiTrackingSyncResult?>(null)
@@ -120,6 +144,8 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
     val lastError: StateFlow<BangumiTrackingConnectionError?> = _lastError.asStateFlow()
     private val _summary = MutableStateFlow<BangumiTrackingSyncSummary?>(null)
     val summary: StateFlow<BangumiTrackingSyncSummary?> = _summary.asStateFlow()
+    private val _fullSyncSummary = MutableStateFlow<BangumiFullSyncSummary?>(null)
+    val fullSyncSummary: StateFlow<BangumiFullSyncSummary?> = _fullSyncSummary.asStateFlow()
     private val _autoResult = MutableStateFlow<BangumiTrackingAutoSyncEvent?>(null)
     val autoResult: StateFlow<BangumiTrackingAutoSyncEvent?> = _autoResult.asStateFlow()
 
@@ -132,7 +158,28 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
                 _summary.value = repository.summary()
             }
         }
+        backgroundScope.launch {
+            loadStoredSyncResult()
+        }
+        backgroundScope.launch {
+            syncCoordinator.state.collect { state ->
+                if (state is BangumiSyncUiState.Completed ||
+                    state is BangumiSyncUiState.PartialFailure ||
+                    state is BangumiSyncUiState.Failed
+                ) {
+                    // The full sync deliberately outlives this screen. Reload its terminal
+                    // result when returning from another settings page or after the screen
+                    // owner recreated the ViewModel.
+                    loadStoredSyncResult()
+                }
+            }
+        }
         testConnection()
+    }
+
+    private suspend fun loadStoredSyncResult() {
+        _summary.value = repository.summary()
+        _fullSyncSummary.value = subjectCollectionRepository.getBangumiFullSyncSummary()
     }
 
     fun testConnection() {
@@ -170,8 +217,27 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
         backgroundScope.launch {
             _isSyncing.value = true
             _lastError.value = null
+            _fullSyncSummary.value = null
             try {
-                _lastResult.value = repository.syncNow()
+                val trackingResult = repository.syncNow()
+                _lastResult.value = trackingResult
+                // Tracking sync resolves collection conflicts first. The full collection pass then
+                // fetches all five tabs and every episode snapshot, including watched state.
+                try {
+                    subjectCollectionRepository.performBangumiFullSync()
+                } finally {
+                    val fullSummary = subjectCollectionRepository.getBangumiFullSyncSummary()
+                    _fullSyncSummary.value = fullSummary
+                    if (fullSummary != null) {
+                        _lastResult.value = trackingResult.copy(
+                            fetchedEpisodeSubjectCount = fullSummary.savedSubjectCount,
+                            episodeCount = fullSummary.episodeCount,
+                            episodeUpdated = fullSummary.episodeSnapshotCount,
+                            failedSubjectIds = fullSummary.failedSubjectIds,
+                            elapsedMillis = trackingResult.elapsedMillis + fullSummary.elapsedMillis,
+                        )
+                    }
+                }
                 _summary.value = repository.summary()
             } catch (e: Throwable) {
                 _lastError.value = classifyBangumiTrackingError(e)
@@ -199,6 +265,8 @@ fun BangumiTrackingSyncScreen(
     val connection by vm.connection.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val isSyncing by vm.isSyncing.collectAsStateWithLifecycle()
+    val syncState by vm.syncState.collectAsStateWithLifecycle()
+    val fullSyncSummary by vm.fullSyncSummary.collectAsStateWithLifecycle()
     val isTesting by vm.isTestingConnection.collectAsStateWithLifecycle()
     val result by vm.lastResult.collectAsStateWithLifecycle()
     val error by vm.lastError.collectAsStateWithLifecycle()
@@ -209,6 +277,8 @@ fun BangumiTrackingSyncScreen(
         connection = connection,
         settings = settings,
         isSyncing = isSyncing,
+        syncState = syncState,
+        fullSyncSummary = fullSyncSummary,
         isTesting = isTesting,
         result = result,
         autoResult = autoResult,
@@ -229,6 +299,8 @@ internal fun BangumiTrackingSyncContent(
     connection: BangumiTrackingConnectionUiState,
     settings: BangumiTrackingSyncSettings,
     isSyncing: Boolean,
+    syncState: BangumiSyncUiState = BangumiSyncUiState.Idle,
+    fullSyncSummary: BangumiFullSyncSummary? = null,
     isTesting: Boolean,
     result: BangumiTrackingSyncResult?,
     error: BangumiTrackingConnectionError?,
@@ -243,6 +315,7 @@ internal fun BangumiTrackingSyncContent(
     modifier: Modifier = Modifier,
 ) = SettingsTab(modifier) {
     val connected = connection as? BangumiTrackingConnectionUiState.Connected
+    val syncRunning = isSyncing || syncState is BangumiSyncUiState.Running
     Group(
         title = { Text(stringResource(Lang.settings_account_tracking_sync_bangumi_account)) },
         description = { Text(stringResource(Lang.settings_account_tracking_sync_description)) },
@@ -305,9 +378,9 @@ internal fun BangumiTrackingSyncContent(
         )
         TextButtonItem(
             onClick = onSyncNow,
-            enabled = connected != null && !isSyncing,
+            enabled = connected != null && !syncRunning,
             title = {
-                if (isSyncing) {
+                if (syncRunning) {
                     CircularProgressIndicator()
                 } else {
                     Text(stringResource(Lang.settings_account_tracking_sync_now))
@@ -315,6 +388,46 @@ internal fun BangumiTrackingSyncContent(
             },
             modifier = Modifier.testTag("bangumi-tracking-sync-now"),
         )
+        if (syncRunning) {
+            BangumiTrackingSyncProgressPanel(syncState)
+        }
+        when (val terminalState = syncState) {
+            is BangumiSyncUiState.PartialFailure -> {
+                TextItem(
+                    title = {
+                        Text(
+                            stringResource(
+                                Lang.settings_account_tracking_sync_progress_partial,
+                                terminalState.progress.current,
+                                terminalState.progress.total ?: terminalState.progress.current,
+                                terminalState.progress.failedCount,
+                            ),
+                        )
+                    },
+                    onClick = onSyncNow,
+                    onClickEnabled = !syncRunning,
+                    modifier = Modifier.testTag("bangumi-tracking-sync-partial-failure"),
+                )
+            }
+
+            is BangumiSyncUiState.Failed -> {
+                TextItem(
+                    title = {
+                        Text(
+                            stringResource(
+                                Lang.settings_account_tracking_sync_progress_failed,
+                                terminalState.error,
+                            ),
+                        )
+                    },
+                    onClick = onSyncNow,
+                    onClickEnabled = !syncRunning,
+                    modifier = Modifier.testTag("bangumi-tracking-sync-failure"),
+                )
+            }
+
+            else -> Unit
+        }
     }
 
     Group({ Text(stringResource(Lang.settings_account_tracking_sync_preferences)) }) {
@@ -360,17 +473,56 @@ internal fun BangumiTrackingSyncContent(
             TextItem(
                 title = {
                     Text(
-                        stringResource(
-                            Lang.settings_account_tracking_sync_complete,
-                            it.localUpdated,
-                            it.bangumiUpdated,
-                            it.unchanged,
-                            it.conflictsResolved,
-                            it.remoteDeleteUnsupported,
-                        ),
+                        if (it.failedSubjectIds.isEmpty()) {
+                            stringResource(
+                                Lang.settings_account_tracking_sync_complete,
+                                it.localUpdated,
+                                it.bangumiUpdated,
+                                it.unchanged,
+                                it.conflictsResolved,
+                                it.remoteDeleteUnsupported,
+                            )
+                        } else {
+                            stringResource(
+                                Lang.settings_account_tracking_sync_progress_partial,
+                                it.fetchedCollectionCount,
+                                it.expectedCollectionCount ?: it.fetchedCollectionCount,
+                                it.failedSubjectIds.size,
+                            )
+                        },
                     )
                 },
                 modifier = Modifier.testTag("bangumi-tracking-sync-result"),
+            )
+        }
+        fullSyncSummary?.let { summary ->
+            val expected = summary.expectedSubjectCount ?: summary.savedSubjectCount
+            TextItem(
+                title = {
+                    Text(
+                        if (summary.failedSubjectIds.isEmpty()) {
+                            stringResource(
+                                Lang.settings_account_tracking_sync_full_summary,
+                                summary.savedSubjectCount,
+                                expected,
+                                summary.episodeCount,
+                                summary.watchedEpisodeCount,
+                                summary.elapsedMillis,
+                            )
+                        } else {
+                            stringResource(
+                                Lang.settings_account_tracking_sync_full_summary_partial,
+                                summary.savedSubjectCount,
+                                expected,
+                                summary.episodeCount,
+                                summary.watchedEpisodeCount,
+                                summary.failedSubjectIds.size,
+                                summary.elapsedMillis,
+                            )
+                        },
+                    )
+                },
+                modifier = Modifier.testTag("bangumi-tracking-sync-full-summary"),
             )
         }
         autoResult?.let { event ->
@@ -401,6 +553,80 @@ internal fun BangumiTrackingSyncContent(
                 modifier = Modifier.testTag("bangumi-tracking-sync-error"),
             )
         }
+    }
+}
+
+@Composable
+private fun BangumiTrackingSyncProgressPanel(state: BangumiSyncUiState) {
+    val progress = when (state) {
+        is BangumiSyncUiState.Running -> state.progress
+        // The view model keeps the panel alive while the second half of the full sync is being
+        // claimed. Keep a visible connecting state instead of replacing it with a bare spinner.
+        else -> BangumiSyncProgress(
+            operation = BangumiSyncOperation.TRACKING,
+            phase = BangumiSyncPhase.CONNECTING,
+            current = 0,
+            total = null,
+        )
+    }
+    val total = progress.total
+    val phaseText = when (progress.phase) {
+        BangumiSyncPhase.CONNECTING -> stringResource(Lang.settings_account_tracking_sync_progress_connecting)
+        BangumiSyncPhase.FETCHING_COLLECTIONS -> if (total == null) {
+            stringResource(Lang.settings_account_tracking_sync_running)
+        } else {
+            stringResource(
+                Lang.settings_account_tracking_sync_progress_collections,
+                progress.current,
+                total,
+            )
+        }
+
+        BangumiSyncPhase.FETCHING_EPISODES -> if (total == null) {
+            stringResource(Lang.settings_account_tracking_sync_running)
+        } else {
+            stringResource(
+                Lang.settings_account_tracking_sync_progress_episodes,
+                progress.current,
+                total,
+            )
+        }
+
+        BangumiSyncPhase.MERGING -> stringResource(
+            Lang.settings_account_tracking_sync_progress_merging,
+            progress.current,
+            total ?: progress.current,
+        )
+
+        BangumiSyncPhase.APPLYING_REMOTE,
+        BangumiSyncPhase.APPLYING_LOCAL,
+        -> stringResource(
+            Lang.settings_account_tracking_sync_progress_applying,
+            progress.current,
+            total ?: progress.current,
+        )
+
+        BangumiSyncPhase.RELOADING -> stringResource(Lang.settings_account_tracking_sync_progress_reloading)
+        BangumiSyncPhase.COMPLETED,
+        BangumiSyncPhase.PARTIAL_FAILURE,
+        BangumiSyncPhase.FAILED,
+        -> stringResource(Lang.settings_account_tracking_sync_running)
+    }
+    Column(Modifier.fillMaxWidth().testTag("bangumi-tracking-sync-progress")) {
+        Text(phaseText)
+        if (total == null) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().testTag("bangumi-tracking-sync-progress-bar"))
+        } else {
+            val fraction = if (total == 0) 0f else (progress.current.toFloat() / total).coerceIn(0f, 1f)
+            LinearProgressIndicator(
+                progress = { fraction },
+                modifier = Modifier.fillMaxWidth().testTag("bangumi-tracking-sync-progress-bar"),
+            )
+        }
+        Text(
+            text = "${progress.current} / ${total ?: "…"}",
+            modifier = Modifier.testTag("bangumi-tracking-sync-progress-count"),
+        )
     }
 }
 

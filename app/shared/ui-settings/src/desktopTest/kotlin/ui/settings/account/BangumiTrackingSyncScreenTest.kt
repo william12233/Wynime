@@ -18,6 +18,10 @@ import me.him188.ani.app.data.repository.subject.BangumiTrackingConflictPolicy
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncResult
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettings
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSummary
+import me.him188.ani.app.data.repository.subject.BangumiSyncOperation
+import me.him188.ani.app.data.repository.subject.BangumiSyncPhase
+import me.him188.ani.app.data.repository.subject.BangumiSyncProgress
+import me.him188.ani.app.data.repository.subject.BangumiSyncUiState
 import me.him188.ani.app.ui.foundation.ProvideCompositionLocalsForPreview
 import me.him188.ani.app.ui.framework.AniComposeUiTest
 import me.him188.ani.app.ui.framework.runAniComposeUiTest
@@ -36,13 +40,16 @@ class BangumiTrackingSyncScreenTest {
         connection: BangumiTrackingConnectionUiState,
         callbacks: Callbacks,
         result: BangumiTrackingSyncResult? = null,
+        syncState: BangumiSyncUiState = BangumiSyncUiState.Idle,
+        isSyncing: Boolean = false,
     ) {
         setContent {
             ProvideCompositionLocalsForPreview {
                 BangumiTrackingSyncContent(
                     connection = connection,
                     settings = BangumiTrackingSyncSettings(),
-                    isSyncing = false,
+                    isSyncing = isSyncing,
+                    syncState = syncState,
                     isTesting = false,
                     result = result,
                     error = null,
@@ -60,6 +67,40 @@ class BangumiTrackingSyncScreenTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun `running sync shows determinate progress and disables repeat click`() = runAniComposeUiTest {
+        val callbacks = Callbacks()
+        render(
+            BangumiTrackingConnectionUiState.Connected(BangumiTrackingAccount(1, "user")),
+            callbacks,
+            syncState = BangumiSyncUiState.Running(
+                BangumiSyncProgress(
+                    operation = BangumiSyncOperation.COLLECTION_REFRESH,
+                    phase = BangumiSyncPhase.FETCHING_EPISODES,
+                    current = 37,
+                    total = 128,
+                ),
+            ),
+        )
+
+        onNodeWithTag("bangumi-tracking-sync-now").assertIsNotEnabled()
+        onNodeWithTag("bangumi-tracking-sync-progress").assertIsDisplayed()
+        onNodeWithTag("bangumi-tracking-sync-progress-count").assertTextContains("37 / 128")
+    }
+
+    @Test
+    fun `syncing fallback keeps progress panel visible before first coordinator update`() = runAniComposeUiTest {
+        val callbacks = Callbacks()
+        render(
+            BangumiTrackingConnectionUiState.Connected(BangumiTrackingAccount(1, "user")),
+            callbacks,
+            isSyncing = true,
+        )
+
+        onNodeWithTag("bangumi-tracking-sync-progress").assertIsDisplayed()
+        onNodeWithTag("bangumi-tracking-sync-progress-count").assertTextContains("0 / …")
     }
 
     @Test

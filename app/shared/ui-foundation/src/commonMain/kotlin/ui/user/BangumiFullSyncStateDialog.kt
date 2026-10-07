@@ -44,28 +44,39 @@ fun BangumiFullSyncStateDialog(
     state: BangumiSyncState?,
     onDismissRequest: () -> Unit,
 ) {
+    val canDismiss = state?.finished == true
+    val progress = state?.progressFraction()
     AlertDialog(
         title = { Text(stringResource(Lang.foundation_bangumi_sync_title)) },
         text = {
             Column {
                 Text(renderBangumiSyncState(state))
                 Spacer(modifier = Modifier.height(24.dp))
-                if (state?.finished == false) {
+                if (progress == null) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 } else {
-                    LinearProgressIndicator({ 1f }, modifier = Modifier.fillMaxWidth())
+                    LinearProgressIndicator({ progress }, modifier = Modifier.fillMaxWidth())
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(stringResource(Lang.foundation_bangumi_sync_description))
             }
         },
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = { if (canDismiss) onDismissRequest() },
         confirmButton = {
-            TextButton(onDismissRequest) {
-                Text(stringResource(Lang.foundation_bangumi_sync_continue_background))
+            if (canDismiss) {
+                TextButton(onDismissRequest) {
+                    Text(stringResource(Lang.foundation_bangumi_sync_continue_background))
+                }
+            } else {
+                TextButton({}, enabled = false) {
+                    Text(stringResource(Lang.foundation_bangumi_sync_in_progress))
+                }
             }
         },
-        properties = DialogProperties(dismissOnClickOutside = false),
+        properties = DialogProperties(
+            dismissOnClickOutside = canDismiss,
+            dismissOnBackPress = canDismiss,
+        ),
     )
 }
 
@@ -74,31 +85,35 @@ private fun renderBangumiSyncState(state: BangumiSyncState?): String {
     return when (state) {
         null -> stringResource(Lang.foundation_bangumi_sync_preparing)
         BangumiSyncState.Preparing -> stringResource(Lang.foundation_bangumi_sync_fetching_metadata)
-        is BangumiSyncState.FetchingSubjects -> stringResource(
-            Lang.foundation_bangumi_sync_fetching_subjects,
+        is BangumiSyncState.FetchingSubjects -> formatCount(
+            stringResource(Lang.foundation_bangumi_sync_fetching_subjects, state.fetchedCount),
             state.fetchedCount,
+            state.totalCount,
         )
 
-        is BangumiSyncState.FetchingEpisodes -> stringResource(
-            Lang.foundation_bangumi_sync_fetching_episodes,
+        is BangumiSyncState.FetchingEpisodes -> formatCount(
+            stringResource(Lang.foundation_bangumi_sync_fetching_episodes, state.fetchedCount),
             state.fetchedCount,
+            state.totalCount,
         )
 
-        is BangumiSyncState.Inserting -> stringResource(
-            Lang.foundation_bangumi_sync_inserting,
+        is BangumiSyncState.Inserting -> formatCount(
+            stringResource(Lang.foundation_bangumi_sync_inserting, state.savedCount),
             state.savedCount,
+            state.totalCount,
         )
 
-        is BangumiSyncState.Finishing -> stringResource(
-            Lang.foundation_bangumi_sync_finishing,
+        is BangumiSyncState.Finishing -> formatCount(
+            stringResource(Lang.foundation_bangumi_sync_finishing, state.savedCount),
             state.savedCount,
+            state.totalCount,
         )
         is BangumiSyncState.Finished -> {
-            if (state.error != null) {
+            if (state.error != null || state.localError != null) {
                 stringResource(
                     Lang.foundation_bangumi_sync_failed,
                     state.savedCount,
-                    state.toString(),
+                    state.localError ?: state.error.toString(),
                 )
             } else {
                 stringResource(Lang.foundation_bangumi_sync_success, state.savedCount)
@@ -107,6 +122,23 @@ private fun renderBangumiSyncState(state: BangumiSyncState?): String {
 
         BangumiSyncState.Unsupported -> stringResource(Lang.foundation_bangumi_sync_in_progress)
     }
+}
+
+private fun formatCount(text: String, current: Int, total: Int?): String {
+    return if (total == null) text else "$text · $current / $total"
+}
+
+private fun BangumiSyncState.progressFraction(): Float? {
+    val (current, total) = when (this) {
+        is BangumiSyncState.FetchingSubjects -> fetchedCount to totalCount
+        is BangumiSyncState.FetchingEpisodes -> fetchedCount to totalCount
+        is BangumiSyncState.Inserting -> savedCount to totalCount
+        is BangumiSyncState.Finishing -> savedCount to totalCount
+        is BangumiSyncState.Finished -> 1 to 1
+        else -> return null
+    }
+    return total?.takeIf { it > 0 }?.let { (current.toFloat() / it).coerceIn(0f, 1f) }
+        ?: if (this is BangumiSyncState.Finished) 1f else null
 }
 
 @Composable

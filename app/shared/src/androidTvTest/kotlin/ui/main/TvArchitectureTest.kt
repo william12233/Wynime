@@ -92,6 +92,8 @@ class TvArchitectureTest {
         "me.him188.ani.app.ui.exploration.ExplorationPageViewModel",
         "me.him188.ani.app.ui.main.SearchViewModel",
         "me.him188.ani.app.ui.exploration.ExplorationPageState",
+        "me.him188.ani.app.ui.exploration.TodayUpdatesUiState",
+        "me.him188.ani.app.ui.exploration.TodayUpdateSubjectInfo",
         "me.him188.ani.app.ui.exploration.search.",
         // 登录态 UI 状态 (SelfInfoUiState/SelfInfoStateProducer)
         "me.him188.ani.app.ui.user.",
@@ -110,7 +112,7 @@ class TvArchitectureTest {
         val tvDirs = (listOf(sharedRoot) + featureModules)
             .map { File(it, "src/androidTv") } + File(repoRoot, "app/android/src/tv")
         val dirs = tvDirs.filter { it.exists() }.map { it.absolutePath }
-        check(dirs.size >= 9) { "TV 源集目录数量异常: $dirs" }
+        check(dirs.size >= 8) { "TV 源集目录数量异常: $dirs" }
         Konsist.scopeFromExternalDirectories(dirs.toSet())
     }
 

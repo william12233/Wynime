@@ -48,6 +48,16 @@
     <string name="settings_account_tracking_sync_local_count">本機追番：%1$d</string>
     <string name="settings_account_tracking_sync_remote_count">Bangumi 追番：%1$d</string>
     <string name="settings_account_tracking_sync_running">同步中…</string>
+    <string name="settings_account_tracking_sync_progress_connecting">正在連線 Bangumi…</string>
+    <string name="settings_account_tracking_sync_progress_collections">正在拉取收藏 %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_episodes">正在取得看過狀態 %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_merging">正在合併同步狀態 %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_applying">正在套用本機資料 %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_reloading">正在重新載入收藏頁…</string>
+    <string name="settings_account_tracking_sync_progress_partial">已完成 %1$d / %2$d；失敗 %3$d 筆</string>
+    <string name="settings_account_tracking_sync_progress_failed">同步失敗：%1$s</string>
+    <string name="settings_account_tracking_sync_full_summary">完整同步：%1$d / %2$d 部作品，%3$d 集，其中看過 %4$d 集；耗時 %5$d 毫秒</string>
+    <string name="settings_account_tracking_sync_full_summary_partial">完整同步：%1$d / %2$d 部作品，%3$d 集，其中看過 %4$d 集；失敗 %5$d 筆；耗時 %6$d 毫秒</string>
     <string name="settings_account_tracking_sync_complete">同步完成 · 本機更新 %1$d · Bangumi 更新 %2$d · 無變更 %3$d · 衝突解決 %4$d · 遠端無法取消 %5$d</string>
     <string name="settings_account_tracking_sync_failed">Bangumi 同步失敗：%1$s</string>
     <string name="settings_account_tracking_sync_auto_success">已同步至 Bangumi</string>

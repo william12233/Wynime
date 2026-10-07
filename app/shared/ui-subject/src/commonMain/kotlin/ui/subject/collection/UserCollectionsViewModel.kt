@@ -13,11 +13,13 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.delay
 import me.him188.ani.app.data.models.bangumi.BangumiSyncState
 import me.him188.ani.app.data.models.preference.MyCollectionsSettings
 import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
@@ -42,6 +44,11 @@ import me.him188.ani.datasources.api.topic.toggleCollected
 import me.him188.ani.utils.coroutines.flows.FlowRestarter
 import me.him188.ani.utils.coroutines.flows.restartable
 import me.him188.ani.utils.logging.info
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -69,6 +76,7 @@ open class UserCollectionsViewModel : AbstractViewModel(), KoinComponent {
 
     private val fullSyncTasker = MonoTasker(backgroundScope)
     val fullSyncState: MutableStateFlow<BangumiSyncState?> = MutableStateFlow(null)
+    val isFullSyncRunning: StateFlow<Boolean> get() = fullSyncTasker.isRunning
 
     /**
      * 重启各类型收藏数量流 (tab 标题的数量). 数量只在登录时拉取一次, 缓存失效 / 换账号后要重新拉取, 否则标题与刷新后的列表对不上.
@@ -113,6 +121,42 @@ open class UserCollectionsViewModel : AbstractViewModel(), KoinComponent {
     private fun refreshCollections() {
         state.refresh()
         countsRestarter.restart()
+    }
+
+    /** Starts the shared Bangumi full snapshot sync without tying it to the visible page. */
+    fun fullSync() {
+        if (fullSyncTasker.isRunning.value) return
+        fullSyncTasker.launch {
+            fullSyncState.value = BangumiSyncState.Preparing
+            supervisorScope {
+                var failure: Throwable? = null
+                val syncJob = launch {
+                    try {
+                        subjectCollectionRepository.performBangumiFullSync()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Throwable) {
+                        failure = e
+                    }
+                }
+                while (syncJob.isActive) {
+                    runCatching { subjectCollectionRepository.getBangumiFullSyncState() }
+                        .getOrNull()
+                        ?.let { fullSyncState.value = it }
+                    delay(200.milliseconds)
+                }
+                syncJob.join()
+                val terminalState = runCatching { subjectCollectionRepository.getBangumiFullSyncState() }
+                    .getOrNull()
+                fullSyncState.value = terminalState ?: failure?.let {
+                    BangumiSyncState.Finished(
+                        savedCount = 0,
+                        error = null,
+                        localError = it.message ?: it::class.simpleName,
+                    )
+                }
+            }
+        }
     }
 
     private fun createEditableSubjectCollectionTypeState(collection: SubjectCollectionInfo): EditableSubjectCollectionTypeState =

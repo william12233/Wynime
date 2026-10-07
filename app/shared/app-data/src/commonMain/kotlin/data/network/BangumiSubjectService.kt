@@ -10,11 +10,21 @@ package me.him188.ani.app.data.network
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 import me.him188.ani.app.data.models.bangumi.BangumiSyncState
 import me.him188.ani.app.data.models.subject.CharacterInfo
 import me.him188.ani.app.data.models.subject.CharacterRole
@@ -29,6 +39,7 @@ import me.him188.ani.app.data.repository.RepositoryAuthorizationException
 import me.him188.ani.app.data.repository.RepositoryException
 import me.him188.ani.app.data.repository.RepositoryRateLimitedException
 import me.him188.ani.app.data.repository.RepositoryRequestError
+import me.him188.ani.utils.platform.currentTimeMillis
 import me.him188.ani.client.models.AniCollectionType
 import me.him188.ani.client.models.AniEpisodeCollection
 import me.him188.ani.client.models.AniEpisodeCollectionType
@@ -58,6 +69,10 @@ import me.him188.ani.datasources.bangumi.models.BangumiV0SubjectRelation
 import me.him188.ani.utils.coroutines.IO_
 import me.him188.ani.utils.coroutines.flows.FlowRestarter
 import me.him188.ani.utils.coroutines.flows.restartable
+import me.him188.ani.utils.logging.debug
+import me.him188.ani.utils.logging.info
+import me.him188.ani.utils.logging.logger
+import me.him188.ani.utils.logging.warn
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -67,25 +82,120 @@ class BangumiSubjectService(
     private val bangumiApi: BangumiApiProvider,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
 ) : SubjectService {
+    private val logger = logger<BangumiSubjectService>()
     val subjectCountStatsRestarter = FlowRestarter()
+    private val syncRequestThrottle = BangumiSyncRequestThrottle()
 
     override suspend fun getSubjectCollections(
         type: BangumiSubjectCollectionType?,
         offset: Int,
         limit: Int,
-    ): List<AniSubjectCollection> = withContext(ioDispatcher) {
-        val username = bangumiApi.currentUsername() ?: return@withContext emptyList()
-        val page = bangumiApi.request {
-            getUserCollectionsByUsername(
-                username = username,
-                subjectType = BangumiSubjectType.Anime,
-                type = type,
-                limit = limit,
-                offset = offset,
+    ): List<AniSubjectCollection> = getSubjectCollectionsPage(type, offset, limit).also { page ->
+        if (page.omittedSubjectIds.isNotEmpty()) {
+            throw RepositoryRequestError(
+                "Bangumi 收藏頁缺少條目：${page.omittedSubjectIds.joinToString()}",
             )
         }
-        page.data.orEmpty().mapNotNull { collection ->
-            buildSubjectCollection(collection.subjectId, collection, username)
+    }.items
+
+    override suspend fun getSubjectCollectionsPage(
+        type: BangumiSubjectCollectionType?,
+        offset: Int,
+        limit: Int,
+        onItemHydrated: suspend (completed: Int, total: Int) -> Unit,
+    ): SubjectCollectionPage = withContext(ioDispatcher) {
+        val username = bangumiApi.currentUsername()
+            ?: return@withContext SubjectCollectionPage(emptyList(), offset, limit, 0)
+        val page = syncRequestThrottle.run {
+            bangumiApi.request {
+                getUserCollectionsByUsername(
+                    username = username,
+                    subjectType = BangumiSubjectType.Anime,
+                    type = type,
+                    limit = limit,
+                    offset = offset,
+                )
+            }
+        }
+        val collections = page.data.orEmpty()
+        if (page.total == 0 && collections.isNotEmpty()) {
+            throw RepositoryRequestError(
+                "Bangumi 收藏頁 total=0 但回傳了 ${collections.size} 筆資料：offset=$offset",
+            )
+        }
+        logger.info {
+            "Bangumi sync collection page offset=$offset raw=${collections.size} " +
+                "total=${page.total} subjectWorkers=$MAX_SYNC_SUBJECT_WORKERS"
+        }
+        val hydrationSemaphore = Semaphore(MAX_SYNC_SUBJECT_WORKERS)
+        val workerStateMutex = Mutex()
+        var activeWorkers = 0
+        var maxActiveWorkers = 0
+        var hydratedCount = 0
+        val hydrated = supervisorScope {
+            collections.map { collection ->
+                async {
+                    hydrationSemaphore.withPermit {
+                        workerStateMutex.withLock {
+                            activeWorkers++
+                            maxActiveWorkers = maxOf(maxActiveWorkers, activeWorkers)
+                        }
+                        try {
+                            buildSubjectCollection(
+                                subjectId = collection.subjectId,
+                                collection = collection,
+                                username = username,
+                                throttle = syncRequestThrottle,
+                            )
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Throwable) {
+                            logger.warn(e) {
+                                "Failed to hydrate Bangumi subject ${collection.subjectId}; " +
+                                    "the page will report a partial result"
+                            }
+                            null
+                        } finally {
+                            workerStateMutex.withLock { activeWorkers-- }
+                        }
+                        .also {
+                            val completed = workerStateMutex.withLock { ++hydratedCount }
+                            onItemHydrated(completed, collections.size)
+                        }
+                    }
+                }
+            }.awaitAll()
+        }
+        val result = SubjectCollectionPage(
+            items = hydrated.filterNotNull(),
+            offset = offset,
+            requestedLimit = limit,
+            total = page.total,
+            omittedSubjectIds = collections.filterIndexed { index, _ -> hydrated[index] == null }
+                .map { it.subjectId },
+            sourceItemCount = collections.size,
+        )
+        logger.info {
+            "Bangumi sync collection page completed offset=$offset raw=${collections.size} " +
+                "hydrated=${result.items.size} omitted=${result.omittedSubjectIds.size} " +
+                "maxActiveWorkers=$maxActiveWorkers"
+        }
+        result
+    }
+
+    private suspend fun <T> throttled(
+        throttle: BangumiSyncRequestThrottle?,
+        block: suspend () -> T,
+    ): T {
+        return if (throttle == null) block() else throttle.run(block)
+    }
+
+    private suspend fun requestSubject(
+        throttle: BangumiSyncRequestThrottle?,
+        subjectId: Int,
+    ): BangumiSubject {
+        return throttled(throttle) {
+            bangumiApi.request { getSubjectById(subjectId) }
         }
     }
 
@@ -220,16 +330,17 @@ class BangumiSubjectService(
         subjectId: Int,
         collection: BangumiUserSubjectCollection? = null,
         username: String? = null,
+        throttle: BangumiSyncRequestThrottle? = null,
     ): AniSubjectCollection? {
         val subject = try {
-            bangumiApi.request { getSubjectById(subjectId) }
+            requestSubject(throttle, subjectId)
         } catch (e: ResponseException) {
             if (e.response.status == HttpStatusCode.NotFound) return null
             throw e
         }
-        val userCollection = collection ?: loadUserCollection(subjectId, username)
-        val episodes = loadEpisodes(subjectId)
-        val episodeCollections = loadEpisodeCollections(subjectId)
+        val userCollection = collection ?: loadUserCollection(subjectId, username, throttle)
+        val episodes = loadEpisodes(subjectId, throttle)
+        val episodeCollections = loadEpisodeCollections(subjectId, throttle)
 
         return subject.toAniSubjectCollection(
             collection = userCollection,
@@ -241,10 +352,13 @@ class BangumiSubjectService(
     private suspend fun loadUserCollection(
         subjectId: Int,
         username: String? = null,
+        throttle: BangumiSyncRequestThrottle? = null,
     ): BangumiUserSubjectCollection? {
         val currentUsername = username ?: bangumiApi.currentUsername() ?: return null
         return try {
-            bangumiApi.request { getUserCollection(username = currentUsername, subjectId = subjectId) }
+            throttled(throttle) {
+                bangumiApi.request { getUserCollection(username = currentUsername, subjectId = subjectId) }
+            }
         } catch (e: ResponseException) {
             if (e.response.status == HttpStatusCode.NotFound ||
                 e.response.status == HttpStatusCode.Unauthorized ||
@@ -257,47 +371,119 @@ class BangumiSubjectService(
         }
     }
 
-    private suspend fun loadEpisodes(subjectId: Int): List<BangumiEpisode> {
+    private suspend fun loadEpisodes(
+        subjectId: Int,
+        throttle: BangumiSyncRequestThrottle? = null,
+    ): List<BangumiEpisode> {
         val result = ArrayList<BangumiEpisode>()
+        val seenEpisodeIds = HashSet<Int>()
         var offset = 0
         val limit = 100
         while (true) {
-            val page = bangumiApi.request {
-                getEpisodes(subjectId = subjectId, limit = limit, offset = offset)
+            val page = throttled(throttle) {
+                bangumiApi.request {
+                    getEpisodes(subjectId = subjectId, limit = limit, offset = offset)
+                }
             }
             val data = page.data.orEmpty()
+            if (data.any { !seenEpisodeIds.add(it.id) }) {
+                throw RepositoryRequestError("Bangumi 集數資料含有重複 episode：subject=$subjectId，offset=$offset")
+            }
             result += data
-            if (data.isEmpty() || data.size < limit || result.size >= (page.total ?: result.size)) break
-            offset += data.size
+            val total = page.total
+            if (total != null && result.size > total) {
+                throw RepositoryRequestError(
+                    "Bangumi 集數資料超過 total：subject=$subjectId，取得 ${result.size}/$total",
+                )
+            }
+            if (data.isEmpty()) {
+                if (total != null && result.size < total) {
+                    throw RepositoryRequestError("Bangumi 集數資料不完整：取得 ${result.size}/$total")
+                }
+                break
+            }
+            if (total != null && result.size >= total) break
+            if (data.size < limit) {
+                if (total == null) break
+                throw RepositoryRequestError("Bangumi 集數分頁提前結束：subject=$subjectId，取得 ${result.size}/$total")
+            }
+            val nextOffset = offset + data.size
+            if (nextOffset <= offset) throw RepositoryRequestError("Bangumi 集數分頁 offset 未前進")
+            offset = nextOffset
         }
         return result
     }
 
-    private suspend fun loadEpisodeCollections(subjectId: Int): Map<Int, BangumiEpisodeCollectionType> {
+    private suspend fun loadEpisodeCollections(
+        subjectId: Int,
+        throttle: BangumiSyncRequestThrottle? = null,
+    ): Map<Int, BangumiEpisodeCollectionType> {
         if (!bangumiApi.hasAccessToken()) return emptyMap()
         val result = HashMap<Int, BangumiEpisodeCollectionType>()
+        val seenEpisodeIds = HashSet<Int>()
         var offset = 0
         val limit = 100
         while (true) {
             val page = try {
-                bangumiApi.request {
-                    getUserSubjectEpisodeCollection(subjectId, offset = offset, limit = limit)
+                throttled(throttle) {
+                    bangumiApi.request {
+                        getUserSubjectEpisodeCollection(subjectId, offset = offset, limit = limit)
+                    }
                 }
             } catch (e: ResponseException) {
-                if (e.response.status == HttpStatusCode.NotFound ||
-                    e.response.status == HttpStatusCode.Unauthorized ||
-                    e.response.status == HttpStatusCode.Forbidden
-                ) {
+                if (e.response.status == HttpStatusCode.NotFound && offset == 0) {
                     return result
                 }
                 throw e
             }
             val data = page.data.orEmpty()
+            if (data.any { !seenEpisodeIds.add(it.episode.id) }) {
+                throw RepositoryRequestError(
+                    "Bangumi 看過資料含有重複 episode：subject=$subjectId，offset=$offset",
+                )
+            }
             data.forEach { result[it.episode.id] = it.type }
-            if (data.isEmpty() || data.size < limit || result.size >= page.total) break
-            offset += data.size
+            if (data.isEmpty()) {
+                if (result.size < page.total) {
+                    throw RepositoryRequestError(
+                        "Bangumi 看過資料不完整：subject=$subjectId，取得 ${result.size}/${page.total}",
+                    )
+                }
+                break
+            }
+            if (result.size >= page.total) break
+            if (data.size < limit) {
+                throw RepositoryRequestError(
+                    "Bangumi 看過資料分頁提前結束：subject=$subjectId，取得 ${result.size}/${page.total}",
+                )
+            }
+            val nextOffset = offset + data.size
+            if (nextOffset <= offset) throw RepositoryRequestError("Bangumi 看過資料 offset 未前進")
+            offset = nextOffset
         }
         return result
+    }
+
+    private companion object {
+        const val MAX_SYNC_SUBJECT_WORKERS = 3
+    }
+}
+
+private class BangumiSyncRequestThrottle(
+    private val intervalMillis: Long = 200L,
+) {
+    private val mutex = Mutex()
+    private var nextStartAt = 0L
+
+    suspend fun <T> run(block: suspend () -> T): T {
+        val waitMillis = mutex.withLock {
+            val now = currentTimeMillis()
+            val startAt = maxOf(now, nextStartAt)
+            nextStartAt = startAt + intervalMillis
+            startAt - now
+        }
+        if (waitMillis > 0) delay(waitMillis)
+        return block()
     }
 }
 

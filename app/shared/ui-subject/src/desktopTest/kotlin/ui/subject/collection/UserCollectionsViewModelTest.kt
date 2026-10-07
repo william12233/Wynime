@@ -13,6 +13,8 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,7 +52,9 @@ import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
 import me.him188.ani.app.data.models.subject.SubjectCollectionCounts
 import me.him188.ani.app.data.models.subject.SubjectCollectionInfo
 import me.him188.ani.app.data.network.AnimeScheduleService
+import me.him188.ani.app.data.network.BangumiApiProvider
 import me.him188.ani.app.data.network.EpisodeServiceImpl
+import me.him188.ani.app.data.persistent.MemoryDataStore
 import me.him188.ani.app.data.persistent.database.AniDatabase
 import me.him188.ani.app.data.persistent.database.AniDatabaseConstructor
 import me.him188.ani.app.data.repository.episode.AnimeScheduleRepository
@@ -60,6 +64,8 @@ import me.him188.ani.app.data.repository.subject.CollectionsFilterQuery
 import me.him188.ani.app.data.repository.subject.GetEpisodeTypeFiltersUseCase
 import me.him188.ani.app.data.repository.subject.OfflineSubjectDisplayInfo
 import me.him188.ani.app.data.repository.subject.SubjectCollectionRepository
+import me.him188.ani.app.data.repository.user.TokenRepository
+import me.him188.ani.app.data.repository.user.TokenSave
 import me.him188.ani.app.data.repository.user.Settings
 import me.him188.ani.app.data.repository.user.SettingsRepository
 import me.him188.ani.app.domain.media.download.MediaDownloadManager
@@ -67,10 +73,10 @@ import me.him188.ani.app.domain.session.SessionEvent
 import me.him188.ani.app.domain.session.SessionState
 import me.him188.ani.app.domain.session.SessionStateProvider
 import me.him188.ani.client.apis.ScheduleAniApi
-import me.him188.ani.client.apis.SubjectsAniApi
 import me.him188.ani.datasources.api.EpisodeType
 import me.him188.ani.datasources.api.topic.UnifiedCollectionType
 import me.him188.ani.utils.ktor.ApiInvoker
+import me.him188.ani.utils.ktor.asScopedHttpClient
 import me.him188.ani.utils.platform.annotations.TestOnly
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -200,12 +206,6 @@ class UserCollectionsViewModelTest {
         override val debugSettings: Settings<DebugSettings> by lazy { error("not implemented") }
     }
 
-    private object UnusedSubjectsApi : ApiInvoker<SubjectsAniApi> {
-        override suspend fun <R> invoke(action: suspend SubjectsAniApi.() -> R): R {
-            error("ApiInvoker not expected in tests")
-        }
-    }
-
     private object UnusedScheduleApi : ApiInvoker<ScheduleAniApi> {
         override suspend fun <R> invoke(action: suspend ScheduleAniApi.() -> R): R {
             error("ApiInvoker not expected in tests")
@@ -213,6 +213,7 @@ class UserCollectionsViewModelTest {
     }
 
     private lateinit var database: AniDatabase
+    private lateinit var episodeHttpClient: HttpClient
     private lateinit var repository: FakeSubjectCollectionRepository
     private lateinit var sessionStateProvider: FakeSessionStateProvider
     private val fixtureScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -227,12 +228,20 @@ class UserCollectionsViewModelTest {
             .build()
         repository = FakeSubjectCollectionRepository()
         sessionStateProvider = FakeSessionStateProvider()
+        episodeHttpClient = HttpClient(MockEngine { error("Episode API not expected in this test") }) {
+            expectSuccess = true
+        }
 
         val animeScheduleRepository = AnimeScheduleRepository(AnimeScheduleService(UnusedScheduleApi))
         val episodeCollectionRepository = EpisodeCollectionRepository(
             subjectDao = database.subjectCollection(),
             episodeCollectionDao = database.episodeCollection(),
-            episodeService = EpisodeServiceImpl(UnusedSubjectsApi),
+            episodeService = EpisodeServiceImpl(
+                BangumiApiProvider(
+                    client = episodeHttpClient.asScopedHttpClient(),
+                    tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+                ),
+            ),
             animeScheduleRepository = animeScheduleRepository,
             subjectCollectionRepository = lazy { repository },
             getEpisodeTypeFiltersUseCase = GetEpisodeTypeFiltersUseCase { flowOf(EpisodeType.entries) },
@@ -257,6 +266,7 @@ class UserCollectionsViewModelTest {
     fun tearDown() {
         stopKoin()
         fixtureScope.cancel()
+        episodeHttpClient.close()
         database.close()
         Dispatchers.resetMain()
     }

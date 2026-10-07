@@ -48,6 +48,16 @@
     <string name="settings_account_tracking_sync_local_count">Local tracking: %1$d</string>
     <string name="settings_account_tracking_sync_remote_count">Bangumi tracking: %1$d</string>
     <string name="settings_account_tracking_sync_running">Syncing…</string>
+    <string name="settings_account_tracking_sync_progress_connecting">Connecting to Bangumi…</string>
+    <string name="settings_account_tracking_sync_progress_collections">Fetching collections %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_episodes">Fetching watched episodes %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_merging">Merging statuses %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_applying">Applying local data %1$d / %2$d</string>
+    <string name="settings_account_tracking_sync_progress_reloading">Reloading collection pages…</string>
+    <string name="settings_account_tracking_sync_progress_partial">Completed %1$d / %2$d; failed %3$d</string>
+    <string name="settings_account_tracking_sync_progress_failed">Sync failed: %1$s</string>
+    <string name="settings_account_tracking_sync_full_summary">Full sync: %1$d / %2$d subjects, %3$d episodes, %4$d watched; %5$d ms</string>
+    <string name="settings_account_tracking_sync_full_summary_partial">Full sync: %1$d / %2$d subjects, %3$d episodes, %4$d watched; failed %5$d; %6$d ms</string>
     <string name="settings_account_tracking_sync_complete">Sync complete · local %1$d · Bangumi %2$d · unchanged %3$d · conflicts %4$d · remote cancel unsupported %5$d</string>
     <string name="settings_account_tracking_sync_failed">Bangumi sync failed: %1$s</string>
     <string name="settings_account_tracking_sync_auto_success">Synced to Bangumi</string>

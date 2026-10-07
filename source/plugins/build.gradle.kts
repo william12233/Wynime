@@ -195,6 +195,9 @@ val freshnessDesktopTasks = pluginIds.associateWith { pluginId ->
  */
 val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshness") {
     dependsOn(freshnessDesktopTasks.values)
+    notCompatibleWithConfigurationCache(
+        "The artifact verifier invokes the Android SDK D8 tool during task execution.",
+    )
 
     doLast {
         val indexFile = layout.projectDirectory.file("index.json").asFile

@@ -33,6 +33,9 @@ kotlin {
     }
     sourceSets.desktopMain.dependencies {
     }
+    sourceSets.getByName("jvmTest").dependencies {
+        implementation(libs.ktor.client.mock)
+    }
 }
 
 compose.resources {

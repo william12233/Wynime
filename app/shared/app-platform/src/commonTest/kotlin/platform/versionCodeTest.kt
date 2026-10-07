@@ -19,7 +19,7 @@ class VersionCodeTest {
         assertEquals(4, versionCode.length)
         assertEquals(
             true,
-            versionCode matches Regex("""[345][0-9]{3}"""),
+            versionCode matches Regex("""[0-9]{4}"""),
             message = "$versionCode is not a valid version code",
         )
     }

@@ -350,6 +350,7 @@ private fun MainScreenNavigationLayout(
                             onClickSearch = onNavigateToSearch,
                             onClickLogin = onLogin,
                             onClickSettings = { navigator.navigateSettings() },
+                            onFullSync = userCollectionsViewModel::fullSync,
                             onCollectionUpdate = { subjectId, episode ->
                                 coroutineScope.launch {
                                     userCollectionsViewModel.toggleEpisodeCollection(

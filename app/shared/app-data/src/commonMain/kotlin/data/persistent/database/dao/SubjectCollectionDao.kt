@@ -175,6 +175,9 @@ interface SubjectCollectionDao {
     @Query("""DELETE FROM subject_collection WHERE collectionType = :type""")
     suspend fun deleteAll(type: UnifiedCollectionType)
 
+    @Query("""SELECT subjectId FROM subject_collection WHERE collectionType = :type""")
+    suspend fun listIdsByCollectionType(type: UnifiedCollectionType): List<Int>
+
     /** Removes tracked cache rows while retaining local cancellation tombstone rows. */
     @Query("""DELETE FROM subject_collection WHERE collectionType != 'NOT_COLLECTED'""")
     suspend fun deleteAll()

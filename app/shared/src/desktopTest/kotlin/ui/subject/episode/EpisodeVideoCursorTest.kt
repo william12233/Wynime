@@ -66,6 +66,10 @@ import kotlin.time.Duration.Companion.seconds
 
 class EpisodeVideoCursorTest {
 
+    private companion object {
+        const val WAIT_TIMEOUT = 5_000L
+    }
+
     private val controllerState = PlayerControllerState(ControllerVisibility.Invisible)
     private var currentPositionMillis by mutableLongStateOf(0L)
     private val progressSliderState: PlayerProgressSliderState = PlayerProgressSliderState(

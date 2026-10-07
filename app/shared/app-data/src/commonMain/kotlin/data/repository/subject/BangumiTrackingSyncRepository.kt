@@ -30,6 +30,7 @@ import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionDao
 import me.him188.ani.app.data.repository.RepositoryAuthorizationException
 import me.him188.ani.app.data.repository.RepositoryException
 import me.him188.ani.app.data.repository.RepositoryRateLimitedException
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.app.data.repository.RepositoryException.Companion.wrapOrThrowCancellation
 import me.him188.ani.app.data.repository.user.AccessTokenSession
 import me.him188.ani.app.data.repository.user.TokenRepository
@@ -190,6 +191,14 @@ data class BangumiTrackingSyncResult(
     val unchanged: Int,
     val conflictsResolved: Int,
     val remoteDeleteUnsupported: Int,
+    val fetchedCollectionCount: Int = 0,
+    val expectedCollectionCount: Int? = null,
+    val fetchedEpisodeSubjectCount: Int = 0,
+    val episodeCount: Int = 0,
+    val episodeUpdated: Int = 0,
+    val failedSubjectIds: List<Int> = emptyList(),
+    val failureMessages: List<String> = emptyList(),
+    val elapsedMillis: Long = 0,
 )
 
 data class BangumiTrackingSyncSummary(
@@ -250,6 +259,7 @@ class BangumiTrackingSyncRepository(
     private val bangumiApi: BangumiTrackingSyncApi,
     private val settingsStore: BangumiTrackingSyncSettingsStore,
     private val serviceScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    private val syncCoordinator: BangumiSyncCoordinator = BangumiSyncCoordinator(),
 ) : BangumiTrackingSyncEnqueuer {
     private val syncLock = Mutex()
     private var runningSync: kotlinx.coroutines.Deferred<BangumiTrackingSyncResult>? = null
@@ -257,6 +267,7 @@ class BangumiTrackingSyncRepository(
     private val pendingLock = Mutex()
     private val _autoSyncEvents = MutableSharedFlow<BangumiTrackingAutoSyncEvent>(extraBufferCapacity = 16)
     val autoSyncEvents = _autoSyncEvents.asSharedFlow()
+    val syncState: kotlinx.coroutines.flow.StateFlow<BangumiSyncUiState> = syncCoordinator.state
 
     suspend fun summary(): BangumiTrackingSyncSummary? {
         val accountKey = metadataRepository.accountKey()
@@ -307,7 +318,9 @@ class BangumiTrackingSyncRepository(
     suspend fun syncNow(): BangumiTrackingSyncResult {
         val deferred = syncLock.withLock {
             runningSync ?: serviceScope.async(start = kotlinx.coroutines.CoroutineStart.LAZY) {
-                performFullSync()
+                syncCoordinator.withExclusive(BangumiSyncOperation.TRACKING) {
+                    performFullSync()
+                }
             }.also { runningSync = it }
         }
         return try {
@@ -338,7 +351,9 @@ class BangumiTrackingSyncRepository(
                 ?.takeUnless { it == UnifiedCollectionType.NOT_COLLECTED }
                 ?: return
             attemptedType = type
-            upsertRemoteType(subjectId, type)
+            syncCoordinator.withExclusive(BangumiSyncOperation.AUTO) {
+                upsertRemoteType(subjectId, type)
+            }
             val latest = metadataDao.find(resolvedAccountKey, subjectId)
             if (latest?.localDeletedAt == null && latest?.pendingType == type.name) {
                 metadataDao.upsert(
@@ -380,6 +395,7 @@ class BangumiTrackingSyncRepository(
     }
 
     private suspend fun performFullSync(): BangumiTrackingSyncResult {
+        val startedAt = currentTimeMillis()
         val user = currentBangumiUser() ?: throw RepositoryAuthorizationException("Bangumi login is required")
         val account = user
         val accountKey = metadataRepository.adoptAccount(account)
@@ -390,7 +406,8 @@ class BangumiTrackingSyncRepository(
                 BangumiTrackingLocalSnapshot(value.subjectId, value.collectionType, value.lastUpdated)
             }
         val metadata = metadataRepository.metadataFor(accountKey).associateBy { it.subjectId }
-        val remote = fetchAllCollections(user.username).associateBy { it.subjectId }
+        val fetched = fetchAllCollections(user.username)
+        val remote = fetched.items.associateBy { it.subjectId }
         val subjectIds = (local.keys + remote.keys + metadata.keys).toSortedSet()
         var localUpdated = 0
         var bangumiUpdated = 0
@@ -409,11 +426,17 @@ class BangumiTrackingSyncRepository(
         conflicts = plans.count { it.conflict }
         remoteDeleteUnsupported = plans.count { it.remoteDeleteUnsupported }
 
+        syncCoordinator.report(
+            operation = BangumiSyncOperation.TRACKING,
+            phase = BangumiSyncPhase.MERGING,
+            current = 0,
+            total = subjectIds.size,
+        )
         val upserts = plans.mapNotNull { plan ->
             (plan.action as? BangumiTrackingSyncAction.UpsertRemote)?.let { plan.subjectId to it.type }
         }
         val semaphore = Semaphore(MAX_PARALLEL_MUTATIONS)
-        val successfulMutations = coroutineScope {
+        val mutationResults = coroutineScope {
             upserts.map { (subjectId, type) ->
                 async {
                     semaphore.withPermit {
@@ -429,19 +452,33 @@ class BangumiTrackingSyncRepository(
                                     ),
                                 )
                             }
-                            true
+                            MutationResult.Success(subjectId)
                         } catch (e: Throwable) {
                             if (e is CancellationException) throw e
                             metadataRepository.markPendingError(subjectId, e)
-                            throw e
+                            MutationResult.Failure(subjectId, e)
                         }
                     }
                 }
             }.awaitAll()
         }
-        bangumiUpdated = successfulMutations.count { it }
+        val failedSubjectIds = mutationResults.filterIsInstance<MutationResult.Failure>()
+            .map { it.subjectId }
+            .toMutableSet()
+        val failureMessages = mutationResults.filterIsInstance<MutationResult.Failure>()
+            .mapNotNull { it.error.message }
+            .toMutableList()
+        bangumiUpdated = mutationResults.count { it is MutationResult.Success }
 
-        for (plan in plans) {
+        for (index in plans.indices) {
+            val plan = plans[index]
+            syncCoordinator.report(
+                operation = BangumiSyncOperation.TRACKING,
+                phase = BangumiSyncPhase.APPLYING_LOCAL,
+                current = index + 1,
+                total = plans.size,
+                failedCount = failedSubjectIds.size,
+            )
             when (val action = plan.action) {
                 BangumiTrackingSyncAction.NoOp -> {
                     unchanged++
@@ -450,8 +487,14 @@ class BangumiTrackingSyncRepository(
 
                 is BangumiTrackingSyncAction.ApplyRemote -> {
                     val remoteSubject = remote[plan.subjectId] ?: continue
-                    applyRemoteType(plan.subjectId, action.type, remoteSubject.updatedAt)
-                    localUpdated++
+                    try {
+                        applyRemoteType(plan.subjectId, action.type, remoteSubject.updatedAt)
+                        localUpdated++
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        failedSubjectIds += plan.subjectId
+                        e.message?.let(failureMessages::add)
+                    }
                 }
 
                 BangumiTrackingSyncAction.KeepLocalUntracked -> {
@@ -479,36 +522,140 @@ class BangumiTrackingSyncRepository(
                 }
             }
         }
-        val successfulAt = currentTimeMillis()
-        metadataRepository.saveAccountSummary(
-            accountKey = accountKey,
-            lastSuccessfulSyncAt = successfulAt,
-            localCount = subjectCollectionDao.listAll().count {
-                it.collectionType != UnifiedCollectionType.NOT_COLLECTED
-            },
-            remoteCount = remote.size,
-        )
+        val complete = failedSubjectIds.isEmpty()
+        if (complete) {
+            metadataRepository.saveAccountSummary(
+                accountKey = accountKey,
+                lastSuccessfulSyncAt = currentTimeMillis(),
+                localCount = subjectCollectionDao.listAll().count {
+                    it.collectionType != UnifiedCollectionType.NOT_COLLECTED
+                },
+                remoteCount = remote.size,
+            )
+            syncCoordinator.report(
+                operation = BangumiSyncOperation.TRACKING,
+                phase = BangumiSyncPhase.RELOADING,
+                current = remote.size,
+                total = remote.size,
+            )
+            syncCoordinator.complete(BangumiSyncOperation.TRACKING)
+        } else {
+            syncCoordinator.partialFailure(
+                operation = BangumiSyncOperation.TRACKING,
+                failedCount = failedSubjectIds.size,
+                detail = "${failedSubjectIds.size} 個條目同步失敗",
+            )
+        }
         return BangumiTrackingSyncResult(
             localUpdated = localUpdated,
             bangumiUpdated = bangumiUpdated,
             unchanged = unchanged,
             conflictsResolved = conflicts,
             remoteDeleteUnsupported = remoteDeleteUnsupported,
+            fetchedCollectionCount = fetched.items.size,
+            expectedCollectionCount = fetched.total,
+            elapsedMillis = currentTimeMillis() - startedAt,
+            failedSubjectIds = failedSubjectIds.sorted(),
+            failureMessages = failureMessages.distinct(),
         )
     }
 
-    private suspend fun fetchAllCollections(username: String): List<BangumiTrackingRemoteSnapshot> {
-        val result = ArrayList<BangumiTrackingRemoteSnapshot>()
-        var offset = 0
+    private suspend fun fetchAllCollections(username: String): TrackingCollectionFetch {
         val limit = 100
-        while (true) {
-            val page = bangumiApi.animeCollections(username, limit, offset)
-            val data = page.collections
-            result += data
-            if (data.isEmpty() || data.size < limit || result.size >= (page.total ?: result.size)) break
-            offset += data.size
+        val seenSubjectIds = HashSet<Int>()
+        val first = syncRequestThrottle.run { bangumiApi.animeCollections(username, limit, 0) }
+        val expectedTotal = first.total
+        val result = ArrayList<BangumiTrackingRemoteSnapshot>(expectedTotal ?: first.collections.size)
+        if (expectedTotal != null && first.collections.size > expectedTotal) {
+            throw RepositoryRequestError("Bangumi 收藏第一頁超過 total=$expectedTotal")
         }
-        return result.distinctBy { it.subjectId }
+        if (expectedTotal != null && expectedTotal > first.collections.size && first.collections.size < limit) {
+            throw RepositoryRequestError(
+                "Bangumi 收藏第一頁提前結束：取得 ${first.collections.size}/$expectedTotal",
+            )
+        }
+        first.collections.forEach { collection ->
+            if (!seenSubjectIds.add(collection.subjectId)) {
+                throw RepositoryRequestError("Bangumi 收藏第一頁含有重複 subject=${collection.subjectId}")
+            }
+        }
+        result += first.collections
+        syncCoordinator.report(
+            operation = BangumiSyncOperation.TRACKING,
+            phase = BangumiSyncPhase.FETCHING_COLLECTIONS,
+            current = result.size,
+            total = expectedTotal,
+        )
+        if (expectedTotal != null && expectedTotal > 0 && first.collections.isEmpty()) {
+            throw RepositoryRequestError("Bangumi 收藏第一頁為空，但 total=$expectedTotal")
+        }
+        if (expectedTotal != null) {
+            val offsets = (limit until expectedTotal step limit).toList()
+            offsets.chunked(MAX_PARALLEL_READS).forEach { batch ->
+                val pages = coroutineScope {
+                    batch.map { offset ->
+                        async {
+                            offset to syncRequestThrottle.run {
+                                bangumiApi.animeCollections(username, limit, offset)
+                            }
+                        }
+                    }.awaitAll()
+                }.sortedBy { it.first }
+                pages.forEach { (offset, page) ->
+                    if (page.collections.isEmpty() && offset < expectedTotal) {
+                        throw RepositoryRequestError("Bangumi 收藏缺少 offset=$offset 的資料")
+                    }
+                    if (page.collections.size < limit && offset + page.collections.size < expectedTotal) {
+                        throw RepositoryRequestError(
+                            "Bangumi 收藏分頁提前結束：offset=$offset，取得 ${offset + page.collections.size}/$expectedTotal",
+                        )
+                    }
+                    page.collections.forEach { collection ->
+                        if (!seenSubjectIds.add(collection.subjectId)) {
+                            throw RepositoryRequestError(
+                                "Bangumi 收藏頁含有重複 subject=${collection.subjectId}，offset=$offset",
+                            )
+                        }
+                    }
+                    result += page.collections
+                    syncCoordinator.report(
+                        operation = BangumiSyncOperation.TRACKING,
+                        phase = BangumiSyncPhase.FETCHING_COLLECTIONS,
+                        current = result.size.coerceAtMost(expectedTotal),
+                        total = expectedTotal,
+                    )
+                }
+            }
+            val distinctCount = result.distinctBy { it.subjectId }.size
+            if (result.size < expectedTotal || distinctCount < expectedTotal) {
+                throw RepositoryRequestError(
+                    "Bangumi 收藏資料不完整：取得 ${result.size}/$expectedTotal，去重後 $distinctCount",
+                )
+            }
+        } else {
+            var offset = first.collections.size
+            while (first.collections.size >= limit) {
+                val page = syncRequestThrottle.run { bangumiApi.animeCollections(username, limit, offset) }
+                if (page.collections.isEmpty()) break
+                page.collections.forEach { collection ->
+                    if (!seenSubjectIds.add(collection.subjectId)) {
+                        throw RepositoryRequestError(
+                            "Bangumi 收藏頁含有重複 subject=${collection.subjectId}，offset=$offset",
+                        )
+                    }
+                }
+                result += page.collections
+                offset += page.collections.size
+                syncCoordinator.report(
+                    operation = BangumiSyncOperation.TRACKING,
+                    phase = BangumiSyncPhase.FETCHING_COLLECTIONS,
+                    current = result.size,
+                    total = null,
+                )
+                if (page.collections.size < limit) break
+            }
+        }
+        return TrackingCollectionFetch(result.distinctBy { it.subjectId }, expectedTotal)
     }
 
     private suspend fun upsertRemoteType(subjectId: Int, type: UnifiedCollectionType) {
@@ -538,8 +685,41 @@ class BangumiTrackingSyncRepository(
         return classifyBangumiTrackingError(this)
     }
 
+    private sealed interface MutationResult {
+        val subjectId: Int
+
+        data class Success(override val subjectId: Int) : MutationResult
+        data class Failure(override val subjectId: Int, val error: Throwable) : MutationResult
+    }
+
+    private data class TrackingCollectionFetch(
+        val items: List<BangumiTrackingRemoteSnapshot>,
+        val total: Int?,
+    )
+
     private companion object {
         const val MAX_PARALLEL_MUTATIONS = 4
+        const val MAX_PARALLEL_READS = 3
         const val AUTO_SYNC_DEBOUNCE_MILLIS = 500L
+    }
+
+    private val syncRequestThrottle = BangumiTrackingSyncRequestThrottle()
+}
+
+private class BangumiTrackingSyncRequestThrottle(
+    private val intervalMillis: Long = 200L,
+) {
+    private val mutex = Mutex()
+    private var nextStartAt = 0L
+
+    suspend fun <T> run(block: suspend () -> T): T {
+        val waitMillis = mutex.withLock {
+            val now = currentTimeMillis()
+            val startAt = maxOf(now, nextStartAt)
+            nextStartAt = startAt + intervalMillis
+            startAt - now
+        }
+        if (waitMillis > 0) delay(waitMillis)
+        return block()
     }
 }

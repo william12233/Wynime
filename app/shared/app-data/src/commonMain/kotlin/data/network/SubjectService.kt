@@ -62,6 +62,24 @@ interface SubjectService {
     ): List<AniSubjectCollection>
 
     /**
+     * Loads one collection page together with the server's pagination metadata when available.
+     * Implementations that do not expose a total retain the old list-based contract.
+     */
+    suspend fun getSubjectCollectionsPage(
+        type: BangumiSubjectCollectionType?,
+        offset: Int,
+        limit: Int,
+        onItemHydrated: suspend (completed: Int, total: Int) -> Unit = { _, _ -> },
+    ): SubjectCollectionPage {
+        return SubjectCollectionPage(
+            items = getSubjectCollections(type, offset, limit),
+            offset = offset,
+            requestedLimit = limit,
+            total = null,
+        )
+    }
+
+    /**
      * 当 [subjectId] 不存在时, 返回 `null`.
      */
     suspend fun getSubjectCollection(subjectId: Int): AniSubjectCollection?
@@ -92,6 +110,16 @@ interface SubjectService {
 
     suspend fun getBangumiFullSyncState(): BangumiSyncState?
 }
+
+data class SubjectCollectionPage(
+    val items: List<AniSubjectCollection>,
+    val offset: Int,
+    val requestedLimit: Int,
+    val total: Int?,
+    val omittedSubjectIds: List<Int> = emptyList(),
+    /** Number of raw collection rows represented by this response before hydration. */
+    val sourceItemCount: Int = items.size,
+)
 
 data class BatchSubjectCollection(
     val batchSubjectDetails: BatchSubjectDetails,

@@ -18,13 +18,17 @@ sealed interface BangumiSyncState {
 
     data object Preparing : BangumiSyncState
 
-    data class FetchingSubjects(val fetchedCount: Int) : BangumiSyncState
-    data class FetchingEpisodes(val fetchedCount: Int) : BangumiSyncState
-    data class Inserting(val savedCount: Int) : BangumiSyncState
+    data class FetchingSubjects(val fetchedCount: Int, val totalCount: Int? = null) : BangumiSyncState
+    data class FetchingEpisodes(val fetchedCount: Int, val totalCount: Int? = null) : BangumiSyncState
+    data class Inserting(val savedCount: Int, val totalCount: Int? = null) : BangumiSyncState
 
-    data class Finishing(val savedCount: Int) : BangumiSyncState
+    data class Finishing(val savedCount: Int, val totalCount: Int? = null) : BangumiSyncState
 
-    data class Finished(val savedCount: Int, val error: AniBangumiSyncError?) : BangumiSyncState {
+    data class Finished(
+        val savedCount: Int,
+        val error: AniBangumiSyncError?,
+        val localError: String? = null,
+    ) : BangumiSyncState {
         override val finished: Boolean
             get() = true
     }

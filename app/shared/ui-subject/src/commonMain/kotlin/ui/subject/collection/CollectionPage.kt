@@ -246,6 +246,7 @@ fun CollectionPage(
     onClickSearch: () -> Unit,
     onClickLogin: () -> Unit,
     onClickSettings: () -> Unit,
+    onFullSync: () -> Unit = {},
     onCollectionUpdate: (subjectId: Int, episode: EpisodeListItem) -> Unit,
     modifier: Modifier = Modifier,
     actions: @Composable RowScope.() -> Unit = {},
@@ -346,6 +347,7 @@ fun CollectionPage(
         },
         isRefreshing = { state.selectedPageRefreshing || isBangumiSyncing },
         onRefresh = { state.refreshSelectedPage() },
+        onFullSync = onFullSync,
         modifier,
         windowInsets,
     ) { nestedScrollConnection, contentPadding ->
@@ -403,7 +405,7 @@ fun CollectionPage(
         }
     }
 
-    if (!hideBangumiSync && isBangumiSyncing) {
+    if (!hideBangumiSync && fullSyncState != null) {
         BangumiFullSyncStateDialog(
             state = fullSyncState,
             onDismissRequest = { hideBangumiSync = true },
@@ -422,6 +424,7 @@ private fun CollectionPageLayout(
     filters: @Composable CollectionPageFilters.() -> Unit,
     isRefreshing: () -> Boolean,
     onRefresh: () -> Unit,
+    onFullSync: () -> Unit,
     modifier: Modifier = Modifier,
     windowInsets: WindowInsets = AniWindowInsets.forPageContent(),
     content: @Composable (nestedScrollConnection: NestedScrollConnection?, contentPadding: PaddingValues) -> Unit,
@@ -452,6 +455,16 @@ private fun CollectionPageLayout(
                     modifier = Modifier,
                     actions = {
                         actions()
+
+                        IconButton(
+                            onClick = onFullSync,
+                            enabled = !isRefreshing(),
+                        ) {
+                            Icon(
+                                Icons.Rounded.Sync,
+                                contentDescription = stringResource(Lang.subject_collection_syncing),
+                            )
+                        }
 
                         if (LocalPlatform.current.isDesktop()) {
                             // PC 无法下拉刷新

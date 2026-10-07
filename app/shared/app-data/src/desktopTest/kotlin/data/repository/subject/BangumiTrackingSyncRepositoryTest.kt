@@ -11,7 +11,10 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -28,6 +31,7 @@ import me.him188.ani.app.data.persistent.createTestPreferencesDataStore
 import me.him188.ani.app.data.persistent.database.AniDatabase
 import me.him188.ani.app.data.persistent.database.AniDatabaseConstructor
 import me.him188.ani.app.data.persistent.database.dao.SubjectCollectionEntity
+import me.him188.ani.app.data.repository.RepositoryRequestError
 import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.app.data.repository.user.TokenSave
 import me.him188.ani.client.models.AniSubjectCollection
@@ -105,6 +109,42 @@ class BangumiTrackingSyncRepositoryTest {
             fixture.database.subjectCollection().upsert(
                 remote.map { subject(it.subjectId, UnifiedCollectionType.WISH, 100) },
             )
+
+            fixture.repository.syncNow()
+
+            assertEquals(listOf(0 to 100, 100 to 100), fixture.api.pageRequests)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `non empty total with an empty first page fails and leaves a terminal state`() = runTest {
+        val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val fixture = fixture(serviceScope)
+        try {
+            fixture.api.page = { BangumiTrackingRemotePage(emptyList(), 1) }
+
+            val failure = async { runCatching { fixture.repository.syncNow() }.exceptionOrNull() }
+            advanceUntilIdle()
+            assertIs<RepositoryRequestError>(failure.await())
+            assertIs<BangumiSyncUiState.Failed>(fixture.repository.syncState.value)
+        } finally {
+            serviceScope.cancel()
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `missing total continues after a full page until a short page`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            val remote = (1..101).map {
+                BangumiTrackingRemoteSnapshot(it, UnifiedCollectionType.WISH, 100)
+            }
+            fixture.api.page = { offset ->
+                BangumiTrackingRemotePage(remote.drop(offset).take(100), null)
+            }
 
             fixture.repository.syncNow()
 

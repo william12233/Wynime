@@ -83,6 +83,9 @@ val writePublicAbiSnapshot = tasks.register("writePublicAbiSnapshot") {
 val verifyPublicAbiSnapshot = tasks.register("verifyPublicAbiSnapshot") {
     dependsOn(tasks.named("compileKotlinDesktop"))
     inputs.file(publicAbiSnapshot)
+    notCompatibleWithConfigurationCache(
+        "The ABI verifier invokes javap against the compiled class directory during task execution.",
+    )
     doLast {
         check(publicAbiSnapshot.isFile) {
             "Missing public plugin API ABI snapshot: ${publicAbiSnapshot.absolutePath}. " +

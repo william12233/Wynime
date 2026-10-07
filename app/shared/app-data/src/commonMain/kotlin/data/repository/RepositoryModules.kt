@@ -40,6 +40,7 @@ import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncApi
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncApiImpl
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncRepository
 import me.him188.ani.app.data.repository.subject.BangumiTrackingSyncSettingsStore
+import me.him188.ani.app.data.repository.subject.BangumiSyncCoordinator
 import me.him188.ani.app.data.repository.subject.SubjectRelationGraphRepository
 import me.him188.ani.app.data.repository.subject.SubjectRelationsRepository
 import me.him188.ani.app.data.repository.subject.SubjectSearchCompletionRepository
@@ -105,8 +106,11 @@ fun KoinApplication.repositoryModules(
             trackingMetadataRepository = get(),
             trackingSyncEnqueuer = get<BangumiTrackingSyncEnqueuer>(),
             trackingSyncSettingsStore = get(),
+            syncCoordinator = get(),
         )
     }
+
+    single { BangumiSyncCoordinator() }
 
     single<BangumiTrackingSyncSettingsStore> {
         BangumiTrackingSyncSettingsStore(getContext().dataStores.preferencesStore)
@@ -130,6 +134,7 @@ fun KoinApplication.repositoryModules(
             subjectService = get(),
             bangumiApi = get(),
             settingsStore = get(),
+            syncCoordinator = get(),
         )
     }
 

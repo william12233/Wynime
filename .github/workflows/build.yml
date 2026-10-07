@@ -570,12 +570,17 @@ jobs:
       env:
         BASE64_CONTENT: ${{ secrets.SIGNING_RELEASE_STOREFILE }}
         FILE_PATH: ./android_signing_key
+        SIGNING_RELEASE_STOREPASSWORD: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}
+        SIGNING_RELEASE_KEYALIAS: ${{ secrets.SIGNING_RELEASE_KEYALIAS }}
+        SIGNING_RELEASE_KEYPASSWORD: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}
       continue-on-error: false
       shell: bash
-      run: "set -euo pipefail\n\nif [ -z \"${BASE64_CONTENT:-}\" ]; then\n  echo \"BASE64_CONTENT is empty\" >&2\n  exit 1\n\
-        fi\n\nmkdir -p \"$(dirname \"$FILE_PATH\")\"\nif ! printf '%s' \"$BASE64_CONTENT\" | base64 --decode > \"$FILE_PATH\"\
-        \ 2>/dev/null; then\n  printf '%s' \"$BASE64_CONTENT\" | base64 -D > \"$FILE_PATH\"\nfi\nchmod 600 \"$FILE_PATH\"\n\
-        echo \"filePath=$FILE_PATH\" >> \"$GITHUB_OUTPUT\""
+      run: "set -euo pipefail\nif [ -z \"${BASE64_CONTENT:-}\" ] || [ -z \"${SIGNING_RELEASE_STOREPASSWORD:-}\" ] || [ -z\
+        \ \"${SIGNING_RELEASE_KEYALIAS:-}\" ] || [ -z \"${SIGNING_RELEASE_KEYPASSWORD:-}\" ]; then\n  echo \"available=false\"\
+        \ >> \"$GITHUB_OUTPUT\"\n  echo \"CI signing credentials unavailable; debug verification remains enabled\"\n  exit\
+        \ 0\nfi\nmkdir -p \"$(dirname \"$FILE_PATH\")\"\nprintf '%s' \"$BASE64_CONTENT\" | base64 --decode > \"$FILE_PATH\"\
+        \nchmod 600 \"$FILE_PATH\"\necho \"filePath=$FILE_PATH\" >> \"$GITHUB_OUTPUT\"\necho \"available=true\" >> \"$GITHUB_OUTPUT\"\
+        \n"
       if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
     - id: step-16
       name: Prepare google-services.json
@@ -743,7 +748,8 @@ jobs:
       timeout-minutes: 180
       run: ./gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g
         -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
-      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+      if: ${{ ((github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request'))) && (steps.step-15.outputs.available
+        == 'true') }}
     - id: step-36
       name: 'Build Android Release APKs (Attempt #2)'
       env:
@@ -764,6 +770,7 @@ jobs:
         name: wynime-android-arm64-v8a-release
         path: app/android/build/outputs/apk/default/release/android-default-arm64-v8a-release.apk
         overwrite: 'true'
+      if: ${{ (true) && (steps.step-15.outputs.available == 'true') }}
     - id: step-38
       name: 'Upload Android Release APK arm64-v8a (Attempt #2)'
       continue-on-error: true
@@ -790,6 +797,7 @@ jobs:
         name: wynime-android-x86_64-release
         path: app/android/build/outputs/apk/default/release/android-default-x86_64-release.apk
         overwrite: 'true'
+      if: ${{ (true) && (steps.step-15.outputs.available == 'true') }}
     - id: step-41
       name: 'Upload Android Release APK x86_64 (Attempt #2)'
       continue-on-error: true
@@ -816,6 +824,7 @@ jobs:
         name: wynime-android-armeabi-v7a-release
         path: app/android/build/outputs/apk/default/release/android-default-armeabi-v7a-release.apk
         overwrite: 'true'
+      if: ${{ (true) && (steps.step-15.outputs.available == 'true') }}
     - id: step-44
       name: 'Upload Android Release APK armeabi-v7a (Attempt #2)'
       continue-on-error: true
@@ -842,6 +851,7 @@ jobs:
         name: wynime-android-universal-release
         path: app/android/build/outputs/apk/default/release/android-default-universal-release.apk
         overwrite: 'true'
+      if: ${{ (true) && (steps.step-15.outputs.available == 'true') }}
     - id: step-47
       name: 'Upload Android Release APK universal (Attempt #2)'
       continue-on-error: true

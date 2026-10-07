@@ -28,6 +28,12 @@ for filename in ("build.yml", "release.yml"):
         publication = next(i for i, step in enumerate(signing) if step.get("name") == "Create Release")
         assert validation < publication
         assert "verify-release-assets" in jobs
+    if filename == "build.yml":
+        android_steps = jobs["build_github-ubuntu-2404"]["steps"]
+        for step in android_steps:
+            name = step.get("name", "")
+            if name.startswith(("Build Android Release APKs", "Upload Android Release APK")) and "Attempt #1" in name:
+                assert "steps.step-15.outputs.available == 'true'" in step.get("if", ""), name
     assert any("windows" in job_id for job_id in jobs)
     assert any("ubuntu" in job_id for job_id in jobs)
 print("Android/Windows workflow configuration and release signing gate: PASS")

@@ -2,6 +2,7 @@ package com.wynime.app.domain.sourceplugin
 
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.Files
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import com.wynime.utils.io.SystemPath
@@ -38,7 +39,7 @@ class SourcePluginPackageTest {
             destination = destination,
         )
 
-        assertEquals(destination.resolve("plugin.jar").absolutePath, extracted.absolutePath)
+        assertTrue(Files.isSameFile(File(destination.resolve("plugin.jar").absolutePath).toPath(), File(extracted.absolutePath).toPath()))
         assertEquals(TEST_ARTIFACT.toList(), File(extracted.absolutePath).readBytes().toList())
     }
 
@@ -56,7 +57,7 @@ class SourcePluginPackageTest {
             destination = destination,
         )
 
-        assertEquals(destination.resolve("nested/plugin.jar").absolutePath, extracted.absolutePath)
+        assertTrue(Files.isSameFile(File(destination.resolve("nested/plugin.jar").absolutePath).toPath(), File(extracted.absolutePath).toPath()))
         assertTrue(extracted.exists())
     }
 

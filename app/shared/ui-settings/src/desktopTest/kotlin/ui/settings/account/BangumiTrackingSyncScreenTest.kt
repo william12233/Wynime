@@ -18,10 +18,21 @@ import com.wynime.app.data.repository.subject.BangumiSyncUiState
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.framework.WynimeComposeUiTest
 import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import java.util.Locale
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class BangumiTrackingSyncScreenTest {
+    private val originalLocale = Locale.getDefault()
+
+    @BeforeTest
+    fun useTestLocale() = Locale.setDefault(Locale.TRADITIONAL_CHINESE)
+
+    @AfterTest
+    fun restoreLocale() = Locale.setDefault(originalLocale)
+
     private class Callbacks {
         var loginClicks = 0
         var syncClicks = 0

@@ -16,10 +16,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.files.Path
 import kotlinx.io.files.SystemFileSystem
+import me.him188.ani.app.data.network.AniApiProvider
 import me.him188.ani.app.data.network.AniCommentReportService
 import me.him188.ani.app.data.network.AniEpisodeCommentService
 import me.him188.ani.app.data.network.AniPersonCommentService
@@ -46,7 +48,9 @@ import me.him188.ani.app.data.persistent.database.MIGRATION_19_20
 import me.him188.ani.app.data.persistent.database.createDatabaseBuilder
 import me.him188.ani.app.data.repository.player.PlaybackHistorySyncer
 import me.him188.ani.app.data.repository.repositoryModules
+import me.him188.ani.app.data.repository.user.AccessTokenSession
 import me.him188.ani.app.data.repository.user.SettingsRepository
+import me.him188.ani.app.data.repository.user.TokenRepository
 import me.him188.ani.app.domain.foundation.ConvertSendCountExceedExceptionFeature
 import me.him188.ani.app.domain.foundation.ConvertSendCountExceedExceptionFeatureHandler
 import me.him188.ani.app.domain.foundation.CookieJarFeatureHandler
@@ -157,11 +161,17 @@ private fun KoinApplication.otherModules(
         get<SessionManager>().stateProvider
     }
     single<HttpClientProvider> {
+        val tokenRepository = get<TokenRepository>()
         DefaultHttpClientProvider(
             get(), coroutineScope,
             featureHandlers = listOf(
                 UserAgentFeatureHandler,
-                UseAniTokenFeatureHandler(flowOf(null), onRefresh = { null }),
+                UseAniTokenFeatureHandler(
+                    tokenRepository.session.map {
+                        (it as? AccessTokenSession)?.tokens?.aniAccessToken?.takeIf(String::isNotBlank)
+                    },
+                    onRefresh = { null },
+                ),
                 ServerListFeatureHandler(
                     flowOf(emptyList()),
                 ),
@@ -218,6 +228,14 @@ private fun KoinApplication.otherModules(
             get<HttpClientProvider>().get(
                 userAgent = ScopedHttpClientUserAgent.ANI,
                 useAniToken = false,
+            ),
+        )
+    }
+    single<AniApiProvider> {
+        AniApiProvider(
+            get<HttpClientProvider>().get(
+                userAgent = ScopedHttpClientUserAgent.ANI,
+                useAniToken = true,
             ),
         )
     }

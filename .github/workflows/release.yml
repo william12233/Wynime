@@ -42,8 +42,8 @@ jobs:
         \ - <<'PY' > \"$RUNNER_TEMP/release-body.md\"\nimport os\nfrom pathlib import Path\n\nbody = Path(\"ci-helper/release-template.md\"\
         ).read_text()\nreplacements = {\n    \"$RELEASE_NOTES\": os.environ[\"RELEASE_NOTES\"],\n    \"$GIT_TAG\": os.environ[\"\
         GIT_TAG\"],\n    \"$TAG_VERSION\": os.environ[\"TAG_VERSION\"],\n}\nfor key, value in replacements.items():\n    body\
-        \ = body.replace(key, value)\nprint(body, end=\"\")\nPY\n\necho \"result<<EOF\" >> \"$GITHUB_OUTPUT\"\ncat \"$RUNNER_TEMP/release-body.md\"\
-        \ >> \"$GITHUB_OUTPUT\"\necho \"EOF\" >> \"$GITHUB_OUTPUT\""
+        \ = body.replace(key, value)\nprint(body, end=\"\")\nPY\n\necho \"result<<RELEASE_BODY_EOF\" >> \"$GITHUB_OUTPUT\"\ncat \"$RUNNER_TEMP/release-body.md\"\
+        \ >> \"$GITHUB_OUTPUT\"\necho \"RELEASE_BODY_EOF\" >> \"$GITHUB_OUTPUT\""
     - id: step-4
       name: Validate formal release signing configuration
       env:

@@ -51,7 +51,7 @@ class BundledSourcePluginMigrationTest {
     }
 
     @Test
-    fun `all seven bundled sources upgrade offline and keep enabled choices`() = runTest {
+    fun `all eight bundled sources upgrade offline and keep enabled choices`() = runTest {
         val previous = packages.pluginIds.mapIndexed { index, id -> oldInstallation(id, index % 2 == 0) }
         val provider = DefaultHttpClientProvider(NoProxyProvider, backgroundScope)
         val registry = SourcePluginRegistry(
@@ -63,14 +63,14 @@ class BundledSourcePluginMigrationTest {
         )
         try {
             registry.loadInstalled()
-            assertEquals(7, registry.states.value.size)
+            assertEquals(8, registry.states.value.size)
             for (old in previous) {
                 val current = repository.snapshot().plugins.single { it.id == old.id }
-                assertEquals("1.0.26", current.version)
+                assertEquals("1.0.27", current.version)
                 assertEquals(3, current.manifest.pluginApiVersion)
                 assertEquals(old.enabled, current.enabled)
                 assertTrue(File(current.artifactPath).isFile)
-                assertFalse(File(old.artifactPath).exists())
+                assertTrue(File(old.artifactPath).isFile)
                 val state = registry.states.value.single { it.installed.id == old.id }
                 assertEquals(null, state.errorMessage)
                 if (old.enabled) assertNotNull(state.metadata)
@@ -81,7 +81,7 @@ class BundledSourcePluginMigrationTest {
     }
 
     @Test
-    fun `all seven bundled sources install on a fresh offline host with its default version`() = runTest {
+    fun `fresh offline installs do not silently fall back to bundled sources`() = runTest {
         val registry = SourcePluginRegistry(
             repository,
             SourcePluginInstaller(SourcePluginRepositoryClient(http), repository, SourcePluginStorage(root), platform, "0.1.3"),
@@ -92,9 +92,11 @@ class BundledSourcePluginMigrationTest {
         try {
             val entries = registry.bundledEntries()
             assertEquals(packages.pluginIds, entries.map { it.id }.toSet())
-            for (entry in entries) registry.install(entry)
-            assertEquals(7, repository.snapshot().plugins.size)
-            assertTrue(registry.states.value.all { it.metadata?.pluginApiVersion == 3 && it.errorMessage == null })
+            assertTrue(entries.all { it.version == "1.0.27" })
+            kotlin.test.assertFailsWith<IllegalStateException> {
+                registry.install(entries.first())
+            }
+            assertTrue(repository.snapshot().plugins.isEmpty())
         } finally {
             registry.close()
         }

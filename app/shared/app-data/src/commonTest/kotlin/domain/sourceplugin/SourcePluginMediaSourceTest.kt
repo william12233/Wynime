@@ -28,18 +28,18 @@ class SourcePluginMediaSourceTest {
     private val simplifiedTitle = "遭到流放的转生重骑士凭借游戏知识大开无双"
 
     @Test
-    fun `browse search sends the simplified query`() = runTest {
+    fun `browse search tries traditional and simplified queries`() = runTest {
         val plugin = RecordingPlugin(simplifiedTitle)
         val source = SourcePluginMediaSource(plugin)
 
         val subjects = source.searchSubjects(traditionalTitle)
 
-        assertEquals(listOf(simplifiedTitle), plugin.searchQueries)
+        assertEquals(listOf(traditionalTitle, simplifiedTitle), plugin.searchQueries)
         assertEquals(listOf("3410"), subjects.map { it.url.substringBefore('#').substringAfterLast('/') })
     }
 
     @Test
-    fun `media discovery sends the simplified query and matches the title`() = runTest {
+    fun `media discovery tries traditional and simplified queries and matches the title`() = runTest {
         val plugin = RecordingPlugin(simplifiedTitle)
         val source = SourcePluginMediaSource(plugin)
 
@@ -56,7 +56,7 @@ class SourcePluginMediaSourceTest {
         val matches = media.results.toList()
         media.awaitFinished()
 
-        assertEquals(listOf(simplifiedTitle), plugin.searchQueries)
+        assertEquals(listOf(traditionalTitle, simplifiedTitle), plugin.searchQueries)
         assertEquals(listOf(simplifiedTitle), matches.map { it.media.properties.subjectName })
     }
 
@@ -72,7 +72,7 @@ class SourcePluginMediaSourceTest {
 
         val subjects = source.searchSubjects("大王饒命第三季")
 
-        assertEquals(listOf("大王饶命"), plugin.searchQueries)
+        assertEquals(listOf("大王饒命", "大王饶命"), plugin.searchQueries)
         assertEquals(listOf("大王饶命3"), subjects.map { it.name })
     }
 
@@ -100,7 +100,10 @@ class SourcePluginMediaSourceTest {
         media.results.toList()
         media.awaitFinished()
 
-        assertEquals(listOf("大王饶命", "大王饶命第三季"), plugin.searchQueries)
+        assertEquals(
+            listOf("大王饒命", "大王饶命", "大王饒命第三季", "大王饶命第三季"),
+            plugin.searchQueries,
+        )
     }
 
     private class RecordingPlugin(
@@ -111,7 +114,7 @@ class SourcePluginMediaSourceTest {
         override val metadata = SourcePluginMetadata(
             id = "next",
             displayName = "Next",
-            version = "1.0.26",
+            version = "1.0.27",
             website = "https://next.xifanacg.com",
             pluginApiVersion = 3,
             minHostVersion = "0.1.3",

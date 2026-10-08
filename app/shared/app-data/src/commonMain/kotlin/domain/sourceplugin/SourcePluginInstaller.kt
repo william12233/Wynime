@@ -49,10 +49,19 @@ class SourcePluginInstaller(
             ?: throw UnsupportedSourcePluginException("Plugin ${manifest.id} has no $platform artifact")
 
         val existing = installedRepository.snapshot().plugins.firstOrNull { it.id == manifest.id }
+        val existingArtifact = existing?.manifest?.artifacts?.get(platform)
+        if (existing != null && existing.version == manifest.version &&
+            existingArtifact != null && existingArtifact.sha256.lowercase() != artifact.sha256.lowercase()
+        ) {
+            throw SourcePluginRepositoryException(
+                "Plugin ${manifest.id} version ${manifest.version} is already installed with a different artifact",
+            )
+        }
         val reusable = existing?.takeIf {
             it.version == manifest.version &&
                 it.artifactPath.isUsableArtifact() &&
-                it.manifest.artifacts[platform] == artifact
+                it.manifest.artifacts[platform]?.sha256.equals(artifact.sha256, ignoreCase = true) &&
+                it.manifest.artifacts[platform]?.format == artifact.format
         }
         if (reusable != null) {
             try {
@@ -105,15 +114,9 @@ class SourcePluginInstaller(
             )
             installedRepository.upsert(installed)
             if (existing != null && existing.version != installed.version) {
-                runCatching {
-                    storage.deleteInstalled(existing)
-                }.onSuccess {
-                    logger.info { "Removed replaced source plugin ${existing.id} ${existing.version}" }
-                }.onFailure { throwable ->
-
-                    logger.warn(throwable) {
-                        "Failed to remove replaced source plugin ${existing.id} ${existing.version}; keeping the new version"
-                    }
+                logger.info {
+                    "Activated source plugin ${installed.id} ${installed.version}; " +
+                        "retaining ${existing.version} for rollback"
                 }
             }
             return installed
@@ -141,13 +144,10 @@ class SourcePluginInstaller(
 
     private fun validateManifest(manifest: SourcePluginManifest) {
         require(manifest.id.isNotBlank()) { "Plugin id must not be blank" }
-        require(manifest.platforms.contains(platform)) { "Plugin ${manifest.id} does not support $platform" }
-        require(manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION) {
-            "Plugin ${manifest.id} API ${manifest.pluginApiVersion} is incompatible with host API $SOURCE_PLUGIN_API_VERSION"
+        require(isValidSourcePluginVersion(manifest.version)) {
+            "Plugin ${manifest.id} has invalid version ${manifest.version}"
         }
-        require(compareSourcePluginVersions(hostVersion, manifest.minHostVersion) >= 0) {
-            "Plugin ${manifest.id} requires a newer Wynime host"
-        }
+        SourcePluginCompatibilityResolver.requireCompatible(manifest, platform, hostVersion)
         require(manifest.entryClass.isNotBlank()) { "Plugin ${manifest.id} entryClass is blank" }
     }
 

@@ -54,11 +54,27 @@ class SourcePluginRepositoryClient(
             require(entry.id.isSafePluginId()) { "Invalid plugin id in repository index: ${entry.id}" }
             require(ids.add(entry.id)) { "Duplicate plugin id in repository index: ${entry.id}" }
             require(entry.version.isNotBlank()) { "Plugin ${entry.id} has no version" }
+            require(isValidSourcePluginVersion(entry.version)) {
+                "Plugin ${entry.id} has invalid version ${entry.version}"
+            }
             require(entry.platforms.isNotEmpty()) { "Plugin ${entry.id} has no supported platform" }
             require(entry.website.isHttpsUrl()) { "Plugin ${entry.id} website must use HTTPS" }
             entry.icon?.let { require(it.isHttpsUrl()) { "Plugin ${entry.id} icon must use HTTPS" } }
-            require(entry.manifest.isSafeRepositoryPath()) {
+            require(entry.manifest.isRepositoryReference()) {
                 "Manifest path must be relative and must not escape the repository"
+            }
+            val versions = entry.versionEntries()
+            require(versions.isNotEmpty()) { "Plugin ${entry.id} has no published versions" }
+            require(versions.map { it.version }.distinct().size == versions.size) {
+                "Plugin ${entry.id} has duplicate version history entries"
+            }
+            versions.forEach { version ->
+                require(isValidSourcePluginVersion(version.version)) {
+                    "Plugin ${entry.id} has invalid version ${version.version}"
+                }
+                require(version.manifest.isRepositoryReference()) {
+                    "Plugin ${entry.id} has an unsafe historical manifest path"
+                }
             }
         }
         return SourcePluginIndexFetchResult(
@@ -70,10 +86,12 @@ class SourcePluginRepositoryClient(
 
     suspend fun fetchManifest(entry: SourcePluginIndexEntry): SourcePluginManifest {
         require(entry.id.isNotBlank()) { "Plugin id must not be blank" }
-        require(entry.manifest.isSafeRepositoryPath()) {
+        require(entry.manifest.isRepositoryReference()) {
             "Manifest path must be relative and must not escape the repository"
         }
-        val manifest = parse<SourcePluginManifest>(get(entry.manifest).bodyAsText())
+        val manifestReference = resolveUrl(entry.manifest)
+        val manifest = parse<SourcePluginManifest>(get(manifestReference).bodyAsText())
+            .withResolvedArtifactUrls(manifestReference)
         validateManifest(entry, manifest)
         return manifest
     }
@@ -114,6 +132,9 @@ class SourcePluginRepositoryClient(
         require(manifest.id.isNotBlank()) { "Manifest id must not be blank" }
         require(manifest.id.isSafePluginId()) { "Invalid plugin id: ${manifest.id}" }
         require(manifest.version.isNotBlank()) { "Plugin ${manifest.id} has no version" }
+        require(isValidSourcePluginVersion(manifest.version)) {
+            "Plugin ${manifest.id} has invalid version ${manifest.version}"
+        }
         require(manifest.entryClass.isNotBlank()) { "Manifest entryClass must not be blank" }
         require(manifest.website.isHttpsUrl()) { "Plugin ${manifest.id} website must use HTTPS" }
         manifest.icon?.let { require(it.isHttpsUrl()) { "Plugin ${manifest.id} icon must use HTTPS" } }
@@ -152,10 +173,13 @@ class SourcePluginRepositoryClient(
             }
             val configuredPath = baseUrlObject.encodedPath.trimEnd('/')
             val requestedPath = url.encodedPath
+            val immutableRepositoryPath = "/${SourcePluginRepositoryDefaults.owner}/" +
+                "${SourcePluginRepositoryDefaults.repository}/"
             require(
                 configuredPath.isEmpty() ||
                     requestedPath == configuredPath ||
-                    requestedPath.startsWith("$configuredPath/"),
+                    requestedPath.startsWith("$configuredPath/") ||
+                    (url.host == "raw.githubusercontent.com" && requestedPath.startsWith(immutableRepositoryPath)),
             ) {
                 "Repository URL path is outside the configured repository"
             }
@@ -165,6 +189,21 @@ class SourcePluginRepositoryClient(
             "Repository path must be relative and must not escape the repository"
         }
         return "${baseUrl.trimEnd('/')}/${pathOrUrl.trimStart('/')}"
+    }
+
+    private fun SourcePluginManifest.withResolvedArtifactUrls(manifestUrl: String): SourcePluginManifest {
+        val repositoryRoot = manifestUrl.substringBefore("/source/plugins/", manifestUrl) + "/source/plugins/"
+        return copy(
+            artifacts = artifacts.mapValues { (_, artifact) ->
+                if (artifact.url.contains("://")) {
+                    artifact
+                } else if (manifestUrl.contains("/source/plugins/")) {
+                    artifact.copy(url = "$repositoryRoot${artifact.url.trimStart('/')}")
+                } else {
+                    artifact
+                }
+            },
+        )
     }
 }
 
@@ -177,6 +216,18 @@ data class SourcePluginIndexFetchResult(
 private fun Map<String, String>.headerValue(name: String): String? = entries
     .firstOrNull { it.key.equals(name, ignoreCase = true) }
     ?.value
+
+private fun String.isRepositoryReference(): Boolean =
+    if (contains("://")) {
+        runCatching { Url(this) }.getOrNull()?.let { url ->
+            url.protocol.name == "https" && url.host == "raw.githubusercontent.com" &&
+                url.encodedPath.startsWith(
+                    "/${SourcePluginRepositoryDefaults.owner}/${SourcePluginRepositoryDefaults.repository}/",
+                )
+        } == true
+    } else {
+        isSafeRepositoryPath()
+    }
 
 private fun String.isSafeRepositoryPath(): Boolean {
     if (isBlank() || startsWith('/') || startsWith('\\') || contains(':')) return false

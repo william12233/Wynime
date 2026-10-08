@@ -59,14 +59,17 @@ internal data class SourceTitleMatch(
 )
 
 /**
- * Builds a bounded set of simplified queries for sites with inconsistent title indexing.
- * The base title is first because several sites index seasonal entries under the franchise name.
+ * Builds a bounded set of outbound queries for sites with inconsistent title indexing.
+ * The original spelling is kept before its simplified equivalent so a traditional-only
+ * index cannot be made unreachable by the normalizer.
  */
 internal fun sourceSearchQueryVariants(query: String): List<String> {
+    val original = normalizeSourceSurface(query)
     val simplified = normalizeSourceQuery(query)
-    if (simplified.isBlank()) return listOf(query)
+    if (original.isBlank() && simplified.isBlank()) return listOf(query)
 
     val title = sourceTitleMatch(simplified)
+    val originalTitle = parseSourceTitleVariant(original)
     val result = linkedSetOf<String>()
     fun add(value: String) {
         value.trim().takeIf(String::isNotBlank)?.let(result::add)
@@ -74,11 +77,17 @@ internal fun sourceSearchQueryVariants(query: String): List<String> {
 
     val variant = title.variant
     if (variant == null) {
+        add(original)
         add(simplified)
     } else {
+        val originalBaseTitle = originalTitle?.baseTitle ?: original
+        add(originalBaseTitle)
         add(title.baseTitle)
+        add(original)
         add(simplified)
+        add("${originalBaseTitle}第${variant.number}${variant.kind.suffix()}")
         add("${title.baseTitle}第${variant.number}${variant.kind.suffix()}")
+        add("${originalBaseTitle}${variant.number}")
         add("${title.baseTitle}${variant.number}")
     }
     return result.toList()
@@ -187,12 +196,15 @@ private fun parseSourceTitleNumber(value: String): Int? = value.toIntOrNull() ?:
     (total + number).takeIf { it > 0 }
 }
 
-private fun normalizeSourceQuery(value: String): String =
-    traditionalToSimplifiedChinese(value)
+private fun normalizeSourceSurface(value: String): String =
+    value
         .lowercase()
         .replace("：", ":")
         .replace(Regex("\\s+"), " ")
         .trim()
+
+private fun normalizeSourceQuery(value: String): String =
+    traditionalToSimplifiedChinese(normalizeSourceSurface(value))
 
 private fun isCjkCharacter(character: Char): Boolean =
     character in '\u3400'..'\u9fff'

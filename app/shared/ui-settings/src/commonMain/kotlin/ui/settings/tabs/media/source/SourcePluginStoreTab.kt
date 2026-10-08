@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wynime.app.domain.sourceplugin.SourcePluginRuntimeState
 import com.wynime.app.domain.sourceplugin.compareSourcePluginVersions
+import com.wynime.app.domain.sourceplugin.versionEntries
 import com.wynime.app.ui.foundation.AsyncImage
 import com.wynime.app.ui.settings.framework.components.SettingsScope
 import com.wynime.app.ui.settings.framework.components.TextItem
@@ -91,6 +92,10 @@ fun SettingsScope.SourcePluginStoreTab(state: SourcePluginStoreState) {
                     Column {
                         Text("${entry.id} · v${entry.version}")
                         if (entry.description.isNotBlank()) Text(entry.description)
+                        val history = entry.versionEntries().filterNot { it.version == entry.version }
+                        if (history.isNotEmpty()) {
+                            Text("歷史版本：${history.joinToString { it.version }}")
+                        }
                         Text(
                             "網站：${entry.website}",
                             maxLines = 1,
@@ -125,6 +130,20 @@ fun SettingsScope.SourcePluginStoreTab(state: SourcePluginStoreState) {
                     }
                 },
             )
+            entry.versionEntries()
+                .filterNot { it.version == entry.version }
+                .forEach { historical ->
+                    TextItem(
+                        title = { Text("${entry.displayName} ${historical.version}") },
+                        description = { Text("安裝或降級至此歷史版本") },
+                        action = {
+                            TextButton(
+                                onClick = { state.installVersion(entry, historical.version) },
+                                enabled = !busy && current?.installed?.version != historical.version,
+                            ) { Text("切換") }
+                        },
+                    )
+                }
         }
     }
 

@@ -15,7 +15,6 @@ import com.wynime.app.data.repository.user.TokenSave
 import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ChineseSearchKeywordTest {
@@ -44,7 +43,7 @@ class ChineseSearchKeywordTest {
     }
 
     @Test
-    fun `Bangumi request uses converted keyword`() = runBlocking {
+    fun `Bangumi request falls back from the original keyword to the converted keyword`() = runBlocking {
         val requests = mutableListOf<HttpRequestData>()
         val httpClient = HttpClient(MockEngine { request ->
             requests += request
@@ -65,9 +64,10 @@ class ChineseSearchKeywordTest {
                 ),
             ).searchSubjects("我獨自升級", limit = 20)
 
-            val body = requests.single().body.toByteArray().decodeToString()
-            assertTrue(body.contains("\"keyword\":\"我独自升级\""))
-            assertFalse(body.contains("我獨自升級"))
+            val bodies = requests.map { it.body.toByteArray().decodeToString() }
+            assertTrue(bodies.first().contains("\"keyword\":\"我獨自升級\""))
+            assertTrue(bodies.last().contains("\"keyword\":\"我独自升级\""))
+            assertEquals(2, requests.size)
         } finally {
             httpClient.close()
         }

@@ -147,7 +147,7 @@ class SourcePluginInstallerTest {
         assertFalse(installed.enabled)
         assertEquals(3, repository.snapshot().plugins.single().manifest.pluginApiVersion)
         assertTrue(File(installed.artifactPath).isFile)
-        assertFalse(File(previous.artifactPath).exists())
+        assertTrue(File(previous.artifactPath).isFile)
     }
 
     @Test

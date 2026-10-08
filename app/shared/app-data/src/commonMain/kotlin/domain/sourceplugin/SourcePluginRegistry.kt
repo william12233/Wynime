@@ -14,6 +14,8 @@ import com.wynime.source.plugin.api.SourcePluginMetadata
 import com.wynime.source.plugin.api.SourceResolveRequest
 import com.wynime.source.plugin.api.ResolvedMedia
 import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.isRegularFile
+import com.wynime.utils.io.exists
 import com.wynime.utils.logging.error
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
@@ -85,19 +87,7 @@ class SourcePluginRegistry(
                 loadedCandidate.close()
             }
         }
-        val packages = bundledPackages
-        val manifest = if (packages != null && entry.id in packages.pluginIds) {
-            packages.manifest(entry.id).takeIf {
-                it.version == entry.version && entry.manifest == "manifests/${it.id}.json"
-            }
-        } else null
-        val installed = if (manifest != null) {
-            installer.installBundled(manifest, { artifact -> packages!!.artifact(entry.id, artifact) }) { candidate ->
-                loadUnregistered(candidate).close()
-            }
-        } else {
-            installer.install(entry, validate)
-        }
+        val installed = installer.install(entry, validate)
         loadInstalled()
         return installed
     }
@@ -189,7 +179,9 @@ class SourcePluginRegistry(
     private suspend fun migrateBundledPlugins() {
         val packages = bundledPackages ?: return
         for (installed in installedRepository.snapshot().plugins) {
-            if (installed.manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION) continue
+            if (installed.manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION &&
+                Path(installed.artifactPath).inSystem.let { it.exists() && it.isRegularFile() }
+            ) continue
             if (installed.id !in packages.pluginIds) continue
             try {
                 val manifest = packages.manifest(installed.id)

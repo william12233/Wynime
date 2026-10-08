@@ -61,7 +61,7 @@ class SourcePluginRepositoryClientTest {
         val newerSchema = FakeSourceHttpClient(
             mapOf(
                 "https://repo.example/index.json" to ArrayDeque(
-                    listOf(response("{\"schemaVersion\":2,\"pluginApiVersion\":3,\"plugins\":[]}")),
+                    listOf(response("{\"schemaVersion\":3,\"pluginApiVersion\":3,\"plugins\":[]}")),
                 ),
             ),
         )
@@ -99,6 +99,34 @@ class SourcePluginRepositoryClientTest {
         assertFailsWith<IllegalArgumentException> {
             SourcePluginRepositoryClient(duplicate, baseUrl = "https://repo.example").fetchIndex()
         }
+    }
+
+    @Test
+    fun `historical manifest can be pinned to an immutable GitHub ref`() = runTest {
+        val entry = validEntry(
+            version = "1.0.1",
+            manifest = "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/demo.json",
+        )
+        val manifestUrl = entry.manifest
+        val http = FakeSourceHttpClient(
+            mapOf(
+                manifestUrl to ArrayDeque(
+                    listOf(response(validManifestJson(version = "1.0.1"))),
+                ),
+                "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/artifacts/demo.jar" to
+                    ArrayDeque(emptyList()),
+            ),
+        )
+
+        val manifest = SourcePluginRepositoryClient(
+            http,
+            baseUrl = "https://raw.githubusercontent.com/william12233/Wynime/main/source/plugins",
+        )
+            .fetchManifest(entry)
+
+        assertEquals("1.0.1", manifest.version)
+        assertTrue(manifest.artifacts.getValue(com.wynime.source.plugin.api.SourcePluginPlatform.DESKTOP).url
+            .startsWith("https://raw.githubusercontent.com"))
     }
 
     @Test
@@ -203,11 +231,12 @@ class SourcePluginRepositoryClientTest {
 
     private fun validManifestJson(
         id: String = "demo",
+        version: String = "1.0.0",
         artifactUrl: String = "artifacts/demo.jar",
         icon: String? = null,
     ): String =
         """
-        {"id":"$id","name":"Demo","version":"1.0.0","pluginApiVersion":3,
+        {"id":"$id","name":"Demo","version":"$version","pluginApiVersion":3,
          "minHostVersion":"1.0.0","entryClass":"demo.Entry","website":"https://demo.example",
          ${icon?.let { "\"icon\":\"$it\"," } ?: ""}
          "platforms":["desktop"],"artifacts":{"desktop":{"url":"$artifactUrl","sha256":"${"0".repeat(64)}","format":"jar"}}}

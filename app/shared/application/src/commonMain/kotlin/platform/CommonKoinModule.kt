@@ -320,6 +320,7 @@ private fun KoinApplication.otherModules(
             httpClientProvider = get(),
             platform = currentSourcePluginPlatform,
             hostVersion = currentWynimeBuildConfig.versionName,
+            webSessionManager = get(),
             cookieJar = get(),
             identityRegistry = get(),
         )

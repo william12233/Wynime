@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import com.wynime.source.plugin.api.SourcePluginMetadata
 import com.wynime.source.plugin.api.SourcePluginPlatform
 
-const val SOURCE_PLUGIN_REPOSITORY_SCHEMA_VERSION = 1
+const val SOURCE_PLUGIN_REPOSITORY_SCHEMA_VERSION = 2
 const val SOURCE_PLUGIN_API_VERSION = 3
 
 object SourcePluginRepositoryDefaults {
@@ -39,7 +39,27 @@ data class SourcePluginIndexEntry(
     val icon: String? = null,
     val platforms: Set<SourcePluginPlatform>,
     val manifest: String,
+    val history: List<SourcePluginVersionEntry> = emptyList(),
 )
+
+@Serializable
+data class SourcePluginVersionEntry(
+    val version: String,
+    val manifest: String,
+)
+
+fun SourcePluginIndexEntry.versionEntries(): List<SourcePluginVersionEntry> =
+    (listOf(SourcePluginVersionEntry(version, manifest)) + history)
+        .distinctBy { it.version }
+
+fun SourcePluginIndexEntry.forVersion(version: String): SourcePluginIndexEntry? =
+    versionEntries().firstOrNull { it.version == version }?.let { selected ->
+        copy(
+            version = selected.version,
+            manifest = selected.manifest,
+            history = emptyList(),
+        )
+    }
 
 @Serializable
 data class SourcePluginManifest(
@@ -108,17 +128,63 @@ class SourcePluginRepositoryException(message: String, cause: Throwable? = null)
 class UnsupportedSourcePluginException(message: String) : Exception(message)
 
 fun compareSourcePluginVersions(left: String, right: String): Int {
-    val leftParts = left.split('.', '-', '_')
-    val rightParts = right.split('.', '-', '_')
-    val size = maxOf(leftParts.size, rightParts.size)
-    for (index in 0 until size) {
-        val leftPart = leftParts.getOrNull(index).orEmpty()
-        val rightPart = rightParts.getOrNull(index).orEmpty()
-        val numberComparison = (leftPart.toIntOrNull() ?: Int.MIN_VALUE)
-            .compareTo(rightPart.toIntOrNull() ?: Int.MIN_VALUE)
-        if (numberComparison != 0) return numberComparison
-        val textComparison = leftPart.compareTo(rightPart)
-        if (textComparison != 0) return textComparison
+    val leftVersion = parseSourcePluginVersion(left)
+    val rightVersion = parseSourcePluginVersion(right)
+    val coreComparison = compareValuesBy(
+        leftVersion,
+        rightVersion,
+        { it.major },
+        { it.minor },
+        { it.patch },
+    )
+    if (coreComparison != 0) return coreComparison
+
+    val leftPreRelease = leftVersion.preRelease
+    val rightPreRelease = rightVersion.preRelease
+    if (leftPreRelease == null && rightPreRelease == null) return 0
+    if (leftPreRelease == null) return 1
+    if (rightPreRelease == null) return -1
+
+    for (index in 0 until maxOf(leftPreRelease.size, rightPreRelease.size)) {
+        val leftPart = leftPreRelease.getOrNull(index) ?: return -1
+        val rightPart = rightPreRelease.getOrNull(index) ?: return 1
+        if (leftPart == rightPart) continue
+        val leftNumber = leftPart.toIntOrNull()
+        val rightNumber = rightPart.toIntOrNull()
+        return when {
+            leftNumber != null && rightNumber != null -> leftNumber.compareTo(rightNumber)
+            leftNumber != null -> -1
+            rightNumber != null -> 1
+            else -> leftPart.compareTo(rightPart)
+        }
     }
     return 0
+}
+
+fun isValidSourcePluginVersion(value: String): Boolean = runCatching {
+    parseSourcePluginVersion(value)
+}.isSuccess
+
+private data class ParsedSourcePluginVersion(
+    val major: Int,
+    val minor: Int,
+    val patch: Int,
+    val preRelease: List<String>?,
+)
+
+private fun parseSourcePluginVersion(value: String): ParsedSourcePluginVersion {
+    val match = Regex(
+        "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+    ).matchEntire(value) ?: throw IllegalArgumentException("Invalid semantic version: $value")
+    val preRelease = match.groupValues[4].takeIf(String::isNotEmpty)?.split('.')?.also { parts ->
+        require(parts.none { it.length > 1 && it.startsWith('0') }) {
+            "Numeric prerelease identifiers must not contain leading zeroes: $value"
+        }
+    }
+    return ParsedSourcePluginVersion(
+        major = match.groupValues[1].toInt(),
+        minor = match.groupValues[2].toInt(),
+        patch = match.groupValues[3].toInt(),
+        preRelease = preRelease,
+    )
 }

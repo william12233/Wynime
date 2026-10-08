@@ -9,6 +9,7 @@ import java.security.MessageDigest
 import java.util.zip.ZipFile
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
@@ -16,7 +17,49 @@ plugins {
 }
 
 group = "tw.wynime.sources"
-version = "1.0.26"
+
+val pluginIds = listOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus", "dyttzy")
+fun isValidSemanticVersion(value: String): Boolean = Regex(
+    "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+).matches(value)
+
+val pluginVersionsFile = layout.projectDirectory.file("plugin-versions.properties").asFile
+val pluginVersions = Properties().apply {
+    pluginVersionsFile.reader().use(::load)
+}.let { properties ->
+    pluginIds.associateWith { pluginId ->
+        properties.getProperty(pluginId)?.trim()?.also { version ->
+            require(isValidSemanticVersion(version)) {
+                "Invalid semantic version for plugin $pluginId: $version"
+            }
+        } ?: error("Missing version for plugin $pluginId in $pluginVersionsFile")
+    }
+}
+version = "independent"
+
+val generatedPluginVersionDirectory = layout.buildDirectory.dir("generated/source/pluginVersions/main")
+val generatePluginVersionCatalog = tasks.register("generatePluginVersionCatalog") {
+    inputs.file(pluginVersionsFile)
+    outputs.dir(generatedPluginVersionDirectory)
+    doLast {
+        val sourceFile = generatedPluginVersionDirectory.get().asFile.resolve(
+            "tw/wynime/sources/shared/PluginVersions.kt",
+        )
+        sourceFile.parentFile.mkdirs()
+        sourceFile.writeText(buildString {
+            appendLine("package tw.wynime.sources.shared")
+            appendLine()
+            appendLine("internal fun pluginVersionFor(pluginId: String): String = when (pluginId) {")
+            pluginVersions.forEach { (pluginId, pluginVersion) ->
+                appendLine("    \"$pluginId\" -> \"$pluginVersion\"")
+            }
+            appendLine("    else -> error(\"Unknown source plugin id: ${'$'}pluginId\")")
+            appendLine("}")
+        })
+    }
+}
+
+kotlin.sourceSets.getByName("main").kotlin.srcDir(generatedPluginVersionDirectory)
 
 dependencies {
     compileOnly(project(":source:plugin-api"))
@@ -31,6 +74,7 @@ kotlin {
 }
 
 tasks.withType<KotlinJvmCompile>().configureEach {
+    dependsOn(generatePluginVersionCatalog)
     compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
 }
 
@@ -49,13 +93,12 @@ tasks.register<JavaExec>("sourcePluginLiveSmokeTest") {
     dependsOn(tasks.named("testClasses"))
     classpath = sourceSets.test.get().runtimeClasspath
     mainClass.set("tw.wynime.sources.SourcePluginLiveSmokeTestKt")
-    isIgnoreExitValue = true
+    isIgnoreExitValue = false
 }
 
 val pluginProjectDir = layout.projectDirectory.asFile
 val pluginBuildDir = layout.buildDirectory.get().asFile
 
-val pluginIds = listOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus", "dyttzy")
 val pluginPackageNames = mapOf("2rk" to "rk2")
 
 pluginIds.forEach { pluginId ->
@@ -63,6 +106,7 @@ pluginIds.forEach { pluginId ->
     tasks.register<Jar>(taskName) {
         dependsOn(tasks.named("classes"))
         archiveBaseName.set("source-$pluginId")
+        archiveFileName.set("source-$pluginId-${pluginVersions.getValue(pluginId)}.jar")
         destinationDirectory.set(layout.buildDirectory.dir("plugins"))
         from(sourceSets.main.get().output) {
             include("tw/wynime/sources/shared/**")
@@ -184,6 +228,7 @@ val freshnessDesktopTasks = pluginIds.associateWith { pluginId ->
     tasks.register<Jar>("fresh${pluginId.replaceFirstChar { it.uppercase() }}Plugin") {
         dependsOn(tasks.named("classes"))
         archiveBaseName.set("source-$pluginId")
+        archiveFileName.set("source-$pluginId-${pluginVersions.getValue(pluginId)}.jar")
         destinationDirectory.set(layout.buildDirectory.dir("freshness/desktop"))
         from(sourceSets.main.get().output) {
             include("tw/wynime/sources/shared/**")
@@ -211,7 +256,8 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
             check(Regex("\\\"id\\\"\\s*:\\s*\\\"$pluginId\\\"").containsMatchIn(manifestText)) {
                 "Manifest id mismatch for $pluginId"
             }
-            check(Regex("\\\"version\\\"\\s*:\\s*\\\"1\\.0\\.26\\\"").containsMatchIn(manifestText)) {
+            val expectedVersion = pluginVersions.getValue(pluginId)
+            check(Regex("\\\"version\\\"\\s*:\\s*\\\"${Regex.escape(expectedVersion)}\\\"").containsMatchIn(manifestText)) {
                 "Manifest version mismatch for $pluginId"
             }
             check(Regex("\\\"pluginApiVersion\\\"\\s*:\\s*3").containsMatchIn(manifestText)) {

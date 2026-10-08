@@ -49,7 +49,7 @@ internal abstract class SitePluginBase(
     final override val metadata = SourcePluginMetadata(
         id = id,
         displayName = displayName,
-        version = PLUGIN_VERSION,
+        version = pluginVersionFor(context.pluginId),
         website = rootUrl,
         description = description,
         iconUrl = iconUrl,
@@ -565,7 +565,6 @@ internal fun isMediaUrl(url: String): Boolean = Regex(
 
 internal fun isHttpUrl(url: String): Boolean = url.startsWith("https://") || url.startsWith("http://")
 
-internal const val PLUGIN_VERSION = "1.0.26"
 internal const val PLUGIN_API_VERSION = 3
 internal const val MIN_HOST_VERSION = "0.1.3"
 internal val SUPPORTED_PLATFORMS = setOf(

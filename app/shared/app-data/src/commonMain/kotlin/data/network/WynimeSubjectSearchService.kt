@@ -32,46 +32,60 @@ class WynimeSubjectSearchService(
         filters: SubjectSearchFilters? = null,
         fields: List<SubjectSearchField>? = null,
     ): List<BatchSubjectDetails> = withContext(ioDispatcher) {
-        val result = bangumiApi.request {
-            searchSubjects(
-                bangumiSearchSubjectsRequest = BangumiSearchSubjectsRequest(
-                    keyword = sanitizeKeyword(keyword),
-                    sort = when (sort) {
-                        SearchSort.MATCH -> BangumiSearchSubjectsRequest.Sort.MATCH
-                        SearchSort.RANK -> BangumiSearchSubjectsRequest.Sort.RANK
-                        SearchSort.COLLECTION -> BangumiSearchSubjectsRequest.Sort.HEAT
-                        SearchSort.DATE -> BangumiSearchSubjectsRequest.Sort.MATCH
-                    },
-                    filter = BangumiSearchSubjectsRequestFilter(
-                        type = listOf(BangumiSubjectType.Anime),
-                        tag = filters?.tags,
-                        airDate = filters?.airDates,
-                        rating = filters?.ratings,
-                        rank = filters?.ranks,
-                        nsfw = filters?.nsfw,
-                    ),
-                ),
-                offset = offset,
-                limit = limit,
-            )
+        val sortValue = when (sort) {
+            SearchSort.MATCH -> BangumiSearchSubjectsRequest.Sort.MATCH
+            SearchSort.RANK -> BangumiSearchSubjectsRequest.Sort.RANK
+            SearchSort.COLLECTION -> BangumiSearchSubjectsRequest.Sort.HEAT
+            SearchSort.DATE -> BangumiSearchSubjectsRequest.Sort.MATCH
         }
-
-        result.data.orEmpty().map { search -> search.toBatchSubjectDetails() }
+        val candidates = searchKeywordVariants(keyword)
+        for ((index, candidate) in candidates.withIndex()) {
+            val result = bangumiApi.request {
+                searchSubjects(
+                    bangumiSearchSubjectsRequest = BangumiSearchSubjectsRequest(
+                        keyword = candidate,
+                        sort = sortValue,
+                        filter = BangumiSearchSubjectsRequestFilter(
+                            type = listOf(BangumiSubjectType.Anime),
+                            tag = filters?.tags,
+                            airDate = filters?.airDates,
+                            rating = filters?.ratings,
+                            rank = filters?.ranks,
+                            nsfw = filters?.nsfw,
+                        ),
+                    ),
+                    offset = offset,
+                    limit = limit,
+                )
+            }
+            val matches = result.data.orEmpty()
+            if (matches.isNotEmpty() || index == candidates.lastIndex) {
+                return@withContext matches.map { search -> search.toBatchSubjectDetails() }
+            }
+        }
+        emptyList()
     }
 
     companion object {
         fun sanitizeKeyword(keyword: String): String {
-            val sanitized = buildString(keyword.length) {
-                for (c in keyword) {
-                    if (MediaListFilters.charsToDeleteForSearch.contains(c.code)) {
-                        append(' ')
-                    } else {
-                        append(c)
-                    }
+            return traditionalToSimplifiedChinese(sanitizeSearchPunctuation(keyword))
+        }
+
+        fun searchKeywordVariants(keyword: String): List<String> {
+            val sanitized = sanitizeSearchPunctuation(keyword)
+            return linkedSetOf(sanitized, traditionalToSimplifiedChinese(sanitized))
+                .filter(String::isNotBlank)
+        }
+
+        private fun sanitizeSearchPunctuation(keyword: String): String = buildString(keyword.length) {
+            for (c in keyword) {
+                if (MediaListFilters.charsToDeleteForSearch.contains(c.code)) {
+                    append(' ')
+                } else {
+                    append(c)
                 }
             }
-            return traditionalToSimplifiedChinese(sanitized)
-        }
+        }.replace(Regex("\\s+"), " ").trim()
     }
 
     private fun com.wynime.datasources.bangumi.models.BangumiSearchSubjects200ResponseDataInner

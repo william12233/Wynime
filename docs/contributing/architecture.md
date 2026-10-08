@@ -16,7 +16,7 @@ Wynime 的 Android 手機／平板與 Windows 入口共享 Kotlin 業務及 Comp
 | `cloud-client` | 從 OpenAPI 生成的 Wynime Cloud 客戶端 |
 | `datasource` | Bangumi、媒體來源抽象及媒體庫整合 |
 | `source/plugin-api` | v3 外掛契約與 ABI 快照 |
-| `source/plugins` | 七個來源、manifest、JVM／Dex 套件 |
+| `source/plugins` | 八個來源、manifest、JVM／Dex 套件 |
 | `app/dev-preview` | 播放器開發預覽與測試播放器相依 |
 | `utils` | IO、HTTP、序列化、日誌與測試基礎工具 |
 
@@ -30,4 +30,4 @@ App 建立帳號隔離的 Worker 操作並開啟 Bangumi 條目網頁。返回 A
 
 Android applicationId、資料庫版本與檔名、Room 歷史 schema、DataStore 欄位、JSON discriminator、來源 ID、Windows 資料目錄與登入回呼保持可讀取既有資料。舊登入／合併路由可反序列化並轉至現有入口。
 
-七個已知舊外掛按來源 ID 交易式遷移，驗證候選套件後才替換，保留啟用選擇與來源偏好。失敗保留舊安裝供重試；其他舊 ABI 套件不載入。
+八個已知舊外掛按來源 ID 交易式遷移，驗證候選套件後才替換，保留啟用選擇與來源偏好。新安裝只從官方索引取得插件，App 內置套件只供既有安裝遷移；版本目錄保留舊 artifact 供降級／回復。失敗保留舊安裝供重試；其他舊 ABI 套件不載入。

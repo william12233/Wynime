@@ -6,9 +6,10 @@ import kotlin.test.assertTrue
 
 class SourceSearchQueryTest {
     @Test
-    fun `traditional source query sends only simplified outbound query`() {
+    fun `traditional source query keeps original and simplified outbound queries`() {
         assertEquals(
             listOf(
+                "遭到流放的轉生重騎士憑藉遊戲知識大開無雙",
                 "遭到流放的转生重骑士凭借游戏知识大开无双",
             ),
             sourceSearchQueryVariants("遭到流放的轉生重騎士憑藉遊戲知識大開無雙"),
@@ -19,9 +20,13 @@ class SourceSearchQueryTest {
     fun `seasonal query prioritizes base and includes equivalent season forms`() {
         assertEquals(
             listOf(
+                "大王饒命",
                 "大王饶命",
+                "大王饒命第三季",
                 "大王饶命第三季",
+                "大王饒命第3季",
                 "大王饶命第3季",
+                "大王饒命3",
                 "大王饶命3",
             ),
             sourceSearchQueryVariants("大王饒命第三季"),

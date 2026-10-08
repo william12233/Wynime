@@ -38,12 +38,27 @@ jobs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         GIT_TAG: ${{ steps.step-1.outputs.tag }}
         TAG_VERSION: ${{ steps.step-2.outputs.substring }}
-      run: "set -euo pipefail\n\nexport RELEASE_NOTES=\"Wynime ${{ steps.step-2.outputs.substring }} release.\"\n\npython3\
-        \ - <<'PY' > \"$RUNNER_TEMP/release-body.md\"\nimport os\nfrom pathlib import Path\n\nbody = Path(\"ci-helper/release-template.md\"\
-        ).read_text()\nreplacements = {\n    \"$RELEASE_NOTES\": os.environ[\"RELEASE_NOTES\"],\n    \"$GIT_TAG\": os.environ[\"\
-        GIT_TAG\"],\n    \"$TAG_VERSION\": os.environ[\"TAG_VERSION\"],\n}\nfor key, value in replacements.items():\n    body\
-        \ = body.replace(key, value)\nprint(body, end=\"\")\nPY\n\necho \"result<<RELEASE_BODY_EOF\" >> \"$GITHUB_OUTPUT\"\ncat \"$RUNNER_TEMP/release-body.md\"\
-        \ >> \"$GITHUB_OUTPUT\"\necho \"RELEASE_BODY_EOF\" >> \"$GITHUB_OUTPUT\""
+      run: |
+        set -euo pipefail
+
+        export RELEASE_NOTES="Wynime ${{ steps.step-2.outputs.substring }} release."
+
+        python3 - <<'PY' > "$RUNNER_TEMP/release-body.md"
+        import os
+        from pathlib import Path
+
+        body = Path("ci-helper/release-template.md").read_text()
+        replacements = {
+            "$RELEASE_NOTES": os.environ["RELEASE_NOTES"],
+            "$GIT_TAG": os.environ["GIT_TAG"],
+            "$TAG_VERSION": os.environ["TAG_VERSION"],
+        }
+        for key, value in replacements.items():
+            body = body.replace(key, value)
+        print(body, end="")
+        PY
+
+        echo "body_path=$RUNNER_TEMP/release-body.md" >> "$GITHUB_OUTPUT"
     - id: step-4
       name: Validate formal release signing configuration
       env:
@@ -58,7 +73,7 @@ jobs:
       name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        body: ${{ steps.step-3.outputs.result }}
+        body_path: ${{ steps.step-3.outputs.body_path }}
         name: ${{ steps.step-2.outputs.substring }}
         tag_name: ${{ steps.step-1.outputs.tag }}
         draft: 'false'

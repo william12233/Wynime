@@ -568,11 +568,11 @@ jobs:
     - id: step-15
       name: Prepare signing key
       env:
-        BASE64_CONTENT: ${{ secrets.SIGNING_RELEASE_STOREFILE }}
+        BASE64_CONTENT: ${{ secrets.SIGNING_RELEASE_STOREFILE || secrets.ANDROID_KEYSTORE_BASE64 }}
         FILE_PATH: ./android_signing_key
-        SIGNING_RELEASE_STOREPASSWORD: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}
-        SIGNING_RELEASE_KEYALIAS: ${{ secrets.SIGNING_RELEASE_KEYALIAS }}
-        SIGNING_RELEASE_KEYPASSWORD: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}
+        SIGNING_RELEASE_STOREPASSWORD: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+        SIGNING_RELEASE_KEYALIAS: ${{ secrets.SIGNING_RELEASE_KEYALIAS || secrets.ANDROID_KEY_ALIAS }}
+        SIGNING_RELEASE_KEYPASSWORD: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD || secrets.ANDROID_KEY_PASSWORD }}
       continue-on-error: false
       shell: bash
       run: "set -euo pipefail\nif [ -z \"${BASE64_CONTENT:-}\" ] || [ -z \"${SIGNING_RELEASE_STOREPASSWORD:-}\" ] || [ -z\
@@ -741,9 +741,9 @@ jobs:
       name: 'Build Android Release APKs (Attempt #1)'
       env:
         signing_release_storeFileFromRoot: ${{ steps.step-15.outputs.filePath }}
-        signing_release_storePassword: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}
-        signing_release_keyAlias: ${{ secrets.SIGNING_RELEASE_KEYALIAS }}
-        signing_release_keyPassword: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}
+        signing_release_storePassword: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+        signing_release_keyAlias: ${{ secrets.SIGNING_RELEASE_KEYALIAS || secrets.ANDROID_KEY_ALIAS }}
+        signing_release_keyPassword: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD || secrets.ANDROID_KEY_PASSWORD }}
       continue-on-error: true
       timeout-minutes: 180
       run: ./gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g
@@ -754,9 +754,9 @@ jobs:
       name: 'Build Android Release APKs (Attempt #2)'
       env:
         signing_release_storeFileFromRoot: ${{ steps.step-15.outputs.filePath }}
-        signing_release_storePassword: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD }}
-        signing_release_keyAlias: ${{ secrets.SIGNING_RELEASE_KEYALIAS }}
-        signing_release_keyPassword: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD }}
+        signing_release_storePassword: ${{ secrets.SIGNING_RELEASE_STOREPASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
+        signing_release_keyAlias: ${{ secrets.SIGNING_RELEASE_KEYALIAS || secrets.ANDROID_KEY_ALIAS }}
+        signing_release_keyPassword: ${{ secrets.SIGNING_RELEASE_KEYPASSWORD || secrets.ANDROID_KEY_PASSWORD }}
       continue-on-error: false
       timeout-minutes: 180
       run: ./gradlew assembleDefaultRelease "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx8g

@@ -39,7 +39,7 @@ open class SubjectBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun getSubjectComments(subjectID: kotlin.Int, type: BangumiNextCollectionType? = null, limit: kotlin.Int? = 20, offset: kotlin.Int? = 0): HttpResponse<BangumiNextGetSubjectComments200Response> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody =
             io.ktor.client.utils.EmptyContent
@@ -55,7 +55,7 @@ open class SubjectBangumiNextApi : ApiClient {
             "/p1/subjects/{subjectID}/comments".replace("{" + "subjectID" + "}", "$subjectID"),
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return request(

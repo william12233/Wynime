@@ -42,7 +42,7 @@ open class EpisodeBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun createEpisodeComment(episodeID: kotlin.Int, bangumiNextCreateEpisodeCommentRequest: BangumiNextCreateEpisodeCommentRequest? = null): HttpResponse<BangumiNextCreateEpisodeComment200Response> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody = bangumiNextCreateEpisodeCommentRequest
 
@@ -54,7 +54,7 @@ open class EpisodeBangumiNextApi : ApiClient {
             "/p1/episodes/{episodeID}/comments".replace("{" + "episodeID" + "}", "$episodeID"),
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return jsonRequest(
@@ -67,7 +67,7 @@ open class EpisodeBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun deleteEpisodeComment(commentID: kotlin.Int): HttpResponse<kotlin.String> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody =
             io.ktor.client.utils.EmptyContent
@@ -80,7 +80,7 @@ open class EpisodeBangumiNextApi : ApiClient {
             "/p1/episodes/-/comments/{commentID}".replace("{" + "commentID" + "}", "$commentID"),
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return request(
@@ -93,7 +93,7 @@ open class EpisodeBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun getEpisode(episodeID: kotlin.Int): HttpResponse<BangumiNextEpisode> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody =
             io.ktor.client.utils.EmptyContent
@@ -106,7 +106,7 @@ open class EpisodeBangumiNextApi : ApiClient {
             "/p1/episodes/{episodeID}".replace("{" + "episodeID" + "}", "$episodeID"),
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return request(
@@ -155,7 +155,7 @@ open class EpisodeBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun updateEpisodeComment(commentID: kotlin.Int, bangumiNextUpdateContent: BangumiNextUpdateContent? = null): HttpResponse<kotlin.String> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody = bangumiNextUpdateContent
 
@@ -167,7 +167,7 @@ open class EpisodeBangumiNextApi : ApiClient {
             "/p1/episodes/-/comments/{commentID}".replace("{" + "commentID" + "}", "$commentID"),
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return jsonRequest(

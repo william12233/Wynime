@@ -42,7 +42,7 @@ open class CollectionBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun getMySubjectCollections(subjectType: BangumiNextSubjectType? = null, type: BangumiNextCollectionType? = null, since: kotlin.Int? = null, limit: kotlin.Int? = 20, offset: kotlin.Int? = 0): HttpResponse<BangumiNextGetMySubjectCollections200Response> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody =
             io.ktor.client.utils.EmptyContent
@@ -60,7 +60,7 @@ open class CollectionBangumiNextApi : ApiClient {
             "/p1/collections/subjects",
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return request(
@@ -73,7 +73,7 @@ open class CollectionBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun updateSubjectCollection(subjectID: kotlin.Int, bangumiNextCollectSubject: BangumiNextCollectSubject? = null): HttpResponse<kotlin.String> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody = bangumiNextCollectSubject
 
@@ -85,7 +85,7 @@ open class CollectionBangumiNextApi : ApiClient {
             "/p1/collections/subjects/{subjectID}".replace("{" + "subjectID" + "}", "$subjectID"),
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return jsonRequest(
@@ -98,7 +98,7 @@ open class CollectionBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun updateSubjectProgress(subjectID: kotlin.Int, bangumiNextUpdateSubjectProgress: BangumiNextUpdateSubjectProgress? = null): HttpResponse<kotlin.String> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody = bangumiNextUpdateSubjectProgress
 
@@ -110,7 +110,7 @@ open class CollectionBangumiNextApi : ApiClient {
             "/p1/collections/subjects/{subjectID}".replace("{" + "subjectID" + "}", "$subjectID"),
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return jsonRequest(

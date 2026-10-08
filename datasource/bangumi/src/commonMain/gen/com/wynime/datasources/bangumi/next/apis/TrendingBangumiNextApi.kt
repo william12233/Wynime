@@ -39,7 +39,7 @@ open class TrendingBangumiNextApi : ApiClient {
     @Suppress("UNCHECKED_CAST")
     open suspend fun getTrendingSubjects(type: BangumiNextSubjectType, limit: kotlin.Int? = 20, offset: kotlin.Int? = 0): HttpResponse<BangumiNextGetTrendingSubjects200Response> {
 
-        val localVariableAuthNames = listOf<String>()
+        val localVariableAuthNames = listOf<String>("HTTPBearer", "CookiesSession")
 
         val localVariableBody =
             io.ktor.client.utils.EmptyContent
@@ -55,7 +55,7 @@ open class TrendingBangumiNextApi : ApiClient {
             "/p1/trending/subjects",
             query = localVariableQuery,
             headers = localVariableHeaders,
-            requiresAuthentication = false,
+            requiresAuthentication = true,
         )
 
         return request(

@@ -1,5 +1,6 @@
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import org.gradle.api.tasks.Sync
+import org.yaml.snakeyaml.Yaml
 
 plugins {
     id("wynime.kmp-library")
@@ -25,6 +26,10 @@ kotlin {
         implementation(libs.ktor.client.logging)
         implementation(libs.ktor.client.content.negotiation)
         implementation(libs.ktor.serialization.kotlinx.json)
+    }
+    sourceSets.commonTest.dependencies {
+        implementation(libs.kotlinx.coroutines.test)
+        implementation(libs.ktor.client.mock)
     }
     sourceSets.commonMain {
         kotlin.srcDirs(file("src/commonMain/gen"))
@@ -75,7 +80,7 @@ val stripeApiP1 = tasks.register("stripeApiP1") {
     outputs.file(strippedP1File)
 
     doLast {
-        val yaml = org.yaml.snakeyaml.Yaml()
+        val yaml = Yaml()
         val p1ApiObject: Map<String, Any> = inputFile.inputStream().use { yaml.load(it) }
 
         val paths = p1ApiObject["paths"].cast<Map<String, *>>().toMutableMap()
@@ -90,7 +95,6 @@ val stripeApiP1 = tasks.register("stripeApiP1") {
         println("The following paths are kept: ${subjectPaths.keys}")
 
         val components = p1ApiObject["components"].cast<Map<String, *>>().toMutableMap()
-        components.remove("securitySchemes")
         val keepSchemaKeys = listOf(
             "ErrorResponse",
             "UpdateContent",
@@ -136,11 +140,15 @@ val stripeApiP1 = tasks.register("stripeApiP1") {
             }
         }
 
+        val strippedComponents = mutableMapOf<String, Any>("schemas" to keepSchemas)
+        components["securitySchemes"]?.let { securitySchemes ->
+            strippedComponents["securitySchemes"] = securitySchemes
+        }
         val strippedApiObject = mutableMapOf<String, Any>().apply {
             put("openapi", p1ApiObject["openapi"].cast())
             put("info", p1ApiObject["info"].cast())
             put("paths", subjectPaths)
-            put("components", mapOf("schemas" to keepSchemas))
+            put("components", strippedComponents)
         }
 
         strippedP1File.get().asFile.writeText(yaml.dump(strippedApiObject))
@@ -183,6 +191,14 @@ val fixGeneratedOpenApi = tasks.register("fixGeneratedOpenApi") {
     val models =
         layout.buildDirectory.file("$generatedRoot/src/commonMain/kotlin/com/wynime/datasources/bangumi/models/")
             .get().asFile
+    val generatedApiClients = listOf(
+        layout.buildDirectory.file(
+            "$generatedRoot/src/commonMain/kotlin/com/wynime/datasources/bangumi/infrastructure/ApiClient.kt",
+        ).get().asFile,
+        layout.buildDirectory.file(
+            "$generatedRoot/src/commonMain/kotlin/com/wynime/datasources/bangumi/next/infrastructure/ApiClient.kt",
+        ).get().asFile,
+    )
 
     doLast {
         models.resolve("BangumiValue.kt").writeText(
@@ -195,6 +211,31 @@ val fixGeneratedOpenApi = tasks.register("fixGeneratedOpenApi") {
         models.resolve("BangumiEpisodeCollectionType.kt").delete()
         models.resolve("BangumiSubjectCollectionType.kt").delete()
         models.resolve("BangumiSubjectType.kt").delete()
+
+        val oldBearerSetter = listOf(
+            "        val auth = authentications?.values?.firstOrNull { it is HttpBearerAuth } as HttpBearerAuth?",
+            "                ?: throw Exception(\"No Bearer authentication configured\")",
+            "        auth.bearerToken = bearerToken",
+        ).joinToString("\n")
+        val newBearerSetter = listOf(
+            "        val bearerAuths = authentications?.values.orEmpty().filterIsInstance<HttpBearerAuth>()",
+            "        if (bearerAuths.isEmpty()) {",
+            "            throw Exception(\"No Bearer authentication configured\")",
+            "        }",
+            "        bearerAuths.forEach { it.bearerToken = bearerToken }",
+        ).joinToString("\n")
+
+        generatedApiClients.forEach { apiClient ->
+            val source = apiClient.readText().replace("\r\n", "\n")
+            val patched = source.replace(oldBearerSetter, newBearerSetter)
+            check(patched != source) {
+                "Generated Bearer setter pattern was not found in ${apiClient.path}"
+            }
+            check(!patched.contains("firstOrNull { it is HttpBearerAuth }")) {
+                "Generated Bearer setter still selects only one authentication in ${apiClient.path}"
+            }
+            apiClient.writeText(patched)
+        }
     }
 }
 

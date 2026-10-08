@@ -5,6 +5,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.request.HttpRequestData
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
@@ -25,7 +26,6 @@ import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class BangumiTrackingSyncApiTest {
     @Test
@@ -136,7 +136,8 @@ class BangumiTrackingSyncApiTest {
             assertEquals(setOf("type"), payload.keys)
             assertEquals("2", payload.getValue("type").jsonPrimitive.content)
             assertFalse(requests.any { it.method == HttpMethod.Delete })
-            assertTrue(requests.any { it.url.encodedPath == "/v0/me" })
+            val meRequest = requests.first { it.url.encodedPath == "/v0/me" }
+            assertEquals("Bearer bgm-test-token", meRequest.headers[HttpHeaders.Authorization])
         } finally {
             client.close()
         }

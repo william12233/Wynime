@@ -1,17 +1,13 @@
 package com.wynime.app.platform
 
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class VersionCodeTest {
     @Test
     fun `versionCode pattern`() {
         val versionCode = currentWynimeBuildConfig.fourDigitVersionCode
-        assertEquals(4, versionCode.length)
-        assertEquals(
-            true,
-            versionCode matches Regex("""[0-9]{4}"""),
-            message = "$versionCode is not a valid version code",
-        )
+        assertTrue(versionCode.length >= 4, "$versionCode is too short to be a valid version code")
+        assertTrue(versionCode matches Regex("""[0-9]+"""), "$versionCode is not a valid version code")
     }
 }

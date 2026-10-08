@@ -88,7 +88,10 @@ tasks.register("uploadAndroidApkQR") {
 }
 
 val zipDesktopDistribution = tasks.register("zipDesktopDistribution", Zip::class) {
-    dependsOn(":app:desktop:createReleaseDistributable")
+    dependsOn(
+        ":app:desktop:createReleaseDistributable",
+        ":app:desktop:copyReleaseLicenseNotices",
+    )
     from(project(":app:desktop").layout.buildDirectory.dir("compose/binaries/main-release/app"))
 
     useFileSystemPermissions()

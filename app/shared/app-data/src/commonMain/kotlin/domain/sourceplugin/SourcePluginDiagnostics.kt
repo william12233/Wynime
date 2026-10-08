@@ -1,6 +1,7 @@
 package com.wynime.app.domain.sourceplugin
 
 import kotlinx.coroutines.CancellationException
+import com.wynime.app.domain.mediasource.web.SolveRequest
 import com.wynime.source.plugin.api.SourceDiagnostics
 import com.wynime.source.plugin.api.SourceResultStatus
 
@@ -9,6 +10,7 @@ class SourcePluginFailure(
     val diagnostics: SourceDiagnostics,
     val retryable: Boolean,
     val requiresVerification: Boolean = false,
+    val verificationRequest: SolveRequest? = null,
     cause: Throwable? = null,
 ) : Exception(
     "Source plugin ${diagnostics.provider} failed with ${status.name} " +

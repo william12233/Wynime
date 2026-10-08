@@ -13,7 +13,7 @@ interface BundledSourcePluginPackages {
 class ResourceSourcePluginPackages(
     private val platform: SourcePluginPlatform,
 ) : BundledSourcePluginPackages {
-    override val pluginIds = setOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus")
+    override val pluginIds = setOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus", "dyttzy")
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun manifest(pluginId: String): SourcePluginManifest {

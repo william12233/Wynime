@@ -22,8 +22,9 @@
 | `2rk` | https://www.2rk.cc/ | `关于我转生变成史莱姆这档事` |
 | `dida` | https://www.didahd.pro/ | `re0` |
 | `dmbus` | https://dmbus.cc/ | `re0` |
+| `dyttzy` | https://caiji.dyttzyapi.com/ | `哪吒之魔童鬧海`（只驗證 `dyttm3u8` 直接 HLS） |
 
-電影天堂／DYTTZY 不在索引、manifest 或已安裝來源範圍。
+DYTTZY 的 `dytt` 分享網址、`vod_down_url` 與非 HTTPS HLS 項目不納入播放或下載；API 搜尋／詳情可作為解析證據，但不能代替實際播放與下載證據。
 
 ## 目前人工證據索引
 
@@ -38,8 +39,9 @@
 | `2rk` | `PASS`（線路 1） | `UNVERIFIED` | `.tmp-final-play-2rk-line1.png` 顯示線路 1 實際畫面。網站 `c.js` 實際列出 `线路1`、`线路2`、`线路3`；線路 2、3 的 `/saber` 回應仍是 31 bytes，ExoPlayer 報 `InvalidKeyException: Unsupported key size: 31 bytes`，因此個別標為上游 `BLOCKED`，沒有假稱三條都能播放。 |
 | `dida` | `PASS` | `PASS` | `.tmp-dida-static-matcher-fix-playing.png` 顯示嘀嗒影視實際畫面與來源卡；`.tmp-dida-download-progress-20s.png` 顯示已取得 `138.6 MB`，完成與刪除後證據為 `.tmp-dida-download-complete.xml`、`.tmp-dida-download-deleted.png`。 |
 | `dmbus` | `PASS` | `PASS` | `.tmp-android-dmbus-slime-playing-fixed-logcat.txt` 有同一番劇的正向播放進度；下載完成、刪除與清理證據為 `.tmp-android-dmbus-download-finished-menu.xml`、`.tmp-android-dmbus-download-after-delete.xml`、`.tmp-android-dmbus-download-clean.png`。 |
+| `dyttzy` | `PASS`（Android；Windows Desktop） | `PASS`（Android；Windows Desktop 下載） | `哪吒闹海` 的 Android host 測試已由 `dyttm3u8` 解析到直接 HLS；`.tmp-android-ui-verify/dyttzy-nezha-playing-1.png` 與 `...-playing-2.png` 顯示播放畫面與進度變化。`.tmp-android-ui-verify/dyttzy-na-zha-download-completed.png` 顯示 `1/1 completed · 450.6 MB` 與「電影天堂 · Finished」；輸出 MP4 為 `450021076` bytes，並由 `.../dyttzy-na-zha-downloaded-playback.png` 確認可播放。刪除後 `.../dyttzy-na-zha-download-cleaned.png` 回到 `0/1 completed`，下載目錄無殘留。Windows Desktop 的商店安裝、`電影天堂`／`dyttm3u8` 播放、`1/1 已完成 · 450.6 MB` 下載與下載檔播放證據記錄於 `.tmp-desktop-ui-verify/dyttzy-desktop-evidence.txt`；桌面輸出檔保留供檢查，未執行刪除清理。 |
 
-目前已有下載完成／刪除後清理證據的來源為 E-ACG、Girigiri、DIDA 與 DMBUS；下載驗收只要求一個來源時，這些證據已超出最低數量。
+目前已有下載完成／刪除後清理證據的來源為 E-ACG、Girigiri、DIDA、DMBUS 與 DYTTZY；下載驗收只要求一個來源時，這些證據已超出最低數量。
 
 ### 多線路結果
 
@@ -53,7 +55,7 @@
 
 ## 圖標與商店 UI 證據
 
-插件 manifest 的 `icon` 使用 HTTPS 網站圖標 URL，host 會驗證 URL 的 scheme、host 與固定 repository path。Android 實機畫面證據：`.tmp-icon-source-management.png` 與 `.tmp-icon-source-management-bottom.png`；UI 階層：`.tmp-icon-source-management.xml` 與 `.tmp-icon-source-management-bottom.xml`。兩張截圖可見七個來源的圖標、版本與網站 URL，包括 DMBUS。
+插件 manifest 的 `icon` 使用 HTTPS 網站圖標 URL，host 會驗證 URL 的 scheme、host 與固定 repository path。DYTTZY 的 Android 商店與設定頁證據為 `.tmp-android-ui-verify/dyttzy-source-plugin-store.png`、`.tmp-android-ui-verify/dyttzy-settings-page.png`；可核對 `電影天堂`、`dyttzy`、版本與啟用狀態。既有來源管理截圖仍保留於 `.tmp-icon-source-management.png` 與 `.tmp-icon-source-management-bottom.png`。
 
 ## 清理規則
 

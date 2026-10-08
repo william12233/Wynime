@@ -65,7 +65,8 @@ internal fun SelfInfoBanner(
                 )
 
                 Column(Modifier.padding(start = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    val (title, subtitle) = state.selfInfo.calculateDisplay()
+                    val (defaultTitle, subtitle) = state.selfInfo.calculateDisplay()
+                    val title = state.loadError?.let { selfInfoLoadErrorText(it) } ?: defaultTitle
                     ProvideTextStyleContentColor(
                         MaterialTheme.typography.titleMedium,
                         MaterialTheme.colorScheme.onSurface,

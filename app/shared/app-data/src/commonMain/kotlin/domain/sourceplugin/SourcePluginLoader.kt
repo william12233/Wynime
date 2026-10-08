@@ -17,8 +17,7 @@ import com.wynime.app.domain.foundation.get
 import com.wynime.app.domain.mediasource.web.PageExpectation
 import com.wynime.app.domain.mediasource.web.SolveRequest
 import com.wynime.app.domain.mediasource.web.WebCaptchaDetector
-import com.wynime.app.domain.mediasource.web.captcha.SolveOutcome
-import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
 import com.wynime.app.domain.mediasource.web.captcha.WebSourceCookieJar
 import com.wynime.app.domain.mediasource.web.captcha.WebSourceIdentityRegistry
 import com.wynime.source.plugin.api.SourceResultStatus
@@ -69,7 +68,6 @@ class SourcePluginContextFactory(
     private val httpClientProvider: HttpClientProvider,
     private val platform: SourcePluginPlatform,
     private val hostVersion: String = currentWynimeBuildConfig.versionName,
-    private val webSessionManager: WebSessionManager? = null,
     private val cookieJar: WebSourceCookieJar = WebSourceCookieJar(),
     private val identityRegistry: WebSourceIdentityRegistry = WebSourceIdentityRegistry(),
 ) {
@@ -87,7 +85,6 @@ class SourcePluginContextFactory(
             http = SourcePluginHttpClient(
                 client = scopedClient,
                 pluginId = pluginId,
-                webSessionManager = webSessionManager,
                 pluginLogger = pluginLogger,
             ),
             logger = pluginLogger,
@@ -106,7 +103,6 @@ private data class DefaultSourcePluginContext(
 class SourcePluginHttpClient(
     private val client: ScopedHttpClient,
     private val pluginId: String? = null,
-    private val webSessionManager: WebSessionManager? = null,
     private val pluginLogger: SourcePluginLogger? = null,
 ) : SourceHttpClient {
     private val logger = logger<SourcePluginHttpClient>()
@@ -188,7 +184,6 @@ class SourcePluginHttpClient(
 
     private suspend fun executeWithChallengeHandling(pluginRequest: SourceHttpRequest): SourceHttpResponse {
         val response = executeOnce(pluginRequest)
-        val sessionManager = webSessionManager
         val challengeKind = WebCaptchaDetector.detect(
             response.finalUrl.ifBlank { pluginRequest.url },
             response.bodyAsText(),
@@ -201,89 +196,17 @@ class SourcePluginHttpClient(
             return response
         }
 
-        if (sessionManager == null) {
-            throw failure(
-                request = pluginRequest,
-                response = response,
-                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
-                retryable = false,
-                requiresVerification = true,
-                challengeKind = challengeKind.name,
-                reason = "shared web session is unavailable",
-            )
-        }
-
-        pluginLogger?.info("偵測到來源網站驗證，準備使用互動網頁工作階段處理")
-        val outcome = try {
-            val request = SolveRequest(
-                mediaSourceId = pluginId.orEmpty(),
-                pageUrl = response.finalUrl.ifBlank { pluginRequest.url },
-                kind = challengeKind,
-                expectation = PageExpectation.AnyContent,
-            )
-            val automatic = sessionManager.solve(request, interactive = false)
-            if (automatic == SolveOutcome.Solved || !sessionManager.isInteractiveSupported) {
-                automatic
-            } else {
-                sessionManager.solve(request, interactive = true)
-            }
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: LinkageError) {
-            throw sourcePluginBoundaryFailure(
-                traceId = pluginRequest.traceId,
-                provider = pluginId,
-                entryPoint = pluginRequest.entryPoint,
-                fallbackStatus = SourceResultStatus.BLOCKED_BY_CHALLENGE,
-                error = error,
-                url = pluginRequest.url,
-                retryable = false,
-            )
-        } catch (error: ClassCastException) {
-            throw sourcePluginBoundaryFailure(
-                traceId = pluginRequest.traceId,
-                provider = pluginId,
-                entryPoint = pluginRequest.entryPoint,
-                fallbackStatus = SourceResultStatus.BLOCKED_BY_CHALLENGE,
-                error = error,
-                url = pluginRequest.url,
-                retryable = false,
-            )
-        } catch (error: Error) {
-            throw error
-        } catch (error: Throwable) {
-            pluginLogger?.warn("來源網站驗證流程失敗: ${error::class.simpleName}")
-            SolveOutcome.Failed(null)
-        }
-        if (outcome != SolveOutcome.Solved) {
-            throw failure(
-                request = pluginRequest,
-                response = response,
-                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
-                retryable = false,
-                requiresVerification = true,
-                challengeKind = challengeKind.name,
-                reason = "web session verification was not completed",
-            )
-        }
-
-        val retried = executeOnce(pluginRequest)
-        val retryChallenge = WebCaptchaDetector.detect(
-            retried.finalUrl.ifBlank { pluginRequest.url },
-            retried.bodyAsText(),
+        pluginLogger?.info("偵測到來源網站驗證，等待使用者點擊「來源需要驗證」")
+        throw failure(
+            request = pluginRequest,
+            response = response,
+            status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+            retryable = false,
+            requiresVerification = true,
+            challengeKind = challengeKind.name,
+            verificationKind = challengeKind,
+            reason = "verification is required before the original request can be retried",
         )
-        if (retryChallenge != null) {
-            throw failure(
-                request = pluginRequest,
-                response = retried,
-                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
-                retryable = false,
-                requiresVerification = true,
-                challengeKind = retryChallenge.name,
-                reason = "challenge remained after the verified retry",
-            )
-        }
-        return validatePluginResponse(pluginRequest, retried)
     }
 
     private fun validatePluginResponse(
@@ -315,26 +238,38 @@ class SourcePluginHttpClient(
         retryable: Boolean,
         requiresVerification: Boolean = false,
         challengeKind: String? = null,
+        verificationKind: WebCaptchaKind? = null,
         reason: String? = null,
-    ): SourcePluginFailure = SourcePluginFailure(
-        status = status,
-        diagnostics = sourceFailureDiagnostics(
-            traceId = request.traceId,
-            provider = pluginId ?: "host",
-            entryPoint = request.entryPoint,
+    ): SourcePluginFailure {
+        val verificationPageUrl = response?.finalUrl?.ifBlank { request.url } ?: request.url
+        return SourcePluginFailure(
             status = status,
-            url = response?.finalUrl?.ifBlank { request.url } ?: request.url,
-            statusCode = response?.statusCode,
-            contentType = response?.contentType,
-            redirectCount = response?.redirectCount,
-            elapsedMillis = response?.elapsedMillis,
-            refererPresent = request.headers.keys.any { it.equals("Referer", ignoreCase = true) },
-            challengeDetected = challengeKind,
-            failureReason = reason,
-        ),
-        retryable = retryable,
-        requiresVerification = requiresVerification,
-    )
+            diagnostics = sourceFailureDiagnostics(
+                traceId = request.traceId,
+                provider = pluginId ?: "host",
+                entryPoint = request.entryPoint,
+                status = status,
+                url = verificationPageUrl,
+                statusCode = response?.statusCode,
+                contentType = response?.contentType,
+                redirectCount = response?.redirectCount,
+                elapsedMillis = response?.elapsedMillis,
+                refererPresent = request.headers.keys.any { it.equals("Referer", ignoreCase = true) },
+                challengeDetected = challengeKind,
+                failureReason = reason,
+            ),
+            retryable = retryable,
+            requiresVerification = requiresVerification,
+            verificationRequest = verificationKind?.let { kind ->
+                SolveRequest(
+                    mediaSourceId = pluginId.orEmpty(),
+                    pageUrl = verificationPageUrl,
+                    kind = kind,
+                    expectation = PageExpectation.AnyContent,
+                )
+            },
+        )
+    }
 
     private suspend fun executeOnce(pluginRequest: SourceHttpRequest): SourceHttpResponse {
         val started = TimeSource.Monotonic.markNow()

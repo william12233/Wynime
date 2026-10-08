@@ -28,6 +28,9 @@ import com.wynime.app.domain.mediasource.web.BlockedException
 import com.wynime.app.domain.mediasource.web.PageExpectation
 import com.wynime.app.domain.mediasource.web.SolveRequest
 import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.app.domain.sourceplugin.SourcePluginFailure
+import com.wynime.app.domain.sourceplugin.sourceFailureDiagnostics
+import com.wynime.source.plugin.api.SourceResultStatus
 import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.paging.SinglePagePagedSource
 import com.wynime.datasources.api.paging.SizedSource
@@ -223,6 +226,40 @@ class MediaFetcherTest {
         assertEquals(5, session.awaitCompletedResults().size)
         assertIs<MediaSourceFetchState.Succeed>(result.state.value)
         assertEquals(2, fetchCalled.get())
+    }
+
+    @Test
+    fun `source plugin verification failure becomes clickable captcha state`() = runTest {
+        val captchaRequest = SolveRequest(
+            mediaSourceId = "eacg",
+            pageUrl = "https://eacg1.com/vodsearch/-------------.html",
+            kind = WebCaptchaKind.Cloudflare,
+            expectation = PageExpectation.AnyContent,
+        )
+        val failure = SourcePluginFailure(
+            status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+            diagnostics = sourceFailureDiagnostics(
+                traceId = "trace-eacg",
+                provider = "eacg",
+                entryPoint = "discovery-search",
+                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+                url = captchaRequest.pageUrl,
+                challengeDetected = captchaRequest.kind.name,
+            ),
+            retryable = false,
+            requiresVerification = true,
+            verificationRequest = captchaRequest,
+        )
+        val session = createFetcher(
+            createTestMediaSourceInstance(
+                TestHttpMediaSource(fetch = { throw failure }),
+            ),
+        ).newSession(request1)
+
+        assertEquals(emptyList(), session.awaitCompletedResults())
+        val state = session.mediaSourceResults.first().state.value
+        assertIs<MediaSourceFetchState.CaptchaRequired>(state)
+        assertEquals(captchaRequest, state.request)
     }
 
     @Test

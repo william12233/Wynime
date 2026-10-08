@@ -25,14 +25,15 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 
 | ID | 網站 | 搜尋規則 | 驗證要求 |
 | --- | --- | --- | --- |
-| `eacg` | [E-ACG](https://eacg.net/) | `re0` | 播放一集、下載一集後刪除 |
+| `eacg` | [E-ACG](https://eacg1.com/) | `re0` | 播放一集、下載一集後刪除 |
 | `dm1` | [DM1](https://dm1.xfdm.pro/) | `re0` | 播放一集、下載一集後刪除 |
 | `next` | [Xifan Next](https://next.xifanacg.com/) | `re0` | 播放一集、下載一集後刪除 |
 | `girigiri` | [Girigiri Love](https://ani.girigirilove.com/) | `re0` | 播放一集、下載一集後刪除 |
 | `2rk` | [2RK](https://www.2rk.cc/) | `关于我转生变成史莱姆这档事` | 播放一集、下載一集後刪除 |
 | `dida` | [DIDAHD](https://www.didahd.pro/) | `re0` | 播放一集、下載一集後刪除 |
 | `dmbus` | [DMBUS](https://dmbus.cc/) | `re0` | 播放一集、下載一集後刪除 |
+| `dyttzy` | [電影天堂](https://caiji.dyttzyapi.com/) | `哪吒之魔童鬧海` | 只使用 `dyttm3u8` 直接 HLS；播放一集、下載一集後刪除 |
 
-線路名稱直接使用網站回傳的初始名稱。煙霧測試只驗證站點正常提供的媒體請求；遇到 TLS 憑證錯誤、破損 playlist、網盤或圖片偽裝串流時，必須記錄為未通過，不能用繞過驗證或替換第三方來源冒充成功。電影天堂／DYTTZY 不在目前索引中。
+線路名稱直接使用網站回傳的初始名稱。煙霧測試只驗證站點正常提供的媒體請求；遇到 TLS 憑證錯誤、破損 playlist、網盤或圖片偽裝串流時，必須記錄為未通過，不能用繞過驗證或替換第三方來源冒充成功。電影天堂只接受 API 回傳的 `dyttm3u8` 直接 HLS，`dytt` 分享網址與 `vod_down_url` 不作為播放或下載來源。
 
 詳細的 host-side 驗證紀錄位於 Wynime 的 `docs/source-plugins/common-smoke-test.md`。

@@ -4,6 +4,7 @@ import com.wynime.source.plugin.api.SourceSubject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SourcePluginSubjectSelectionTest {
     @Test
@@ -60,5 +61,43 @@ class SourcePluginSubjectSelectionTest {
 
         assertEquals("base", selected?.subject?.id)
         assertEquals(true, selected?.isExactTitle)
+    }
+
+    @Test
+    fun `traditional query matches simplified source title`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(
+                SourceSubject("next-3410", "遭到流放的转生重骑士凭借游戏知识大开无双"),
+            ),
+            queryNames = listOf("遭到流放的轉生重騎士憑藉遊戲知識大開無雙"),
+        )
+
+        assertEquals("next-3410", selected?.subject?.id)
+        assertEquals(true, selected?.isExactTitle)
+    }
+
+    @Test
+    fun `Chinese season query selects matching compact Arabic season`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(
+                SourceSubject("base", "大王饶命"),
+                SourceSubject("season-2", "大王饶命2"),
+                SourceSubject("season-3", "大王饶命3"),
+            ),
+            queryNames = listOf("大王饒命第三季"),
+        )
+
+        assertEquals("season-3", selected?.subject?.id)
+        assertTrue(selected?.isExactTitle == true)
+    }
+
+    @Test
+    fun `base query does not select compact seasonal title`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(SourceSubject("season-3", "大王饶命3")),
+            queryNames = listOf("大王饶命"),
+        )
+
+        assertNull(selected)
     }
 }

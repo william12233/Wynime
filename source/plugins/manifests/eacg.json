@@ -5,7 +5,7 @@
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.eacg.EacgEntryPoint",
-  "website": "https://eacg.net/",
+  "website": "https://eacg1.com/",
   "icon": "https://k8dm.com/template/vfed/asset/img/favicon.png",
   "description": "E-ACG 動畫來源；依目前頁面動態取得播放頁與媒體請求。",
   "platforms": [
@@ -15,12 +15,12 @@
   "artifacts": {
     "desktop": {
       "url": "artifacts/source-eacg.jar",
-      "sha256": "2711227d429bf32387c70a7a7bb06506efd404562dd3873737f98d7ca0852242",
+      "sha256": "e23fa934200beb3a6f36f5ff5f8e14792836ecadf5a37512746e8e9620303e14",
       "format": "jar"
     },
     "android": {
       "url": "artifacts/source-eacg-android.jar",
-      "sha256": "42d816838a37a625b51c93b61aa172fa2c5375442a62aca389ac75dd7c121286",
+      "sha256": "1b5fe2fc7ecfa173183b120c0cc850ef86e1e9825385534349b5ef3944730b14",
       "format": "jar"
     }
   }

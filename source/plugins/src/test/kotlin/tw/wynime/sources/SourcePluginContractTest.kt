@@ -15,6 +15,7 @@ import com.wynime.source.plugin.api.SourcePluginPlatform
 import tw.wynime.sources.dida.DidaEntryPoint
 import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
+import tw.wynime.sources.dyttzy.DyttzyEntryPoint
 import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
@@ -38,13 +39,14 @@ class SourcePluginContractTest {
     @Test
     fun everyPublishedEntryPointHasCompatibleMetadataAndConnectionCheck() = runBlocking {
         val entryPoints = listOf(
-            "eacg" to ("https://eacg.net" to EacgEntryPoint()),
+            "eacg" to ("https://eacg1.com" to EacgEntryPoint()),
             "dm1" to ("https://dm1.xfdm.pro" to Dm1EntryPoint()),
             "next" to ("https://next.xifanacg.com" to NextEntryPoint()),
             "girigiri" to ("https://ani.girigirilove.com" to GirigiriEntryPoint()),
             "2rk" to ("https://www.2rk.cc" to Rk2EntryPoint()),
             "dida" to ("https://www.didahd.pro" to DidaEntryPoint()),
             "dmbus" to ("https://dmbus.cc" to DmbusEntryPoint()),
+            "dyttzy" to ("https://caiji.dyttzyapi.com" to DyttzyEntryPoint()),
         )
 
         entryPoints.forEach { (id, expected) ->

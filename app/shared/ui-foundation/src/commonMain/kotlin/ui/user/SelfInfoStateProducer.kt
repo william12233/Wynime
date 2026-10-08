@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import com.wynime.app.data.models.user.SelfInfo
 import com.wynime.app.data.repository.user.UserRepository
+import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.domain.session.SessionState
 import com.wynime.app.domain.session.SessionStateProvider
 import com.wynime.app.domain.usecase.GlobalKoin
@@ -23,7 +24,8 @@ data class SelfInfoUiState(
 
     val isSessionValid: Boolean?,
 
-    val bangumiConnected: Boolean?
+    val bangumiConnected: Boolean?,
+    val loadError: LoadError? = null,
 )
 
 @TestOnly
@@ -50,13 +52,18 @@ class SelfInfoStateProducer(
     private val sessionStateProvider: SessionStateProvider by koin.inject()
     private val userRepository: UserRepository by koin.inject()
 
-    val flow = combine(sessionStateProvider.stateFlow, userRepository.selfInfoFlow) { sessionState, selfInfo ->
+    val flow = combine(
+        sessionStateProvider.stateFlow,
+        userRepository.selfInfoFlow,
+        userRepository.selfInfoLoadError,
+    ) { sessionState, selfInfo, loadError ->
         val isSessionValid = sessionState is SessionState.Valid
         SelfInfoUiState(
             selfInfo = if (isSessionValid) selfInfo else null,
-            isLoading = false,
+            isLoading = isSessionValid && selfInfo == null && loadError == null,
             isSessionValid = isSessionValid,
             bangumiConnected = isSessionValid && sessionState.bangumiConnected,
+            loadError = loadError.takeIf { isSessionValid },
         )
     }.stateIn(
         CoroutineScope(flowContext),

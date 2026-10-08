@@ -193,6 +193,12 @@ class MediaSourceMediaFetcher(
                                 id = restartCount,
                             )
 
+                            exception is SourcePluginFailure && exception.verificationRequest != null ->
+                                MediaSourceFetchState.CaptchaRequired(
+                                    request = exception.verificationRequest,
+                                    id = restartCount,
+                                )
+
                             exception is SourcePluginFailure -> MediaSourceFetchState.Failed(
                                 cause = exception,
                                 id = restartCount,

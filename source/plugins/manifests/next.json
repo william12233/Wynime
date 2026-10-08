@@ -7,7 +7,7 @@
   "entryClass": "tw.wynime.sources.next.NextEntryPoint",
   "website": "https://next.xifanacg.com/",
   "icon": "https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico",
-  "description": "Xifan Next 動畫來源；依當前頁面公開設定動態取得播放資料並保留頁面回退。",
+  "description": "Xifan Next 動畫來源；依當前頁面公開設定動態取得有效媒體資料。",
   "platforms": [
     "desktop",
     "android"
@@ -15,12 +15,12 @@
   "artifacts": {
     "desktop": {
       "url": "artifacts/source-next.jar",
-      "sha256": "decef068a845fac89b9f8b5d03802585a3b6b12cdd319e49f2332fe044b6373f",
+      "sha256": "486caa4768e6b5adc2d74767950ec1479e413a6d9a2462a361c853721797bd76",
       "format": "jar"
     },
     "android": {
       "url": "artifacts/source-next-android.jar",
-      "sha256": "75f57b5cc090937d17b73b2d3985302dfeb0c40ec13a79366aca21d464080252",
+      "sha256": "06ccbfb8daea8ddace29d582f77c68ec73b76b3373ca9597bebbaa98bb896b54",
       "format": "jar"
     }
   }

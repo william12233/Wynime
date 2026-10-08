@@ -7,7 +7,7 @@
       "name": "E-ACG",
       "version": "1.0.26",
       "description": "E-ACG 動畫來源",
-      "website": "https://eacg.net/",
+      "website": "https://eacg1.com/",
       "icon": "https://k8dm.com/template/vfed/asset/img/favicon.png",
       "platforms": [
         "desktop",
@@ -92,6 +92,19 @@
         "android"
       ],
       "manifest": "manifests/dmbus.json"
+    },
+    {
+      "id": "dyttzy",
+      "name": "電影天堂",
+      "version": "1.0.26",
+      "description": "電影天堂公開 API 的直接 HLS 來源",
+      "website": "https://caiji.dyttzyapi.com/",
+      "icon": "https://caiji.dyttzyapi.com/favicon.ico",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/dyttzy.json"
     }
   ]
 }

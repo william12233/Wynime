@@ -55,7 +55,11 @@ fun SettingsScope.ProfileGroup(
             TextItem(
                 title = { Text(if (isLoggedIn) "Bangumi 帳號" else "登入 Bangumi") },
                 description = {
-                    Text(selfInfo?.bangumiUsername ?: "使用 Bangumi 帳號登入以同步收藏與播放進度。")
+                    Text(
+                        state.selfInfo.loadError?.let { selfInfoLoadErrorText(it) }
+                            ?: selfInfo?.bangumiUsername
+                            ?: "使用 Bangumi 帳號登入以同步收藏與播放進度。",
+                    )
                 },
                 icon = { Image(Icons.Default.BangumiNext, contentDescription = "Bangumi") },
                 onClick = if (isLoggedIn) null else { { onNavigateToOAuth(OAuthPlatform.BANGUMI) } },

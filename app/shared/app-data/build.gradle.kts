@@ -67,6 +67,9 @@ kotlin {
     sourceSets.getByName("jvmTest").dependencies {
         implementation(libs.slf4j.simple)
     }
+    sourceSets.getByName("desktopMain").dependencies {
+        implementation(libs.opencc4j)
+    }
     sourceSets.desktopMain {
         dependencies {
             implementation(libs.onnxruntime)
@@ -90,6 +93,7 @@ kotlin {
         }
     }
     sourceSets.androidMain.dependencies {
+        implementation(libs.opencc4j)
         implementation(libs.androidx.browser)
         implementation(libs.onnxruntime.android)
         api(libs.datastore)

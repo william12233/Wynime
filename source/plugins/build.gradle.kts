@@ -55,7 +55,7 @@ tasks.register<JavaExec>("sourcePluginLiveSmokeTest") {
 val pluginProjectDir = layout.projectDirectory.asFile
 val pluginBuildDir = layout.buildDirectory.get().asFile
 
-val pluginIds = listOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus")
+val pluginIds = listOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus", "dyttzy")
 val pluginPackageNames = mapOf("2rk" to "rk2")
 
 pluginIds.forEach { pluginId ->

@@ -537,16 +537,21 @@ class WebSessionManager(
         val cookies = runCatching { browser.collectCookies(urls) }
             .onFailure { logger.error(it) { "WebSessionManager: failed to collect cookies for $host" } }
             .getOrDefault(emptyList())
+        val cookieTargets = urls.filter(String::isNotBlank)
         if (cookies.isNotEmpty()) {
-            cookieJar.addBrowserCookies(finalUrl, cookies)
+            cookieTargets.forEach { target ->
+                cookieJar.addBrowserCookies(target, cookies)
+            }
         }
-        identityRegistry.setUserAgent(
+        val userAgent = withContext(Dispatchers.Main) { browser.userAgent }
+        listOfNotNull(
             host,
-            withContext(Dispatchers.Main) {
-                browser.userAgent
-            },
-        )
-        logger.info { "WebSessionManager: synced ${cookies.size} cookies and UA for $host" }
+            normalizedSessionHost(requestedUrl),
+            normalizedSessionHost(finalUrl),
+        ).distinct().forEach { targetHost ->
+            identityRegistry.setUserAgent(targetHost, userAgent)
+        }
+        logger.info { "WebSessionManager: synced ${cookies.size} cookies and UA for ${cookieTargets.joinToString()}" }
     }
 
     suspend fun extractVideoResource(

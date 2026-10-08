@@ -28,6 +28,7 @@ import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
 import com.wynime.app.navigation.BrowserNavigator
 import com.wynime.app.navigation.DesktopBrowserNavigator
 import com.wynime.app.platform.AppTerminator
+import com.wynime.app.platform.Context
 import com.wynime.app.platform.DefaultAppTerminator
 import com.wynime.app.platform.DesktopContext
 import com.wynime.app.platform.GrantedPermissionManager
@@ -51,6 +52,8 @@ import java.io.File
 import kotlin.io.path.Path
 
 fun getDesktopModules(getContext: () -> DesktopContext, scope: CoroutineScope) = module {
+    single<Context> { getContext() }
+
     single<MediaSaveDirProvider> {
         val settings = get<SettingsRepository>().mediaCacheSettings
         val defaultMediaCachePath = getContext().files.defaultMediaCacheBaseDir

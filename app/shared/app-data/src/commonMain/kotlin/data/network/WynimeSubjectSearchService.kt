@@ -35,7 +35,7 @@ class WynimeSubjectSearchService(
         val result = bangumiApi.request {
             searchSubjects(
                 bangumiSearchSubjectsRequest = BangumiSearchSubjectsRequest(
-                    keyword = keyword,
+                    keyword = sanitizeKeyword(keyword),
                     sort = when (sort) {
                         SearchSort.MATCH -> BangumiSearchSubjectsRequest.Sort.MATCH
                         SearchSort.RANK -> BangumiSearchSubjectsRequest.Sort.RANK
@@ -61,7 +61,7 @@ class WynimeSubjectSearchService(
 
     companion object {
         fun sanitizeKeyword(keyword: String): String {
-            return buildString(keyword.length) {
+            val sanitized = buildString(keyword.length) {
                 for (c in keyword) {
                     if (MediaListFilters.charsToDeleteForSearch.contains(c.code)) {
                         append(' ')
@@ -70,6 +70,7 @@ class WynimeSubjectSearchService(
                     }
                 }
             }
+            return traditionalToSimplifiedChinese(sanitized)
         }
     }
 

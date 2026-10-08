@@ -173,7 +173,7 @@ class WebCaptchaDetectorTest {
     fun `ignores normal page with injected cloudflare browser script`() {
         assertNull(
             WebCaptchaDetector.detect(
-                "https://eacg.net/vodsearch/-------------.html?wd=test",
+                "https://eacg1.com/vodsearch/-------------.html?wd=test",
                 """
                 <html>
                   <head>

@@ -8,16 +8,21 @@ import com.wynime.source.plugin.api.SourcePluginEntryPoint
 import com.wynime.source.plugin.api.SourcePlugin
 import com.wynime.source.plugin.api.SourceResolveRequest
 import com.wynime.source.plugin.api.SourceSearchRequest
+import com.wynime.source.plugin.api.SourceEpisode
+import com.wynime.source.plugin.api.SourceSubject
 import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.extractJsonNumberField
 import tw.wynime.sources.shared.extractJsonStringField
+import tw.wynime.sources.shared.decodePlayerUrl
 import tw.wynime.sources.shared.isMediaUrl
 import tw.wynime.sources.shared.jsonObjects
+import tw.wynime.sources.shared.jsonArrayObjects
 import tw.wynime.sources.shared.links
 import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.searchQueryVariants
+import tw.wynime.sources.shared.SourceSiteException
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
@@ -43,14 +48,14 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
     iconUrl = "https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico",
     description = "稀飯動漫 Next 的 SSR 番劇與正常播放服務",
 ) {
-    override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {
+    override suspend fun search(request: SourceSearchRequest): List<SourceSubject> {
         val page = requestPage(
             "$rootUrl/search?q=${urlEncode(request.query)}",
             traceId = request.traceId,
             entryPoint = request.entryPoint,
         )
         val variants = searchQueryVariants(request.query)
-        val serverResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
+        val serverResults = mutableListOf<SourceSubject>()
         for (variant in variants) {
             serverResults += dynamicSearchLinks(
                 page.html,
@@ -59,7 +64,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
             )
         }
         val apiConfig = discoverPlaybackConfig(page.html) ?: (PUBLIC_API_ROOT to PUBLIC_API_KEY)
-        val apiResults = mutableListOf<com.wynime.source.plugin.api.SourceSubject>()
+        val apiResults = mutableListOf<SourceSubject>()
         for (variant in variants) {
             apiResults += searchApi(
                 apiConfig.first,
@@ -84,7 +89,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
             .ifBlank { subjectId }
         val subject = subject(subjectId, subjectTitle, page.finalUrl)
         val sourceIds = sourceIdsByCode(page.html)
-        val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
+        val groups = linkedMapOf<String, MutableList<SourceEpisode>>()
         links(page.html).forEach { link ->
             val match = Regex("(?i)/anime/${Regex.escape(subjectId)}/play/(\\d+)(?:\\?source=([^&#\"']+))?").find(link.href)
                 ?: return@forEach
@@ -135,14 +140,17 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         } else {
             null
         }
-        val mediaUrl = apiResult?.let {
-            extractJsonStringField(it, "master_playlist") ?: extractJsonStringField(it, "url")
-        }
-        if (mediaUrl != null && isMediaUrl(mediaUrl)) {
-            resolvedMedia(request, page.finalUrl, mediaUrl)
-        } else {
-            resolvedMedia(request, page.finalUrl, page.finalUrl)
-        }
+        val mediaUrl = apiResult?.let(::extractPlaybackMediaUrl)
+            ?: throw SourceSiteException(
+                "Next playback API did not return a valid MP4, HLS, or media candidate",
+            )
+        resolvedMedia(
+            request = request,
+            pageUrl = page.finalUrl,
+            rawUrl = mediaUrl,
+            headers = mapOf("Origin" to rootUrl),
+            referer = page.finalUrl,
+        )
     }
 
     override fun matchWebResource(url: String): SourceWebResourceMatch = when {
@@ -200,7 +208,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         limit: Int,
         traceId: String,
         entryPoint: String,
-    ): List<com.wynime.source.plugin.api.SourceSubject> {
+    ): List<SourceSubject> {
         val body = "{\"search_term\":${jsonString(query)},\"page_number\":1,\"items_per_page\":$limit,\"sort_by\":\"created_at\",\"sort_order\":\"desc\"}"
         val response = requestJson(
             url = "$api/rest/v1/rpc/search_animes",
@@ -258,7 +266,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         return result?.getOrThrow() ?: error("Next playback configuration request did not complete")
     }
 
-    private fun parseSearchResults(response: String): List<com.wynime.source.plugin.api.SourceSubject> =
+    private fun parseSearchResults(response: String): List<SourceSubject> =
         jsonObjects(response).mapNotNull { item ->
             val id = extractJsonNumberField(item, "id")?.toString() ?: return@mapNotNull null
             val title = extractJsonStringField(item, "title")
@@ -266,6 +274,28 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
                 ?: return@mapNotNull null
             subject(id, title, "$rootUrl/anime/$id", extractJsonStringField(item, "cover_url"))
         }.distinctBy { it.id }
+
+    private fun extractPlaybackMediaUrl(response: String): String? {
+        val directCandidates = listOf(
+            "master_playlist",
+            "url",
+            "playback_url",
+            "playlist",
+            "source_url",
+        ).mapNotNull { field -> extractJsonStringField(response, field) }
+        val objectCandidates = listOf("candidates", "sources", "media")
+            .flatMap { field -> jsonArrayObjects(response, field) }
+            .mapNotNull { item ->
+                listOf("url", "src", "file", "playback_url", "master_playlist")
+                    .asSequence()
+                    .mapNotNull { field -> extractJsonStringField(item, field) }
+                    .firstOrNull()
+            }
+        return (directCandidates + objectCandidates)
+            .asSequence()
+            .mapNotNull(::decodePlayerUrl)
+            .firstOrNull(::isMediaUrl)
+    }
 
     private fun jsonString(value: String): String = buildString {
         append('"')

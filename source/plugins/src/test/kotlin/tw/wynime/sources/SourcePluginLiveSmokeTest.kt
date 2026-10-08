@@ -9,6 +9,7 @@ import java.time.Duration
 import kotlin.test.Test
 import kotlinx.coroutines.runBlocking
 import com.wynime.source.plugin.api.ResolvedMedia
+import com.wynime.source.plugin.api.ResolvedMediaFormat
 import com.wynime.source.plugin.api.SourceHttpClient
 import com.wynime.source.plugin.api.SourceHttpRequest
 import com.wynime.source.plugin.api.SourceHttpResponse
@@ -22,6 +23,7 @@ import com.wynime.source.plugin.api.SourceSubject
 import tw.wynime.sources.dida.DidaEntryPoint
 import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
+import tw.wynime.sources.dyttzy.DyttzyEntryPoint
 import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
@@ -40,7 +42,26 @@ fun main() = runBlocking {
     println(SourcePluginLiveSmokeReport(LiveHttpClient(), liveSmokeSpecs()).run().render())
 }
 
-private fun liveSmokeSpecs() = listOf(
+private fun liveSmokeSpecs(): List<SmokeSpec> {
+    val queryOverride = System.getenv("WYNIME_SOURCE_PLUGIN_LIVE_QUERY")?.trim()
+        ?.takeIf(String::isNotBlank)
+    if (queryOverride == null) return defaultLiveSmokeSpecs()
+
+    val episodeOverride = System.getenv("WYNIME_SOURCE_PLUGIN_LIVE_EPISODE")
+        ?.trim()
+        ?.toIntOrNull()
+    return defaultLiveSmokeSpecs()
+        .distinctBy { it.id }
+        .map { spec ->
+            spec.copy(
+                query = queryOverride,
+                episodeNumber = episodeOverride,
+                verifyHlsPlaylist = false,
+            )
+        }
+}
+
+private fun defaultLiveSmokeSpecs() = listOf(
     SmokeSpec("2RK", "2rk", "關於鄰家的天使大人不知不覺把我慣成了廢人這檔子事", 3, Rk2EntryPoint()),
     SmokeSpec("DIDA", "dida", "咒術迴戰", null, DidaEntryPoint()),
     SmokeSpec("DM1", "dm1", "咒術迴戰", null, Dm1EntryPoint()),
@@ -48,6 +69,14 @@ private fun liveSmokeSpecs() = listOf(
     SmokeSpec("E-ACG", "eacg", "咒術迴戰", null, EacgEntryPoint()),
     SmokeSpec("Girigiri", "girigiri", "咒術迴戰", null, GirigiriEntryPoint()),
     SmokeSpec("Next", "next", "咒術迴戰", null, NextEntryPoint()),
+    SmokeSpec("電影天堂", "dyttzy", "哪吒之魔童闹海", null, DyttzyEntryPoint(), verifyHlsPlaylist = true),
+    SmokeSpec(
+        "Next current target",
+        "next",
+        "遭到流放的转生重骑士凭借游戏知识大开无双",
+        14,
+        NextEntryPoint(),
+    ),
 )
 
 private data class SmokeSpec(
@@ -56,6 +85,7 @@ private data class SmokeSpec(
     val query: String,
     val episodeNumber: Int?,
     val entryPoint: SourcePluginEntryPoint,
+    val verifyHlsPlaylist: Boolean = false,
 )
 
 private class SourcePluginLiveSmokeReport(
@@ -130,8 +160,11 @@ private class SourcePluginLiveSmokeReport(
             } catch (error: Throwable) {
                 return SmokeResult.failure(spec, classify(error, LiveStatus.RESOLVE_ERROR), "resolve: ${error.shortMessage()}")
             }
+            if (spec.verifyHlsPlaylist && media.format != ResolvedMediaFormat.HLS) {
+                return SmokeResult.failure(spec, LiveStatus.PLAYBACK_ERROR, "media format is ${media.format}, expected HLS")
+            }
             val probe = try {
-                httpClient.probe(media)
+                httpClient.probe(media, verifyHlsPlaylist = spec.verifyHlsPlaylist)
             } catch (error: Throwable) {
                 return SmokeResult.failure(spec, classify(error, LiveStatus.PLAYBACK_ERROR), "media: ${error.shortMessage()}")
             }
@@ -143,8 +176,8 @@ private class SourcePluginLiveSmokeReport(
                 episodes = LiveStatus.PASS,
                 resolve = LiveStatus.PASS,
                 finalMedia = finalStatus,
-                playback = finalStatus,
-                download = finalStatus,
+                playback = LiveStatus.UNVERIFIED,
+                download = LiveStatus.UNVERIFIED,
                 detail = "${subject.title} / ${episode.displayName} / ${media.url.safeUrl()}",
             )
         } finally {
@@ -221,6 +254,7 @@ private enum class LiveStatus {
     PARSE_ERROR,
     RESOLVE_ERROR,
     PLAYBACK_ERROR,
+    UNVERIFIED,
 }
 
 private class LiveContext(
@@ -271,10 +305,15 @@ private class LiveHttpClient : SourceHttpClient {
         val bodyBytes = response.body()
         val bodyText = bodyBytes.decodeToString()
         if (isChallenge(response.statusCode(), bodyText)) {
-            throw LiveChallengeException("HTTP ${response.statusCode()} challenge")
+            throw LiveChallengeException(
+                "HTTP ${response.statusCode()} challenge: ${bodyText.safePreview()}",
+            )
         }
         if (response.statusCode() !in 200..399) {
-            throw LiveHttpException("HTTP ${response.statusCode()}", response.statusCode())
+            throw LiveHttpException(
+                "HTTP ${response.statusCode()}: ${bodyText.safePreview()}",
+                response.statusCode(),
+            )
         }
         return SourceHttpResponse(
             statusCode = response.statusCode(),
@@ -285,8 +324,8 @@ private class LiveHttpClient : SourceHttpClient {
         )
     }
 
-    fun probe(media: ResolvedMedia): SourceHttpResponse = runBlocking {
-        execute(
+    fun probe(media: ResolvedMedia, verifyHlsPlaylist: Boolean): SourceHttpResponse = runBlocking {
+        val response = execute(
             SourceHttpRequest(
                 method = "GET",
                 url = media.url,
@@ -295,6 +334,10 @@ private class LiveHttpClient : SourceHttpClient {
                 entryPoint = "FINAL_MEDIA_CHECK",
             ),
         )
+        if (verifyHlsPlaylist && !response.bodyAsText().contains("#EXTM3U", ignoreCase = false)) {
+            throw LiveHttpException("HLS response does not contain #EXTM3U", response.statusCode)
+        }
+        response
     }
 
     private fun isChallenge(statusCode: Int, body: String): Boolean {
@@ -321,3 +364,5 @@ private fun String.safeUrl(): String = try {
 }
 
 private fun Throwable.shortMessage(): String = message?.take(160) ?: this::class.simpleName.orEmpty()
+
+private fun String.safePreview(): String = replace(Regex("\\s+"), " ").trim().take(180)

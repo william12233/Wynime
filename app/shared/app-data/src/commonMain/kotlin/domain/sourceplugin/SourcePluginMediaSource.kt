@@ -1,7 +1,5 @@
 package com.wynime.app.domain.sourceplugin
 
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.flow
 import com.wynime.datasources.api.DefaultMedia
 import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.MediaProperties
@@ -27,16 +25,18 @@ import com.wynime.datasources.api.topic.FileSize
 import com.wynime.datasources.api.topic.ResourceLocation
 import com.wynime.source.plugin.api.SourceConnectionState
 import com.wynime.source.plugin.api.SourceDiagnostics
+import com.wynime.source.plugin.api.SourceMediaIdentity
 import com.wynime.source.plugin.api.SourceResultStatus
 import com.wynime.source.plugin.api.SourcePlugin
 import com.wynime.source.plugin.api.SourceSearchRequest
-import com.wynime.source.plugin.api.SourceMediaIdentity
 import com.wynime.source.plugin.api.SourceSubject
 import com.wynime.source.plugin.api.SourceTracePhase
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
 import com.wynime.utils.platform.Uuid
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.flow
 
 class SourcePluginMediaSource(
     private val plugin: SourcePlugin,
@@ -71,11 +71,14 @@ class SourcePluginMediaSource(
         -> ConnectionStatus.FAILED
     }
 
-    override suspend fun searchSubjects(keyword: String): List<BrowseSubject> {
-        val traceId = Uuid.randomString()
-        trace(traceId, SourceTracePhase.SEARCH_REQUEST, SourceResultStatus.SUCCESS, query = keyword)
-        val subjects = try {
-            plugin.search(SourceSearchRequest(keyword, traceId = traceId, entryPoint = "browse-search"))
+    private suspend fun searchPluginSubjects(
+        query: String,
+        traceId: String,
+        entryPoint: String,
+    ): List<SourceSubject> {
+        trace(traceId, SourceTracePhase.SEARCH_REQUEST, SourceResultStatus.SUCCESS, query = query)
+        val searchResults = try {
+            plugin.search(SourceSearchRequest(query, traceId = traceId, entryPoint = entryPoint))
         } catch (error: SourcePluginFailure) {
             traceFailure(traceId, SourceTracePhase.SEARCH_RESPONSE, error)
             throw error
@@ -85,12 +88,37 @@ class SourcePluginMediaSource(
             throw sourcePluginBoundaryFailure(
                 traceId = traceId,
                 provider = mediaSourceId,
-                entryPoint = "browse-search",
+                entryPoint = entryPoint,
                 fallbackStatus = SourceResultStatus.PARSE_ERROR,
                 error = error,
-                url = keyword,
+                url = query,
                 retryable = false,
             )
+        }
+        trace(
+            traceId,
+            SourceTracePhase.SEARCH_RESPONSE,
+            if (searchResults.isEmpty()) SourceResultStatus.SUBJECT_NO_MATCH else SourceResultStatus.SUCCESS,
+            query = query,
+            parserResultCount = searchResults.size,
+        )
+        return searchResults
+    }
+
+    override suspend fun searchSubjects(keyword: String): List<BrowseSubject> {
+        val traceId = Uuid.randomString()
+        val requestedTitle = sourceTitleMatch(keyword)
+        val subjects = buildList {
+            val seen = HashSet<String>()
+            for (query in sourceSearchQueryVariants(keyword)) {
+                val searchResults = searchPluginSubjects(query, traceId, "browse-search")
+                for (subject in searchResults) {
+                    if (seen.add(subject.id)) add(subject)
+                }
+                if (requestedTitle.hasVariantMarker && selectBestSourceSubject(this, listOf(keyword)) != null) {
+                    break
+                }
+            }
         }
         trace(
             traceId,
@@ -176,49 +204,36 @@ class SourcePluginMediaSource(
     override suspend fun fetch(query: MediaFetchRequest): SizedSource<MediaMatch> = SinglePagePagedSource {
         flow {
             val traceId = query.traceId.ifBlank { Uuid.randomString() }
-            val names = query.subjectNames.ifEmpty { listOfNotNull(query.subjectNameCN) }
-            trace(traceId, SourceTracePhase.DISCOVERY_START, SourceResultStatus.SUCCESS, query = names.joinToString(" | "))
+            val requestedNames = query.subjectNames.ifEmpty { listOfNotNull(query.subjectNameCN) }
+                .map(String::trim)
+                .filter(String::isNotBlank)
+                .distinct()
+            val searchQueries = requestedNames
+                .flatMap(::sourceSearchQueryVariants)
+                .distinct()
+            trace(
+                traceId,
+                SourceTracePhase.DISCOVERY_START,
+                SourceResultStatus.SUCCESS,
+                query = requestedNames.joinToString(" | "),
+            )
             val subjects = buildList {
                 val seen = HashSet<String>()
-                for (name in names) {
-                    trace(traceId, SourceTracePhase.SEARCH_REQUEST, SourceResultStatus.SUCCESS, query = name)
-                    val searchResults = try {
-                        plugin.search(SourceSearchRequest(name, traceId = traceId, entryPoint = "discovery-search"))
-                    } catch (error: SourcePluginFailure) {
-                        traceFailure(traceId, SourceTracePhase.SEARCH_RESPONSE, error)
-                        throw error
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Throwable) {
-                        throw sourcePluginBoundaryFailure(
-                            traceId = traceId,
-                            provider = mediaSourceId,
-                            entryPoint = "discovery-search",
-                            fallbackStatus = SourceResultStatus.PARSE_ERROR,
-                            error = error,
-                            url = name,
-                            retryable = false,
-                        )
-                    }
-                    trace(
-                        traceId,
-                        SourceTracePhase.SEARCH_RESPONSE,
-                        if (searchResults.isEmpty()) SourceResultStatus.SUBJECT_NO_MATCH else SourceResultStatus.SUCCESS,
-                        query = name,
-                        parserResultCount = searchResults.size,
-                    )
+                for (searchQuery in searchQueries) {
+                    val searchResults = searchPluginSubjects(searchQuery, traceId, "discovery-search")
                     for (subject in searchResults) {
                         if (seen.add(subject.id)) add(subject)
                     }
+                    if (selectBestSourceSubject(this, requestedNames) != null) break
                 }
             }
-            val selectedSubject = selectBestSourceSubject(subjects, names)
+            val selectedSubject = selectBestSourceSubject(subjects, requestedNames)
             if (selectedSubject == null) {
                 val diagnostics = trace(
                     traceId,
                     SourceTracePhase.MATCH_RESULT,
                     SourceResultStatus.SUBJECT_NO_MATCH,
-                    query = names.joinToString(" | "),
+                    query = requestedNames.joinToString(" | "),
                     parserResultCount = subjects.size,
                     failureReason = "no safe subject match",
                 )
@@ -229,7 +244,7 @@ class SourcePluginMediaSource(
                 traceId,
                 SourceTracePhase.MATCH_RESULT,
                 SourceResultStatus.SUCCESS,
-                query = names.joinToString(" | "),
+                query = requestedNames.joinToString(" | "),
                 url = subject.detailUrl,
                 parserResultCount = subjects.size,
                 matcherScore = selectedSubject.score,
@@ -409,25 +424,29 @@ internal fun selectBestSourceSubject(
     val matches = subjects.distinctBy { it.id }.mapIndexedNotNull { subjectIndex, subject ->
         var best: SubjectMatch? = null
         for ((queryIndex, queryName) in names.withIndex()) {
-            val query = queryName.normalizeSubjectMatch()
-            if (query.isBlank()) continue
-            val queryHasVariantMarker = queryName.hasSubjectVariantMarker()
+            val query = sourceTitleMatch(queryName)
+            if (query.canonical.isBlank()) continue
             for ((titleIndex, title) in (listOf(subject.title) + subject.alternativeTitles).withIndex()) {
-                val normalizedTitle = title.normalizeSubjectMatch()
-                if (normalizedTitle.isBlank()) continue
+                val normalizedTitle = sourceTitleMatch(title)
+                if (normalizedTitle.canonical.isBlank()) continue
 
-                val exactTitle = normalizedTitle == query
-                val titleIsBaseEquivalent = title.isBaseTitleEquivalent()
-                if (!exactTitle && title.hasSubjectVariantMarker() && !queryHasVariantMarker && !titleIsBaseEquivalent) {
+                val exactTitle = normalizedTitle.canonical == query.canonical
+                if (query.variant != null && normalizedTitle.variant != query.variant) {
+                    continue
+                }
+                if (!query.hasVariantMarker && normalizedTitle.hasVariantMarker && !normalizedTitle.isBaseEquivalent) {
                     continue
                 }
 
                 val score = when {
-                    normalizedTitle == query -> 1_000_000
-                    titleIsBaseEquivalent && !queryHasVariantMarker && normalizedTitle.startsWith(query) ->
-                        900_000 + query.length
-                    query.length >= 3 && normalizedTitle.contains(query) -> 600_000 + query.length
-                    normalizedTitle.length >= 3 && query.contains(normalizedTitle) -> 500_000 + normalizedTitle.length
+                    exactTitle -> 1_000_000
+                    normalizedTitle.isBaseEquivalent && !query.hasVariantMarker &&
+                        normalizedTitle.base.startsWith(query.base) ->
+                        900_000 + query.base.length
+                    query.base.length >= 3 && normalizedTitle.base.contains(query.base) ->
+                        600_000 + query.base.length
+                    normalizedTitle.base.length >= 3 && query.base.contains(normalizedTitle.base) ->
+                        500_000 + normalizedTitle.base.length
                     else -> null
                 } ?: continue
 
@@ -448,27 +467,6 @@ private data class SubjectMatch(
     val score: Int,
     val isExactTitle: Boolean,
 )
-
-private fun String.normalizeSubjectMatch(): String = lowercase()
-    .replace(Regex("(?i)(封面图|封面圖)$"), "")
-    .filter(Char::isLetterOrDigit)
-
-private fun String.hasSubjectVariantMarker(): Boolean {
-    val lower = lowercase().replace(Regex("(?i)(封面图|封面圖)$"), "")
-    return Regex("第[一二三四五六七八九十百0-9]+[季部]").containsMatchIn(lower) ||
-        listOf(
-            "season", "part", "ova", "oad", "剧场版", "劇場版", "电影", "電影", "movie",
-            "日记", "日記", "外传", "外傳", "特别篇", "特別篇", "冰结之绊", "冰結之絆",
-            "雪之回忆", "雪之回憶",
-        ).any(lower::contains)
-}
-
-private fun String.isBaseTitleEquivalent(): Boolean {
-    val lower = lowercase().replace(Regex("(?i)(封面图|封面圖)$"), "")
-    return Regex("第\\s*(?:一|1)\\s*[季部]").containsMatchIn(lower) ||
-        Regex("(?i)\\b(?:first|1st)\\s+season\\b").containsMatchIn(lower) ||
-        listOf("新编集版", "新編集版", "新编辑版", "新編集版").any(lower::contains)
-}
 
 private const val SUBJECT_MARKER = "#wynime-source-subject=v1:"
 private const val EPISODE_MARKER = "#wynime-source-episode=v1:"

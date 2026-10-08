@@ -1,5 +1,13 @@
 package com.wynime.app.data.repository.user
 
+import com.wynime.app.data.repository.RepositoryNetworkException
+import com.wynime.app.data.repository.RepositoryRateLimitedException
+import com.wynime.app.data.repository.RepositoryServiceUnavailableException
+import com.wynime.app.domain.foundation.LoadError
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
 import androidx.datastore.core.DataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +26,6 @@ import com.wynime.app.data.models.user.SelfInfo
 import com.wynime.app.data.network.BangumiApiProvider
 import com.wynime.app.data.repository.RepositoryAuthorizationException
 import com.wynime.app.data.repository.RepositoryException
-import com.wynime.app.data.repository.RepositoryRequestError
 import com.wynime.app.domain.session.SessionManager
 import com.wynime.app.domain.session.SessionState
 import com.wynime.app.domain.session.SessionStateProvider
@@ -43,12 +50,19 @@ class UserRepository(
     private val scope = CoroutineScope(coroutineContext)
 
     private val selfInfoRefresher = FlowRestarter()
+    private val _selfInfoLoadError = MutableStateFlow<LoadError?>(null)
+
+    val selfInfoLoadError: StateFlow<LoadError?> = _selfInfoLoadError.asStateFlow()
 
     val selfInfoFlow: Flow<SelfInfo?> = sessionStateProvider.stateFlow.transformLatest { state ->
 
             when (state) {
-                is SessionState.Invalid -> emit(null)
+                is SessionState.Invalid -> {
+                    _selfInfoLoadError.value = null
+                    emit(null)
+                }
                 is SessionState.Valid -> {
+                    _selfInfoLoadError.value = null
                     emit(dataStore.data.firstOrNull())
                     suspend {
                         officialBangumiApi.request { getMyself() }.toSelfInfo()
@@ -56,25 +70,37 @@ class UserRepository(
                         .asFlow()
                         .retryWhen { e, attempt ->
                             val wrapped = RepositoryException.wrapOrThrowCancellation(e)
-                            (wrapped is RepositoryAuthorizationException && attempt < 3).also {
-                                if (it) {
-                                    logger.warn(wrapped) { "Failed to get Bangumi user info, retried $attempt, max retries: 3" }
-                                    delay(125L)
+                            val retryable = wrapped is RepositoryAuthorizationException ||
+                                wrapped is RepositoryNetworkException ||
+                                wrapped is RepositoryServiceUnavailableException ||
+                                wrapped is RepositoryRateLimitedException
+                            val shouldRetry = retryable && attempt < 3
+                            if (shouldRetry) {
+                                if (wrapped is RepositoryAuthorizationException && attempt == 0L) {
+                                    sessionManager.refreshSession()
                                 }
+                                logger.warn(wrapped) {
+                                    "Failed to get Bangumi user info, retrying attempt ${attempt + 1}/3"
+                                }
+                                delay(125L * (attempt + 1))
                             }
+                            shouldRetry
                         }
                         .catching()
                         .restartable(selfInfoRefresher)
                         .collectLatest { result ->
                             result
                                 .onSuccess { self ->
+                                    _selfInfoLoadError.value = null
                                     coroutineScope {
                                         launch { dataStore.updateData { self } }
                                         emit(self)
                                     }
                                 }
                                 .onFailure { e ->
-                                    logger.error(RepositoryException.wrapOrThrowCancellation(e)) {
+                                    val wrapped = RepositoryException.wrapOrThrowCancellation(e)
+                                    _selfInfoLoadError.value = LoadError.fromException(wrapped)
+                                    logger.error(wrapped) {
                                         "Failed to refresh Bangumi user profile info."
                                     }
                                 }

@@ -92,7 +92,8 @@ internal fun ProfilePopupLayout(
                 )
             }
         }
-        val (title, _) = state.selfInfo.selfInfo.calculateDisplay()
+        val title = state.selfInfo.loadError?.let { selfInfoLoadErrorText(it) }
+            ?: state.selfInfo.selfInfo.calculateDisplay().title
         val showEmail = false
 
         Text(

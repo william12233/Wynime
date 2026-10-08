@@ -598,8 +598,8 @@ jobs:
         $sdkRoot/build-tools\" -type f -name apksigner -print | sort -V | tail -n 1)\"\naapt2=\"$(find \"$sdkRoot/build-tools\"\
         \ -type f -name aapt2 -print | sort -V | tail -n 1)\"\ntest -n \"$apksigner\"\ntest -n \"$aapt2\"\n\napkPath=\"$RUNNER_TEMP/$expectedAndroid\"\
         \nzipPath=\"$RUNNER_TEMP/$expectedWindows\"\ngh api -H 'Accept: application/octet-stream' \"repos/$GITHUB_REPOSITORY/releases/assets/$androidId\"\
-        \ --output \"$apkPath\"\ngh api -H 'Accept: application/octet-stream' \"repos/$GITHUB_REPOSITORY/releases/assets/$windowsId\"\
-        \ --output \"$zipPath\"\n\n\"$apksigner\" verify --verbose \"$apkPath\"\nnativeCode=\"$(\"$aapt2\" dump badging \"\
+        \ > \"$apkPath\"\ngh api -H 'Accept: application/octet-stream' \"repos/$GITHUB_REPOSITORY/releases/assets/$windowsId\"\
+        \ > \"$zipPath\"\n\n\"$apksigner\" verify --verbose \"$apkPath\"\nnativeCode=\"$(\"$aapt2\" dump badging \"\
         $apkPath\" | sed -n 's/^native-code: //p')\"\nprintf '%s\\n' \"$nativeCode\" | grep -Fxq \"'arm64-v8a'\"\nif printf\
         \ '%s\\n' \"$nativeCode\" | grep -Eq \"'(x86_64|armeabi-v7a|x86)'\"; then\n  echo \"The official APK contains an unexpected\
         \ ABI: $nativeCode\" >&2\n  exit 1\nfi\nunzip -t \"$zipPath\" >/dev/null"

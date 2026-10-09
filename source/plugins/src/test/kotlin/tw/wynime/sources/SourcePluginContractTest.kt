@@ -20,6 +20,9 @@ import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
 import tw.wynime.sources.rk2.Rk2EntryPoint
+import tw.wynime.sources.akianime.AkianimeEntryPoint
+import tw.wynime.sources.baimao.BaimaoEntryPoint
+import tw.wynime.sources.mxdm.MxdmEntryPoint
 import tw.wynime.sources.shared.jsonArrayObjects
 
 class SourcePluginContractTest {
@@ -48,9 +51,12 @@ class SourcePluginContractTest {
             "next" to ("https://next.xifanacg.com" to NextEntryPoint()),
             "girigiri" to ("https://ani.girigirilove.com" to GirigiriEntryPoint()),
             "2rk" to ("https://www.2rk.cc" to Rk2EntryPoint()),
-            "dida" to ("https://www.didahd.pro" to DidaEntryPoint()),
+            "dida" to ("https://www.didahd.xyz" to DidaEntryPoint()),
             "dmbus" to ("https://dmbus.cc" to DmbusEntryPoint()),
             "dyttzy" to ("https://caiji.dyttzyapi.com" to DyttzyEntryPoint()),
+            "baimao" to ("https://www.bmmdmm.com" to BaimaoEntryPoint()),
+            "akianime" to ("https://www.akianime.cc" to AkianimeEntryPoint()),
+            "mxdm" to ("https://www.dcc3.com" to MxdmEntryPoint()),
         )
 
         entryPoints.forEach { (id, expected) ->

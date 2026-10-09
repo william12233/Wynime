@@ -20,9 +20,12 @@
 | `next` | https://next.xifanacg.com/ | `re0` |
 | `girigiri` | https://Wynime.girigirilove.com/ | `re0` |
 | `2rk` | https://www.2rk.cc/ | `关于我转生变成史莱姆这档事` |
-| `dida` | https://www.didahd.pro/ | `re0` |
+| `dida` | https://www.didahd.xyz/ | `咒術迴戰` |
 | `dmbus` | https://dmbus.cc/ | `re0` |
 | `dyttzy` | https://caiji.dyttzyapi.com/ | `哪吒之魔童鬧海`（只驗證 `dyttm3u8` 直接 HLS） |
+| `baimao` | https://www.bmmdmm.com/ | `新网球王子 U-17 世界杯 半决赛` |
+| `akianime` | https://www.akianime.cc/ | `新网球王子 U-17 世界杯 半决赛` |
+| `mxdm` | https://www.dcc3.com/ | `黑子的篮球第二季` |
 
 DYTTZY 的 `dytt` 分享網址、`vod_down_url` 與非 HTTPS HLS 項目不納入播放或下載；API 搜尋／詳情可作為解析證據，但不能代替實際播放與下載證據。
 

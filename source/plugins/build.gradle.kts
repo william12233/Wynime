@@ -18,7 +18,19 @@ plugins {
 
 group = "tw.wynime.sources"
 
-val pluginIds = listOf("eacg", "dm1", "next", "girigiri", "2rk", "dida", "dmbus", "dyttzy")
+val pluginIds = listOf(
+    "eacg",
+    "dm1",
+    "next",
+    "girigiri",
+    "2rk",
+    "dida",
+    "dmbus",
+    "dyttzy",
+    "baimao",
+    "akianime",
+    "mxdm",
+)
 fun isValidSemanticVersion(value: String): Boolean = Regex(
     "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
 ).matches(value)

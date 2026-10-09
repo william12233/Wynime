@@ -1,0 +1,27 @@
+{
+  "id": "mxdm",
+  "name": "MX動漫",
+  "version": "1.0.0",
+  "pluginApiVersion": 3,
+  "minHostVersion": "0.1.3",
+  "entryClass": "tw.wynime.sources.mxdm.MxdmEntryPoint",
+  "website": "https://www.dcc3.com/",
+  "icon": "https://www.dcc3.com/favicon.ico",
+  "description": "MX動漫動畫來源；播放頁由主程式 WebView 執行站方播放器。",
+  "platforms": [
+    "desktop",
+    "android"
+  ],
+  "artifacts": {
+    "desktop": {
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-mxdm-v1.0.0/source/plugins/artifacts/source-mxdm.jar",
+      "sha256": "474e9bfcc26c356a4d454f453e02dab66a651cbcd645afbd394f1e7df1c95485",
+      "format": "jar"
+    },
+    "android": {
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-mxdm-v1.0.0/source/plugins/artifacts/source-mxdm-android.jar",
+      "sha256": "4caada83cb37b8757201871a520505f1f851d63c1caf145ccb1ce8cd194a5531",
+      "format": "jar"
+    }
+  }
+}

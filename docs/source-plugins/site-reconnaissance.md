@@ -1,6 +1,6 @@
 # 來源網站實勘紀錄
 
-本文件記錄目前索引中的八個來源插件所依據的網站行為。endpoint、線路名稱與媒體格式來自插件程式及 Android 模擬器的實際請求；短效 token、Cookie 值與驗證內容不寫入文件。
+本文件記錄目前索引中的十一個來源插件所依據的網站行為。endpoint、線路名稱與媒體格式來自插件程式及 Android 模擬器的實際請求；短效 token、Cookie 值與驗證內容不寫入文件。
 
 ## 來源實作
 
@@ -11,9 +11,12 @@
 | 稀飯動漫 Next | SSR `/search?q=...`、Supabase `search_animes` RPC、`/anime/{id}/play/{episode}` | 從番劇頁 `source` code 與 episode URL 建立頻道；每個 source code 都保留 | 從公開頁面／JS 發現 playback API，呼叫 `functions/v1/issue-web-playback` 取得短效 master playlist 或 MP4，保留 Origin／Referer | `re0` 搜尋與實際畫面 PASS |
 | Girigiri | `m3u8.girigirilove.com/api.php/provide/vod/?ac=detail&wd=...`，並以站內詳情頁核對標題 | `/play{subject}-{channel}-{episode}/`；Re:Zero 詳情頁實際只有 `简中` 1 條線路、25 集 | 播放頁／公開 API 回傳的 `ana.girigirilove.com` MP4；直接媒體請求保留必要範圍 headers | `re0`、播放、333.7 MB 下載、刪除清理 PASS |
 | 二礦動漫 2RK | `/search?w=...`、`/detail/{slug}?id=...`、公開 `c.js` | `c.js` 實際列出 `线路1`、`线路2`、`线路3`；不由 Host 追加不存在的線路 | 依選定 host 傳 `curXianlu` Cookie，並保留 detail Referer／Origin 取得 HLS；站方線路 2、3 目前回傳 31-byte 金鑰，未繞過或修改金鑰 | 線路 1 播放 PASS；線路 2、3 因站方回應 BLOCKED |
-| DIDA | `/search/-------------.html?wd=...`、`/detail/{id}.html`、`/play/{id}-{channel}-{episode}.html` | 由 `#playlistN` 的原始文字與 play URL 對應 channel ID，保留網站線路名稱 | 一般 player data 或 BBA Artplayer 頁面解析；播放頁 Referer 傳給需要它的媒體請求 | `re0` 搜尋、實際畫面、138.6 MB 下載進度、刪除清理 PASS |
+| DIDA | `/search/-------------.html?wd=...`、`/detail/{id}.html`、`/play/{id}-{channel}-{episode}.html`；現行網域為 `didahd.xyz` | 由 `#playlistN` 的原始文字與 play URL 對應 channel ID，保留網站線路名稱；搜尋同時支援常見繁簡字形 | 一般 player data 或 BBA Artplayer 頁面解析；播放頁 Referer 傳給需要它的媒體請求 | fixture 驗證目前卡片格式與繁簡搜尋；人工播放紀錄沿用既有版本 |
 | DMBUS | 搜尋頁、`/v/{id}.html`、`/p/{id}-{channel}-{episode}.html` | 由 `play_from` 及 play URL 建立全部網站線路 | HHJX 播放頁的正常 `/api/parse` POST 取得下游 MP4；解析請求使用 Origin／Referer，但 QQ 直出媒體依站方行為移除不被接受的 Referer | Re:Zero 播放、下載進度、刪除清理 PASS |
 | DYTTZY | `https://caiji.dyttzyapi.com/api.php/provide/vod?ac=videolist&wd=...`；詳情使用 `ids=...` | `vod_play_from` 以 `$$$` 對應 `vod_play_url`；只保留名稱為 `dyttm3u8` 的來源，以 `#` 分集、`$` 分隔集名與直接 URL | 只接受 API 回傳的 HTTPS `.m3u8`；resolve 時重新抓取詳情，不附加未驗證 Referer／Origin；`dytt` 分享網址與 `vod_down_url` 排除 | API 搜尋／詳情、Android 播放、Android 下載與刪除清理 PASS；Windows Desktop 插件安裝、播放、下載完成與下載檔播放 PASS，桌面輸出尚未清理 |
+| 白猫動漫 | `s_all?ex=1&kw=...`、`/show/{id}.html`、`/play/{id}-{channel}-{episode}.html` | `menu0` 的播放線路與 play URL 對應；公開播放頁交給 WebView | 播放頁由站方 JavaScript 初始化播放器，插件只返回正常播放頁 | fixture PASS；需另行完成實機播放驗收 |
+| AkiAnime | `/bgmsearch/-------------.html?wd=...`、`/bgmdetail/{code}.html`、`/bgmplay/{code}-{channel}-{episode}.html` | `anthology-tab` 與播放 URL 對應線路，保留網站名稱 | 播放頁含加密播放器資料，交給站方 JavaScript 與 WebView | U-17 半決賽搜尋／詳情／第 8 集播放頁煙霧測試 PASS；實機播放待驗 |
+| MX動漫 | `/search/?wd=...`、`/detail/{id}/`、`/play/{id}-{channel}-{episode}/` | 以詳情頁 tabs 順序對應實際 channel ID，不假設 ID 連號 | 播放頁的下游媒體受站方區域策略影響，保留正常播放頁給 WebView | 黑子的籃球第二季搜尋／詳情／第 8 集播放頁煙霧測試 PASS；實機播放待驗 |
 
 ## 驗證邊界
 

@@ -28,6 +28,9 @@ import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
 import tw.wynime.sources.rk2.Rk2EntryPoint
+import tw.wynime.sources.akianime.AkianimeEntryPoint
+import tw.wynime.sources.baimao.BaimaoEntryPoint
+import tw.wynime.sources.mxdm.MxdmEntryPoint
 
 class SourcePluginLiveSmokeTest {
     @Test
@@ -63,7 +66,10 @@ private fun liveSmokeSpecs(): List<SmokeSpec> {
 
 private fun defaultLiveSmokeSpecs() = listOf(
     SmokeSpec("2RK", "2rk", "關於鄰家的天使大人不知不覺把我慣成了廢人這檔子事", 3, Rk2EntryPoint()),
-    SmokeSpec("DIDA", "dida", "咒術迴戰", null, DidaEntryPoint()),
+    SmokeSpec("DIDA", "dida", "咒术回战", null, DidaEntryPoint()),
+    SmokeSpec("白猫動漫", "baimao", "新网球王子 U-17 世界杯 半决赛", 8, BaimaoEntryPoint()),
+    SmokeSpec("AkiAnime", "akianime", "新网球王子 U-17 世界杯 半决赛", 8, AkianimeEntryPoint()),
+    SmokeSpec("MX動漫", "mxdm", "黑子的篮球第二季", 8, MxdmEntryPoint()),
     SmokeSpec("DM1", "dm1", "咒術迴戰", null, Dm1EntryPoint()),
     SmokeSpec("DMBUS", "dmbus", "咒術迴戰", null, DmbusEntryPoint()),
     SmokeSpec("E-ACG", "eacg", "咒術迴戰", null, EacgEntryPoint()),

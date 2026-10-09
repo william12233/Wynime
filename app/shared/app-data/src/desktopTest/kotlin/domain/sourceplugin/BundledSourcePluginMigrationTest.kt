@@ -51,7 +51,7 @@ class BundledSourcePluginMigrationTest {
     }
 
     @Test
-    fun `all eight bundled sources upgrade offline and keep enabled choices`() = runTest {
+    fun `all eleven bundled sources upgrade offline and keep enabled choices`() = runTest {
         val previous = packages.pluginIds.mapIndexed { index, id -> oldInstallation(id, index % 2 == 0) }
         val provider = DefaultHttpClientProvider(NoProxyProvider, backgroundScope)
         val registry = SourcePluginRegistry(
@@ -63,7 +63,7 @@ class BundledSourcePluginMigrationTest {
         )
         try {
             registry.loadInstalled()
-            assertEquals(8, registry.states.value.size)
+            assertEquals(11, registry.states.value.size)
             for (old in previous) {
                 val current = repository.snapshot().plugins.single { it.id == old.id }
                 assertEquals(packages.manifest(old.id).version, current.version)
@@ -90,6 +90,9 @@ class BundledSourcePluginMigrationTest {
             packages,
         )
         try {
+            registry.loadInstalled()
+            assertTrue(repository.snapshot().plugins.isEmpty())
+            assertTrue(registry.states.value.isEmpty())
             val entries = registry.bundledEntries()
             assertEquals(packages.pluginIds, entries.map { it.id }.toSet())
             for (entry in entries) {

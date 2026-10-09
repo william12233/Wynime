@@ -188,6 +188,29 @@ class SourcePluginFixtureTest {
     }
 
     @Test
+    fun `dida parses the current card title and canonical domain`() = runBlocking {
+        val plugin = DidaEntryPoint().create(FixtureContext("dida") { request ->
+            when {
+                "/search/" in request.url -> """
+                    <li class="myui-vodlist__media">
+                        <a class="myui-vodlist__thumb lazyload" href="/detail/2592.html" title="咒术回战第三季"></a>
+                        <h4 class="title text-overflow"><a href="/detail/2592.html" title="咒术回战第三季">咒术回战第三季</a></h4>
+                    </li>
+                """.trimIndent()
+                else -> "<html><body>ok</body></html>"
+            }
+        })
+        try {
+            val subject = plugin.search(SourceSearchRequest("咒術迴戰")).single()
+            assertEquals("2592", subject.id)
+            assertEquals("咒术回战第三季", subject.title)
+            assertEquals("https://www.didahd.xyz", plugin.metadata.website)
+        } finally {
+            plugin.close()
+        }
+    }
+
+    @Test
     fun `dmbus parses search subject channel episode and m3u8`() = runBlocking {
         val plugin = DmbusEntryPoint().create(FixtureContext("dmbus") { request ->
             when {

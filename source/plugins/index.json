@@ -69,16 +69,55 @@
     },
     {
       "id": "dida",
-      "name": "DIDAHD",
-      "version": "1.5.0",
-      "description": "DIDAHD 動畫來源",
-      "website": "https://www.didahd.pro/",
-      "icon": "https://www.didahd.pro/template/mytheme/statics/img/newfavicon.png",
+      "name": "嘀嗒影視",
+      "version": "1.5.1",
+      "description": "嘀嗒影視動畫來源",
+      "website": "https://www.didahd.xyz/",
+      "icon": "https://www.didahd.xyz/template/mytheme/statics/img/newfavicon.png",
       "platforms": [
         "desktop",
         "android"
       ],
       "manifest": "manifests/dida.json"
+    },
+    {
+      "id": "baimao",
+      "name": "白猫動漫",
+      "version": "1.0.0",
+      "description": "白猫動漫動畫來源",
+      "website": "https://www.bmmdmm.com/",
+      "icon": "https://www.bmmdmm.com/hdst/hm_pic/favicon.ico",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/baimao.json"
+    },
+    {
+      "id": "akianime",
+      "name": "AkiAnime",
+      "version": "1.0.0",
+      "description": "AkiAnime 動畫來源",
+      "website": "https://www.akianime.cc/",
+      "icon": "https://www.akianime.cc/favicon.ico",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/akianime.json"
+    },
+    {
+      "id": "mxdm",
+      "name": "MX動漫",
+      "version": "1.0.0",
+      "description": "MX動漫動畫來源",
+      "website": "https://www.dcc3.com/",
+      "icon": "https://www.dcc3.com/favicon.ico",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/mxdm.json"
     },
     {
       "id": "dmbus",

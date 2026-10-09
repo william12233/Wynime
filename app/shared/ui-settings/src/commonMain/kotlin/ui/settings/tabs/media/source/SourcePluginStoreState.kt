@@ -44,8 +44,9 @@ class SourcePluginStoreState(
             _isRefreshing.value = true
             _error.value = null
             try {
-                // Bundled packages are migration-only. New installations must come from
-                // the repository so an App release cannot silently select a plugin build.
+                // Keep this list empty: bundled packages are migration-only. New installations
+                // must come from the repository, so a fresh App install starts with zero
+                // selected source plugins and an upgrade cannot silently select a build.
                 val bundled = emptyList<SourcePluginIndexEntry>()
                 _available.value = bundled
                 val cached = repositoryCache.data.first()

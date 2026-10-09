@@ -1,12 +1,12 @@
 {
   "id": "dida",
-  "name": "DIDAHD",
-  "version": "1.5.0",
+  "name": "嘀嗒影視",
+  "version": "1.5.1",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.dida.DidaEntryPoint",
-  "website": "https://www.didahd.pro/",
-  "icon": "https://www.didahd.pro/template/mytheme/statics/img/newfavicon.png",
+  "website": "https://www.didahd.xyz/",
+  "icon": "https://www.didahd.xyz/template/mytheme/statics/img/newfavicon.png",
   "description": "DIDAHD 動畫來源；外部播放頁交由主程式 WebView 依正常頁面請求處理。",
   "platforms": [
     "desktop",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dida-v1.5.0/source/plugins/artifacts/source-dida.jar",
-      "sha256": "3271de02089cc9d51ba011ed0889107d3221ab190c04feffcd61d40fc00dbfb0",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dida-v1.5.1/source/plugins/artifacts/source-dida.jar",
+      "sha256": "a6735496c77be299fc89d9359d867b3612c7bedf239060fbf9ac451f7ac5bac6",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dida-v1.5.0/source/plugins/artifacts/source-dida-android.jar",
-      "sha256": "c0b25b3b5992995319b55bc563b1d43b11afaba419f08d3abdbe9c7ac74c1409",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dida-v1.5.1/source/plugins/artifacts/source-dida-android.jar",
+      "sha256": "1a8dbda63fb65adcc6f13dbab877891b3536cb55d35d2fd120b4edd340a21f24",
       "format": "jar"
     }
   }

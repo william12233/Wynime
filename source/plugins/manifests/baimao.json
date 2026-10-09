@@ -1,0 +1,27 @@
+{
+  "id": "baimao",
+  "name": "白猫動漫",
+  "version": "1.0.0",
+  "pluginApiVersion": 3,
+  "minHostVersion": "0.1.3",
+  "entryClass": "tw.wynime.sources.baimao.BaimaoEntryPoint",
+  "website": "https://www.bmmdmm.com/",
+  "icon": "https://www.bmmdmm.com/hdst/hm_pic/favicon.ico",
+  "description": "白猫動漫動畫來源；播放頁由主程式 WebView 執行站方播放器。",
+  "platforms": [
+    "desktop",
+    "android"
+  ],
+  "artifacts": {
+    "desktop": {
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.0.0/source/plugins/artifacts/source-baimao.jar",
+      "sha256": "835939a986ff168c3d5d33adb2e12a484657bc99ced340d6dc4ca6e1ebad5676",
+      "format": "jar"
+    },
+    "android": {
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.0.0/source/plugins/artifacts/source-baimao-android.jar",
+      "sha256": "a822370efb41698fccb90657d203608e1dfecf034c17960741ddb000516e15ac",
+      "format": "jar"
+    }
+  }
+}

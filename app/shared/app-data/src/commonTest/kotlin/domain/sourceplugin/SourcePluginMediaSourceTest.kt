@@ -20,6 +20,7 @@ import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -146,6 +147,99 @@ class SourcePluginMediaSourceTest {
         media.awaitFinished()
 
         assertTrue(plugin.searchQueries.contains(compactTitle))
+    }
+
+    @Test
+    fun `arc discovery uses a generic base fallback without losing specificity`() = runTest {
+        val targetTitle = "新网球王子 U-17 世界杯 SEMIFINAL"
+        val plugin = RecordingPlugin(
+            title = targetTitle,
+            searchResultsByQuery = mapOf(
+                "新网球王子" to listOf(
+                    SourceSubject("2022", "新网球王子 U-17世界杯篇"),
+                    SourceSubject("5107", targetTitle),
+                ),
+            ),
+        )
+        val source = SourcePluginMediaSource(plugin)
+
+        val media = source.fetch(
+            MediaFetchRequest(
+                subjectId = "439197",
+                episodeId = "",
+                subjectNameCN = "新网球王子 U-17 世界杯 半决赛",
+                subjectNames = emptyList(),
+                episodeSort = EpisodeSort("8"),
+                episodeName = "第8集",
+            ),
+        )
+        val matches = media.results.toList()
+        media.awaitFinished()
+
+        assertEquals(targetTitle, matches.single().media.properties.subjectName)
+        assertTrue(plugin.searchQueries.contains("新网球王子"))
+    }
+
+    @Test
+    fun `specific discovery still accepts an unmarked source title when it is the only safe fallback`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(SourceSubject("base", "新网球王子")),
+            queryNames = listOf("新网球王子 U-17 世界杯 半决赛"),
+        )
+
+        assertEquals("base", selected?.subject?.id)
+    }
+
+    @Test
+    fun `specific discovery rejects another marked arc instead of guessing`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(SourceSubject("2022", "新网球王子 U-17世界杯篇")),
+            queryNames = listOf("新网球王子 U-17 世界杯 半决赛"),
+        )
+
+        assertNull(selected)
+    }
+
+    @Test
+    fun `unmarked fallback does not stop discovery before another title spelling`() = runTest {
+        val targetTitle = "新テニスの王子様 U-17 WORLD CUP SEMIFINAL"
+        val plugin = RecordingPlugin(
+            title = targetTitle,
+            searchResultsByQuery = mapOf(
+                "新网球王子" to listOf(SourceSubject("base", "新网球王子")),
+                "新テニスの王子様" to listOf(SourceSubject("5107", targetTitle)),
+            ),
+        )
+        val source = SourcePluginMediaSource(plugin)
+
+        val media = source.fetch(
+            MediaFetchRequest(
+                subjectId = "",
+                episodeId = "",
+                subjectNameCN = "新网球王子 U-17 世界杯 半决赛",
+                subjectNames = listOf(
+                    "新网球王子 U-17 世界杯 半决赛",
+                    targetTitle,
+                ),
+                episodeSort = EpisodeSort("8"),
+                episodeName = "第8集",
+            ),
+        )
+        val matches = media.results.toList()
+        media.awaitFinished()
+
+        assertEquals(targetTitle, matches.single().media.properties.subjectName)
+        assertTrue(plugin.searchQueries.contains("新テニスの王子様"))
+    }
+
+    @Test
+    fun `arc fallback does not invent another marker for an unrelated subject`() = runTest {
+        val plugin = RecordingPlugin(title = "新网球王子 U-17世界杯篇")
+        val source = SourcePluginMediaSource(plugin)
+
+        source.searchSubjects("新网球王子 U-17 世界杯")
+
+        assertTrue(plugin.searchQueries.none { it == "半决赛" || it == "SEMIFINAL" })
     }
 
     private class RecordingPlugin(

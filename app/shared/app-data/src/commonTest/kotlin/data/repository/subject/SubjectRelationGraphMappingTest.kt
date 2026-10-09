@@ -3,6 +3,7 @@ package com.wynime.app.data.repository.subject
 import kotlinx.serialization.json.Json
 import com.wynime.app.data.models.subject.SubjectRelation
 import com.wynime.app.data.models.subject.SubjectRelationGraphPlatform
+import com.wynime.app.data.models.subject.SubjectRelationGraphSubject
 import com.wynime.models.CollectionTypeDto
 import com.wynime.models.SubjectRelationGraphDto
 import com.wynime.models.SubjectRelationGraphNodeRoleDto
@@ -11,6 +12,7 @@ import com.wynime.datasources.api.topic.UnifiedCollectionType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class SubjectRelationGraphMappingTest {
     private fun decode(json: String) = Json.decodeFromString(SubjectRelationGraphDto.serializer(), json)
@@ -69,6 +71,58 @@ class SubjectRelationGraphMappingTest {
 ]}
         """.trimIndent(),
     )
+
+    @Test
+    fun `mainline traversal includes every prequel and sequel hop`() {
+        val traversal = buildRelationGraphMainline(
+            rootSubjectId = 2,
+            relations = mapOf(
+                2 to listOf(
+                    RelationGraphLink(1, SubjectRelation.PREQUEL),
+                    RelationGraphLink(3, SubjectRelation.SEQUEL),
+                ),
+                1 to listOf(RelationGraphLink(0, SubjectRelation.PREQUEL)),
+                3 to listOf(RelationGraphLink(4, SubjectRelation.SEQUEL)),
+            ),
+        )
+
+        assertEquals(listOf(0, 1, 2, 3, 4), traversal.subjectIds)
+        assertFalse(traversal.truncated)
+    }
+
+    @Test
+    fun `mainline traversal marks nodes beyond the safety limit`() {
+        val traversal = buildRelationGraphMainline(
+            rootSubjectId = 1,
+            relations = mapOf(
+                1 to listOf(RelationGraphLink(2, SubjectRelation.SEQUEL)),
+                2 to listOf(RelationGraphLink(3, SubjectRelation.SEQUEL)),
+            ),
+            maxSubjects = 2,
+        )
+
+        assertEquals(listOf(1, 2), traversal.subjectIds)
+        assertTrue(traversal.truncated)
+    }
+
+    @Test
+    fun `mainline node labels use episode count and platform rather than relation position`() {
+        fun subject(platform: SubjectRelationGraphPlatform?, episodes: Int) =
+            SubjectRelationGraphSubject(
+                subjectId = episodes,
+                name = "",
+                nameCn = "",
+                image = "",
+                airDate = PackedDate.Invalid,
+                platform = platform,
+                episodeCount = episodes,
+                collectionType = UnifiedCollectionType.NOT_COLLECTED,
+            )
+
+        assertFalse(subject(SubjectRelationGraphPlatform.OVA, 10).isMinorMainlineNode())
+        assertTrue(subject(SubjectRelationGraphPlatform.OVA, 1).isMinorMainlineNode())
+        assertFalse(subject(SubjectRelationGraphPlatform.TV, 0).isMinorMainlineNode())
+    }
 
     @Test
     fun `groups branches under their main node`() {

@@ -11,6 +11,9 @@ private val ordinalSourceTitlePattern = Regex(
 private val seasonSourceTitlePattern = Regex(
     """(?i)^(.+?)\s+season\s*(\d+)(?:\s+.*)?$""",
 )
+private val partSourceTitlePattern = Regex(
+    """(?i)^(.+?)\s+part\s*\.?\s*(\d+)(?:\s+.*)?$""",
+)
 private val compactSourceTitlePattern = Regex("^(.+?)(\\d{1,2})$")
 private val coverSuffixPattern = Regex("(?i)\\s*(?:封面图|封面圖)$")
 
@@ -39,6 +42,20 @@ private val specialSourceTitleMarkers = listOf(
     "新编辑版",
 )
 
+private val sourceTitleBaseSuffixPattern = Regex(
+    """(?i)^(.+?)\s*(?:u\s*[- ]?\s*\d+|world\s*cup|world\s*championship|世界杯|世界盃|semi[- ]?final|半决赛|半決賽|準決勝|準決賽|(?:the\s+)?final\s+season|最终季|最終季|season\s*\d+|part(?:[.\s]*\d+)?|ova|oad|剧场版|劇場版|电影|電影|特别篇|特別篇).*$""",
+)
+
+private val sourceTitleMarkerPatterns = listOf(
+    "semifinal" to Regex("(?i)semi[- ]?final|半决赛|半決賽|準決勝|準決賽"),
+    "worldcup" to Regex("(?i)world[ -]?cup|世界杯|世界盃"),
+    "finalseason" to Regex("""(?i)final\s+season|最终季|最終季"""),
+    "movie" to Regex("(?i)movie|剧场版|劇場版|电影|電影"),
+    "ova" to Regex("(?i)ova|oad"),
+    "special" to Regex("特别篇|特別篇|番外篇|番外"),
+)
+private val arcSourceTitleMarkerNames = setOf("semifinal", "worldcup", "finalseason")
+
 internal enum class SourceTitleVariantKind {
     SEASON,
     PART,
@@ -56,6 +73,7 @@ internal data class SourceTitleMatch(
     val variant: SourceTitleVariant?,
     val hasVariantMarker: Boolean,
     val isBaseEquivalent: Boolean,
+    val arcMarkers: Set<String>,
 )
 
 /**
@@ -79,6 +97,8 @@ internal fun sourceSearchQueryVariants(query: String): List<String> {
     if (variant == null) {
         add(original)
         add(simplified)
+        sourceTitleBaseFallbacks(original).forEach(::add)
+        sourceTitleBaseFallbacks(simplified).forEach(::add)
     } else {
         val originalBaseTitle = originalTitle?.baseTitle ?: original
         add(originalBaseTitle)
@@ -89,9 +109,31 @@ internal fun sourceSearchQueryVariants(query: String): List<String> {
         add("${title.baseTitle}第${variant.number}${variant.kind.suffix()}")
         add("${originalBaseTitle}${variant.number}")
         add("${title.baseTitle}${variant.number}")
+        sourceTitleBaseFallbacks(original).forEach(::add)
+        sourceTitleBaseFallbacks(simplified).forEach(::add)
     }
     return result.toList()
 }
+
+/**
+ * Merges title spellings from all known subject names before querying a provider.
+ * The individual title matcher remains responsible for deciding whether a result
+ * belongs to the requested installment.
+ */
+internal fun sourceSearchQueryVariantsForRequest(
+    queryNames: List<String>,
+): List<String> {
+    val result = linkedSetOf<String>()
+    queryNames.flatMap(::sourceSearchQueryVariants).forEach(result::add)
+    return result.toList()
+}
+
+/**
+ * Keeps the source selector aware of every canonical title supplied by Bangumi.
+ */
+internal fun sourceTitleNamesForRequest(
+    queryNames: List<String>,
+): List<String> = queryNames.map(String::trim).filter(String::isNotBlank).distinct()
 
 /**
  * Returns the season-specific spellings of a title without including its franchise-only query.
@@ -111,8 +153,11 @@ internal fun sourceTitleMatch(value: String): SourceTitleMatch {
     val normalized = normalizeSourceQuery(value).replace(coverSuffixPattern, "").trim()
     val parsedVariant = parseSourceTitleVariant(normalized)
     val baseTitle = parsedVariant?.baseTitle ?: normalized
-    val base = baseTitle.filter(Char::isLetterOrDigit)
+    val base = normalizeSourceTitleKey(baseTitle)
     val hasSpecialMarker = specialSourceTitleMarkers.any(normalized::contains)
+    val titleMarkers = sourceTitleMarkerPatterns
+        .filter { (_, pattern) -> pattern.containsMatchIn(normalized) }
+        .mapTo(linkedSetOf()) { (marker, _) -> marker }
     val canonical = if (parsedVariant == null) {
         base
     } else {
@@ -123,11 +168,12 @@ internal fun sourceTitleMatch(value: String): SourceTitleMatch {
         base = base,
         baseTitle = baseTitle,
         variant = parsedVariant?.variant,
-        hasVariantMarker = parsedVariant != null || hasSpecialMarker,
+        hasVariantMarker = parsedVariant != null || hasSpecialMarker || titleMarkers.isNotEmpty(),
         isBaseEquivalent = parsedVariant?.variant?.number == 1 ||
             normalized.contains("新编集版") ||
             normalized.contains("新編集版") ||
             normalized.contains("新编辑版"),
+        arcMarkers = titleMarkers.filterTo(linkedSetOf()) { it in arcSourceTitleMarkerNames },
     )
 }
 
@@ -160,6 +206,13 @@ private fun parseSourceTitleVariant(value: String): ParsedSourceTitleVariant? {
         return ParsedSourceTitleVariant(
             baseTitle = match.groupValues[1].trim(),
             variant = SourceTitleVariant(SourceTitleVariantKind.SEASON, number),
+        )
+    }
+    partSourceTitlePattern.matchEntire(value)?.let { match ->
+        val number = match.groupValues[2].toIntOrNull() ?: return@let null
+        return ParsedSourceTitleVariant(
+            baseTitle = match.groupValues[1].trim(),
+            variant = SourceTitleVariant(SourceTitleVariantKind.PART, number),
         )
     }
     compactSourceTitlePattern.matchEntire(value)?.let { match ->
@@ -209,6 +262,40 @@ private fun parseSourceTitleNumber(value: String): Int? = value.toIntOrNull() ?:
     }
     (total + number).takeIf { it > 0 }
 }
+
+private fun sourceTitleBaseFallbacks(value: String): List<String> {
+    val normalized = normalizeSourceSurface(value)
+    val result = linkedSetOf<String>()
+    sourceTitleBaseSuffixPattern.matchEntire(normalized)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.trim()
+        ?.takeIf { it.length >= 2 && it.any(Char::isLetterOrDigit) }
+        ?.let(result::add)
+
+    normalized.split(Regex("\\s*[:：/／|｜]\\s*"), limit = 2)
+        .firstOrNull()
+        ?.trim()
+        ?.takeIf { it.length >= 2 && it != normalized && it.any(Char::isLetterOrDigit) }
+        ?.let(result::add)
+
+    return result.toList()
+}
+
+private fun normalizeSourceTitleKey(value: String): String = value
+    .let { normalizeSourceQuery(it) }
+    .replace(Regex("(?i)semi[- ]?final"), "semifinal")
+    .replace("半決賽", "semifinal")
+    .replace("半决赛", "semifinal")
+    .replace("準決勝", "semifinal")
+    .replace("準決賽", "semifinal")
+    .replace(Regex("(?i)world[ -]?cup"), "worldcup")
+    .replace("世界盃", "worldcup")
+    .replace("世界杯", "worldcup")
+    .replace(Regex("""(?i)(?:the\s+)?final\s+season"""), "finalseason")
+    .replace("最终季", "finalseason")
+    .replace("最終季", "finalseason")
+    .filter(Char::isLetterOrDigit)
 
 private fun normalizeSourceSurface(value: String): String =
     value

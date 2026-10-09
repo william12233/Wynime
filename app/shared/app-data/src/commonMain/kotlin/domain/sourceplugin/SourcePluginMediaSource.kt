@@ -108,11 +108,12 @@ class SourcePluginMediaSource(
     override suspend fun searchSubjects(keyword: String): List<BrowseSubject> {
         val traceId = Uuid.randomString()
         val requestedTitle = sourceTitleMatch(keyword)
+        val requestedNames = sourceTitleNamesForRequest(listOf(keyword))
         val subjects = buildList {
             val seen = HashSet<String>()
             var completedQuery = false
             var lastFailure: SourcePluginFailure? = null
-            for (query in sourceSearchQueryVariants(keyword)) {
+            for (query in sourceSearchQueryVariantsForRequest(listOf(keyword))) {
                 val searchResults = try {
                     searchPluginSubjects(query, traceId, "browse-search")
                 } catch (error: SourcePluginFailure) {
@@ -123,7 +124,9 @@ class SourcePluginMediaSource(
                 for (subject in searchResults) {
                     if (seen.add(subject.id)) add(subject)
                 }
-                if (requestedTitle.hasVariantMarker && selectBestSourceSubject(this, listOf(keyword)) != null) {
+                if (requestedTitle.hasVariantMarker &&
+                    selectBestSourceSubject(this, requestedNames)?.isExactTitle == true
+                ) {
                     break
                 }
             }
@@ -217,9 +220,8 @@ class SourcePluginMediaSource(
                 .map(String::trim)
                 .filter(String::isNotBlank)
                 .distinct()
-            val searchQueries = requestedNames
-                .flatMap(::sourceSearchQueryVariants)
-                .distinct()
+            val matchingNames = sourceTitleNamesForRequest(requestedNames)
+            val searchQueries = sourceSearchQueryVariantsForRequest(requestedNames)
             trace(
                 traceId,
                 SourceTracePhase.DISCOVERY_START,
@@ -241,11 +243,11 @@ class SourcePluginMediaSource(
                     for (subject in searchResults) {
                         if (seen.add(subject.id)) add(subject)
                     }
-                    if (selectBestSourceSubject(this, requestedNames) != null) break
+                    if (selectBestSourceSubject(this, matchingNames)?.isExactTitle == true) break
                 }
                 if (!completedQuery) lastFailure?.let { throw it }
             }
-            val selectedSubject = selectBestSourceSubject(subjects, requestedNames)
+            val selectedSubject = selectBestSourceSubject(subjects, matchingNames)
             if (selectedSubject == null) {
                 val diagnostics = trace(
                     traceId,
@@ -450,6 +452,17 @@ internal fun selectBestSourceSubject(
 
                 val exactTitle = normalizedTitle.canonical == query.canonical
                 if (query.variant != null && normalizedTitle.variant != query.variant) {
+                    continue
+                }
+                if (query.variant == null && normalizedTitle.variant != null &&
+                    !normalizedTitle.isBaseEquivalent
+                ) {
+                    continue
+                }
+                if (query.arcMarkers.isNotEmpty() &&
+                    normalizedTitle.arcMarkers.isNotEmpty() &&
+                    normalizedTitle.arcMarkers != query.arcMarkers
+                ) {
                     continue
                 }
                 if (!query.hasVariantMarker && normalizedTitle.hasVariantMarker && !normalizedTitle.isBaseEquivalent) {

@@ -2,6 +2,7 @@ package com.wynime.app.domain.sourceplugin
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SourceSearchQueryTest {
@@ -46,5 +47,33 @@ class SourceSearchQueryTest {
     @Test
     fun `season aliases include compact Arabic season spelling`() {
         assertTrue(sourceTitleSeasonVariants("大王饒命第三季").contains("大王饶命3"))
+    }
+
+    @Test
+    fun `arc title fallback keeps the base query and specific marker`() {
+        val target = sourceSearchQueryVariantsForRequest(
+            queryNames = listOf("新网球王子 U-17 世界杯 半决赛"),
+        )
+        assertTrue(target.contains("新网球王子"))
+        assertTrue(target.contains("新网球王子 u-17 世界杯 半决赛"))
+        assertEquals(
+            sourceTitleMatch("新网球王子 U-17 世界杯 半决赛").canonical,
+            sourceTitleMatch("新网球王子 U-17 世界杯 SEMIFINAL").canonical,
+        )
+
+        val unrelated = sourceSearchQueryVariantsForRequest(
+            queryNames = listOf("新网球王子 U-17 世界杯"),
+        )
+        assertFalse(unrelated.contains("半决赛"))
+    }
+
+    @Test
+    fun `final season fallback is shared by other arc titles`() {
+        val queries = sourceSearchQueryVariants("進撃の巨人 The Final Season Part.2")
+        assertTrue(queries.contains("進撃の巨人"))
+        assertEquals(
+            sourceTitleMatch("進擊的巨人 最終季").canonical,
+            sourceTitleMatch("進擊的巨人 The Final Season").canonical,
+        )
     }
 }

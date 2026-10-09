@@ -216,7 +216,10 @@ class SourcePluginMediaSource(
     override suspend fun fetch(query: MediaFetchRequest): SizedSource<MediaMatch> = SinglePagePagedSource {
         flow {
             val traceId = query.traceId.ifBlank { Uuid.randomString() }
-            val requestedNames = query.subjectNames.ifEmpty { listOfNotNull(query.subjectNameCN) }
+            val requestedNames = buildList {
+                addAll(query.subjectNames)
+                query.subjectNameCN?.let(::add)
+            }
                 .map(String::trim)
                 .filter(String::isNotBlank)
                 .distinct()

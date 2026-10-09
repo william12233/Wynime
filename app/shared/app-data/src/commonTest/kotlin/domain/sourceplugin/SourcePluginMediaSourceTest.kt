@@ -77,6 +77,34 @@ class SourcePluginMediaSourceTest {
     }
 
     @Test
+    fun `media discovery keeps the CN name when source names already contain another spelling`() = runTest {
+        val targetTitle = "新网球王子 U-17 世界杯 SEMIFINAL"
+        val plugin = RecordingPlugin(
+            title = targetTitle,
+            searchResultsByQuery = mapOf(
+                "新テニスの王子様" to listOf(SourceSubject("5107", targetTitle)),
+            ),
+        )
+        val source = SourcePluginMediaSource(plugin)
+
+        val media = source.fetch(
+            MediaFetchRequest(
+                subjectId = "439197",
+                episodeId = "8",
+                subjectNameCN = "新网球王子 U-17 世界杯 半决赛",
+                subjectNames = listOf("新テニスの王子様 U-17 WORLD CUP SEMIFINAL"),
+                episodeSort = EpisodeSort("8"),
+                episodeName = "第8集",
+            ),
+        )
+        val matches = media.results.toList()
+        media.awaitFinished()
+
+        assertEquals(targetTitle, matches.single().media.properties.subjectName)
+        assertTrue(plugin.searchQueries.contains("新テニスの王子様"))
+    }
+
+    @Test
     fun `seasonal browse search starts with base and stops after safe match`() = runTest {
         val plugin = RecordingPlugin(
             title = "大王饶命3",

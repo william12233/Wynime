@@ -1,7 +1,7 @@
 {
   "id": "dyttzy",
   "name": "電影天堂",
-  "version": "1.0.28",
+  "version": "1.3.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.dyttzy.DyttzyEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dyttzy-v1.0.28/source/plugins/artifacts/source-dyttzy.jar",
-      "sha256": "564cff4399e298b17d31e63135eb55b8b0fa9c6ad5ed7e1855437f8c1abde14a",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dyttzy-v1.3.0/source/plugins/artifacts/source-dyttzy.jar",
+      "sha256": "ac478fd61171337f0e96e8f5736b70a7644369a641a755dc5371c7a985a7fa84",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dyttzy-v1.0.28/source/plugins/artifacts/source-dyttzy-android.jar",
-      "sha256": "a0e307cf956b38467b98b14e7741d3a722ea280dad81f810415609c1b69075c1",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dyttzy-v1.3.0/source/plugins/artifacts/source-dyttzy-android.jar",
+      "sha256": "7dc446899a91022bb0c7562567fcde0dc7236f4f1828e83ddcb8b59d6b65ea79",
       "format": "jar"
     }
   }

@@ -1,7 +1,7 @@
 {
   "id": "eacg",
   "name": "E-ACG",
-  "version": "1.0.28",
+  "version": "1.0.34",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.eacg.EacgEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-eacg-v1.0.28/source/plugins/artifacts/source-eacg.jar",
-      "sha256": "f7ab894af0ee95052832b75853a92b3edfeb07632fc72ece8cd642740f39e5ab",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-eacg-v1.0.34/source/plugins/artifacts/source-eacg.jar",
+      "sha256": "d646a1bd122753a3d6f7893f2dde07e1abf0e9cd4e9a3b292fa8cc2e710d895f",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-eacg-v1.0.28/source/plugins/artifacts/source-eacg-android.jar",
-      "sha256": "aca06bfc94d8aa0e6c0f0f284aaf3d31a902fff77ea93719b0dc2b282a130e8e",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-eacg-v1.0.34/source/plugins/artifacts/source-eacg-android.jar",
+      "sha256": "bba3a25c9a56157d3fa437bdcba9012886c46b1b1fe09c0a7dca67430dc3f348",
       "format": "jar"
     }
   }

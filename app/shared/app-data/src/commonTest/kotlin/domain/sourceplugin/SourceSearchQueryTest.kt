@@ -42,4 +42,9 @@ class SourceSearchQueryTest {
         assertEquals(3, chinese.variant?.number)
         assertTrue(chinese.hasVariantMarker)
     }
+
+    @Test
+    fun `season aliases include compact Arabic season spelling`() {
+        assertTrue(sourceTitleSeasonVariants("大王饒命第三季").contains("大王饶命3"))
+    }
 }

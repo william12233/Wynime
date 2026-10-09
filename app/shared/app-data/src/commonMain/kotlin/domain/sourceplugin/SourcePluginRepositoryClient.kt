@@ -63,19 +63,6 @@ class SourcePluginRepositoryClient(
             require(entry.manifest.isRepositoryReference()) {
                 "Manifest path must be relative and must not escape the repository"
             }
-            val versions = entry.versionEntries()
-            require(versions.isNotEmpty()) { "Plugin ${entry.id} has no published versions" }
-            require(versions.map { it.version }.distinct().size == versions.size) {
-                "Plugin ${entry.id} has duplicate version history entries"
-            }
-            versions.forEach { version ->
-                require(isValidSourcePluginVersion(version.version)) {
-                    "Plugin ${entry.id} has invalid version ${version.version}"
-                }
-                require(version.manifest.isRepositoryReference()) {
-                    "Plugin ${entry.id} has an unsafe historical manifest path"
-                }
-            }
         }
         return SourcePluginIndexFetchResult(
             index = index,

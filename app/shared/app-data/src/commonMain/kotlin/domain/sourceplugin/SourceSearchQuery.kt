@@ -93,6 +93,20 @@ internal fun sourceSearchQueryVariants(query: String): List<String> {
     return result.toList()
 }
 
+/**
+ * Returns the season-specific spellings of a title without including its franchise-only query.
+ *
+ * The source search needs the franchise spelling as a fallback, while the selector must not
+ * treat that fallback as another season. Keeping this set separate lets both paths share the
+ * same season parser without weakening season filtering.
+ */
+internal fun sourceTitleSeasonVariants(query: String): List<String> {
+    val variant = sourceTitleMatch(query).variant ?: return emptyList()
+    return sourceSearchQueryVariants(query).filter { candidate ->
+        sourceTitleMatch(candidate).variant == variant
+    }
+}
+
 internal fun sourceTitleMatch(value: String): SourceTitleMatch {
     val normalized = normalizeSourceQuery(value).replace(coverSuffixPattern, "").trim()
     val parsedVariant = parseSourceTitleVariant(normalized)

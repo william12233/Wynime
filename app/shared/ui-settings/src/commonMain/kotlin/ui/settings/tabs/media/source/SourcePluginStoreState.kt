@@ -15,8 +15,6 @@ import com.wynime.app.domain.sourceplugin.SourcePluginRegistry
 import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryClient
 import com.wynime.app.domain.sourceplugin.SOURCE_PLUGIN_API_VERSION
 import com.wynime.app.domain.sourceplugin.compareSourcePluginVersions
-import com.wynime.app.domain.sourceplugin.forVersion
-import com.wynime.app.domain.sourceplugin.versionEntries
 
 class SourcePluginStoreState(
     private val repositoryClient: SourcePluginRepositoryClient,
@@ -73,12 +71,6 @@ class SourcePluginStoreState(
         registry.install(entry)
     }
 
-    fun installVersion(entry: SourcePluginIndexEntry, version: String): Job = runPluginOperation(entry.id) {
-        val selected = entry.forVersion(version)
-            ?: error("來源插件 ${entry.id} 沒有版本 $version")
-        registry.install(selected)
-    }
-
     fun setEnabled(pluginId: String, enabled: Boolean): Job = runPluginOperation(pluginId) {
         registry.setEnabled(pluginId, enabled)
     }
@@ -95,12 +87,7 @@ class SourcePluginStoreState(
         bundled: List<SourcePluginIndexEntry>,
         remote: List<SourcePluginIndexEntry>,
     ): List<SourcePluginIndexEntry> = (bundled + remote).groupBy { it.id }.values.map { entries ->
-        val latest = entries.maxWith { left, right -> compareSourcePluginVersions(left.version, right.version) }
-        val history = entries
-            .flatMap(SourcePluginIndexEntry::versionEntries)
-            .distinctBy { it.version }
-            .filterNot { it.version == latest.version }
-        latest.copy(history = history)
+        entries.maxWith { left, right -> compareSourcePluginVersions(left.version, right.version) }
     }
 
     private fun runPluginOperation(pluginId: String, operation: suspend () -> Unit): Job = scope.launch {

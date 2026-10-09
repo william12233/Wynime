@@ -20,6 +20,7 @@ import com.wynime.app.domain.media.fetch.create
 import com.wynime.app.domain.media.fetch.createFetchFetchSession
 import com.wynime.app.domain.media.selector.DefaultMediaSelector
 import com.wynime.app.domain.media.selector.MediaSelectorContextFlowProducer
+import com.wynime.app.domain.media.selector.withFetchRequestSubjectNames
 import com.wynime.app.domain.usecase.UseCase
 import com.wynime.datasources.api.source.MediaFetchRequest
 import com.wynime.utils.logging.info
@@ -117,6 +118,7 @@ class CreateMediaFetchSelectBundleFlowUseCaseImpl(
             bundle ?: return@mapLatest null
             fetchSession ?: return@mapLatest null
 
+            val latestRequest = fetchSession.latestRequest
             val selector = DefaultMediaSelector(
                 MediaSelectorContextFlowProducer(
 
@@ -125,8 +127,10 @@ class CreateMediaFetchSelectBundleFlowUseCaseImpl(
                         list.map { it.mediaSourceId }
                     },
                     flowOf(bundle.seriesInfo ?: SubjectSeriesInfo.Fallback),
-                    flowOf(bundle.subjectInfo),
-                    fetchSession.latestRequest.map { bundle.episodeInfo.withRequestedNumbers(it) },
+                    combine(flowOf(bundle.subjectInfo), latestRequest) { subjectInfo, request ->
+                        subjectInfo.withFetchRequestSubjectNames(request)
+                    },
+                    latestRequest.map { bundle.episodeInfo.withRequestedNumbers(it) },
                     mediaSourceManager.mediaSourceTiersFlow(),
                 ).flow,
                 fetchSession.cumulativeResults,

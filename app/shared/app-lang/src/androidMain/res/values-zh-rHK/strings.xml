@@ -1002,7 +1002,7 @@
     <string name="mediafetch_request_editor_primary_name">主要搜尋名稱</string>
     <string name="mediafetch_request_editor_primary_name_supporting">大多數資料來源只使用此名稱</string>
     <string name="mediafetch_request_editor_secondary_names">次要搜尋名稱</string>
-    <string name="mediafetch_request_editor_secondary_names_supporting">線上來源會忽略這些名稱</string>
+    <string name="mediafetch_request_editor_secondary_names_supporting">線上來源也會使用這些名稱</string>
     <string name="mediafetch_request_editor_collapse">收起</string>
     <string name="mediafetch_request_editor_expand">展開</string>
     <string name="mediafetch_request_editor_delete_name">刪除名稱 %1$d</string>

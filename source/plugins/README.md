@@ -21,7 +21,20 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 
 `index.json` 與各 `manifests/*.json` 是公開倉庫的機器可讀索引，更新 artifact 後必須同步更新 SHA-256。
 
-每個插件版本由 `versions/<id>.properties` 獨立管理；App 版本更新不會自動替換插件版本。版本常數只會編譯進對應插件的 artifact，不會由共用 runtime 映射決定。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，與 App release tag 分離；索引保留以 immutable Git tag 固定的歷史 manifest，商店可安裝、降級或回復指定版本；App 內置套件只用於既有安裝的遷移。
+每個插件版本由 `versions/<id>.properties` 獨立管理；App 版本更新不會自動替換插件版本。版本常數只會編譯進對應插件的 artifact，不會由共用 runtime 映射決定。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，與 App release tag 分離；官方索引只提供每個插件的最新版，App 內置套件只用於既有安裝的遷移。
+
+版本號依該插件的程式碼修訂次數計算；修訂次數包含插件專屬程式碼，以及該插件實際打包的共用 `SitePluginBase` 程式碼。除 eacg 保留 `1.0.x` 版本線外，其餘插件使用 `1.<修訂次數>.0`：
+
+| ID | 程式碼修訂次數 | 版本 |
+| --- | ---: | --- |
+| `eacg` | 6 | `1.0.34` |
+| `next` | 6 | `1.6.0` |
+| `dm1` | 5 | `1.5.0` |
+| `girigiri` | 5 | `1.5.0` |
+| `2rk` | 5 | `1.5.0` |
+| `dida` | 5 | `1.5.0` |
+| `dmbus` | 5 | `1.5.0` |
+| `dyttzy` | 3 | `1.3.0` |
 
 ## 目前來源與人工煙霧測試
 

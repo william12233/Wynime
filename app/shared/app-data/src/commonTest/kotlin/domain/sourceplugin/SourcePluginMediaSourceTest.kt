@@ -20,6 +20,7 @@ import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 
@@ -118,6 +119,33 @@ class SourcePluginMediaSourceTest {
             listOf("大王饒命", "大王饶命", "大王饒命第三季", "大王饶命第三季"),
             plugin.searchQueries,
         )
+    }
+
+    @Test
+    fun `seasonal discovery reaches a compact Arabic season result`() = runTest {
+        val compactTitle = "大王饶命3"
+        val plugin = RecordingPlugin(
+            title = compactTitle,
+            searchResultsByQuery = mapOf(
+                compactTitle to listOf(SourceSubject("season-3", compactTitle)),
+            ),
+        )
+        val source = SourcePluginMediaSource(plugin)
+
+        val media = source.fetch(
+            MediaFetchRequest(
+                subjectId = "",
+                episodeId = "203536",
+                subjectNameCN = "大王饒命第三季",
+                subjectNames = emptyList(),
+                episodeSort = EpisodeSort("14"),
+                episodeName = "第14集",
+            ),
+        )
+        media.results.toList()
+        media.awaitFinished()
+
+        assertTrue(plugin.searchQueries.contains(compactTitle))
     }
 
     private class RecordingPlugin(

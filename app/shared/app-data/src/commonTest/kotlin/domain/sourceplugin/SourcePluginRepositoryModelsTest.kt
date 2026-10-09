@@ -1,8 +1,6 @@
 package com.wynime.app.domain.sourceplugin
 
-import com.wynime.source.plugin.api.SourcePluginPlatform
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -22,21 +20,4 @@ class SourcePluginRepositoryModelsTest {
         assertTrue(isValidSourcePluginVersion("2.4.0-preview.2"))
     }
 
-    @Test
-    fun `version history selects a concrete manifest without retaining latest history`() {
-        val entry = SourcePluginIndexEntry(
-            id = "demo",
-            displayName = "Demo",
-            version = "1.0.1",
-            website = "https://demo.example",
-            platforms = setOf(SourcePluginPlatform.DESKTOP),
-            manifest = "manifests/demo.json",
-            history = listOf(SourcePluginVersionEntry("1.0.0", "manifests/demo-1.0.0.json")),
-        )
-
-        val selected = requireNotNull(entry.forVersion("1.0.0"))
-        assertEquals("1.0.0", selected.version)
-        assertEquals("manifests/demo-1.0.0.json", selected.manifest)
-        assertTrue(selected.history.isEmpty())
-    }
 }

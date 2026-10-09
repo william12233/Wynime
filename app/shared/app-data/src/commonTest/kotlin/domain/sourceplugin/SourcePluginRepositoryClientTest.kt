@@ -102,7 +102,7 @@ class SourcePluginRepositoryClientTest {
     }
 
     @Test
-    fun `historical manifest can be pinned to an immutable GitHub ref`() = runTest {
+    fun `manifest can be pinned to an immutable GitHub ref`() = runTest {
         val entry = validEntry(
             version = "1.0.1",
             manifest = "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/demo.json",

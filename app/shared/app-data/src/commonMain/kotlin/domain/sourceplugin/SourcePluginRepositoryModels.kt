@@ -39,27 +39,7 @@ data class SourcePluginIndexEntry(
     val icon: String? = null,
     val platforms: Set<SourcePluginPlatform>,
     val manifest: String,
-    val history: List<SourcePluginVersionEntry> = emptyList(),
 )
-
-@Serializable
-data class SourcePluginVersionEntry(
-    val version: String,
-    val manifest: String,
-)
-
-fun SourcePluginIndexEntry.versionEntries(): List<SourcePluginVersionEntry> =
-    (listOf(SourcePluginVersionEntry(version, manifest)) + history)
-        .distinctBy { it.version }
-
-fun SourcePluginIndexEntry.forVersion(version: String): SourcePluginIndexEntry? =
-    versionEntries().firstOrNull { it.version == version }?.let { selected ->
-        copy(
-            version = selected.version,
-            manifest = selected.manifest,
-            history = emptyList(),
-        )
-    }
 
 @Serializable
 data class SourcePluginManifest(

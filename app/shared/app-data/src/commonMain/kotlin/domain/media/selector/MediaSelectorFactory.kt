@@ -56,6 +56,14 @@ interface MediaSelectorFactory {
                 flowCoroutineContext: CoroutineContext,
                 fetchRequest: Flow<MediaFetchRequest>?,
             ): MediaSelector {
+                val subjectInfoFlow = subjectCollectionRepository
+                    .subjectCollectionFlow(subjectId)
+                    .map { it.subjectInfo }
+                val subjectInfoWithRequestFlow = fetchRequest?.let { requestFlow ->
+                    combine(subjectInfoFlow, requestFlow) { subjectInfo, request ->
+                        subjectInfo.withFetchRequestSubjectNames(request)
+                    }
+                } ?: subjectInfoFlow
                 return DefaultMediaSelector(
                     MediaSelectorContextFlowProducer(
                         episodeCollectionRepository.subjectCompletedFlow(subjectId),
@@ -63,7 +71,7 @@ interface MediaSelectorFactory {
                             list.map { it.mediaSourceId }
                         },
                         subjectRelationsRepository.subjectSeriesInfoFlow(subjectId),
-                        subjectCollectionRepository.subjectCollectionFlow(subjectId).map { it.subjectInfo },
+                        subjectInfoWithRequestFlow,
                         episodeCollectionRepository.episodeCollectionInfoFlow(subjectId, episodeId).map { it.episodeInfo }.let { episodeInfo ->
                             if (fetchRequest == null) episodeInfo else combine(episodeInfo, fetchRequest) { info, request -> info.withRequestedNumbers(request) }
                         },

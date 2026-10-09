@@ -34,6 +34,8 @@ import com.wynime.source.plugin.api.SourceResultStatus
 import com.wynime.utils.coroutines.flows.flowOfEmptyList
 import com.wynime.utils.platform.annotations.TestOnly
 
+internal fun List<Media>.countPlaybackLines(): Int = distinctBy { it.properties.alliance }.size
+
 @Stable
 data class MediaSourceResultPresentation(
     val instanceId: String,
@@ -89,8 +91,10 @@ class MediaSourceResultListPresenter(
         .flatMapLatest { (list, preferred) ->
             val flows = list.map { source ->
                 val countFlow = includedMediaFlow
-                    ?.map { included -> included.count { it.mediaSourceId == source.mediaSourceId } }
-                    ?: source.results.map { it.size }
+                    ?.map { included ->
+                        included.filter { it.mediaSourceId == source.mediaSourceId }.countPlaybackLines()
+                    }
+                    ?: source.results.map { it.countPlaybackLines() }
                 combine(source.state, countFlow) { state, count ->
                     source.toPresentation(
                         state,

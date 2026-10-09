@@ -46,4 +46,15 @@ class MediaSelectorVisibleChannelsTest {
             visibleSourceMedia(candidates, TestMediaList[0].mediaSourceId),
         )
     }
+
+    @Test
+    fun `source result count uses distinct playback lines`() {
+        val sameLine = TestMediaList[0].copy(mediaId = "${TestMediaList[0].mediaId}-episode-2")
+        val secondLine = TestMediaList[0].copy(
+            mediaId = "${TestMediaList[0].mediaId}-second-line",
+            properties = TestMediaList[0].properties.copy(alliance = "第二線路"),
+        )
+
+        assertEquals(2, listOf(TestMediaList[0], sameLine, secondLine).countPlaybackLines())
+    }
 }

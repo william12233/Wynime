@@ -1,7 +1,7 @@
 {
   "id": "2rk",
   "name": "2RK",
-  "version": "1.0.28",
+  "version": "1.5.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.rk2.Rk2EntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-2rk-v1.0.28/source/plugins/artifacts/source-2rk.jar",
-      "sha256": "19a293030bd2efd990290b2adf91e983fc7835b028ffe245558478df5e4e238d",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-2rk-v1.5.0/source/plugins/artifacts/source-2rk.jar",
+      "sha256": "23680b33c27f2aef51fadf9847f43bb078ef46719aec4db576d58f1603a53763",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-2rk-v1.0.28/source/plugins/artifacts/source-2rk-android.jar",
-      "sha256": "48791b72de34328b472db0b469f63727bd433beecec35f6732a52be0da4acd94",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-2rk-v1.5.0/source/plugins/artifacts/source-2rk-android.jar",
+      "sha256": "fe41c5d368407b02e12336f1ed54175eb8b13e819fe741758f717e2715f2e7ab",
       "format": "jar"
     }
   }

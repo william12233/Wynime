@@ -27,6 +27,7 @@ internal class DidaPlugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "dida",
     displayName = "嘀嗒影視",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://www.didahd.pro",
     iconUrl = "https://www.didahd.pro/template/mytheme/statics/img/newfavicon.png",
     description = "嘀嗒影視公開番劇與分集來源",

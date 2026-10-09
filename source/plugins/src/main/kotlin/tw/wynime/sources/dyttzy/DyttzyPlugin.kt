@@ -34,6 +34,7 @@ internal class DyttzyPlugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "dyttzy",
     displayName = "電影天堂",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = ROOT_URL,
     iconUrl = "$ROOT_URL/favicon.ico",
     description = "電影天堂公開 API 的直接 HLS 來源",

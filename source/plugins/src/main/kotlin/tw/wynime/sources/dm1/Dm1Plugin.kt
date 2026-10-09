@@ -25,6 +25,7 @@ internal class Dm1Plugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "dm1",
     displayName = "稀飯動漫",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://dm1.xfdm.pro",
     iconUrl = "https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png",
     description = "稀飯動漫公開分集來源",

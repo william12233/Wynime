@@ -1,7 +1,7 @@
 {
   "id": "next",
   "name": "Xifan Next",
-  "version": "1.0.27",
+  "version": "1.0.28",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.next.NextEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-next-v1.0.27/source/plugins/artifacts/source-next.jar",
-      "sha256": "d2fb781ddbc9802e03a2d2607faea4cc9f1355725313e085284cd9b755dfb021",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-next-v1.0.28/source/plugins/artifacts/source-next.jar",
+      "sha256": "d90501c24ceb3ff69c82c4f66cd7d94e442e7a24a15647e26af5d83b7df3ecff",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-next-v1.0.27/source/plugins/artifacts/source-next-android.jar",
-      "sha256": "805d10b66680bcdec9e9f260ca9d278610931d7279e63f89b144dbd6e1eb1e58",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-next-v1.0.28/source/plugins/artifacts/source-next-android.jar",
+      "sha256": "60fe35a1cab9674c83c6ceda17876026b36c9b7202a351476e85eddb10a8e922",
       "format": "jar"
     }
   }

@@ -42,6 +42,7 @@ internal abstract class SitePluginBase(
     protected val context: SourcePluginContext,
     id: String,
     displayName: String,
+    pluginVersion: String,
     protected val rootUrl: String,
     iconUrl: String,
     description: String,
@@ -49,7 +50,7 @@ internal abstract class SitePluginBase(
     final override val metadata = SourcePluginMetadata(
         id = id,
         displayName = displayName,
-        version = pluginVersionFor(context.pluginId),
+        version = pluginVersion,
         website = rootUrl,
         description = description,
         iconUrl = iconUrl,

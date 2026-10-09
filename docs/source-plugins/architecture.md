@@ -35,11 +35,11 @@ SourcePluginMediaResolver
                                       └─ 下載器
 ```
 
-插件不得持有 UI、播放器或下載器實例，也不得把短期媒體網址當成長期資料庫身分。`SourceMediaIdentity` 由插件 ID、網站 subject ID、頻道 ID 與集數 ID 組成；短期網址在播放或下載開始時重新取得。
+插件不得持有 UI、播放器或下載器實例，也不得把短期媒體網址當成長期資料庫身分。`SourceMediaIdentity` 由插件 ID、網站 subject ID、頻道 ID 與集數 ID 組成；短期網址在播放或下載開始時重新取得。插件版本與網站解析版本均只屬於各自 artifact；跨插件唯一穩定契約是上述 API 輸出資料。
 
 ## 插件 API
 
-插件只依賴 `source/plugin-api`。核心型別包括：
+插件只依賴 `source/plugin-api`；每個 artifact 內含自己的網站解析與支援程式碼，插件之間不共用執行時類別。核心型別包括：
 
 - `SourceSubject`、`SourceChannel`、`SourceEpisode`、`SourceSubjectDetails`：網站內容模型。
 - `SourcePluginMetadata`：顯示名稱、版本、網站、圖示、支援平台與最低主程式版本。

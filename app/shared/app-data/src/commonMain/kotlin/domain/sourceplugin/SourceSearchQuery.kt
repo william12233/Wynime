@@ -1,6 +1,6 @@
 package com.wynime.app.domain.sourceplugin
 
-import com.wynime.app.data.network.traditionalToSimplifiedChinese
+import com.wynime.app.data.network.simplifyChineseOrOriginal
 
 private val numberedSourceTitlePattern = Regex(
     """^(.+?)\s*第\s*([零〇一二两兩三四五六七八九十百千0-9]+)\s*(季|部)(?:\s+.*)?$""",
@@ -204,7 +204,7 @@ private fun normalizeSourceSurface(value: String): String =
         .trim()
 
 private fun normalizeSourceQuery(value: String): String =
-    traditionalToSimplifiedChinese(normalizeSourceSurface(value))
+    simplifyChineseOrOriginal(normalizeSourceSurface(value))
 
 private fun isCjkCharacter(character: Char): Boolean =
     character in '\u3400'..'\u9fff'

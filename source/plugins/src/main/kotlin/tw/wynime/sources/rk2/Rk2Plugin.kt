@@ -28,6 +28,7 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "2rk",
     displayName = "二礦動漫",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://www.2rk.cc",
     iconUrl = "https://www.2rk.cc/logo.png",
     description = "二礦動漫公開 HLS 番劇來源",

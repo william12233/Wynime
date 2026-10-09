@@ -21,7 +21,7 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 
 `index.json` 與各 `manifests/*.json` 是公開倉庫的機器可讀索引，更新 artifact 後必須同步更新 SHA-256。
 
-每個插件版本由 `plugin-versions.properties` 獨立管理；App 版本更新不會自動替換插件版本。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，與 App release tag 分離；索引保留以 immutable Git tag 固定的歷史 manifest，商店可安裝、降級或回復指定版本；App 內置套件只用於既有安裝的遷移。
+每個插件版本由 `versions/<id>.properties` 獨立管理；App 版本更新不會自動替換插件版本。版本常數只會編譯進對應插件的 artifact，不會由共用 runtime 映射決定。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，與 App release tag 分離；索引保留以 immutable Git tag 固定的歷史 manifest，商店可安裝、降級或回復指定版本；App 內置套件只用於既有安裝的遷移。
 
 ## 目前來源與人工煙霧測試
 

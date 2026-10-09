@@ -44,6 +44,7 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "next",
     displayName = "稀飯動漫 Next",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://next.xifanacg.com",
     iconUrl = "https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico",
     description = "稀飯動漫 Next 的 SSR 番劇與正常播放服務",

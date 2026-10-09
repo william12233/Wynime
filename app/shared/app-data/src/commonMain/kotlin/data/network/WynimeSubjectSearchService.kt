@@ -1,5 +1,6 @@
 package com.wynime.app.data.network
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.wynime.app.data.models.subject.PersonPosition
@@ -39,41 +40,52 @@ class WynimeSubjectSearchService(
             SearchSort.DATE -> BangumiSearchSubjectsRequest.Sort.MATCH
         }
         val candidates = searchKeywordVariants(keyword)
+        var lastFailure: Throwable? = null
         for ((index, candidate) in candidates.withIndex()) {
-            val result = bangumiApi.request {
-                searchSubjects(
-                    bangumiSearchSubjectsRequest = BangumiSearchSubjectsRequest(
-                        keyword = candidate,
-                        sort = sortValue,
-                        filter = BangumiSearchSubjectsRequestFilter(
-                            type = listOf(BangumiSubjectType.Anime),
-                            tag = filters?.tags,
-                            airDate = filters?.airDates,
-                            rating = filters?.ratings,
-                            rank = filters?.ranks,
-                            nsfw = filters?.nsfw,
+            val result = try {
+                bangumiApi.request {
+                    searchSubjects(
+                        bangumiSearchSubjectsRequest = BangumiSearchSubjectsRequest(
+                            keyword = candidate,
+                            sort = sortValue,
+                            filter = BangumiSearchSubjectsRequestFilter(
+                                type = listOf(BangumiSubjectType.Anime),
+                                tag = filters?.tags,
+                                airDate = filters?.airDates,
+                                rating = filters?.ratings,
+                                rank = filters?.ranks,
+                                nsfw = filters?.nsfw,
+                            ),
                         ),
-                    ),
-                    offset = offset,
-                    limit = limit,
-                )
+                        offset = offset,
+                        limit = limit,
+                    )
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                if (error is Error && error !is LinkageError) throw error
+                lastFailure = error
+                if (index == candidates.lastIndex) throw error
+                continue
             }
             val matches = result.data.orEmpty()
             if (matches.isNotEmpty() || index == candidates.lastIndex) {
                 return@withContext matches.map { search -> search.toBatchSubjectDetails() }
             }
         }
+        lastFailure?.let { throw it }
         emptyList()
     }
 
     companion object {
         fun sanitizeKeyword(keyword: String): String {
-            return traditionalToSimplifiedChinese(sanitizeSearchPunctuation(keyword))
+            return simplifyChineseOrOriginal(sanitizeSearchPunctuation(keyword))
         }
 
         fun searchKeywordVariants(keyword: String): List<String> {
             val sanitized = sanitizeSearchPunctuation(keyword)
-            return linkedSetOf(sanitized, traditionalToSimplifiedChinese(sanitized))
+            return linkedSetOf(sanitized, simplifyChineseOrOriginal(sanitized))
                 .filter(String::isNotBlank)
         }
 

@@ -39,6 +39,20 @@ class SourcePluginMediaSourceTest {
     }
 
     @Test
+    fun `browse search continues when one spelling is rejected`() = runTest {
+        val plugin = RecordingPlugin(
+            title = simplifiedTitle,
+            failedQueries = setOf(traditionalTitle),
+        )
+        val source = SourcePluginMediaSource(plugin)
+
+        val subjects = source.searchSubjects(traditionalTitle)
+
+        assertEquals(listOf(traditionalTitle, simplifiedTitle), plugin.searchQueries)
+        assertEquals(listOf("3410"), subjects.map { it.url.substringBefore('#').substringAfterLast('/') })
+    }
+
+    @Test
     fun `media discovery tries traditional and simplified queries and matches the title`() = runTest {
         val plugin = RecordingPlugin(simplifiedTitle)
         val source = SourcePluginMediaSource(plugin)
@@ -109,6 +123,7 @@ class SourcePluginMediaSourceTest {
     private class RecordingPlugin(
         private val title: String,
         private val searchResultsByQuery: Map<String, List<SourceSubject>> = emptyMap(),
+        private val failedQueries: Set<String> = emptySet(),
         val searchQueries: MutableList<String> = mutableListOf(),
     ) : SourcePlugin {
         override val metadata = SourcePluginMetadata(
@@ -125,6 +140,7 @@ class SourcePluginMediaSourceTest {
 
         override suspend fun search(request: SourceSearchRequest): List<SourceSubject> {
             searchQueries += request.query
+            if (request.query in failedQueries) error("query spelling rejected")
             return searchResultsByQuery[request.query]
                 ?: if (request.query == title) {
                     listOf(SourceSubject("3410", title, detailUrl = "https://next.xifanacg.com/anime/3410"))

@@ -23,39 +23,41 @@ fun isValidSemanticVersion(value: String): Boolean = Regex(
     "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
 ).matches(value)
 
-val pluginVersionsFile = layout.projectDirectory.file("plugin-versions.properties").asFile
-val pluginVersions = Properties().apply {
-    pluginVersionsFile.reader().use(::load)
-}.let { properties ->
-    pluginIds.associateWith { pluginId ->
-        properties.getProperty(pluginId)?.trim()?.also { version ->
+val pluginVersionsDirectory = layout.projectDirectory.dir("versions").asFile
+val pluginVersionFiles = pluginIds.associateWith { pluginId ->
+    File(pluginVersionsDirectory, "$pluginId.properties")
+}
+val pluginVersions = pluginVersionFiles.mapValues { (pluginId, file) ->
+    require(file.isFile) { "Missing version file for plugin $pluginId: $file" }
+    Properties().apply { file.reader().use(::load) }
+        .getProperty("version")
+        ?.trim()
+        ?.also { version ->
             require(isValidSemanticVersion(version)) {
                 "Invalid semantic version for plugin $pluginId: $version"
             }
-        } ?: error("Missing version for plugin $pluginId in $pluginVersionsFile")
-    }
+        }
+        ?: error("Missing version for plugin $pluginId in $file")
 }
 version = "independent"
 
+val pluginPackageNames = mapOf("2rk" to "rk2")
 val generatedPluginVersionDirectory = layout.buildDirectory.dir("generated/source/pluginVersions/main")
-val generatePluginVersionCatalog = tasks.register("generatePluginVersionCatalog") {
-    inputs.file(pluginVersionsFile)
+val generatePluginVersionSources = tasks.register("generatePluginVersionSources") {
+    inputs.files(pluginVersionFiles.values)
     outputs.dir(generatedPluginVersionDirectory)
     doLast {
-        val sourceFile = generatedPluginVersionDirectory.get().asFile.resolve(
-            "tw/wynime/sources/shared/PluginVersions.kt",
-        )
-        sourceFile.parentFile.mkdirs()
-        sourceFile.writeText(buildString {
-            appendLine("package tw.wynime.sources.shared")
-            appendLine()
-            appendLine("internal fun pluginVersionFor(pluginId: String): String = when (pluginId) {")
-            pluginVersions.forEach { (pluginId, pluginVersion) ->
-                appendLine("    \"$pluginId\" -> \"$pluginVersion\"")
-            }
-            appendLine("    else -> error(\"Unknown source plugin id: ${'$'}pluginId\")")
-            appendLine("}")
-        })
+        pluginIds.forEach { pluginId ->
+            val packageName = "tw.wynime.sources.${pluginPackageNames[pluginId] ?: pluginId}"
+            val sourceFile = generatedPluginVersionDirectory.get().asFile.resolve(
+                "${packageName.replace('.', '/')}/PluginVersion.kt",
+            )
+            sourceFile.parentFile.mkdirs()
+            sourceFile.writeText(
+                "package $packageName\n\n" +
+                    "internal const val PLUGIN_VERSION = \"${pluginVersions.getValue(pluginId)}\"\n",
+            )
+        }
     }
 }
 
@@ -74,7 +76,7 @@ kotlin {
 }
 
 tasks.withType<KotlinJvmCompile>().configureEach {
-    dependsOn(generatePluginVersionCatalog)
+    dependsOn(generatePluginVersionSources)
     compilerOptions.jvmTarget.set(JvmTarget.JVM_1_8)
 }
 
@@ -98,8 +100,6 @@ tasks.register<JavaExec>("sourcePluginLiveSmokeTest") {
 
 val pluginProjectDir = layout.projectDirectory.asFile
 val pluginBuildDir = layout.buildDirectory.get().asFile
-
-val pluginPackageNames = mapOf("2rk" to "rk2")
 
 pluginIds.forEach { pluginId ->
     val taskName = "package${pluginId.replaceFirstChar { it.uppercase() }}Plugin"
@@ -281,6 +281,13 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
                 }
                 check(zip.entries().asSequence().none { it.name == "classes.dex" }) {
                     "Desktop artifact for $pluginId contains classes.dex"
+                }
+                val packagePath = "tw/wynime/sources/${pluginPackageNames[pluginId] ?: pluginId}"
+                check(zip.getEntry("$packagePath/PluginVersionKt.class") != null) {
+                    "Fresh desktop artifact for $pluginId has no package-local version source"
+                }
+                check(zip.getEntry("tw/wynime/sources/shared/PluginVersionsKt.class") == null) {
+                    "Fresh desktop artifact for $pluginId contains a shared plugin version map"
                 }
             }
 

@@ -5,7 +5,7 @@
     {
       "id": "eacg",
       "name": "E-ACG",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "E-ACG 動畫來源",
       "website": "https://eacg1.com/",
       "icon": "https://k8dm.com/template/vfed/asset/img/favicon.png",
@@ -16,6 +16,10 @@
       "manifest": "manifests/eacg.json",
       "history": [
         {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-eacg-v1.0.27/source/plugins/manifests/eacg.json"
+        },
+        {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/eacg.json"
         }
@@ -24,7 +28,7 @@
     {
       "id": "dm1",
       "name": "DM1",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "DM1 動畫來源",
       "website": "https://dm1.xfdm.pro/",
       "icon": "https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png",
@@ -35,6 +39,10 @@
       "manifest": "manifests/dm1.json",
       "history": [
         {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dm1-v1.0.27/source/plugins/manifests/dm1.json"
+        },
+        {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/dm1.json"
         }
@@ -43,7 +51,7 @@
     {
       "id": "next",
       "name": "Xifan Next",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "Xifan Next 動畫來源",
       "website": "https://next.xifanacg.com/",
       "icon": "https://next.xifanacg.com/favicon.ico?favicon.046zlab6jl7gk.ico",
@@ -54,6 +62,10 @@
       "manifest": "manifests/next.json",
       "history": [
         {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-next-v1.0.27/source/plugins/manifests/next.json"
+        },
+        {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/next.json"
         }
@@ -62,7 +74,7 @@
     {
       "id": "girigiri",
       "name": "Girigiri Love",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "Girigiri Love 動畫來源",
       "website": "https://ani.girigirilove.com/",
       "icon": "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
@@ -73,6 +85,10 @@
       "manifest": "manifests/girigiri.json",
       "history": [
         {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-girigiri-v1.0.27/source/plugins/manifests/girigiri.json"
+        },
+        {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/girigiri.json"
         }
@@ -81,7 +97,7 @@
     {
       "id": "2rk",
       "name": "2RK",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "2RK 動畫來源",
       "website": "https://www.2rk.cc/",
       "icon": "https://www.2rk.cc/logo.png",
@@ -92,6 +108,10 @@
       "manifest": "manifests/2rk.json",
       "history": [
         {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-2rk-v1.0.27/source/plugins/manifests/2rk.json"
+        },
+        {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/2rk.json"
         }
@@ -100,7 +120,7 @@
     {
       "id": "dida",
       "name": "DIDAHD",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "DIDAHD 動畫來源",
       "website": "https://www.didahd.pro/",
       "icon": "https://www.didahd.pro/template/mytheme/statics/img/newfavicon.png",
@@ -111,6 +131,10 @@
       "manifest": "manifests/dida.json",
       "history": [
         {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dida-v1.0.27/source/plugins/manifests/dida.json"
+        },
+        {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/dida.json"
         }
@@ -119,7 +143,7 @@
     {
       "id": "dmbus",
       "name": "DMBUS",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "DMBUS 動畫來源",
       "website": "https://dmbus.cc/",
       "icon": "https://dmbus.cc/favicon.ico",
@@ -130,6 +154,10 @@
       "manifest": "manifests/dmbus.json",
       "history": [
         {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dmbus-v1.0.27/source/plugins/manifests/dmbus.json"
+        },
+        {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/dmbus.json"
         }
@@ -138,7 +166,7 @@
     {
       "id": "dyttzy",
       "name": "電影天堂",
-      "version": "1.0.27",
+      "version": "1.0.28",
       "description": "電影天堂公開 API 的直接 HLS 來源",
       "website": "https://caiji.dyttzyapi.com/",
       "icon": "https://caiji.dyttzyapi.com/favicon.ico",
@@ -148,6 +176,10 @@
       ],
       "manifest": "manifests/dyttzy.json",
       "history": [
+        {
+          "version": "1.0.27",
+          "manifest": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dyttzy-v1.0.27/source/plugins/manifests/dyttzy.json"
+        },
         {
           "version": "1.0.26",
           "manifest": "https://raw.githubusercontent.com/william12233/Wynime/v1.0.11/source/plugins/manifests/dyttzy.json"

@@ -23,6 +23,10 @@ import tw.wynime.sources.rk2.Rk2EntryPoint
 import tw.wynime.sources.shared.jsonArrayObjects
 
 class SourcePluginContractTest {
+    private val semanticVersionPattern = Regex(
+        "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",
+    )
+
     @Test
     fun jsonArrayObjectsReturnsEveryItemInsteadOfTheResponseWrapper() {
         val response = """{"list":[{"vod_id":27030,"vod_name":"第四季"},{"vod_id":1222,"vod_name":"第一季"}]}"""
@@ -54,7 +58,7 @@ class SourcePluginContractTest {
             val plugin = entryPoint.create(FakeContext(id))
             try {
                 assertEquals(id, plugin.metadata.id)
-                assertEquals("1.0.27", plugin.metadata.version)
+                assertTrue(semanticVersionPattern.matches(plugin.metadata.version))
                 assertEquals(3, plugin.metadata.pluginApiVersion)
                 assertEquals(website, plugin.metadata.website)
                 assertTrue(plugin.metadata.iconUrl.orEmpty().startsWith("https://"))

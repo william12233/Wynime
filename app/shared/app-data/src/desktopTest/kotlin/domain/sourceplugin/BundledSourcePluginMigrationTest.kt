@@ -66,7 +66,7 @@ class BundledSourcePluginMigrationTest {
             assertEquals(8, registry.states.value.size)
             for (old in previous) {
                 val current = repository.snapshot().plugins.single { it.id == old.id }
-                assertEquals("1.0.27", current.version)
+                assertEquals(packages.manifest(old.id).version, current.version)
                 assertEquals(3, current.manifest.pluginApiVersion)
                 assertEquals(old.enabled, current.enabled)
                 assertTrue(File(current.artifactPath).isFile)
@@ -92,7 +92,9 @@ class BundledSourcePluginMigrationTest {
         try {
             val entries = registry.bundledEntries()
             assertEquals(packages.pluginIds, entries.map { it.id }.toSet())
-            assertTrue(entries.all { it.version == "1.0.27" })
+            for (entry in entries) {
+                assertEquals(packages.manifest(entry.id).version, entry.version)
+            }
             kotlin.test.assertFailsWith<IllegalStateException> {
                 registry.install(entries.first())
             }

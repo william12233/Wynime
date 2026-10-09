@@ -28,6 +28,7 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "eacg",
     displayName = "E-ACG",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://eacg1.com",
     iconUrl = "https://k8dm.com/template/vfed/asset/img/favicon.png",
     description = "E-ACG 動畫搜尋與分集來源",

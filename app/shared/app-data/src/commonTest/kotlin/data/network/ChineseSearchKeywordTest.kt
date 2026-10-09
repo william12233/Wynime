@@ -19,6 +19,14 @@ import kotlin.test.assertTrue
 
 class ChineseSearchKeywordTest {
     @Test
+    fun `converter failure keeps the original keyword usable`() {
+        assertEquals(
+            "我獨自升級",
+            simplifyChineseOrOriginal("我獨自升級") { error("converter unavailable") },
+        )
+    }
+
+    @Test
     fun `traditional Chinese title is converted for Bangumi search`() {
         assertEquals(
             "我独自升级",

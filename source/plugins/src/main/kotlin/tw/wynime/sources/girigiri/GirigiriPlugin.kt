@@ -29,6 +29,7 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "girigiri",
     displayName = "Girigiri 愛動漫",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://ani.girigirilove.com",
     iconUrl = "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
     description = "Girigiri 愛動漫公開番劇與分集來源",

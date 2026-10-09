@@ -32,6 +32,7 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
     context = context,
     id = "dmbus",
     displayName = "動漫巴士",
+    pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://dmbus.cc",
     iconUrl = "https://dmbus.cc/favicon.ico",
     description = "動漫巴士公開番劇與外部播放頁來源",

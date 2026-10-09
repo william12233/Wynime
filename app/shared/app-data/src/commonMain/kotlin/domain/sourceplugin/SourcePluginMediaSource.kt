@@ -110,8 +110,16 @@ class SourcePluginMediaSource(
         val requestedTitle = sourceTitleMatch(keyword)
         val subjects = buildList {
             val seen = HashSet<String>()
+            var completedQuery = false
+            var lastFailure: SourcePluginFailure? = null
             for (query in sourceSearchQueryVariants(keyword)) {
-                val searchResults = searchPluginSubjects(query, traceId, "browse-search")
+                val searchResults = try {
+                    searchPluginSubjects(query, traceId, "browse-search")
+                } catch (error: SourcePluginFailure) {
+                    lastFailure = error
+                    continue
+                }
+                completedQuery = true
                 for (subject in searchResults) {
                     if (seen.add(subject.id)) add(subject)
                 }
@@ -119,6 +127,7 @@ class SourcePluginMediaSource(
                     break
                 }
             }
+            if (!completedQuery) lastFailure?.let { throw it }
         }
         trace(
             traceId,
@@ -219,13 +228,22 @@ class SourcePluginMediaSource(
             )
             val subjects = buildList {
                 val seen = HashSet<String>()
+                var completedQuery = false
+                var lastFailure: SourcePluginFailure? = null
                 for (searchQuery in searchQueries) {
-                    val searchResults = searchPluginSubjects(searchQuery, traceId, "discovery-search")
+                    val searchResults = try {
+                        searchPluginSubjects(searchQuery, traceId, "discovery-search")
+                    } catch (error: SourcePluginFailure) {
+                        lastFailure = error
+                        continue
+                    }
+                    completedQuery = true
                     for (subject in searchResults) {
                         if (seen.add(subject.id)) add(subject)
                     }
                     if (selectBestSourceSubject(this, requestedNames) != null) break
                 }
+                if (!completedQuery) lastFailure?.let { throw it }
             }
             val selectedSubject = selectBestSourceSubject(subjects, requestedNames)
             if (selectedSubject == null) {

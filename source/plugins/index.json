@@ -70,7 +70,7 @@
     {
       "id": "baimao",
       "name": "白猫動漫",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "description": "白猫動漫動畫來源",
       "website": "https://www.bmmdmm.com/",
       "icon": "https://www.bmmdmm.com/hdst/hm_pic/favicon.ico",
@@ -83,7 +83,7 @@
     {
       "id": "akianime",
       "name": "AkiAnime",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "description": "AkiAnime 動畫來源",
       "website": "https://www.akianime.cc/",
       "icon": "https://www.akianime.cc/favicon.ico",

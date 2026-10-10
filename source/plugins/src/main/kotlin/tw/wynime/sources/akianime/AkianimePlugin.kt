@@ -2,6 +2,9 @@ package tw.wynime.sources.akianime
 
 import com.wynime.source.plugin.api.SourceChannel
 import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.ResolvedMedia
+import com.wynime.source.plugin.api.ResolvedMediaFormat
 import com.wynime.source.plugin.api.SourcePlugin
 import com.wynime.source.plugin.api.SourcePluginContext
 import com.wynime.source.plugin.api.SourcePluginEntryPoint
@@ -9,13 +12,17 @@ import com.wynime.source.plugin.api.SourceResolveRequest
 import com.wynime.source.plugin.api.SourceSearchRequest
 import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
+import com.wynime.source.plugin.api.mediaIdentity
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
+import tw.wynime.sources.shared.extractJsonStringField
 import tw.wynime.sources.shared.extractPlayerObjectUrl
+import tw.wynime.sources.shared.isHttpUrl
 import tw.wynime.sources.shared.isMediaUrl
 import tw.wynime.sources.shared.links
 import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.searchQueryVariants
+import kotlin.coroutines.cancellation.CancellationException
 
 class AkianimeEntryPoint : SourcePluginEntryPoint {
     override fun create(context: SourcePluginContext): SourcePlugin = AkianimePlugin(context)
@@ -81,18 +88,26 @@ internal class AkianimePlugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/bgmplay/${request.subjectId}-${request.channelId}-${request.episodeId}.html"
         val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
-        // Aki exposes a usable HLS URL in player_aaaa for some lines. Encrypted or
-        // otherwise non-HTTP values still fall back to the normal site player page.
-        resolvedMedia(
-            request = request,
-            pageUrl = page.finalUrl,
-            rawUrl = extractPlayerObjectUrl(page.html),
-            headers = mapOf("Referer" to page.finalUrl),
-        )
+        val playerUrl = extractPlayerObjectUrl(page.html)
+        val decodedDokiUrl = playerUrl
+            ?.takeIf { it.startsWith("Doki-", ignoreCase = true) }
+            ?.let { resolveDokiMedia(it, page.finalUrl, request) }
+        val rawUrl = decodedDokiUrl ?: playerUrl
+        val directDoki = decodedDokiUrl != null && isDokiMediaUrl(decodedDokiUrl)
+        if (directDoki) {
+            resolvedDokiMedia(request, page.finalUrl, decodedDokiUrl)
+        } else {
+            resolvedMedia(
+                request = request,
+                pageUrl = page.finalUrl,
+                rawUrl = rawUrl,
+                headers = mapOf("Referer" to page.finalUrl),
+            )
+        }
     }
 
     override fun matchWebResource(url: String): SourceWebResourceMatch = when {
-        isMediaUrl(url) -> SourceWebResourceMatch.Matched(url)
+        isAkiMediaUrl(url) -> SourceWebResourceMatch.Matched(url)
         isPlayerPage(url) -> SourceWebResourceMatch.LoadPage
         else -> defaultWebResourceMatch(url)
     }
@@ -127,7 +142,86 @@ internal class AkianimePlugin(context: SourcePluginContext) : SitePluginBase(
         Regex("(?i)\\bthis-link\\b").containsMatchIn(link.attributes)
     }
 
+    private suspend fun resolveDokiMedia(
+        dokiUrl: String,
+        pageUrl: String,
+        request: SourceResolveRequest,
+    ): String? {
+        return try {
+            val parserUrl = "$DOKI_PARSER_URL/?url=${urlEncode(dokiUrl)}"
+            val parserPage = requestPage(
+                parserUrl,
+                headers = mapOf("Referer" to pageUrl),
+                traceId = request.traceId,
+                entryPoint = request.entryPoint,
+            )
+            val key = extractJsonStringField(parserPage.html, "key") ?: return null
+            val time = extractJsonStringField(parserPage.html, "time") ?: return null
+            val response = context.http.execute(
+                SourceHttpRequest(
+                    method = "POST",
+                    url = "$DOKI_PARSER_URL/api_config.php",
+                    headers = defaultHeaders + mapOf(
+                        "Accept" to "application/json, text/javascript, */*; q=0.01",
+                        "Content-Type" to "application/x-www-form-urlencoded; charset=UTF-8",
+                        "Referer" to parserUrl,
+                        "X-Requested-With" to "XMLHttpRequest",
+                    ),
+                    body = listOf(
+                        "url" to dokiUrl,
+                        "time" to time,
+                        "key" to key,
+                        "title" to "",
+                    ).joinToString("&") { (name, value) ->
+                        "${urlEncode(name)}=${urlEncode(value)}"
+                    }.encodeToByteArray(),
+                    traceId = request.traceId,
+                    entryPoint = request.entryPoint,
+                ),
+            )
+            if (response.statusCode !in 200..399) return null
+            val body = response.bodyAsText()
+            val code = extractJsonStringField(body, "code")
+            val mediaUrl = extractJsonStringField(body, "url")
+            mediaUrl
+                ?.takeIf { code == "200" && isHttpUrl(it) }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: LinkageError) {
+            throw error
+        } catch (error: Error) {
+            throw error
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun resolvedDokiMedia(
+        request: SourceResolveRequest,
+        pageUrl: String,
+        mediaUrl: String,
+    ): ResolvedMedia = ResolvedMedia(
+        stableIdentity = request.mediaIdentity(metadata.id).asStableId(),
+        url = mediaUrl,
+        format = when {
+            Regex("(?i)\\.m3u8(?:[?#&]|$)").containsMatchIn(mediaUrl) ||
+                mediaUrl.contains("m3u8", ignoreCase = true) -> ResolvedMediaFormat.HLS
+            Regex("(?i)\\.(?:mp4|m4v)(?:[?#&]|$)").containsMatchIn(mediaUrl) -> ResolvedMediaFormat.MP4
+            else -> ResolvedMediaFormat.UNKNOWN
+        },
+        originalPageUrl = pageUrl,
+    )
+
+    private fun isAkiMediaUrl(url: String): Boolean =
+        isMediaUrl(url) || Regex("(?i)\\.(?:mp4|m4v)(?:[?#&]|$)").containsMatchIn(url)
+
+    private fun isDokiMediaUrl(url: String): Boolean = isAkiMediaUrl(url)
+
     private fun isPlayerPage(url: String): Boolean = Regex(
         "(?i)/bgmplay/[^/?#]+-\\d+-\\d+\\.html(?:[?#]|$)",
     ).containsMatchIn(url)
+
+    private companion object {
+        const val DOKI_PARSER_URL = "https://aniplayer.xn--gmqr9gevarqk8t.cn"
+    }
 }

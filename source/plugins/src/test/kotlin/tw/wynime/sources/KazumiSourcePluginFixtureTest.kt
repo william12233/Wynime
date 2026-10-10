@@ -81,6 +81,69 @@ class KazumiSourcePluginFixtureTest {
     }
 
     @Test
+    fun `akianime resolves the encrypted high quality line through the parser`() = runBlocking {
+        val plugin = AkianimeEntryPoint().create(FixtureContext("akianime") { request ->
+            when {
+                "/bgmplay/high-1-1.html" in request.url ->
+                    "<script>var player_aaaa={\"url\":\"Doki-fixture-token\",\"from\":\"YDY\"}</script>"
+                "aniplayer.xn--gmqr9gevarqk8t.cn/?url=" in request.url ->
+                    "<script>var config={\"url\":\"Doki-fixture-token\",\"key\":\"fixture-key\",\"time\":\"fixture-time\"}</script>"
+                request.method == "POST" && "api_config.php" in request.url ->
+                    "{\"code\":\"200\",\"url\":\"https://cdn.example/akianime-high.mp4?token=one&part=two\"}"
+                else -> "<html><body>ok</body></html>"
+            }
+        })
+        try {
+            val resolved = plugin.resolve(SourceResolveRequest("high", "1", "1"))
+
+            assertEquals(
+                "https://cdn.example/akianime-high.mp4?token=one&part=two",
+                resolved.url,
+            )
+            assertEquals(ResolvedMediaFormat.MP4, resolved.format)
+            assertTrue(resolved.requestHeaders().isEmpty())
+        } finally {
+            plugin.close()
+        }
+    }
+
+    @Test
+    fun `baimao decrypts playinfo and returns the direct media url`() = runBlocking {
+        val plugin = BaimaoEntryPoint().create(
+            FixtureContext(
+                pluginId = "baimao",
+                handler = { request ->
+                    when {
+                        "/play/42-0-0.html" in request.url -> "<html>player</html>"
+                        request.url.endsWith("/time") -> "1791606027"
+                        "/playinfo?" in request.url -> BAIMAO_ENCRYPTED_PLAYINFO
+                        else -> "<html><body>ok</body></html>"
+                    }
+                },
+                responseHeaders = { request ->
+                    if ("/play/42-0-0.html" in request.url) {
+                        mapOf("Set-Cookie" to "t1=1791599772393; Path=/, k1=38161845068; Path=/")
+                    } else {
+                        emptyMap()
+                    }
+                },
+            ),
+        )
+        try {
+            val resolved = plugin.resolve(SourceResolveRequest("42", "0", "0"))
+
+            assertEquals("https://cdn.example/baimao.m3u8", resolved.url)
+            assertEquals(ResolvedMediaFormat.HLS, resolved.format)
+            assertEquals(
+                "https://www.bmmdmm.com/play/42-0-0.html",
+                resolved.requestHeaders()["Referer"],
+            )
+        } finally {
+            plugin.close()
+        }
+    }
+
+    @Test
     fun `mxdm keeps real channel ids and lets the site player resolve media`() = runBlocking {
         val plugin = MxdmEntryPoint().create(FixtureContext("mxdm") { request ->
             when {
@@ -109,6 +172,7 @@ class KazumiSourcePluginFixtureTest {
 
     private class FixtureContext(
         override val pluginId: String,
+        private val responseHeaders: (SourceHttpRequest) -> Map<String, String> = { emptyMap() },
         handler: (SourceHttpRequest) -> String,
     ) : SourcePluginContext {
         override val hostVersion: String = "4.9.0-dev"
@@ -117,6 +181,7 @@ class KazumiSourcePluginFixtureTest {
             override suspend fun execute(request: SourceHttpRequest): SourceHttpResponse = SourceHttpResponse(
                 statusCode = 200,
                 finalUrl = request.url,
+                headers = responseHeaders(request),
                 body = handler(request).encodeToByteArray(),
             )
         }
@@ -151,6 +216,8 @@ class KazumiSourcePluginFixtureTest {
         const val AKIANIME_PLAY_PAGE = """
             <script>var player_aaaa={"url":"https://cdn.example/akianime.m3u8"}</script>
         """
+
+        const val BAIMAO_ENCRYPTED_PLAYINFO = "23c7d4c5dcc3160d07bfc8bdd20ecb04c404f500fbf2f2bef3f9fcf8eb01edb5f4e9e7b2b1bbf3eff2f1e49db49be4e9ebeb969f94aedce1e3acd8d8ded196dfcbc9d2cc91d3c5d8bfc9cccfccba87c9bbceb5bfc280c4c2b2b57b6d846bb4b9bbb566be"
 
         const val MXDM_SUBJECT = """
             <h2>黑子的篮球第二季</h2>

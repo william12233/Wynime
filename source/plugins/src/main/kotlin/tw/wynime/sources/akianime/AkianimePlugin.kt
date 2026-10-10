@@ -11,6 +11,7 @@ import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
+import tw.wynime.sources.shared.extractPlayerObjectUrl
 import tw.wynime.sources.shared.isMediaUrl
 import tw.wynime.sources.shared.links
 import tw.wynime.sources.shared.parseEpisodeNumber
@@ -54,7 +55,7 @@ internal class AkianimePlugin(context: SourcePluginContext) : SitePluginBase(
             ?: page.title.substringBefore("-").ifBlank { subjectId }
         val groups = linkedMapOf<String, MutableList<com.wynime.source.plugin.api.SourceEpisode>>()
         val episodePattern = Regex("(?i)/bgmplay/${Regex.escape(subjectId)}-(\\d+)-(\\d+)\\.html")
-        links(page.html).forEach { link ->
+        resourceEpisodeLinks(page.html).forEach { link ->
             val match = episodePattern.find(link.href) ?: return@forEach
             val channelId = match.groupValues[1]
             val episodeId = match.groupValues[2]
@@ -80,11 +81,12 @@ internal class AkianimePlugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/bgmplay/${request.subjectId}-${request.channelId}-${request.episodeId}.html"
         val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
-        // The player URL is encrypted and resolved by the site's player JavaScript.
+        // Aki exposes a usable HLS URL in player_aaaa for some lines. Encrypted or
+        // otherwise non-HTTP values still fall back to the normal site player page.
         resolvedMedia(
             request = request,
             pageUrl = page.finalUrl,
-            rawUrl = null,
+            rawUrl = extractPlayerObjectUrl(page.html),
             headers = mapOf("Referer" to page.finalUrl),
         )
     }
@@ -107,7 +109,7 @@ internal class AkianimePlugin(context: SourcePluginContext) : SitePluginBase(
             }
             .filter(String::isNotBlank)
             .toList()
-        val routeIds = links(html)
+        val routeIds = resourceEpisodeLinks(html)
             .mapNotNull { link ->
                 Regex("(?i)/bgmplay/${Regex.escape(subjectId)}-(\\d+)-\\d+\\.html")
                     .find(link.href)
@@ -119,6 +121,10 @@ internal class AkianimePlugin(context: SourcePluginContext) : SitePluginBase(
         return routeIds.mapIndexed { index, channelId ->
             channelId to (names.getOrNull(index) ?: "線路$channelId")
         }.toMap()
+    }
+
+    private fun resourceEpisodeLinks(html: String) = links(html).filter { link ->
+        Regex("(?i)\\bthis-link\\b").containsMatchIn(link.attributes)
     }
 
     private fun isPlayerPage(url: String): Boolean = Regex(

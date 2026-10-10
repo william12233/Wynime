@@ -115,7 +115,6 @@ import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
 import com.wynime.app.ui.foundation.widgets.LocalToaster
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.acknowledgements
-import com.wynime.app.ui.lang.developer_list
 import com.wynime.app.ui.lang.settings_about_build_info
 import com.wynime.app.ui.lang.settings
 import com.wynime.app.ui.lang.settings_acknowledgements_oss_licenses
@@ -149,7 +148,6 @@ import com.wynime.app.ui.settings.tabs.about.AboutTab
 import com.wynime.app.ui.settings.tabs.about.AcknowledgementsTab
 import com.wynime.app.ui.settings.tabs.about.BuildInfo
 import com.wynime.app.ui.settings.tabs.about.BuildInfoTab
-import com.wynime.app.ui.settings.tabs.about.DevelopersTab
 import com.wynime.app.ui.settings.tabs.about.OpenSourceLibrariesTab
 import com.wynime.app.ui.settings.tabs.app.AppearanceGroup
 import com.wynime.app.ui.settings.tabs.app.PlayerGroup
@@ -284,18 +282,8 @@ fun SettingsScreen(
                         onClickBuildInfo = {
                             navigateTo(DetailPaneRoutes.BuildInfo)
                         },
-                        onClickReleaseNotes = {
-                            browserNavigator.openBrowser(
-                                context,
-                                WynimeHelperDestination.RELEASE_PREFIX + vm.aboutTabInfo.version,
-                            )
-                        },
-                        onClickWebsite = { browserNavigator.openBrowser(context, WynimeHelperDestination.ANI_WEBSITE) },
                         onClickFeedback = { browserNavigator.openBrowser(context, WynimeHelperDestination.ISSUE_TRACKER) },
                         onClickSource = { browserNavigator.openBrowser(context, WynimeHelperDestination.GITHUB_HOME) },
-                        onClickDevelopers = {
-                            navigateTo(DetailPaneRoutes.Developers)
-                        },
                         onClickAcknowledgements = {
                             navigateTo(DetailPaneRoutes.Acknowledgements)
                         },
@@ -704,27 +692,6 @@ internal fun SettingsPageLayout(
                             }
                         }
                     }
-                    entry<DetailPaneRoutes.Developers> {
-                        DetailPaneRoute(
-                            topAppBar = {
-                                WynimeTopAppBar(
-                                    title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.developer_list)) },
-                                    navigationIcon = {
-                                        BackNavigationIconButton(navigateUp)
-                                    },
-                                    colors = topAppBarColors,
-                                    windowInsets = topAppBarWindowInsets,
-                                    size = topAppBarSize,
-                                    scrollBehavior = detailPaneTopAppBarScrollBehavior,
-                                )
-                            },
-                            detailPaneTopAppBarScrollBehavior,
-                        ) {
-                            RouteContent {
-                                DevelopersTab(Modifier.fillMaxSize())
-                            }
-                        }
-                    }
                     entry<DetailPaneRoutes.BuildInfo> {
                         DetailPaneRoute(
                             topAppBar = {
@@ -900,10 +867,6 @@ sealed class DetailPaneRoutes : NavKey {
     @Serializable
     data object OpenSourceLicenses : DetailPaneRoutes()
 
-    @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.Developers")
-    @Serializable
-    data object Developers : DetailPaneRoutes()
-
     @SerialName("me.him188.ani.app.ui.settings.DetailPaneRoutes.BuildInfo")
     @Serializable
     data object BuildInfo : DetailPaneRoutes()
@@ -928,7 +891,6 @@ private val DetailPaneBackStackSaver: Saver<SnapshotStateList<DetailPaneRoutes>,
                 when (name as String) {
                     "Acknowledgements" -> DetailPaneRoutes.Acknowledgements
                     "OpenSourceLicenses" -> DetailPaneRoutes.OpenSourceLicenses
-                    "Developers" -> DetailPaneRoutes.Developers
                     "BuildInfo" -> DetailPaneRoutes.BuildInfo
                     "DevBuilds" -> DetailPaneRoutes.DevBuilds
                     "BangumiSync" -> DetailPaneRoutes.BangumiSync

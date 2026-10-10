@@ -24,7 +24,6 @@ val pluginIds = listOf(
     "next",
     "girigiri",
     "2rk",
-    "dida",
     "dmbus",
     "dyttzy",
     "baimao",

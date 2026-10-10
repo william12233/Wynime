@@ -50,12 +50,13 @@ class KazumiSourcePluginFixtureTest {
     }
 
     @Test
-    fun `akianime parses the u17 semifinal source and encrypted play page`() = runBlocking {
+    fun `akianime parses the u17 semifinal source and direct hls play page`() = runBlocking {
         val plugin = AkianimeEntryPoint().create(FixtureContext("akianime") { request ->
             when {
                 "/bgmsearch/" in request.url ->
                     "<a href=\"/bgmdetail/xhcDDE.html\"><h3>新网球王子 U-17 世界杯 半决赛</h3></a>"
                 "/bgmdetail/xhcDDE.html" in request.url -> AKIANIME_SUBJECT
+                "/bgmplay/xhcDDE-1-1.html" in request.url -> AKIANIME_PLAY_PAGE
                 else -> "<html><body>ok</body></html>"
             }
         })
@@ -67,9 +68,12 @@ class KazumiSourcePluginFixtureTest {
 
             assertEquals("xhcDDE", subject.id)
             assertEquals("超高画三线", details.channels.single().channel.displayName)
-            assertEquals("https://www.akianime.cc/bgmplay/xhcDDE-1-1.html", resolved.url)
-            assertEquals(ResolvedMediaFormat.WEB, resolved.format)
-            assertEquals(SourceWebResourceMatch.LoadPage, plugin.matchWebResource(resolved.url))
+            assertEquals("https://cdn.example/akianime.m3u8", resolved.url)
+            assertEquals(ResolvedMediaFormat.HLS, resolved.format)
+            assertEquals(
+                "https://www.akianime.cc/bgmplay/xhcDDE-1-1.html",
+                resolved.requestHeaders()["Referer"],
+            )
             assertTrue(plugin.matchWebResource("https://cdn.example/akianime.mp4") is SourceWebResourceMatch.Matched)
         } finally {
             plugin.close()
@@ -142,6 +146,10 @@ class KazumiSourcePluginFixtureTest {
             <ul class="anthology-list-play size">
                 <li><a class="hide this-link" href="/bgmplay/xhcDDE-1-1.html">01</a></li>
             </ul>
+        """
+
+        const val AKIANIME_PLAY_PAGE = """
+            <script>var player_aaaa={"url":"https://cdn.example/akianime.m3u8"}</script>
         """
 
         const val MXDM_SUBJECT = """

@@ -1,6 +1,8 @@
 package com.wynime.app.domain.sourceplugin
 
 import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.matcher.WebVideoMatcher
+import com.wynime.datasources.api.matcher.WebVideoMatcherContext
 import com.wynime.datasources.api.paging.awaitFinished
 import com.wynime.datasources.api.source.MediaFetchRequest
 import com.wynime.source.plugin.api.ResolvedMedia
@@ -74,6 +76,34 @@ class SourcePluginMediaSourceTest {
 
         assertEquals(listOf(traditionalTitle, simplifiedTitle), plugin.searchQueries)
         assertEquals(listOf(simplifiedTitle), matches.map { it.media.properties.subjectName })
+    }
+
+    @Test
+    fun `source matcher preserves the playback page referer for captured media`() = runTest {
+        val plugin = RecordingPlugin(simplifiedTitle)
+        val source = SourcePluginMediaSource(plugin)
+        val media = source.fetch(
+            MediaFetchRequest(
+                subjectId = "",
+                episodeId = "203536",
+                subjectNameCN = traditionalTitle,
+                subjectNames = emptyList(),
+                episodeSort = EpisodeSort("14"),
+                episodeName = "第14集",
+            ),
+        )
+        val match = media.results.toList().single()
+        media.awaitFinished()
+
+        val result = source.matcher.match(
+            "https://cdn.example/stream.m3u8",
+            WebVideoMatcherContext(match.media),
+        ) as WebVideoMatcher.MatchResult.Matched
+
+        assertEquals(
+            "https://next.xifanacg.com/anime/3410/play/203536?source=xfxf1",
+            result.video.headers["Referer"],
+        )
     }
 
     @Test
@@ -322,7 +352,11 @@ class SourcePluginMediaSourceTest {
             format = ResolvedMediaFormat.MP4,
         )
 
-        override fun matchWebResource(url: String) = SourceWebResourceMatch.Continue
+        override fun matchWebResource(url: String) = if (url.endsWith(".m3u8")) {
+            SourceWebResourceMatch.Matched(url)
+        } else {
+            SourceWebResourceMatch.Continue
+        }
 
         override fun close() = Unit
     }

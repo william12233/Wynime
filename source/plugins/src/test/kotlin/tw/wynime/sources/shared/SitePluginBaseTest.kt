@@ -10,7 +10,7 @@ import com.wynime.source.plugin.api.SourcePluginContext
 import com.wynime.source.plugin.api.SourcePluginLogger
 import com.wynime.source.plugin.api.SourcePluginPlatform
 import com.wynime.source.plugin.api.SourceWebResourceMatch
-import tw.wynime.sources.dida.DidaEntryPoint
+import tw.wynime.sources.baimao.BaimaoEntryPoint
 
 class SitePluginBaseTest {
     @Test
@@ -63,15 +63,15 @@ class SitePluginBaseTest {
 
     @Test
     fun keepsStaticPlayerAssetsOutOfWebViewResourceCapture() {
-        val plugin = DidaEntryPoint().create(FakeContext())
+        val plugin = BaimaoEntryPoint().create(FakeContext())
         try {
             assertEquals(
                 SourceWebResourceMatch.Continue,
-                plugin.matchWebResource("https://www.didahd.xyz/static/js/player.js"),
+                plugin.matchWebResource("https://www.bmmdmm.com/hdst/js/player.js"),
             )
             assertEquals(
                 SourceWebResourceMatch.LoadPage,
-                plugin.matchWebResource("https://www.didahd.xyz/static/player/artplayer/?url=token"),
+                plugin.matchWebResource("https://www.bmmdmm.com/hdst/player/artplayer/?url=token"),
             )
         } finally {
             plugin.close()
@@ -79,7 +79,7 @@ class SitePluginBaseTest {
     }
 
     private class FakeContext : SourcePluginContext {
-        override val pluginId: String = "dida"
+        override val pluginId: String = "baimao"
         override val hostVersion: String = "4.9.0-dev"
         override val platform: SourcePluginPlatform = SourcePluginPlatform.DESKTOP
         override val http: SourceHttpClient = object : SourceHttpClient {

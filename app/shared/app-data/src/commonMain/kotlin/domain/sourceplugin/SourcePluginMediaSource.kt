@@ -53,13 +53,23 @@ class SourcePluginMediaSource(
         tier = null,
     )
 
-    override val matcher: WebVideoMatcher = WebVideoMatcher { url, _: WebVideoMatcherContext ->
+    override val matcher: WebVideoMatcher = WebVideoMatcher { url, context ->
         when (val match = plugin.matchWebResource(url)) {
             SourceWebResourceMatch.Continue -> WebVideoMatcher.MatchResult.Continue
             SourceWebResourceMatch.LoadPage -> WebVideoMatcher.MatchResult.LoadPage
-            is SourceWebResourceMatch.Matched -> WebVideoMatcher.MatchResult.Matched(
-                WebVideo(match.url, match.headers),
-            )
+            is SourceWebResourceMatch.Matched -> {
+                val pageDownload = context.media.download as? ResourceLocation.WebVideo
+                val sourceDownload = context.media.download as? ResourceLocation.SourcePluginMedia
+                val pageUrl = pageDownload?.uri ?: sourceDownload?.uri
+                val headers = buildMap {
+                    putAll(pageDownload?.headers.orEmpty())
+                    putAll(match.headers)
+                    if (pageUrl != null && keys.none { it.equals("Referer", ignoreCase = true) }) {
+                        put("Referer", pageUrl)
+                    }
+                }
+                WebVideoMatcher.MatchResult.Matched(WebVideo(match.url, headers))
+            }
         }
     }
 

@@ -20,7 +20,6 @@
 | `next` | https://next.xifanacg.com/ | `re0` |
 | `girigiri` | https://Wynime.girigirilove.com/ | `re0` |
 | `2rk` | https://www.2rk.cc/ | `关于我转生变成史莱姆这档事` |
-| `dida` | https://www.didahd.xyz/ | `咒術迴戰` |
 | `dmbus` | https://dmbus.cc/ | `re0` |
 | `dyttzy` | https://caiji.dyttzyapi.com/ | `哪吒之魔童鬧海`（只驗證 `dyttm3u8` 直接 HLS） |
 | `baimao` | https://www.bmmdmm.com/ | `新网球王子 U-17 世界杯 半决赛` |
@@ -40,17 +39,15 @@ DYTTZY 的 `dytt` 分享網址、`vod_down_url` 與非 HTTPS HLS 項目不納入
 | `next` | `PASS` | `UNVERIFIED` | `.tmp-final-play-next.png` 顯示播放器實際畫面，來源卡為稀飯動漫 Next；下載未另行測試，依目前人工驗收指示只需一個來源完成下載驗證。 |
 | `girigiri` | `PASS` | `PASS` | `re0` 搜尋由公開 API 取得 6 個候選，精確選到 `GV1222`；網站詳情頁只有 `简中` 1 個頻道、25 集。`.tmp-girigiri-playing-confirmed.png`／`.tmp-girigiri-download.log` 可核對播放與 `206` 媒體請求；`.tmp-girigiri-download-completed.png` 顯示 `1/25 已完成 · 333.7 MB`，`.tmp-girigiri-download-clean.png` 顯示由 App 刪除後回到 `0/25 已完成`。 |
 | `2rk` | `PASS`（線路 1） | `UNVERIFIED` | `.tmp-final-play-2rk-line1.png` 顯示線路 1 實際畫面。網站 `c.js` 實際列出 `线路1`、`线路2`、`线路3`；線路 2、3 的 `/saber` 回應仍是 31 bytes，ExoPlayer 報 `InvalidKeyException: Unsupported key size: 31 bytes`，因此個別標為上游 `BLOCKED`，沒有假稱三條都能播放。 |
-| `dida` | `PASS` | `PASS` | `.tmp-dida-static-matcher-fix-playing.png` 顯示嘀嗒影視實際畫面與來源卡；`.tmp-dida-download-progress-20s.png` 顯示已取得 `138.6 MB`，完成與刪除後證據為 `.tmp-dida-download-complete.xml`、`.tmp-dida-download-deleted.png`。 |
 | `dmbus` | `PASS` | `PASS` | `.tmp-android-dmbus-slime-playing-fixed-logcat.txt` 有同一番劇的正向播放進度；下載完成、刪除與清理證據為 `.tmp-android-dmbus-download-finished-menu.xml`、`.tmp-android-dmbus-download-after-delete.xml`、`.tmp-android-dmbus-download-clean.png`。 |
 | `dyttzy` | `PASS`（Android；Windows Desktop） | `PASS`（Android；Windows Desktop 下載） | `哪吒闹海` 的 Android host 測試已由 `dyttm3u8` 解析到直接 HLS；`.tmp-android-ui-verify/dyttzy-nezha-playing-1.png` 與 `...-playing-2.png` 顯示播放畫面與進度變化。`.tmp-android-ui-verify/dyttzy-na-zha-download-completed.png` 顯示 `1/1 completed · 450.6 MB` 與「電影天堂 · Finished」；輸出 MP4 為 `450021076` bytes，並由 `.../dyttzy-na-zha-downloaded-playback.png` 確認可播放。刪除後 `.../dyttzy-na-zha-download-cleaned.png` 回到 `0/1 completed`，下載目錄無殘留。Windows Desktop 的商店安裝、`電影天堂`／`dyttm3u8` 播放、`1/1 已完成 · 450.6 MB` 下載與下載檔播放證據記錄於 `.tmp-desktop-ui-verify/dyttzy-desktop-evidence.txt`；桌面輸出檔保留供檢查，未執行刪除清理。 |
 
-目前已有下載完成／刪除後清理證據的來源為 E-ACG、Girigiri、DIDA、DMBUS 與 DYTTZY；下載驗收只要求一個來源時，這些證據已超出最低數量。
+目前已有下載完成／刪除後清理證據的來源為 E-ACG、Girigiri、DMBUS 與 DYTTZY；下載驗收只要求一個來源時，這些證據已超出最低數量。
 
 ### 多線路結果
 
 - E-ACG 詳情頁實際回傳 `EDD动漫`、`极速在线`、`看吧备用` 三條線路；最新模擬器測試以 `看吧备用` 成功播放。其餘線路保留網站實際錯誤（TLS 憑證鏈或上游 timeout），不以替代 URL 或停用驗證冒充成功。
 - 2RK 詳情頁實際回傳 `线路1`、`线路2`、`线路3`；線路 1 播放成功，線路 2、3 因站方金鑰回應不是可用的 32-byte AES 金鑰而標示 `BLOCKED`。
-- DIDA、DMBUS 的來源卡與網站線路名稱均來自插件詳情解析，沒有由 host 補造不存在的線路。
 
 ### 2RK 線路記錄
 

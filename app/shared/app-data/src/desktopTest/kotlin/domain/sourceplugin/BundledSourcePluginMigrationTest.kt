@@ -51,7 +51,7 @@ class BundledSourcePluginMigrationTest {
     }
 
     @Test
-    fun `all eleven bundled sources upgrade offline and keep enabled choices`() = runTest {
+    fun `all ten bundled sources upgrade offline and keep enabled choices`() = runTest {
         val previous = packages.pluginIds.mapIndexed { index, id -> oldInstallation(id, index % 2 == 0) }
         val provider = DefaultHttpClientProvider(NoProxyProvider, backgroundScope)
         val registry = SourcePluginRegistry(
@@ -63,7 +63,7 @@ class BundledSourcePluginMigrationTest {
         )
         try {
             registry.loadInstalled()
-            assertEquals(11, registry.states.value.size)
+            assertEquals(10, registry.states.value.size)
             for (old in previous) {
                 val current = repository.snapshot().plugins.single { it.id == old.id }
                 assertEquals(packages.manifest(old.id).version, current.version)
@@ -75,6 +75,49 @@ class BundledSourcePluginMigrationTest {
                 assertEquals(null, state.errorMessage)
                 if (old.enabled) assertNotNull(state.metadata)
             }
+        } finally {
+            registry.close()
+        }
+    }
+
+    @Test
+    fun `retired dida installation is removed during startup migration`() = runTest {
+        val manifest = SourcePluginManifest(
+            id = "dida",
+            displayName = "嘀嗒影視",
+            version = "1.5.1",
+            pluginApiVersion = 3,
+            minHostVersion = "0.1.3",
+            entryClass = "tw.wynime.sources.dida.DidaEntryPoint",
+            website = "https://www.didahd.xyz/",
+            icon = null,
+            platforms = setOf(SourcePluginPlatform.DESKTOP),
+            artifacts = mapOf(
+                SourcePluginPlatform.DESKTOP to SourcePluginArtifact(
+                    url = "https://repo.example/source-dida.jar",
+                    sha256 = "0".repeat(64),
+                    format = SourcePluginArtifactFormat.JAR,
+                ),
+            ),
+        )
+        val directory = root.resolve("installed").resolve("dida").resolve("1.5.1")
+        directory.createDirectories()
+        val artifact = directory.resolve("source-dida.jar")
+        artifact.writeBytes(byteArrayOf(1, 2, 3))
+        repository.upsert(InstalledSourcePlugin("dida", "1.5.1", manifest, artifact.absolutePath))
+
+        val registry = SourcePluginRegistry(
+            repository,
+            SourcePluginInstaller(SourcePluginRepositoryClient(http), repository, SourcePluginStorage(root), platform, "0.1.3"),
+            createSourcePluginLoader(object : Context() {}),
+            SourcePluginContextFactory(DefaultHttpClientProvider(NoProxyProvider, backgroundScope), platform, "0.1.3"),
+            packages,
+        )
+        try {
+            registry.loadInstalled()
+            assertTrue(repository.snapshot().plugins.none { it.id == "dida" })
+            assertFalse(File(artifact.absolutePath).exists())
+            assertTrue(registry.states.value.isEmpty())
         } finally {
             registry.close()
         }

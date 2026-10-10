@@ -14,7 +14,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import tw.wynime.sources.dida.DidaEntryPoint
 import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
 import tw.wynime.sources.dyttzy.DyttzyEntryPoint
@@ -161,56 +160,6 @@ class SourcePluginFixtureTest {
     }
 
     @Test
-    fun `dida parses search subject playlist channel episode and mp4`() = runBlocking {
-        val plugin = DidaEntryPoint().create(FixtureContext("dida") { request ->
-            when {
-                "/search/" in request.url -> "<li><h4 class=\"title\"><a href=\"/detail/321.html\">Re:Zero</a></h4></li>"
-                "/detail/321.html" in request.url -> DIDA_SUBJECT
-                "/play/321-1-1.html" in request.url -> "<script>var player_aaaa={\"url\":\"https://cdn.example/dida.mp4\"}</script>"
-                else -> "<html><body>ok</body></html>"
-            }
-        })
-        try {
-            val subject = plugin.search(SourceSearchRequest("re0")).single()
-            val details = plugin.getSubject(subject.id)
-            val channel = details.channels.single()
-            val resolved = plugin.resolve(
-                SourceResolveRequest(subject.id, channel.channel.id, channel.episodes.single().id),
-            )
-
-            assertEquals("321", subject.id)
-            assertEquals("极速線", channel.channel.displayName)
-            assertEquals("https://cdn.example/dida.mp4", resolved.url)
-            assertEquals(ResolvedMediaFormat.MP4, resolved.format)
-        } finally {
-            plugin.close()
-        }
-    }
-
-    @Test
-    fun `dida parses the current card title and canonical domain`() = runBlocking {
-        val plugin = DidaEntryPoint().create(FixtureContext("dida") { request ->
-            when {
-                "/search/" in request.url -> """
-                    <li class="myui-vodlist__media">
-                        <a class="myui-vodlist__thumb lazyload" href="/detail/2592.html" title="咒术回战第三季"></a>
-                        <h4 class="title text-overflow"><a href="/detail/2592.html" title="咒术回战第三季">咒术回战第三季</a></h4>
-                    </li>
-                """.trimIndent()
-                else -> "<html><body>ok</body></html>"
-            }
-        })
-        try {
-            val subject = plugin.search(SourceSearchRequest("咒術迴戰")).single()
-            assertEquals("2592", subject.id)
-            assertEquals("咒术回战第三季", subject.title)
-            assertEquals("https://www.didahd.xyz", plugin.metadata.website)
-        } finally {
-            plugin.close()
-        }
-    }
-
-    @Test
     fun `dmbus parses search subject channel episode and m3u8`() = runBlocking {
         val plugin = DmbusEntryPoint().create(FixtureContext("dmbus") { request ->
             when {
@@ -350,11 +299,6 @@ class SourcePluginFixtureTest {
         const val GIRIGIRI_SUBJECT = """
             <div class="anthology-tab"><div class="swiper-wrapper"><a class="swiper-slide">简中</a></div></div>
             <a href="/playGV1222-1-1/">第01集</a>
-        """
-
-        const val DIDA_SUBJECT = """
-            <ul><li><a href="#playlist1">极速線</a></li></ul>
-            <div id="playlist1"><a href="/play/321-1-1.html">第01集</a></div>
         """
 
         const val DMBUS_SUBJECT = """

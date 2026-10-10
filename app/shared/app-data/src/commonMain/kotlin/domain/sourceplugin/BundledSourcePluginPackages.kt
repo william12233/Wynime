@@ -19,7 +19,6 @@ class ResourceSourcePluginPackages(
         "next",
         "girigiri",
         "2rk",
-        "dida",
         "dmbus",
         "dyttzy",
         "baimao",

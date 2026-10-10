@@ -68,22 +68,9 @@
       "manifest": "manifests/2rk.json"
     },
     {
-      "id": "dida",
-      "name": "嘀嗒影視",
-      "version": "1.5.1",
-      "description": "嘀嗒影視動畫來源",
-      "website": "https://www.didahd.xyz/",
-      "icon": "https://www.didahd.xyz/template/mytheme/statics/img/newfavicon.png",
-      "platforms": [
-        "desktop",
-        "android"
-      ],
-      "manifest": "manifests/dida.json"
-    },
-    {
       "id": "baimao",
       "name": "白猫動漫",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "description": "白猫動漫動畫來源",
       "website": "https://www.bmmdmm.com/",
       "icon": "https://www.bmmdmm.com/hdst/hm_pic/favicon.ico",
@@ -96,7 +83,7 @@
     {
       "id": "akianime",
       "name": "AkiAnime",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "description": "AkiAnime 動畫來源",
       "website": "https://www.akianime.cc/",
       "icon": "https://www.akianime.cc/favicon.ico",

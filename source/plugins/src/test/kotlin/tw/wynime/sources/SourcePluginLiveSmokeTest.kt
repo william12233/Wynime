@@ -20,7 +20,6 @@ import com.wynime.source.plugin.api.SourcePluginPlatform
 import com.wynime.source.plugin.api.SourceResolveRequest
 import com.wynime.source.plugin.api.SourceSearchRequest
 import com.wynime.source.plugin.api.SourceSubject
-import tw.wynime.sources.dida.DidaEntryPoint
 import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
 import tw.wynime.sources.dyttzy.DyttzyEntryPoint
@@ -66,7 +65,6 @@ private fun liveSmokeSpecs(): List<SmokeSpec> {
 
 private fun defaultLiveSmokeSpecs() = listOf(
     SmokeSpec("2RK", "2rk", "關於鄰家的天使大人不知不覺把我慣成了廢人這檔子事", 3, Rk2EntryPoint()),
-    SmokeSpec("DIDA", "dida", "咒术回战", null, DidaEntryPoint()),
     SmokeSpec("白猫動漫", "baimao", "新网球王子 U-17 世界杯 半决赛", 8, BaimaoEntryPoint()),
     SmokeSpec("AkiAnime", "akianime", "新网球王子 U-17 世界杯 半决赛", 8, AkianimeEntryPoint()),
     SmokeSpec("MX動漫", "mxdm", "黑子的篮球第二季", 8, MxdmEntryPoint()),

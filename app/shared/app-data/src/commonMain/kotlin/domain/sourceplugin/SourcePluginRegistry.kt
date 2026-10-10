@@ -53,6 +53,7 @@ class SourcePluginRegistry(
 
     suspend fun loadInstalled() {
         closeLoadedPlugins()
+        removeRetiredPlugins()
         migrateBundledPlugins()
         val current = installedRepository.snapshot().plugins
         _states.value = current.map { installed ->
@@ -198,6 +199,20 @@ class SourcePluginRegistry(
         }
     }
 
+    private suspend fun removeRetiredPlugins() {
+        for (pluginId in RETIRED_PLUGIN_IDS) {
+            if (installedRepository.snapshot().plugins.none { it.id == pluginId }) continue
+            try {
+                installer.uninstall(pluginId)
+                logger.info { "Removed retired source plugin $pluginId" }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                logger.warn(error) { "Failed to remove retired source plugin $pluginId" }
+            }
+        }
+    }
+
     private suspend fun validateRuntimeContract(
         plugin: SourcePlugin,
         installed: InstalledSourcePlugin,
@@ -232,6 +247,10 @@ class SourcePluginRegistry(
     private fun closeLoadedPlugins() {
         loaded.values.forEach { runCatching { it.close() } }
         loaded.clear()
+    }
+
+    private companion object {
+        val RETIRED_PLUGIN_IDS = setOf("dida")
     }
 
 }

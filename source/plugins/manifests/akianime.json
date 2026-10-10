@@ -1,26 +1,26 @@
 {
   "id": "akianime",
   "name": "AkiAnime",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.akianime.AkianimeEntryPoint",
   "website": "https://www.akianime.cc/",
   "icon": "https://www.akianime.cc/favicon.ico",
-  "description": "AkiAnime 動畫來源；播放頁由主程式 WebView 執行站方播放器。",
+  "description": "AkiAnime 動畫來源；優先使用播放頁公開媒體，其他線路交由主程式 WebView 執行站方播放器。",
   "platforms": [
     "desktop",
     "android"
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.0.0/source/plugins/artifacts/source-akianime.jar",
-      "sha256": "2048cb0c7cbf20f157d7b2ada5d762e16ed16bcd2fa4da0dcf7a91e43efa1322",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.1.0/source/plugins/artifacts/source-akianime.jar",
+      "sha256": "29590f5a23bf180c15ff92c06d3b4108e68ffdb4161e13e5c37fb86f45e2df1b",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.0.0/source/plugins/artifacts/source-akianime-android.jar",
-      "sha256": "8b8e354f2309292a34718fbc434d6bd5b375e13ac5b0ddbe663b0b026bc726e1",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.1.0/source/plugins/artifacts/source-akianime-android.jar",
+      "sha256": "c0d84e898df19bd33f0d5666da83ad3c3fb7fdf5a578df62600dc7dffaf04d2c",
       "format": "jar"
     }
   }

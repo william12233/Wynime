@@ -12,7 +12,6 @@ import com.wynime.source.plugin.api.SourcePluginContext
 import com.wynime.source.plugin.api.SourcePluginEntryPoint
 import com.wynime.source.plugin.api.SourcePluginLogger
 import com.wynime.source.plugin.api.SourcePluginPlatform
-import tw.wynime.sources.dida.DidaEntryPoint
 import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
 import tw.wynime.sources.dyttzy.DyttzyEntryPoint
@@ -51,7 +50,6 @@ class SourcePluginContractTest {
             "next" to ("https://next.xifanacg.com" to NextEntryPoint()),
             "girigiri" to ("https://ani.girigirilove.com" to GirigiriEntryPoint()),
             "2rk" to ("https://www.2rk.cc" to Rk2EntryPoint()),
-            "dida" to ("https://www.didahd.xyz" to DidaEntryPoint()),
             "dmbus" to ("https://dmbus.cc" to DmbusEntryPoint()),
             "dyttzy" to ("https://caiji.dyttzyapi.com" to DyttzyEntryPoint()),
             "baimao" to ("https://www.bmmdmm.com" to BaimaoEntryPoint()),

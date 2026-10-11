@@ -151,7 +151,8 @@ open class UserCollectionsViewModel : AbstractViewModel(), KoinComponent {
             onSetAllEpisodesWatched = {
                 episodeCollectionRepository.setAllEpisodesWatched(collection.subjectId)
             },
-            backgroundScope,
+            backgroundScope = backgroundScope,
+            subjectId = collection.subjectId,
         )
 
     suspend fun toggleEpisodeCollection(

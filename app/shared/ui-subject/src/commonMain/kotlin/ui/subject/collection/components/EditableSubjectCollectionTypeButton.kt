@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +26,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import com.wynime.app.data.network.CollectionRemovalService
+import com.wynime.app.data.repository.RepositoryRequestError
 import com.wynime.app.domain.foundation.LoadError
+import com.wynime.app.navigation.OpenBrowserResult
+import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.navigation.LocalBrowserNavigator
 import com.wynime.app.tools.MonoTasker
 import com.wynime.app.ui.external.placeholder.placeholder
 import com.wynime.app.ui.lang.*
@@ -34,6 +41,7 @@ import com.wynime.app.ui.foundation.widgets.showLoadError
 import com.wynime.datasources.api.topic.UnifiedCollectionType
 import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.*
+import org.koin.mp.KoinPlatform
 import kotlin.coroutines.cancellation.CancellationException
 
 interface SubjectCollectionTypeEditActions {
@@ -63,6 +71,7 @@ class EditableSubjectCollectionTypeState(
     private val onSetSelfCollectionType: suspend (UnifiedCollectionType) -> Unit,
     private val onSetAllEpisodesWatched: suspend () -> Unit,
     private val backgroundScope: CoroutineScope,
+    val subjectId: Int? = null,
 ) : SubjectCollectionTypeEditActions {
     data class Presentation(
         val selfCollectionType: UnifiedCollectionType,
@@ -109,8 +118,16 @@ class EditableSubjectCollectionTypeState(
         )
 
     override suspend fun setSelfCollectionType(new: UnifiedCollectionType): LoadError? {
+        return setSelfCollectionType(new) {}
+    }
+
+    suspend fun setSelfCollectionType(
+        new: UnifiedCollectionType,
+        beforeSet: suspend () -> Unit,
+    ): LoadError? {
         return setSelfCollectionTypeTasker.async {
             try {
+                beforeSet()
                 onSetSelfCollectionType(new)
                 if (new == UnifiedCollectionType.DONE && hasAnyUnwatched()) {
                     showSetAllEpisodesDoneDialogFlow.value = true
@@ -143,7 +160,13 @@ fun EditableSubjectCollectionTypeButton(
     modifier: Modifier = Modifier,
 ) {
     val presentation by state.presentationFlow.collectAsStateWithLifecycle()
-    EditableSubjectCollectionTypeButton(presentation, state, modifier)
+    val setSelfCollectionType = rememberSubjectCollectionTypeSetter(state)
+    EditableSubjectCollectionTypeButton(
+        presentation = presentation,
+        actions = state,
+        modifier = modifier,
+        onSetSelfCollectionType = setSelfCollectionType,
+    )
 }
 
 @Composable
@@ -151,24 +174,89 @@ fun EditableSubjectCollectionTypeButton(
     presentation: EditableSubjectCollectionTypeState.Presentation,
     actions: SubjectCollectionTypeEditActions,
     modifier: Modifier = Modifier,
+    onSetSelfCollectionType: suspend (UnifiedCollectionType) -> LoadError? = {
+        actions.setSelfCollectionType(it)
+    },
+    subjectId: Int? = null,
 ) {
 
     EditableSubjectCollectionTypeDialogsHost(presentation, actions)
 
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
+    val prepareRemoval = rememberSubjectCollectionRemovalPreparation(subjectId)
+    val setSelfCollectionType: suspend (UnifiedCollectionType) -> LoadError? = remember(
+        onSetSelfCollectionType,
+        prepareRemoval,
+    ) {
+        { newType: UnifiedCollectionType ->
+            try {
+                if (newType == UnifiedCollectionType.NOT_COLLECTED) {
+                    prepareRemoval()
+                }
+                onSetSelfCollectionType(newType)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                LoadError.fromException(e)
+            }
+        }
+    }
 
     SubjectCollectionTypeButton(
         presentation.selfCollectionType,
         onEdit = {
             scope.launch {
-                val error = actions.setSelfCollectionType(it)
+                val error = setSelfCollectionType(it)
                 error?.let(toaster::showLoadError)
             }
         },
         modifier = modifier.placeholder(presentation.isPlaceholder),
         enabled = !presentation.isSetSelfCollectionTypeWorking,
     )
+}
+
+@Composable
+fun rememberSubjectCollectionTypeSetter(
+    state: EditableSubjectCollectionTypeState,
+): suspend (UnifiedCollectionType) -> LoadError? {
+    val prepareRemoval = rememberSubjectCollectionRemovalPreparation(state.subjectId)
+
+    return remember(state, prepareRemoval) {
+        { newType ->
+            state.setSelfCollectionType(newType) {
+                if (newType == UnifiedCollectionType.NOT_COLLECTED) {
+                    prepareRemoval()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberSubjectCollectionRemovalPreparation(
+    subjectId: Int?,
+): suspend () -> Unit {
+    val context = LocalContext.current
+    val browserNavigator = LocalBrowserNavigator.current
+
+    return remember(subjectId, context, browserNavigator) {
+        {
+            if (subjectId != null) {
+                val removalService = KoinPlatform.getKoin().get<CollectionRemovalService>()
+                val url = removalService.start(subjectId)
+                val result = withContext(Dispatchers.Main.immediate) {
+                    browserNavigator.openBrowser(context, url)
+                }
+                if (result is OpenBrowserResult.Failure) {
+                    throw RepositoryRequestError(
+                        "無法開啟 Bangumi 網頁，取消收藏尚未送出",
+                        cause = result.throwable,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

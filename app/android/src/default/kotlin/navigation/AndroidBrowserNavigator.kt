@@ -1,5 +1,6 @@
 package com.wynime.android.navigation
 
+import android.app.Activity
 import android.content.Intent
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.net.toUri
@@ -34,6 +35,7 @@ class AndroidBrowserNavigator : BrowserNavigator {
 
     private fun launchChromeTab(context: Context, url: String) {
         val intent = CustomTabsIntent.Builder().build()
+        addNewTaskFlagIfNeeded(context, intent.intent)
         intent.launchUrl(context, url.toUri())
     }
 
@@ -51,7 +53,7 @@ class AndroidBrowserNavigator : BrowserNavigator {
         try {
             val browserIntent = Intent(Intent.ACTION_VIEW)
                 .apply { setDataAndType(url.toUri(), "video/*") }
-            context.startActivity(Intent.createChooser(browserIntent, "选择播放器"))
+            context.startExternalActivity(Intent.createChooser(browserIntent, "选择播放器"))
             return OpenBrowserResult.Success
         } catch (ex: Exception) {
             logger.warn("Failed to open video", ex)
@@ -63,14 +65,14 @@ class AndroidBrowserNavigator : BrowserNavigator {
         val browserIntent = Intent(Intent.ACTION_VIEW).apply {
             setData(url.toUri())
         }
-        context.startActivity(browserIntent)
+        context.startExternalActivity(browserIntent)
     }
 
     override fun openJoinGroup(context: Context): OpenBrowserResult {
         try {
             val browserIntent = Intent(Intent.ACTION_VIEW)
                 .apply { setData(QQ_GROUP.toUri()) }
-            context.startActivity(browserIntent)
+            context.startExternalActivity(browserIntent)
             return OpenBrowserResult.Success
         } catch (ex: Exception) {
             logger.warn("Failed to open QQ", ex)
@@ -79,6 +81,16 @@ class AndroidBrowserNavigator : BrowserNavigator {
     }
 }
 
+private fun Context.startExternalActivity(intent: Intent) {
+    addNewTaskFlagIfNeeded(this, intent)
+    startActivity(intent)
+}
+
+private fun addNewTaskFlagIfNeeded(context: Context, intent: Intent) {
+    if (context !is Activity) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+}
+
 private const val QQ_GROUP =
     "mqqopensdkapi://bizAgent/qm/qr?url=http%3A%2F%2Fqm.qq.com%2Fcgi-bin%2Fqm%2Fqr%3Ffrom%3Dapp%26p%3Dandroid%26jump_from%3Dwebapi%26k%3D" + "oiWgOz87g6x4Eskej1Ja0bKWYyZR_dPO"
- 

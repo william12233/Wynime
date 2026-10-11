@@ -8,12 +8,8 @@ interface SetSubjectCollectionTypeOrDeleteUseCase {
 
 class SetSubjectCollectionTypeOrDeleteUseCaseImpl(
     private val subjectRepository: SubjectCollectionRepository,
-    private val prepareRemoval: suspend (Int) -> Unit,
 ) : SetSubjectCollectionTypeOrDeleteUseCase {
     override suspend fun invoke(subjectId: Int, collectionType: UnifiedCollectionType?) {
-        if (collectionType == null || collectionType == UnifiedCollectionType.NOT_COLLECTED) {
-            prepareRemoval(subjectId)
-        }
         subjectRepository.setSubjectCollectionTypeOrDelete(subjectId, collectionType)
     }
 }

@@ -483,7 +483,8 @@ open class EpisodeViewModel(
             onSetAllEpisodesWatched = {
                 episodeCollectionRepository.setAllEpisodesWatched(subjectId)
             },
-            backgroundScope,
+            backgroundScope = backgroundScope,
+            subjectId = subjectId,
         )
 
     var isFullscreen: Boolean by mutableStateOf(initialIsFullscreen)

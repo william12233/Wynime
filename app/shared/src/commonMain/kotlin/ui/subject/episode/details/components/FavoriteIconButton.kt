@@ -13,8 +13,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.wynime.app.ui.foundation.rememberAsyncHandler
+import com.wynime.app.ui.foundation.widgets.LocalToaster
+import com.wynime.app.ui.foundation.widgets.showLoadError
 import com.wynime.app.ui.subject.collection.components.EditCollectionTypeDropDown
 import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
+import com.wynime.app.ui.subject.collection.components.rememberSubjectCollectionTypeSetter
 import com.wynime.datasources.api.topic.UnifiedCollectionType
 
 @Composable
@@ -24,6 +27,8 @@ fun FavoriteIconButton(
 ) {
     val tasker = rememberAsyncHandler()
     val presentation by state.presentationFlow.collectAsStateWithLifecycle()
+    val setSelfCollectionType = rememberSubjectCollectionTypeSetter(state)
+    val toaster = LocalToaster.current
 
     var showEditCollectionTypeDropDown by rememberSaveable { mutableStateOf(false) }
     val collectionAtLeastWatching = when (presentation.selfCollectionType) {
@@ -38,7 +43,7 @@ fun FavoriteIconButton(
                 if (collectionAtLeastWatching) {
                     showEditCollectionTypeDropDown = true
                 } else {
-                    state.setSelfCollectionType(UnifiedCollectionType.DOING)
+                    setSelfCollectionType(UnifiedCollectionType.DOING)?.let(toaster::showLoadError)
                 }
             }
         },
@@ -58,7 +63,7 @@ fun FavoriteIconButton(
         onClick = {
             showEditCollectionTypeDropDown = false
             tasker.launch {
-                state.setSelfCollectionType(it.type)
+                setSelfCollectionType(it.type)?.let(toaster::showLoadError)
             }
         },
     )

@@ -153,7 +153,8 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
             onSetAllEpisodesWatched = {
                 episodeCollectionRepository.setAllEpisodesWatched(subjectId)
             },
-            this,
+            backgroundScope = this,
+            subjectId = subjectId,
         )
 
         val ratingEditController = RatingEditController(

@@ -48,4 +48,23 @@ class EditableSubjectCollectionTypeStateTest {
         assertFalse(state.shouldOfferMarkAllWatched)
         assertEquals(UnifiedCollectionType.DOING, collection.value)
     }
+
+    @Test
+    fun failedPreparationDoesNotChangeCollection() = runTest {
+        val collection = MutableStateFlow(UnifiedCollectionType.DOING)
+        val state = EditableSubjectCollectionTypeState(
+            collection,
+            { false },
+            { collection.value = UnifiedCollectionType.NOT_COLLECTED },
+            {},
+            backgroundScope,
+        )
+
+        assertNotNull(
+            state.setSelfCollectionType(UnifiedCollectionType.NOT_COLLECTED) {
+                error("browser unavailable")
+            },
+        )
+        assertEquals(UnifiedCollectionType.DOING, collection.value)
+    }
 }

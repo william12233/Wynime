@@ -423,7 +423,11 @@ private fun SubjectDetailsPage(
                         Text(stringResource(Lang.subject_details_login_to_collect))
                     }
                 } else {
-                    EditableSubjectCollectionTypeButton(uiState.collectionTypeEdit, state)
+                    EditableSubjectCollectionTypeButton(
+                        presentation = uiState.collectionTypeEdit,
+                        actions = state,
+                        subjectId = state.subjectId,
+                    )
                 }
             },
             rating = {

@@ -1,5 +1,6 @@
 package com.wynime.app.tools.update
 
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
@@ -231,12 +232,6 @@ class AndroidUpdateInstaller : UpdateInstaller {
         val intent = createApkInstallIntent(apkUri, file.name)
 
         val handlers = context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
-        if (handlers.isEmpty()) {
-            throw ApkInstallException(
-                InstallationFailureReason.NO_INSTALLER_ACTIVITY,
-                "No activity can handle APK installation",
-            )
-        }
         handlers
             .asSequence()
             .map { it.activityInfo.packageName }
@@ -245,6 +240,8 @@ class AndroidUpdateInstaller : UpdateInstaller {
 
         try {
             context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            throw ApkInstallException(InstallationFailureReason.NO_INSTALLER_ACTIVITY, e.message, e)
         } catch (e: Throwable) {
             throw ApkInstallException(InstallationFailureReason.START_ACTIVITY_FAILED, e.message, e)
         }

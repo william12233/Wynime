@@ -16,11 +16,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncRepository
+import com.wynime.app.data.repository.subject.SubjectCollectionRepository
 import com.wynime.app.data.models.preference.EpisodeProgressSettings
 import com.wynime.app.data.models.preference.SubjectAppearanceSettings
 import com.wynime.app.data.models.preference.ThemeSettings
@@ -58,11 +60,14 @@ import com.wynime.app.ui.foundation.theme.WynimeTheme
 import com.wynime.app.ui.foundation.theme.LocalThemeSettings
 import com.wynime.app.ui.lang.LocaleZhCN
 import com.wynime.utils.ktor.ScopedHttpClient
+import com.wynime.utils.logging.info
+import com.wynime.utils.logging.warn
 import com.wynime.utils.platform.Platform
 import com.wynime.utils.platform.currentPlatform
 import com.wynime.utils.platform.isMobile
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import kotlin.coroutines.cancellation.CancellationException
 
 @Stable
 class WynimeAppState(
@@ -85,6 +90,9 @@ class WynimeAppViewModel : AbstractViewModel(), KoinComponent {
     private val userRepository: UserRepository by inject()
     private val sessionStateProvider: SessionStateProvider by inject()
     private val trackingSyncRepository: BangumiTrackingSyncRepository by inject()
+    private val subjectCollectionRepository: SubjectCollectionRepository by inject()
+
+    private var startupCollectionSyncStarted = false
 
     private val imageLoaderClient = httpClientProvider.get(ScopedHttpClientUserAgent.WYNIME)
 
@@ -131,7 +139,26 @@ class WynimeAppViewModel : AbstractViewModel(), KoinComponent {
     }
 
     fun verifyPendingCollectionRemovals() {
-        backgroundScope.launch { trackingSyncRepository.confirmPendingWebRemovals() }
+        if (!startupCollectionSyncStarted) {
+            startupCollectionSyncStarted = true
+            backgroundScope.launch {
+                sessionStateProvider.stateFlow.first { state ->
+                    state is SessionState.Valid && state.bangumiConnected
+                }
+                trackingSyncRepository.confirmPendingWebRemovals()
+                try {
+                    logger.info { "Starting Bangumi collection sync on app open" }
+                    subjectCollectionRepository.performBangumiFullSync()
+                    logger.info { "Bangumi collection sync on app open completed" }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    logger.warn(e) { "Bangumi collection sync on app open failed" }
+                }
+            }
+        } else {
+            backgroundScope.launch { trackingSyncRepository.confirmPendingWebRemovals() }
+        }
     }
 
 }

@@ -478,9 +478,10 @@ private fun SubjectSidebar(
             }
         } else {
             EditableSubjectCollectionTypeButton(
-                uiState.collectionTypeEdit,
-                state,
-                Modifier.fillMaxWidth(),
+                presentation = uiState.collectionTypeEdit,
+                actions = state,
+                modifier = Modifier.fillMaxWidth(),
+                subjectId = state.subjectId,
             )
         }
 

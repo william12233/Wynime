@@ -230,10 +230,10 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
             return
         }
         val currentVersion = latestVersionFlow.value
-        val file = (fileDownloaderPresenter.flow.value.state as? FileDownloaderState.Succeed)?.file
-            ?: pending?.file
+        val file = pending?.file
+            ?: (fileDownloaderPresenter.flow.value.state as? FileDownloaderState.Succeed)?.file
             ?: return
-        val version = currentVersion ?: pending?.descriptor?.let { descriptor ->
+        val version = pending?.descriptor?.let { descriptor ->
             NewVersion(
                 name = descriptor.version,
                 changelogs = emptyList(),
@@ -241,7 +241,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                 publishedAt = "",
                 packageDescriptor = descriptor,
             )
-        } ?: return
+        } ?: currentVersion ?: return
         installationTasker.launch(Dispatchers.Main) {
             installationRunner.install(
                 file = file,

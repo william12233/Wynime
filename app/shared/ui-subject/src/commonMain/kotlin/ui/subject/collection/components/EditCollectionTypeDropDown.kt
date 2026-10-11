@@ -35,6 +35,7 @@ fun EditCollectionTypeDropDown(
     val presentation by state.presentationFlow.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val toaster = LocalToaster.current
+    val setSelfCollectionType = rememberSubjectCollectionTypeSetter(state)
 
     EditCollectionTypeDropDown(
         currentType = presentation.selfCollectionType,
@@ -42,7 +43,7 @@ fun EditCollectionTypeDropDown(
         onDismissRequest = onDismissRequest,
         onClick = {
             scope.launch {
-                val error = state.setSelfCollectionType(it.type)
+                val error = setSelfCollectionType(it.type)
                 if (error != null) {
                     toaster.showLoadError(error)
                 }

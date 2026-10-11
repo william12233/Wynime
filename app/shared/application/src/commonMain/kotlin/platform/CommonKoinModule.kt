@@ -37,12 +37,8 @@ import com.wynime.app.data.persistent.database.MIGRATION_19_20
 import com.wynime.app.data.persistent.database.createDatabaseBuilder
 import com.wynime.app.data.repository.player.PlaybackHistorySyncer
 import com.wynime.app.data.repository.repositoryModules
-import com.wynime.app.data.repository.RepositoryRequestError
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCaseImpl
-import com.wynime.app.navigation.BrowserNavigator
-import com.wynime.app.navigation.OpenBrowserResult
-import kotlinx.coroutines.withContext
 import com.wynime.app.data.repository.user.AccessTokenSession
 import com.wynime.app.data.repository.user.SettingsRepository
 import com.wynime.app.data.repository.user.TokenRepository
@@ -215,17 +211,7 @@ private fun KoinApplication.otherModules(
         )
     }
     single { CollectionRemovalService(get(), get()) }
-    single<SetSubjectCollectionTypeOrDeleteUseCase> {
-        val removal = get<CollectionRemovalService>()
-        val browser = get<BrowserNavigator>()
-        SetSubjectCollectionTypeOrDeleteUseCaseImpl(get()) { subjectId ->
-            val url = removal.start(subjectId)
-            val result = withContext(Dispatchers.Main) { browser.openBrowser(getContext(), url) }
-            if (result is OpenBrowserResult.Failure) {
-                throw RepositoryRequestError("無法開啟 Bangumi 網頁，取消收藏尚未送出", cause = result.throwable)
-            }
-        }
-    }
+    single<SetSubjectCollectionTypeOrDeleteUseCase> { SetSubjectCollectionTypeOrDeleteUseCaseImpl(get()) }
     single<BangumiApiProvider> {
         BangumiApiProvider(
             client = get<HttpClientProvider>().get(

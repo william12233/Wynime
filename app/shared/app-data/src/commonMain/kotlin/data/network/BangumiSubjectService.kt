@@ -43,6 +43,7 @@ import com.wynime.models.SubjectAiringInfoDto
 import com.wynime.models.SubjectCollectionDto
 import com.wynime.models.SubjectRecommendationDto
 import com.wynime.models.SubjectRelationsDto
+import com.wynime.models.SubjectTypeDto
 import com.wynime.models.TagDto
 import com.wynime.models.UpdateSubjectCollectionRequestDto
 import com.wynime.datasources.bangumi.models.BangumiCollection
@@ -94,6 +95,7 @@ class BangumiSubjectService(
         offset: Int,
         limit: Int,
         onItemHydrated: suspend (completed: Int, total: Int) -> Unit,
+        hydrateItems: Boolean,
     ): SubjectCollectionPage = withContext(ioDispatcher) {
         val username = bangumiApi.currentUsername()
             ?: return@withContext SubjectCollectionPage(emptyList(), offset, limit, 0)
@@ -116,7 +118,20 @@ class BangumiSubjectService(
         }
         logger.info {
             "Bangumi sync collection page offset=$offset raw=${collections.size} " +
-                "total=${page.total} subjectWorkers=$MAX_SYNC_SUBJECT_WORKERS"
+                "total=${page.total} hydrateItems=$hydrateItems " +
+                "subjectWorkers=$MAX_SYNC_SUBJECT_WORKERS"
+        }
+        if (!hydrateItems) {
+            return@withContext SubjectCollectionPage(
+                items = collections.map { it.toLightweightSubjectCollection() },
+                offset = offset,
+                requestedLimit = limit,
+                total = page.total,
+                episodeCounts = collections.mapNotNull { collection ->
+                    collection.subject?.let { collection.subjectId to it.eps }
+                }.toMap(),
+                sourceItemCount = collections.size,
+            )
         }
         val hydrationSemaphore = Semaphore(MAX_SYNC_SUBJECT_WORKERS)
         val workerStateMutex = Mutex()
@@ -525,6 +540,47 @@ private fun BangumiSubject.toWynimeSubjectCollection(
         collectionType = collection?.type?.toWynimeCollectionType(),
         airingInfo = SubjectAiringInfoDto(begin = date),
         updatedAt = collection?.updatedAt?.toString(),
+    )
+}
+
+private fun BangumiUserSubjectCollection.toLightweightSubjectCollection(): SubjectCollectionDto {
+    val slimSubject = subject
+    val images = slimSubject?.images
+    val subjectIdLong = subjectId.toLong()
+    return SubjectCollectionDto(
+        id = subjectIdLong,
+        type = SubjectTypeDto.ANIME,
+        name = slimSubject?.name.orEmpty(),
+        nameCn = slimSubject?.nameCn.orEmpty(),
+        summary = slimSubject?.shortSummary.orEmpty(),
+        nsfw = false,
+        airDate = slimSubject?.date.orEmpty(),
+        aliases = emptyList(),
+        favorite = FavouriteDto(0, 0, 0, 0, 0),
+        tags = slimSubject?.tags.orEmpty().map { TagDto(it.name, it.count) },
+        metaTags = emptyList(),
+        scoreDetails = emptyMap(),
+        selfRating = SelfRatingInfoDto(
+            score = rate,
+            tags = tags,
+            isPrivate = private,
+            comment = comment,
+        ),
+        episodes = emptyList(),
+        relations = SubjectRelationsDto(
+            subjectId = subjectIdLong,
+            seriesMainSubjectIds = emptyList(),
+            seriesMainSubjectNames = emptyList(),
+            sequelSubjects = emptyList(),
+            sequelSubjectNames = emptyList(),
+        ),
+        imageLarge = images?.large.orEmpty(),
+        imageThumb = images?.grid?.ifBlank { images.common }.orEmpty(),
+        score = slimSubject?.score?.toString(),
+        rank = null,
+        collectionType = type.toWynimeCollectionType(),
+        airingInfo = SubjectAiringInfoDto(begin = slimSubject?.date),
+        updatedAt = updatedAt.toString(),
     )
 }
 

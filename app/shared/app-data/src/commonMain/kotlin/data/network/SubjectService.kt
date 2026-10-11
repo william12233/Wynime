@@ -48,6 +48,7 @@ interface SubjectService {
         offset: Int,
         limit: Int,
         onItemHydrated: suspend (completed: Int, total: Int) -> Unit = { _, _ -> },
+        hydrateItems: Boolean = true,
     ): SubjectCollectionPage {
         return SubjectCollectionPage(
             items = getSubjectCollections(type, offset, limit),
@@ -87,6 +88,7 @@ data class SubjectCollectionPage(
     val requestedLimit: Int,
     val total: Int?,
     val omittedSubjectIds: List<Int> = emptyList(),
+    val episodeCounts: Map<Int, Int> = emptyMap(),
 
     val sourceItemCount: Int = items.size,
 )

@@ -252,7 +252,12 @@ class SubjectCollectionRepositoryImpl(
                     emit(existing)
                 }
 
-                if (existing == null || existing.isExpired()) {
+                val cachedEpisodeCount = existing?.let {
+                    episodeCollectionDao.listIdBySubjectId(subjectId).first().size
+                }
+                if (existing == null || existing.isExpired() ||
+                    cachedEpisodeCount != existing.totalEpisodes
+                ) {
                     refetchSubjectCollection(subjectId)
 
                 }
@@ -675,44 +680,34 @@ class SubjectCollectionRepositoryImpl(
             syncCoordinator.withExclusive(BangumiSyncOperation.COLLECTION_REFRESH) {
                 withContext(defaultDispatcher) {
                     bangumiFullSyncMutex.withLock {
-                    bangumiFullSyncSummary.value = null
-                    sessionManager.checkAccessBangumiApiNow()
-                    bangumiFullSyncState.value = BangumiSyncState.Preparing
-                    val syncStartedAt = currentTimeMillis()
-                    val pageSize = 100
-                    val remoteCollections = ArrayList<SubjectCollectionDto>()
-                    val collectionTotals = mutableMapOf<UnifiedCollectionType, Int?>()
-                    val failedSubjectIds = mutableListOf<Int>()
-                    val failureMessages = mutableListOf<String>()
-                    val seenSourceSubjectIds = mutableSetOf<Int>()
-                    var episodeCount = 0
-                    var watchedEpisodeCount = 0
-                    var episodeSnapshotCount = 0
-
-                    for (type in FULL_SYNC_COLLECTION_TYPES) {
+                        bangumiFullSyncSummary.value = null
+                        sessionManager.checkAccessBangumiApiNow()
+                        bangumiFullSyncState.value = BangumiSyncState.Preparing
+                        val syncStartedAt = currentTimeMillis()
+                        val pageSize = 100
+                        val remoteCollections = ArrayList<SubjectCollectionDto>()
+                        val remoteEpisodeCounts = mutableMapOf<Int, Int>()
+                        val failedSubjectIds = mutableListOf<Int>()
+                        val failureMessages = mutableListOf<String>()
+                        val seenSourceSubjectIds = mutableSetOf<Int>()
+                        var expectedSubjectCount: Int? = null
                         var offset = 0
+
                         while (true) {
                             val page = subjectService.getSubjectCollectionsPage(
-                                type = type.toSubjectCollectionType(),
+                                type = null,
                                 offset = offset,
                                 limit = pageSize,
-                                onItemHydrated = { current, total ->
-                                    syncCoordinator.report(
-                                        operation = BangumiSyncOperation.COLLECTION_REFRESH,
-                                        phase = BangumiSyncPhase.FETCHING_EPISODES,
-                                        current = current,
-                                        total = total,
-                                    )
-                                },
+                                hydrateItems = false,
                             )
                             if (page.omittedSubjectIds.isNotEmpty()) {
                                 failedSubjectIds += page.omittedSubjectIds
                                 failureMessages += "收藏頁缺少 subject：${page.omittedSubjectIds.joinToString()}"
                             }
                             logger.info {
-                                "Bangumi full sync type=$type offset=$offset raw=${page.sourceItemCount} " +
-                                    "hydrated=${page.items.size} total=${page.total} " +
-                                    "omitted=${page.omittedSubjectIds.size} subjectWorkers=3"
+                                "Bangumi lightweight sync offset=$offset raw=${page.sourceItemCount} " +
+                                    "items=${page.items.size} total=${page.total} " +
+                                    "omitted=${page.omittedSubjectIds.size}"
                             }
                             val pageSubjectIds = page.items.map { it.id.toInt() } + page.omittedSubjectIds
                             if (page.sourceItemCount != pageSubjectIds.size ||
@@ -721,20 +716,23 @@ class SubjectCollectionRepositoryImpl(
                             ) {
                                 throw RepositoryRequestError("收藏頁 subject ID 重複或數量不一致：offset=$offset")
                             }
-                            collectionTotals.putIfAbsent(type, page.total)
-                            remoteCollections += page.items
-                            val total = collectionTotals.values.sumOf { it ?: 0 }.takeIf {
-                                collectionTotals.values.all { it != null }
+                            page.total?.let { total ->
+                                if (expectedSubjectCount != null && expectedSubjectCount != total) {
+                                    throw RepositoryRequestError("收藏頁 total 在分頁間不一致：$expectedSubjectCount/$total")
+                                }
+                                expectedSubjectCount = total
                             }
+                            remoteCollections += page.items
+                            remoteEpisodeCounts.putAll(page.episodeCounts)
                             bangumiFullSyncState.value = BangumiSyncState.FetchingSubjects(
                                 fetchedCount = remoteCollections.size,
-                                totalCount = total,
+                                totalCount = expectedSubjectCount,
                             )
                             syncCoordinator.report(
                                 operation = BangumiSyncOperation.COLLECTION_REFRESH,
                                 phase = BangumiSyncPhase.FETCHING_COLLECTIONS,
                                 current = remoteCollections.size,
-                                total = total,
+                                total = expectedSubjectCount,
                             )
                             val reachedEnd = page.total?.let { total ->
                                 if (total == 0 && page.sourceItemCount != 0) {
@@ -755,137 +753,134 @@ class SubjectCollectionRepositoryImpl(
                             }
                             offset += page.sourceItemCount
                         }
-                    }
 
-                    bangumiFullSyncState.value = BangumiSyncState.FetchingEpisodes(
-                        fetchedCount = remoteCollections.size,
-                        totalCount = remoteCollections.size,
-                    )
-                    syncCoordinator.report(
-                        operation = BangumiSyncOperation.COLLECTION_REFRESH,
-                        phase = BangumiSyncPhase.FETCHING_EPISODES,
-                        current = remoteCollections.size,
-                        total = remoteCollections.size,
-                    )
-
-                    val existing = subjectCollectionDao.listAll()
-                        .associateBy { it.subjectId }
-                    val remoteById = remoteCollections.distinctBy { it.id }.associateBy { it.id.toInt() }
-                    val protectedLocalIds = existing.values
-                        .asSequence()
-                        .filter { it.subjectId !in remoteById && it.lastUpdated > syncStartedAt }
-                        .map { it.subjectId }
-                        .toSet()
-                    val tombstoneIds = existing.values.asSequence()
-                        .filter { it.collectionType == UnifiedCollectionType.NOT_COLLECTED }
-                        .map { it.subjectId }
-                        .toSet()
-                    val staleIds = existing.keys - remoteById.keys - protectedLocalIds - tombstoneIds
-
-                    bangumiFullSyncState.value = BangumiSyncState.Inserting(0, remoteById.size)
-                    val lastFetched = currentTimeMillis()
-                    remoteById.forEach { (subjectId, remote) ->
-                        val remoteEntity = remote.toEntity(lastFetched)
-                        val local = existing[subjectId]
-                        episodeCount += remote.episodes.size
-                        watchedEpisodeCount += remote.episodes.count { it.collectionType == EpisodeCollectionTypeDto.DONE }
-                        try {
-                            val tombstone = trackingMetadataRepository?.find(subjectId)
-                            if (tombstone?.localDeletedAt != null &&
-                                remoteEntity.lastUpdated <= tombstone.localDeletedAt
-                            ) {
-                                subjectCollectionDao.updateType(
-                                    subjectId = subjectId,
-                                    collectionType = local?.collectionType ?: remoteEntity.collectionType,
-                                    lastUpdated = tombstone.localDeletedAt,
-                                    lastFetched = lastFetched,
-                                )
-                            } else {
-                                if (tombstone?.localDeletedAt != null) {
-                                    trackingMetadataRepository.clearTombstone(subjectId, remoteEntity.lastUpdated)
-                                }
-
-                                if (local == null ||
-                                    remoteEntity.lastUpdated <= 0L ||
-                                    local.lastUpdated <= remoteEntity.lastUpdated
-                                ) {
-                                    saveSubjectCollectionsWithEpisodes(listOf(remote), lastFetched)
-                                    savedCount++
-                                    episodeSnapshotCount += remote.episodes.size
-                                }
-                            }
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            failedSubjectIds += subjectId
-                            e.message?.let(failureMessages::add)
+                        val existing = subjectCollectionDao.listAll()
+                            .associateBy { it.subjectId }
+                        val remoteById = remoteCollections.associateBy { it.id.toInt() }
+                        val protectedLocalIds = existing.values
+                            .asSequence()
+                            .filter { it.subjectId !in remoteById && it.lastUpdated > syncStartedAt }
+                            .map { it.subjectId }
+                            .toSet()
+                        val tombstoneIds = existing.values.asSequence()
+                            .filter { it.collectionType == UnifiedCollectionType.NOT_COLLECTED }
+                            .map { it.subjectId }
+                            .toSet()
+                        val staleIds = existing.keys - remoteById.keys - protectedLocalIds - tombstoneIds
+                        val cachedEpisodes = episodeCollectionDao.all().first()
+                        val episodeCount = remoteById.keys.sumOf { remoteEpisodeCounts[it] ?: 0 }
+                        val watchedEpisodeCount = cachedEpisodes.count {
+                            it.subjectId in remoteById &&
+                                it.selfCollectionType == UnifiedCollectionType.DONE
                         }
-                        bangumiFullSyncState.value = BangumiSyncState.Inserting(savedCount, remoteById.size)
+                        val episodeSnapshotCount = cachedEpisodes.count { it.subjectId in remoteById }
+
+                        bangumiFullSyncState.value = BangumiSyncState.Inserting(0, remoteById.size)
+                        val lastFetched = currentTimeMillis()
+                        val entitiesToUpsert = ArrayList<SubjectCollectionEntity>(remoteById.size)
+                        remoteById.forEach { (subjectId, remote) ->
+                            val local = existing[subjectId]
+                            val remoteEntity = remote.toLightweightEntity(
+                                existing = local,
+                                episodeCount = remoteEpisodeCounts[subjectId],
+                                lastFetched = lastFetched,
+                            )
+                            try {
+                                val tombstone = trackingMetadataRepository?.find(subjectId)
+                                if (tombstone?.localDeletedAt != null &&
+                                    remoteEntity.lastUpdated <= tombstone.localDeletedAt
+                                ) {
+                                    if (local != null) {
+                                        entitiesToUpsert += remoteEntity.copy(
+                                            collectionType = local.collectionType,
+                                            lastUpdated = tombstone.localDeletedAt,
+                                        )
+                                    }
+                                } else {
+                                    if (tombstone?.localDeletedAt != null) {
+                                        trackingMetadataRepository.clearTombstone(subjectId, remoteEntity.lastUpdated)
+                                    }
+
+                                    if (local == null ||
+                                        remoteEntity.lastUpdated <= 0L ||
+                                        local.lastUpdated <= remoteEntity.lastUpdated
+                                    ) {
+                                        entitiesToUpsert += remoteEntity
+                                        savedCount++
+                                    }
+                                }
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                failedSubjectIds += subjectId
+                                e.message?.let(failureMessages::add)
+                            }
+                            bangumiFullSyncState.value = BangumiSyncState.Inserting(savedCount, remoteById.size)
+                            syncCoordinator.report(
+                                operation = BangumiSyncOperation.COLLECTION_REFRESH,
+                                phase = BangumiSyncPhase.APPLYING_LOCAL,
+                                current = savedCount,
+                                total = remoteById.size,
+                                failedCount = failedSubjectIds.size,
+                            )
+                        }
+                        if (entitiesToUpsert.isNotEmpty()) {
+                            subjectCollectionDao.upsert(entitiesToUpsert)
+                        }
+
+                        if (failedSubjectIds.isNotEmpty()) {
+                            val detail = "${failedSubjectIds.size} 個條目同步失敗"
+                            bangumiFullSyncState.value = BangumiSyncState.Finished(
+                                savedCount,
+                                null,
+                                detail + failureMessages.distinct().joinToString(prefix = "："),
+                            )
+                            syncCoordinator.partialFailure(
+                                operation = BangumiSyncOperation.COLLECTION_REFRESH,
+                                failedCount = failedSubjectIds.size,
+                                detail = detail,
+                            )
+                            bangumiFullSyncSummary.value = BangumiFullSyncSummary(
+                                savedSubjectCount = savedCount,
+                                expectedSubjectCount = expectedSubjectCount,
+                                episodeCount = episodeCount,
+                                watchedEpisodeCount = watchedEpisodeCount,
+                                episodeSnapshotCount = episodeSnapshotCount,
+                                failedSubjectIds = failedSubjectIds.distinct().sorted(),
+                                elapsedMillis = currentTimeMillis() - syncStartedAt,
+                            )
+                            notifyCollectionsInvalidated()
+                            throw RepositoryRequestError(detail)
+                        }
+
+                        if (staleIds.isNotEmpty()) {
+                            subjectCollectionDao.deleteByIds(staleIds.toList())
+                        }
+
+                        bangumiFullSyncState.value = BangumiSyncState.Finishing(savedCount, remoteById.size)
                         syncCoordinator.report(
                             operation = BangumiSyncOperation.COLLECTION_REFRESH,
-                            phase = BangumiSyncPhase.APPLYING_LOCAL,
+                            phase = BangumiSyncPhase.RELOADING,
                             current = savedCount,
                             total = remoteById.size,
-                            failedCount = failedSubjectIds.size,
                         )
-                    }
-
-                    if (failedSubjectIds.isNotEmpty()) {
-                        val detail = "${failedSubjectIds.size} 個條目同步失敗"
-                        bangumiFullSyncState.value = BangumiSyncState.Finished(
-                            savedCount,
-                            null,
-                            detail + failureMessages.distinct().joinToString(prefix = "："),
-                        )
-                        syncCoordinator.partialFailure(
-                            operation = BangumiSyncOperation.COLLECTION_REFRESH,
-                            failedCount = failedSubjectIds.size,
-                            detail = detail,
-                        )
+                        bangumiFullSyncState.value = BangumiSyncState.Finished(savedCount, null)
                         bangumiFullSyncSummary.value = BangumiFullSyncSummary(
                             savedSubjectCount = savedCount,
-                            expectedSubjectCount = collectionTotals.values
-                                .takeIf { it.all { total -> total != null } }
-                                ?.sumOf { it ?: 0 },
+                            expectedSubjectCount = expectedSubjectCount,
                             episodeCount = episodeCount,
                             watchedEpisodeCount = watchedEpisodeCount,
                             episodeSnapshotCount = episodeSnapshotCount,
-                            failedSubjectIds = failedSubjectIds.distinct().sorted(),
+                            failedSubjectIds = emptyList(),
                             elapsedMillis = currentTimeMillis() - syncStartedAt,
                         )
+                        logger.info {
+                            "Bangumi lightweight sync completed subjects=$savedCount " +
+                                "episodes=$episodeCount cachedEpisodes=$episodeSnapshotCount " +
+                                "watched=$watchedEpisodeCount " +
+                                "elapsedMs=${currentTimeMillis() - syncStartedAt}"
+                        }
                         notifyCollectionsInvalidated()
-                        throw RepositoryRequestError(detail)
-                    }
-
-                    if (staleIds.isNotEmpty()) {
-                        subjectCollectionDao.deleteByIds(staleIds.toList())
-                    }
-
-                    bangumiFullSyncState.value = BangumiSyncState.Finishing(savedCount, remoteById.size)
-                    syncCoordinator.report(
-                        operation = BangumiSyncOperation.COLLECTION_REFRESH,
-                        phase = BangumiSyncPhase.RELOADING,
-                        current = savedCount,
-                        total = remoteById.size,
-                    )
-                    bangumiFullSyncState.value = BangumiSyncState.Finished(savedCount, null)
-                    bangumiFullSyncSummary.value = BangumiFullSyncSummary(
-                        savedSubjectCount = savedCount,
-                        expectedSubjectCount = collectionTotals.values
-                            .takeIf { it.all { total -> total != null } }
-                            ?.sumOf { it ?: 0 },
-                        episodeCount = episodeCount,
-                        watchedEpisodeCount = watchedEpisodeCount,
-                        episodeSnapshotCount = episodeSnapshotCount,
-                        failedSubjectIds = emptyList(),
-                        elapsedMillis = currentTimeMillis() - syncStartedAt,
-                    )
-                    logger.info {
-                        "Bangumi full sync completed subjects=$savedCount " +
-                            "episodes=$episodeSnapshotCount watched=$watchedEpisodeCount " +
-                            "elapsedMs=${currentTimeMillis() - syncStartedAt} workers=3"
-                    }
-                    notifyCollectionsInvalidated()
                     }
                 }
             }
@@ -966,14 +961,6 @@ class SubjectCollectionRepositoryImpl(
 
     private companion object {
         private val logger = logger<SubjectCollectionRepository>()
-
-        private val FULL_SYNC_COLLECTION_TYPES = listOf(
-            UnifiedCollectionType.WISH,
-            UnifiedCollectionType.DONE,
-            UnifiedCollectionType.DOING,
-            UnifiedCollectionType.ON_HOLD,
-            UnifiedCollectionType.DROPPED,
-        )
 
         private const val INVALIDATE_REFETCH_PARALLELISM = 4
     }
@@ -1135,6 +1122,39 @@ fun SubjectCollectionDto.toEntity(
         lastFetched = lastFetched,
         cachedStaffUpdated = 0,
         cachedCharactersUpdated = 0,
+    )
+}
+
+private fun SubjectCollectionDto.toLightweightEntity(
+    existing: SubjectCollectionEntity?,
+    episodeCount: Int?,
+    lastFetched: Long,
+): SubjectCollectionEntity {
+    val remote = toEntity(lastFetched)
+    if (existing == null) {
+        return remote.copy(totalEpisodes = episodeCount ?: remote.totalEpisodes)
+    }
+    return remote.copy(
+        name = name.ifBlank { existing.name },
+        nameCn = nameCn.ifBlank { existing.nameCn },
+        summary = summary.ifBlank { existing.summary },
+        nsfw = existing.nsfw,
+        imageLarge = imageLarge.ifBlank { existing.imageLarge },
+        imageThumb = imageThumb.ifBlank { existing.imageThumb },
+        totalEpisodes = episodeCount?.takeIf { it > 0 } ?: existing.totalEpisodes,
+        airDate = if (airDate.isBlank()) existing.airDate else remote.airDate,
+        aliases = aliases.ifEmpty { existing.aliases },
+        tags = tags.map { it.toTag() }.ifEmpty { existing.tags },
+        collectionStats = existing.collectionStats,
+        ratingInfo = existing.ratingInfo.copy(
+            score = remote.ratingInfo.score.takeUnless { it == "0" } ?: existing.ratingInfo.score,
+        ),
+        completeDate = existing.completeDate,
+        recurrence = existing.recurrence,
+        relations = existing.relations,
+        tmdbArt = existing.tmdbArt,
+        cachedStaffUpdated = existing.cachedStaffUpdated,
+        cachedCharactersUpdated = existing.cachedCharactersUpdated,
     )
 }
 

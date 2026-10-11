@@ -429,7 +429,7 @@ private fun BoxScope.UpdateNotifierWithVersionExpiryCheck() {
     val expired by versionExpiryService.state.collectAsStateWithLifecycle(null)
     LaunchedEffect(expired) {
         if (expired != null) {
-            updateVm.startCheckLatestVersion(null)
+            updateVm.startCheckLatestVersion(null, force = true)
         }
     }
     if (expired != null) {

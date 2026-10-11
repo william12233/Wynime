@@ -418,7 +418,7 @@ fun SettingsScope.SoftwareUpdateGroup(
                 if (updatePresentation.isCheckingUpdate) {
                     return@TextButtonItem
                 }
-                autoUpdate.startCheckLatestVersion(uriHandler)
+                autoUpdate.startCheckLatestVersion(uriHandler, force = true)
             },
             title = {
                 when {

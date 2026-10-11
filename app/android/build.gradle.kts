@@ -23,6 +23,34 @@ val archs = getPropertyOrNull("wynime.android.abis")
     }
     ?: listOf("arm64-v8a")
 
+private fun androidVersionCode(versionName: String): Int {
+    val numericParts = versionName.substringBefore('-').split('.').map {
+        it.toIntOrNull() ?: error("Invalid Android version name: $versionName")
+    }
+    require(numericParts.size == 3) { "Android version name must contain major.minor.patch: $versionName" }
+
+    val qualifier = versionName.substringAfter('-', "").lowercase()
+    val qualifierRank = when {
+        qualifier.isEmpty() -> 3
+        qualifier.startsWith("rc") -> 2
+        qualifier.startsWith("beta") -> 1
+        else -> 0
+    }
+    val qualifierNumber = qualifier
+        .dropWhile { !it.isDigit() }
+        .takeWhile(Char::isDigit)
+        .toIntOrNull()
+        ?: 0
+
+    val code = numericParts[0] * 100_000_000 +
+        numericParts[1] * 1_000_000 +
+        numericParts[2] * 1_000 +
+        qualifierRank * 100 +
+        qualifierNumber
+    require(code in 1..2_100_000_000) { "Android version code is out of range: $code" }
+    return code
+}
+
 android {
     namespace = "com.wynime.app"
     compileSdk = getIntProperty("android.compile.sdk")
@@ -30,7 +58,7 @@ android {
         applicationId = "com.wynime.app"
         minSdk = getIntProperty("android.min.sdk")
         targetSdk = getIntProperty("android.compile.sdk")
-        versionCode = getIntProperty("android.version.code")
+        versionCode = androidVersionCode(project.version.toString())
         versionName = project.version.toString()
         ndk {
 

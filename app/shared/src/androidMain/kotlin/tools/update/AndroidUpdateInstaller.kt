@@ -78,6 +78,18 @@ class AndroidUpdateInstaller : UpdateInstaller {
         }
     }
 
+    override suspend fun openForManualInstallation(file: SystemPath, context: ContextMP): Boolean {
+        val apk = file.toFile()
+        if (!file.exists() || !apk.isFile || file.length() <= 0) return false
+
+        return try {
+            installApk(context, apk)
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     override suspend fun install(
         file: SystemPath,
         packageUrls: List<String>,

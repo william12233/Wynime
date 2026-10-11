@@ -128,14 +128,15 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
     }
 
     fun startCheckLatestVersion(
-        uriHandler: UriHandler?
+        uriHandler: UriHandler?,
+        force: Boolean = false,
     ) {
         autoCheckTasker.launch {
             val updateSettings = updateSettings.first()
 
             checkUpdateErrorFlow.value = null
             val ver = try {
-                if (!updateSettings.autoCheckUpdate) {
+                if (!force && !updateSettings.autoCheckUpdate) {
                     logger.info { "autoCheckUpdate disabled" }
                     return@launch
                 }

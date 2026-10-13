@@ -177,6 +177,7 @@ fun EpisodeVideoImpl(
     onClickNextEpisode: () -> Unit,
     playerControllerState: PlayerControllerState,
     opEdSkipDuration: Duration = DEFAULT_OP_ED_SKIP_DURATION,
+    doubleTapSeekDuration: Duration = VideoScaffoldConfig.Default.doubleTapSeekDuration,
     onClickSkipOpEd: (currentPositionMillis: Long) -> Unit = {
         playerState.skip(opEdSkipDuration.inWholeMilliseconds)
     },
@@ -327,6 +328,7 @@ fun EpisodeVideoImpl(
                     playerState,
                     locked = isLocked,
                     enableSwipeToSeek = enableSwipeToSeek,
+                    doubleTapSeekSeconds = doubleTapSeekDuration.inWholeSeconds.toInt(),
                     audioController = audioController,
                     brightnessController = brightnessController,
                     playbackSpeedControllerState = playbackSpeedControllerState,
@@ -421,8 +423,25 @@ fun EpisodeVideoImpl(
                                 onClick = onClickNextEpisode,
                             )
                         }
+                    },
+                    progressIndicator = {
+                        MediaProgressIndicatorText(
+                            progressSliderState,
+                            playbackSpeedState = playbackSpeedControllerState,
+                        )
+                    },
+                    progressSlider = {
+                        PlayerControllerDefaults.MediaProgressSlider(
+                            progressSliderState,
+                            cacheProgressInfoFlow = cacheProgressInfoFlow,
+                            showPreviewTimeTextOnThumb = expanded,
+                            framePreview = framePreview,
+                            showFramePreviewInPopup = expanded,
+                            touchSeekState = touchSeekState,
+                        )
+                    },
+                    endActions = {
                         val audioLevelController = audioController as? MediampAudioLevelController
-
                         val hasMouse = hasPointerDevice(
                             LocalPlatform.current,
                             LocalActiveInputSource.current.hasSeenMouse,
@@ -444,24 +463,7 @@ fun EpisodeVideoImpl(
                                 controllerState = playerControllerState,
                             )
                         }
-                    },
-                    progressIndicator = {
-                        MediaProgressIndicatorText(
-                            progressSliderState,
-                            playbackSpeedState = playbackSpeedControllerState,
-                        )
-                    },
-                    progressSlider = {
-                        PlayerControllerDefaults.MediaProgressSlider(
-                            progressSliderState,
-                            cacheProgressInfoFlow = cacheProgressInfoFlow,
-                            showPreviewTimeTextOnThumb = expanded,
-                            framePreview = framePreview,
-                            showFramePreviewInPopup = expanded,
-                            touchSeekState = touchSeekState,
-                        )
-                    },
-                    endActions = {
+
                         if (expanded) {
                             PlayerControllerDefaults.SelectEpisodeIcon(
                                 onClick = { sheetsController.navigateTo(EpisodeVideoSideSheetPage.EPISODE_SELECTOR) },

@@ -446,14 +446,22 @@ enum class GestureFamily(
     MOUSE(
         clickToPauseResume = true,
         clickToToggleController = false,
-        doubleClickToFullscreen = true,
-        doubleClickToPauseResume = false,
+        doubleClickToFullscreen = false,
+        doubleClickToPauseResume = true,
         autoHideController = false,
     )
 }
 
 val VIDEO_GESTURE_MOUSE_MOVE_SHOW_CONTROLLER_DURATION = 3.seconds
 val VIDEO_GESTURE_TOUCH_SHOW_CONTROLLER_DURATION = 3.seconds
+
+private const val DOUBLE_TAP_SEEK_SEQUENCE_TIMEOUT_MILLIS = 750L
+
+private enum class PlayerTapZone {
+    LEFT,
+    CENTER,
+    RIGHT,
+}
 
 private class SwipeSeekInteraction(
     private val controllerState: PlayerControllerState,
@@ -532,6 +540,7 @@ fun PlayerGestureHost(
     fastSkipState: FastSkipState?,
     playerState: MediampPlayer,
     enableSwipeToSeek: Boolean,
+    doubleTapSeekSeconds: Int = 5,
     audioController: LevelController,
     brightnessController: LevelController,
     playbackSpeedControllerState: PlaybackSpeedControllerState?,
@@ -644,42 +653,73 @@ fun PlayerGestureHost(
             }
         }
 
+        val doubleTapSeekSequenceState = remember { DoubleTapSeekSequenceState() }
+        val doubleTapSeekSequenceTasker = rememberUiMonoTasker()
+        val effectiveDoubleTapSeekSeconds = doubleTapSeekSeconds.coerceAtLeast(1)
+
+        fun resetDoubleTapSeekSequence() {
+            doubleTapSeekSequenceTasker.cancel()
+            doubleTapSeekSequenceState.reset()
+        }
+
+        fun seekFromDoubleTap(direction: SkipDirection) {
+            if (!enableSwipeToSeek) return
+
+            val multiplier = doubleTapSeekSequenceState.nextMultiplier(direction)
+            val deltaSeconds = effectiveDoubleTapSeekSeconds * multiplier * when (direction) {
+                SkipDirection.FORWARD -> 1
+                SkipDirection.BACKWARD -> -1
+            }
+            playerState.skip(deltaSeconds * 1000L)
+            indicatorTasker.launch {
+                indicatorState.showSeeking(deltaSeconds)
+            }
+            doubleTapSeekSequenceTasker.launch {
+                delay(DOUBLE_TAP_SEEK_SEQUENCE_TIMEOUT_MILLIS)
+                doubleTapSeekSequenceState.reset()
+            }
+        }
+
         @Composable
-        fun Modifier.combineClickableWithFamilyGesture() = this then
+        fun Modifier.combineClickableWithFamilyGesture(
+            zone: PlayerTapZone,
+        ) = this then
                 combinedClickable(
                     remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = remember(family, playerFocusState, inputSourceState) {
-                        {
-
-                            val tapFamily = gestureFamilyOf(inputSourceState.latest, family)
-                            if (tapFamily.clickToPauseResume) {
-                                onTogglePauseResumeState()
-                            }
-                            if (tapFamily.clickToToggleController) {
-                                controllerState.toggleFullVisible()
-                            }
-                            playerFocusState.requestPlayerFocus()
+                    onClick = {
+                        val tapFamily = gestureFamilyOf(inputSourceState.latest, family)
+                        if (tapFamily.clickToPauseResume) {
+                            onTogglePauseResumeState()
                         }
+                        if (tapFamily.clickToToggleController) {
+                            controllerState.toggleFullVisible()
+                        }
+                        playerFocusState.requestPlayerFocus()
                     },
-                    onDoubleClick = remember(family, fullscreenState, playerFocusState, inputSourceState) {
-                        {
-                            val tapFamily = gestureFamilyOf(inputSourceState.latest, family)
-                            if (tapFamily.doubleClickToFullscreen) {
-                                fullscreenState.toggle()
+                    onDoubleClick = {
+                        val tapFamily = gestureFamilyOf(inputSourceState.latest, family)
+                        when (zone) {
+                            PlayerTapZone.CENTER -> {
+                                resetDoubleTapSeekSequence()
+                                if (tapFamily.doubleClickToFullscreen) {
+                                    fullscreenState.toggle()
+                                }
+                                if (tapFamily.doubleClickToPauseResume) {
+                                    onTogglePauseResumeState()
+                                }
                             }
-                            if (tapFamily.doubleClickToPauseResume) {
-                                onTogglePauseResumeState()
-                            }
-                            playerFocusState.requestPlayerFocus()
+
+                            PlayerTapZone.LEFT -> seekFromDoubleTap(SkipDirection.BACKWARD)
+                            PlayerTapZone.RIGHT -> seekFromDoubleTap(SkipDirection.FORWARD)
                         }
+                        playerFocusState.requestPlayerFocus()
                     },
                 )
 
         val mouseMoveTasker = rememberUiMonoTasker()
         Box(
             keyboardModifier
-                .combineClickableWithFamilyGesture()
                 .ifThen(enableSwipeToSeek) {
                     val swipeSeekInteraction = rememberSwipeSeekInteraction(
                         controllerState,
@@ -764,7 +804,8 @@ fun PlayerGestureHost(
                             )
                         }
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        .combineClickableWithFamilyGesture(PlayerTapZone.LEFT),
                 )
 
                 Box(
@@ -777,7 +818,8 @@ fun PlayerGestureHost(
                             onExitFullscreen = { fullscreenState.request(false) },
                         )
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        .combineClickableWithFamilyGesture(PlayerTapZone.CENTER),
                 )
 
                 Box(
@@ -796,7 +838,8 @@ fun PlayerGestureHost(
                             )
                         }
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        .combineClickableWithFamilyGesture(PlayerTapZone.RIGHT),
                 )
             }
         }
@@ -806,7 +849,7 @@ fun PlayerGestureHost(
             Box(
                 Modifier.fillMaxWidth()
                     .windowInsetsTopHeight(WindowInsets.systemGestures)
-                    .combineClickableWithFamilyGesture(),
+                    .combineClickableWithFamilyGesture(PlayerTapZone.CENTER),
             )
         }
     }

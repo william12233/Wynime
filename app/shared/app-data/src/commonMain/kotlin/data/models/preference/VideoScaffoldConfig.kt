@@ -48,6 +48,8 @@ data class VideoScaffoldConfig @SerializationOnly constructor(
 
     val opEdSkipDuration: Duration = 85.seconds,
 
+    val doubleTapSeekDuration: Duration = 5.seconds,
+
     val autoSwitchMediaOnPlayerError: Boolean = true,
 
     val enableHighQualityAudioTimeStretch: Boolean = true,

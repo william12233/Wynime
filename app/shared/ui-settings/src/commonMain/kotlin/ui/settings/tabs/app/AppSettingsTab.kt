@@ -80,6 +80,9 @@ import com.wynime.app.ui.lang.settings_player_auto_switch_media_on_error
 import com.wynime.app.utils.formatSpeedValue
 import com.wynime.app.ui.lang.settings_player_default_playback_speed
 import com.wynime.app.ui.lang.settings_player_default_playback_speed_description
+import com.wynime.app.ui.lang.settings_player_double_tap_seek_duration
+import com.wynime.app.ui.lang.settings_player_double_tap_seek_duration_description
+import com.wynime.app.ui.lang.settings_player_double_tap_seek_duration_seconds
 import com.wynime.app.ui.lang.settings_player_experimental_hls_segment_filter
 import com.wynime.app.ui.lang.settings_player_experimental_hls_segment_filter_description
 import com.wynime.app.ui.lang.settings_player_frame_preview
@@ -598,6 +601,21 @@ fun SettingsScope.PlayerGroup(
             },
             title = { Text(stringResource(Lang.settings_player_frame_preview)) },
             description = { Text(stringResource(Lang.settings_player_frame_preview_description)) },
+        )
+        HorizontalDividerItem()
+        DropdownItem(
+            selected = { config.doubleTapSeekDuration },
+            values = { listOf(3.seconds, 5.seconds, 10.seconds, 15.seconds, 30.seconds, 60.seconds) },
+            itemText = {
+                Text(stringResource(Lang.settings_player_double_tap_seek_duration_seconds, it.inWholeSeconds))
+            },
+            onSelect = {
+                videoScaffoldConfig.update(config.copy(doubleTapSeekDuration = it))
+            },
+            title = { Text(stringResource(Lang.settings_player_double_tap_seek_duration)) },
+            description = {
+                Text(stringResource(Lang.settings_player_double_tap_seek_duration_description))
+            },
         )
         HorizontalDividerItem()
         PlaybackSpeedItems(config, videoScaffoldConfig)

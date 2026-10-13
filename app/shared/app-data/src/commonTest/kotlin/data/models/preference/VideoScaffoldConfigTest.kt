@@ -36,6 +36,13 @@ class VideoScaffoldConfigTest {
     }
 
     @Test
+    fun `missing double tap seek duration uses 5 seconds`() {
+        val config = DataStoreJson.decodeFromString(VideoScaffoldConfig.serializer(), "{}")
+
+        assertEquals(5.seconds, config.doubleTapSeekDuration)
+    }
+
+    @Test
     fun `OP ED skip duration survives serialization`() {
         for (duration in listOf(80.seconds, 85.seconds, 90.seconds)) {
             val encoded = DataStoreJson.encodeToString(
@@ -46,6 +53,20 @@ class VideoScaffoldConfigTest {
             val decoded = DataStoreJson.decodeFromString(VideoScaffoldConfig.serializer(), encoded)
 
             assertEquals(duration, decoded.opEdSkipDuration)
+        }
+    }
+
+    @Test
+    fun `double tap seek duration survives serialization`() {
+        for (duration in listOf(3.seconds, 5.seconds, 10.seconds, 30.seconds)) {
+            val encoded = DataStoreJson.encodeToString(
+                VideoScaffoldConfig.serializer(),
+                VideoScaffoldConfig.Default.copy(doubleTapSeekDuration = duration),
+            )
+
+            val decoded = DataStoreJson.decodeFromString(VideoScaffoldConfig.serializer(), encoded)
+
+            assertEquals(duration, decoded.doubleTapSeekDuration)
         }
     }
 

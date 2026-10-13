@@ -270,6 +270,9 @@
     <string name="settings_player_video_enhancement_default_description">设置每次进入播放器时使用的画质增强档位</string>
     <string name="settings_player_frame_preview">显示进度条画面预览</string>
     <string name="settings_player_frame_preview_description">悬停或拖动进度条时，显示目标位置的视频画面</string>
+    <string name="settings_player_double_tap_seek_duration">左右双击跳转秒数</string>
+    <string name="settings_player_double_tap_seek_duration_description">设置播放器左右两侧双击时向前或向后跳转的秒数；连续双击会按次数倍增。</string>
+    <string name="settings_player_double_tap_seek_duration_seconds">%1$d 秒</string>
     <string name="settings_player_auto_mark_done">观看 90% 后自动标记为看过</string>
     <string name="settings_player_hide_selector_on_select">选择数据源后自动关闭弹窗</string>
     <string name="settings_player_auto_fullscreen_on_landscape">旋转屏幕时自动全屏</string>

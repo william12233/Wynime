@@ -260,6 +260,9 @@
     <string name="settings_player_video_enhancement_default_description">Choose the video enhancement mode used when entering the player</string>
     <string name="settings_player_frame_preview">Show frame preview on the progress bar</string>
     <string name="settings_player_frame_preview_description">Show the video frame at the target position when hovering over or dragging the progress bar</string>
+    <string name="settings_player_double_tap_seek_duration">Double-tap seek duration</string>
+    <string name="settings_player_double_tap_seek_duration_description">Seconds to seek when double-tapping the left or right side of the player. Repeated double-taps use successive multiples.</string>
+    <string name="settings_player_double_tap_seek_duration_seconds">%1$d seconds</string>
     <string name="settings_player_auto_mark_done">Automatically mark as watched after 90% viewed</string>
     <string name="settings_player_hide_selector_on_select">Automatically close the pop-up after selecting a data source</string>
     <string name="settings_player_auto_fullscreen_on_landscape">Automatically go fullscreen on screen rotation</string>

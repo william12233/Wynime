@@ -50,6 +50,7 @@ import com.wynime.datasources.bangumi.models.BangumiCollection
 import com.wynime.datasources.bangumi.models.BangumiCount
 import com.wynime.datasources.bangumi.models.BangumiEpisode
 import com.wynime.datasources.bangumi.models.BangumiEpisodeCollectionType
+import com.wynime.datasources.bangumi.models.BangumiItem
 import com.wynime.datasources.bangumi.models.BangumiPerson
 import com.wynime.datasources.bangumi.models.BangumiPersonCareer
 import com.wynime.datasources.bangumi.models.BangumiRelatedCharacter
@@ -67,6 +68,11 @@ import com.wynime.utils.logging.debug
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
 import com.wynime.utils.logging.warn
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlin.coroutines.CoroutineContext
 
 class BangumiSubjectService(
@@ -517,7 +523,7 @@ private fun BangumiSubject.toWynimeSubjectCollection(
         summary = summary,
         nsfw = nsfw,
         airDate = date.orEmpty(),
-        aliases = emptyList(),
+        aliases = extractBangumiAliases(infobox),
         favorite = this.collection.toWynimeFavourite(),
         tags = tags.map { TagDto(it.name, it.count) },
         metaTags = emptyList(),
@@ -541,6 +547,25 @@ private fun BangumiSubject.toWynimeSubjectCollection(
         airingInfo = SubjectAiringInfoDto(begin = date),
         updatedAt = collection?.updatedAt?.toString(),
     )
+}
+
+internal fun extractBangumiAliases(infobox: List<BangumiItem>?): List<String> {
+    return infobox.orEmpty()
+        .asSequence()
+        .filter { it.key == "别名" || it.key == "別名" }
+        .flatMap { flattenBangumiValue(it.value).asSequence() }
+        .map(String::trim)
+        .filter(String::isNotBlank)
+        .distinct()
+        .toList()
+}
+
+private fun flattenBangumiValue(value: JsonElement): List<String> {
+    return when (value) {
+        is JsonArray -> value.flatMap(::flattenBangumiValue)
+        is JsonObject -> value["v"]?.let(::flattenBangumiValue).orEmpty()
+        is JsonPrimitive -> value.contentOrNull?.let(::listOf).orEmpty()
+    }
 }
 
 private fun BangumiUserSubjectCollection.toLightweightSubjectCollection(): SubjectCollectionDto {

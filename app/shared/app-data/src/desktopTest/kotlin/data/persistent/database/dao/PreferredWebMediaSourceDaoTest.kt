@@ -37,6 +37,7 @@ class PreferredWebMediaSourceDaoTest {
         totalEpisodes = 12,
         airDate = PackedDate.Invalid,
         aliases = emptyList(),
+        aliasesFetched = true,
         tags = emptyList(),
         collectionStats = SubjectCollectionStats.Zero,
         ratingInfo = RatingInfo.Empty,

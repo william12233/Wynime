@@ -507,6 +507,7 @@ class BangumiTrackingSyncRepositoryTest {
         totalEpisodes = 0,
         airDate = PackedDate.Invalid,
         aliases = emptyList(),
+        aliasesFetched = true,
         tags = emptyList(),
         collectionStats = SubjectCollectionStats.Zero,
         ratingInfo = RatingInfo.Empty,

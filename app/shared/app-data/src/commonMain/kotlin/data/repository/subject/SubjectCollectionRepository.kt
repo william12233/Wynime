@@ -255,11 +255,21 @@ class SubjectCollectionRepositoryImpl(
                 val cachedEpisodeCount = existing?.let {
                     episodeCollectionDao.listIdBySubjectId(subjectId).first().size
                 }
-                if (existing == null || existing.isExpired() ||
-                    cachedEpisodeCount != existing.totalEpisodes
-                ) {
-                    refetchSubjectCollection(subjectId)
-
+                val needsRefetch = existing == null || existing.isExpired() ||
+                    cachedEpisodeCount != existing.totalEpisodes ||
+                    !existing.aliasesFetched
+                if (existing != null && !existing.aliasesFetched) {
+                    // Do not start media search with a lightweight cache entry missing Bangumi aliases.
+                    if (refetchSubjectCollection(subjectId) == null) {
+                        emit(existing)
+                    }
+                } else {
+                    if (existing != null) {
+                        emit(existing)
+                    }
+                    if (needsRefetch) {
+                        refetchSubjectCollection(subjectId)
+                    }
                 }
             }
             .filterNotNull()
@@ -1081,6 +1091,7 @@ fun <T : Any> calculateIndexBasedLoadInfo(
 
 fun SubjectCollectionDto.toEntity(
     lastFetched: Long,
+    aliasesFetched: Boolean = true,
 ): SubjectCollectionEntity {
     return SubjectCollectionEntity(
         subjectId = id.toInt(),
@@ -1093,6 +1104,7 @@ fun SubjectCollectionDto.toEntity(
         totalEpisodes = episodes.size,
         airDate = PackedDate.parseFromDate(airDate),
         aliases = aliases,
+        aliasesFetched = aliasesFetched,
         tags = tags.map { it.toTag() },
         collectionStats = favorite.toSubjectCollectionStats(),
         ratingInfo = RatingInfo(
@@ -1130,7 +1142,7 @@ private fun SubjectCollectionDto.toLightweightEntity(
     episodeCount: Int?,
     lastFetched: Long,
 ): SubjectCollectionEntity {
-    val remote = toEntity(lastFetched)
+    val remote = toEntity(lastFetched, aliasesFetched = false)
     if (existing == null) {
         return remote.copy(totalEpisodes = episodeCount ?: remote.totalEpisodes)
     }
@@ -1144,6 +1156,7 @@ private fun SubjectCollectionDto.toLightweightEntity(
         totalEpisodes = episodeCount?.takeIf { it > 0 } ?: existing.totalEpisodes,
         airDate = if (airDate.isBlank()) existing.airDate else remote.airDate,
         aliases = aliases.ifEmpty { existing.aliases },
+        aliasesFetched = existing.aliasesFetched,
         tags = tags.map { it.toTag() }.ifEmpty { existing.tags },
         collectionStats = existing.collectionStats,
         ratingInfo = existing.ratingInfo.copy(

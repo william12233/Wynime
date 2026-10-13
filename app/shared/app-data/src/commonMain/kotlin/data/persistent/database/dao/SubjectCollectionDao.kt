@@ -49,6 +49,8 @@ data class SubjectCollectionEntity(
     val airDate: PackedDate,
     @field:TypeConverters(ProtoConverters.StringList::class)
     val aliases: List<String>,
+    @ColumnInfo(defaultValue = "0")
+    val aliasesFetched: Boolean = false,
     @field:TypeConverters(ProtoConverters.TagList::class)
     val tags: List<Tag>,
     @Embedded(prefix = "collection_stats_")

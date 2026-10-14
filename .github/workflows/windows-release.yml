@@ -77,7 +77,10 @@ jobs:
               throw "Failed to create draft release $env:CI_TAG"
             }
           }
-          $releaseId = gh api "repos/$repository/releases/tags/$env:CI_TAG" --jq .id
+          $releaseJson = gh api "repos/$repository/releases?per_page=100"
+          $release = @($releaseJson | ConvertFrom-Json | Where-Object { $_.tag_name -eq $env:CI_TAG }) |
+            Select-Object -First 1
+          $releaseId = [string]$release.id
           if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($releaseId)) {
             throw "Failed to resolve release id for $env:CI_TAG"
           }
@@ -148,15 +151,13 @@ jobs:
         run: |
           $repository = $env:GITHUB_REPOSITORY
           $expected = "wynime-$env:RELEASE_VERSION-windows-x86_64.zip"
-          $assets = @(gh api "repos/$repository/releases/$env:CI_TAG/assets?per_page=100" --jq '.[].name')
+          $assets = @(gh api "repos/$repository/releases/$env:CI_RELEASE_ID/assets?per_page=100" --jq '.[].name')
           if ($assets.Count -ne 1 -or $assets[0] -ne $expected) {
             Write-Error "Expected exactly one Windows asset ($expected), got: $($assets -join ', ')"
             exit 1
           }
-          gh release edit $env:CI_TAG `
-            --repo $repository `
-            --draft=false `
-            --prerelease=false `
-            --latest `
-            --title $env:RELEASE_VERSION `
-            --notes "Wynime $env:RELEASE_VERSION Windows x86_64 release."
+          gh api --method PATCH "repos/$repository/releases/$env:CI_RELEASE_ID" `
+            --field draft=false `
+            --field prerelease=false `
+            --field "name=$env:RELEASE_VERSION" `
+            --field "body=Wynime $env:RELEASE_VERSION Windows x86_64 release."

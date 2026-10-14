@@ -35,6 +35,29 @@ jobs:
           $version = $env:CI_TAG.Substring(1)
           "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
 
+      - name: Create release tag
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          $repository = $env:GITHUB_REPOSITORY
+          $tagRef = "tags/$env:CI_TAG"
+          $existing = gh api "repos/$repository/git/ref/$tagRef" 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $existingSha = gh api "repos/$repository/git/ref/$tagRef" --jq .object.sha
+            if ($existingSha -ne $env:TARGET_SHA) {
+              throw "Tag $env:CI_TAG already points to $existingSha, expected $env:TARGET_SHA"
+            }
+          } else {
+            gh api --method POST "repos/$repository/git/refs" `
+              --field "ref=refs/tags/$env:CI_TAG" `
+              --field "sha=$env:TARGET_SHA"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to create tag $env:CI_TAG"
+            }
+          }
+
       - name: Create draft Windows-only release
         shell: pwsh
         env:
@@ -46,7 +69,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             gh release create $env:CI_TAG `
               --repo $repository `
-              --target $env:TARGET_SHA `
+              --verify-tag `
               --draft `
               --title $env:RELEASE_VERSION `
               --notes "Wynime $env:RELEASE_VERSION Windows x86_64 release."

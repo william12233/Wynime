@@ -65,21 +65,17 @@ jobs:
           TARGET_SHA: ${{ github.sha }}
         run: |
           $repository = $env:GITHUB_REPOSITORY
-          $release = gh api "repos/$repository/releases/tags/$env:CI_TAG" 2>$null
+          $releaseJson = gh api --method POST "repos/$repository/releases" `
+            --field "tag_name=$env:CI_TAG" `
+            --field "target_commitish=$env:TARGET_SHA" `
+            --field "name=$env:RELEASE_VERSION" `
+            --field "body=Wynime $env:RELEASE_VERSION Windows x86_64 release." `
+            --field draft=true `
+            --field prerelease=false
           if ($LASTEXITCODE -ne 0) {
-            gh release create $env:CI_TAG `
-              --repo $repository `
-              --verify-tag `
-              --draft `
-              --title $env:RELEASE_VERSION `
-              --notes "Wynime $env:RELEASE_VERSION Windows x86_64 release."
-            if ($LASTEXITCODE -ne 0) {
-              throw "Failed to create draft release $env:CI_TAG"
-            }
+            throw "Failed to create draft release $env:CI_TAG"
           }
-          $releaseJson = gh api "repos/$repository/releases?per_page=100"
-          $release = @($releaseJson | ConvertFrom-Json | Where-Object { $_.tag_name -eq $env:CI_TAG }) |
-            Select-Object -First 1
+          $release = $releaseJson | ConvertFrom-Json
           $releaseId = [string]$release.id
           if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($releaseId)) {
             throw "Failed to resolve release id for $env:CI_TAG"

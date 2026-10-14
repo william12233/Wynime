@@ -1,0 +1,139 @@
+name: Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v1.0.24
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    name: Windows x86_64 release
+    runs-on:
+      - windows-2022
+    env:
+      CI_TAG: ${{ inputs.tag }}
+      UPLOAD_TO_S3: 'false'
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          submodules: recursive
+
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          if ($env:CI_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$') {
+            throw "Invalid release tag: $env:CI_TAG"
+          }
+          $version = $env:CI_TAG.Substring(1)
+          "RELEASE_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Create draft Windows-only release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          $repository = $env:GITHUB_REPOSITORY
+          $release = gh api "repos/$repository/releases/tags/$env:CI_TAG" 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:CI_TAG `
+              --repo $repository `
+              --target $env:TARGET_SHA `
+              --draft `
+              --title $env:RELEASE_VERSION `
+              --notes "Wynime $env:RELEASE_VERSION Windows x86_64 release."
+            if ($LASTEXITCODE -ne 0) {
+              throw "Failed to create draft release $env:CI_TAG"
+            }
+          }
+          $releaseId = gh api "repos/$repository/releases/tags/$env:CI_TAG" --jq .id
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($releaseId)) {
+            throw "Failed to resolve release id for $env:CI_TAG"
+          }
+          "CI_RELEASE_ID=$releaseId" >> $env:GITHUB_ENV
+
+      - name: Prepare local properties
+        shell: pwsh
+        run: |
+          Remove-Item -LiteralPath local.properties -Force -ErrorAction SilentlyContinue
+          @(
+            'wynime.android.abis=x86_64',
+            'kotlin.native.ignoreDisabledTargets=true',
+            'jvm.toolchain.version=21'
+          ) | Set-Content -LiteralPath local.properties
+
+      - name: Get JBR (Windows)
+        id: get-jbr
+        env:
+          RUNNER_TOOL_CACHE: ${{ runner.tool_cache }}
+          JBR_URL: https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-windows-x64-b1163.116.tar.gz
+          JBR_CHECKSUM_URL: https://cache-redirector.jetbrains.com/intellij-jbr/jbrsdk_jcef-21.0.11-windows-x64-b1163.116.tar.gz.checksum
+        shell: cmd
+        run: python .github/workflows/download_jbr.py
+
+      - name: Setup JBR 21 for Windows
+        uses: gmitch215/setup-java@6d2c5e1f82f180ae79f799f0ed6e3e5efb4e664d
+        with:
+          java-version: '21'
+          distribution: jdkfile
+          jdkFile: ${{ steps.get-jbr.outputs.jbrLocation }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-disabled: 'true'
+
+      - name: Set release version
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          ./gradlew updateReleaseVersionNameFromGit `
+            '--no-configuration-cache' `
+            '--no-daemon' `
+            '-Dfile.encoding=UTF-8'
+
+      - name: Build and upload Windows package
+        timeout-minutes: 180
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: pwsh
+        run: |
+          ./gradlew :ci-helper:uploadDesktopInstallers `
+            '--no-configuration-cache' `
+            '--no-daemon' `
+            '--parallel' `
+            '-Dfile.encoding=UTF-8' `
+            '-Dorg.gradle.jvmargs=-Xmx4g -Dkotlin.daemon.jvm.options=-Xmx4g'
+
+      - name: Verify and publish Windows-only release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $repository = $env:GITHUB_REPOSITORY
+          $expected = "wynime-$env:RELEASE_VERSION-windows-x86_64.zip"
+          $assets = @(gh api "repos/$repository/releases/$env:CI_TAG/assets?per_page=100" --jq '.[].name')
+          if ($assets.Count -ne 1 -or $assets[0] -ne $expected) {
+            Write-Error "Expected exactly one Windows asset ($expected), got: $($assets -join ', ')"
+            exit 1
+          }
+          gh release edit $env:CI_TAG `
+            --repo $repository `
+            --draft=false `
+            --prerelease=false `
+            --latest `
+            --title $env:RELEASE_VERSION `
+            --notes "Wynime $env:RELEASE_VERSION Windows x86_64 release."

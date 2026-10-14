@@ -46,14 +46,17 @@ private fun exitProcessForUpdate(delayMillis: Long): InstallationResult {
 object WindowsUpdateInstaller : DesktopUpdateInstaller {
     private val logger = logger<WindowsUpdateInstaller>()
 
+    private const val APPLICATION_EXECUTABLE = "Wynime.exe"
+    private const val UPDATER_EXECUTABLE = "ani_update.exe"
+
     override val installablePackageExtensions: Set<String> = setOf("zip")
 
     override fun install(file: SystemPath, context: ContextMP): InstallationResult {
         logger.info { "Installing update for Windows" }
         val appDir = ExecutableDirectoryDetector.INSTANCE.getExecutableDirectory()
         logger.info { "Current app dir: ${appDir.absolutePath}" }
-        if (!appDir.resolve("wynime.exe").exists()) {
-            logger.info { "Current app dir does not have 'Wynime.exe'. Fallback to manual update" }
+        if (!appDir.resolve(APPLICATION_EXECUTABLE).exists()) {
+            logger.info { "Current app dir does not have '$APPLICATION_EXECUTABLE'. Fallback to manual update" }
             return InstallationResult.Failed(InstallationFailureReason.UNSUPPORTED_FILE_STRUCTURE)
         }
 
@@ -61,13 +64,13 @@ object WindowsUpdateInstaller : DesktopUpdateInstaller {
             System.getProperty("compose.application.resources.dir")
                 ?: throw IllegalStateException("Cannot get resources directory"),
         )
-        val updateExecutable = resourcesDir.resolve("ani_update.exe")
+        val updateExecutable = resourcesDir.resolve(UPDATER_EXECUTABLE)
         if (!updateExecutable.exists()) {
-            logger.info { "'ani_update.exe' not found. Fallback to manual update" }
+            logger.info { "'$UPDATER_EXECUTABLE' not found. Fallback to manual update" }
             return InstallationResult.Failed(InstallationFailureReason.UNSUPPORTED_FILE_STRUCTURE)
         }
 
-        val copiedUpdateExecutable = appDir.resolve("ani_update.exe")
+        val copiedUpdateExecutable = appDir.resolve(UPDATER_EXECUTABLE)
         updateExecutable.copyTo(copiedUpdateExecutable, true)
 
         ProcessBuilder(
@@ -83,7 +86,7 @@ object WindowsUpdateInstaller : DesktopUpdateInstaller {
 
     override fun deleteOldUpdater() {
         val appDir = ExecutableDirectoryDetector.INSTANCE.getExecutableDirectory()
-        val updateExecutable = appDir.resolve("ani_update.exe")
+        val updateExecutable = appDir.resolve(UPDATER_EXECUTABLE)
         if (updateExecutable.exists()) {
             updateExecutable.delete()
         }

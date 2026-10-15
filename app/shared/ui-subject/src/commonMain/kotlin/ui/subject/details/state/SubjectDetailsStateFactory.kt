@@ -34,23 +34,12 @@ import com.wynime.app.data.models.subject.SubjectCollectionInfo
 import com.wynime.app.data.models.subject.SubjectInfo
 import com.wynime.app.data.models.subject.SubjectProgressInfo
 import com.wynime.app.data.network.BangumiRelatedPeopleService
-import com.wynime.app.data.repository.episode.BangumiCommentRepository
 import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
 import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import com.wynime.app.data.repository.subject.SubjectCollectionRepository
 import com.wynime.app.data.repository.subject.SubjectRelationsRepository
-import com.wynime.app.data.models.comment.CommentReportTargetType
 import com.wynime.app.data.models.player.playProgressByEpisodeId
-import com.wynime.app.data.network.WynimeCommentReportService
-import com.wynime.app.ui.comment.CommentMapperContext.parseToUIComment
-import com.wynime.app.ui.comment.CommentMapperContext.toCommentVoteValue
-import com.wynime.app.ui.comment.CommentReportState
-import com.wynime.app.ui.comment.CommentState
-import com.wynime.app.ui.comment.UICommentSource
-import com.wynime.app.ui.comment.reportSnapshotText
-import com.wynime.app.ui.comment.toDataReason
-import com.wynime.app.ui.foundation.produceState
 import com.wynime.app.ui.rating.EditableRatingActions
 import com.wynime.app.ui.rating.RatingEditController
 import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeState
@@ -84,8 +73,6 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
     private val episodePlayHistoryRepository: EpisodePlayHistoryRepository by inject()
     private val bangumiRelatedPeopleService: BangumiRelatedPeopleService by inject()
     private val subjectRelationsRepository: SubjectRelationsRepository by inject()
-    private val bangumiCommentRepository: BangumiCommentRepository by inject()
-    private val commentReportService: WynimeCommentReportService by inject()
     private val setSubjectCollectionTypeOrDeleteUseCase: SetSubjectCollectionTypeOrDeleteUseCase by inject()
 
     override fun create(
@@ -184,45 +171,6 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
             SubjectCollectionTypeEditActions by editableSubjectCollectionTypeState,
             EditableRatingActions by ratingEditController {}
 
-        val commentsCount = MutableStateFlow<Int?>(null)
-        val comments = bangumiCommentRepository.subjectCommentsPager(subjectId) { commentsCount.value = it }
-            .map { page ->
-                page.map { it.parseToUIComment() }
-            }
-            .cachedIn(this)
-
-        val subjectCommentState = CommentState(
-            list = comments,
-            countState = commentsCount.produceState(null, this),
-            onSubmitCommentReaction = { _, _, _ -> },
-            backgroundScope = this,
-            onSubmitCommentVote = { comment, vote ->
-
-                if (comment.source == UICommentSource.WYNIME && comment.sourceCommentId.isNotEmpty()) {
-                    bangumiCommentRepository.voteSubjectReview(
-                        subjectId = subjectId,
-                        reviewId = comment.sourceCommentId,
-                        vote = vote?.toCommentVoteValue(),
-                    )
-                }
-            },
-        )
-
-        val subjectCommentReportState = CommentReportState(
-            onSubmitReport = { comment, reason, detail ->
-                commentReportService.createReport(
-                    targetType = CommentReportTargetType.SUBJECT_REVIEW,
-                    targetId = comment.sourceCommentId,
-                    reason = reason.toDataReason(),
-                    commentAuthorId = comment.author?.id,
-                    detail = detail.takeIf { it.isNotEmpty() },
-                    contentSnapshot = comment.reportSnapshotText(),
-                    subjectId = subjectId.toLong(),
-                )
-            },
-            backgroundScope = this,
-        )
-
         val relatedPersonsFlow = subjectRelationsRepository.subjectRelatedPersonsFlow(subjectId)
             .stateIn(this, SharingStarted.Eagerly, null)
 
@@ -288,8 +236,6 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
                 .map { it.computeExposed() }
                 .map { PagingData.from(it) }
                 .cachedIn(this),
-            subjectCommentState = subjectCommentState,
-            subjectCommentReportState = subjectCommentReportState,
             actions = actions,
 
             uiState = combine(

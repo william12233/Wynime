@@ -1,7 +1,6 @@
 package com.wynime.app.ui.subject.details.state
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -15,8 +14,6 @@ import com.wynime.app.data.models.subject.RelatedSubjectInfo
 import com.wynime.app.data.models.subject.SubjectAiringInfo
 import com.wynime.app.data.models.subject.SubjectInfo
 import com.wynime.app.data.models.subject.SubjectProgressInfo
-import com.wynime.app.ui.comment.CommentReportState
-import com.wynime.app.ui.comment.CommentState
 import com.wynime.app.ui.rating.EditableRatingActions
 import com.wynime.app.ui.rating.EditableRatingUiState
 import com.wynime.app.ui.subject.AiringLabelState
@@ -42,14 +39,11 @@ class SubjectDetailsState(
     val charactersPager: Flow<PagingData<RelatedCharacterInfo>>,
     val exposedCharactersPager: Flow<PagingData<RelatedCharacterInfo>>,
     val relatedSubjectsPager: Flow<PagingData<RelatedSubjectInfo>>,
-    val subjectCommentState: CommentState,
 
     val uiState: StateFlow<SubjectDetailsUiState>,
-    val subjectCommentReportState: CommentReportState? = null,
     actions: SubjectDetailsActions = SubjectDetailsActions.Noop,
 ) : SubjectDetailsActions by actions {
     val detailsTabLazyListState = LazyListState()
-    val commentTabLazyGridState = LazyGridState()
 }
 
 @Immutable

@@ -24,7 +24,6 @@ import com.wynime.app.data.models.subject.TestCoverImage
 import com.wynime.app.data.models.subject.TestSelfRatingInfo
 import com.wynime.app.data.models.subject.TestSubjectCollections
 import com.wynime.app.data.models.subject.TestSubjectInfo
-import com.wynime.app.ui.comment.createTestCommentState
 import com.wynime.app.ui.foundation.IMAGE_VIEWER_TEST_TAG
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.framework.runOnSwingEdt
@@ -70,7 +69,6 @@ class SubjectDetailsImageViewerTest {
             staffPager = createTestPager(TestSubjectStaffInfo),
             exposedStaffPager = createTestPager(TestSubjectStaffInfo),
             relatedSubjectsPager = createTestPager(TestRelatedSubjects),
-            subjectCommentState = createTestCommentState(scope),
             uiState = MutableStateFlow(
                 SubjectDetailsUiState(
                     subjectId = info.subjectId,

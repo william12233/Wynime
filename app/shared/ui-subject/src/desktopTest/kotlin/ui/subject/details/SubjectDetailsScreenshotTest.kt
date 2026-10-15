@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import com.wynime.app.data.models.subject.TestSelfRatingInfo
 import com.wynime.app.data.models.subject.TestSubjectCollections
 import com.wynime.app.data.models.subject.TestSubjectInfo
-import com.wynime.app.ui.comment.createTestCommentState
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.search.createTestPager
 import com.wynime.app.ui.subject.details.state.SubjectDetailsUiState
@@ -51,7 +50,6 @@ class SubjectDetailsScreenshotTest {
             staffPager = createTestPager(TestSubjectStaffInfo),
             exposedStaffPager = createTestPager(TestSubjectStaffInfo.take(10)),
             relatedSubjectsPager = createTestPager(TestRelatedSubjects),
-            subjectCommentState = createTestCommentState(scope),
             uiState = MutableStateFlow(
                 SubjectDetailsUiState(
                     subjectId = TestSubjectInfo.subjectId,

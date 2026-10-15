@@ -75,6 +75,12 @@ interface SubjectService {
 
     suspend fun getSubjectRecommendations(subjectId: Int, limit: Int): List<SubjectRecommendationDto>
 
+    suspend fun getSubjectRecommendations(
+        subjectId: Int,
+        relatedTags: List<String>,
+        limit: Int,
+    ): List<SubjectRecommendationDto> = getSubjectRecommendations(subjectId, limit)
+
     fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts>
 
     suspend fun performBangumiFullSync()

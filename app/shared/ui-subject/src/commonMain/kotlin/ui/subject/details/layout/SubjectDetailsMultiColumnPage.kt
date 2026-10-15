@@ -90,9 +90,7 @@ import com.wynime.app.ui.subject.details.components.RelatedSubjectsGrid
 import com.wynime.app.ui.subject.details.components.rememberNavigateToRelatedSubject
 import com.wynime.app.ui.subject.details.components.rememberNavigateToRelationGraph
 import com.wynime.app.ui.subject.details.sections.CharactersSection
-import com.wynime.app.ui.subject.details.sections.HotReviewsCardContent
 import com.wynime.app.ui.subject.details.sections.PagedEpisodesGrid
-import com.wynime.app.ui.subject.details.sections.ReviewsPreviewSection
 import com.wynime.app.ui.subject.details.sections.SectionHeader
 import com.wynime.app.ui.subject.details.sections.SectionHeaderRelationGraphButton
 import com.wynime.app.ui.subject.details.sections.SectionHeaderCacheButton
@@ -120,7 +118,6 @@ internal fun SubjectDetailsMultiColumnPage(
     onEpisodeLongClick: (EpisodeListItem) -> Unit,
     onClickTag: (Tag) -> Unit,
     onClickLogin: () -> Unit,
-    onShowComments: () -> Unit,
     onClickCache: () -> Unit,
     modifier: Modifier = Modifier,
     showTopBar: Boolean = true,
@@ -144,8 +141,6 @@ internal fun SubjectDetailsMultiColumnPage(
     val allStaff = state.staffPager.collectAsLazyPagingItemsWithLifecycle()
     val totalStaffCount = uiState.totalStaffCount
     val related = state.relatedSubjectsPager.collectAsLazyPagingItemsWithLifecycle()
-    val comments = state.subjectCommentState.list.collectAsLazyPagingItemsWithLifecycle()
-    val commentCount = state.subjectCommentState.count
 
     MultiColumnScaffold(
         layoutParams,
@@ -235,9 +230,6 @@ internal fun SubjectDetailsMultiColumnPage(
             if (related.itemCount > 0) {
                 SubjectRelatedBlock(state.subjectId, related)
             }
-            if (!layoutParams.showRail) {
-                ReviewsPreviewSection(comments, commentCount, onShowAll = onShowComments)
-            }
         }
 
         if (layoutParams.showRail) {
@@ -256,11 +248,6 @@ internal fun SubjectDetailsMultiColumnPage(
                         onClick = { state.requestEditRating() },
                     )
                     RatingHistogram(info.ratingInfo, Modifier.padding(top = 16.dp))
-                }
-                if (comments.itemCount > 0) {
-                    RailCard {
-                        HotReviewsCardContent(comments, commentCount, onShowAll = onShowComments)
-                    }
                 }
                 if (exposedStaff.itemCount > 0) {
                     RailCard {

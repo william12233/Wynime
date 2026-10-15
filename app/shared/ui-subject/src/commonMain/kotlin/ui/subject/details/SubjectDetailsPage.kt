@@ -34,9 +34,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
-import androidx.compose.material.icons.rounded.AddComment
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -88,8 +86,6 @@ import com.wynime.app.data.models.subject.preferredDisplayName
 import com.wynime.app.domain.episode.SetEpisodeCollectionTypeRequest
 import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.navigation.LocalNavigator
-import com.wynime.app.ui.comment.CommentReportHost
-import com.wynime.app.ui.comment.UIComment
 import com.wynime.app.ui.external.placeholder.placeholder
 import com.wynime.app.ui.foundation.WynimeImageLoadSuccess
 import com.wynime.app.ui.foundation.ImageViewer
@@ -126,19 +122,14 @@ import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
 import com.wynime.app.ui.foundation.widgets.LocalToaster
 import com.wynime.app.ui.foundation.widgets.showLoadError
 import com.wynime.app.ui.lang.Lang
-import com.wynime.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
-import com.wynime.app.ui.lang.foundation_richtext_open_failed_prefix
 import com.wynime.app.ui.lang.subject_details_coming_soon
 import com.wynime.app.ui.lang.subject_details_login_to_collect
-import com.wynime.app.ui.lang.subject_details_tab_comments
 import com.wynime.app.ui.lang.subject_details_tab_details
 import com.wynime.app.ui.lang.subject_details_tab_discussions
-import com.wynime.app.ui.lang.subject_details_write_review
 import com.wynime.app.ui.rating.EditableRating
 import com.wynime.app.ui.rating.EditableRatingDialogsHost
 import com.wynime.app.ui.rating.EditableRatingActions
 import com.wynime.app.ui.rating.EditableRatingUiState
-import com.wynime.app.ui.richtext.RichTextDefaults
 import com.wynime.app.ui.search.LoadErrorCard
 import com.wynime.app.ui.subject.AiringLabelState
 import com.wynime.app.ui.subject.SubjectProgressState
@@ -147,7 +138,6 @@ import com.wynime.app.ui.subject.details.components.CollectionData
 import com.wynime.app.ui.subject.details.components.SeasonTag
 import com.wynime.app.ui.subject.details.components.SelectEpisodeButtons
 import com.wynime.app.ui.subject.details.components.SubjectBlurredBackground
-import com.wynime.app.ui.subject.details.components.SubjectCommentColumn
 import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults
 import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults.MaximumContentWidth
 import com.wynime.app.ui.subject.details.components.SubjectDetailsHeader
@@ -155,7 +145,6 @@ import com.wynime.app.ui.subject.details.layout.CompactDetailsTabContent
 import com.wynime.app.ui.subject.details.layout.SubjectDetailsLayoutParams
 import com.wynime.app.ui.subject.details.layout.SubjectDetailsMultiColumnPage
 import com.wynime.app.ui.subject.details.layout.SubjectDetailsMultiColumnPlaceholder
-import com.wynime.app.ui.subject.details.sections.SubjectCommentsSheet
 import com.wynime.app.ui.subject.details.state.SubjectDetailsState
 import com.wynime.app.ui.subject.details.state.createTestSubjectDetailsState
 import com.wynime.app.ui.subject.details.state.rememberAiringLabelState
@@ -291,11 +280,7 @@ private fun SubjectDetailsPage(
     navigationIcon: @Composable () -> Unit = {},
     onClickOpenExternal: () -> Unit = {},
 ) {
-    val toaster = LocalToaster.current
-    val browserNavigator = LocalUriHandler.current
     val navigator = LocalNavigator.current
-    val externalAppLinkWarningPrefix = stringResource(Lang.foundation_richtext_external_app_link_warning_prefix)
-    val openLinkFailedPrefix = stringResource(Lang.foundation_richtext_open_failed_prefix)
 
     var showSelectEpisode by rememberSaveable { mutableStateOf(false) }
 
@@ -313,23 +298,8 @@ private fun SubjectDetailsPage(
         )
     }
 
-    val onClickCommentUrl = { url: String ->
-        RichTextDefaults.checkSanityAndOpen(
-            url,
-            browserNavigator,
-            toaster,
-            externalAppLinkWarningPrefix,
-            openLinkFailedPrefix,
-        )
-    }
-    val onClickCommentImage = { url: String -> imageViewer.viewImage(url) }
-
     val coverImageUrl = state.info?.imageLarge?.takeIf { it.isNotBlank() }
     val onClickCover: (() -> Unit)? = coverImageUrl?.let { url -> { imageViewer.viewImage(url) } }
-
-    val onOpenCommentOriginal = { _: UIComment ->
-        browserNavigator.openUri("https://bgm.tv/subject/${uiState.subjectId}")
-    }
 
     val themeSettings = LocalThemeSettings.current
     var bitmap by remember { mutableStateOf<ImageBitmap?>(null) }
@@ -359,23 +329,8 @@ private fun SubjectDetailsPage(
             )
         }
 
-        state.subjectCommentReportState?.let { CommentReportHost(it) }
-
         if (layoutParams.isMultiColumn && state.info != null) {
-
-            var showComments by rememberSaveable { mutableStateOf(false) }
             EditableRatingDialogsHost(uiState.rating, state)
-            if (showComments) {
-                SubjectCommentsSheet(
-                    state = state.subjectCommentState,
-                    onClickUrl = onClickCommentUrl,
-                    onClickImage = onClickCommentImage,
-                    onClickWriteReview = { state.requestEditRating() },
-                    onDismissRequest = { showComments = false },
-                    reportState = state.subjectCommentReportState,
-                    onOpenOriginal = onOpenCommentOriginal,
-                )
-            }
 
             PeoplePreviewHost {
                 SubjectDetailsMultiColumnPage(
@@ -386,7 +341,6 @@ private fun SubjectDetailsPage(
                     onEpisodeLongClick = onEpisodeLongClick,
                     onClickTag = onClickTag,
                     onClickLogin = onClickLogin,
-                    onShowComments = { showComments = true },
                     onClickCache = { navigator.navigateSubjectCaches(uiState.subjectId) },
                     modifier = modifier,
                     showTopBar = showTopBar,
@@ -403,7 +357,7 @@ private fun SubjectDetailsPage(
 
         val pagerState = rememberPagerState(
             initialPage = SubjectDetailsTab.DETAILS.ordinal,
-            pageCount = { 3 },
+            pageCount = { SubjectDetailsTab.entries.size },
         )
         val nestedScrollableColumnState = rememberNestedScrollableColumnState()
         SubjectDetailsSingleColumnPage(
@@ -448,22 +402,6 @@ private fun SubjectDetailsPage(
             onCoverImageSuccess = onCoverImageSuccess,
             onClickOpenExternal = onClickOpenExternal,
             onClickCover = onClickCover,
-            floatingActionButton = {
-                when (SubjectDetailsTab.entries.getOrNull(pagerState.currentPage)) {
-                    SubjectDetailsTab.COMMENTS -> {
-                        ExtendedFloatingActionButton(
-                            text = { Text(stringResource(Lang.subject_details_write_review)) },
-                            icon = {
-                                Icon(Icons.Rounded.AddComment, null)
-                            },
-                            onClick = { state.requestEditRating() },
-                            expanded = !nestedScrollableColumnState.isHeaderScrolledOut,
-                        )
-                    }
-
-                    else -> {}
-                }
-            },
             tabRow = { isOverlay, visible ->
                 SubjectDetailsContentTabRow(
                     pagerState,
@@ -491,22 +429,6 @@ private fun SubjectDetailsPage(
                             .nestedScrollWorkaround(state.detailsTabLazyListState),
                         listState = state.detailsTabLazyListState,
                         contentPadding = tabContentPadding,
-                    )
-                },
-                commentsTab = { tabContentPadding ->
-                    SubjectDetailsDefaults.SubjectCommentColumn(
-                        state = state.subjectCommentState,
-                        onClickUrl = onClickCommentUrl,
-                        onClickImage = onClickCommentImage,
-                        reportState = state.subjectCommentReportState,
-                        onOpenOriginal = onOpenCommentOriginal,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .nestedScrollWorkaround(state.commentTabLazyGridState),
-                        gridState = state.commentTabLazyGridState,
-                        contentPadding = tabContentPadding,
-
-                        pullToRefreshEnabled = nestedScrollableColumnState.isHeaderFullyVisible,
                     )
                 },
                 discussionsTab = {
@@ -879,7 +801,6 @@ private fun SubjectDetailsContentPager(
     pagerState: PagerState,
     contentPadding: PaddingValues,
     detailsTab: @Composable (contentPadding: PaddingValues) -> Unit,
-    commentsTab: @Composable (contentPadding: PaddingValues) -> Unit,
     discussionsTab: @Composable (contentPadding: PaddingValues) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -905,7 +826,6 @@ private fun SubjectDetailsContentPager(
                     ).plus(WindowInsets.navigationBars.only(WindowInsetsSides.Bottom).asPaddingValues())
                 when (type) {
                     SubjectDetailsTab.DETAILS -> detailsTab(panePaddingValues)
-                    SubjectDetailsTab.COMMENTS -> commentsTab(panePaddingValues)
                     SubjectDetailsTab.DISCUSSIONS -> discussionsTab(panePaddingValues)
                 }
             }
@@ -1038,7 +958,6 @@ private fun PlaceholderSubjectDetailsContentPager(paddingValues: PaddingValues) 
 @Serializable
 enum class SubjectDetailsTab {
     DETAILS,
-    COMMENTS,
     DISCUSSIONS,
 }
 
@@ -1067,7 +986,6 @@ sealed interface SubjectDetailsLoadState {
 private fun renderSubjectDetailsTab(tab: SubjectDetailsTab): String {
     return when (tab) {
         SubjectDetailsTab.DETAILS -> stringResource(Lang.subject_details_tab_details)
-        SubjectDetailsTab.COMMENTS -> stringResource(Lang.subject_details_tab_comments)
         SubjectDetailsTab.DISCUSSIONS -> stringResource(Lang.subject_details_tab_discussions)
     }
 }
@@ -1077,9 +995,8 @@ private fun renderSubjectDetailsTab(tab: SubjectDetailsTab): String {
 @Preview(device = "spec:width=1280dp,height=800dp,dpi=240")
 @Composable
 internal fun PreviewSubjectDetails() = ProvideCompositionLocalsForPreview {
-    val scope = rememberCoroutineScope()
     val state = remember {
-        createTestSubjectDetailsState(scope)
+        createTestSubjectDetailsState()
             .let { SubjectDetailsLoadState.Ok(it.subjectId, it) }
     }
     PreviewSubjectDetailsScreen(

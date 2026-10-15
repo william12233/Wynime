@@ -47,7 +47,7 @@ class SubjectDetailsStateLoaderTest {
             }
             coroutineScope {
                 scopes.add(this)
-                emit(createTestSubjectDetailsState(this))
+                emit(createTestSubjectDetailsState())
                 awaitCancellation()
             }
         }

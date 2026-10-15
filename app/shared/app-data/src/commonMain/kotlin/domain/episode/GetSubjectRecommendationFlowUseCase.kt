@@ -1,8 +1,9 @@
 package com.wynime.app.domain.episode
 
 import com.wynime.app.data.network.SubjectService
-import com.wynime.app.data.models.subject.preferredDisplayName as subjectPreferredDisplayName
+import com.wynime.app.data.models.subject.SubjectInfo
 import com.wynime.app.domain.usecase.UseCase
+import com.wynime.models.SubjectRecommendationDto
 import com.wynime.utils.platform.Uuid
 
 class SubjectRecommendation(
@@ -26,20 +27,32 @@ fun SubjectRecommendation.preferredDisplayName(useOriginalTitle: Boolean): Strin
 
 fun interface GetSubjectRecommendationUseCase : UseCase {
     suspend operator fun invoke(subjectId: Int): List<SubjectRecommendation>
+
+    suspend operator fun invoke(subjectInfo: SubjectInfo): List<SubjectRecommendation> = invoke(subjectInfo.subjectId)
 }
 
 class GetSubjectRecommendationUseCaseImpl(private val service: SubjectService) : GetSubjectRecommendationUseCase {
-    override suspend fun invoke(subjectId: Int): List<SubjectRecommendation> {
-        return service.getSubjectRecommendations(subjectId, 15).map {
-            SubjectRecommendation(
-                subjectId = it.subjectId,
-                name = it.subjectName,
-                nameCn = it.subjectNameCn,
-                desc1 = it.desc1,
-                desc2 = it.desc2,
-                imageUrl = it.imageUrl,
-                uri = it.uri,
-            )
-        }
+    override suspend fun invoke(subjectId: Int): List<SubjectRecommendation> =
+        service.getSubjectRecommendations(subjectId, 15).map { it.toSubjectRecommendation() }
+
+    override suspend fun invoke(subjectInfo: SubjectInfo): List<SubjectRecommendation> {
+        val relatedTags = subjectInfo.tags
+            .asSequence()
+            .map { it.name.trim() }
+            .filter(String::isNotEmpty)
+            .distinct()
+            .toList()
+        return service.getSubjectRecommendations(subjectInfo.subjectId, relatedTags, 15)
+            .map { it.toSubjectRecommendation() }
     }
 }
+
+private fun SubjectRecommendationDto.toSubjectRecommendation() = SubjectRecommendation(
+    subjectId = subjectId,
+    name = subjectName,
+    nameCn = subjectNameCn,
+    desc1 = desc1,
+    desc2 = desc2,
+    imageUrl = imageUrl,
+    uri = uri,
+)

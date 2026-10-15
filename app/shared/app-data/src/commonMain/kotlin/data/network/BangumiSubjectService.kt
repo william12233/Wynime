@@ -55,6 +55,8 @@ import com.wynime.datasources.bangumi.models.BangumiPerson
 import com.wynime.datasources.bangumi.models.BangumiPersonCareer
 import com.wynime.datasources.bangumi.models.BangumiRelatedCharacter
 import com.wynime.datasources.bangumi.models.BangumiRelatedPerson
+import com.wynime.datasources.bangumi.models.BangumiSearchSubjectsRequest
+import com.wynime.datasources.bangumi.models.BangumiSearchSubjectsRequestFilter
 import com.wynime.datasources.bangumi.models.BangumiSubject
 import com.wynime.datasources.bangumi.models.BangumiSubjectCollectionType
 import com.wynime.datasources.bangumi.models.BangumiSubjectType
@@ -301,19 +303,84 @@ class BangumiSubjectService(
         subjectId: Int,
         limit: Int,
     ): List<SubjectRecommendationDto> = withContext(ioDispatcher) {
-        bangumiApi.request { getRelatedSubjectsBySubjectId(subjectId) }
-            .take(limit)
-            .map { relation ->
-                SubjectRecommendationDto(
-                    subjectName = relation.name,
-                    subjectNameCn = relation.nameCn,
-                    imageUrl = relation.images?.large.orEmpty(),
-                    desc1 = relation.relation,
-                    desc2 = "",
-                    subjectId = relation.id.toLong(),
-                    uri = null,
-                )
+        loadRelatedSubjectRecommendations(subjectId).take(limit)
+    }
+
+    override suspend fun getSubjectRecommendations(
+        subjectId: Int,
+        relatedTags: List<String>,
+        limit: Int,
+    ): List<SubjectRecommendationDto> = withContext(ioDispatcher) {
+        if (limit <= 0) return@withContext emptyList()
+
+        val relations = bangumiApi.request { getRelatedSubjectsBySubjectId(subjectId) }
+        val sequel = relations
+            .firstOrNull { it.relation.isSequelRelation() }
+            ?.toWynimeRecommendation()
+        val excludedSubjectIds = buildSet {
+            add(subjectId.toLong())
+            relations.forEach { add(it.id.toLong()) }
+        }
+        val tags = relatedTags
+            .asSequence()
+            .map(String::trim)
+            .filter(String::isNotEmpty)
+            .distinct()
+            .take(MAX_RECOMMENDATION_TAGS)
+            .toList()
+
+        if (tags.isEmpty()) {
+            return@withContext relations.map { it.toWynimeRecommendation() }.take(limit)
+        }
+
+        val candidates = searchSubjectRecommendations(tags.take(PRIMARY_RECOMMENDATION_TAGS))
+            .let { primary ->
+                if (primary.size < limit && tags.size > PRIMARY_RECOMMENDATION_TAGS) {
+                    primary + searchSubjectRecommendations(tags.take(1))
+                } else {
+                    primary
+                }
             }
+
+        buildList {
+            sequel?.let(::add)
+            candidates.asSequence()
+                .filter { candidate -> candidate.subjectId?.let { it !in excludedSubjectIds } == true }
+                .distinctBy { it.subjectId }
+                .take((limit - size).coerceAtLeast(0))
+                .forEach(::add)
+        }.take(limit)
+    }
+
+    private suspend fun loadRelatedSubjectRecommendations(subjectId: Int): List<SubjectRecommendationDto> =
+        bangumiApi.request { getRelatedSubjectsBySubjectId(subjectId) }
+            .map { it.toWynimeRecommendation() }
+
+    private suspend fun searchSubjectRecommendations(tags: List<String>): List<SubjectRecommendationDto> {
+        if (tags.isEmpty()) return emptyList()
+        return try {
+            bangumiApi.request {
+                searchSubjects(
+                    limit = RECOMMENDATION_SEARCH_LIMIT,
+                    offset = 0,
+                    bangumiSearchSubjectsRequest = BangumiSearchSubjectsRequest(
+                        keyword = "",
+                        sort = BangumiSearchSubjectsRequest.Sort.HEAT,
+                        filter = BangumiSearchSubjectsRequestFilter(
+                            type = listOf(BangumiSubjectType.Anime),
+                            tag = tags,
+                        ),
+                    ),
+                )
+            }.data.orEmpty().map { it.toWynimeRecommendation() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logger.warn(e) {
+                "Failed to load tag-based subject recommendations; keeping the next-season recommendation."
+            }
+            emptyList()
+        }
     }
 
     override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts> = flow {
@@ -755,5 +822,22 @@ private fun BangumiSubjectRelation.toWynimeRecommendation() = SubjectRecommendat
     subjectId = id.toLong(),
     uri = null,
 )
+
+private fun com.wynime.datasources.bangumi.models.BangumiSearchSubjects200ResponseDataInner
+    .toWynimeRecommendation() = SubjectRecommendationDto(
+    subjectName = name,
+    subjectNameCn = nameCn,
+    imageUrl = image,
+    desc1 = date.orEmpty(),
+    desc2 = score?.toString().orEmpty(),
+    subjectId = id.toLong(),
+    uri = null,
+)
+
+private fun String.isSequelRelation(): Boolean = trim().lowercase() in setOf("续集", "續集", "sequel")
+
+private const val MAX_RECOMMENDATION_TAGS = 5
+private const val PRIMARY_RECOMMENDATION_TAGS = 2
+private const val RECOMMENDATION_SEARCH_LIMIT = 50
 
 private typealias BangumiSubjectRelation = BangumiV0SubjectRelation

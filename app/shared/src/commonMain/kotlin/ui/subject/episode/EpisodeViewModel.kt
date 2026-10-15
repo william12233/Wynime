@@ -375,7 +375,7 @@ open class EpisodeViewModel(
     private val selfInfoFlow = SelfInfoStateProducer(koin = getKoin()).flow
 
     @OptIn(UnsafeEpisodeSessionApi::class)
-    protected val recommendationsFlow = subjectInfoFlow.map { getSubjectRecommendations(it.subjectId) }
+    protected val recommendationsFlow = subjectInfoFlow.map { getSubjectRecommendations(it) }
         .shareTransparentlyIn(backgroundScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
 
     @OptIn(UnsafeEpisodeSessionApi::class)

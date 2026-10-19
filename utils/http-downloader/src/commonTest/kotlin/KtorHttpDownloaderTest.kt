@@ -41,6 +41,7 @@ import com.wynime.utils.io.copyTo
 import com.wynime.utils.io.deleteRecursively
 import com.wynime.utils.io.resolve
 import com.wynime.utils.ktor.asScopedHttpClient
+import com.wynime.utils.httpdownloader.m3u.M3u8PlaylistTransformer
 import org.openani.mediamp.ffmpeg.FFmpegResult
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -71,6 +72,7 @@ class KtorHttpDownloaderTest {
     private var lastInputPlaylistContent: String? = null
     private var forceFfmpegFailure = false
     private var partFileBytesWhenBodySent = -1L
+    private var filterM3u8Playlist = false
 
     private val attempts = mutableMapOf<String, Int>().withDefault { 0 }
 
@@ -94,6 +96,7 @@ class KtorHttpDownloaderTest {
         lastInputPlaylistContent = null
         forceFfmpegFailure = false
         partFileBytesWhenBodySent = -1L
+        filterM3u8Playlist = false
 
         mockClient = HttpClient(MockEngine) {
             expectSuccess = true
@@ -303,6 +306,9 @@ class KtorHttpDownloaderTest {
             baseSaveDir = Path(tempDir),
             parentScope = CoroutineScope(SupervisorJob() + testDispatcher),
             ioDispatcher = testDispatcher,
+            m3u8PlaylistTransformer = M3u8PlaylistTransformer { content, _ ->
+                if (filterM3u8Playlist) removePlaylistSegment(content, "segment2.ts") else content
+            },
         ) {
             override suspend fun executeFfmpeg(args: List<String>): FFmpegResult {
                 lastFfmpegArgs = args
@@ -462,6 +468,28 @@ class KtorHttpDownloaderTest {
         assertTrue(lastFfmpegArgs?.contains("-allowed_extensions") == true)
         assertTrue(lastFfmpegArgs?.contains("-protocol_whitelist") == true)
         assertTrue(lastInputPlaylistContent?.contains("0.ts") == true)
+    }
+
+    @Test
+    fun `download - applies playlist transformation before creating segments`() = testScope.runTest {
+        filterM3u8Playlist = true
+        val segment2AttemptsBefore = attempts.getValue("https://example.com/segment2.ts")
+
+        val downloadId = downloader.downloadWithId(
+            url = "https://example.com/playlist.m3u8",
+            downloadId = DownloadId("filtered-output"),
+        )?.downloadId
+        assertNotNull(downloadId)
+
+        downloader.joinDownload(downloadId)
+
+        val state = downloader.getState(downloadId)
+        assertNotNull(state)
+        assertEquals(DownloadStatus.COMPLETED, state.status)
+        assertEquals(2, state.segments.size)
+        assertEquals(segment2AttemptsBefore, attempts.getValue("https://example.com/segment2.ts"))
+        assertFalse(lastInputPlaylistContent.orEmpty().contains("segment2.ts"))
+        assertEquals(1024 + 3072, fileSystem.metadata(Path("$tempDir/filtered-output.mp4")).size)
     }
 
     @Test
@@ -1278,6 +1306,25 @@ class KtorHttpDownloaderTest {
         assertEquals(DownloadStatus.COMPLETED, progress.last().status)
         assertNull(progress.last().lastSegmentFailure)
         assertNull(downloader.getProgressFlow(downloadId).first().lastSegmentFailure)
+    }
+
+    private fun removePlaylistSegment(content: String, segmentName: String): String {
+        val lines = content.lines()
+        val filtered = buildList {
+            var index = 0
+            while (index < lines.size) {
+                val isTarget = index + 1 < lines.size &&
+                    lines[index].trim().startsWith("#EXTINF:") &&
+                    lines[index + 1].trim() == segmentName
+                if (isTarget) {
+                    index += 2
+                } else {
+                    add(lines[index])
+                    index++
+                }
+            }
+        }
+        return filtered.joinToString("\n")
     }
 
     companion object {

@@ -16,6 +16,7 @@ import com.wynime.utils.httpdownloader.DownloadStatus
 import com.wynime.utils.httpdownloader.KtorHttpDownloader
 import com.wynime.utils.httpdownloader.m3u.DefaultM3u8Parser
 import com.wynime.utils.httpdownloader.m3u.M3u8Parser
+import com.wynime.utils.httpdownloader.m3u.M3u8PlaylistTransformer
 import com.wynime.utils.ktor.ScopedHttpClient
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
@@ -31,6 +32,7 @@ class KtorPersistentHttpDownloader(
     clock: Clock = Clock.System,
     m3u8Parser: M3u8Parser = DefaultM3u8Parser,
     scope: CoroutineScope,
+    m3u8PlaylistTransformer: M3u8PlaylistTransformer? = null,
 ) : KtorHttpDownloader(
     client = client,
     fileSystem = fileSystem,
@@ -39,6 +41,7 @@ class KtorPersistentHttpDownloader(
     m3u8Parser = m3u8Parser,
     parentScope = scope,
     ioDispatcher = ioDispatcher,
+    m3u8PlaylistTransformer = m3u8PlaylistTransformer,
 ) {
     override suspend fun init() {
         super.init()

@@ -36,6 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowSizeClass
 import com.wynime.app.platform.LocalContext
+import com.wynime.app.platform.WynimeBrand
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.foundation.animation.WynimeAnimatedVisibility
 import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
@@ -141,7 +142,7 @@ fun BoxScope.UpdateNotifier(
         } else {
 
             val onDetailsClick =
-                { uriHandler.openUri("https://github.com/william12233/Wynime/releases/tag/${newVersion.name}") }
+                { uriHandler.openUri(WynimeBrand.githubReleaseTagPrefix + newVersion.name) }
 
             when (layoutKind) {
                 UpdateNotifierLayoutKind.POPUP -> {

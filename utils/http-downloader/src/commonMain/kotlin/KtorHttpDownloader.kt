@@ -52,6 +52,7 @@ import com.wynime.utils.httpdownloader.DownloadStatus.PAUSED
 import com.wynime.utils.httpdownloader.m3u.DefaultM3u8Parser
 import com.wynime.utils.httpdownloader.m3u.M3u8Parser
 import com.wynime.utils.httpdownloader.m3u.M3u8Playlist
+import com.wynime.utils.httpdownloader.m3u.M3u8PlaylistTransformer
 import com.wynime.utils.httpdownloader.m3u.MediaSegmentEncryption
 import com.wynime.utils.httpdownloader.m3u.ResolvedMediaPlaylist
 import com.wynime.utils.httpdownloader.m3u.export
@@ -88,6 +89,7 @@ open class KtorHttpDownloader(
     private val m3u8Parser: M3u8Parser = DefaultM3u8Parser,
     parentScope: CoroutineScope,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
+    private val m3u8PlaylistTransformer: M3u8PlaylistTransformer? = null,
 ) : HttpDownloader {
 
     protected val scope = parentScope.childScope()
@@ -588,7 +590,8 @@ open class KtorHttpDownloader(
 
             is M3u8Playlist.MediaPlaylist -> {
                 logger.info { "Media playlist resolved at depth=$depth for $url" }
-                m3u8Parser.parseResolvedMediaPlaylist(response, url)
+                val transformedResponse = m3u8PlaylistTransformer?.transform(response, url) ?: response
+                m3u8Parser.parseResolvedMediaPlaylist(transformedResponse, url)
             }
         }
     }

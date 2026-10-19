@@ -8,6 +8,10 @@ interface M3u8Parser {
     fun parse(content: String, baseUrl: String): M3u8Playlist
 }
 
+fun interface M3u8PlaylistTransformer {
+    suspend fun transform(content: String, baseUrl: String): String
+}
+
 class M3uFormatException(override val message: String?) : RuntimeException()
 
 data class ResolvedMediaPlaylist(

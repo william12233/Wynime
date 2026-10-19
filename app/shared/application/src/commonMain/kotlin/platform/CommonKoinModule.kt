@@ -66,6 +66,8 @@ import com.wynime.app.domain.foundation.get
 import com.wynime.app.domain.foundation.withValue
 import com.wynime.app.domain.media.download.DownloadOperations
 import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.hls.HlsManifestFilter
+import com.wynime.app.domain.media.hls.HlsManifestFilterStatus
 import com.wynime.app.domain.mediasource.web.PageEvaluator
 import com.wynime.app.domain.mediasource.web.captcha.BrowserImageCaptchaSolver
 import com.wynime.app.domain.mediasource.web.captcha.CaptchaBrowserFactory
@@ -108,6 +110,7 @@ import com.wynime.utils.coroutines.IO_
 import com.wynime.utils.coroutines.childScope
 import com.wynime.utils.coroutines.childScopeContext
 import com.wynime.utils.httpdownloader.HttpDownloader
+import com.wynime.utils.httpdownloader.m3u.M3u8PlaylistTransformer
 import com.wynime.utils.io.resolve
 import com.wynime.utils.logging.logger
 import com.wynime.utils.logging.warn
@@ -355,6 +358,7 @@ private fun KoinApplication.otherModules(
 
     if (enableMediaCache) {
         single<HttpDownloader> {
+            val settingsRepository = get<SettingsRepository>()
             KtorPersistentHttpDownloader(
                 dao = database.httpCacheDownloadStateDao(),
                 get<HttpClientProvider>().get(),
@@ -362,6 +366,15 @@ private fun KoinApplication.otherModules(
                 baseSaveDir = get<MediaSaveDirProvider>().saveDir
                     .let { Path(it).resolve(HttpMediaCacheEngine.MEDIA_CACHE_DIR) },
                 scope = coroutineScope,
+                m3u8PlaylistTransformer = M3u8PlaylistTransformer { content, baseUrl ->
+                    if (!settingsRepository.videoScaffoldConfig.flow.first().enableExperimentalHlsSegmentFiltering) {
+                        content
+                    } else {
+                        HlsManifestFilter.filter(content, baseUrl).let { result ->
+                            if (result.status == HlsManifestFilterStatus.Filtered) result.content else content
+                        }
+                    }
+                },
             )
         }
 

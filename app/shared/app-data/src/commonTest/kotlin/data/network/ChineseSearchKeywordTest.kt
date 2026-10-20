@@ -80,4 +80,39 @@ class ChineseSearchKeywordTest {
             httpClient.close()
         }
     }
+
+    @Test
+    fun `filter-only search sends a request with an empty keyword`() = runBlocking {
+        val requests = mutableListOf<HttpRequestData>()
+        val httpClient = HttpClient(MockEngine { request ->
+            requests += request
+            respond(
+                content = "{\"total\":0,\"data\":[]}",
+                headers = headersOf("Content-Type", "application/json"),
+            )
+        }) {
+            install(ContentNegotiation) { json() }
+            expectSuccess = true
+        }
+
+        try {
+            WynimeSubjectSearchService(
+                bangumiApi = BangumiApiProvider(
+                    client = httpClient.asScopedHttpClient(),
+                    tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+                ),
+            ).searchSubjects(
+                keyword = "",
+                filters = SubjectSearchFilters(tags = listOf("奇幻")),
+                limit = 20,
+            )
+
+            assertEquals(1, requests.size)
+            assertTrue(
+                requests.single().body.toByteArray().decodeToString().contains("\"keyword\":\"\""),
+            )
+        } finally {
+            httpClient.close()
+        }
+    }
 }

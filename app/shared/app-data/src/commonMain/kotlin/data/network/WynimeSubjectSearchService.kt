@@ -39,7 +39,7 @@ class WynimeSubjectSearchService(
             SearchSort.COLLECTION -> BangumiSearchSubjectsRequest.Sort.HEAT
             SearchSort.DATE -> BangumiSearchSubjectsRequest.Sort.MATCH
         }
-        val candidates = searchKeywordVariants(keyword)
+        val candidates = searchKeywordVariants(keyword).ifEmpty { listOf("") }
         var lastFailure: Throwable? = null
         for ((index, candidate) in candidates.withIndex()) {
             val result = try {

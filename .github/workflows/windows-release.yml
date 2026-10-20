@@ -1,6 +1,6 @@
 name: Windows release
 
-on:
+'on':
   workflow_dispatch:
     inputs:
       tag:

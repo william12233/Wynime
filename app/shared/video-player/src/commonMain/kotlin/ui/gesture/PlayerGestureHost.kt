@@ -787,8 +787,10 @@ fun PlayerGestureHost(
                         longPressFastSkip(it, SkipDirection.FORWARD, requiredPointerType = PointerType.Touch)
                     },
             ) {
+                // Tap handling wraps each drag handler so vertical level gestures keep the pointer stream.
                 Box(
                     Modifier
+                        .combineClickableWithFamilyGesture(PlayerTapZone.LEFT)
 
                         .ifThen(brightnessController !== NoOpLevelController) {
                             swipeLevelControlWithIndicator(
@@ -804,12 +806,12 @@ fun PlayerGestureHost(
                             )
                         }
                         .weight(1f)
-                        .fillMaxHeight()
-                        .combineClickableWithFamilyGesture(PlayerTapZone.LEFT),
+                        .fillMaxHeight(),
                 )
 
                 Box(
                     Modifier
+                        .combineClickableWithFamilyGesture(PlayerTapZone.CENTER)
                         .swipeToFullscreen(
                             enabled = swipeGesturesEnabled && !seekerState.isSeeking && !adjustingVolumeOrBrightness &&
                                     !adjustingForwardOrBackward,
@@ -818,12 +820,12 @@ fun PlayerGestureHost(
                             onExitFullscreen = { fullscreenState.request(false) },
                         )
                         .weight(1f)
-                        .fillMaxHeight()
-                        .combineClickableWithFamilyGesture(PlayerTapZone.CENTER),
+                        .fillMaxHeight(),
                 )
 
                 Box(
                     Modifier
+                        .combineClickableWithFamilyGesture(PlayerTapZone.RIGHT)
                         .ifThen(audioController !== NoOpLevelController) {
                             swipeLevelControlWithIndicator(
                                 audioController,
@@ -838,8 +840,7 @@ fun PlayerGestureHost(
                             )
                         }
                         .weight(1f)
-                        .fillMaxHeight()
-                        .combineClickableWithFamilyGesture(PlayerTapZone.RIGHT),
+                        .fillMaxHeight(),
                 )
             }
         }

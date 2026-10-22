@@ -206,12 +206,7 @@ internal abstract class SitePluginBase(
     protected open fun directMediaFormat(url: String): ResolvedMediaFormat = mediaFormat(url)
 
     protected fun absoluteUrl(base: String, raw: String): String {
-        val value = decodeHtmlEntities(raw.trim())
-        return try {
-            URI(base).resolve(value).toString()
-        } catch (_: IllegalArgumentException) {
-            value
-        }
+        return computeSelectorUrl(base, raw)
     }
 
     protected fun urlEncode(value: String): String = URLEncoder.encode(value, Charsets.UTF_8.name())
@@ -248,6 +243,56 @@ internal abstract class SitePluginBase(
         val presentationPenalty = if (presentationOnly) 1500 else 0
         return semanticClass + link.title.length - statusPenalty - presentationPenalty
     }
+}
+
+/**
+ * Resolves a site link and upgrades a same-host HTTP link when its page is HTTPS.
+ * The default HTTP port and an optional `www.` prefix are treated as equivalent.
+ */
+internal fun computeSelectorUrl(baseUrl: String, rawUrl: String): String {
+    val value = decodeHtmlEntities(rawUrl.trim())
+    return try {
+        val base = URI(baseUrl)
+        val absolute = base.resolve(value)
+        upgradeHttpToHttps(base, absolute)
+    } catch (_: IllegalArgumentException) {
+        value
+    }
+}
+
+private fun upgradeHttpToHttps(base: URI, target: URI): String {
+    if (!base.scheme.equals("https", ignoreCase = true) ||
+        !target.scheme.equals("http", ignoreCase = true) ||
+        !isSameHost(base.host, target.host) ||
+        (target.port != -1 && target.port != 80)
+    ) {
+        return target.toString()
+    }
+
+    val targetString = target.toString()
+    val schemeEnd = targetString.indexOf("://")
+    if (schemeEnd < 0) return targetString
+
+    val authorityStart = schemeEnd + 3
+    val authorityEnd = targetString.indexOfAny(charArrayOf('/', '?', '#'), authorityStart)
+        .takeIf { it >= 0 }
+        ?: targetString.length
+    val authority = targetString.substring(authorityStart, authorityEnd)
+    val httpsAuthority = if (target.port == 80) {
+        authority.replace(Regex(":(?:0*80)$"), "")
+    } else {
+        authority
+    }
+    return "https://$httpsAuthority${targetString.substring(authorityEnd)}"
+}
+
+private fun isSameHost(baseHost: String?, targetHost: String?): Boolean {
+    fun normalize(host: String) = host.lowercase()
+        .removePrefix("[")
+        .removeSuffix("]")
+        .removePrefix("www.")
+
+    return baseHost != null && targetHost != null && normalize(baseHost) == normalize(targetHost)
 }
 
 private data class SearchLink(

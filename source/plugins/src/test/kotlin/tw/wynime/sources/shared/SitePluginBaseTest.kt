@@ -62,6 +62,41 @@ class SitePluginBaseTest {
     }
 
     @Test
+    fun upgradesSameHostHttpLinksToHttps() {
+        assertEquals(
+            "https://example.com/detail/1",
+            computeSelectorUrl("https://www.example.com/search", "http://example.com/detail/1"),
+        )
+        assertEquals(
+            "https://www.example.com/detail/1",
+            computeSelectorUrl("https://example.com/search", "http://www.example.com/detail/1"),
+        )
+        assertEquals(
+            "http://other.example.com/detail/1",
+            computeSelectorUrl("https://example.com/search", "http://other.example.com/detail/1"),
+        )
+        assertEquals(
+            "http://www.example.com:8080/detail/1",
+            computeSelectorUrl("https://www.example.com/search", "http://www.example.com:8080/detail/1"),
+        )
+        assertEquals(
+            "https://www.example.com/detail/1",
+            computeSelectorUrl("https://www.example.com/search", "http://www.example.com:80/detail/1"),
+        )
+        assertEquals(
+            "http://www.example.com/detail/1",
+            computeSelectorUrl("http://www.example.com/search", "http://www.example.com/detail/1"),
+        )
+        assertEquals(
+            "https://www.example.com/detail/1?from=search#episode",
+            computeSelectorUrl(
+                "https://www.example.com/search",
+                "http://www.example.com/detail/1?from=search#episode",
+            ),
+        )
+    }
+
+    @Test
     fun keepsStaticPlayerAssetsOutOfWebViewResourceCapture() {
         val plugin = BaimaoEntryPoint().create(FakeContext())
         try {

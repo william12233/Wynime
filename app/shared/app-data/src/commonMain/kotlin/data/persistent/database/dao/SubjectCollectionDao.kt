@@ -195,6 +195,17 @@ interface SubjectCollectionDao {
     @Query("""SELECT * FROM subject_collection WHERE subjectId IN (:subjectIds)""")
     fun filterByIds(subjectIds: IntArray): Flow<List<SubjectCollectionEntity>>
 
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM subject_collection
+            WHERE collectionType != 'NOT_COLLECTED'
+            AND (:type IS NULL OR collectionType = :type)
+        )
+        """,
+    )
+    suspend fun hasCachedCollections(type: UnifiedCollectionType?): Boolean
+
     @Query("SELECT * FROM subject_collection")
     suspend fun listAll(): List<SubjectCollectionEntity>
 

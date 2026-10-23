@@ -129,6 +129,9 @@ interface EpisodeCollectionDao {
     )
     fun filterBySubjectIdPaging(subjectId: Int): PagingSource<Int, EpisodeCollectionEntity>
 
+    @Query("SELECT * FROM episode_collection WHERE subjectId IN (:subjectIds)")
+    suspend fun listBySubjectIds(subjectIds: List<Int>): List<EpisodeCollectionEntity>
+
     @Upsert
     suspend fun upsert(item: EpisodeCollectionEntity)
 

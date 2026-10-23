@@ -93,6 +93,11 @@ class SubjectCollectionRepositoryInvalidateTest {
         var gate: CompletableDeferred<Unit>? = null
 
         @Volatile
+        var collectionPageGate: CompletableDeferred<Unit>? = null
+
+        val collectionPageFetches = AtomicInteger(0)
+
+        @Volatile
         var failFirstFetchGate: CompletableDeferred<Unit>? = null
 
         @Volatile
@@ -127,11 +132,15 @@ class SubjectCollectionRepositoryInvalidateTest {
             type: BangumiSubjectCollectionType?,
             offset: Int,
             limit: Int,
-        ): List<SubjectCollectionDto> = serverSubjects.values
-            .filter { it.collectionType != null }
-            .sortedByDescending { it.id }
-            .drop(offset)
-            .take(limit)
+        ): List<SubjectCollectionDto> {
+            collectionPageFetches.incrementAndGet()
+            collectionPageGate?.await()
+            return serverSubjects.values
+                .filter { it.collectionType != null }
+                .sortedByDescending { it.id }
+                .drop(offset)
+                .take(limit)
+        }
 
         override suspend fun getSubjectRelations(
             subjectId: Int,
@@ -857,6 +866,54 @@ class SubjectCollectionRepositoryInvalidateTest {
 
         assertEquals(0, assertNotNull(dao.findById(1).first()).lastFetched)
         assertEquals(0, dao.lastFetched(null))
+    }
+
+    @Test
+    fun `INV-23 過期收藏先顯示本地快取, 背景同步後套用差異`() = runRepositoryTest {
+        dao.upsert(subject(1, 0, score = 3))
+        service.serverSubjects[1] = serverSubject(1, score = 9)
+        service.collectionPageGate = CompletableDeferred()
+
+        val (probe, job) = collectDoingPager()
+        try {
+            val cached = probe.awaitItems { items ->
+                items.singleOrNull()?.selfRatingInfo?.score == 3
+            }
+            assertEquals(3, cached.single().selfRatingInfo.score)
+
+            service.collectionPageGate?.complete(Unit)
+            val refreshed = probe.awaitItems { items ->
+                items.singleOrNull()?.selfRatingInfo?.score == 9
+            }
+            assertEquals(9, refreshed.single().selfRatingInfo.score)
+        } finally {
+            job.cancel()
+        }
+    }
+
+    @Test
+    fun `INV-24 背景同步沒有差異時不重寫收藏資料`() = runRepositoryTest {
+        val cached = serverSubject(1).toEntity(lastFetched = 0)
+        dao.upsert(cached)
+        service.serverSubjects[1] = serverSubject(1)
+        service.collectionPageGate = CompletableDeferred()
+
+        val (probe, job) = collectDoingPager()
+        try {
+            probe.awaitItems { items -> items.singleOrNull()?.subjectId == 1 }
+            val eventsBeforeSync = probe.events.get()
+
+            service.collectionPageGate?.complete(Unit)
+            withTimeout(10.seconds) {
+                while (service.collectionPageFetches.get() < 1) delay(20)
+            }
+            delay(100)
+
+            assertEquals(eventsBeforeSync, probe.events.get())
+            assertEquals(cached, assertNotNull(dao.findById(1).first()))
+        } finally {
+            job.cancel()
+        }
     }
 
 }

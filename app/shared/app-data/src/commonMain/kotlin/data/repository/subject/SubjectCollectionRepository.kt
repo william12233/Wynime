@@ -12,9 +12,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retry
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -217,6 +220,9 @@ class SubjectCollectionRepositoryImpl(
     private var runningFullSync: Deferred<Unit>? = null
     private val bangumiFullSyncState = MutableStateFlow<BangumiSyncState?>(null)
     private val bangumiFullSyncSummary = MutableStateFlow<BangumiFullSyncSummary?>(null)
+    private val backgroundRefreshScope = CoroutineScope(SupervisorJob() + defaultDispatcher)
+    private val backgroundRefreshMutex = Mutex()
+    private val backgroundRefreshJobs = mutableMapOf<CollectionsFilterQuery, Job>()
 
     override fun subjectCollectionCountsFlow(): Flow<SubjectCollectionCounts?> {
         return combine(
@@ -376,7 +382,7 @@ class SubjectCollectionRepositoryImpl(
             Pager(
                 config = pagingConfig,
                 initialKey = 0,
-                remoteMediator = SubjectCollectionRemoteMediator(query),
+                remoteMediator = SubjectCollectionRemoteMediator(query, pagingConfig.pageSize),
                 pagingSourceFactory = {
                     subjectCollectionDao.filterByCollectionTypePaging(
                         query.type,
@@ -423,12 +429,11 @@ class SubjectCollectionRepositoryImpl(
         }
     }
 
-    private suspend inline fun fetchAndSaveSubjectCollectionsWithEpisodes(
+    private suspend fun fetchAndSaveSubjectCollectionsWithEpisodes(
         type: UnifiedCollectionType?,
         limit: Int,
         offset: Int,
-        onFetched: (page: SubjectCollectionPage) -> Unit = {},
-    ) {
+    ): SubjectCollectionPage {
         require(type != UnifiedCollectionType.NOT_COLLECTED) { "type must not be NOT_COLLECTED" }
         require(limit > 0) { "limit must be positive" }
 
@@ -465,13 +470,20 @@ class SubjectCollectionRepositoryImpl(
 
         val lastFetched = currentTimeMillis()
         saveSubjectCollectionsWithEpisodes(page.items, lastFetched)
-        onFetched(page)
+        return page
     }
 
     private suspend fun saveSubjectCollectionsWithEpisodes(
         items: List<SubjectCollectionDto>,
         lastFetched: Long,
     ) {
+        if (items.isEmpty()) return
+
+        val subjectIds = items.map { it.id.toInt() }.distinct()
+        val existingSubjects = subjectCollectionDao
+            .filterByIds(subjectIds.toIntArray())
+            .first()
+            .associateBy { it.subjectId }
         val entities = ArrayList<SubjectCollectionEntity>(items.size)
         for (item in items) {
             val entity = item.toEntity(lastFetched = lastFetched)
@@ -479,7 +491,7 @@ class SubjectCollectionRepositoryImpl(
             if (tombstone?.localDeletedAt != null && entity.lastUpdated <= tombstone.localDeletedAt) {
 
                 entities += entity.copy(
-                    collectionType = subjectCollectionDao.findById(entity.subjectId).first()?.collectionType
+                    collectionType = existingSubjects[entity.subjectId]?.collectionType
                         ?: entity.collectionType,
                     lastUpdated = tombstone.localDeletedAt,
                 )
@@ -490,18 +502,35 @@ class SubjectCollectionRepositoryImpl(
                 entities += entity
             }
         }
-        subjectCollectionDao.upsert(entities)
 
-        episodeCollectionDao.upsert(
-            items
-                .flatMap { it.episodes }
-                .map { episode ->
-                    episode.toEntity1(
-                        subjectId = episode.subjectId.toInt(),
-                        lastFetched = lastFetched,
-                    )
-                },
-        )
+        val changedEntities = entities.filter { entity ->
+            val existing = existingSubjects[entity.subjectId]
+            existing == null || !existing.hasSameCachedContent(entity)
+        }
+        if (changedEntities.isNotEmpty()) {
+            subjectCollectionDao.upsert(changedEntities)
+        }
+
+        val episodeEntities = items
+            .flatMap { it.episodes }
+            .map { episode ->
+                episode.toEntity1(
+                    subjectId = episode.subjectId.toInt(),
+                    lastFetched = lastFetched,
+                )
+            }
+        if (episodeEntities.isNotEmpty()) {
+            val existingEpisodes = episodeCollectionDao
+                .listBySubjectIds(subjectIds)
+                .associateBy { it.episodeId }
+            val changedEpisodes = episodeEntities.filter { episode ->
+                val existing = existingEpisodes[episode.episodeId]
+                existing == null || !existing.hasSameCachedContent(episode)
+            }
+            if (changedEpisodes.isNotEmpty()) {
+                episodeCollectionDao.upsert(changedEpisodes)
+            }
+        }
 
         items.forEach { item ->
             val subjectId = item.id.toInt()
@@ -546,15 +575,20 @@ class SubjectCollectionRepositoryImpl(
 
     private inner class SubjectCollectionRemoteMediator<T : Any>(
         private val query: CollectionsFilterQuery,
+        private val pageSize: Int,
     ) : RemoteMediator<Int, T>() {
         private var refreshOriginalIds: Set<Int>? = null
         private val refreshSeenIds = mutableSetOf<Int>()
 
         override suspend fun initialize(): InitializeAction = withContext(defaultDispatcher) {
-            val lastUpdated = subjectCollectionDao.lastFetched(query.type)
-            if ((currentTimeMillis() - lastUpdated).milliseconds > cacheExpiry) {
+            val hasCachedCollections = subjectCollectionDao.hasCachedCollections(query.type)
+            if (!hasCachedCollections) {
                 InitializeAction.LAUNCH_INITIAL_REFRESH
             } else {
+                val lastFetched = subjectCollectionDao.lastFetched(query.type)
+                if ((currentTimeMillis() - lastFetched).milliseconds > cacheExpiry) {
+                    scheduleBackgroundRefresh(query, pageSize)
+                }
                 InitializeAction.SKIP_INITIAL_REFRESH
             }
         }
@@ -576,26 +610,24 @@ class SubjectCollectionRepositoryImpl(
                     refreshSeenIds.clear()
                 }
                 var endOfPaginationReached = false
-                fetchAndSaveSubjectCollectionsWithEpisodes(
+                val page = fetchAndSaveSubjectCollectionsWithEpisodes(
                     type = query.type,
                     limit = limit,
                     offset = offset,
-                    onFetched = { page ->
-                        if (loadType == LoadType.REFRESH) {
-                            refreshSeenIds += page.items.map { it.id.toInt() }
-                        }
-                        endOfPaginationReached = page.total?.let { total ->
-                            offset + page.sourceItemCount >= total
-                        } ?: (page.sourceItemCount < limit)
-
-                        if (endOfPaginationReached) {
-                            val staleIds = refreshOriginalIds.orEmpty().filterNot(refreshSeenIds::contains)
-                            if (staleIds.isNotEmpty()) subjectCollectionDao.deleteByIds(staleIds)
-                            refreshOriginalIds = null
-                            refreshSeenIds.clear()
-                        }
-                    },
                 )
+                if (loadType == LoadType.REFRESH) {
+                    refreshSeenIds += page.items.map { it.id.toInt() }
+                }
+                endOfPaginationReached = page.total?.let { total ->
+                    offset + page.sourceItemCount >= total
+                } ?: (page.sourceItemCount < limit)
+
+                if (endOfPaginationReached) {
+                    val staleIds = refreshOriginalIds.orEmpty().filterNot(refreshSeenIds::contains)
+                    if (staleIds.isNotEmpty()) subjectCollectionDao.deleteByIds(staleIds)
+                    refreshOriginalIds = null
+                    refreshSeenIds.clear()
+                }
 
                 MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
                 }
@@ -969,11 +1001,96 @@ class SubjectCollectionRepositoryImpl(
         notifyCollectionsInvalidated()
     }
 
+    private fun scheduleBackgroundRefresh(query: CollectionsFilterQuery, pageSize: Int) {
+        backgroundRefreshScope.launch {
+            val job = currentCoroutineContext()[Job] ?: return@launch
+            val accepted = backgroundRefreshMutex.withLock {
+                if (backgroundRefreshJobs[query]?.isActive == true) {
+                    false
+                } else {
+                    backgroundRefreshJobs[query] = job
+                    true
+                }
+            }
+            if (!accepted) return@launch
+
+            try {
+                refreshCollectionsInBackground(query, pageSize)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.warn(e) { "Background collection refresh failed for type=${query.type}" }
+            } finally {
+                backgroundRefreshMutex.withLock {
+                    if (backgroundRefreshJobs[query] === job) {
+                        backgroundRefreshJobs.remove(query)
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun refreshCollectionsInBackground(query: CollectionsFilterQuery, pageSize: Int) {
+        syncCoordinator.withExclusive(BangumiSyncOperation.COLLECTION_PAGE_REFRESH) {
+            withContext(defaultDispatcher) {
+                val cachedSubjectIds = subjectCollectionDao.listAll()
+                    .asSequence()
+                    .filter { entity ->
+                        entity.collectionType != UnifiedCollectionType.NOT_COLLECTED &&
+                            (query.type == null || entity.collectionType == query.type)
+                    }
+                    .map { it.subjectId }
+                    .toSet()
+                val seenSubjectIds = mutableSetOf<Int>()
+                var offset = 0
+
+                while (true) {
+                    val page = fetchAndSaveSubjectCollectionsWithEpisodes(
+                        type = query.type,
+                        limit = pageSize,
+                        offset = offset,
+                    )
+                    seenSubjectIds += page.items.map { it.id.toInt() }
+                    val endOfPaginationReached = page.total?.let { total ->
+                        offset + page.sourceItemCount >= total
+                    } ?: (page.sourceItemCount < pageSize)
+                    if (endOfPaginationReached) {
+                        val staleIds = cachedSubjectIds.filterNot(seenSubjectIds::contains)
+                        if (staleIds.isNotEmpty()) {
+                            subjectCollectionDao.deleteByIds(staleIds)
+                        }
+                        break
+                    }
+                    if (page.sourceItemCount <= 0) {
+                        throw RepositoryRequestError("收藏頁 offset=$offset 未前進")
+                    }
+                    offset += page.sourceItemCount
+                }
+            }
+        }
+    }
+
     private companion object {
         private val logger = logger<SubjectCollectionRepository>()
 
         private const val INVALIDATE_REFETCH_PARALLELISM = 4
     }
+}
+
+private fun SubjectCollectionEntity.hasSameCachedContent(other: SubjectCollectionEntity): Boolean {
+    return copy(
+        lastFetched = 0L,
+        cachedStaffUpdated = 0L,
+        cachedCharactersUpdated = 0L,
+    ) == other.copy(
+        lastFetched = 0L,
+        cachedStaffUpdated = 0L,
+        cachedCharactersUpdated = 0L,
+    )
+}
+
+private fun EpisodeCollectionEntity.hasSameCachedContent(other: EpisodeCollectionEntity): Boolean {
+    return copy(lastFetched = 0L) == other.copy(lastFetched = 0L)
 }
 
 data class CollectionsFilterQuery(

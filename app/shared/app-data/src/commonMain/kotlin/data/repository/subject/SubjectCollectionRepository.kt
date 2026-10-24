@@ -253,11 +253,6 @@ class SubjectCollectionRepositoryImpl(
         subjectCollectionDao.findById(subjectId)
             .restartOnNewLogin(sessionManager)
             .transform { existing ->
-                if (existing != null) {
-
-                    emit(existing)
-                }
-
                 val cachedEpisodeCount = existing?.let {
                     episodeCollectionDao.listIdBySubjectId(subjectId).first().size
                 }

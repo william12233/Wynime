@@ -147,14 +147,19 @@ private class WynimeNavigatorImpl : WynimeNavigator {
     override suspend fun awaitBackStack(): List<NavRoutes> = _backStack.filterNotNull().first()
 
     override fun navigate(route: NavRoutes) {
-        currentBackStack.add(route)
+        Snapshot.withMutableSnapshot {
+            currentBackStack.add(route)
+        }
     }
 
     override fun popBackStack() {
         val stack = currentBackStack
 
-        if (stack.size <= 1) return
-        stack.removeAt(stack.lastIndex)
+        Snapshot.withMutableSnapshot {
+            if (stack.size > 1) {
+                stack.removeAt(stack.lastIndex)
+            }
+        }
     }
 
     override fun popBackStack(route: NavRoutes, inclusive: Boolean) {
@@ -162,7 +167,9 @@ private class WynimeNavigatorImpl : WynimeNavigator {
         val index = stack.indexOfLast { it == route }
         if (index == -1) return
         val targetSize = if (inclusive) index else index + 1
-        stack.popTo(targetSize)
+        Snapshot.withMutableSnapshot {
+            stack.popTo(targetSize)
+        }
     }
 
     override fun navigateMain(page: MainScreenPage, popUpTargetInclusive: NavRoutes?) {
@@ -183,7 +190,9 @@ private class WynimeNavigatorImpl : WynimeNavigator {
         val stack = currentBackStack
         val firstMain = stack.indexOfFirst { it is NavRoutes.Main }
         if (firstMain != -1) {
-            stack.popTo(firstMain + 1)
+            Snapshot.withMutableSnapshot {
+                stack.popTo(firstMain + 1)
+            }
             return
         }
         Snapshot.withMutableSnapshot {

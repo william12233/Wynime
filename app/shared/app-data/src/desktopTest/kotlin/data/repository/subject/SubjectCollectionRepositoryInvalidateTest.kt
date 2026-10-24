@@ -730,6 +730,7 @@ class SubjectCollectionRepositoryInvalidateTest {
         repository.subjectCollectionFlow(1).test {
             assertEquals(1, awaitItem().subjectId)
             delay(200)
+            expectNoEvents()
             assertTrue(service.fetchedSubjectIds.isEmpty(), "unexpected fetch: ${service.fetchedSubjectIds}")
             cancelAndIgnoreRemainingEvents()
         }

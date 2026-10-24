@@ -24,7 +24,7 @@ class WynimeSubjectSearchService(
     private val bangumiApi: BangumiApiProvider,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
 ) {
-    suspend fun searchSubjects(
+    internal suspend fun searchSubjectsPage(
         keyword: String,
         offset: Int? = null,
         limit: Int? = null,
@@ -32,7 +32,7 @@ class WynimeSubjectSearchService(
         sort: SearchSort = SearchSort.MATCH,
         filters: SubjectSearchFilters? = null,
         fields: List<SubjectSearchField>? = null,
-    ): List<BatchSubjectDetails> = withContext(ioDispatcher) {
+    ): SubjectSearchPage = withContext(ioDispatcher) {
         val sortValue = when (sort) {
             SearchSort.MATCH -> BangumiSearchSubjectsRequest.Sort.MATCH
             SearchSort.RANK -> BangumiSearchSubjectsRequest.Sort.RANK
@@ -71,12 +71,37 @@ class WynimeSubjectSearchService(
             }
             val matches = result.data.orEmpty()
             if (matches.isNotEmpty() || index == candidates.lastIndex) {
-                return@withContext matches.map { search -> search.toBatchSubjectDetails() }
+                return@withContext SubjectSearchPage(
+                    items = matches.map { search -> search.toBatchSubjectDetails() },
+                    total = result.total,
+                    resolvedKeyword = candidate,
+                )
             }
         }
         lastFailure?.let { throw it }
-        emptyList()
+        SubjectSearchPage(
+            items = emptyList(),
+            total = 0,
+            resolvedKeyword = candidates.last(),
+        )
     }
+
+    suspend fun searchSubjects(
+        keyword: String,
+        offset: Int? = null,
+        limit: Int? = null,
+
+        sort: SearchSort = SearchSort.MATCH,
+        filters: SubjectSearchFilters? = null,
+        fields: List<SubjectSearchField>? = null,
+    ): List<BatchSubjectDetails> = searchSubjectsPage(
+        keyword = keyword,
+        offset = offset,
+        limit = limit,
+        sort = sort,
+        filters = filters,
+        fields = fields,
+    ).items
 
     companion object {
         fun sanitizeKeyword(keyword: String): String {
@@ -133,5 +158,11 @@ class WynimeSubjectSearchService(
         )
     }
 }
+
+internal data class SubjectSearchPage(
+    val items: List<BatchSubjectDetails>,
+    val total: Int?,
+    val resolvedKeyword: String,
+)
 
 private fun BangumiTag.toTag() = Tag(name, count)

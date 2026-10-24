@@ -9,6 +9,26 @@ import kotlin.test.assertEquals
 
 class SubjectSearchRepositoryTest {
     @Test
+    fun `date search ranges start with future and newest months`() {
+        assertEquals(
+            listOf(">=2027-01-01"),
+            dateSearchAirDateRanges(currentYear = 2026, minimumYear = 2025).first(),
+        )
+        assertEquals(
+            listOf(">=2026-12-01", "<2027-01-01"),
+            dateSearchAirDateRanges(currentYear = 2026, minimumYear = 2025)[1],
+        )
+        assertEquals(
+            listOf(">=2026-01-01", "<2026-02-01"),
+            dateSearchAirDateRanges(currentYear = 2026, minimumYear = 2025)[12],
+        )
+        assertEquals(
+            listOf("<2025-01-01"),
+            dateSearchAirDateRanges(currentYear = 2026, minimumYear = 2025).last(),
+        )
+    }
+
+    @Test
     fun `release date sort puts newest valid dates first and invalid dates last`() {
         val subjects = listOf(
             subject(30, PackedDate.Invalid),

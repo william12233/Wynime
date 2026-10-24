@@ -12,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import com.wynime.app.data.persistent.MemoryDataStore
 import com.wynime.app.data.repository.user.TokenRepository
 import com.wynime.app.data.repository.user.TokenSave
+import com.wynime.app.domain.search.SearchSort
 import com.wynime.utils.ktor.asScopedHttpClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -111,6 +112,71 @@ class ChineseSearchKeywordTest {
             assertTrue(
                 requests.single().body.toByteArray().decodeToString().contains("\"keyword\":\"\""),
             )
+        } finally {
+            httpClient.close()
+        }
+    }
+
+    @Test
+    fun `popular search uses the bangumi heat sort and keeps page metadata`() = runBlocking {
+        val requests = mutableListOf<HttpRequestData>()
+        val httpClient = HttpClient(MockEngine { request ->
+            requests += request
+            respond(
+                content = "{\"total\":3,\"data\":[]}",
+                headers = headersOf("Content-Type", "application/json"),
+            )
+        }) {
+            install(ContentNegotiation) { json() }
+            expectSuccess = true
+        }
+
+        try {
+            val page = WynimeSubjectSearchService(
+                bangumiApi = BangumiApiProvider(
+                    client = httpClient.asScopedHttpClient(),
+                    tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+                ),
+            ).searchSubjectsPage(
+                keyword = "popular",
+                sort = SearchSort.COLLECTION,
+                limit = 20,
+            )
+
+            assertEquals(3, page.total)
+            assertTrue(requests.single().body.toByteArray().decodeToString().contains("\"sort\":\"heat\""))
+        } finally {
+            httpClient.close()
+        }
+    }
+
+    @Test
+    fun `release date search keeps bangumi match sort for client-side ordering`() = runBlocking {
+        val requests = mutableListOf<HttpRequestData>()
+        val httpClient = HttpClient(MockEngine { request ->
+            requests += request
+            respond(
+                content = "{\"total\":0,\"data\":[]}",
+                headers = headersOf("Content-Type", "application/json"),
+            )
+        }) {
+            install(ContentNegotiation) { json() }
+            expectSuccess = true
+        }
+
+        try {
+            WynimeSubjectSearchService(
+                bangumiApi = BangumiApiProvider(
+                    client = httpClient.asScopedHttpClient(),
+                    tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+                ),
+            ).searchSubjectsPage(
+                keyword = "release",
+                sort = SearchSort.DATE,
+                limit = 20,
+            )
+
+            assertTrue(requests.single().body.toByteArray().decodeToString().contains("\"sort\":\"match\""))
         } finally {
             httpClient.close()
         }

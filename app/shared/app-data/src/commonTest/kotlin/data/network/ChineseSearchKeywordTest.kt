@@ -181,4 +181,38 @@ class ChineseSearchKeywordTest {
             httpClient.close()
         }
     }
+
+    @Test
+    fun `traditional tag filters are converted to Bangumi simplified tags`() = runBlocking {
+        val requests = mutableListOf<HttpRequestData>()
+        val httpClient = HttpClient(MockEngine { request ->
+            requests += request
+            respond(
+                content = "{\"total\":0,\"data\":[]}",
+                headers = headersOf("Content-Type", "application/json"),
+            )
+        }) {
+            install(ContentNegotiation) { json() }
+            expectSuccess = true
+        }
+
+        try {
+            WynimeSubjectSearchService(
+                bangumiApi = BangumiApiProvider(
+                    client = httpClient.asScopedHttpClient(),
+                    tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+                ),
+            ).searchSubjectsPage(
+                keyword = "",
+                filters = SubjectSearchFilters(tags = listOf("國產")),
+                limit = 20,
+            )
+
+            assertTrue(
+                requests.single().body.toByteArray().decodeToString().contains("\"tag\":[\"国产\"]"),
+            )
+        } finally {
+            httpClient.close()
+        }
+    }
 }

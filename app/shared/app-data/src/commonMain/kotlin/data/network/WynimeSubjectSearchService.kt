@@ -50,7 +50,7 @@ class WynimeSubjectSearchService(
                             sort = sortValue,
                             filter = BangumiSearchSubjectsRequestFilter(
                                 type = listOf(BangumiSubjectType.Anime),
-                                tag = filters?.tags,
+                                tag = filters?.tags?.map(::simplifyChineseOrOriginal),
                                 airDate = filters?.airDates,
                                 rating = filters?.ratings,
                                 rank = filters?.ranks,

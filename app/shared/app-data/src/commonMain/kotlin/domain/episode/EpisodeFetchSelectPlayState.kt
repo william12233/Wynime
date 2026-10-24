@@ -184,9 +184,13 @@ class EpisodeFetchSelectPlayState(
     }
 
     suspend fun onClose() {
-        extensionManager.call { it.onClose() }
-        playerSession.stopPlayback()
-        fetchSessions.close()
+        try {
+            extensionManager.call { it.onClose() }
+            playerSession.stopPlayback()
+            fetchSessions.close()
+        } finally {
+            playerSession.close()
+        }
     }
 
     fun restartLoad() {

@@ -1073,9 +1073,9 @@
     <string name="exploration_search_back_to_top">Back to top</string>
     <string name="exploration_search_results_shown">%1$d results shown</string>
     <string name="exploration_search_sort_match">Best match</string>
-    <string name="exploration_search_sort_collection">Most follows</string>
+    <string name="exploration_search_sort_collection">Popular (most follows)</string>
     <string name="exploration_search_sort_rank">Highest rank</string>
-    <string name="exploration_search_sort_date">Release date</string>
+    <string name="exploration_search_sort_date">Newest releases</string>
     <string name="exploration_search_staff_prefix">Staff: </string>
     <string name="exploration_search_filter_audience">Audience</string>
     <string name="exploration_search_filter_category">Category</string>

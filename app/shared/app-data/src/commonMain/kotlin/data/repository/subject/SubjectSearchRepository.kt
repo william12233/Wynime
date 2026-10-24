@@ -9,6 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import com.wynime.app.data.models.schedule.AnimeSeasonId
 import com.wynime.app.data.models.schedule.yearMonths
@@ -48,47 +50,110 @@ class SubjectSearchRepository(
         private val searchQuery: SubjectSearchQuery
     ) : PagingSource<Int, BatchSubjectDetails>() {
         private val filters = searchQuery.toSubjectSearchFilters()
+        private val dateSortedSubjectsMutex = Mutex()
+        private var dateSortedSubjects: List<BatchSubjectDetails>? = null
+
         override fun getRefreshKey(state: PagingState<Int, BatchSubjectDetails>): Int? = null
         override suspend fun load(
             params: LoadParams<Int>
         ): LoadResult<Int, BatchSubjectDetails> = withContext(defaultDispatcher) {
-            val offset = params.key
-                ?: return@withContext LoadResult.Error(IllegalArgumentException("Key is null"))
             return@withContext try {
-                val subjects = wynimeSubjectSearchService.searchSubjects(
-                    searchQuery.keywords,
-                    offset = offset,
-                    limit = params.loadSize,
-                    filters = filters,
-                    sort = searchQuery.sort,
-                    fields = subjectSearchFields,
-                )
-
-                val filteredSubjects = if (ignoreDoneAndDropped()) {
-                    val excludedIds = subjectCollectionRepository.getSubjectIdsByCollectionType(
-                        types = listOf(UnifiedCollectionType.DONE, UnifiedCollectionType.DROPPED),
-                    ).first()
-
-                    subjects.filter { it.subjectInfo.subjectId !in excludedIds }
+                if (searchQuery.sort == SearchSort.DATE) {
+                    loadDateSortedPage(params)
                 } else {
-                    subjects
+                    loadRemotePage(params)
                 }
-
-                val subjectInfos = filterSubjectsBySort(
-                    filteredSubjects,
-                    searchQuery.sort,
-                )
-
-                return@withContext LoadResult.Page(
-                    subjectInfos,
-                    prevKey = if (offset == 0) null else offset,
-                    nextKey = if (subjectInfos.isEmpty()) null else offset + params.loadSize,
-                )
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 LoadResult.Error(RepositoryException.wrapOrThrowCancellation(e))
             }
+        }
+
+        private suspend fun loadRemotePage(
+            params: LoadParams<Int>,
+        ): LoadResult<Int, BatchSubjectDetails> {
+            val offset = params.key
+                ?: return LoadResult.Error(IllegalArgumentException("Key is null"))
+            val subjects = wynimeSubjectSearchService.searchSubjects(
+                searchQuery.keywords,
+                offset = offset,
+                limit = params.loadSize,
+                filters = filters,
+                sort = searchQuery.sort,
+                fields = subjectSearchFields,
+            )
+            val filteredSubjects = filterExcludedSubjects(subjects)
+
+            return LoadResult.Page(
+                data = filteredSubjects,
+                prevKey = if (offset == 0) null else offset,
+                nextKey = if (subjects.isEmpty()) null else offset + subjects.size,
+            )
+        }
+
+        private suspend fun loadDateSortedPage(
+            params: LoadParams<Int>,
+        ): LoadResult<Int, BatchSubjectDetails> {
+            val offset = params.key
+                ?: return LoadResult.Error(IllegalArgumentException("Key is null"))
+            val subjects = dateSortedSubjectsMutex.withLock {
+                dateSortedSubjects ?: loadAllDateSortedSubjects().also {
+                    dateSortedSubjects = it
+                }
+            }
+            val endExclusive = (offset + params.loadSize).coerceAtMost(subjects.size)
+            val page = subjects.subList(offset.coerceAtMost(subjects.size), endExclusive)
+
+            return LoadResult.Page(
+                data = page,
+                prevKey = if (offset == 0) null else (offset - params.loadSize).coerceAtLeast(0),
+                nextKey = endExclusive.takeIf { it < subjects.size },
+            )
+        }
+
+        private suspend fun loadAllDateSortedSubjects(): List<BatchSubjectDetails> {
+            val excludedIds = if (ignoreDoneAndDropped()) {
+                subjectCollectionRepository.getSubjectIdsByCollectionType(
+                    types = listOf(UnifiedCollectionType.DONE, UnifiedCollectionType.DROPPED),
+                ).first()
+            } else {
+                emptyList<Int>()
+            }
+
+            val subjects = buildList {
+                var offset = 0
+                var keyword = searchQuery.keywords
+                while (true) {
+                    val page = wynimeSubjectSearchService.searchSubjectsPage(
+                        keyword = keyword,
+                        offset = offset,
+                        limit = DATE_SORT_FETCH_PAGE_SIZE,
+                        filters = filters,
+                        sort = SearchSort.DATE,
+                        fields = subjectSearchFields,
+                    )
+                    keyword = page.resolvedKeyword
+                    addAll(page.items.filter { it.subjectInfo.subjectId !in excludedIds })
+
+                    if (page.items.isEmpty()) break
+                    offset += page.items.size
+                    if (page.total != null && offset >= page.total) break
+                    if (page.total == null && page.items.size < DATE_SORT_FETCH_PAGE_SIZE) break
+                }
+            }
+
+            return sortSubjectsByReleaseDate(subjects)
+        }
+
+        private suspend fun filterExcludedSubjects(
+            subjects: List<BatchSubjectDetails>,
+        ): List<BatchSubjectDetails> {
+            if (!ignoreDoneAndDropped()) return subjects
+            val excludedIds = subjectCollectionRepository.getSubjectIdsByCollectionType(
+                types = listOf(UnifiedCollectionType.DONE, UnifiedCollectionType.DROPPED),
+            ).first()
+            return subjects.filter { it.subjectInfo.subjectId !in excludedIds }
         }
 
         private fun SubjectSearchQuery.toSubjectSearchFilters(): SubjectSearchFilters {
@@ -108,17 +173,6 @@ class SubjectSearchRepository(
             )
         }
 
-        private fun filterSubjectsBySort(
-            subjects: List<BatchSubjectDetails>,
-            sort: SearchSort
-        ): List<BatchSubjectDetails> {
-            return when (sort) {
-                SearchSort.RANK -> subjects.filter { it.subjectInfo.ratingInfo.total >= 50 }
-                SearchSort.DATE -> subjects.sortedByDescending { it.subjectInfo.airDate }
-                SearchSort.MATCH,
-                SearchSort.COLLECTION -> subjects
-            }
-        }
     }
 
     private companion object {
@@ -126,6 +180,8 @@ class SubjectSearchRepository(
             pageSize = 20,
             initialLoadSize = 20,
         )
+
+        private const val DATE_SORT_FETCH_PAGE_SIZE = 100
 
         private val subjectSearchFields = listOf(
             SubjectSearchField.NAME,
@@ -142,6 +198,14 @@ class SubjectSearchRepository(
         )
     }
 }
+
+internal fun sortSubjectsByReleaseDate(
+    subjects: List<BatchSubjectDetails>,
+): List<BatchSubjectDetails> = subjects.sortedWith(
+    compareByDescending<BatchSubjectDetails> { it.subjectInfo.airDate.isValid }
+        .thenByDescending { it.subjectInfo.airDate }
+        .thenBy { it.subjectInfo.subjectId },
+)
 
 internal fun SubjectSearchQuery.toBangumiAirDates(): List<String>? {
     val y = year ?: return null

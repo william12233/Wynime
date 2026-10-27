@@ -46,11 +46,12 @@ fun PlayerControllerDefaults.AudioSwitcher(
     playerState: TrackGroup<AudioTrack>,
     modifier: Modifier = Modifier,
     onSelect: (AudioTrack?) -> Unit = { playerState.select(it) },
+    onExpandedChanged: (expanded: Boolean) -> Unit = {},
 ) {
     val state = remember(playerState) {
         AudioTrackState(playerState.selected, playerState.candidates)
     }
-    AudioSwitcher(state, onSelect, modifier)
+    AudioSwitcher(state, onSelect, modifier, onExpandedChanged)
 }
 
 @Composable
@@ -58,6 +59,7 @@ fun PlayerControllerDefaults.AudioSwitcher(
     state: AudioTrackState,
     onSelect: (AudioTrack?) -> Unit,
     modifier: Modifier = Modifier,
+    onExpandedChanged: (expanded: Boolean) -> Unit = {},
 ) {
     val options by state.options.collectAsStateWithLifecycle(emptyList())
     AudioSwitcher(
@@ -65,6 +67,7 @@ fun PlayerControllerDefaults.AudioSwitcher(
         onValueChange = { onSelect(it?.audioTrack) },
         optionsProvider = { options },
         modifier,
+        onExpandedChanged = onExpandedChanged,
     )
 }
 
@@ -74,6 +77,7 @@ fun PlayerControllerDefaults.AudioSwitcher(
     onValueChange: (AudioPresentation?) -> Unit,
     optionsProvider: () -> List<AudioPresentation>,
     modifier: Modifier = Modifier,
+    onExpandedChanged: (expanded: Boolean) -> Unit = {},
 ) {
     val optionsProviderUpdated by rememberUpdatedState(optionsProvider)
     val options by remember {
@@ -105,5 +109,6 @@ fun PlayerControllerDefaults.AudioSwitcher(
         properties = PlatformPopupProperties(
             clippingEnabled = false,
         ),
+        onExpandedChanged = onExpandedChanged,
     )
 }

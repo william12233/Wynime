@@ -15,11 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.focus.onFocusChanged
 import com.wynime.app.ui.foundation.effects.ComposeKey
 import com.wynime.app.ui.foundation.effects.onKey
+import com.wynime.app.ui.foundation.LocalPlatform
 import com.wynime.app.ui.foundation.interaction.hoverable
 import com.wynime.utils.platform.annotations.TestOnly
+import com.wynime.utils.platform.isDesktop
 
 @Composable
 fun rememberVideoControllerState(
@@ -68,6 +71,43 @@ class PlayerFocusState {
         if (preferredTarget == PlayerFocusTarget.PLAYER) {
             requester.requestFocus()
         }
+    }
+}
+
+/**
+ * Returns focus to the player when a desktop control in this container receives focus.
+ *
+ * Player controls are activated with the pointer, but Compose Desktop keeps the activated
+ * control focused. Keyboard shortcuts belong to the player gesture host, so the control layer
+ * must hand focus back to that host after the control interaction.
+ */
+@Composable
+internal fun Modifier.restorePlayerFocusOnDesktopControlFocus(
+    state: PlayerFocusState,
+): Modifier {
+    if (!LocalPlatform.current.isDesktop()) return this
+    return onFocusEvent {
+        if (it.hasFocus) {
+            state.requestPlayerFocus()
+        }
+    }
+}
+
+/**
+ * Restores player focus after a focusable popup or sheet has been dismissed.
+ *
+ * The popup keeps focus while it is open so that text fields and menu navigation continue to
+ * work. Only a real open-to-closed transition hands keyboard shortcuts back to the player.
+ */
+@Composable
+fun PlayerControllerState.restorePlayerFocusWhenClosed(isOpen: Boolean) {
+    var wasOpen by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isOpen) {
+        if (wasOpen && !isOpen) {
+            requestPlayerFocus()
+        }
+        wasOpen = isOpen
     }
 }
 
@@ -169,6 +209,10 @@ class PlayerControllerState(
     }
 
     val focusState = PlayerFocusState()
+
+    fun requestPlayerFocus() {
+        focusState.requestPlayerFocus()
+    }
 
     private var fullVisible by mutableStateOf(initialVisibility == ControllerVisibility.Visible)
     private val hasProgressBarRequester by derivedStateOf { progressBarRequesters.isNotEmpty() }

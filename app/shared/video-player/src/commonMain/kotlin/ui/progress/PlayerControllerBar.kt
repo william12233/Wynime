@@ -51,15 +51,12 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusEvent
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -77,7 +74,6 @@ import com.wynime.app.data.models.preference.DarkMode
 import com.wynime.app.domain.media.player.MediaCacheProgressInfo
 import com.wynime.app.ui.foundation.SteppedSlider
 import com.wynime.app.ui.foundation.dialogs.PlatformPopupProperties
-import com.wynime.app.ui.foundation.ifThen
 import com.wynime.app.ui.foundation.theme.WynimeTheme
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.video_player_cancel
@@ -97,7 +93,6 @@ import com.wynime.app.videoplayer.ui.VideoAspectRatioControllerState
 import com.wynime.app.videoplayer.ui.keepLayoutWhenHidden
 import com.wynime.app.videoplayer.ui.renderAspectRatioMode
 import com.wynime.app.videoplayer.ui.toggle
-import com.wynime.app.videoplayer.ui.top.needWorkaroundForFocusManager
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
@@ -286,16 +281,9 @@ object PlayerControllerDefaults {
         modifier: Modifier = Modifier,
     ) {
         val isFullscreen = fullscreenState.isFullscreen
-        val focusManager by rememberUpdatedState(LocalFocusManager.current)
         IconButton(
             onClick = remember(fullscreenState) { { fullscreenState.toggle() } },
-            modifier.ifThen(needWorkaroundForFocusManager) {
-                onFocusEvent {
-                    if (it.hasFocus) {
-                        focusManager.clearFocus()
-                    }
-                }
-            }.testTag(TAG_FULL_SCREEN_BUTTON),
+            modifier.testTag(TAG_FULL_SCREEN_BUTTON),
         ) {
             if (isFullscreen) {
                 Icon(Icons.Rounded.FullscreenExit, contentDescription = "Exit Fullscreen", Modifier.size(32.dp))

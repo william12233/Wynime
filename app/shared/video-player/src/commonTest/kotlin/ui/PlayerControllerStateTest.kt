@@ -22,6 +22,17 @@ class PlayerControllerStateTest {
     }
 
     @Test
+    fun `preferring player focus overrides text input preference`() {
+        val state = PlayerFocusState()
+        val owner = Any()
+
+        state.preferTextInput(owner)
+        state.preferPlayer()
+
+        assertEquals(PlayerFocusTarget.PLAYER, state.preferredTarget)
+    }
+
+    @Test
     fun `test toggle visibility`() = runTest {
         val state = PlayerControllerState(ControllerVisibility.Visible)
         state.toggleFullVisible()

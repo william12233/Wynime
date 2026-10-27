@@ -46,11 +46,12 @@ fun PlayerControllerDefaults.SubtitleSwitcher(
     playerState: TrackGroup<SubtitleTrack>,
     modifier: Modifier = Modifier,
     onSelect: (SubtitleTrack?) -> Unit = { playerState.select(it) },
+    onExpandedChanged: (expanded: Boolean) -> Unit = {},
 ) {
     val state = remember(playerState) {
         SubtitleTrackState(playerState.selected, playerState.candidates)
     }
-    SubtitleSwitcher(state, onSelect, modifier)
+    SubtitleSwitcher(state, onSelect, modifier, onExpandedChanged)
 }
 
 @Composable
@@ -58,6 +59,7 @@ fun PlayerControllerDefaults.SubtitleSwitcher(
     state: SubtitleTrackState,
     onSelect: (SubtitleTrack?) -> Unit,
     modifier: Modifier = Modifier,
+    onExpandedChanged: (expanded: Boolean) -> Unit = {},
 ) {
     val options by state.options.collectAsStateWithLifecycle(emptyList())
     SubtitleSwitcher(
@@ -65,6 +67,7 @@ fun PlayerControllerDefaults.SubtitleSwitcher(
         onValueChange = { onSelect(it?.subtitleTrack) },
         optionsProvider = { options },
         modifier,
+        onExpandedChanged = onExpandedChanged,
     )
 }
 
@@ -74,6 +77,7 @@ fun PlayerControllerDefaults.SubtitleSwitcher(
     onValueChange: (SubtitlePresentation?) -> Unit,
     optionsProvider: () -> List<SubtitlePresentation>,
     modifier: Modifier = Modifier,
+    onExpandedChanged: (expanded: Boolean) -> Unit = {},
 ) {
     val optionsProviderUpdated by rememberUpdatedState(optionsProvider)
     val options by remember {
@@ -105,5 +109,6 @@ fun PlayerControllerDefaults.SubtitleSwitcher(
         properties = PlatformPopupProperties(
             clippingEnabled = false,
         ),
+        onExpandedChanged = onExpandedChanged,
     )
 }

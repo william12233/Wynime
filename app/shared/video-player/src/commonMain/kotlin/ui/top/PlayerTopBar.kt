@@ -15,16 +15,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import com.wynime.app.ui.foundation.LocalPlatform
-import com.wynime.app.ui.foundation.ifThen
 import com.wynime.app.ui.foundation.navigation.LocalBackDispatcher
-import com.wynime.utils.platform.isDesktop
 
 @Composable
 fun PlayerTopBar(
@@ -47,16 +40,8 @@ fun PlayerTopBar(
         navigationIcon = {
             val back = LocalBackDispatcher.current
             CompositionLocalProvider(LocalContentColor provides color) {
-                val focusManager by rememberUpdatedState(LocalFocusManager.current)
                 IconButton(
                     onClick = { back.onBackPressed() },
-                    Modifier.ifThen(needWorkaroundForFocusManager) {
-                        onFocusEvent {
-                            if (it.hasFocus) {
-                                focusManager.clearFocus()
-                            }
-                        }
-                    },
                 ) {
                     Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
                 }
@@ -73,7 +58,3 @@ fun PlayerTopBar(
         windowInsets = windowInsets.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
     )
 }
-
-val needWorkaroundForFocusManager: Boolean
-    @Composable
-    get() = LocalPlatform.current.isDesktop()

@@ -145,6 +145,7 @@ import com.wynime.app.videoplayer.ui.rememberAlwaysOnRequester
 import com.wynime.app.videoplayer.ui.rememberPlayerStatsState
 import com.wynime.app.videoplayer.ui.rememberVideoControllerState
 import com.wynime.app.videoplayer.ui.rememberVideoSideSheetsController
+import com.wynime.app.videoplayer.ui.restorePlayerFocusWhenClosed
 import com.wynime.app.videoplayer.ui.top.PlayerTopBar
 import com.wynime.app.videoplayer.ui.top.SystemTime
 import com.wynime.app.videoplayer.videoenhancement.VideoEnhancementController
@@ -465,24 +466,36 @@ fun EpisodeVideoImpl(
                         }
 
                         if (expanded) {
+                            var audioSwitcherExpanded by remember { mutableStateOf(false) }
+                            var subtitleSwitcherExpanded by remember { mutableStateOf(false) }
+                            var videoAspectRatioSelectorExpanded by remember { mutableStateOf(false) }
+                            var speedSwitcherExpanded by remember { mutableStateOf(false) }
+
                             PlayerControllerDefaults.SelectEpisodeIcon(
                                 onClick = { sheetsController.navigateTo(EpisodeVideoSideSheetPage.EPISODE_SELECTOR) },
                             )
 
                             if (LocalPlatform.current.isDesktop()) {
                                 playerState.audioTracks?.let {
-                                    PlayerControllerDefaults.AudioSwitcher(it)
+                                    PlayerControllerDefaults.AudioSwitcher(
+                                        it,
+                                        onExpandedChanged = { audioSwitcherExpanded = it },
+                                    )
                                 }
                             }
 
                             playerState.subtitleTracks?.let {
-                                PlayerControllerDefaults.SubtitleSwitcher(it)
+                                PlayerControllerDefaults.SubtitleSwitcher(
+                                    it,
+                                    onExpandedChanged = { subtitleSwitcherExpanded = it },
+                                )
                             }
 
                             val videoAspectRatioAlwaysOnRequester =
                                 rememberAlwaysOnRequester(playerControllerState, "videoAspectRatioSelector")
                             videoAspectRatioControllerState?.also { controller ->
                                 VideoAspectRatioSelector(controller) {
+                                    videoAspectRatioSelectorExpanded = it
                                     if (it) {
                                         videoAspectRatioAlwaysOnRequester.request()
                                     } else {
@@ -495,6 +508,7 @@ fun EpisodeVideoImpl(
                                 rememberAlwaysOnRequester(playerControllerState, "speedSwitcher")
                             playbackSpeedControllerState?.also { controller ->
                                 SpeedSwitcher(controller) {
+                                    speedSwitcherExpanded = it
                                     if (it) {
                                         playbackSpeedAlwaysOnRequester.request()
                                     } else {
@@ -502,6 +516,11 @@ fun EpisodeVideoImpl(
                                     }
                                 }
                             }
+
+                            playerControllerState.restorePlayerFocusWhenClosed(audioSwitcherExpanded)
+                            playerControllerState.restorePlayerFocusWhenClosed(subtitleSwitcherExpanded)
+                            playerControllerState.restorePlayerFocusWhenClosed(videoAspectRatioSelectorExpanded)
+                            playerControllerState.restorePlayerFocusWhenClosed(speedSwitcherExpanded)
                         }
                         PlayerControllerDefaults.FullscreenIcon(fullscreenState)
                     },
@@ -582,6 +601,8 @@ private fun EpisodeVideoTopBarActions(
     val dropdownAlwaysOnRequester = rememberAlwaysOnRequester(playerControllerState, "topBarExternalActions")
     val isExternalDropdownVisible = showShareDropdown || showMoreDropdown || showVideoEnhancementDropdown
     val skipDurationSeconds = opEdSkipDuration.inWholeSeconds
+
+    playerControllerState.restorePlayerFocusWhenClosed(isExternalDropdownVisible)
 
     val fastForwardSecondsText = stringResource(Lang.subject_episode_fast_forward_seconds, skipDurationSeconds)
     val selectMediaSourceText = stringResource(Lang.subject_episode_select_media_source)

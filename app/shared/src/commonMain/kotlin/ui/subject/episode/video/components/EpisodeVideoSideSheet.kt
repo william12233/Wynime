@@ -13,6 +13,7 @@ import com.wynime.app.videoplayer.ui.VideoSideSheetsController
 import com.wynime.app.videoplayer.ui.hasPageAsState
 import com.wynime.app.videoplayer.ui.rememberAlwaysOnRequester
 import com.wynime.app.videoplayer.ui.rememberVideoSideSheetsController
+import com.wynime.app.videoplayer.ui.restorePlayerFocusWhenClosed
 
 @Suppress("UnusedReceiverParameter")
 @Composable
@@ -35,6 +36,8 @@ fun EpisodeVideoDefaults.SideSheets(
 
     val alwaysOnRequester = rememberAlwaysOnRequester(playerControllerState, "sideSheets")
     val isPage by sheetsController.hasPageAsState()
+    playerControllerState.restorePlayerFocusWhenClosed(isPage)
+
     if (isPage) {
         DisposableEffect(true) {
             alwaysOnRequester.request()

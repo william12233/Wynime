@@ -124,7 +124,7 @@ fun VideoScaffold(
                         enter = enterTransition,
                         exit = exitTransition,
                     ) {
-                        Box {
+                        Box(Modifier.restorePlayerFocusOnDesktopControlFocus(controllerState.focusState)) {
                             Box(
                                 Modifier
                                     .matchParentSize()
@@ -180,7 +180,7 @@ fun VideoScaffold(
 
                     Box(Modifier.weight(1f, fill = true).fillMaxWidth())
 
-                    Column {
+                    Column(Modifier.restorePlayerFocusOnDesktopControlFocus(controllerState.focusState)) {
 
                         WynimeAnimatedVisibility(
                             visible = controllerVisibility.bottomBar,
@@ -248,7 +248,8 @@ fun VideoScaffold(
                     exit = exitTransition,
                 ) {
                     Row(
-                        Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        Modifier.restorePlayerFocusOnDesktopControlFocus(controllerState.focusState)
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
                             .windowInsetsPadding(contentWindowInsets.only(WindowInsetsSides.End)),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.End,
@@ -260,7 +261,8 @@ fun VideoScaffold(
                 }
             }
             Column(
-                Modifier.fillMaxSize().background(Color.Transparent)
+                Modifier.restorePlayerFocusOnDesktopControlFocus(controllerState.focusState)
+                    .fillMaxSize().background(Color.Transparent)
                     .windowInsetsPadding(contentWindowInsets.only(WindowInsetsSides.End)),
             ) {
                 Box(Modifier.weight(1f, fill = true).fillMaxWidth()) {
@@ -287,7 +289,7 @@ fun VideoScaffold(
                 }
             }
 
-            Box(Modifier.matchParentSize()) {
+            Box(Modifier.matchParentSize().restorePlayerFocusOnDesktopControlFocus(controllerState.focusState)) {
                 Column(Modifier.windowInsetsPadding(contentWindowInsets)) {
                     Box(Modifier.weight(0.5f))
                     Row(

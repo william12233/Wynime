@@ -89,7 +89,7 @@ class KazumiSourcePluginFixtureTest {
                 "aniplayer.xn--gmqr9gevarqk8t.cn/?url=" in request.url ->
                     "<script>var config={\"url\":\"Doki-fixture-token\",\"key\":\"fixture-key\",\"time\":\"fixture-time\"}</script>"
                 request.method == "POST" && "api_config.php" in request.url ->
-                    "{\"code\":\"200\",\"url\":\"https://cdn.example/akianime-high.mp4?token=one&part=two\"}"
+                    "{\"code\":200,\"url\":\"https://cdn.example/akianime-high.mp4?token=one&part=two\"}"
                 else -> "<html><body>ok</body></html>"
             }
         })

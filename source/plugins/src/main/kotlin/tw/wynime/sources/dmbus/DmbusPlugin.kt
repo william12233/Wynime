@@ -104,7 +104,7 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
         val iframe = Regex("(?is)<iframe[^>]+src=[\"']([^\"']+)[\"']").find(page.html)?.groupValues?.getOrNull(1)
         val iframeUrl = iframe?.let { absoluteUrl(page.finalUrl, it) }
         val directUrlAndReferer = iframeUrl?.let { url ->
-            resolveHhjxPlayer(url)?.let { directUrl -> directUrl to url }
+            resolveHhjxPlayer(url, request)?.let { directUrl -> directUrl to url }
         }
         val directUrl = directUrlAndReferer?.first
         val directReferer = directUrlAndReferer?.second
@@ -138,9 +138,13 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
         }
     }
 
-    private suspend fun resolveHhjxPlayer(iframeUrl: String): String? {
+    private suspend fun resolveHhjxPlayer(iframeUrl: String, request: SourceResolveRequest): String? {
         if (!iframeUrl.contains("hhjx.hhplayer.com", ignoreCase = true)) return null
-        val playerPage = requestPage(iframeUrl)
+        val playerPage = requestPage(
+            iframeUrl,
+            traceId = request.traceId,
+            entryPoint = request.entryPoint,
+        )
         val bootstrap = Regex(
             "(?s)window\\.__HHJX_BOOTSTRAP__\\s*=\\s*(\\{.*?\\})\\s*;",
         ).find(playerPage.html)?.groupValues?.getOrNull(1) ?: return null
@@ -155,6 +159,8 @@ internal class DmbusPlugin(context: SourcePluginContext) : SitePluginBase(
                 "Origin" to URI(playerPage.finalUrl).let { "${it.scheme}://${it.authority}" },
                 "Referer" to playerPage.finalUrl,
             ),
+            traceId = request.traceId,
+            entryPoint = request.entryPoint,
         )
         return extractJsonStringField(response, "url")?.takeIf(::isMediaUrl)
     }

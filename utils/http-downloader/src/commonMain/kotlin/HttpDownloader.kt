@@ -33,6 +33,16 @@ interface HttpDownloader : AutoCloseable {
 
     suspend fun resume(downloadId: DownloadId): Boolean
 
+    /**
+     * Replaces a temporary media URL before resuming a persisted download.
+     * Implementations that cannot refresh a source may return false.
+     */
+    suspend fun replaceSource(
+        downloadId: DownloadId,
+        url: String,
+        options: DownloadOptions = DownloadOptions(),
+    ): Boolean = false
+
     suspend fun getActiveDownloadIds(): List<DownloadId>
 
     suspend fun pause(downloadId: DownloadId): Boolean

@@ -1,7 +1,7 @@
 {
   "id": "dmbus",
   "name": "DMBUS",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.dmbus.DmbusEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dmbus-v1.5.0/source/plugins/artifacts/source-dmbus.jar",
-      "sha256": "641d37463e537d15d3778cb0686628baf7ac19f9a402c94476fcafa0d1bbfb2e",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dmbus-v1.6.0/source/plugins/artifacts/source-dmbus.jar",
+      "sha256": "0959fbe58448b0f0114b86c65aa89cf35a506a6cfd8020adca9b7b80517ec90c",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dmbus-v1.5.0/source/plugins/artifacts/source-dmbus-android.jar",
-      "sha256": "beae008472fd5ef034588cfec82d37e31a67e5fb65b7c566a8f33ec78a0a6628",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dmbus-v1.6.0/source/plugins/artifacts/source-dmbus-android.jar",
+      "sha256": "bfa322fd40c8e77c37bc0f56ec0bce820289cf1f3e3006f6639269c499627f66",
       "format": "jar"
     }
   }

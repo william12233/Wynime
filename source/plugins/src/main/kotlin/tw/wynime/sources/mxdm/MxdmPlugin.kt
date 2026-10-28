@@ -11,6 +11,7 @@ import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
+import tw.wynime.sources.shared.extractPlayerObjectUrl
 import tw.wynime.sources.shared.isMediaUrl
 import tw.wynime.sources.shared.links
 import tw.wynime.sources.shared.parseEpisodeNumber
@@ -80,12 +81,11 @@ internal class MxdmPlugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/play/${request.subjectId}-${request.channelId}-${request.episodeId}/"
         val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
-        // The page's inline player URL is region-dependent; let the normal web player
-        // execute it so the site can apply its own cookies and fallback logic.
+        val playerUrl = parsePlayerUrl(page.html) ?: extractPlayerObjectUrl(page.html)
         resolvedMedia(
             request = request,
             pageUrl = page.finalUrl,
-            rawUrl = null,
+            rawUrl = playerUrl,
             headers = mapOf("Referer" to page.finalUrl),
         )
     }

@@ -237,6 +237,32 @@ class KtorHttpDownloaderTest {
                             }
                         }
 
+                        "https://example.com/range-rejected-after-probe.mp4" -> {
+                            val rangeHeader = request.headers[HttpHeaders.Range]
+                            if (rangeHeader == "bytes=0-0") {
+                                respond(
+                                    content = byteArrayOf(0),
+                                    status = HttpStatusCode.PartialContent,
+                                    headers = headersOf(
+                                        HttpHeaders.ContentType to listOf("video/mp4"),
+                                        HttpHeaders.ContentRange to listOf("bytes 0-0/$MP4_FILE_SIZE"),
+                                        HttpHeaders.ContentLength to listOf("1"),
+                                    ),
+                                )
+                            } else if (rangeHeader != null) {
+                                respond("Range rejected", HttpStatusCode.RequestedRangeNotSatisfiable)
+                            } else {
+                                respond(
+                                    content = ByteArray(MP4_FILE_SIZE.toInt()) { it.toByte() },
+                                    status = HttpStatusCode.OK,
+                                    headers = headersOf(
+                                        HttpHeaders.ContentType to listOf("video/mp4"),
+                                        HttpHeaders.ContentLength to listOf("$MP4_FILE_SIZE"),
+                                    ),
+                                )
+                            }
+                        }
+
                         "https://example.com/unstable-playlist1.m3u8" -> {
 
                             if (currentAttempt == 0) {
@@ -1011,6 +1037,28 @@ class KtorHttpDownloaderTest {
 
         val fileSize = fileSystem.metadata(Path("$tempDir/no-range-support.mp4")).size
         assertEquals(MP4_FILE_SIZE, fileSize, "File size mismatch for non-range-support mp4.")
+    }
+
+    @Test
+    fun `download - falls back to full file when range probe passes but segments are rejected`() = testScope.runTest {
+        val downloadId = downloader.downloadWithId(
+            url = "https://example.com/range-rejected-after-probe.mp4",
+            downloadId = DownloadId("range-rejected-after-probe"),
+            options = DownloadOptions(maxRetriesPerSegment = 3, baseRetryDelayMillis = 0),
+        )?.downloadId
+        assertNotNull(downloadId)
+
+        downloader.joinDownload(downloadId)
+
+        val state = downloader.getState(downloadId)
+        assertNotNull(state)
+        assertEquals(DownloadStatus.COMPLETED, state.status)
+        assertEquals(1, state.segments.size)
+        assertEquals(null, state.segments.single().rangeStart)
+        assertEquals(
+            MP4_FILE_SIZE,
+            fileSystem.metadata(Path("$tempDir/range-rejected-after-probe.mp4")).size,
+        )
     }
 
     @Test

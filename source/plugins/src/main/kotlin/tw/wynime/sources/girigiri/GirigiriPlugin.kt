@@ -170,7 +170,11 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/play${request.subjectId}-${request.channelId}-${request.episodeId}/"
         val page = requestPage(pageUrl, traceId = request.traceId, entryPoint = request.entryPoint)
-        resolvedMedia(request, page.finalUrl, extractPlayerObjectUrl(page.html) ?: page.finalUrl)
+        resolvedMedia(
+            request,
+            page.finalUrl,
+            parsePlayerUrl(page.html) ?: extractPlayerObjectUrl(page.html) ?: page.finalUrl,
+        )
     }
 
     override fun matchWebResource(url: String): SourceWebResourceMatch = when {

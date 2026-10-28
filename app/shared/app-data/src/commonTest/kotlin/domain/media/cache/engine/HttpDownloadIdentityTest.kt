@@ -94,6 +94,29 @@ class HttpDownloadIdentityTest {
     }
 
     @Test
+    fun `resuming a paused cache refreshes the temporary media source`() = runTest {
+        val downloader = FakeDownloader()
+        val engine = engine(downloader)
+        val media = TestMediaList.first().copy(
+            kind = MediaSourceKind.WEB,
+            download = ResourceLocation.HttpStreamingFile("https://example.com/expired.mp4"),
+        )
+        val cache = engine.createCache(
+            media,
+            testMetadata(1),
+            testEpisodeMetadata(1),
+            backgroundScope.coroutineContext,
+        )
+        val downloadId = downloader.states.keys.single()
+        downloader.states[downloadId] = downloader.states.getValue(downloadId).copy(status = DownloadStatus.PAUSED)
+
+        cache.resume()
+
+        assertEquals("https://example.com/01.mp4", downloader.replacedSources[downloadId])
+        assertEquals(downloadId, downloader.resumed.last())
+    }
+
+    @Test
     fun `identity is stable filesystem safe and distinguishes episodes subjects and media`() = runTest {
         val media = TestMediaList.first()
         suspend fun createId(media: Media, metadata: MediaCacheMetadata): DownloadId {
@@ -158,6 +181,7 @@ class HttpDownloadIdentityTest {
 private class FakeDownloader : HttpDownloader {
     val states = mutableMapOf<DownloadId, DownloadState>()
     val resumed = mutableListOf<DownloadId>()
+    val replacedSources = mutableMapOf<DownloadId, String>()
     val recreated = mutableListOf<DownloadId>()
     val persistedOnly = mutableSetOf<DownloadId>()
 
@@ -181,6 +205,13 @@ private class FakeDownloader : HttpDownloader {
 
     override suspend fun resume(downloadId: DownloadId): Boolean {
         resumed += downloadId
+        return true
+    }
+
+    override suspend fun replaceSource(downloadId: DownloadId, url: String, options: DownloadOptions): Boolean {
+        val state = states[downloadId] ?: return false
+        states[downloadId] = state.copy(url = url, requestHeaders = options.headers)
+        replacedSources[downloadId] = url
         return true
     }
 

@@ -320,6 +320,43 @@ open class KtorHttpDownloader(
         return true
     }
 
+    override suspend fun replaceSource(
+        downloadId: DownloadId,
+        url: String,
+        options: DownloadOptions,
+    ): Boolean {
+        val oldState = stateMutex.withLock {
+            val entry = _downloadStatesFlow.value[downloadId] ?: return false
+            if (entry.job?.isActive == true || entry.state.status == COMPLETED || entry.state.status == CANCELED) {
+                return false
+            }
+            entry.state
+        }
+
+        deleteDownloadArtifacts(oldState)
+        val newState = stateMutex.withLock {
+            val entry = _downloadStatesFlow.value[downloadId] ?: return@withLock null
+            val refreshed = entry.state.copy(
+                url = url,
+                segments = emptyList(),
+                totalSegments = 0,
+                downloadedBytes = 0L,
+                timestamp = clock.now().toEpochMilliseconds(),
+                status = PAUSED,
+                error = null,
+                requestHeaders = options.headers,
+            )
+            _downloadStatesFlow.update { put(downloadId, entry.copy(job = null, state = refreshed)) }
+            refreshed
+        } ?: return false
+
+        clearSegmentFailure(downloadId)
+        onUpdateDownloadState(downloadId, newState)
+        emitProgress(downloadId)
+        logger.info { "Replaced temporary source for $downloadId with a fresh media URL" }
+        return true
+    }
+
     override suspend fun getActiveDownloadIds(): List<DownloadId> {
         return stateMutex.withLock {
             _downloadStatesFlow.value.values
@@ -822,7 +859,7 @@ open class KtorHttpDownloader(
         segmentInfo: SegmentInfo,
         options: DownloadOptions,
     ): Long {
-
+        val hasRange = segmentInfo.rangeStart != null && segmentInfo.rangeEnd != null
         val finalOptions = if (segmentInfo.rangeStart != null && segmentInfo.rangeEnd != null) {
             options.copy(
                 headers = options.headers + ("Range" to "bytes=${segmentInfo.rangeStart}-${segmentInfo.rangeEnd}"),
@@ -832,22 +869,46 @@ open class KtorHttpDownloader(
         }
         logger.info { "Downloading segment index=${segmentInfo.index}, range=(${segmentInfo.rangeStart}-${segmentInfo.rangeEnd})" }
 
-        return httpGet(segmentInfo.url, finalOptions) { statement ->
+        return try {
+            httpGet(segmentInfo.url, finalOptions) { statement ->
+                statement.execute { response ->
+                    if (hasRange) {
+                        val expectedRange = "bytes ${segmentInfo.rangeStart}-${segmentInfo.rangeEnd}/"
+                        val contentRange = response.headers[io.ktor.http.HttpHeaders.ContentRange]
+                        if (response.status.value != 206 || contentRange?.startsWith(expectedRange) != true) {
+                            throw RangeRequestRejectedException(
+                                "Server did not honor range ${segmentInfo.rangeStart}-${segmentInfo.rangeEnd}: " +
+                                    "status=${response.status.value}, contentRange=$contentRange",
+                            )
+                        }
+                    }
 
-            statement.execute { response ->
-                val segmentPath = baseSaveDir.resolve(segmentInfo.relativeTempFilePath)
-                withContext(ioDispatcher) {
-                    fileSystem.createDirectories(
-                        segmentPath.parent ?: error("Parent dir not found for segmentInfo: $segmentInfo"),
-                    )
-                }
+                    val segmentPath = baseSaveDir.resolve(segmentInfo.relativeTempFilePath)
+                    withContext(ioDispatcher) {
+                        fileSystem.createDirectories(
+                            segmentPath.parent ?: error("Parent dir not found for segmentInfo: $segmentInfo"),
+                        )
+                    }
 
-                val channel = response.bodyAsChannel()
-                val byteSize = copyChannelToFile(channel, segmentPath)
-                byteSize.also {
-                    logger.info { "Segment index=${segmentInfo.index} downloaded, size=$it" }
+                    val channel = response.bodyAsChannel()
+                    val byteSize = copyChannelToFile(channel, segmentPath)
+                    byteSize.also {
+                        logger.info { "Segment index=${segmentInfo.index} downloaded, size=$it" }
+                    }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: RangeRequestRejectedException) {
+            throw e
+        } catch (e: Throwable) {
+            if (hasRange) {
+                throw RangeRequestRejectedException(
+                    "Range request failed for ${segmentInfo.rangeStart}-${segmentInfo.rangeEnd}",
+                    e,
+                )
+            }
+            throw e
         }
     }
 
@@ -885,6 +946,26 @@ open class KtorHttpDownloader(
     @OptIn(DelicateCoroutinesApi::class, ExperimentalAtomicApi::class)
     protected suspend fun downloadSegments(downloadId: DownloadId, options: DownloadOptions) {
         val snapshot = getState(downloadId) ?: return
+        val canFallbackFromRange = snapshot.mediaType in setOf(MediaType.MP4, MediaType.MKV) &&
+            snapshot.segments.any { it.rangeStart != null || it.rangeEnd != null }
+        try {
+            downloadSegmentsOnce(downloadId, options)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            if (!canFallbackFromRange) throw e
+
+            logger.warn(e) {
+                "Range download was rejected for $downloadId; retrying as one full-file request"
+            }
+            resetToUnrangedSegment(downloadId)
+            downloadSegmentsOnce(downloadId, options)
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalAtomicApi::class)
+    private suspend fun downloadSegmentsOnce(downloadId: DownloadId, options: DownloadOptions) {
+        val snapshot = getState(downloadId) ?: return
         if (snapshot.segments.isEmpty()) {
             logger.info { "No segments to download for $downloadId" }
             return
@@ -921,6 +1002,38 @@ open class KtorHttpDownloader(
             }
         }
         logger.info { "All segments downloaded for $downloadId" }
+    }
+
+    private suspend fun resetToUnrangedSegment(downloadId: DownloadId) {
+        val snapshot = getState(downloadId) ?: return
+        val cacheDir = baseSaveDir.resolve(snapshot.relativeSegmentCacheDir)
+        withContext(ioDispatcher) {
+            if (cacheDir.inSystem.exists()) {
+                fileSystem.deleteRecursively(cacheDir)
+            }
+            fileSystem.createDirectories(cacheDir)
+        }
+        val segment = SegmentInfo(
+            index = 0,
+            url = snapshot.url,
+            isDownloaded = false,
+            byteSize = -1,
+            relativeTempFilePath = cacheDir.resolve("0.part").inSystem.absolutePath
+                .substringAfter(baseSaveDir.inSystem.absolutePath),
+            rangeStart = null,
+            rangeEnd = null,
+        )
+        updateState(downloadId) {
+            it.copy(
+                segments = listOf(segment),
+                totalSegments = 1,
+                downloadedBytes = 0L,
+                error = null,
+                status = DOWNLOADING,
+            )
+        }
+        clearSegmentFailure(downloadId)
+        emitProgress(downloadId)
     }
 
     protected suspend fun markSegmentDownloaded(downloadId: DownloadId, segmentIndex: Int, byteSize: Long) {
@@ -1148,6 +1261,9 @@ open class KtorHttpDownloader(
             } catch (ce: CancellationException) {
 
                 throw ce
+            } catch (range: RangeRequestRejectedException) {
+                onFailure(attempt, range)
+                throw range
             } catch (ex: Throwable) {
                 onFailure(attempt, ex)
                 if (attempt >= maxRetries) {
@@ -1188,6 +1304,11 @@ open class KtorHttpDownloader(
 }
 
 private class M3u8Exception(val errorCode: DownloadErrorCode) : Exception()
+
+private class RangeRequestRejectedException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)
 
 private fun M3u8Playlist.MediaPlaylist.toSegments(resolveSegmentPath: (String) -> String): List<SegmentInfo> {
     return segments.mapIndexed { i, seg ->

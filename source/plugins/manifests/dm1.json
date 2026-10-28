@@ -1,7 +1,7 @@
 {
   "id": "dm1",
   "name": "DM1",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.dm1.Dm1EntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dm1-v1.5.0/source/plugins/artifacts/source-dm1.jar",
-      "sha256": "d8e43ef4d55f5d90f35a4e27a684c5e9086b4aa7a8b36c2af4761fba4573e948",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dm1-v1.6.0/source/plugins/artifacts/source-dm1.jar",
+      "sha256": "77473cd157b43d06710a63a5dd9909d0f4de99a2c997d6a3a95a5f6eaaf23290",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dm1-v1.5.0/source/plugins/artifacts/source-dm1-android.jar",
-      "sha256": "60b9f50dbcd11e705221b1c5203f638ae09ad9469f9f48e7696cd3f3d8744269",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-dm1-v1.6.0/source/plugins/artifacts/source-dm1-android.jar",
+      "sha256": "2fa884c21e92eb8cd5e97bd681489d20cc815e91b74a50b6c23e71a0ea171314",
       "format": "jar"
     }
   }

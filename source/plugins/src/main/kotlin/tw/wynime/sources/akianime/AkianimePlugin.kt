@@ -16,6 +16,7 @@ import com.wynime.source.plugin.api.mediaIdentity
 import tw.wynime.sources.shared.SitePluginBase
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractJsonStringField
+import tw.wynime.sources.shared.extractJsonNumberField
 import tw.wynime.sources.shared.extractPlayerObjectUrl
 import tw.wynime.sources.shared.isHttpUrl
 import tw.wynime.sources.shared.isMediaUrl
@@ -182,6 +183,7 @@ internal class AkianimePlugin(context: SourcePluginContext) : SitePluginBase(
             if (response.statusCode !in 200..399) return null
             val body = response.bodyAsText()
             val code = extractJsonStringField(body, "code")
+                ?: extractJsonNumberField(body, "code")?.toString()
             val mediaUrl = extractJsonStringField(body, "url")
             mediaUrl
                 ?.takeIf { code == "200" && isHttpUrl(it) }

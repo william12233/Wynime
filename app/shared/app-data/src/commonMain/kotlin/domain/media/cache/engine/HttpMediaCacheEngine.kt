@@ -114,26 +114,33 @@ class HttpMediaCacheEngine(
 
         logger.info { "Restarting cache '${origin.mediaId}'" }
         val downloadId = restoredHttpDownloadId(origin, metadata)
+        val episodeMetadata = EpisodeMetadata(
+            title = metadata.episodeName,
+            ep = metadata.episodeEp,
+            sort = metadata.episodeSort,
+        )
 
         if (downloader.getState(downloadId) != null) {
-            downloader.resume(downloadId)
+            val cache = HttpMediaCache(origin, downloadId, metadata, episodeMetadata, parentContext)
+            cache.resume()
 
             logger.info { "Resumed download $downloadId" }
-            return HttpMediaCache(origin, downloadId, metadata)
+            return cache
         }
 
-        val persistentState = dao.getById(downloadId) ?: kotlin.run {
+        if (dao.getById(downloadId) == null) {
             logger.error { "Failed to find download state $downloadId from persistent storage while recreating cache." }
             return null
         }
 
         logger.info { "Download not found, recreating $downloadId" }
+        val mediaData = resolveUriMediaData(origin, episodeMetadata, parentContext)
         downloader.downloadWithId(
             downloadId = downloadId,
-            persistentState.url,
-            options = DownloadOptions(headers = persistentState.requestHeaders),
+            mediaData.uri,
+            options = DownloadOptions(headers = mediaData.headers),
         )
-        return HttpMediaCache(origin, downloadId, metadata)
+        return HttpMediaCache(origin, downloadId, metadata, episodeMetadata, parentContext)
     }
 
     override suspend fun createCache(
@@ -144,29 +151,34 @@ class HttpMediaCacheEngine(
     ): MediaCache {
         if (!supports(origin)) throw UnsupportedOperationException("Media is not supported by this engine $this: ${origin.download}")
 
+        val mediaData = resolveUriMediaData(origin, episodeMetadata, parentContext)
+        val downloadId = httpDownloadId(origin, metadata)
+        downloader.downloadWithId(
+            downloadId = downloadId,
+            mediaData.uri,
+            options = DownloadOptions(headers = mediaData.headers),
+        ) ?: throw UnsupportedOperationException("Failed to create download job of $downloadId, state is null.")
+
+        return HttpMediaCache(
+            origin,
+            downloadId,
+            metadata,
+            episodeMetadata,
+            parentContext,
+        )
+    }
+
+    private suspend fun resolveUriMediaData(
+        origin: Media,
+        episodeMetadata: EpisodeMetadata,
+        parentContext: CoroutineContext,
+    ): UriMediaData {
         val mediaDataProvider = (mediaResolver as? DownloadMediaResolver)
             ?.resolveForDownload(origin, episodeMetadata)
             ?: mediaResolver.resolve(origin, episodeMetadata)
-        when (val mediaData = mediaDataProvider.open(CoroutineScope(parentContext))) {
-            is SeekableInputMediaData -> {
-
-                throw UnsupportedOperationException("SeekableInputMediaData is not supported")
-            }
-
-            is UriMediaData -> {
-                val downloadId = httpDownloadId(origin, metadata)
-                val state = downloader.downloadWithId(
-                    downloadId = downloadId,
-                    mediaData.uri,
-                    options = DownloadOptions(headers = mediaData.headers),
-                ) ?: throw UnsupportedOperationException("Failed to create download job of $downloadId, state is null.")
-
-                return HttpMediaCache(
-                    origin,
-                    downloadId,
-                    metadata,
-                )
-            }
+        return when (val mediaData = mediaDataProvider.open(CoroutineScope(parentContext))) {
+            is SeekableInputMediaData -> throw UnsupportedOperationException("SeekableInputMediaData is not supported")
+            is UriMediaData -> mediaData
         }
     }
 
@@ -213,6 +225,8 @@ class HttpMediaCacheEngine(
         override val origin: Media,
         internal val downloadId: DownloadId,
         override val metadata: MediaCacheMetadata,
+        private val episodeMetadata: EpisodeMetadata,
+        private val parentContext: CoroutineContext,
     ) : MediaCache {
         override val state: Flow<MediaCacheState> =
             downloader.getProgressFlow(downloadId).map { it.status.toMediaCacheState() }
@@ -322,6 +336,15 @@ class HttpMediaCacheEngine(
         }
 
         override suspend fun resume() {
+            val state = downloader.getState(downloadId)
+            if (state?.status == DownloadStatus.PAUSED || state?.status == DownloadStatus.FAILED) {
+                val mediaData = resolveUriMediaData(origin, episodeMetadata, parentContext)
+                downloader.replaceSource(
+                    downloadId = downloadId,
+                    url = mediaData.uri,
+                    options = DownloadOptions(headers = mediaData.headers),
+                )
+            }
             downloader.resume(downloadId)
         }
 

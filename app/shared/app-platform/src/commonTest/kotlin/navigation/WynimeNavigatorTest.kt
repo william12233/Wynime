@@ -88,6 +88,22 @@ class WynimeNavigatorTest {
     }
 
     @Test
+    fun `navigateEpisodeDetails preserves the requested cache`() {
+        val navigator = navigatorWith(main)
+        navigator.navigateEpisodeDetails(
+            subjectId = 1,
+            episodeId = 2,
+            force = true,
+            cacheId = "cache-1",
+        )
+
+        assertEquals(
+            listOf(main, NavRoutes.EpisodeDetail(1, 2, cacheId = "cache-1")),
+            navigator.backStack,
+        )
+    }
+
+    @Test
     fun `navigateMain pops up to the target before pushing`() {
         val navigator = navigatorWith(NavRoutes.EmailLoginStart, NavRoutes.EmailLoginVerify, NavRoutes.OAuthAuthorize("bangumi"))
         navigator.navigateMain(MainScreenPage.Collection, popUpTargetInclusive = NavRoutes.EmailLoginStart)

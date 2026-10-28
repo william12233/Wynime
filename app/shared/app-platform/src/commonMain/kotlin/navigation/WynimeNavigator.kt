@@ -61,13 +61,15 @@ interface WynimeNavigator {
         episodeId: Int,
         fullscreen: Boolean = false,
         force: Boolean = false,
+        cacheId: String? = null,
     ) {
         if (!force && !EpisodeNavigationGuardRegistry.checkOrNotifyDenied(subjectId, episodeId)) {
             return
         }
 
-        popBackStack(NavRoutes.EpisodeDetail(subjectId, episodeId), inclusive = true)
-        navigate(NavRoutes.EpisodeDetail(subjectId, episodeId))
+        val route = NavRoutes.EpisodeDetail(subjectId, episodeId, cacheId)
+        popBackStack(route, inclusive = true)
+        navigate(route)
         Analytics.recordEvent(
             EpisodeEnter,
             mapOf("subject_id" to subjectId, "episode_id" to episodeId),

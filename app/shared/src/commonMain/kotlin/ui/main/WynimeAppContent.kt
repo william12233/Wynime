@@ -298,7 +298,8 @@ private fun WynimeAppContentImpl(
                         subjectId = route.subjectId,
                         initialEpisodeId = route.episodeId,
                         initialIsFullscreen = false,
-                        context,
+                        context = context,
+                        initialCacheId = route.cacheId,
                     )
                 }
                 EpisodeScreen(vm, Modifier.fillMaxSize(), windowInsets)
@@ -368,7 +369,11 @@ private fun WynimeAppContentImpl(
                     vm = viewModel { createDownloadManagementViewModel() },
                     selfInfo = selfInfo,
                     onPlay = {
-                        wynimeNavigator.navigateEpisodeDetails(it.subjectId, it.episodeId)
+                        wynimeNavigator.navigateEpisodeDetails(
+                            it.subjectId,
+                            it.episodeId,
+                            cacheId = it.id,
+                        )
                     },
                     onClickLogin = { },
                     onNavigateCacheDetail = { wynimeNavigator.navigateCacheDetails(it) },
@@ -444,7 +449,13 @@ private fun WynimeAppContentImpl(
             entry<NavRoutes.SubjectCaches> { route ->
                 SubjectDownloadsScreen(
                     vm = viewModel(key = route.toString()) { createSubjectDownloadsViewModel(route.subjectId) },
-                    onPlay = { wynimeNavigator.navigateEpisodeDetails(it.subjectId, it.episodeId) },
+                    onPlay = {
+                        wynimeNavigator.navigateEpisodeDetails(
+                            it.subjectId,
+                            it.episodeId,
+                            cacheId = it.id,
+                        )
+                    },
                     onNavigateDownloadDetail = { wynimeNavigator.navigateCacheDetails(it) },
                     modifier = Modifier.fillMaxSize(),
                     windowInsets = windowInsets,

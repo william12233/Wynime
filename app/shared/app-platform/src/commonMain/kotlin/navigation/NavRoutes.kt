@@ -97,6 +97,7 @@ sealed class NavRoutes : NavKey {
     data class EpisodeDetail(
         val subjectId: Int,
         val episodeId: Int,
+        val cacheId: String? = null,
     ) : NavRoutes()
 
     @SerialName("me.him188.ani.app.navigation.NavRoutes.Caches")

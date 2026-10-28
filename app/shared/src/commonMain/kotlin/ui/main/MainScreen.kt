@@ -358,7 +358,13 @@ private fun MainScreenNavigationLayout(
                         DownloadManagementScreen(
                             downloadManagementViewModel,
                             selfInfo = selfInfo,
-                            onPlay = { navigator.navigateEpisodeDetails(it.subjectId, it.episodeId) },
+                            onPlay = {
+                                navigator.navigateEpisodeDetails(
+                                    it.subjectId,
+                                    it.episodeId,
+                                    cacheId = it.id,
+                                )
+                            },
                             onNavigateCacheDetail = { navigator.navigateCacheDetails(it) },
                             onClickLogin = onLogin,
                             modifier = Modifier.fillMaxSize(),

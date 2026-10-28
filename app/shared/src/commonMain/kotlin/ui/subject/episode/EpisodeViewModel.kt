@@ -45,6 +45,7 @@ import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.atomicfu.atomic
 import com.wynime.app.data.models.comment.CommentReportTargetType
 import com.wynime.app.data.models.episode.displayName
 import com.wynime.app.data.models.episode.nameOrNameCn
@@ -80,6 +81,7 @@ import com.wynime.app.domain.episode.mediaSelectorFlow
 import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.domain.media.DroppedFileMedia
 import com.wynime.app.domain.media.cache.EpisodeCacheStatus
+import com.wynime.app.domain.media.cache.MediaCacheState
 import com.wynime.app.domain.media.download.MediaDownloadManager
 import com.wynime.app.domain.media.fetch.MediaSourceManager
 import com.wynime.app.domain.media.fetch.MediaSourceResultsFilterer
@@ -206,9 +208,10 @@ sealed class EpisodePageLoadError {
 @Stable
 open class EpisodeViewModel(
     val subjectId: Int,
-    initialEpisodeId: Int,
+    private val initialEpisodeId: Int,
     initialIsFullscreen: Boolean = false,
     context: Context,
+    private val initialCacheId: String? = null,
     val getCurrentDate: () -> PackedDate = { PackedDate.now() },
     private val koin: Koin = GlobalKoin,
 ) : KoinComponent, AbstractViewModel(), HasBackgroundScope {
@@ -216,6 +219,7 @@ open class EpisodeViewModel(
     private val playerStateFactory: MediampPlayerFactory<*> by inject()
     private val episodeCollectionRepository: EpisodeCollectionRepository by inject()
     private val downloadManager: MediaDownloadManager by inject()
+    private val initialCachePlaybackStarted = atomic(false)
     private val settingsRepository: SettingsRepository by inject()
     private val episodePlayHistoryRepository: EpisodePlayHistoryRepository by inject()
     private val mediaSourceManager: MediaSourceManager by inject()
@@ -786,6 +790,33 @@ open class EpisodeViewModel(
 
     fun onUIReady() {
         fetchPlayState.onUIReady()
+        val cacheId = initialCacheId ?: return
+        if (initialCachePlaybackStarted.compareAndSet(false, true)) {
+            launchInBackground {
+                playInitialCache(cacheId)
+            }
+        }
+    }
+
+    @OptIn(UnsafeEpisodeSessionApi::class)
+    private suspend fun playInitialCache(cacheId: String) {
+        val download = downloadManager.downloads.first { downloads ->
+            downloads.any { download ->
+                download.id == cacheId &&
+                        download.metadata.subjectId == subjectId.toString() &&
+                        download.metadata.episodeId == initialEpisodeId.toString()
+            }
+        }.first { it.id == cacheId }
+        val cache = download.cache
+        val terminalState = cache.state.first {
+            it == MediaCacheState.COMPLETED || it == MediaCacheState.FAILED
+        }
+        if (terminalState != MediaCacheState.COMPLETED) {
+            return
+        }
+        val cachedMedia = runCatching { cache.getCachedMedia() }.getOrNull() ?: return
+        val selector = fetchPlayState.mediaSelectorFlow.filterNotNull().first()
+        selector.selectTemporarily(cachedMedia)
     }
 
     init {

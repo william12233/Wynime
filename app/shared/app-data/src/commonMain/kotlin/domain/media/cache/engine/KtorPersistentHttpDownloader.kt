@@ -3,6 +3,8 @@ package com.wynime.app.domain.media.cache.engine
 import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
@@ -10,6 +12,7 @@ import kotlinx.io.files.FileSystem
 import kotlinx.io.files.Path
 import com.wynime.app.data.persistent.database.dao.HttpCacheDownloadStateDao
 import com.wynime.utils.coroutines.IO_
+import com.wynime.utils.httpdownloader.DownloadConcurrencyLimiter
 import com.wynime.utils.httpdownloader.DownloadId
 import com.wynime.utils.httpdownloader.DownloadState
 import com.wynime.utils.httpdownloader.DownloadStatus
@@ -33,6 +36,9 @@ class KtorPersistentHttpDownloader(
     m3u8Parser: M3u8Parser = DefaultM3u8Parser,
     scope: CoroutineScope,
     m3u8PlaylistTransformer: M3u8PlaylistTransformer? = null,
+    maxConcurrentDownloads: StateFlow<Int> = MutableStateFlow(
+        DownloadConcurrencyLimiter.DEFAULT_MAX_CONCURRENT_DOWNLOADS,
+    ),
 ) : KtorHttpDownloader(
     client = client,
     fileSystem = fileSystem,
@@ -42,6 +48,7 @@ class KtorPersistentHttpDownloader(
     parentScope = scope,
     ioDispatcher = ioDispatcher,
     m3u8PlaylistTransformer = m3u8PlaylistTransformer,
+    maxConcurrentDownloads = maxConcurrentDownloads,
 ) {
     override suspend fun init() {
         super.init()

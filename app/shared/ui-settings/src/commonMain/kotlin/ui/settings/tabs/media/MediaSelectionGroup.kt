@@ -11,9 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.util.fastAll
+import com.wynime.app.data.models.preference.MediaCacheSettings
 import com.wynime.app.data.models.preference.MediaPreference
 import com.wynime.app.data.models.preference.MediaSelectorSettings
 import com.wynime.app.data.models.preference.VideoResolverSettings
@@ -38,6 +41,9 @@ import com.wynime.app.ui.lang.settings_media_cache_ttl_30min
 import com.wynime.app.ui.lang.settings_media_cache_ttl_5min
 import com.wynime.app.ui.lang.settings_media_cache_ttl_6h
 import com.wynime.app.ui.lang.settings_media_cache_ttl_none
+import com.wynime.app.ui.lang.settings_media_concurrent_downloads
+import com.wynime.app.ui.lang.settings_media_concurrent_downloads_description
+import com.wynime.app.ui.lang.settings_media_concurrent_downloads_value
 import com.wynime.app.ui.lang.settings_media_fast_select_web
 import com.wynime.app.ui.lang.settings_media_fast_select_web_description
 import com.wynime.app.ui.lang.settings_media_hide_no_subtitle
@@ -79,6 +85,7 @@ import com.wynime.app.ui.settings.framework.SettingsState
 import com.wynime.app.ui.settings.framework.components.DropdownItem
 import com.wynime.app.ui.settings.framework.components.SelectableItem
 import com.wynime.app.ui.settings.framework.components.SettingsScope
+import com.wynime.app.ui.settings.framework.components.SliderItem
 import com.wynime.app.ui.settings.framework.components.SorterItem
 import com.wynime.app.ui.settings.framework.components.SwitchItem
 import com.wynime.app.ui.settings.framework.components.TextFieldItem
@@ -88,6 +95,7 @@ import com.wynime.datasources.api.topic.FileSize.Companion.megaBytes
 import com.wynime.datasources.api.topic.Resolution
 import com.wynime.datasources.api.topic.SubtitleLanguage
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -99,6 +107,7 @@ class MediaSelectionGroupState(
     val defaultMediaPreferenceState: SettingsState<MediaPreference>,
     val mediaSelectorSettingsState: SettingsState<MediaSelectorSettings>,
     val videoResolverSettingsState: SettingsState<VideoResolverSettings>,
+    val mediaCacheSettingsState: SettingsState<MediaCacheSettings>,
 ) {
     val defaultMediaPreference by defaultMediaPreferenceState
 
@@ -427,6 +436,38 @@ internal fun SettingsScope.MediaSelectionGroup(
 
                 }
             }
+
+            val mediaCacheSettings by state.mediaCacheSettingsState
+            var maxConcurrentDownloads by remember(mediaCacheSettings) {
+                mutableFloatStateOf(mediaCacheSettings.effectiveMaxConcurrentDownloads.toFloat())
+            }
+            SliderItem(
+                value = maxConcurrentDownloads,
+                onValueChange = { maxConcurrentDownloads = it },
+                onValueChangeFinished = {
+                    state.mediaCacheSettingsState.update(
+                        mediaCacheSettings.copy(maxConcurrentDownloads = maxConcurrentDownloads.roundToInt()),
+                    )
+                },
+                valueRange = MediaCacheSettings.MIN_MAX_CONCURRENT_DOWNLOADS.toFloat()..
+                    MediaCacheSettings.MAX_MAX_CONCURRENT_DOWNLOADS.toFloat(),
+                steps = MediaCacheSettings.MAX_MAX_CONCURRENT_DOWNLOADS -
+                    MediaCacheSettings.MIN_MAX_CONCURRENT_DOWNLOADS - 1,
+                title = { Text(stringResource(Lang.settings_media_concurrent_downloads)) },
+                description = {
+                    Text(stringResource(Lang.settings_media_concurrent_downloads_description))
+                },
+                valueLabel = {
+                    Text(
+                        stringResource(
+                            Lang.settings_media_concurrent_downloads_value,
+                            maxConcurrentDownloads.roundToInt(),
+                        ),
+                    )
+                },
+            )
+
+            HorizontalDividerItem()
 
             SwitchItem(
                 checked = mediaSelectorSettings.showDisabled,

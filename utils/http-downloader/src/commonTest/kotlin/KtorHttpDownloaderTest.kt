@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -73,6 +74,9 @@ class KtorHttpDownloaderTest {
     private var forceFfmpegFailure = false
     private var partFileBytesWhenBodySent = -1L
     private var filterM3u8Playlist = false
+    private var delaySegmentResponses = false
+    private var activeSegmentRequests = 0
+    private var maxActiveSegmentRequests = 0
 
     private val attempts = mutableMapOf<String, Int>().withDefault { 0 }
 
@@ -97,6 +101,9 @@ class KtorHttpDownloaderTest {
         forceFfmpegFailure = false
         partFileBytesWhenBodySent = -1L
         filterM3u8Playlist = false
+        delaySegmentResponses = false
+        activeSegmentRequests = 0
+        maxActiveSegmentRequests = 0
 
         mockClient = HttpClient(MockEngine) {
             expectSuccess = true
@@ -311,6 +318,15 @@ class KtorHttpDownloaderTest {
                         else -> {
                             if (urlString.startsWith("https://example.com/segment") && urlString.endsWith(".ts")) {
                                 val num = urlString.substringAfter("segment").substringBefore(".ts").toInt()
+                                if (delaySegmentResponses) {
+                                    activeSegmentRequests++
+                                    maxActiveSegmentRequests = maxOf(maxActiveSegmentRequests, activeSegmentRequests)
+                                    try {
+                                        delay(1.seconds)
+                                    } finally {
+                                        activeSegmentRequests--
+                                    }
+                                }
                                 respond(
                                     content = ByteArray(1024 * num) { it.toByte() },
                                     status = HttpStatusCode.OK,
@@ -754,6 +770,36 @@ class KtorHttpDownloaderTest {
             val last = expectMostRecentItem()
             assertEquals(DownloadStatus.COMPLETED, last.status)
             cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `download limit caps complete video transfers`() = testScope.runTest {
+        delaySegmentResponses = true
+        val limitedDownloader = object : KtorHttpDownloader(
+            client = mockClient.asScopedHttpClient(),
+            fileSystem = fileSystem,
+            clock = mockClock,
+            baseSaveDir = Path(tempDir),
+            parentScope = CoroutineScope(SupervisorJob() + testDispatcher),
+            ioDispatcher = testDispatcher,
+            maxConcurrentDownloads = MutableStateFlow(1),
+        ) {
+            override suspend fun executeFfmpeg(args: List<String>): FFmpegResult = FFmpegResult(exitCode = 0)
+        }
+
+        try {
+            val first = limitedDownloader.download("https://example.com/master.m3u8")
+            val second = limitedDownloader.download("https://example.com/master.m3u8")
+
+            limitedDownloader.joinDownload(first)
+            limitedDownloader.joinDownload(second)
+
+            assertEquals(3, maxActiveSegmentRequests)
+            assertEquals(DownloadStatus.COMPLETED, limitedDownloader.getState(first)?.status)
+            assertEquals(DownloadStatus.COMPLETED, limitedDownloader.getState(second)?.status)
+        } finally {
+            limitedDownloader.closeSuspend()
         }
     }
 

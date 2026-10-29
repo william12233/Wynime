@@ -123,6 +123,7 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
         defaultMediaPreferenceState = defaultMediaPreferenceState,
         mediaSelectorSettingsState = mediaSelectorSettingsState,
         videoResolverSettingsState = videoResolverSettingsState,
+        mediaCacheSettingsState = mediaCacheSettingsState,
     )
 
     val debugSettingsState = settingsRepository.debugSettings.stateInBackground(DebugSettings(_placeHolder = -1))

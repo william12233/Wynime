@@ -55,4 +55,7 @@
     <string name="settings_media_auto_cache_partial">Current setting: Auto-cache %d episodes after current progress, </string>
     <string name="settings_media_auto_cache_space">Estimated space usage %s/anime</string>
     <string name="settings_media_sort_tip">Long press to sort, higher-ranked items are prioritized.\nFewer selected items means faster queries.</string>
+    <string name="settings_media_concurrent_downloads">Maximum concurrent video downloads</string>
+    <string name="settings_media_concurrent_downloads_description">Limit how many video cache downloads can transfer at the same time. Each video can still download its segments in parallel.</string>
+    <string name="settings_media_concurrent_downloads_value">%d videos</string>
 </resources>

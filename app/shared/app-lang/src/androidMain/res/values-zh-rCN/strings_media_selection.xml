@@ -55,4 +55,7 @@
     <string name="settings_media_auto_cache_partial">当前设置: 自动缓存观看进度之后的 %d 话, </string>
     <string name="settings_media_auto_cache_space">预计占用空间 %s/番剧</string>
     <string name="settings_media_sort_tip">长按排序，优先选择顺序较高的项目。\n选中数量越少，查询越快。</string>
+    <string name="settings_media_concurrent_downloads">同时下载视频上限</string>
+    <string name="settings_media_concurrent_downloads_description">限制同时进行的视频缓存下载数；每个视频内的分段仍会并行下载。</string>
+    <string name="settings_media_concurrent_downloads_value">%d 个</string>
 </resources>

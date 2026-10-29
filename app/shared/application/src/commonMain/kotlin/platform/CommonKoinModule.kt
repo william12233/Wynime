@@ -5,9 +5,11 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.io.files.Path
@@ -31,6 +33,7 @@ import com.wynime.app.data.network.BangumiSubjectService
 import com.wynime.app.data.network.EpisodeService
 import com.wynime.app.data.network.EpisodeServiceImpl
 import com.wynime.app.data.network.SubjectService
+import com.wynime.app.data.models.preference.MediaCacheSettings
 import com.wynime.app.data.persistent.dataStores
 import com.wynime.app.data.persistent.database.WynimeDatabase
 import com.wynime.app.data.persistent.database.MIGRATION_19_20
@@ -359,6 +362,13 @@ private fun KoinApplication.otherModules(
     if (enableMediaCache) {
         single<HttpDownloader> {
             val settingsRepository = get<SettingsRepository>()
+            val maxConcurrentDownloads = settingsRepository.mediaCacheSettings.flow
+                .map { it.effectiveMaxConcurrentDownloads }
+                .stateIn(
+                    scope = coroutineScope,
+                    started = SharingStarted.Eagerly,
+                    initialValue = MediaCacheSettings.Default.effectiveMaxConcurrentDownloads,
+                )
             KtorPersistentHttpDownloader(
                 dao = database.httpCacheDownloadStateDao(),
                 get<HttpClientProvider>().get(),
@@ -366,6 +376,7 @@ private fun KoinApplication.otherModules(
                 baseSaveDir = get<MediaSaveDirProvider>().saveDir
                     .let { Path(it).resolve(HttpMediaCacheEngine.MEDIA_CACHE_DIR) },
                 scope = coroutineScope,
+                maxConcurrentDownloads = maxConcurrentDownloads,
                 m3u8PlaylistTransformer = M3u8PlaylistTransformer { content, baseUrl ->
                     if (!settingsRepository.videoScaffoldConfig.flow.first().enableExperimentalHlsSegmentFiltering) {
                         content

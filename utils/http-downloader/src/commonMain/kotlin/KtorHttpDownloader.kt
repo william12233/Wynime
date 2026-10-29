@@ -103,7 +103,6 @@ open class KtorHttpDownloader(
     init {
         scope.launch {
             maxConcurrentDownloads
-                .distinctUntilChanged()
                 .collect { downloadConcurrencyLimiter.updateLimit(it) }
         }
     }

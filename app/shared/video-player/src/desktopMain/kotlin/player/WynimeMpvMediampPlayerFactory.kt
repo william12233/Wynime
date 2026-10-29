@@ -18,7 +18,6 @@ class WynimeMpvMediampPlayerFactory(
                 handle.option(key, value)
             }
         }
-        MpvPlaybackGuard(player, player.impl as MPVHandle, parentCoroutineContext)
         return player
     }
 }

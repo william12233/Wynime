@@ -50,11 +50,25 @@ private val sourceTitleMarkerPatterns = listOf(
     "semifinal" to Regex("(?i)semi[- ]?final|半决赛|半決賽|準決勝|準決賽"),
     "worldcup" to Regex("(?i)world[ -]?cup|世界杯|世界盃"),
     "finalseason" to Regex("""(?i)final\s+season|最终季|最終季"""),
+    "newchapter" to Regex(
+        "(?i)新章|new\\s+chapter|迷宫篇|迷宮篇|迷宫编|迷宮編|" +
+            "labyrinth(?:\\s+arc)?|meikyuu(?:[- ]?(?:hen|arc))?",
+    ),
+    "deepchapter" to Regex(
+        "(?i)深章|deep\\s+chapter|灾厄篇|災厄篇|厄灾篇|厄災篇|厄灾编|厄災編|" +
+            "calamity(?:\\s+arc)?",
+    ),
     "movie" to Regex("(?i)movie|剧场版|劇場版|电影|電影"),
     "ova" to Regex("(?i)ova|oad"),
     "special" to Regex("特别篇|特別篇|番外篇|番外"),
 )
-private val arcSourceTitleMarkerNames = setOf("semifinal", "worldcup", "finalseason")
+private val arcSourceTitleMarkerNames = setOf(
+    "semifinal",
+    "worldcup",
+    "finalseason",
+    "newchapter",
+    "deepchapter",
+)
 
 internal enum class SourceTitleVariantKind {
     SEASON,
@@ -158,10 +172,19 @@ internal fun sourceTitleMatch(value: String): SourceTitleMatch {
     val titleMarkers = sourceTitleMarkerPatterns
         .filter { (_, pattern) -> pattern.containsMatchIn(normalized) }
         .mapTo(linkedSetOf()) { (marker, _) -> marker }
-    val canonical = if (parsedVariant == null) {
-        base
-    } else {
-        "$base#${parsedVariant.variant.kind.name.lowercase()}:${parsedVariant.variant.number}"
+    val arcMarkers = titleMarkers.filterTo(linkedSetOf()) { it in arcSourceTitleMarkerNames }
+    val canonical = buildString {
+        append(base)
+        parsedVariant?.let {
+            append('#')
+            append(it.variant.kind.name.lowercase())
+            append(':')
+            append(it.variant.number)
+        }
+        if (arcMarkers.isNotEmpty()) {
+            append("#arc:")
+            append(arcMarkers.joinToString(","))
+        }
     }
     return SourceTitleMatch(
         canonical = canonical,
@@ -173,7 +196,7 @@ internal fun sourceTitleMatch(value: String): SourceTitleMatch {
             normalized.contains("新编集版") ||
             normalized.contains("新編集版") ||
             normalized.contains("新编辑版"),
-        arcMarkers = titleMarkers.filterTo(linkedSetOf()) { it in arcSourceTitleMarkerNames },
+        arcMarkers = arcMarkers,
     )
 }
 

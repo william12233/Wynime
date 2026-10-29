@@ -1,8 +1,10 @@
 package com.wynime.app.domain.sourceplugin
 
+import com.wynime.source.plugin.api.SourceSubject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class SourceSearchQueryTest {
@@ -75,5 +77,39 @@ class SourceSearchQueryTest {
             sourceTitleMatch("進擊的巨人 最終季").canonical,
             sourceTitleMatch("進擊的巨人 The Final Season").canonical,
         )
+    }
+
+    @Test
+    fun `new and deep chapter titles remain distinct`() {
+        val newChapter = sourceTitleMatch(
+            "在地下城尋求邂逅是否搞錯了什麼 第四季 新章 迷宮篇",
+        )
+        val deepChapter = sourceTitleMatch(
+            "在地下城寻找邂逅是否搞错了什么 第四季 深章 灾厄篇",
+        )
+
+        assertEquals(setOf("newchapter"), newChapter.arcMarkers)
+        assertEquals(setOf("deepchapter"), deepChapter.arcMarkers)
+        assertNotEquals(newChapter.canonical, deepChapter.canonical)
+    }
+
+    @Test
+    fun `new chapter selection rejects a deep chapter result`() {
+        val selected = selectBestSourceSubject(
+            subjects = listOf(
+                SourceSubject(
+                    id = "deep",
+                    title = "在地下城寻找邂逅是否搞错了什么 第四季 深章 灾厄篇",
+                ),
+                SourceSubject(
+                    id = "new",
+                    title = "在地下城寻找邂逅是否搞错了什么 第四季 新章 迷宫篇",
+                ),
+            ),
+            queryNames = listOf("在地下城寻找邂逅是否搞错了什么 第四季 新章 迷宫篇"),
+        )
+
+        assertEquals("new", selected?.subject?.id)
+        assertTrue(selected?.isExactTitle == true)
     }
 }

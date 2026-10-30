@@ -144,6 +144,21 @@ open class KtorHttpDownloader(
         logger.info { "KtorHttpDownloader initialized." }
     }
 
+    override suspend fun restoreState(state: DownloadState): Boolean {
+        val restored = stateMutex.withLock {
+            if (_downloadStatesFlow.value.containsKey(state.downloadId)) {
+                true
+            } else {
+                _downloadStatesFlow.update {
+                    put(state.downloadId, DownloadEntry(job = null, state = state))
+                }
+                true
+            }
+        }
+        if (restored) emitProgress(state.downloadId)
+        return restored
+    }
+
     protected val stateMutex = Mutex()
 
     override suspend fun download(

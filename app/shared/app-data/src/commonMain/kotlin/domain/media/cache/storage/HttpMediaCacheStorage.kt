@@ -1,6 +1,7 @@
 package com.wynime.app.domain.media.cache.storage
 
 import androidx.datastore.core.DataStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,8 +35,13 @@ class HttpMediaCacheStorage(
     private val lock = Mutex()
 
     override suspend fun restorePersistedCaches() {
-        val allRecovered = refreshCache()
-        httpEngine.deleteUnusedCaches(allRecovered)
+        try {
+            val allRecovered = refreshCache()
+            httpEngine.deleteUnusedCaches(allRecovered)
+        } finally {
+            // A failed/corrupt record must not leave the local source waiting forever.
+            completeRestoration()
+        }
     }
 
     override suspend fun refreshCache(): List<MediaCache> {
@@ -51,6 +57,8 @@ class HttpMediaCacheStorage(
     ): MediaCache? = withContext(Dispatchers.IO_) {
         try {
             super.restoreFile(origin, metadata, reportRecovered)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             logger.error(e) { "Failed to restore cache for ${origin.mediaId}" }
             null

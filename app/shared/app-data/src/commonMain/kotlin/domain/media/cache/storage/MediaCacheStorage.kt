@@ -1,12 +1,16 @@
 package com.wynime.app.domain.media.cache.storage
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import com.wynime.app.domain.media.cache.MediaCache
@@ -15,7 +19,6 @@ import com.wynime.app.domain.media.cache.engine.MediaCacheEngine
 import com.wynime.app.domain.media.cache.engine.MediaCacheEngineKey
 import com.wynime.app.domain.media.cache.engine.MediaStats
 import com.wynime.app.domain.media.download.MediaDownloadManager
-import com.wynime.app.domain.media.fetch.MediaFetcher
 import com.wynime.app.domain.media.resolver.EpisodeMetadata
 import com.wynime.datasources.api.CachedMedia
 import com.wynime.datasources.api.Media
@@ -47,6 +50,12 @@ interface MediaCacheStorage : AutoCloseable {
 
     val listFlow: Flow<List<MediaCache>>
 
+    /**
+     * Wait until the persisted cache list has been restored before exposing it as a media source.
+     * In-memory/test storages are ready immediately by default.
+     */
+    suspend fun awaitRestoration() = Unit
+
     suspend fun restorePersistedCaches()
 
     suspend fun cache(
@@ -60,6 +69,14 @@ interface MediaCacheStorage : AutoCloseable {
         deleteFirst { it == cache }
 
     suspend fun deleteFirst(predicate: (MediaCache) -> Boolean): Boolean
+}
+
+/**
+ * Internal app-side signal used to refresh a source when its cache candidates change.
+ * This deliberately does not extend the public source-plugin contract.
+ */
+internal interface MediaSourceInvalidation {
+    val invalidations: Flow<Unit>
 }
 
 @Serializable
@@ -91,21 +108,41 @@ interface MediaSaveDirProvider {
     val saveDir: String
 }
 
-class MediaCacheStorageSource(
+internal class MediaCacheStorageSource(
     private val storage: MediaCacheStorage,
     private val displayName: String,
     override val location: MediaSourceLocation = MediaSourceLocation.Local,
-) : MediaSource {
+) : MediaSource, MediaSourceInvalidation {
     override val mediaSourceId: String get() = storage.mediaSourceId
     override val kind: MediaSourceKind get() = MediaSourceKind.LocalCache
+
+    override val invalidations: Flow<Unit> = merge(
+        storage.listFlow.drop(1).map { Unit },
+        storage.listFlow.flatMapLatest { caches ->
+            if (caches.isEmpty()) {
+                emptyFlow<Unit>()
+            } else {
+                caches.map { cache -> cache.canPlay.drop(1).map { Unit } }.merge()
+            }
+        },
+    )
 
     override suspend fun checkConnection(): ConnectionStatus = ConnectionStatus.SUCCESS
 
     override suspend fun fetch(query: MediaFetchRequest): SizedSource<MediaMatch> {
         return SinglePagePagedSource {
+            storage.awaitRestoration()
             storage.listFlow.first().mapNotNull { cache ->
                 val kind = query.matchesSubject(cache.metadata) ?: return@mapNotNull null
-                MediaMatch(cache.getCachedMedia().forRecord(cache.metadata), kind)
+                if (!cache.canPlay.first()) return@mapNotNull null
+                val cachedMedia = try {
+                    cache.getCachedMedia()
+                } catch (cause: CancellationException) {
+                    throw cause
+                } catch (_: Throwable) {
+                    null
+                } ?: return@mapNotNull null
+                MediaMatch(cachedMedia.forRecord(cache.metadata), kind)
             }.asFlow()
         }
     }

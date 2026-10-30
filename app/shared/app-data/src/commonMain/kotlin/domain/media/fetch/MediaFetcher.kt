@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -41,6 +43,7 @@ import com.wynime.app.data.repository.RepositoryRateLimitedException
 import com.wynime.app.data.repository.RepositoryRequestError
 import com.wynime.app.data.repository.RepositoryServiceUnavailableException
 import com.wynime.app.data.repository.RepositoryUnknownException
+import com.wynime.app.domain.media.cache.storage.MediaSourceInvalidation
 import com.wynime.app.domain.mediasource.instance.MediaSourceInstance
 import com.wynime.app.domain.mediasource.web.BlockReason
 import com.wynime.app.domain.mediasource.web.BlockedException
@@ -131,14 +134,16 @@ class MediaSourceMediaFetcher(
         val disabled: Boolean,
         pagedSources: Flow<SizedSource<MediaMatch>>,
         private val flowContext: CoroutineContext,
+        private val invalidations: Flow<Unit>?,
     ) : MediaSourceFetchResult, SynchronizedObject() {
 
         override val state: MutableStateFlow<MediaSourceFetchState> =
             MutableStateFlow(if (disabled) MediaSourceFetchState.Disabled else MediaSourceFetchState.Idle)
         private val restartCount = MutableStateFlow(0)
+        private var restartRequested = false
 
         override val results by lazy {
-            restartCount.flatMapLatest { restartCount ->
+            val sourceResults = restartCount.flatMapLatest { restartCount ->
 
                 state.value.let { currentState ->
 
@@ -244,19 +249,36 @@ class MediaSourceMediaFetcher(
                     is FetchUpdate.Results -> emit(update.results)
                     is FetchUpdate.Completed -> {
 
+                        var restartAfterCompletion = false
                         val published = synchronized(this@MediaSourceResultImpl) {
                             if (update.generation != restartCount.value) false else {
                                 if (update.state is MediaSourceFetchState.Succeed) rateLimitAutoRestartBudget = 1
                                 state.value = update.state
+                                restartAfterCompletion = restartRequested
+                                restartRequested = false
                                 true
                             }
                         }
                         if (published && update.state is MediaSourceFetchState.RateLimited && state.value == update.state) {
                             scheduleRateLimitAutoRestart(update.state)
                         }
+                        if (published && restartAfterCompletion) {
+                            restart()
+                        }
                     }
                 }
-            }.shareIn(
+            }
+            val invalidationAwareResults = invalidations?.let { invalidations ->
+                channelFlow {
+                    launch {
+                        sourceResults.collect { send(it) }
+                    }
+                    invalidations.collect {
+                        requestRestart()
+                    }
+                }
+            } ?: sourceResults
+            invalidationAwareResults.shareIn(
                 CoroutineScope(flowContext), replay = 1, started = SharingStarted.WhileSubscribed(),
             ).onCompletion {
                 if (it == null)
@@ -333,6 +355,37 @@ class MediaSourceMediaFetcher(
 
         private var rateLimitAutoRestartBudget = 1
 
+        private fun restartLocked() {
+            while (true) {
+                when (val value = state.value) {
+                    is MediaSourceFetchState.Completed,
+                    MediaSourceFetchState.Disabled -> {
+                        restartRequested = false
+                        restartCount.value += 1
+
+                        if (state.compareAndSet(value, MediaSourceFetchState.Idle)) {
+                            return
+                        }
+                    }
+
+                    MediaSourceFetchState.Idle,
+                    MediaSourceFetchState.Working -> return
+                }
+            }
+        }
+
+        private fun requestRestart() {
+            synchronized(this) {
+                when (state.value) {
+                    is MediaSourceFetchState.Completed -> restartLocked()
+
+                    MediaSourceFetchState.Disabled -> Unit
+                    MediaSourceFetchState.Working -> restartRequested = true
+                    MediaSourceFetchState.Idle -> Unit
+                }
+            }
+        }
+
         private fun scheduleRateLimitAutoRestart(rateLimited: MediaSourceFetchState.RateLimited) {
             val allowed = synchronized(this) {
                 if (rateLimitAutoRestartBudget <= 0) {
@@ -352,26 +405,8 @@ class MediaSourceMediaFetcher(
         }
 
         override fun restart() {
-
             synchronized(this) {
-                while (true) {
-                    when (val value = state.value) {
-                        is MediaSourceFetchState.Completed,
-                        MediaSourceFetchState.Disabled -> {
-                            restartCount.value += 1
-
-                            if (state.compareAndSet(value, MediaSourceFetchState.Idle)) {
-                                break
-                            }
-
-                        }
-
-                        MediaSourceFetchState.Idle,
-                        MediaSourceFetchState.Working -> {
-                            break
-                        }
-                    }
-                }
+                restartLocked()
             }
         }
 
@@ -425,6 +460,7 @@ class MediaSourceMediaFetcher(
                             instance.source.fetch(it)
                         },
                     flowContext = flowContext,
+                    invalidations = (instance.source as? MediaSourceInvalidation)?.invalidations,
                 )
             }
 

@@ -20,6 +20,12 @@ interface HttpDownloader : AutoCloseable {
 
     suspend fun init()
 
+    /**
+     * Restores an already persisted state without resolving its source or starting a download.
+     * Implementations that do not support this operation return false.
+     */
+    suspend fun restoreState(state: DownloadState): Boolean = false
+
     suspend fun download(
         url: String,
         options: DownloadOptions = DownloadOptions(),

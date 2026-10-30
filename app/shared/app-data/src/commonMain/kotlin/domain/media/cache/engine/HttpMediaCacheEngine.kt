@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -120,17 +121,38 @@ class HttpMediaCacheEngine(
             sort = metadata.episodeSort,
         )
 
-        if (downloader.getState(downloadId) != null) {
+        val currentState = downloader.getState(downloadId)
+        if (currentState != null) {
+            if (currentState.status == DownloadStatus.COMPLETED && !hasOutputFile(currentState)) {
+                logger.warn { "Completed cache output is missing for $downloadId" }
+                return null
+            }
             val cache = HttpMediaCache(origin, downloadId, metadata, episodeMetadata, parentContext)
-            cache.resume()
+            if (currentState.status != DownloadStatus.COMPLETED) {
+                cache.resume()
+            }
 
             logger.info { "Resumed download $downloadId" }
             return cache
         }
 
-        if (dao.getById(downloadId) == null) {
+        val persistedState = dao.getById(downloadId)
+        if (persistedState == null) {
             logger.error { "Failed to find download state $downloadId from persistent storage while recreating cache." }
             return null
+        }
+
+        if (persistedState.status == DownloadStatus.COMPLETED) {
+            if (!hasOutputFile(persistedState)) {
+                logger.warn { "Completed persisted cache output is missing for $downloadId" }
+                return null
+            }
+            if (!downloader.restoreState(persistedState)) {
+                logger.error { "Failed to restore completed download state $downloadId" }
+                return null
+            }
+            // A completed cache is self-contained. Do not resolve its temporary online URL.
+            return HttpMediaCache(origin, downloadId, metadata, episodeMetadata, parentContext)
         }
 
         logger.info { "Download not found, recreating $downloadId" }
@@ -142,6 +164,9 @@ class HttpMediaCacheEngine(
         )
         return HttpMediaCache(origin, downloadId, metadata, episodeMetadata, parentContext)
     }
+
+    private fun hasOutputFile(state: DownloadState): Boolean =
+        Path(saveDir, state.relativeOutputPath).inSystem.exists()
 
     override suspend fun createCache(
         origin: Media,
@@ -231,10 +256,12 @@ class HttpMediaCacheEngine(
         override val state: Flow<MediaCacheState> =
             downloader.getProgressFlow(downloadId).map { it.status.toMediaCacheState() }
 
-        override val canPlay: Flow<Boolean>
-            get() = downloader.getProgressFlow(downloadId).map {
-                it.status == DownloadStatus.COMPLETED
+        override val canPlay: Flow<Boolean> = downloader.downloadStatesFlow
+            .map { states ->
+                val state = states.firstOrNull { it.downloadId == downloadId }
+                state != null && state.status == DownloadStatus.COMPLETED && hasOutputFile(state)
             }
+            .distinctUntilChanged()
 
         override val fileStats: Flow<MediaCache.FileStats> = downloader.getProgressFlow(downloadId).map {
             val totalSize = it.totalBytes
@@ -286,9 +313,13 @@ class HttpMediaCacheEngine(
                 }
 
                 DownloadStatus.COMPLETED -> {
+                    val outputPath = Path(saveDir, state.relativeOutputPath).inSystem
+                    check(outputPath.exists()) {
+                        "Completed download output is missing for $downloadId"
+                    }
                     val actualFileSize = withContext(Dispatchers.IO_) {
                         try {
-                            Path(saveDir, state.relativeOutputPath).inSystem.actualSize().bytes
+                            outputPath.actualSize().bytes
                         } catch (_: Exception) {
                             FileSize.Unspecified
                         }
@@ -297,7 +328,7 @@ class HttpMediaCacheEngine(
                         origin,
                         cacheMediaSourceId = mediaSourceId,
                         download = ResourceLocation.LocalFile(
-                            Path(saveDir, state.relativeOutputPath).inSystem.absolutePath,
+                            outputPath.absolutePath,
                             state.toFileType(),
                             originalUri = state.url,
                         ),

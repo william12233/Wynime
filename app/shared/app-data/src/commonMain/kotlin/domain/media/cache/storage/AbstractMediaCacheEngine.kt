@@ -4,8 +4,10 @@ import androidx.datastore.core.DataStore
 import kotlinx.collections.immutable.minus
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.plus
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -35,6 +37,7 @@ import com.wynime.utils.coroutines.childScope
 import com.wynime.utils.coroutines.update
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.thisLogger
+import com.wynime.utils.logging.warn
 import kotlin.coroutines.CoroutineContext
 
 abstract class AbstractDataStoreMediaCacheStorage(
@@ -54,8 +57,17 @@ abstract class AbstractDataStoreMediaCacheStorage(
         }
 
     protected val restoredLocalFileMediaCacheIds = MutableStateFlow(persistentListOf<String>())
+    private val restorationCompleted = CompletableDeferred<Unit>()
 
-    open suspend fun refreshCache(): List<MediaCache> {
+    override suspend fun awaitRestoration() {
+        restorationCompleted.await()
+    }
+
+    protected fun completeRestoration() {
+        restorationCompleted.complete(Unit)
+    }
+
+    open suspend fun refreshCache(): List<MediaCache> = try {
         val allRecovered = MutableStateFlow(persistentListOf<MediaCache>())
         val metadataFlowSnapshot = metadataFlow.first()
         logger.info { "Restoring media cache, cache count in datastore: ${metadataFlowSnapshot.size}" }
@@ -86,7 +98,9 @@ abstract class AbstractDataStoreMediaCacheStorage(
             allRecovered.value +
                     listFlow.value.filter { it.cacheId in restoredLocalFileMediaCacheIds.value }
         }
-        return allRecovered.value
+        allRecovered.value
+    } finally {
+        completeRestoration()
     }
 
     open suspend fun restoreFile(
@@ -94,14 +108,27 @@ abstract class AbstractDataStoreMediaCacheStorage(
         metadata: MediaCacheMetadata,
         reportRecovered: suspend (MediaCache) -> Unit,
     ): MediaCache? {
-        val cache = engine.restore(origin, metadata, scope.coroutineContext) ?: return null
-        logger.info { "Cache restored: ${origin.mediaId}, result=${cache}" }
+        val cache = try {
+            engine.restore(origin, metadata, scope.coroutineContext)
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Throwable) {
+            logger.warn(cause) { "Failed to restore cache: ${origin.mediaId}" }
+            return null
+        } ?: return null
 
-        reportRecovered(cache)
-        cache.resume()
-
-        logger.info { "Cache resumed: $cache" }
-        return cache
+        return try {
+            cache.resume()
+            reportRecovered(cache)
+            logger.info { "Cache restored and resumed: $cache" }
+            cache
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Throwable) {
+            logger.warn(cause) { "Failed to resume restored cache: ${origin.mediaId}" }
+            runCatching { cache.close() }
+            null
+        }
     }
 
     override val listFlow: MutableStateFlow<List<MediaCache>> = MutableStateFlow(emptyList())

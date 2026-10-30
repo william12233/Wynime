@@ -150,7 +150,9 @@ private class TestStorage(
     displayName = "Test Storage",
     parentCoroutineContext = parentCoroutineContext,
 ) {
-    override suspend fun restorePersistedCaches() = Unit
+    override suspend fun restorePersistedCaches() {
+        completeRestoration()
+    }
 }
 
 private fun testCache(

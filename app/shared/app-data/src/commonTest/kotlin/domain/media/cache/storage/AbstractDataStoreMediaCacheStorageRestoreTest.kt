@@ -43,7 +43,9 @@ class AbstractDataStoreMediaCacheStorageRestoreTest {
         displayName = "Test Storage",
         parentCoroutineContext = parentCoroutineContext,
     ) {
-        override suspend fun restorePersistedCaches() = Unit
+        override suspend fun restorePersistedCaches() {
+            completeRestoration()
+        }
     }
 
     private object LocalFileEngine : MediaCacheEngine by DummyMediaCacheEngine("test-storage") {

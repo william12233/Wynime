@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.io.files.Path
+import kotlinx.io.files.SystemTemporaryDirectory
 import com.wynime.app.data.persistent.database.dao.HttpCacheDownloadStateDao
 import com.wynime.app.domain.media.TestMediaList
 import com.wynime.app.domain.media.player.data.MediaDataProvider
@@ -23,11 +24,17 @@ import com.wynime.utils.httpdownloader.DownloadState
 import com.wynime.utils.httpdownloader.DownloadStatus
 import com.wynime.utils.httpdownloader.HttpDownloader
 import com.wynime.utils.httpdownloader.MediaType
+import com.wynime.utils.io.createDirectories
+import com.wynime.utils.io.deleteRecursively
+import com.wynime.utils.io.inSystem
+import com.wynime.utils.io.resolve
+import com.wynime.utils.io.writeText
 import org.openani.mediamp.source.MediaExtraFiles
 import org.openani.mediamp.source.UriMediaData
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class HttpDownloadIdentityTest {
@@ -94,6 +101,52 @@ class HttpDownloadIdentityTest {
     }
 
     @Test
+    fun `completed persisted cache restores offline without resolving its source`() = runTest {
+        val downloader = FakeDownloader()
+        val saveDir = SystemTemporaryDirectory.resolve("completed-cache-${kotlin.random.Random.nextLong()}")
+        saveDir.inSystem.createDirectories()
+        try {
+            val creationEngine = engine(
+                downloader = downloader,
+                saveDir = saveDir,
+            )
+            val media = TestMediaList.first().copy(
+                kind = MediaSourceKind.WEB,
+                download = ResourceLocation.HttpStreamingFile("https://example.com/offline.mp4"),
+            )
+            val metadata = testMetadata(1)
+            creationEngine.createCache(media, metadata, testEpisodeMetadata(1), backgroundScope.coroutineContext)
+            val downloadId = downloader.states.keys.single()
+            val completedState = downloader.states.getValue(downloadId).copy(status = DownloadStatus.COMPLETED)
+            downloader.states[downloadId] = completedState
+            downloader.persistedOnly += downloadId
+            saveDir.resolve(completedState.relativeOutputPath).inSystem.writeText("cached")
+
+            val resolveCalls = mutableListOf<Media>()
+            val offlineEngine = engine(
+                downloader = downloader,
+                saveDir = saveDir,
+                resolver = object : MediaResolver by TestUniversalMediaResolver {
+                    override suspend fun resolve(media: Media, episode: EpisodeMetadata): MediaDataProvider<*> {
+                        resolveCalls += media
+                        error("completed cache must not resolve an online source")
+                    }
+                },
+            )
+
+            val restored = offlineEngine.restore(media, metadata, backgroundScope.coroutineContext)
+
+            assertNotNull(restored)
+            assertTrue(resolveCalls.isEmpty())
+            assertNotNull(restored.getCachedMedia())
+            assertEquals(DownloadStatus.COMPLETED, downloader.states.getValue(downloadId).status)
+            assertTrue(downloadId !in downloader.persistedOnly)
+        } finally {
+            saveDir.inSystem.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `resuming a paused cache refreshes the temporary media source`() = runTest {
         val downloader = FakeDownloader()
         val engine = engine(downloader)
@@ -147,16 +200,21 @@ class HttpDownloadIdentityTest {
     private fun testEpisodeMetadata(episodeId: Int) =
         EpisodeMetadata("Episode $episodeId", EpisodeSort(episodeId), EpisodeSort(episodeId))
 
-    private fun engine(downloader: FakeDownloader) = HttpMediaCacheEngine(
-        downloader,
-        Path("/unused-test-downloads"),
-        object : MediaResolver by TestUniversalMediaResolver {
+    private fun engine(
+        downloader: FakeDownloader,
+        saveDir: Path = Path("/unused-test-downloads"),
+        resolver: MediaResolver = object : MediaResolver by TestUniversalMediaResolver {
             override suspend fun resolve(media: Media, episode: EpisodeMetadata): MediaDataProvider<*> =
                 object : MediaDataProvider<UriMediaData> {
                     override val extraFiles = MediaExtraFiles.EMPTY
-                    override suspend fun open(scopeForCleanup: CoroutineScope) = UriMediaData("https://example.com/${episode.sort}.mp4")
+                    override suspend fun open(scopeForCleanup: CoroutineScope) =
+                        UriMediaData("https://example.com/${episode.sort}.mp4")
                 }
         },
+    ) = HttpMediaCacheEngine(
+        downloader,
+        saveDir,
+        resolver,
         "test-storage",
         object : HttpCacheDownloadStateDao {
             override fun getAll() = flowOf(downloader.persisted.values.toList())
@@ -191,6 +249,11 @@ private class FakeDownloader : HttpDownloader {
     override val downloadStatesFlow: Flow<List<DownloadState>> = flowOf(emptyList())
     override fun getProgressFlow(downloadId: DownloadId): Flow<DownloadProgress> = flowOf()
     override suspend fun init() = Unit
+    override suspend fun restoreState(state: DownloadState): Boolean {
+        states[state.downloadId] = state
+        persistedOnly.remove(state.downloadId)
+        return true
+    }
     override suspend fun download(url: String, options: DownloadOptions): DownloadId = error("unused")
     override suspend fun downloadWithId(downloadId: DownloadId, url: String, options: DownloadOptions): DownloadState {
         if (persistedOnly.remove(downloadId)) recreated += downloadId

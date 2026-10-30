@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.io.files.FileSystem
 import kotlinx.io.files.Path
@@ -50,6 +51,8 @@ class KtorPersistentHttpDownloader(
     m3u8PlaylistTransformer = m3u8PlaylistTransformer,
     maxConcurrentDownloads = maxConcurrentDownloads,
 ) {
+    private val persistenceMutex = Mutex()
+
     override suspend fun init() {
         super.init()
         restoreStates()
@@ -84,32 +87,30 @@ class KtorPersistentHttpDownloader(
     }
 
     override fun onCreateDownloadState(state: DownloadState) {
-        scope.launch {
-            dao.upsert(state)
-        }
+        persist { dao.upsert(state) }
     }
 
     override fun onUpdateDownloadState(downloadId: DownloadId, state: DownloadState) {
-        scope.launch {
-            dao.upsert(state)
-        }
+        persist { dao.upsert(state) }
     }
 
     override fun onUpdateDownloadStatus(downloadId: DownloadId, status: DownloadStatus) {
-        scope.launch {
-            dao.updateStatus(downloadId, status)
-        }
+        persist { dao.updateStatus(downloadId, status) }
     }
 
     override fun onRemoveAllDownloads() {
-        scope.launch {
-            dao.deleteAll()
-        }
+        persist { dao.deleteAll() }
     }
 
     override fun onRemoveDownload(downloadId: DownloadId) {
+        persist { dao.deleteById(downloadId) }
+    }
+
+    private fun persist(action: suspend () -> Unit) {
         scope.launch {
-            dao.deleteById(downloadId)
+            persistenceMutex.withLock {
+                action()
+            }
         }
     }
 

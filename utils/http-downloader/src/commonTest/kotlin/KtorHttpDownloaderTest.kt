@@ -131,6 +131,26 @@ class KtorHttpDownloaderTest {
                             )
                         }
 
+                        "https://example.com/origin-fallback.m3u8" -> {
+                            respond(
+                                content = ORIGIN_FALLBACK_PLAYLIST,
+                                status = HttpStatusCode.OK,
+                                headers = headersOf(HttpHeaders.ContentType, "application/vnd.apple.mpegurl"),
+                            )
+                        }
+
+                        "https://example.com/origin-fallback.ts" -> {
+                            if (request.headers["Origin"] != null) {
+                                respond("CORS policy blocked", HttpStatusCode.Forbidden)
+                            } else {
+                                respond(
+                                    content = byteArrayOf(1, 2, 3, 4),
+                                    status = HttpStatusCode.OK,
+                                    headers = headersOf(HttpHeaders.ContentType, "video/mp2t"),
+                                )
+                            }
+                        }
+
                         "https://example.com/bad-segments.m3u8" -> {
 
                             respond(
@@ -671,6 +691,34 @@ class KtorHttpDownloaderTest {
     }
 
     @Test
+    fun `pause and source refresh - should retain resumable segments`() = testScope.runTest {
+        delaySegmentResponses = true
+        val downloadId = DownloadId("refreshable")
+        downloader.downloadWithId(
+            downloadId = downloadId,
+            url = "https://example.com/master.m3u8",
+        )
+
+        assertTrue(downloader.pause(downloadId))
+        val beforeRefresh = assertNotNull(downloader.getState(downloadId))
+        assertEquals(3, beforeRefresh.segments.size)
+
+        assertTrue(
+            downloader.replaceSource(
+                downloadId = downloadId,
+                url = "https://example.com/playlist.m3u8",
+            ),
+        )
+
+        val afterRefresh = assertNotNull(downloader.getState(downloadId))
+        assertEquals(DownloadStatus.PAUSED, afterRefresh.status)
+        assertEquals(beforeRefresh.segments.size, afterRefresh.segments.size)
+        assertEquals(beforeRefresh.totalSegments, afterRefresh.totalSegments)
+        assertEquals(beforeRefresh.downloadedBytes, afterRefresh.downloadedBytes)
+        assertTrue(afterRefresh.segments.all { it.url.startsWith("https://example.com/segment") })
+    }
+
+    @Test
     fun `cancel - should stop download and mark canceled`() = testScope.runTest {
         val downloadId = DownloadId("cancellable")
         downloader.downloadWithId(
@@ -1033,6 +1081,58 @@ class KtorHttpDownloaderTest {
     }
 
     @Test
+    fun `download segment - should append to an existing partial range`() = testScope.runTest {
+        val segmentDownloader = object : KtorHttpDownloader(
+            client = mockClient.asScopedHttpClient(),
+            fileSystem = fileSystem,
+            clock = mockClock,
+            baseSaveDir = Path(tempDir),
+            parentScope = CoroutineScope(SupervisorJob() + testDispatcher),
+            ioDispatcher = testDispatcher,
+        ) {
+            suspend fun downloadPartial(segment: SegmentInfo): Long = downloadSingleSegment(segment, DownloadOptions())
+        }
+        val partialPath = Path("$tempDir/partial.part")
+        writeBytes(partialPath, byteArrayOf(0, 1))
+
+        try {
+            val size = segmentDownloader.downloadPartial(
+                SegmentInfo(
+                    index = 0,
+                    url = "https://example.com/sample.mp4",
+                    isDownloaded = false,
+                    byteSize = 4,
+                    relativeTempFilePath = "partial.part",
+                    rangeStart = 0,
+                    rangeEnd = 3,
+                ),
+            )
+            assertEquals(4, size)
+            assertEquals(listOf<Byte>(0, 1, 2, 3), fileSystem.read(partialPath) { readByteArray().toList() })
+        } finally {
+            segmentDownloader.closeSuspend()
+        }
+    }
+
+    @Test
+    fun `download - should retry a CORS blocked media request without Origin`() = testScope.runTest {
+        val downloadId = downloader.downloadWithId(
+            downloadId = DownloadId("origin-fallback"),
+            url = "https://example.com/origin-fallback.m3u8",
+            options = DownloadOptions(
+                headers = mapOf("Origin" to "https://example.com"),
+                maxRetriesPerSegment = 2,
+                baseRetryDelayMillis = 0,
+            ),
+        )?.downloadId
+        assertNotNull(downloadId)
+        downloader.joinDownload(downloadId)
+
+        assertEquals(DownloadStatus.COMPLETED, downloader.getState(downloadId)?.status)
+        assertEquals(2, attempts["https://example.com/origin-fallback.ts"])
+    }
+
+    @Test
     fun `cancel - mp4 file should stop download and mark canceled`() = testScope.runTest {
         val downloadId = downloader.download(
             url = "https://example.com/sample.mp4",
@@ -1250,6 +1350,7 @@ class KtorHttpDownloaderTest {
         downloader.downloadWithId(
             url = "https://example.com/unstable-playlist1.m3u8",
             downloadId = downloadId,
+            options = DownloadOptions(maxRetriesPerSegment = 1, baseRetryDelayMillis = 0),
         )
         downloader.joinDownload(downloadId)
 
@@ -1278,6 +1379,7 @@ class KtorHttpDownloaderTest {
         val failedState = downloader.getState(downloadId)
         assertNotNull(failedState)
         assertEquals(DownloadStatus.FAILED, failedState.status, "Expected first attempt to fail")
+        assertEquals(5, attempts["https://example.com/unstable-playlist2.m3u8"])
 
         val resumed = downloader.resume(downloadId)
         assertFalse(resumed)
@@ -1286,6 +1388,7 @@ class KtorHttpDownloaderTest {
         val finalState = downloader.getState(downloadId)
         assertNotNull(finalState)
         assertEquals(DownloadStatus.FAILED, finalState.status, "Expected to remain FAILED after second fail")
+        assertEquals(10, attempts["https://example.com/unstable-playlist2.m3u8"])
         assertFalse(fileSystem.exists(Path("$tempDir/unstable2.mp4")), "File should not exist after repeated failures")
     }
 
@@ -1444,6 +1547,15 @@ class KtorHttpDownloaderTest {
             segment2.ts
             #EXTINF:4.0,
             segment3.ts
+            #EXT-X-ENDLIST
+        """
+
+        private const val ORIGIN_FALLBACK_PLAYLIST = """
+            #EXTM3U
+            #EXT-X-TARGETDURATION:5
+            #EXT-X-MEDIA-SEQUENCE:0
+            #EXTINF:4.0,
+            origin-fallback.ts
             #EXT-X-ENDLIST
         """
 

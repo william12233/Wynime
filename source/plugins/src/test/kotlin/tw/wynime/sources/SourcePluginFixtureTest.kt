@@ -105,7 +105,7 @@ class SourcePluginFixtureTest {
             assertEquals("主線", channel.channel.displayName)
             assertEquals("https://cdn.example/next.m3u8", resolved.url)
             assertEquals(ResolvedMediaFormat.HLS, resolved.format)
-            assertEquals("https://next.xifanacg.com", resolved.requestHeaders()["Origin"])
+            assertTrue(resolved.requestHeaders().keys.none { it.equals("Origin", ignoreCase = true) })
             assertEquals("https://next.xifanacg.com/anime/42/play/1?source=main", resolved.requestHeaders()["Referer"])
         } finally {
             plugin.close()

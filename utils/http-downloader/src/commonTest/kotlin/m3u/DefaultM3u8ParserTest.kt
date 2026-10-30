@@ -361,4 +361,31 @@ class DefaultM3u8ParserTest {
 
         assertEquals(expected, exported.trimEnd())
     }
+
+    @Test
+    fun `export - can strip byte ranges when downloaded segments are already extracted`() {
+        val content = """
+            #EXTM3U
+            #EXT-X-VERSION:4
+            #EXT-X-TARGETDURATION:10
+            #EXTINF:10.0,
+            #EXT-X-BYTERANGE:10@0
+            segment.ts
+            #EXTINF:10.0,
+            #EXT-X-BYTERANGE:20
+            segment.ts
+            #EXT-X-ENDLIST
+        """.trimIndent()
+
+        val resolved = parser.parseResolvedMediaPlaylist(content, "https://example.com/playlist.m3u8")
+        val exported = resolved.export(
+            resolveSegmentUri = { _, index -> "local/$index.ts" },
+            resolveKeyUri = { error("No key expected") },
+            stripByteRanges = true,
+        )
+
+        assertFalse(exported.contains("#EXT-X-BYTERANGE:"))
+        assertTrue(exported.contains("local/0.ts"))
+        assertTrue(exported.contains("local/1.ts"))
+    }
 }

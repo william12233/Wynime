@@ -149,7 +149,6 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
             request = request,
             pageUrl = page.finalUrl,
             rawUrl = mediaUrl,
-            headers = mapOf("Origin" to rootUrl),
             referer = page.finalUrl,
         )
     }

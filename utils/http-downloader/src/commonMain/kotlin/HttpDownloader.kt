@@ -35,6 +35,8 @@ interface HttpDownloader : AutoCloseable {
 
     /**
      * Replaces a temporary media URL before resuming a persisted download.
+     * Implementations should retain verified and partial segment files whenever
+     * the refreshed source still describes the same media.
      * Implementations that cannot refresh a source may return false.
      */
     suspend fun replaceSource(
@@ -191,6 +193,7 @@ data class DownloadOptions(
     val readTimeoutMs: Long = 30_000,
     val autoSaveIntervalMs: Long = 5_000,
     val headers: Map<String, String> = emptyMap(),
-    val maxRetriesPerSegment: Int = 100,
+    /** Total attempts for one request, including the first attempt. */
+    val maxRetriesPerSegment: Int = 5,
     val baseRetryDelayMillis: Long = 1000L,
 )

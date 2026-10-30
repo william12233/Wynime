@@ -35,6 +35,7 @@ fun M3u8Parser.parseResolvedMediaPlaylist(content: String, baseUrl: String): Res
 fun ResolvedMediaPlaylist.export(
     resolveSegmentUri: (segment: MediaSegment, index: Int) -> String,
     resolveKeyUri: (encryption: MediaSegmentEncryption) -> String,
+    stripByteRanges: Boolean = false,
 ): String {
     val segmentEncryptions = playlist.segments.mapNotNull { it.encryption }
     val orderedUniqueEncryptions = segmentEncryptions.distinctBy { listOf(it.method, it.uri, it.iv) }
@@ -53,6 +54,8 @@ fun ResolvedMediaPlaylist.export(
                         resolveKeyUri = resolveKeyUri,
                     ),
                 )
+
+                stripByteRanges && trimmed.startsWith("#EXT-X-BYTERANGE:") -> Unit
 
                 trimmed.isEmpty() || trimmed.startsWith("#") -> appendLine(line)
                 else -> {

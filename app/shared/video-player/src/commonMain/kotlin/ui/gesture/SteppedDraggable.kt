@@ -32,7 +32,7 @@ enum class StepDirection {
     BACKWARD,
 }
 
-private class SteppedDraggableStateImpl(
+internal class SteppedDraggableStateImpl(
     @MainThread private val onStep: (StepDirection) -> Unit,
     private val stepSizePx: Float,
 ) : SteppedDraggableState {
@@ -46,11 +46,13 @@ private class SteppedDraggableStateImpl(
             offset.y
         }
         currentOffset = startOffset
+        lastCallbackOffset = 0f
     }
 
     override fun onDragStopped(velocity: Float) {
         startOffset = Float.NaN
         currentOffset = 0f
+        lastCallbackOffset = 0f
     }
 
     override fun dispatchRawDelta(delta: Float) {

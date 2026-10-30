@@ -55,4 +55,7 @@
     <string name="settings_media_auto_cache_partial">當前設置: 自動緩存觀看進度之後的 %d 話, </string>
     <string name="settings_media_auto_cache_space">預計佔用空間 %s/番劇</string>
     <string name="settings_media_sort_tip">長按排序，優先選擇順序較高的項目。\n選中數量越少，查詢越快。</string>
+    <string name="settings_media_concurrent_downloads">同時下載影片上限</string>
+    <string name="settings_media_concurrent_downloads_description">限制同時進行的影片快取下載數；每部影片內的分段仍會並行下載。</string>
+    <string name="settings_media_concurrent_downloads_value">%d 部</string>
 </resources>

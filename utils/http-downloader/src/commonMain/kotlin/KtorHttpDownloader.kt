@@ -24,6 +24,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.asSharedFlow
@@ -90,9 +92,20 @@ open class KtorHttpDownloader(
     parentScope: CoroutineScope,
     private val ioDispatcher: CoroutineContext = Dispatchers.IO_,
     private val m3u8PlaylistTransformer: M3u8PlaylistTransformer? = null,
+    private val maxConcurrentDownloads: StateFlow<Int> = MutableStateFlow(
+        DownloadConcurrencyLimiter.DEFAULT_MAX_CONCURRENT_DOWNLOADS,
+    ),
 ) : HttpDownloader {
 
     protected val scope = parentScope.childScope()
+    private val downloadConcurrencyLimiter = DownloadConcurrencyLimiter(maxConcurrentDownloads.value)
+
+    init {
+        scope.launch {
+            maxConcurrentDownloads
+                .collect { downloadConcurrencyLimiter.updateLimit(it) }
+        }
+    }
 
     private val _progressFlow = MutableSharedFlow<DownloadProgress>(
         replay = 1,
@@ -945,6 +958,13 @@ open class KtorHttpDownloader(
 
     @OptIn(DelicateCoroutinesApi::class, ExperimentalAtomicApi::class)
     protected suspend fun downloadSegments(downloadId: DownloadId, options: DownloadOptions) {
+        downloadConcurrencyLimiter.withPermit {
+            downloadSegmentsWithPermit(downloadId, options)
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class, ExperimentalAtomicApi::class)
+    private suspend fun downloadSegmentsWithPermit(downloadId: DownloadId, options: DownloadOptions) {
         val snapshot = getState(downloadId) ?: return
         val canFallbackFromRange = snapshot.mediaType in setOf(MediaType.MP4, MediaType.MKV) &&
             snapshot.segments.any { it.rangeStart != null || it.rangeEnd != null }

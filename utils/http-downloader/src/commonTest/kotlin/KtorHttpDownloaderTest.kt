@@ -785,7 +785,10 @@ class KtorHttpDownloaderTest {
             ioDispatcher = testDispatcher,
             maxConcurrentDownloads = MutableStateFlow(1),
         ) {
-            override suspend fun executeFfmpeg(args: List<String>): FFmpegResult = FFmpegResult(exitCode = 0)
+            override suspend fun executeFfmpeg(args: List<String>): FFmpegResult {
+                writeBytes(Path(args.last()), byteArrayOf(0x00))
+                return FFmpegResult(exitCode = 0)
+            }
         }
 
         try {

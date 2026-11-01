@@ -28,7 +28,7 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 | ID | 程式碼修訂次數 | 版本 |
 | --- | ---: | --- |
 | `eacg` | 7 | `1.0.35` |
-| `next` | 7 | `1.7.0` |
+| `next` | 7 | `1.7.1` |
 | `dm1` | 6 | `1.6.0` |
 | `girigiri` | 6 | `1.6.0` |
 | `2rk` | 6 | `1.6.0` |

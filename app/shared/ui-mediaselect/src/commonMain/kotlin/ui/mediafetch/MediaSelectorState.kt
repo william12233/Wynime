@@ -48,6 +48,24 @@ import com.wynime.source.plugin.api.SourceResultStatus
 import com.wynime.utils.coroutines.flows.flowOfEmptyList
 import com.wynime.utils.platform.annotations.TestOnly
 
+internal data class MediaSelectorDisplayCandidates(
+    val candidates: List<MaybeExcludedMedia>,
+    val isFallbackActive: Boolean,
+)
+
+internal fun chooseMediaSelectorDisplayCandidates(
+    visibleCandidates: List<MaybeExcludedMedia>,
+    visiblePreferred: List<MaybeExcludedMedia>,
+): MediaSelectorDisplayCandidates {
+    val hasPreferredIncluded = visiblePreferred.any { it is MaybeExcludedMedia.Included }
+    val hasFallbackIncluded = visibleCandidates.any { it is MaybeExcludedMedia.Included }
+    val isFallbackActive = !hasPreferredIncluded && hasFallbackIncluded
+    return MediaSelectorDisplayCandidates(
+        candidates = if (isFallbackActive) visibleCandidates else visiblePreferred,
+        isFallbackActive = isFallbackActive,
+    )
+}
+
 @Composable
 fun rememberMediaSelectorState(
     mediaSourceInfoProvider: MediaSourceInfoProvider,
@@ -129,6 +147,7 @@ class MediaSelectorState(
     data class Presentation(
         val filteredCandidates: List<MaybeExcludedMedia>,
         val preferredCandidates: List<Media>,
+        val displayCandidates: List<Media>,
         val groupedMediaListIncluded: List<MediaGroup>,
         val groupedMediaListExcluded: List<MediaGroup>,
         val selected: Media?,
@@ -141,6 +160,7 @@ class MediaSelectorState(
         val selectedWebSource: WebSource?,
         val selectedWebSourceChannel: WebSourceChannel?,
         val isPlaceholder: Boolean = false,
+        val isFallbackActive: Boolean = false,
     )
 
     private val groupStates: SnapshotStateMap<MediaGroupId, MediaGroupState> = SnapshotStateMap()
@@ -184,11 +204,13 @@ class MediaSelectorState(
 
         val visibleCandidates = filteredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
         val visiblePreferred = preferredCandidates.filterNot { it.exclusionReason is MediaExclusionReason.EpisodeMismatch }
+        val display = chooseMediaSelectorDisplayCandidates(visibleCandidates, visiblePreferred)
 
-        val (groupsExcluded, groupsIncluded) = MediaGrouper.buildGroups(visiblePreferred).partition { it.isExcluded }
+        val (groupsExcluded, groupsIncluded) = MediaGrouper.buildGroups(display.candidates).partition { it.isExcluded }
         Presentation(
             visibleCandidates,
             visiblePreferred.mapNotNull { it.result },
+            display.candidates.mapNotNull { it.result },
             groupsIncluded,
             groupsExcluded,
             selected,
@@ -196,12 +218,13 @@ class MediaSelectorState(
             webSources,
             selectedWebSource = webSources.find { source -> source.channels.any { it.original == selected } },
             selectedWebSourceChannel = webSources.firstNotNullOfOrNull { source -> source.channels.find { it.original == selected } },
+            isFallbackActive = display.isFallbackActive,
         )
     }.stateIn(
         backgroundScope,
         started = SharingStarted.WhileSubscribed(),
         Presentation(
-            emptyList(), emptyList(), emptyList(), emptyList(), null,
+            emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), null,
             alliance = MediaPreferenceItemState.Presentation.placeholder(),
             resolution = MediaPreferenceItemState.Presentation.placeholder(),
             subtitleLanguageId = MediaPreferenceItemState.Presentation.placeholder(),

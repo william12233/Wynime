@@ -1037,6 +1037,7 @@
     <string name="media_selector_view_simple_mode">Simple mode</string>
     <string name="media_selector_view_detailed_mode">Detailed mode</string>
     <string name="media_selector_view_filtered_count">Filtered %1$d/%2$d resources</string>
+    <string name="media_selector_view_fallback">Preferred source has no result for this episode; showing other available sources</string>
     <string name="media_selector_view_show_excluded">Show excluded resources (%1$d)</string>
     <string name="subject_episode_default_title">Episode %1$s</string>
     <string name="subject_episode_cached">Cached</string>

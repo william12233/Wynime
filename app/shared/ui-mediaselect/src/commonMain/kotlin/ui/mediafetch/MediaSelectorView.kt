@@ -49,6 +49,7 @@ import com.wynime.app.ui.foundation.icons.EditSquare
 import com.wynime.app.ui.foundation.ifThen
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.media_selector_view_detailed_mode
+import com.wynime.app.ui.lang.media_selector_view_fallback
 import com.wynime.app.ui.lang.media_selector_view_filtered_count
 import com.wynime.app.ui.lang.media_selector_view_show_excluded
 import com.wynime.app.ui.lang.media_selector_view_simple_mode
@@ -191,9 +192,10 @@ private fun MediaSelectorDetailedList(
     var showExcluded by rememberSaveable { mutableStateOf(false) }
     val filteredCountText = stringResource(
         Lang.media_selector_view_filtered_count,
-        presentation.preferredCandidates.size,
+        presentation.displayCandidates.size,
         presentation.filteredCandidates.size,
     )
+    val fallbackText = stringResource(Lang.media_selector_view_fallback)
     val showExcludedText = stringResource(
         Lang.media_selector_view_show_excluded,
         presentation.groupedMediaListExcluded.size,
@@ -216,6 +218,13 @@ private fun MediaSelectorDetailedList(
             filteredCountText,
             style = MaterialTheme.typography.titleMedium,
         )
+        if (presentation.isFallbackActive) {
+            Text(
+                fallbackText,
+                color = MaterialTheme.colorScheme.secondary,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         MediaSelectorFilters(
             resolution = state.resolution,
             subtitleLanguageId = state.subtitleLanguageId,

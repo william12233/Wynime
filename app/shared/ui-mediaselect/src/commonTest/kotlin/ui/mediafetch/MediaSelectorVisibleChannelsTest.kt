@@ -2,6 +2,8 @@ package com.wynime.app.ui.mediafetch
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import com.wynime.app.domain.media.TestMediaList
 import com.wynime.app.domain.media.selector.MatchMetadata
 import com.wynime.app.domain.media.selector.MaybeExcludedMedia
@@ -9,6 +11,32 @@ import com.wynime.app.domain.media.selector.MediaExclusionReason
 import com.wynime.app.domain.media.selector.TestMatchMetadata
 
 class MediaSelectorVisibleChannelsTest {
+    @Test
+    fun `detailed mode falls back to current candidates when preference has no included result`() {
+        val candidates = listOf(
+            MaybeExcludedMedia.Included(TestMediaList[0], TestMatchMetadata),
+            MaybeExcludedMedia.Included(TestMediaList[1], TestMatchMetadata),
+        )
+
+        val display = chooseMediaSelectorDisplayCandidates(candidates, emptyList())
+
+        assertEquals(candidates, display.candidates)
+        assertTrue(display.isFallbackActive)
+    }
+
+    @Test
+    fun `detailed mode keeps preferred candidates when one is included`() {
+        val candidates = listOf(
+            MaybeExcludedMedia.Included(TestMediaList[0], TestMatchMetadata),
+            MaybeExcludedMedia.Included(TestMediaList[1], TestMatchMetadata),
+        )
+
+        val display = chooseMediaSelectorDisplayCandidates(candidates, candidates.take(1))
+
+        assertEquals(candidates.take(1), display.candidates)
+        assertFalse(display.isFallbackActive)
+    }
+
     @Test
     fun `simple mode excludes other season candidates from source channels`() {
         val candidates = listOf(

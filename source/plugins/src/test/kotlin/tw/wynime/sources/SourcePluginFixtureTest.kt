@@ -113,6 +113,42 @@ class SourcePluginFixtureTest {
     }
 
     @Test
+    fun `next keeps episode 51 from the current SSR subject data and resolves mp4`() = runBlocking {
+        val plugin = NextEntryPoint().create(FixtureContext("next") { request ->
+            when {
+                request.url.contains("/search?") -> "<a href=\"/anime/1137\">境界触发者</a>"
+                request.url.contains("/anime/1137/play/18206") -> NEXT_51_PLAY
+                request.url.endsWith("/anime/1137") -> NEXT_51_SUBJECT
+                request.url.contains("/rest/v1/rpc/search_animes") -> "{\"id\":1137,\"title\":\"境界触发者\"}"
+                request.url.contains("/functions/v1/issue-web-playback") ->
+                    "{\"url\":\"https://cdn.example/world-trigger-51.mp4\"}"
+                else -> "<html><body>ok</body></html>"
+            }
+        })
+        try {
+            val subject = plugin.search(SourceSearchRequest("境界觸發者")).single()
+            val details = plugin.getSubject(subject.id)
+            val channel = details.channels.single()
+            val episode = channel.episodes.single { it.id == "18206" }
+            val resolved = plugin.resolve(SourceResolveRequest(subject.id, channel.channel.id, episode.id))
+
+            assertEquals("1137", subject.id)
+            assertEquals("xfy2", channel.channel.id)
+            assertEquals(listOf("18205", "18206"), channel.episodes.map { it.id })
+            assertEquals("18206", episode.id)
+            assertEquals(51f, episode.episodeSort)
+            assertEquals("https://cdn.example/world-trigger-51.mp4", resolved.url)
+            assertEquals(ResolvedMediaFormat.MP4, resolved.format)
+            assertEquals(
+                "https://next.xifanacg.com/anime/1137/play/18206?source=xfy2",
+                resolved.requestHeaders()["Referer"],
+            )
+        } finally {
+            plugin.close()
+        }
+    }
+
+    @Test
     fun `next rejects a playback page when the API has no valid media`() = runBlocking {
         val plugin = NextEntryPoint().create(FixtureContext("next") { request ->
             when {
@@ -291,6 +327,13 @@ class SourcePluginFixtureTest {
         """
 
         const val NEXT_PLAY = NEXT_SUBJECT
+
+        const val NEXT_51_SUBJECT = """
+            <script>self.__next_f.push([1,"{\"sources\":[{\"id\":5,\"code\":\"xfy2\",\"name\":\"稀飯舊番主線-1\",\"episodes\":[{\"id\":18206,\"kind\":\"main\",\"title\":\"杰诺的三离子兵\",\"episode_number\":51}]}]"])</script>
+            <a href="/anime/1137/play/18205/?foo=1&source=xfy2">第50集 来自异世界的逃亡者</a>
+        """
+
+        const val NEXT_51_PLAY = NEXT_51_SUBJECT
 
         const val GIRIGIRI_SEARCH = """
             {"list":[{"vod_id":1222,"vod_name":"Re：从零开始的异世界生活"}]}

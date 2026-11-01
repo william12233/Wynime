@@ -1064,6 +1064,7 @@
     <string name="media_selector_view_simple_mode">简单模式</string>
     <string name="media_selector_view_detailed_mode">详细模式</string>
     <string name="media_selector_view_filtered_count">筛选到 %1$d/%2$d 条资源</string>
+    <string name="media_selector_view_fallback">偏好来源没有这一集，已自动显示其他可用来源</string>
     <string name="media_selector_view_show_excluded">显示已被排除的资源 (%1$d)</string>
     <string name="subject_episode_default_title">第 %1$s 话</string>
     <string name="subject_episode_cached">已缓存</string>

@@ -15,12 +15,12 @@
   "artifacts": {
     "desktop": {
       "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-next-v1.7.1/source/plugins/artifacts/source-next.jar",
-      "sha256": "0a236fc3cc64eeb5b5e49ca12bee4db6acb15d9159ff8f9dc9bb8170547820b1",
+      "sha256": "6cf35bae146ce1bb11c08765b5c6d6a99965743c6a5c0a10d5da43d70dcd5831",
       "format": "jar"
     },
     "android": {
       "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-next-v1.7.1/source/plugins/artifacts/source-next-android.jar",
-      "sha256": "10fea7be72ff21158d8cd10974aee2ffdd93bf517dbf83f133acdff93e299bf9",
+      "sha256": "187446dcf77575337021e8f693f34aca44d4858a88a43df6e050ab72807b65b5",
       "format": "jar"
     }
   }

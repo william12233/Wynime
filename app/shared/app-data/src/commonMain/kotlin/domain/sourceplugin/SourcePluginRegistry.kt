@@ -180,13 +180,14 @@ class SourcePluginRegistry(
     private suspend fun migrateBundledPlugins() {
         val packages = bundledPackages ?: return
         for (installed in installedRepository.snapshot().plugins) {
-            if (installed.manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION &&
-                Path(installed.artifactPath).inSystem.let { it.exists() && it.isRegularFile() }
-            ) continue
             if (installed.id !in packages.pluginIds) continue
             try {
                 val manifest = packages.manifest(installed.id)
                 check(manifest.id == installed.id)
+                if (!requiresBundledMigration(installed, manifest)) continue
+                logger.info {
+                    "Migrating bundled source plugin ${installed.id} ${installed.version} -> ${manifest.version}"
+                }
                 installer.installBundled(manifest, { artifact -> packages.artifact(installed.id, artifact) }) { candidate ->
                     val loadedCandidate = loadUnregistered(candidate)
                     loadedCandidate.close()
@@ -197,6 +198,20 @@ class SourcePluginRegistry(
                 logger.warn(error) { "Source plugin ${installed.id} migration failed; keeping its installed files for retry" }
             }
         }
+    }
+
+    private fun requiresBundledMigration(
+        installed: InstalledSourcePlugin,
+        bundled: SourcePluginManifest,
+    ): Boolean {
+        if (installed.manifest.pluginApiVersion != SOURCE_PLUGIN_API_VERSION) return true
+        if (!Path(installed.artifactPath).inSystem.let { it.exists() && it.isRegularFile() }) return true
+
+        // Bundled plugin versions are immutable. Keep a separately installed newer
+        // version, but replace an older version that was bundled with an app update.
+        return runCatching {
+            compareSourcePluginVersions(bundled.version, installed.version) > 0
+        }.getOrDefault(true)
     }
 
     private suspend fun removeRetiredPlugins() {

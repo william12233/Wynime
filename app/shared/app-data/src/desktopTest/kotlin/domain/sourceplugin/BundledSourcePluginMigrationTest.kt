@@ -81,6 +81,45 @@ class BundledSourcePluginMigrationTest {
     }
 
     @Test
+    fun `existing api-compatible old bundled version is upgraded offline`() = runTest {
+        val id = "next"
+        val bundled = packages.manifest(id)
+        val oldVersion = "1.0.0"
+        val oldManifest = bundled.copy(version = oldVersion)
+        val directory = root.resolve("installed").resolve(id).resolve(oldVersion)
+        directory.createDirectories()
+        val artifact = directory.resolve("old.jar")
+        artifact.writeBytes(byteArrayOf(1, 2, 3))
+        repository.upsert(
+            InstalledSourcePlugin(
+                id = id,
+                version = oldVersion,
+                manifest = oldManifest,
+                artifactPath = artifact.absolutePath,
+                enabled = false,
+            ),
+        )
+
+        val registry = SourcePluginRegistry(
+            repository,
+            SourcePluginInstaller(SourcePluginRepositoryClient(http), repository, SourcePluginStorage(root), platform, "0.1.3"),
+            createSourcePluginLoader(object : Context() {}),
+            SourcePluginContextFactory(DefaultHttpClientProvider(NoProxyProvider, backgroundScope), platform, "0.1.3"),
+            packages,
+        )
+        try {
+            registry.loadInstalled()
+            val current = repository.snapshot().plugins.single()
+            assertEquals(bundled.version, current.version)
+            assertEquals(false, current.enabled)
+            assertTrue(File(current.artifactPath).isFile)
+            assertEquals(null, registry.states.value.single().errorMessage)
+        } finally {
+            registry.close()
+        }
+    }
+
+    @Test
     fun `retired dida installation is removed during startup migration`() = runTest {
         val manifest = SourcePluginManifest(
             id = "dida",

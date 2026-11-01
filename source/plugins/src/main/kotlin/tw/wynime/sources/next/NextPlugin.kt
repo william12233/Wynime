@@ -23,6 +23,7 @@ import tw.wynime.sources.shared.links
 import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.searchQueryVariants
 import tw.wynime.sources.shared.SourceSiteException
+import java.net.URI
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutionException
@@ -92,10 +93,12 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         val sourceIds = sourceIdsByCode(page.html)
         val groups = linkedMapOf<String, MutableList<SourceEpisode>>()
         links(page.html).forEach { link ->
-            val match = Regex("(?i)/anime/${Regex.escape(subjectId)}/play/(\\d+)(?:\\?source=([^&#\"']+))?").find(link.href)
+            val match = Regex(
+                "(?i)/anime/${Regex.escape(subjectId)}/play/(\\d+)(?:/|(?=[?#]|$))",
+            ).find(link.href)
                 ?: return@forEach
             val episodeId = match.groupValues[1]
-            val sourceCode = match.groupValues.getOrNull(2).orEmpty().ifBlank {
+            val sourceCode = sourceCodeFromPlayLink(link.href).orEmpty().ifBlank {
                 sourceIds.keys.firstOrNull().orEmpty().ifBlank { "default" }
             }
             groups.getOrPut(sourceCode) { mutableListOf() } += episode(
@@ -106,6 +109,9 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
                     ?: parseEpisodeNumber(link.text)
                     ?: episodeId.toFloatOrNull(),
             )
+        }
+        sourceEpisodesFromSsr(page.html, subjectId).forEach { (sourceCode, parsedEpisode) ->
+            groups.getOrPut(sourceCode) { mutableListOf() } += parsedEpisode
         }
         return SourceSubjectDetails(
             subject = subject,
@@ -163,12 +169,55 @@ internal class NextPlugin(context: SourcePluginContext) : SitePluginBase(
         "(?is)(?:\\\\\"|\")id(?:\\\\\"|\")\\s*:\\s*(\\d+)\\s*,\\s*(?:\\\\\"|\")code(?:\\\\\"|\")\\s*:\\s*(?:\\\\\"|\")([^\"\\\\]+)",
     ).findAll(html).associate { it.groupValues[2] to it.groupValues[1].toInt() }
 
+    private fun sourceEpisodesFromSsr(html: String, subjectId: String): List<Pair<String, SourceEpisode>> =
+        ssrJsonArrayObjects(html, "sources").flatMap { sourceJson ->
+            val sourceCode = extractJsonStringField(sourceJson, "code")
+                ?: return@flatMap emptyList()
+            ssrJsonArrayObjects(sourceJson, "episodes").mapNotNull { episodeJson ->
+                val episodeId = extractJsonNumberField(episodeJson, "id")?.toString()
+                    ?: return@mapNotNull null
+                val title = extractJsonStringField(episodeJson, "title")
+                    .orEmpty()
+                    .ifBlank { "第${episodeId}集" }
+                sourceCode to episode(
+                    id = episodeId,
+                    title = title,
+                    pageUrl = "$rootUrl/anime/$subjectId/play/$episodeId?source=${urlEncode(sourceCode)}",
+                    episodeSort = extractJsonNumberField(episodeJson, "episode_number")?.toFloat()
+                        ?: parseEpisodeNumber(title)
+                        ?: episodeId.toFloatOrNull(),
+                )
+            }
+        }
+
+    private fun ssrJsonArrayObjects(text: String, field: String): List<String> {
+        jsonArrayObjects(text, field).takeIf { it.isNotEmpty() }?.let { return it }
+        val marker = Regex(
+            "(?s)(?:\\\\)?[\"']${Regex.escape(field)}(?:\\\\)?[\"']\\s*:\\s*\\[",
+        ).find(text) ?: return emptyList()
+        val normalizedRemainder = text.substring(marker.range.last + 1)
+            .replace("\\\"", "\"")
+            .replace("\\/", "/")
+        return jsonArrayObjects("{\"$field\":[$normalizedRemainder", field)
+    }
+
     private fun sourceNameByCode(html: String, code: String): String? = Regex(
         "(?is)(?:\\\\\"|\")code(?:\\\\\"|\")\\s*:\\s*(?:\\\\\"|\")${Regex.escape(code)}(?:\\\\\"|\").{0,180}?(?:\\\\\"|\")name(?:\\\\\"|\")\\s*:\\s*(?:\\\\\"|\")([^\"\\\\]+)",
     ).find(html)?.groupValues?.getOrNull(1)
 
+    private fun sourceCodeFromPlayLink(href: String): String? {
+        val query = runCatching { URI(href).rawQuery }.getOrNull() ?: return null
+        return query.split('&').firstNotNullOfOrNull { parameter ->
+            if (!parameter.substringBefore('=').equals("source", ignoreCase = true)) {
+                return@firstNotNullOfOrNull null
+            }
+            parameter.substringAfter('=', missingDelimiterValue = "")
+                .takeIf(String::isNotBlank)
+        }
+    }
+
     private fun episodeNumberById(html: String, episodeId: String): Float? = Regex(
-        """(?is)(?:\\"id\\"|"id")\s*:\s*${Regex.escape(episodeId)}\s*,.*?(?:\\"episode_number\\"|"episode_number")\s*:\s*([0-9]+(?:\.[0-9]+)?)""",
+        """(?is)(?:\\"id\\"|"id")\s*:\s*${Regex.escape(episodeId)}\b(?:(?!\}).)*?(?:\\"episode_number\\"|"episode_number")\s*:\s*([0-9]+(?:\.[0-9]+)?)""",
     ).find(html)?.groupValues?.getOrNull(1)?.toFloatOrNull()
 
     private suspend fun discoverPlaybackConfig(html: String): Pair<String, String>? {

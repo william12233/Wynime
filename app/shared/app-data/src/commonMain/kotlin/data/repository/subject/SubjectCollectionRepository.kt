@@ -432,6 +432,7 @@ class SubjectCollectionRepositoryImpl(
         require(type != UnifiedCollectionType.NOT_COLLECTED) { "type must not be NOT_COLLECTED" }
         require(limit > 0) { "limit must be positive" }
 
+        sessionManager.checkAccessBangumiApiNow()
         val page = subjectService.getSubjectCollectionsPage(
             type = type?.toSubjectCollectionType(),
             offset = offset,
@@ -599,27 +600,31 @@ class SubjectCollectionRepositoryImpl(
                 logger.debug { "${loadType}, Loading $offset, limit=$limit" }
 
                 if (loadType == LoadType.REFRESH) {
-                    refreshOriginalIds = query.type?.let { collectionType ->
-                        subjectCollectionDao.listIdsByCollectionType(collectionType)
-                    }?.toSet()
+                    refreshOriginalIds = subjectCollectionDao.listAll()
+                        .asSequence()
+                        .filter { entity ->
+                            entity.collectionType != UnifiedCollectionType.NOT_COLLECTED &&
+                                (query.type == null || entity.collectionType == query.type)
+                        }
+                        .map { it.subjectId }
+                        .toSet()
                     refreshSeenIds.clear()
                 }
-                var endOfPaginationReached = false
                 val page = fetchAndSaveSubjectCollectionsWithEpisodes(
                     type = query.type,
                     limit = limit,
                     offset = offset,
                 )
-                if (loadType == LoadType.REFRESH) {
-                    refreshSeenIds += page.items.map { it.id.toInt() }
-                }
-                endOfPaginationReached = page.total?.let { total ->
+                refreshSeenIds += page.items.map { it.id.toInt() }
+                val endOfPaginationReached = page.total?.let { total ->
                     offset + page.sourceItemCount >= total
                 } ?: (page.sourceItemCount < limit)
 
                 if (endOfPaginationReached) {
-                    val staleIds = refreshOriginalIds.orEmpty().filterNot(refreshSeenIds::contains)
-                    if (staleIds.isNotEmpty()) subjectCollectionDao.deleteByIds(staleIds)
+                    deleteStaleSubjectCollections(
+                        refreshOriginalIds.orEmpty().filterNot(refreshSeenIds::contains),
+                        query.type,
+                    )
                     refreshOriginalIds = null
                     refreshSeenIds.clear()
                 }
@@ -629,6 +634,44 @@ class SubjectCollectionRepositoryImpl(
             }
         } catch (e: Exception) {
             MediatorResult.Error(RepositoryException.wrapOrThrowCancellation(e))
+        }
+    }
+
+    private suspend fun deleteStaleSubjectCollections(
+        subjectIds: Collection<Int>,
+        queryType: UnifiedCollectionType? = null,
+    ) {
+        if (subjectIds.isEmpty()) return
+        val eligibleIds = subjectIds.filter { subjectId ->
+            val metadata = trackingMetadataRepository?.find(subjectId)
+            metadata == null || (
+                metadata.pendingOperation == null &&
+                    metadata.pendingType == null &&
+                    metadata.localDeletedAt == null
+                )
+        }
+        if (eligibleIds.isEmpty()) return
+        val resolved: Map<Int, SubjectCollectionDto?> = if (queryType == null) {
+            eligibleIds.associateWith { null }
+        } else {
+            eligibleIds.associateWith { subjectId ->
+                subjectService.getSubjectCollection(subjectId)
+            }
+        }
+        val deletableIds = resolved.filter { (_, current) ->
+            queryType == null || current == null || current.collectionType == null
+        }.keys
+        if (deletableIds.isNotEmpty()) {
+            subjectCollectionDao.deleteByIds(deletableIds.toList())
+        }
+        if (queryType != null) {
+            resolved.forEach { (subjectId, current) ->
+                if (current != null && current.collectionType != null &&
+                    current.collectionType.toUnifiedCollectionType() != queryType
+                ) {
+                    saveSubjectCollectionsWithEpisodes(listOf(current), currentTimeMillis())
+                }
+            }
         }
     }
 
@@ -803,7 +846,18 @@ class SubjectCollectionRepositoryImpl(
                             .filter { it.collectionType == UnifiedCollectionType.NOT_COLLECTED }
                             .map { it.subjectId }
                             .toSet()
-                        val staleIds = existing.keys - remoteById.keys - protectedLocalIds - tombstoneIds
+                        val pendingSyncIds = trackingMetadataRepository?.let { metadataRepository ->
+                            metadataRepository.metadataFor(metadataRepository.accountKey())
+                                .asSequence()
+                                .filter { metadata ->
+                                    metadata.pendingOperation != null ||
+                                        metadata.pendingType != null ||
+                                        metadata.localDeletedAt != null
+                                }
+                                .map { it.subjectId }
+                                .toSet()
+                        }.orEmpty()
+                        val staleIds = existing.keys - remoteById.keys - protectedLocalIds - tombstoneIds - pendingSyncIds
                         val cachedEpisodes = episodeCollectionDao.all().first()
                         val episodeCount = remoteById.keys.sumOf { remoteEpisodeCounts[it] ?: 0 }
                         val watchedEpisodeCount = cachedEpisodes.count {
@@ -1026,7 +1080,7 @@ class SubjectCollectionRepositoryImpl(
     }
 
     private suspend fun refreshCollectionsInBackground(query: CollectionsFilterQuery, pageSize: Int) {
-        syncCoordinator.withExclusive(BangumiSyncOperation.COLLECTION_PAGE_REFRESH) {
+        syncCoordinator.withExclusive(BangumiSyncOperation.COLLECTION_PAGE_BACKGROUND_REFRESH) {
             withContext(defaultDispatcher) {
                 val cachedSubjectIds = subjectCollectionDao.listAll()
                     .asSequence()
@@ -1050,10 +1104,10 @@ class SubjectCollectionRepositoryImpl(
                         offset + page.sourceItemCount >= total
                     } ?: (page.sourceItemCount < pageSize)
                     if (endOfPaginationReached) {
-                        val staleIds = cachedSubjectIds.filterNot(seenSubjectIds::contains)
-                        if (staleIds.isNotEmpty()) {
-                            subjectCollectionDao.deleteByIds(staleIds)
-                        }
+                        deleteStaleSubjectCollections(
+                            cachedSubjectIds.filterNot(seenSubjectIds::contains),
+                            query.type,
+                        )
                         break
                     }
                     if (page.sourceItemCount <= 0) {

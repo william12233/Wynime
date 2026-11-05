@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.wynime.app.data.models.episode.EpisodeCollectionInfo
 import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.repository.RepositoryRequestError
 import com.wynime.app.data.repository.episode.toEpisodeCollectionInfo
 import com.wynime.app.data.repository.subject.toEntity1
 import com.wynime.datasources.api.EpisodeSort
@@ -56,25 +57,53 @@ class EpisodeServiceImpl(
         episodeType: BangumiEpType?,
     ): Paged<EpisodeCollectionInfo> {
         return withContext(ioDispatcher) {
-            val episodes = bangumiApi.request {
+            val requestedOffset = offset ?: 0
+            val requestedLimit = limit?.takeIf { it > 0 } ?: 100
+            val episodePage = bangumiApi.request {
                 getEpisodes(
                     subjectId = subjectId,
                     type = episodeType,
-                    limit = limit,
-                    offset = offset,
+                    limit = requestedLimit,
+                    offset = requestedOffset,
                 )
-            }.data.orEmpty()
+            }
+            val episodes = episodePage.data.orEmpty()
+            val responseOffset = episodePage.offset ?: requestedOffset
+            if (responseOffset != requestedOffset) {
+                throw RepositoryRequestError(
+                    "Bangumi 集數回傳 offset 不一致：要求 $requestedOffset，收到 $responseOffset",
+                )
+            }
+            val total = episodePage.total
+            if (total != null && (total < 0 || responseOffset > total || responseOffset + episodes.size > total)) {
+                throw RepositoryRequestError(
+                    "Bangumi 集數資料超過 total：offset=$responseOffset，取得 ${episodes.size}，total=$total",
+                )
+            }
+            if (episodes.isEmpty() && total != null && responseOffset < total) {
+                throw RepositoryRequestError(
+                    "Bangumi 集數資料不完整：offset=$responseOffset，total=$total",
+                )
+            }
+            if (total != null && responseOffset + episodes.size < total && episodes.size < requestedLimit) {
+                throw RepositoryRequestError(
+                    "Bangumi 集數分頁提前結束：offset=$responseOffset，取得 ${responseOffset + episodes.size}/$total",
+                )
+            }
             val collections = if (bangumiApi.hasAccessToken()) {
-                runCatching {
-                    bangumiApi.request { getUserSubjectEpisodeCollection(subjectId) }
-                        .data.orEmpty()
-                        .associateBy { it.episode.id }
-                }.getOrDefault(emptyMap())
+                loadUserEpisodeCollections(subjectId, episodeType)
             } else {
                 emptyMap()
             }
+            val hasMore = if (total != null) {
+                responseOffset + episodes.size < total
+            } else {
+                episodes.size >= requestedLimit
+            }
             Paged(
-                episodes.map { episode ->
+                total = total,
+                hasMore = hasMore,
+                page = episodes.map { episode ->
                     collections[episode.id]?.toEpisodeCollectionInfo()
                         ?: episode.toEpisodeInfo().createNotCollected()
                 },
@@ -84,21 +113,80 @@ class EpisodeServiceImpl(
 
     override suspend fun getEpisodeCollectionById(subjectId: Int, episodeId: Int): EpisodeCollectionInfo? =
         withContext(ioDispatcher) {
-            try {
+            val episode = try {
                 val episode = bangumiApi.request { getEpisodeById(episodeId) }
-                if (!bangumiApi.hasAccessToken()) return@withContext episode.toEpisodeInfo().createNotCollected()
-                val collection = runCatching {
-                    bangumiApi.request { getUserEpisodeCollection(episodeId) }
-                }.getOrNull()
-                return@withContext collection?.toEpisodeCollectionInfo()
-                    ?: episode.toEpisodeInfo().createNotCollected()
+                episode
             } catch (e: ClientRequestException) {
                 if (e.response.status == HttpStatusCode.NotFound) {
                     return@withContext null
                 }
                 throw e
             }
+            if (!bangumiApi.hasAccessToken()) return@withContext episode.toEpisodeInfo().createNotCollected()
+            val collection = try {
+                bangumiApi.request { getUserEpisodeCollection(episodeId) }
+            } catch (e: ClientRequestException) {
+                if (e.response.status == HttpStatusCode.NotFound) null else throw e
+            }
+            collection?.toEpisodeCollectionInfo()
+                ?: episode.toEpisodeInfo().createNotCollected()
         }
+
+    private suspend fun loadUserEpisodeCollections(
+        subjectId: Int,
+        episodeType: BangumiEpType?,
+    ): Map<Int, BangumiUserEpisodeCollection> {
+        val result = HashMap<Int, BangumiUserEpisodeCollection>()
+        val seenEpisodeIds = HashSet<Int>()
+        val limit = 100
+        var offset = 0
+        while (true) {
+            val page = try {
+                bangumiApi.request {
+                    getUserSubjectEpisodeCollection(
+                        subjectId = subjectId,
+                        offset = offset,
+                        limit = limit,
+                        episodeType = episodeType,
+                    )
+                }
+            } catch (e: ClientRequestException) {
+                if (e.response.status == HttpStatusCode.NotFound && offset == 0) {
+                    return emptyMap()
+                }
+                throw e
+            }
+            val data = page.data.orEmpty()
+            if (page.offset != offset || page.limit <= 0 || page.total < 0) {
+                throw RepositoryRequestError(
+                    "Bangumi 看過資料分頁欄位不一致：offset=$offset，回傳 offset=${page.offset} limit=${page.limit} total=${page.total}",
+                )
+            }
+            if (data.any { !seenEpisodeIds.add(it.episode.id) }) {
+                throw RepositoryRequestError(
+                    "Bangumi 看過資料含有重複 episode：subject=$subjectId，offset=$offset",
+                )
+            }
+            if (offset + data.size > page.total) {
+                throw RepositoryRequestError(
+                    "Bangumi 看過資料超過 total：subject=$subjectId，取得 ${offset + data.size}/${page.total}",
+                )
+            }
+            result.putAll(data.associateBy { it.episode.id })
+            if (offset + data.size >= page.total) break
+            if (data.isEmpty() || data.size < limit) {
+                throw RepositoryRequestError(
+                    "Bangumi 看過資料分頁提前結束：subject=$subjectId，取得 ${offset + data.size}/${page.total}",
+                )
+            }
+            val nextOffset = offset + data.size
+            if (nextOffset <= offset) {
+                throw RepositoryRequestError("Bangumi 看過資料 offset 未前進")
+            }
+            offset = nextOffset
+        }
+        return result
+    }
 
     override suspend fun setEpisodeCollection(
         subjectId: Int,

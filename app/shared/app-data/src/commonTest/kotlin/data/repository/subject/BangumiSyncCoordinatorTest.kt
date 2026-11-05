@@ -42,6 +42,30 @@ class BangumiSyncCoordinatorTest {
     }
 
     @Test
+    fun `different result types wait without sharing the completed value`() = runTest {
+        val coordinator = BangumiSyncCoordinator()
+        val gate = CompletableDeferred<Unit>()
+
+        val background = async {
+            coordinator.withExclusive(BangumiSyncOperation.COLLECTION_PAGE_BACKGROUND_REFRESH) {
+                gate.await()
+            }
+        }
+        runCurrent()
+        val page = async {
+            coordinator.withExclusive(BangumiSyncOperation.COLLECTION_PAGE_REFRESH) {
+                42
+            }
+        }
+        runCurrent()
+
+        gate.complete(Unit)
+
+        background.await()
+        assertEquals(42, page.await())
+    }
+
+    @Test
     fun `exception enters failed state and a later operation can run`() = runTest {
         val coordinator = BangumiSyncCoordinator()
 

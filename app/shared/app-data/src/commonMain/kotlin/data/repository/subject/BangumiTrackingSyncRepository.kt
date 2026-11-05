@@ -49,21 +49,49 @@ enum class BangumiTrackingPendingOperation {
     DELETE_COLLECTION,
 }
 
+data class BangumiTrackingMetadataExpectation(
+    val exists: Boolean,
+    val localDeletedAt: Long?,
+    val lastLocalModifiedAt: Long,
+    val pendingType: String?,
+    val pendingOperation: String?,
+)
+
+private fun BangumiTrackingMetadataEntity?.toExpectation() = BangumiTrackingMetadataExpectation(
+    exists = this != null,
+    localDeletedAt = this?.localDeletedAt,
+    lastLocalModifiedAt = this?.lastLocalModifiedAt ?: 0L,
+    pendingType = this?.pendingType,
+    pendingOperation = this?.pendingOperation,
+)
+
+private fun BangumiTrackingMetadataEntity?.matches(
+    expectation: BangumiTrackingMetadataExpectation,
+): Boolean {
+    if (expectation.exists != (this != null)) return false
+    if (!expectation.exists) return true
+    return this?.localDeletedAt == expectation.localDeletedAt &&
+        this?.lastLocalModifiedAt == expectation.lastLocalModifiedAt &&
+        this?.pendingType == expectation.pendingType &&
+        this?.pendingOperation == expectation.pendingOperation
+}
+
 class BangumiTrackingMetadataRepository(
     private val dao: BangumiTrackingMetadataDao,
     private val tokenRepository: TokenRepository,
     private val accountBindingStore: BangumiTrackingSyncSettingsStore? = null,
 ) {
+    private val accountMutex = Mutex()
     private var adoptedAccountKey: String? = null
     private var adoptedTokenKey: String? = null
 
-    suspend fun accountKey(): String {
+    suspend fun accountKey(): String = accountMutex.withLock {
         val tokenKey = currentTokenKey()
-        if (tokenKey == adoptedTokenKey) return adoptedAccountKey ?: tokenKey
-        return accountBindingStore?.accountKeyForToken(tokenKey) ?: tokenKey
+        if (tokenKey == adoptedTokenKey) return@withLock adoptedAccountKey ?: tokenKey
+        accountBindingStore?.accountKeyForToken(tokenKey) ?: tokenKey
     }
 
-    suspend fun adoptAccount(account: BangumiTrackingAccount): String {
+    suspend fun adoptAccount(account: BangumiTrackingAccount): String = accountMutex.withLock {
         val tokenKey = currentTokenKey()
         val oldKey = if (tokenKey == adoptedTokenKey) {
             adoptedAccountKey ?: tokenKey
@@ -93,7 +121,7 @@ class BangumiTrackingMetadataRepository(
         adoptedAccountKey = account.key
         adoptedTokenKey = tokenKey
         accountBindingStore?.bindTokenToAccount(tokenKey, account.key)
-        return account.key
+        account.key
     }
 
     private suspend fun currentTokenKey(): String {
@@ -146,9 +174,12 @@ class BangumiTrackingMetadataRepository(
         remoteType: UnifiedCollectionType? = null,
         syncedAt: Long = currentTimeMillis(),
         clearPending: Boolean = false,
-    ) {
-        val key = accountKey()
+        expectedAccountKey: String? = null,
+        expected: BangumiTrackingMetadataExpectation? = null,
+    ): Boolean {
+        val key = expectedAccountKey ?: accountKey()
         val old = dao.find(key, subjectId)
+        if (expected != null && !old.matches(expected)) return false
         dao.upsert(
             (old ?: BangumiTrackingMetadataEntity(accountKey = key, subjectId = subjectId)).copy(
                 remoteUpdatedAt = remoteUpdatedAt,
@@ -160,6 +191,7 @@ class BangumiTrackingMetadataRepository(
                 pendingError = if (clearPending) null else old?.pendingError,
             ),
         )
+        return true
     }
 
     suspend fun clearTombstone(
@@ -188,9 +220,11 @@ class BangumiTrackingMetadataRepository(
         remoteUpdatedAt: Long?,
         syncedAt: Long = currentTimeMillis(),
         expectedAccountKey: String? = null,
-    ) {
+        expected: BangumiTrackingMetadataExpectation? = null,
+    ): Boolean {
         val key = expectedAccountKey ?: accountKey()
         val old = dao.find(key, subjectId)
+        if (expected != null && !old.matches(expected)) return false
         dao.upsert(
             (old ?: BangumiTrackingMetadataEntity(accountKey = key, subjectId = subjectId)).copy(
                 localDeletedAt = null,
@@ -202,12 +236,20 @@ class BangumiTrackingMetadataRepository(
                 pendingError = null,
             ),
         )
+        return true
     }
 
-    suspend fun markPendingError(subjectId: Int, error: Throwable, expectedAccountKey: String? = null) {
+    suspend fun markPendingError(
+        subjectId: Int,
+        error: Throwable,
+        expectedAccountKey: String? = null,
+        expected: BangumiTrackingMetadataExpectation? = null,
+    ): Boolean {
         val key = expectedAccountKey ?: accountKey()
-        val old = dao.find(key, subjectId) ?: return
+        val old = dao.find(key, subjectId) ?: return false
+        if (expected != null && !old.matches(expected)) return false
         dao.upsert(old.copy(pendingError = error.message ?: error::class.simpleName))
+        return true
     }
 
     suspend fun metadataFor(accountKey: String): List<BangumiTrackingMetadataEntity> = dao.list(accountKey)
@@ -400,6 +442,8 @@ class BangumiTrackingSyncRepository(
     private suspend fun flushPending(subjectId: Int, confirmWebRemoval: Boolean = false) {
         var attemptedOperation: BangumiTrackingPendingOperation? = null
         var accountKey: String? = null
+        var expectedMetadata: BangumiTrackingMetadataExpectation? = null
+        var expectedLocal: BangumiTrackingLocalSnapshot? = null
         try {
             val settings = settingsStore.flow.first()
             if (!settings.autoSyncTracking && !confirmWebRemoval) return
@@ -407,6 +451,10 @@ class BangumiTrackingSyncRepository(
             val resolvedAccountKey = metadataRepository.adoptAccount(user)
             accountKey = resolvedAccountKey
             val metadata = metadataDao.find(resolvedAccountKey, subjectId) ?: return
+            val metadataExpectation = metadata.toExpectation()
+            val localSnapshot = readLocalSnapshot(subjectId)
+            expectedMetadata = metadataExpectation
+            expectedLocal = localSnapshot
             val operation = metadata.pendingOperation
                 ?.let { runCatching { BangumiTrackingPendingOperation.valueOf(it) }.getOrNull() }
                 ?: when {
@@ -417,10 +465,22 @@ class BangumiTrackingSyncRepository(
             attemptedOperation = operation
             if (confirmWebRemoval && operation != BangumiTrackingPendingOperation.DELETE_COLLECTION) return
             syncCoordinator.withExclusive(BangumiSyncOperation.AUTO) {
+                ensureSnapshotCurrent(
+                    accountKey = resolvedAccountKey,
+                    subjectId = subjectId,
+                    expectedLocal = localSnapshot,
+                    expectedMetadata = metadataExpectation,
+                )
                 when (operation) {
                     BangumiTrackingPendingOperation.DELETE_COLLECTION -> {
-                        ensureRemovalAccount(resolvedAccountKey, user.username)
+                        ensureActiveAccount(resolvedAccountKey)
                         val before = readRemoteCollection(user.username, subjectId)
+                        ensureSnapshotCurrent(
+                            resolvedAccountKey,
+                            subjectId,
+                            localSnapshot,
+                            metadataExpectation,
+                        )
                         if (before != null) {
                             timedRemoteMutation("POST", "/api/v1/collections/{subjectId}/removal/confirm") {
                                 subjectService.deleteSubjectCollection(subjectId)
@@ -430,18 +490,20 @@ class BangumiTrackingSyncRepository(
                         check(after == null) {
                             "Bangumi collection still exists after DELETE_COLLECTION"
                         }
-                        ensureRemovalAccount(resolvedAccountKey, user.username)
-                        val latest = metadataDao.find(resolvedAccountKey, subjectId)
-                        check(latest?.pendingOperation == metadata.pendingOperation &&
-                            latest?.localDeletedAt == metadata.localDeletedAt
-                        ) { "Collection operation changed during removal verification" }
-                        markVerifiedLocalRemoval(subjectId)
-                        metadataRepository.markMutationSucceeded(
+                        ensureSnapshotCurrent(
+                            resolvedAccountKey,
+                            subjectId,
+                            localSnapshot,
+                            metadataExpectation,
+                        )
+                        markVerifiedLocalRemoval(subjectId, localSnapshot)
+                        check(metadataRepository.markMutationSucceeded(
                             subjectId = subjectId,
                             remoteType = null,
                             remoteUpdatedAt = null,
                             expectedAccountKey = resolvedAccountKey,
-                        )
+                            expected = metadataExpectation,
+                        )) { "Collection operation changed during removal verification" }
                         _autoSyncEvents.tryEmit(BangumiTrackingAutoSyncEvent.Deleted(subjectId))
                     }
 
@@ -456,14 +518,25 @@ class BangumiTrackingSyncRepository(
                             upsertRemoteType(subjectId, type)
                         }
                         val after = readRemoteCollection(user.username, subjectId)
-                        check(after?.type == type) {
+                        val verified = checkNotNull(after) {
                             "Bangumi collection verification mismatch after UPSERT_COLLECTION"
                         }
-                        metadataRepository.markMutationSucceeded(
-                            subjectId = subjectId,
-                            remoteType = after.type,
-                            remoteUpdatedAt = after.updatedAt,
+                        check(verified.type == type) {
+                            "Bangumi collection verification mismatch after UPSERT_COLLECTION"
+                        }
+                        ensureSnapshotCurrent(
+                            resolvedAccountKey,
+                            subjectId,
+                            localSnapshot,
+                            metadataExpectation,
                         )
+                        check(metadataRepository.markMutationSucceeded(
+                            subjectId = subjectId,
+                            remoteType = verified.type,
+                            remoteUpdatedAt = verified.updatedAt,
+                            expectedAccountKey = resolvedAccountKey,
+                            expected = metadataExpectation,
+                        )) { "Collection operation changed during upsert verification" }
                         _autoSyncEvents.tryEmit(BangumiTrackingAutoSyncEvent.Succeeded(subjectId, type))
                     }
                 }
@@ -486,7 +559,12 @@ class BangumiTrackingSyncRepository(
                 (attemptedOperation == BangumiTrackingPendingOperation.DELETE_COLLECTION &&
                     latest?.localDeletedAt != null)
             if (isCurrentAttempt) {
-                metadataRepository.markPendingError(subjectId, e, accountKey)
+                metadataRepository.markPendingError(
+                    subjectId,
+                    e,
+                    accountKey,
+                    expectedMetadata,
+                )
                 _autoSyncEvents.tryEmit(
                     BangumiTrackingAutoSyncEvent.Failed(subjectId, classifyBangumiTrackingError(e)),
                 )
@@ -514,6 +592,7 @@ class BangumiTrackingSyncRepository(
             }
         val metadata = metadataRepository.metadataFor(accountKey).associateBy { it.subjectId }
         val fetched = fetchAllCollections(user.username)
+        ensureActiveAccount(accountKey)
         val remote = fetched.items.associateBy { it.subjectId }
         val subjectIds = (local.keys + remote.keys + metadata.keys).toSortedSet()
         logger.info {
@@ -573,10 +652,21 @@ class BangumiTrackingSyncRepository(
             }.map { plan ->
                 async {
                     try {
-                        executeRemoteMutation(user.username, accountKey, plan)
+                        executeRemoteMutation(
+                            username = user.username,
+                            accountKey = accountKey,
+                            plan = plan,
+                            expectedLocal = local[plan.subjectId],
+                            expectedMetadata = metadata[plan.subjectId].toExpectation(),
+                        )
                     } catch (e: Throwable) {
                         if (e is CancellationException) throw e
-                        metadataRepository.markPendingError(plan.subjectId, e, accountKey)
+                        metadataRepository.markPendingError(
+                            subjectId = plan.subjectId,
+                            error = e,
+                            expectedAccountKey = accountKey,
+                            expected = metadata[plan.subjectId].toExpectation(),
+                        )
                         MutationResult.Failure(plan.subjectId, e)
                     }
                 }
@@ -607,21 +697,41 @@ class BangumiTrackingSyncRepository(
             )
             when (val action = plan.action) {
                 BangumiTrackingSyncAction.NoOp -> {
-                    unchanged++
-                    remote[plan.subjectId].let { remoteSubject ->
-                        metadataRepository.markRemoteObserved(
+                    try {
+                        ensureSnapshotCurrent(
+                            accountKey = accountKey,
+                            subjectId = plan.subjectId,
+                            expectedLocal = local[plan.subjectId],
+                            expectedMetadata = metadata[plan.subjectId].toExpectation(),
+                        )
+                        val remoteSubject = remote[plan.subjectId]
+                        check(metadataRepository.markRemoteObserved(
                             subjectId = plan.subjectId,
                             remoteUpdatedAt = remoteSubject?.updatedAt,
                             remoteType = remoteSubject?.type,
                             clearPending = true,
-                        )
+                            expectedAccountKey = accountKey,
+                            expected = metadata[plan.subjectId].toExpectation(),
+                        )) { "Local collection changed during Bangumi synchronization" }
+                        unchanged++
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        failedSubjectIds += plan.subjectId
+                        e.message?.let(failureMessages::add)
                     }
                 }
 
                 is BangumiTrackingSyncAction.ApplyRemote -> {
                     val remoteSubject = remote[plan.subjectId] ?: continue
                     try {
-                        applyRemoteType(plan.subjectId, action.type, remoteSubject.updatedAt)
+                        applyRemoteType(
+                            subjectId = plan.subjectId,
+                            type = action.type,
+                            remoteUpdatedAt = remoteSubject.updatedAt,
+                            accountKey = accountKey,
+                            expectedLocal = local[plan.subjectId],
+                            expectedMetadata = metadata[plan.subjectId].toExpectation(),
+                        )
                         localUpdated++
                     } catch (e: Throwable) {
                         if (e is CancellationException) throw e
@@ -631,21 +741,39 @@ class BangumiTrackingSyncRepository(
                 }
 
                 BangumiTrackingSyncAction.MarkLocalUntracked -> {
-                    val deletedAt = currentTimeMillis()
-                    subjectCollectionDao.updateType(
-                        subjectId = plan.subjectId,
-                        collectionType = UnifiedCollectionType.NOT_COLLECTED,
-                        lastUpdated = deletedAt,
-                        lastFetched = deletedAt,
-                    )
-                    metadataRepository.markRemoteObserved(
-                        subjectId = plan.subjectId,
-                        remoteUpdatedAt = null,
-                        remoteType = null,
-                        syncedAt = deletedAt,
-                        clearPending = true,
-                    )
-                    localUpdated++
+                    try {
+                        val deletedAt = currentTimeMillis()
+                        ensureSnapshotCurrent(
+                            accountKey = accountKey,
+                            subjectId = plan.subjectId,
+                            expectedLocal = local[plan.subjectId],
+                            expectedMetadata = metadata[plan.subjectId].toExpectation(),
+                        )
+                        val expectedLocal = local[plan.subjectId]
+                        if (expectedLocal != null) {
+                            check(subjectCollectionDao.updateTypeIfLastUpdated(
+                                subjectId = plan.subjectId,
+                                collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                                lastUpdated = deletedAt,
+                                lastFetched = deletedAt,
+                                expectedLastUpdated = expectedLocal.lastUpdated,
+                            ) == 1) { "Local collection changed during remote removal" }
+                        }
+                        check(metadataRepository.markRemoteObserved(
+                            subjectId = plan.subjectId,
+                            remoteUpdatedAt = null,
+                            remoteType = null,
+                            syncedAt = deletedAt,
+                            clearPending = true,
+                            expectedAccountKey = accountKey,
+                            expected = metadata[plan.subjectId].toExpectation(),
+                        )) { "Local collection changed during remote removal" }
+                        localUpdated++
+                    } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+                        failedSubjectIds += plan.subjectId
+                        e.message?.let(failureMessages::add)
+                    }
                 }
 
                 is BangumiTrackingSyncAction.UpsertRemote -> {
@@ -843,27 +971,38 @@ class BangumiTrackingSyncRepository(
         username: String,
         accountKey: String,
         plan: BangumiTrackingSyncPlan,
+        expectedLocal: BangumiTrackingLocalSnapshot?,
+        expectedMetadata: BangumiTrackingMetadataExpectation,
     ): MutationResult {
+        ensureSnapshotCurrent(accountKey, plan.subjectId, expectedLocal, expectedMetadata)
         return when (val action = plan.action) {
             is BangumiTrackingSyncAction.UpsertRemote -> {
                 timedRemoteMutation("POST", "/v0/users/{username}/collections/{subjectId}") {
                     upsertRemoteType(plan.subjectId, action.type)
                 }
+                ensureSnapshotCurrent(accountKey, plan.subjectId, expectedLocal, expectedMetadata)
                 val verified = readRemoteCollection(username, plan.subjectId)
-                check(verified?.type == action.type) {
+                val verifiedCollection = checkNotNull(verified) {
                     "Bangumi collection verification mismatch after UPSERT_COLLECTION"
                 }
-                metadataRepository.markMutationSucceeded(
+                check(verifiedCollection.type == action.type) {
+                    "Bangumi collection verification mismatch after UPSERT_COLLECTION"
+                }
+                ensureSnapshotCurrent(accountKey, plan.subjectId, expectedLocal, expectedMetadata)
+                check(metadataRepository.markMutationSucceeded(
                     subjectId = plan.subjectId,
-                    remoteType = verified.type,
-                    remoteUpdatedAt = verified.updatedAt,
-                )
+                    remoteType = verifiedCollection.type,
+                    remoteUpdatedAt = verifiedCollection.updatedAt,
+                    expectedAccountKey = accountKey,
+                    expected = expectedMetadata,
+                )) { "Collection operation changed during upsert verification" }
                 MutationResult.UpsertSuccess(plan.subjectId)
             }
 
             BangumiTrackingSyncAction.DeleteRemote -> {
-                ensureRemovalAccount(accountKey, username)
+                ensureActiveAccount(accountKey)
                 if (readRemoteCollection(username, plan.subjectId) != null) {
+                    ensureSnapshotCurrent(accountKey, plan.subjectId, expectedLocal, expectedMetadata)
                     timedRemoteMutation("POST", "/api/v1/collections/{subjectId}/removal/confirm") {
                         subjectService.deleteSubjectCollection(plan.subjectId)
                     }
@@ -871,14 +1010,15 @@ class BangumiTrackingSyncRepository(
                 check(readRemoteCollection(username, plan.subjectId) == null) {
                     "Bangumi collection still exists after DELETE_COLLECTION"
                 }
-                ensureRemovalAccount(accountKey, username)
-                markVerifiedLocalRemoval(plan.subjectId)
-                metadataRepository.markMutationSucceeded(
+                ensureSnapshotCurrent(accountKey, plan.subjectId, expectedLocal, expectedMetadata)
+                markVerifiedLocalRemoval(plan.subjectId, expectedLocal)
+                check(metadataRepository.markMutationSucceeded(
                     subjectId = plan.subjectId,
                     remoteType = null,
                     remoteUpdatedAt = null,
                     expectedAccountKey = accountKey,
-                )
+                    expected = expectedMetadata,
+                )) { "Collection operation changed during removal verification" }
                 MutationResult.DeleteSuccess(plan.subjectId)
             }
 
@@ -886,38 +1026,97 @@ class BangumiTrackingSyncRepository(
         }
     }
 
-    private suspend fun ensureRemovalAccount(accountKey: String, username: String) {
-        check(metadataRepository.accountKey() == accountKey) { "Account changed during collection removal" }
-        val current = currentBangumiUser()
-        check(current?.key == accountKey && current.username == username) {
-            "Account changed during collection removal"
+    private suspend fun ensureActiveAccount(accountKey: String) {
+        check(metadataRepository.accountKey() == accountKey) {
+            "Bangumi account changed during synchronization"
         }
     }
 
-    private suspend fun markVerifiedLocalRemoval(subjectId: Int) {
+    private suspend fun markVerifiedLocalRemoval(
+        subjectId: Int,
+        expectedLocal: BangumiTrackingLocalSnapshot?,
+    ) {
         val now = currentTimeMillis()
-        subjectCollectionDao.updateType(subjectId, UnifiedCollectionType.NOT_COLLECTED, now, now)
+        if (expectedLocal == null) return
+        check(subjectCollectionDao.updateTypeIfLastUpdated(
+            subjectId = subjectId,
+            collectionType = UnifiedCollectionType.NOT_COLLECTED,
+            lastUpdated = now,
+            lastFetched = now,
+            expectedLastUpdated = expectedLocal.lastUpdated,
+        ) == 1) { "Local collection changed during remote removal" }
     }
 
-    private suspend fun applyRemoteType(subjectId: Int, type: UnifiedCollectionType, remoteUpdatedAt: Long) {
-        val updated = subjectCollectionDao.updateType(
-            subjectId = subjectId,
-            collectionType = type,
-            lastUpdated = remoteUpdatedAt,
-            lastFetched = currentTimeMillis(),
-        )
+    private suspend fun applyRemoteType(
+        subjectId: Int,
+        type: UnifiedCollectionType,
+        remoteUpdatedAt: Long,
+        accountKey: String,
+        expectedLocal: BangumiTrackingLocalSnapshot?,
+        expectedMetadata: BangumiTrackingMetadataExpectation,
+    ) {
+        ensureSnapshotCurrent(accountKey, subjectId, expectedLocal, expectedMetadata)
+        val fetchedAt = currentTimeMillis()
+        val updated = if (expectedLocal != null) {
+            subjectCollectionDao.updateTypeIfLastUpdated(
+                subjectId = subjectId,
+                collectionType = type,
+                lastUpdated = remoteUpdatedAt,
+                lastFetched = fetchedAt,
+                expectedLastUpdated = expectedLocal.lastUpdated,
+            )
+        } else {
+            subjectCollectionDao.updateType(
+                subjectId = subjectId,
+                collectionType = type,
+                lastUpdated = remoteUpdatedAt,
+                lastFetched = fetchedAt,
+            )
+        }
+        if (expectedLocal != null) {
+            check(updated == 1) { "Local collection changed during remote apply" }
+        }
         if (updated == 0) {
+            ensureSnapshotCurrent(accountKey, subjectId, expectedLocal, expectedMetadata)
             val hydrated = subjectService.getSubjectCollection(subjectId)
+            ensureSnapshotCurrent(accountKey, subjectId, expectedLocal, expectedMetadata)
             if (hydrated != null) {
                 subjectCollectionDao.upsert(hydrated.toEntity(currentTimeMillis()).copy(lastUpdated = remoteUpdatedAt))
             }
         }
-        metadataRepository.markRemoteObserved(
+        check(metadataRepository.markRemoteObserved(
             subjectId = subjectId,
             remoteUpdatedAt = remoteUpdatedAt,
             remoteType = type,
             clearPending = true,
-        )
+            expectedAccountKey = accountKey,
+            expected = expectedMetadata,
+        )) { "Local collection changed during remote apply" }
+    }
+
+    private suspend fun readLocalSnapshot(subjectId: Int): BangumiTrackingLocalSnapshot? {
+        return subjectCollectionDao.findById(subjectId).first()?.let {
+            BangumiTrackingLocalSnapshot(
+                subjectId = it.subjectId,
+                type = it.collectionType,
+                lastUpdated = it.lastUpdated,
+            )
+        }
+    }
+
+    private suspend fun ensureSnapshotCurrent(
+        accountKey: String,
+        subjectId: Int,
+        expectedLocal: BangumiTrackingLocalSnapshot?,
+        expectedMetadata: BangumiTrackingMetadataExpectation,
+    ) {
+        ensureActiveAccount(accountKey)
+        check(readLocalSnapshot(subjectId) == expectedLocal) {
+            "Local collection changed during Bangumi synchronization"
+        }
+        check(metadataDao.find(accountKey, subjectId).matches(expectedMetadata)) {
+            "Collection metadata changed during Bangumi synchronization"
+        }
     }
 
     private suspend fun readRemoteCollection(

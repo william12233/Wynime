@@ -125,6 +125,21 @@ interface SubjectCollectionDao {
         lastFetched: Long = currentTimeMillis(),
     ): Int
 
+    @Query(
+        """
+        UPDATE subject_collection
+        SET collectionType = :collectionType, lastUpdated = :lastUpdated, lastFetched = :lastFetched
+        WHERE subjectId = :subjectId AND lastUpdated = :expectedLastUpdated
+        """,
+    )
+    suspend fun updateTypeIfLastUpdated(
+        subjectId: Int,
+        collectionType: UnifiedCollectionType,
+        lastUpdated: Long,
+        lastFetched: Long,
+        expectedLastUpdated: Long,
+    ): Int
+
     @Query("""DELETE FROM subject_collection WHERE subjectId = :subjectId""")
     suspend fun delete(subjectId: Int)
 

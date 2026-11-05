@@ -163,6 +163,8 @@ class BangumiSubjectService(
                             )
                         } catch (e: CancellationException) {
                             throw e
+                        } catch (e: RepositoryAuthorizationException) {
+                            throw e
                         } catch (e: Throwable) {
                             logger.warn(e) {
                                 "Failed to hydrate Bangumi subject ${collection.subjectId}; " +
@@ -422,21 +424,34 @@ class BangumiSubjectService(
         username: String? = null,
         throttle: BangumiSyncRequestThrottle? = null,
     ): SubjectCollectionDto? {
-        val subject = try {
-            requestSubject(throttle, subjectId)
-        } catch (e: ResponseException) {
-            if (e.response.status == HttpStatusCode.NotFound) return null
-            throw e
-        }
-        val userCollection = collection ?: loadUserCollection(subjectId, username, throttle)
-        val episodes = loadEpisodes(subjectId, throttle)
-        val episodeCollections = loadEpisodeCollections(subjectId, throttle)
+        try {
+            val subject = try {
+                requestSubject(throttle, subjectId)
+            } catch (e: ResponseException) {
+                if (e.response.status == HttpStatusCode.NotFound) return null
+                throw e
+            }
+            val userCollection = collection ?: loadUserCollection(subjectId, username, throttle)
+            val episodes = loadEpisodes(subjectId, throttle)
+            val episodeCollections = loadEpisodeCollections(subjectId, throttle)
 
-        return subject.toWynimeSubjectCollection(
-            collection = userCollection,
-            episodes = episodes,
-            episodeCollections = episodeCollections,
-        )
+            return subject.toWynimeSubjectCollection(
+                collection = userCollection,
+                episodes = episodes,
+                episodeCollections = episodeCollections,
+            )
+        } catch (e: ResponseException) {
+            when (e.response.status) {
+                HttpStatusCode.Unauthorized,
+                HttpStatusCode.Forbidden,
+                -> throw RepositoryAuthorizationException(
+                    "Bangumi access is no longer authorized",
+                    e,
+                )
+
+                else -> throw e
+            }
+        }
     }
 
     private suspend fun loadUserCollection(
@@ -450,13 +465,16 @@ class BangumiSubjectService(
                 bangumiApi.request { getUserCollection(username = currentUsername, subjectId = subjectId) }
             }
         } catch (e: ResponseException) {
-            if (e.response.status == HttpStatusCode.NotFound ||
-                e.response.status == HttpStatusCode.Unauthorized ||
-                e.response.status == HttpStatusCode.Forbidden
-            ) {
-                null
-            } else {
-                throw e
+            when (e.response.status) {
+                HttpStatusCode.NotFound -> null
+                HttpStatusCode.Unauthorized,
+                HttpStatusCode.Forbidden,
+                -> throw RepositoryAuthorizationException(
+                    "Bangumi access is no longer authorized",
+                    e,
+                )
+
+                else -> throw e
             }
         }
     }

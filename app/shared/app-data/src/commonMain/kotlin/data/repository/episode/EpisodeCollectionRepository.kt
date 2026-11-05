@@ -14,6 +14,7 @@ import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
 import com.wynime.app.data.persistent.database.dao.SubjectCollectionEntity
 import com.wynime.app.data.repository.Repository
 import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryRequestError
 import com.wynime.app.data.repository.subject.GetEpisodeTypeFiltersUseCase
 import com.wynime.app.data.repository.subject.SubjectCollectionRepository
 import com.wynime.app.data.repository.subject.toEpisodeType
@@ -110,11 +111,19 @@ class EpisodeCollectionRepository(
     }.flowOn(defaultDispatcher)
 
     suspend fun setAllEpisodesWatched(subjectId: Int) = withContext(defaultDispatcher) {
+        if (subjectDao.findById(subjectId).first()?.collectionType == UnifiedCollectionType.NOT_COLLECTED) {
+            logger.warn { "User has not yet collected subject $subjectId when setting all episodes watched." }
+            return@withContext
+        }
         val episodeIds = subjectEpisodeCollectionInfosFlow(subjectId)
             .first()
             .map { it.episodeId }
 
-        episodeService.setEpisodeCollection(subjectId, episodeIds, UnifiedCollectionType.DONE)
+        if (episodeIds.isEmpty()) return@withContext
+        val updated = episodeService.setEpisodeCollection(subjectId, episodeIds, UnifiedCollectionType.DONE)
+        if (!updated) {
+            throw RepositoryRequestError("Bangumi 沒有接受條目進度更新：subject=$subjectId")
+        }
         episodeCollectionDao.setAllEpisodesWatched(subjectId)
     }
 
@@ -127,9 +136,14 @@ class EpisodeCollectionRepository(
                 .first().collectionType == UnifiedCollectionType.NOT_COLLECTED
         ) {
             logger.warn { "User has not yet collected subject $subjectId when we want to setEpisodeCollectionType, ignoring." }
-
+            return@withContext
         }
-        episodeService.setEpisodeCollection(subjectId, listOf(episodeId), collectionType)
+        val updated = episodeService.setEpisodeCollection(subjectId, listOf(episodeId), collectionType)
+        if (!updated) {
+            throw RepositoryRequestError(
+                "Bangumi 沒有接受條目進度更新：subject=$subjectId episode=$episodeId",
+            )
+        }
         episodeCollectionDao.updateSelfCollectionType(subjectId, episodeId, collectionType)
     }
 
@@ -168,6 +182,10 @@ class EpisodeCollectionRepository(
         private val episodeService: EpisodeService,
         val subjectId: Int,
     ) : RemoteMediator<Int, T>() {
+        private var nextOffset: Int? = null
+        private var refreshOriginalIds: Set<Int>? = null
+        private val refreshSeenIds = mutableSetOf<Int>()
+
         override suspend fun initialize(): InitializeAction {
             return withContext(defaultDispatcher) {
                 if ((currentTimeMillis() - episodeCollectionDao.lastFetched(subjectId)).milliseconds > cacheExpiry) {
@@ -182,14 +200,27 @@ class EpisodeCollectionRepository(
             loadType: LoadType,
             state: PagingState<Int, T>,
         ): MediatorResult = withContext(defaultDispatcher) {
+            if (subjectDao.findById(subjectId).first()?.collectionType == UnifiedCollectionType.NOT_COLLECTED) {
+                return@withContext MediatorResult.Success(endOfPaginationReached = true)
+            }
+
+            val episodeTypes = getEpisodeTypeFiltersUseCase().first()
             val offset = when (loadType) {
-                LoadType.REFRESH -> 0
+                LoadType.REFRESH -> {
+                    nextOffset = 0
+                    refreshSeenIds.clear()
+                    val cached = episodeCollectionDao.filterBySubjectId(subjectId).first()
+                    val selectedIds = cached
+                        .filter { episodeTypes.isEmpty() || it.episodeType in episodeTypes }
+                        .mapTo(HashSet()) { it.episodeId }
+                    refreshOriginalIds = selectedIds
+                    0
+                }
                 LoadType.PREPEND -> return@withContext MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.APPEND -> state.pages.size * state.config.pageSize
+                LoadType.APPEND -> nextOffset ?: state.pages.sumOf { it.data.size }.also { nextOffset = it }
             }
 
             try {
-                val episodeTypes = getEpisodeTypeFiltersUseCase().first()
                 val episodes = episodeService.getEpisodeCollectionInfosPaged(
                     subjectId,
 
@@ -197,13 +228,32 @@ class EpisodeCollectionRepository(
                     offset = offset,
                     limit = state.config.pageSize,
                 )
-                episodes.page.filter { it.episodeInfo.type in episodeTypes }.takeIf { it.isNotEmpty() }?.let { list ->
+                if (episodes.page.isEmpty() && episodes.hasMore) {
+                    throw RepositoryRequestError("Bangumi 集數分頁 offset=$offset 未前進")
+                }
+                val selectedEpisodes = episodes.page.filter {
+                    episodeTypes.isEmpty() || it.episodeInfo.type in episodeTypes
+                }
+                refreshSeenIds += selectedEpisodes.map { it.episodeId }
+                selectedEpisodes.takeIf { it.isNotEmpty() }?.let { list ->
                     episodeCollectionDao.upsert(
                         list.map { it.toEntity(subjectId) },
                     )
                 }
 
-                MediatorResult.Success(endOfPaginationReached = episodes.hasMore)
+                val endOfPaginationReached = !episodes.hasMore
+                nextOffset = offset + episodes.page.size
+                if (endOfPaginationReached) {
+                    val staleIds = refreshOriginalIds.orEmpty().filterNot(refreshSeenIds::contains)
+                    if (staleIds.isNotEmpty()) {
+                        episodeCollectionDao.deleteAllByEpisodeIds(subjectId, staleIds)
+                    }
+                    refreshOriginalIds = null
+                    refreshSeenIds.clear()
+                    nextOffset = null
+                }
+
+                MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
             } catch (e: Exception) {
                 return@withContext MediatorResult.Error(RepositoryException.wrapOrThrowCancellation(e))
             }

@@ -9,6 +9,7 @@ import com.wynime.app.data.persistent.database.WynimeDatabase
 import com.wynime.app.data.repository.episode.AnimeScheduleRepository
 import com.wynime.app.data.repository.episode.BangumiCommentRepository
 import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
+import com.wynime.app.data.repository.episode.EpisodeCollectionSyncEnqueuer
 import com.wynime.app.data.repository.episode.EpisodeCommentRepository
 import com.wynime.app.data.repository.episode.EpisodeProgressRepository
 import com.wynime.app.data.repository.media.EpisodePreferencesRepository
@@ -188,6 +189,7 @@ fun KoinApplication.repositoryModules(
             episodeService = get(),
             subjectCollectionRepository = inject(),
             getEpisodeTypeFiltersUseCase = get(),
+            pendingSyncEnqueuer = getOrNull<EpisodeCollectionSyncEnqueuer>(),
         )
     }
 

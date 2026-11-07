@@ -48,7 +48,7 @@ class BangumiApiProvider(
     suspend fun <T : Any> nextSubjectRequest(block: suspend SubjectBangumiNextApi.() -> NextHttpResponse<T>): T {
         return withHttpClient { httpClient ->
             val api = SubjectBangumiNextApi(
-                baseUrl = BANGUMI_API_BASE_URL,
+                baseUrl = BANGUMI_NEXT_API_BASE_URL,
                 httpClient = httpClient,
             )
             currentAccessToken()?.let(api::setBearerToken)
@@ -59,7 +59,7 @@ class BangumiApiProvider(
     suspend fun <T : Any> nextEpisodeRequest(block: suspend EpisodeBangumiNextApi.() -> NextHttpResponse<T>): T {
         return withHttpClient { httpClient ->
             val api = EpisodeBangumiNextApi(
-                baseUrl = BANGUMI_API_BASE_URL,
+                baseUrl = BANGUMI_NEXT_API_BASE_URL,
                 httpClient = httpClient,
             )
             currentAccessToken()?.let(api::setBearerToken)

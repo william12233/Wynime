@@ -6,6 +6,7 @@ import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.plugins.BrowserUserAgent
 import io.ktor.client.plugins.HttpRedirect
 import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -36,11 +37,17 @@ fun createDefaultHttpClient(
     clientConfig: HttpClientConfig<*>.() -> Unit = {},
 ): HttpClient = HttpClient(getPlatformKtorEngine()) {
     install(HttpRequestRetry) {
-        maxRetries = 1
-        delayMillis { 1000 }
-        retryIf { cause, response ->
-
-            cause is IOException
+        maxRetries = 3
+        delayMillis { retry -> (750L * (retry + 1)).coerceAtMost(3_000L) }
+        retryOnExceptionIf { request, cause ->
+            request.method in RETRYABLE_METHODS &&
+                (cause is IOException || cause is ServerResponseException)
+        }
+        retryIf { request, response ->
+            request.method in RETRYABLE_METHODS &&
+                (response.status == HttpStatusCode.RequestTimeout ||
+                    response.status == HttpStatusCode.TooManyRequests ||
+                    response.status.value in 500..599)
         }
     }
     install(HttpCookies)
@@ -70,6 +77,12 @@ fun createDefaultHttpClient(
     expectSuccess = true
     clientConfig()
 }
+
+private val RETRYABLE_METHODS = setOf(
+    HttpMethod.Get,
+    HttpMethod.Head,
+    HttpMethod.Options,
+)
 
 fun HttpClient.registerLogging(
     logger: Logger = logger("ktor"),

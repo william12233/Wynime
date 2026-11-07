@@ -1,6 +1,5 @@
 package com.wynime.app.domain.player.extension
 
-import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -20,6 +19,7 @@ import com.wynime.utils.logging.logger
 import org.koin.core.Koin
 import org.openani.mediamp.MediampPlayer
 import kotlin.math.min
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
 
 class MarkAsWatchedExtension(
@@ -97,7 +97,9 @@ class MarkAsWatchedExtension(
                     logger.info { "观看到 90%, 标记看过" }
                     try {
                         setEpisodeCollectionTypeUseCase(subjectId, episodeId, UnifiedCollectionType.DONE)
-                    } catch (e: ClientRequestException) {
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
                         logger.warn("Failed to setEpisodeCollectionTypeUseCase, see cause", e)
                     }
                     cancelScope()

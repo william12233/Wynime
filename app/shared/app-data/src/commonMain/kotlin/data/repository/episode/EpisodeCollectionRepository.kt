@@ -1,6 +1,7 @@
 package com.wynime.app.data.repository.episode
 
 import androidx.paging.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
@@ -40,6 +41,7 @@ class EpisodeCollectionRepository(
     private val getEpisodeTypeFiltersUseCase: GetEpisodeTypeFiltersUseCase,
     defaultDispatcher: CoroutineContext = Dispatchers.Default,
     private val cacheExpiry: Duration = 1.hours,
+    private val pendingSyncEnqueuer: EpisodeCollectionSyncEnqueuer? = null,
 ) : Repository(defaultDispatcher) {
 
     private val subjectCollectionRepository by subjectCollectionRepository
@@ -54,15 +56,23 @@ class EpisodeCollectionRepository(
 
     fun episodeCollectionInfoFlow(subjectId: Int, episodeId: Int): Flow<EpisodeCollectionInfo> {
         return episodeCollectionDao.findByEpisodeId(episodeId).map { entity ->
-            entity?.takeIf { !it.isExpired() }
-                ?.toEpisodeCollectionInfo()
-                ?: kotlin.run {
-                    episodeService.getEpisodeCollectionById(subjectId, episodeId)
-                        ?.also {
-                            episodeCollectionDao.upsert(it.toEntity(subjectId))
-                        }
-                        ?: throw NoSuchElementException("Episode $episodeId not found")
+            val cached = entity?.toEpisodeCollectionInfo()
+            if (cached != null && !entity.isExpired()) return@map cached
+
+            try {
+                episodeService.getEpisodeCollectionById(subjectId, episodeId)
+                    ?.also { episodeCollectionDao.upsert(it.toEntity(subjectId)) }
+                    ?: cached
+                    ?: throw NoSuchElementException("Episode $episodeId not found")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                if (cached == null) throw e
+                logger.warn(e) {
+                    "Failed to refresh episode $episodeId; continuing with local data"
                 }
+                cached
+            }
         }.flowOn(defaultDispatcher)
     }
 
@@ -111,7 +121,8 @@ class EpisodeCollectionRepository(
     }.flowOn(defaultDispatcher)
 
     suspend fun setAllEpisodesWatched(subjectId: Int) = withContext(defaultDispatcher) {
-        if (subjectDao.findById(subjectId).first()?.collectionType == UnifiedCollectionType.NOT_COLLECTED) {
+        val subject = subjectDao.findById(subjectId).first()
+        if (subject == null || subject.collectionType == UnifiedCollectionType.NOT_COLLECTED) {
             logger.warn { "User has not yet collected subject $subjectId when setting all episodes watched." }
             return@withContext
         }
@@ -120,11 +131,23 @@ class EpisodeCollectionRepository(
             .map { it.episodeId }
 
         if (episodeIds.isEmpty()) return@withContext
-        val updated = episodeService.setEpisodeCollection(subjectId, episodeIds, UnifiedCollectionType.DONE)
-        if (!updated) {
-            throw RepositoryRequestError("Bangumi 沒有接受條目進度更新：subject=$subjectId")
-        }
         episodeCollectionDao.setAllEpisodesWatched(subjectId)
+        val pending = episodeIds.map { episodeId ->
+            EpisodeCollectionPendingChange(
+                subjectId = subjectId,
+                episodeId = episodeId,
+                collectionType = UnifiedCollectionType.DONE,
+                modifiedAt = currentTimeMillis(),
+            )
+        }
+        if (pendingSyncEnqueuer != null) {
+            pendingSyncEnqueuer.enqueue(pending)
+        } else {
+            val updated = episodeService.setEpisodeCollection(subjectId, episodeIds, UnifiedCollectionType.DONE)
+            if (!updated) {
+                throw RepositoryRequestError("Bangumi 沒有接受條目進度更新：subject=$subjectId")
+            }
+        }
     }
 
     suspend fun setEpisodeCollectionType(
@@ -132,19 +155,28 @@ class EpisodeCollectionRepository(
         episodeId: Int,
         collectionType: UnifiedCollectionType,
     ) = withContext(defaultDispatcher) {
-        if (subjectCollectionRepository.subjectCollectionFlow(subjectId)
-                .first().collectionType == UnifiedCollectionType.NOT_COLLECTED
-        ) {
+        val subject = subjectDao.findById(subjectId).first()
+        if (subject == null || subject.collectionType == UnifiedCollectionType.NOT_COLLECTED) {
             logger.warn { "User has not yet collected subject $subjectId when we want to setEpisodeCollectionType, ignoring." }
             return@withContext
         }
-        val updated = episodeService.setEpisodeCollection(subjectId, listOf(episodeId), collectionType)
-        if (!updated) {
-            throw RepositoryRequestError(
-                "Bangumi 沒有接受條目進度更新：subject=$subjectId episode=$episodeId",
-            )
-        }
         episodeCollectionDao.updateSelfCollectionType(subjectId, episodeId, collectionType)
+        val pending = EpisodeCollectionPendingChange(
+            subjectId = subjectId,
+            episodeId = episodeId,
+            collectionType = collectionType,
+            modifiedAt = currentTimeMillis(),
+        )
+        if (pendingSyncEnqueuer != null) {
+            pendingSyncEnqueuer.enqueue(listOf(pending))
+        } else {
+            val updated = episodeService.setEpisodeCollection(subjectId, listOf(episodeId), collectionType)
+            if (!updated) {
+                throw RepositoryRequestError(
+                    "Bangumi 沒有接受條目進度更新：subject=$subjectId episode=$episodeId",
+                )
+            }
+        }
     }
 
     suspend fun getEpisodeCollectionType(
@@ -255,6 +287,10 @@ class EpisodeCollectionRepository(
 
                 MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                if (episodeCollectionDao.filterBySubjectId(subjectId).first().isNotEmpty()) {
+                    return@withContext MediatorResult.Success(endOfPaginationReached = true)
+                }
                 return@withContext MediatorResult.Error(RepositoryException.wrapOrThrowCancellation(e))
             }
 

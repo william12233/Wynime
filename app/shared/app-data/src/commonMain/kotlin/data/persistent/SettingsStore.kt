@@ -9,6 +9,7 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.nullable
 import com.wynime.app.data.models.user.SelfInfo
 import com.wynime.app.data.repository.SavedWindowState
+import com.wynime.app.data.repository.episode.EpisodeCollectionPendingChanges
 import com.wynime.app.data.repository.media.MediaSourceSaves
 import com.wynime.app.data.repository.player.EpisodeHistories
 import com.wynime.app.data.repository.user.TokenSave
@@ -37,6 +38,17 @@ abstract class PlatformDataStoreManager {
             produceFile = { resolveDataStoreFile("episodeHistories") },
             corruptionHandler = ReplaceFileCorruptionHandler {
                 EpisodeHistories.Empty
+            },
+        )
+    }
+
+    val episodeCollectionPendingStore by lazy {
+        DataStoreFactory.create(
+            serializer = EpisodeCollectionPendingChanges.serializer()
+                .asDataStoreSerializer({ EpisodeCollectionPendingChanges() }),
+            produceFile = { resolveDataStoreFile("episodeCollectionPending") },
+            corruptionHandler = ReplaceFileCorruptionHandler {
+                EpisodeCollectionPendingChanges()
             },
         )
     }

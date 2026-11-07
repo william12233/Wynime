@@ -17,6 +17,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -111,6 +112,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 abstract class SubjectCollectionRepository(
@@ -261,7 +263,7 @@ class SubjectCollectionRepositoryImpl(
                     !existing.aliasesFetched
                 if (existing != null && !existing.aliasesFetched) {
                     // Do not start media search with a lightweight cache entry missing Bangumi aliases.
-                    if (refetchSubjectCollection(subjectId) == null) {
+                    if (tryRefetchKeepingCachedSubject(subjectId) == null) {
                         emit(existing)
                     }
                 } else {
@@ -269,7 +271,11 @@ class SubjectCollectionRepositoryImpl(
                         emit(existing)
                     }
                     if (needsRefetch) {
-                        refetchSubjectCollection(subjectId)
+                        if (existing == null) {
+                            refetchSubjectCollection(subjectId)
+                        } else {
+                            tryRefetchKeepingCachedSubject(subjectId)
+                        }
                     }
                 }
             }
@@ -325,6 +331,19 @@ class SubjectCollectionRepositoryImpl(
             episodeCollectionDao.deleteAllByEpisodeIds(subjectId, oldIds)
         }
         return subject
+    }
+
+    private suspend fun tryRefetchKeepingCachedSubject(subjectId: Int): SubjectCollectionDto? {
+        return try {
+            refetchSubjectCollection(subjectId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            logger.warn(e) {
+                "Failed to refresh cached subject $subjectId; continuing with local data"
+            }
+            null
+        }
     }
 
     private suspend fun saveEpisodeEntities(
@@ -633,7 +652,17 @@ class SubjectCollectionRepositoryImpl(
                 }
             }
         } catch (e: Exception) {
-            MediatorResult.Error(RepositoryException.wrapOrThrowCancellation(e))
+            if (e is CancellationException) throw e
+            val hasCachedCollections = withContext(defaultDispatcher) {
+                subjectCollectionDao.hasCachedCollections(query.type)
+            }
+            if (hasCachedCollections) {
+                // Paging already has usable local rows; keep them visible and retry the full refresh later.
+                scheduleBackgroundRefresh(query, pageSize)
+                MediatorResult.Success(endOfPaginationReached = true)
+            } else {
+                MediatorResult.Error(RepositoryException.wrapOrThrowCancellation(e))
+            }
         }
     }
 
@@ -1069,6 +1098,10 @@ class SubjectCollectionRepositoryImpl(
                 throw e
             } catch (e: Exception) {
                 logger.warn(e) { "Background collection refresh failed for type=${query.type}" }
+                backgroundRefreshScope.launch {
+                    delay(BACKGROUND_REFRESH_RETRY_DELAY)
+                    scheduleBackgroundRefresh(query, pageSize)
+                }
             } finally {
                 backgroundRefreshMutex.withLock {
                     if (backgroundRefreshJobs[query] === job) {
@@ -1123,6 +1156,7 @@ class SubjectCollectionRepositoryImpl(
         private val logger = logger<SubjectCollectionRepository>()
 
         private const val INVALIDATE_REFETCH_PARALLELISM = 4
+        private val BACKGROUND_REFRESH_RETRY_DELAY = 30.seconds
     }
 }
 

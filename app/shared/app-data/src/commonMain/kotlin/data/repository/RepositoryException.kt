@@ -75,7 +75,7 @@ fun RepositoryException.shouldRetry() = when (this) {
     is RepositoryAuthorizationException -> false
     is RepositoryNetworkException -> true
     is RepositoryRateLimitedException -> false
-    is RepositoryServiceUnavailableException -> false
+    is RepositoryServiceUnavailableException -> true
     is RepositoryUnknownException -> false
     is RepositoryRequestError -> false
 }

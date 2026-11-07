@@ -85,6 +85,7 @@ import com.wynime.app.domain.media.cache.MediaCacheState
 import com.wynime.app.domain.media.download.MediaDownloadManager
 import com.wynime.app.domain.media.fetch.MediaSourceManager
 import com.wynime.app.domain.media.fetch.MediaSourceResultsFilterer
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
 import com.wynime.app.domain.media.resolver.MediaResolver
 import com.wynime.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
 import com.wynime.app.domain.mediasource.instance.GetMediaSourceInstancesUseCase
@@ -815,8 +816,15 @@ open class EpisodeViewModel(
             return
         }
         val cachedMedia = runCatching { cache.getCachedMedia() }.getOrNull() ?: return
-        val selector = fetchPlayState.mediaSelectorFlow.filterNotNull().first()
-        selector.selectTemporarily(cachedMedia)
+        // Local-cache playback uses PlayerSession directly because selector creation requires remote metadata.
+        fetchPlayState.playerSession.loadMedia(
+            cachedMedia,
+            EpisodeMetadata(
+                title = cache.metadata.episodeName,
+                ep = cache.metadata.episodeEp,
+                sort = cache.metadata.episodeSort,
+            ),
+        )
     }
 
     init {

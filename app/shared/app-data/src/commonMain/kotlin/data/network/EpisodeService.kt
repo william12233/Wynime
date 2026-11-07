@@ -4,6 +4,7 @@ import io.ktor.client.plugins.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
 import com.wynime.app.data.models.episode.EpisodeCollectionInfo
 import com.wynime.app.data.models.episode.EpisodeInfo
 import com.wynime.app.data.repository.RepositoryRequestError
@@ -20,12 +21,16 @@ import com.wynime.datasources.bangumi.models.BangumiEpisode
 import com.wynime.datasources.bangumi.models.BangumiEpisodeDetail
 import com.wynime.datasources.bangumi.models.BangumiPatchUserSubjectEpisodeCollectionRequest
 import com.wynime.datasources.bangumi.models.BangumiUserEpisodeCollection
+import com.wynime.datasources.bangumi.next.models.BangumiNextEpisode
+import com.wynime.datasources.bangumi.next.models.BangumiNextEpisodeCollectionStatus
+import com.wynime.datasources.bangumi.next.models.BangumiNextEpisodeType
 import com.wynime.datasources.bangumi.processing.toCollectionType
 import com.wynime.datasources.bangumi.processing.toEpisodeCollectionType
 import com.wynime.utils.coroutines.IO_
 import com.wynime.utils.platform.currentTimeMillis
 import com.wynime.utils.serialization.BigNum
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 
 sealed interface EpisodeService {
 
@@ -113,24 +118,45 @@ class EpisodeServiceImpl(
 
     override suspend fun getEpisodeCollectionById(subjectId: Int, episodeId: Int): EpisodeCollectionInfo? =
         withContext(ioDispatcher) {
-            val episode = try {
-                val episode = bangumiApi.request { getEpisodeById(episodeId) }
-                episode
-            } catch (e: ClientRequestException) {
-                if (e.response.status == HttpStatusCode.NotFound) {
-                    return@withContext null
+            try {
+                val episode = try {
+                    bangumiApi.request { getEpisodeById(episodeId) }
+                } catch (e: ClientRequestException) {
+                    if (e.response.status == HttpStatusCode.NotFound) {
+                        return@withContext null
+                    }
+                    throw e
                 }
-                throw e
+                if (!bangumiApi.hasAccessToken()) {
+                    return@withContext episode.toEpisodeInfo().createNotCollected()
+                }
+                val collection = try {
+                    bangumiApi.request { getUserEpisodeCollection(episodeId) }
+                } catch (e: ClientRequestException) {
+                    if (e.response.status == HttpStatusCode.NotFound) null else throw e
+                }
+                collection?.toEpisodeCollectionInfo()
+                    ?: episode.toEpisodeInfo().createNotCollected()
+            } catch (e: ServerResponseException) {
+                return@withContext getEpisodeCollectionFromNextOrThrow(episodeId, e)
+            } catch (e: IOException) {
+                return@withContext getEpisodeCollectionFromNextOrThrow(episodeId, e)
             }
-            if (!bangumiApi.hasAccessToken()) return@withContext episode.toEpisodeInfo().createNotCollected()
-            val collection = try {
-                bangumiApi.request { getUserEpisodeCollection(episodeId) }
-            } catch (e: ClientRequestException) {
-                if (e.response.status == HttpStatusCode.NotFound) null else throw e
-            }
-            collection?.toEpisodeCollectionInfo()
-                ?: episode.toEpisodeInfo().createNotCollected()
         }
+
+    private suspend fun getEpisodeCollectionFromNextOrThrow(
+        episodeId: Int,
+        originalError: Throwable,
+    ): EpisodeCollectionInfo {
+        return try {
+            bangumiApi.nextEpisodeRequest { getEpisode(episodeId) }
+                .toEpisodeCollectionInfoFromNext()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            throw originalError
+        }
+    }
 
     private suspend fun loadUserEpisodeCollections(
         subjectId: Int,
@@ -235,6 +261,44 @@ private fun EpisodeInfo.createNotCollected(): EpisodeCollectionInfo {
 
 private fun BangumiUserEpisodeCollection.toEpisodeCollectionInfo() =
     EpisodeCollectionInfo(episode.toEpisodeInfo(), type.toCollectionType())
+
+private fun BangumiNextEpisode.toEpisodeCollectionInfoFromNext(): EpisodeCollectionInfo {
+    val episodeType = type.toWynimeEpisodeType()
+    return EpisodeCollectionInfo(
+        episodeInfo = EpisodeInfo(
+            episodeId = id,
+            type = episodeType,
+            name = name,
+            nameCn = nameCN,
+            airDate = runCatching { PackedDate.parseFromDate(airdate) }
+                .getOrDefault(PackedDate.Invalid),
+            comment = comment,
+            desc = desc.orEmpty(),
+            sort = EpisodeSort(sort, episodeType),
+            ep = EpisodeSort(sort, episodeType),
+        ),
+        collectionType = status.toUnifiedCollectionTypeFromNext(),
+    )
+}
+
+private fun BangumiNextEpisodeType.toWynimeEpisodeType(): EpisodeType? = when (this) {
+    BangumiNextEpisodeType.Normal -> MainStory
+    BangumiNextEpisodeType.Special -> SP
+    BangumiNextEpisodeType.OP -> OP
+    BangumiNextEpisodeType.ED -> ED
+    BangumiNextEpisodeType.Pre -> PV
+    BangumiNextEpisodeType.MAD -> MAD
+    BangumiNextEpisodeType.Other -> null
+}
+
+private fun BangumiNextEpisodeCollectionStatus?.toUnifiedCollectionTypeFromNext(): UnifiedCollectionType = when (this) {
+    BangumiNextEpisodeCollectionStatus.Wish -> UnifiedCollectionType.WISH
+    BangumiNextEpisodeCollectionStatus.Done -> UnifiedCollectionType.DONE
+    BangumiNextEpisodeCollectionStatus.Dropped -> UnifiedCollectionType.DROPPED
+    null,
+    BangumiNextEpisodeCollectionStatus.None,
+    -> UnifiedCollectionType.NOT_COLLECTED
+}
 
 internal fun BangumiEpisode.toEpisodeInfo(): EpisodeInfo {
     return EpisodeInfo(

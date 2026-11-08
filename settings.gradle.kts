@@ -20,6 +20,10 @@ dependencyResolutionManagement {
     @Suppress("UnstableApiUsage")
     repositories {
 
+        maven {
+            url = uri("https://repo.huaweicloud.com/repository/maven/")
+            content { includeGroupByRegex("org\\.jetbrains\\.kotlin(\\..*)?") }
+        }
         mavenCentral()
         google()
         mavenLocal()

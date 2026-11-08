@@ -133,7 +133,40 @@ class DefaultFileDownloaderTest {
             get("/unavailable") {
                 call.respond(HttpStatusCode.InternalServerError, "Internal Server Error")
             }
+            get("/unavailable-checksum") {
+                call.respondText(fileContent, ContentType.Text.Plain)
+            }
+            get("/unavailable-checksum.sha1") {
+                call.respond(HttpStatusCode.GatewayTimeout, "Gateway Time-out")
+            }
         }
+    }
+
+    @Test
+    fun `test unavailable checksum does not block download`() = testApplication {
+        setupRouting()
+
+        val downloader = DefaultFileDownloader(
+            createClient {
+                expectSuccess = true
+                install(HttpTimeout)
+            }.asScopedHttpClient(),
+        )
+        val tempDir = createTempDirectory(prefix = "file-downloader-test").toFile()
+        val targetFile = File(tempDir, "unavailable-checksum.txt")
+
+        val succeeded = downloader.download(
+            alternativeUrls = listOf("/unavailable-checksum"),
+            filenameProvider = { targetFile.name },
+            saveDir = tempDir.toKtPath().inSystem,
+        )
+
+        assertNotNull(succeeded, "A checksum gateway error must not block the file download.")
+        assertEquals(fileContent, targetFile.readText())
+        assertTrue(downloader.state.value is FileDownloaderState.Succeed)
+        assertEquals(false, (downloader.state.value as FileDownloaderState.Succeed).checked)
+
+        tempDir.deleteRecursively()
     }
 
     @Test

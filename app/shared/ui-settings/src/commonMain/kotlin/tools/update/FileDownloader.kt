@@ -1,7 +1,7 @@
 package com.wynime.app.tools.update
 
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
 import io.ktor.client.request.prepareRequest
@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
 import com.wynime.datasources.api.topic.FileSize.Companion.bytes
 import com.wynime.utils.coroutines.IO_
 import com.wynime.utils.coroutines.cancellableCoroutineScope
@@ -181,13 +182,16 @@ class DefaultFileDownloader(
             client.use { get("$url.sha1").body<String>().trim() }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: ClientRequestException) {
-            if (e.response.status == io.ktor.http.HttpStatusCode.NotFound) {
-                logger.info { "No remote SHA-1 found for: $url" }
-                null
-            } else {
-                throw e
+        } catch (e: ResponseException) {
+            logger.info(e) {
+                "Remote SHA-1 unavailable for $url (${e.response.status}); continuing without checksum"
             }
+            null
+        } catch (e: IOException) {
+            logger.info(e) {
+                "Remote SHA-1 request failed for $url; continuing without checksum"
+            }
+            null
         }
     }
 

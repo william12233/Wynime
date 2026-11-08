@@ -1,11 +1,14 @@
 package com.wynime.app.tools.update
 
 import io.ktor.client.call.body
-import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.plugins.timeout
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.prepareRequest
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentLength
 import io.ktor.utils.io.readAvailable
 import kotlinx.atomicfu.atomic
@@ -32,8 +35,11 @@ import com.wynime.utils.io.bufferedSource
 import com.wynime.utils.io.delete
 import com.wynime.utils.io.exists
 import com.wynime.utils.io.length
+import com.wynime.utils.io.moveTo
+import com.wynime.utils.io.name
 import com.wynime.utils.io.readAndDigest
 import com.wynime.utils.io.resolve
+import com.wynime.utils.io.resolveSibling
 import com.wynime.utils.ktor.ScopedHttpClient
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
@@ -78,6 +84,9 @@ class DefaultFileDownloader(
 ) : FileDownloader {
     private companion object {
         private val logger = logger<DefaultFileDownloader>()
+        private val SHA1_PATTERN = Regex("^[0-9a-f]{40}$")
+        private const val CHECKSUM_REQUEST_TIMEOUT_MILLIS = 15_000L
+        private const val DOWNLOAD_SOCKET_TIMEOUT_MILLIS = 30_000L
     }
 
     override val state = MutableStateFlow<FileDownloaderState>(FileDownloaderState.Idle)
@@ -114,6 +123,9 @@ class DefaultFileDownloader(
                 try {
                     val filename = filenameProvider(url)
                     val targetFile = saveDir.resolve(filename)
+                    withContext(Dispatchers.IO_) {
+                        targetFile.resolveSibling("${targetFile.name}.part").delete()
+                    }
 
                     val remoteChecksum = fetchRemoteChecksum(client, url)
 
@@ -178,80 +190,121 @@ class DefaultFileDownloader(
 
     private suspend fun fetchRemoteChecksum(client: ScopedHttpClient, url: String): String? {
         return try {
+            val checksum = client.use {
+                get("$url.sha1") {
+                    configureReleaseAssetRequest(url)
+                    timeout {
+                        requestTimeoutMillis = CHECKSUM_REQUEST_TIMEOUT_MILLIS
+                    }
+                }.body<String>()
+            }
+                .trim()
+                .split(Regex("\\s+"), limit = 2)
+                .firstOrNull()
+                ?.lowercase()
 
-            client.use { get("$url.sha1").body<String>().trim() }
+            checksum?.takeIf(SHA1_PATTERN::matches)
         } catch (e: CancellationException) {
             throw e
-        } catch (e: ResponseException) {
+        } catch (e: Throwable) {
             logger.info(e) {
-                "Remote SHA-1 unavailable for $url (${e.response.status}); continuing without checksum"
-            }
-            null
-        } catch (e: IOException) {
-            logger.info(e) {
-                "Remote SHA-1 request failed for $url; continuing without checksum"
+                "Remote SHA-1 unavailable for $url; continuing without checksum"
             }
             null
         }
     }
 
     private suspend fun tryDownload(client: ScopedHttpClient, url: String, file: SystemPath) {
-        cancellableCoroutineScope {
-            logger.info { "Attempting download: $url" }
-            try {
-                client.use {
-                    prepareRequest(url) {
-                        timeout {
-                            requestTimeoutMillis = 1_000_000
-                        }
-                    }.execute { resp ->
-                        val length = resp.contentLength()
-                        logger.info { "Downloading $url to ${file.absolutePath}, length=${(length ?: 0).bytes}" }
+        val temporaryFile = file.resolveSibling("${file.name}.part")
+        withContext(Dispatchers.IO_) {
+            temporaryFile.delete()
+        }
 
-                        val downloaded = object {
-                            val value = atomic(0L)
-                        }
+        try {
+            cancellableCoroutineScope {
+                logger.info { "Attempting download: $url" }
+                try {
+                    client.use {
+                        prepareRequest(url) {
+                            expectSuccess = true
+                            configureReleaseAssetRequest(url)
+                            timeout {
+                                requestTimeoutMillis = 1_000_000
+                                socketTimeoutMillis = DOWNLOAD_SOCKET_TIMEOUT_MILLIS
+                            }
+                        }.execute { resp ->
+                            val length = resp.contentLength()
+                            logger.info { "Downloading $url to ${file.absolutePath}, length=${(length ?: 0).bytes}" }
 
-                        val input = resp.bodyAsChannel()
-                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                            val downloaded = object {
+                                val value = atomic(0L)
+                            }
 
-                        if (length != null) {
-                            this@cancellableCoroutineScope.launch {
-                                while (isActive) {
-                                    delay(1.seconds)
-                                    _progress.value = downloaded.value.value.toFloat() / length
+                            val input = resp.bodyAsChannel()
+                            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
+                            if (length != null && length > 0) {
+                                this@cancellableCoroutineScope.launch {
+                                    while (isActive) {
+                                        delay(1.seconds)
+                                        _progress.value = downloaded.value.value.toFloat() / length
+                                    }
                                 }
                             }
-                        }
 
-                        file.bufferedSink().use { output ->
-                            while (!input.isClosedForRead) {
-                                val read = input.readAvailable(buffer)
-                                if (read == -1) {
-                                    break
-                                }
-                                downloaded.value.addAndGet(read.toLong())
-                                withContext(Dispatchers.IO_) {
-                                    output.write(buffer, 0, read)
+                            temporaryFile.bufferedSink().use { output ->
+                                while (!input.isClosedForRead) {
+                                    val read = input.readAvailable(buffer)
+                                    if (read == -1) {
+                                        break
+                                    }
+                                    downloaded.value.addAndGet(read.toLong())
+                                    withContext(Dispatchers.IO_) {
+                                        output.write(buffer, 0, read)
+                                    }
                                 }
                             }
-                        }
-                        _progress.value = 1f
 
-                        logger.info { "Successfully downloaded: $url" }
+                            if (length != null && downloaded.value.value != length) {
+                                throw IOException(
+                                    "Download ended early for $url: expected $length bytes, " +
+                                        "received ${downloaded.value.value}",
+                                )
+                            }
+                            _progress.value = 1f
+
+                            logger.info { "Successfully downloaded: $url" }
+                        }
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    logger.info(e) { "Failed to download $url" }
+                    throw e
+                } finally {
+                    cancelScope()
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                logger.info(e) { "Failed to download $url" }
-                throw e
-            } finally {
+            }
 
-                cancelScope()
+            withContext(Dispatchers.IO_) {
+                file.delete()
+                temporaryFile.moveTo(file)
+            }
+        } finally {
+            withContext(Dispatchers.IO_) {
+                temporaryFile.delete()
             }
         }
     }
+
+    private fun HttpRequestBuilder.configureReleaseAssetRequest(url: String) {
+        if (url.isGitHubReleaseAssetApiUrl()) {
+            header(HttpHeaders.Accept, "application/octet-stream")
+        }
+    }
+
+    private fun String.isGitHubReleaseAssetApiUrl(): Boolean =
+        startsWith("https://api.github.com/repos/") && contains("/releases/assets/")
 
     private fun computeLocalChecksum(file: SystemPath, algorithm: DigestAlgorithm): String {
         return file.bufferedSource().use {

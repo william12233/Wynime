@@ -74,14 +74,15 @@ object WindowsUpdateInstaller : DesktopUpdateInstaller {
         updateExecutable.copyTo(copiedUpdateExecutable, true)
 
         ProcessBuilder(
-            "cmd", "/c", "start", "cmd", "/c",
-            "\"", copiedUpdateExecutable.absolutePath, file.absolutePath, appDir.absolutePath, "\"",
+            copiedUpdateExecutable.absolutePath,
+            file.absolutePath,
+            appDir.absolutePath,
         )
             .directory(appDir)
             .start()
 
         logger.info { "Installer started" }
-        return exitProcessForUpdate(delayMillis = 0)
+        return exitProcessForUpdate(delayMillis = 500)
     }
 
     override fun deleteOldUpdater() {

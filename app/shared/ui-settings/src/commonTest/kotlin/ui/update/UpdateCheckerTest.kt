@@ -13,6 +13,7 @@ import com.wynime.utils.platform.Arch
 import com.wynime.utils.platform.Platform
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 
 class UpdateCheckerTest {
@@ -73,12 +74,38 @@ class UpdateCheckerTest {
     }
 
     @Test
-    fun `non-success response and malformed JSON are treated as no update`() = runTest {
+    fun `release asset exposes GitHub API download before browser download`() = runTest {
+        val result = checker(
+            """
+            [{"tag_name":"0.2","assets":[{"name":"wynime-0.2-windows-x86_64.zip","url":"https://api.github.com/repos/example/releases/assets/42","browser_download_url":"https://github.com/example/releases/download/v0.2/wynime-0.2-windows-x86_64.zip"}]}]
+            """.trimIndent(),
+            Platform.Windows(Arch.X86_64),
+        ).checkLatestVersion(ReleaseClass.STABLE, currentVersion = "0.1")
+
+        assertEquals(
+            listOf(
+                "https://api.github.com/repos/example/releases/assets/42",
+                "https://github.com/example/releases/download/v0.2/wynime-0.2-windows-x86_64.zip",
+            ),
+            result?.downloadUrlAlternatives,
+        )
+        assertEquals(
+            "https://api.github.com/repos/example/releases/assets/42",
+            result?.packageDescriptor?.downloadUrl,
+        )
+    }
+
+    @Test
+    fun `non-success response and malformed JSON are reported as check failures`() = runTest {
         val notFound = checker("{}", Platform.Windows(Arch.X86_64), HttpStatusCode.NotFound)
-        assertNull(notFound.checkLatestVersion(ReleaseClass.STABLE, currentVersion = "0.1"))
+        assertFailsWith<UpdateCheckException> {
+            notFound.checkLatestVersion(ReleaseClass.STABLE, currentVersion = "0.1")
+        }
 
         val malformed = checker("not-json", Platform.Windows(Arch.X86_64))
-        assertNull(malformed.checkLatestVersion(ReleaseClass.STABLE, currentVersion = "0.1"))
+        assertFailsWith<UpdateCheckException> {
+            malformed.checkLatestVersion(ReleaseClass.STABLE, currentVersion = "0.1")
+        }
     }
 
     private fun checker(

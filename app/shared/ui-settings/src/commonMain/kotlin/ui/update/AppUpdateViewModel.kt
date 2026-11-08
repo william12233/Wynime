@@ -55,25 +55,31 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
 
     private val latestVersionFlow = MutableStateFlow<NewVersion?>(null)
     private val lastCheckTime: MutableStateFlow<Long> = MutableStateFlow(0L)
+    private var lastCheckAttemptTime = 0L
 
     private val fileDownloaderPresenter = FileDownloaderPresenter(fileDownloader, backgroundScope)
     private val autoCheckTasker = MonoTasker(backgroundScope)
 
     private val installationTasker = MonoTasker(backgroundScope)
     private val checkUpdateErrorFlow = MutableStateFlow<LoadError?>(null)
+    private val checkStatusFlow = combine(checkUpdateErrorFlow, lastCheckTime) { error, lastCheck ->
+        error to lastCheck
+    }
 
     val presentationFlow = combine(
         latestVersionFlow,
         fileDownloaderPresenter.flow,
         autoCheckTasker.isRunning,
         installationRunner.state,
-        checkUpdateErrorFlow,
-    ) { latestVersion, fileDownloaderStats, isCheckingUpdate, installationState, checkUpdateError ->
-        val latestVersion = latestVersion
+        checkStatusFlow,
+    ) { latestVersion, fileDownloaderStats, isCheckingUpdate, installationState, checkStatus ->
+        val checkUpdateError = checkStatus.first
+        val lastCheckTime = checkStatus.second
         val state = when {
 
-            lastCheckTime.value == 0L -> AppUpdateState.ClickToCheck
-            latestVersion == null -> AppUpdateState.AlreadyUpToDate
+            lastCheckTime == 0L -> AppUpdateState.ClickToCheck
+            latestVersion == null && checkUpdateError == null -> AppUpdateState.AlreadyUpToDate
+            latestVersion == null -> AppUpdateState.ClickToCheck
             installationState is UpdateInstallationState.Installing -> AppUpdateState.Installing(latestVersion)
             installationState is UpdateInstallationState.WaitingForPermission ->
                 AppUpdateState.WaitingForPermission(latestVersion)
@@ -119,7 +125,12 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
         if (autoCheckTasker.isRunning.value) {
             return
         } else {
-            if (currentTimeMillis() - lastCheckTime.value < 1000 * 60 * 60 * 1) {
+            val retryInterval = if (checkUpdateErrorFlow.value != null) {
+                AUTOMATIC_RETRY_INTERVAL_MILLIS
+            } else {
+                AUTOMATIC_CHECK_INTERVAL_MILLIS
+            }
+            if (currentTimeMillis() - lastCheckAttemptTime < retryInterval) {
                 return
             }
 
@@ -133,6 +144,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
     ) {
         autoCheckTasker.launch {
             val updateSettings = updateSettings.first()
+            lastCheckAttemptTime = currentTimeMillis()
 
             checkUpdateErrorFlow.value = null
             val ver = try {
@@ -147,12 +159,11 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
                 throw e
             } catch (e: Throwable) {
                 checkUpdateErrorFlow.value = LoadError.fromException(e)
-                logger.info { "Auto update checking failed due to IOException: $e" }
+                logger.info { "Update checking failed: $e" }
                 return@launch
-            } finally {
-                lastCheckTime.value = currentTimeMillis()
             }
 
+            lastCheckTime.value = currentTimeMillis()
             latestVersionFlow.update { ver }
 
             if (ver != null && updateSettings.autoDownloadUpdate) {
@@ -196,10 +207,7 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
             }
             fileDownloader.download(
                 alternativeUrls = preparationUrls,
-                filenameProvider = { url ->
-                    if (descriptor?.downloadUrl == url) descriptor.filename
-                    else url.substringAfterLast("/", "")
-                },
+                filenameProvider = { url -> descriptor?.filename ?: url.substringAfterLast("/", "") },
                 saveDir = dir,
             )
         }
@@ -263,6 +271,11 @@ class AppUpdateViewModel : AbstractViewModel(), KoinComponent {
         } else {
             downloadTasker.cancel()
         }
+    }
+
+    private companion object {
+        private const val AUTOMATIC_CHECK_INTERVAL_MILLIS = 1000L * 60 * 60
+        private const val AUTOMATIC_RETRY_INTERVAL_MILLIS = 1000L * 60
     }
 }
 

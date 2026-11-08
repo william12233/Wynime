@@ -170,6 +170,40 @@ class DefaultFileDownloaderTest {
     }
 
     @Test
+    fun `test falls back to the next download URL after a gateway failure`() = testApplication {
+        routing {
+            get("/broken") {
+                call.respond(HttpStatusCode.GatewayTimeout, "Gateway Time-out")
+            }
+            get("/fallback") {
+                call.respondText(fileContent, ContentType.Text.Plain)
+            }
+        }
+
+        val downloader = DefaultFileDownloader(
+            createClient {
+                expectSuccess = true
+                install(HttpTimeout)
+            }.asScopedHttpClient(),
+        )
+        val tempDir = createTempDirectory(prefix = "file-downloader-test").toFile()
+        val targetFile = File(tempDir, "fallback.txt")
+
+        val succeeded = downloader.download(
+            alternativeUrls = listOf("/broken", "/fallback"),
+            filenameProvider = { targetFile.name },
+            saveDir = tempDir.toKtPath().inSystem,
+        )
+
+        assertNotNull(succeeded)
+        assertEquals(fileContent, targetFile.readText())
+        assertEquals("/fallback", (downloader.state.value as FileDownloaderState.Succeed).url)
+        assertTrue(!File(tempDir, "fallback.txt.part").exists())
+
+        tempDir.deleteRecursively()
+    }
+
+    @Test
     fun `test skip download if file already exists and matches checksum`() = testApplication {
         setupRouting()
 

@@ -19,6 +19,11 @@ import com.wynime.utils.platform.Platform
 import com.wynime.utils.platform.currentPlatform
 import kotlin.coroutines.cancellation.CancellationException
 
+class UpdateCheckException(
+    message: String,
+    cause: Throwable? = null,
+) : Exception(message, cause)
+
 class UpdateChecker(
     private val client: ScopedHttpClient,
     private val releasesUrl: String = WynimeBrand.githubReleasesApi,
@@ -37,17 +42,19 @@ class UpdateChecker(
                 header(HttpHeaders.UserAgent, "${WynimeBrand.name}/$currentVersion")
             }
             if (!response.status.isSuccess()) {
-                return@use null
+                throw UpdateCheckException(
+                    "GitHub releases request failed with ${response.status}",
+                )
             }
             response.bodyAsText()
-        } ?: return null
+        }
 
         val releases = try {
             json.decodeFromString<List<GitHubRelease>>(responseBody)
         } catch (error: CancellationException) {
             throw error
-        } catch (_: Throwable) {
-            return null
+        } catch (error: Throwable) {
+            throw UpdateCheckException("GitHub releases response was not valid JSON", error)
         }
 
         val current = ReleaseVersion.parse(currentVersion) ?: return null
@@ -65,11 +72,14 @@ class UpdateChecker(
                 val assets = assetNames.mapNotNull { expected ->
                     release.assets.firstOrNull { it.name == expected }
                         ?.let { asset ->
-                            asset.browserDownloadUrl.takeIf(String::isNotBlank)?.let { url -> asset.name to url }
+                            val urls = listOf(asset.apiUrl, asset.browserDownloadUrl)
+                                .filter(String::isNotBlank)
+                                .distinct()
+                            urls.takeIf { it.isNotEmpty() }?.let { asset.name to it }
                         }
                 }
                 if (assets.isEmpty()) return@mapNotNull null
-                val (assetName, assetUrl) = assets.first()
+                val (assetName, assetUrls) = assets.first()
                 val abi = assetName
                     .removePrefix("wynime-${version.displayName}-")
                     .removeSuffix(".apk")
@@ -84,12 +94,12 @@ class UpdateChecker(
                             changes = release.body.orEmpty(),
                         ),
                     ),
-                    downloadUrlAlternatives = assets.map { it.second },
+                    downloadUrlAlternatives = assets.flatMap { it.second }.distinct(),
                     publishedAt = release.publishedAt.orEmpty(),
                     packageDescriptor = UpdatePackageDescriptor(
                         version = version.displayName,
                         filename = assetName,
-                        downloadUrl = assetUrl,
+                        downloadUrl = assetUrls.first(),
                         abi = abi,
                     ),
                 ) to version
@@ -127,8 +137,11 @@ class UpdateChecker(
     @Serializable
     private data class GitHubAsset(
         val name: String,
+        val url: String = "",
         @SerialName("browser_download_url") val browserDownloadUrl: String,
-    )
+    ) {
+        val apiUrl: String get() = url
+    }
 
     private data class ReleaseVersion(
         val displayName: String,

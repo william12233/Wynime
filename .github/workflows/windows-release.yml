@@ -92,6 +92,12 @@ jobs:
             'jvm.toolchain.version=21'
           ) | Set-Content -LiteralPath local.properties
 
+      - name: Prepare WiX toolset
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: python .github/workflows/download_wix.py
+
       - name: Get JBR (Windows)
         id: get-jbr
         env:

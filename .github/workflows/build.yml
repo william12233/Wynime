@@ -60,6 +60,11 @@ jobs:
       env:
         FIREBASE_GA_APP_ID: ${{ secrets.FIREBASE_GA_APP_ID }}
         FIREBASE_GA_API_SECRET: ${{ secrets.FIREBASE_GA_API_SECRET }}
+    - name: Prepare WiX toolset
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: pwsh
+      run: python .github/workflows/download_wix.py
     - id: step-4
       name: Get JBR (Windows)
       env:
@@ -276,6 +281,11 @@ jobs:
       env:
         FIREBASE_GA_APP_ID: ${{ secrets.FIREBASE_GA_APP_ID }}
         FIREBASE_GA_API_SECRET: ${{ secrets.FIREBASE_GA_API_SECRET }}
+    - name: Prepare WiX toolset
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: pwsh
+      run: python .github/workflows/download_wix.py
     - id: step-4
       name: Setup Android SDK
       uses: android-actions/setup-android@v3

@@ -7,8 +7,8 @@ pluginManagement {
     includeBuild("build-logic")
 
     repositories {
-        gradlePluginPortal()
         mavenCentral()
+        gradlePluginPortal()
         google()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }

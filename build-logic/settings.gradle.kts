@@ -2,8 +2,8 @@ rootProject.name = "build-logic"
 
 dependencyResolutionManagement {
     repositories {
-        gradlePluginPortal()
         mavenCentral()
+        gradlePluginPortal()
         google()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }

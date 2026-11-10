@@ -8,7 +8,6 @@ plugins {
     alias(libs.plugins.androidx.room)
     idea
 }
-
 kotlin {
     android {
         namespace = "com.wynime.app.data"
@@ -121,30 +120,7 @@ ksp {
 dependencies {
     kspDesktop(libs.androidx.room.compiler)
     kspAndroid(libs.androidx.room.compiler)
-
 }
 
-val pluginResourceRoot = rootProject.layout.projectDirectory.dir("source/plugins")
-val bundledPluginManifests = tasks.register<Copy>("copyBundledPluginManifests") {
-    from(pluginResourceRoot.dir("manifests"))
-    into("src/commonMain/composeResources/files/source-plugins/manifests")
-}
-val bundledAndroidPlugins = tasks.register<Copy>("copyBundledAndroidPlugins") {
-    from(pluginResourceRoot.dir("artifacts")) { include("source-*-android.jar") }
-    into("src/androidMain/composeResources/files/source-plugins/artifacts")
-    dependsOn(bundledPluginManifests)
-}
-val bundledWindowsPlugins = tasks.register<Copy>("copyBundledWindowsPlugins") {
-    from(pluginResourceRoot.dir("artifacts")) { include("source-*.jar"); exclude("*-android.jar") }
-    into("src/desktopMain/composeResources/files/source-plugins/artifacts")
-    dependsOn(bundledPluginManifests)
-}
-tasks.matching { it.name in setOf("prepareComposeResourcesTaskForCommonMain", "copyNonXmlValueResourcesForCommonMain", "convertXmlValueResourcesForCommonMain") }.configureEach {
-    dependsOn(bundledPluginManifests)
-}
-tasks.matching { it.name in setOf("prepareComposeResourcesTaskForAndroidMain", "copyNonXmlValueResourcesForAndroidMain", "convertXmlValueResourcesForAndroidMain") }.configureEach {
-    dependsOn(bundledAndroidPlugins)
-}
-tasks.matching { it.name in setOf("prepareComposeResourcesTaskForDesktopMain", "copyNonXmlValueResourcesForDesktopMain", "convertXmlValueResourcesForDesktopMain") }.configureEach {
-    dependsOn(bundledWindowsPlugins)
-}
+// Source plugins are downloaded and verified from the remote repository at runtime.
+// The application package intentionally contains no source-plugin artifacts.

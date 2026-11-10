@@ -26,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -137,7 +138,9 @@ fun MediaSelectorWebSourcesColumn(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
 
         list.forEach { source ->
-            card(source)
+            key(source.instanceId) {
+                card(source)
+            }
         }
 
         TextButton(

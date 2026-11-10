@@ -29,6 +29,7 @@ val pluginIds = listOf(
     "baimao",
     "akianime",
     "mxdm",
+    "bfzy",
 )
 fun isValidSemanticVersion(value: String): Boolean = Regex(
     "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$",

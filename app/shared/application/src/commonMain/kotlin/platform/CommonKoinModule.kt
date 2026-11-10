@@ -94,7 +94,6 @@ import com.wynime.app.domain.sourceplugin.SourcePluginContextFactory
 import com.wynime.app.domain.sourceplugin.SourcePluginHttpClient
 import com.wynime.app.domain.sourceplugin.SourcePluginInstaller
 import com.wynime.app.domain.sourceplugin.SourcePluginLoader
-import com.wynime.app.domain.sourceplugin.ResourceSourcePluginPackages
 import com.wynime.app.domain.sourceplugin.SourcePluginRegistry
 import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryClient
 import com.wynime.app.domain.sourceplugin.SourcePluginStorage
@@ -343,7 +342,6 @@ private fun KoinApplication.otherModules(
             installer = get(),
             loader = get(),
             contextFactory = get(),
-            bundledPackages = ResourceSourcePluginPackages(currentSourcePluginPlatform),
         )
     }
 

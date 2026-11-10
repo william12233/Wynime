@@ -1,0 +1,27 @@
+{
+  "id": "bfzy",
+  "name": "暴風資源",
+  "version": "1.1.0",
+  "pluginApiVersion": 3,
+  "minHostVersion": "0.1.3",
+  "entryClass": "tw.wynime.sources.bfzy.BfzyEntryPoint",
+  "website": "https://bfzy.tv/",
+  "icon": "https://bfzy.tv/favicon.ico",
+  "description": "暴風資源公開影片與 bfzym3u8 播放來源。",
+  "platforms": [
+    "desktop",
+    "android"
+  ],
+  "artifacts": {
+    "desktop": {
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-bfzy-v1.1.0/source/plugins/artifacts/source-bfzy.jar",
+      "sha256": "803e7370f6ed8ba138db603b3d47e202601b0cad7350139523d173e2c19daebf",
+      "format": "jar"
+    },
+    "android": {
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-bfzy-v1.1.0/source/plugins/artifacts/source-bfzy-android.jar",
+      "sha256": "8f8da08a9cb7ad233c8e9e9ec8bdac651a3bf440e45f098897711d425097194d",
+      "format": "jar"
+    }
+  }
+}

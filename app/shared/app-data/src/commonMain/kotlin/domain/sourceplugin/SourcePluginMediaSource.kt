@@ -49,7 +49,10 @@ class SourcePluginMediaSource(
         displayName = plugin.metadata.displayName,
         description = plugin.metadata.description,
         websiteUrl = plugin.metadata.website,
-        iconUrl = plugin.metadata.iconUrl,
+        iconUrl = plugin.metadata.iconUrl
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: plugin.metadata.website.trimEnd('/') + "/favicon.ico",
         tier = null,
     )
 

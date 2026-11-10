@@ -5,7 +5,7 @@
     {
       "id": "eacg",
       "name": "E-ACG",
-      "version": "1.0.35",
+      "version": "1.0.36",
       "description": "E-ACG 動畫來源",
       "website": "https://eacg1.com/",
       "icon": "https://k8dm.com/template/vfed/asset/img/favicon.png",
@@ -57,7 +57,7 @@
     {
       "id": "2rk",
       "name": "2RK",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "description": "2RK 動畫來源",
       "website": "https://www.2rk.cc/",
       "icon": "https://www.2rk.cc/logo.png",
@@ -131,6 +131,19 @@
         "android"
       ],
       "manifest": "manifests/dyttzy.json"
+    },
+    {
+      "id": "bfzy",
+      "name": "暴風資源",
+      "version": "1.1.0",
+      "description": "暴風資源公開影片與 bfzym3u8 播放來源",
+      "website": "https://bfzy.tv/",
+      "icon": "https://bfzy.tv/favicon.ico",
+      "platforms": [
+        "desktop",
+        "android"
+      ],
+      "manifest": "manifests/bfzy.json"
     }
   ]
 }

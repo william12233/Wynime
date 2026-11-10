@@ -19,6 +19,7 @@ import tw.wynime.sources.shared.links
 import tw.wynime.sources.shared.isMediaUrl
 import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.searchQueryVariants
+import tw.wynime.sources.shared.SourceSiteException
 
 class EacgEntryPoint : SourcePluginEntryPoint {
     override fun create(context: SourcePluginContext): SourcePlugin = EacgPlugin(context)
@@ -42,15 +43,19 @@ internal class EacgPlugin(context: SourcePluginContext) : SitePluginBase(
         val variants = searchQueryVariants(request.query)
         val searchResults = mutableListOf<SourceSubject>()
         for (variant in variants) {
-            searchResults += dynamicSearchLinks(
+            val searchPage = try {
                 requestPage(
                     "$rootUrl/vodsearch/-------------.html?wd=${urlEncode(variant)}",
                     traceId = request.traceId,
                     entryPoint = request.entryPoint,
-                ).html,
-                variant,
-                detailPattern,
-            )
+                ).html
+            } catch (_: SourceSiteException) {
+                // E-ACG protects the query endpoint with Cloudflare while its
+                // catalogue and playback pages remain available. Continue to
+                // the public catalogue fallback instead of failing the source.
+                ""
+            }
+            searchResults += dynamicSearchLinks(searchPage, variant, detailPattern)
             if (searchResults.distinctBy { it.id }.size >= request.limit) break
         }
         val uniqueSearchResults = searchResults.distinctBy { it.id }.take(request.limit)

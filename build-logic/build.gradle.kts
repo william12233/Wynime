@@ -17,10 +17,8 @@ fun toolchainProperty(name: String): Provider<String> =
         .orElse(providers.gradleProperty(name))
 
 kotlin {
-    jvmToolchain {
-        toolchainProperty("jvm.toolchain.vendor").orNull?.let { vendor.set(JvmVendorSpec.matching(it)) }
-        toolchainProperty("jvm.toolchain.version").orNull?.let { languageVersion.set(JavaLanguageVersion.of(it)) }
-    }
+    // build-logic is compiled by the JDK launching Gradle. Avoid a second
+    // toolchain lookup here; managed runners already provide Java 21.
     compilerOptions {
         optIn.add("org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi")
     }

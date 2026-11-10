@@ -16,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import tw.wynime.sources.akianime.AkianimeEntryPoint
 import tw.wynime.sources.baimao.BaimaoEntryPoint
+import tw.wynime.sources.bfzy.BfzyEntryPoint
 import tw.wynime.sources.mxdm.MxdmEntryPoint
 
 class KazumiSourcePluginFixtureTest {
@@ -170,6 +171,33 @@ class KazumiSourcePluginFixtureTest {
         }
     }
 
+    @Test
+    fun `bfzy parses public m3u8 episodes and resolves the player page`() = runBlocking {
+        val plugin = BfzyEntryPoint().create(FixtureContext("bfzy") { request ->
+            when {
+                "/vod/search/" in request.url ->
+                    "<a href=\"/index.php/vod/detail/id/48096.html\">遮天动画版</a>"
+                "/vod/detail/id/48096.html" in request.url -> BFZY_SUBJECT
+                "/vod/play/id/48096/sid/1/nid/1.html" in request.url -> BFZY_PLAY_PAGE
+                else -> "<html><body>ok</body></html>"
+            }
+        })
+        try {
+            val subject = plugin.search(SourceSearchRequest("遮天动画版")).single()
+            val details = plugin.getSubject(subject.id)
+            val channel = details.channels.single()
+            val resolved = plugin.resolve(SourceResolveRequest(subject.id, channel.channel.id, channel.episodes.single().id))
+
+            assertEquals("48096", subject.id)
+            assertEquals("bfzym3u8", channel.channel.displayName)
+            assertEquals("https://cdn.example/bfzy.m3u8", resolved.url)
+            assertEquals(ResolvedMediaFormat.HLS, resolved.format)
+            assertEquals(SourceWebResourceMatch.Matched(resolved.url), plugin.matchWebResource(resolved.url))
+        } finally {
+            plugin.close()
+        }
+    }
+
     private class FixtureContext(
         override val pluginId: String,
         private val responseHeaders: (SourceHttpRequest) -> Map<String, String> = { emptyMap() },
@@ -227,6 +255,16 @@ class KazumiSourcePluginFixtureTest {
                 <div class="row"><ul><li><a href="/play/7202-1-1/">第01集</a></li></ul></div>
                 <div class="row"><ul><li><a href="/play/7202-2-1/">第01集</a></li></ul></div>
             </div>
+        """
+
+        const val BFZY_SUBJECT = """
+            <title>遮天动画版详情介绍-遮天动画版在线观看</title>
+            <h4><div>bfzym3u8地址</div></h4>
+            <a href="/index.php/vod/play/id/48096/sid/1/nid/1.html">第01集</a>
+        """
+
+        const val BFZY_PLAY_PAGE = """
+            <script>var player_aaaa={"url":"https://cdn.example/bfzy.m3u8","from":"bfzym3u8"}</script>
         """
     }
 }

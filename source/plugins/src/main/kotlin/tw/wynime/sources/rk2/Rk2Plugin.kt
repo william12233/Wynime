@@ -124,7 +124,10 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
             entryPoint = request.entryPoint,
         )
         val mediaUrl = extractJsonStringField(page.html, "source")
-            ?: Regex("(?is)loadSource\\s*\\(\\s*[\"']([^\"']+)[\"']").find(page.html)?.groupValues?.getOrNull(1)
+            ?: Regex("(?is)(?:loadSource|loadSrc)\\s*\\(\\s*[\"']([^\"']+)[\"']")
+                .find(page.html)?.groupValues?.getOrNull(1)
+            ?: Regex("(?is)(?:data-src|data-url|src)\\s*=\\s*[\"'](https?://[^\"']+\\.m3u8(?:\\?[^\"']*)?)[\"']")
+                .find(page.html)?.groupValues?.getOrNull(1)
             ?: Regex("https?://[^\"'<>\\s]+\\.m3u8(?:\\?[^\"'<>\\s]*)?").find(page.html)?.value
         val resolved = resolvedMedia(request, page.finalUrl, mediaUrl ?: page.finalUrl, headers = lineHeaders)
         resolved.copy(

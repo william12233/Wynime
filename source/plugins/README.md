@@ -19,19 +19,19 @@ JAR 會輸出到 `build/plugins/`，並同步寫入主專案的 `source/plugins/
 
 Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入；桌面 artifact 保留 JVM class。
 
-`index.json` 與各 `manifests/*.json` 是公開倉庫的機器可讀索引，更新 artifact 後必須同步更新 SHA-256。
+`index.json` 與各 `manifests/*.json` 是公開倉庫的機器可讀索引，更新 artifact 後必須同步更新 SHA-256。App 不會把這些 manifest 或 JAR 打包進安裝檔；新安裝與更新都從遠端倉庫下載並驗證。
 
-每個插件版本由 `versions/<id>.properties` 獨立管理；App 版本更新不會自動替換插件版本。版本常數只會編譯進對應插件的 artifact，不會由共用 runtime 映射決定。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，與 App release tag 分離；官方索引只提供每個插件的最新版，App 內置套件只用於既有安裝的遷移。
+每個插件版本由 `versions/<id>.properties` 獨立管理；App 版本更新不會自動替換插件版本。版本常數只會編譯進對應插件的 artifact，不會由共用 runtime 映射決定。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，與 App release tag 分離；官方索引只提供每個插件的最新版，App 不內置任何來源插件。
 
-版本號依該插件的程式碼修訂次數計算；修訂次數包含插件專屬程式碼，以及該插件實際打包的共用 `SitePluginBase` 程式碼。除 eacg 保留 `1.0.x` 版本線外，其餘插件使用 `1.<修訂次數>.0`：
+版本號依該插件的程式碼修訂次數計算；修訂次數包含插件專屬程式碼，以及該插件實際打包的共用 `SitePluginBase` 程式碼。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，App 只讀取遠端索引並下載對應平台 artifact；除 eacg 保留 `1.0.x` 版本線外，其餘插件使用 `1.<修訂次數>.0`：
 
 | ID | 程式碼修訂次數 | 版本 |
 | --- | ---: | --- |
-| `eacg` | 7 | `1.0.35` |
+| `eacg` | 8 | `1.0.36` |
 | `next` | 7 | `1.7.1` |
 | `dm1` | 6 | `1.6.0` |
 | `girigiri` | 6 | `1.6.0` |
-| `2rk` | 6 | `1.6.0` |
+| `2rk` | 7 | `1.7.0` |
 | `dmbus` | 6 | `1.6.0` |
 | `dyttzy` | 4 | `1.4.0` |
 | `baimao` | 2 | `1.2.0` |
@@ -52,6 +52,7 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 | `baimao` | [白猫動漫](https://www.bmmdmm.com/) | `新网球王子` | 播放頁由站方播放器處理 |
 | `akianime` | [AkiAnime](https://www.akianime.cc/) | `新网球王子 U-17 世界杯 半决赛` | 公開 HLS 優先，其他線路由站方播放器處理 |
 | `mxdm` | [MX動漫](https://www.dcc3.com/) | `黑子的篮球第二季` | 播放頁由站方播放器處理 |
+| `bfzy` | [暴風資源](https://bfzy.tv/) | `遮天动画版` | 只使用站方公開 `bfzym3u8` HLS；播放一集、下載一集後刪除 |
 
 線路名稱直接使用網站回傳的初始名稱。煙霧測試只驗證站點正常提供的媒體請求；遇到 TLS 憑證錯誤、破損 playlist、網盤或圖片偽裝串流時，必須記錄為未通過，不能用繞過驗證或替換第三方來源冒充成功。電影天堂只接受 API 回傳的 `dyttm3u8` 直接 HLS，`dytt` 分享網址與 `vod_down_url` 不作為播放或下載來源。
 

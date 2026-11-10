@@ -32,7 +32,6 @@ class SourcePluginRegistry(
     private val installer: SourcePluginInstaller,
     private val loader: SourcePluginLoader,
     private val contextFactory: SourcePluginContextFactory,
-    private val bundledPackages: BundledSourcePluginPackages? = null,
 ) : AutoCloseable {
     private val logger = logger<SourcePluginRegistry>()
     private val loaded = LinkedHashMap<String, LoadedSourcePlugin>()
@@ -54,7 +53,6 @@ class SourcePluginRegistry(
     suspend fun loadInstalled() {
         closeLoadedPlugins()
         removeRetiredPlugins()
-        migrateBundledPlugins()
         val current = installedRepository.snapshot().plugins
         _states.value = current.map { installed ->
             if (installed.manifest.pluginApiVersion != SOURCE_PLUGIN_API_VERSION) {
@@ -91,23 +89,6 @@ class SourcePluginRegistry(
         val installed = installer.install(entry, validate)
         loadInstalled()
         return installed
-    }
-
-    suspend fun bundledEntries(): List<SourcePluginIndexEntry> {
-        val packages = bundledPackages ?: return emptyList()
-        return packages.pluginIds.map { id ->
-            val manifest = packages.manifest(id)
-            SourcePluginIndexEntry(
-                id = id,
-                displayName = manifest.displayName,
-                version = manifest.version,
-                description = manifest.description,
-                website = manifest.website,
-                icon = manifest.icon,
-                platforms = manifest.platforms,
-                manifest = "manifests/$id.json",
-            )
-        }
     }
 
     suspend fun setEnabled(pluginId: String, enabled: Boolean) {
@@ -174,28 +155,6 @@ class SourcePluginRegistry(
         } catch (throwable: Throwable) {
             loadedPlugin.close()
             throw throwable
-        }
-    }
-
-    private suspend fun migrateBundledPlugins() {
-        val packages = bundledPackages ?: return
-        for (installed in installedRepository.snapshot().plugins) {
-            if (installed.manifest.pluginApiVersion == SOURCE_PLUGIN_API_VERSION &&
-                Path(installed.artifactPath).inSystem.let { it.exists() && it.isRegularFile() }
-            ) continue
-            if (installed.id !in packages.pluginIds) continue
-            try {
-                val manifest = packages.manifest(installed.id)
-                check(manifest.id == installed.id)
-                installer.installBundled(manifest, { artifact -> packages.artifact(installed.id, artifact) }) { candidate ->
-                    val loadedCandidate = loadUnregistered(candidate)
-                    loadedCandidate.close()
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Throwable) {
-                logger.warn(error) { "Source plugin ${installed.id} migration failed; keeping its installed files for retry" }
-            }
         }
     }
 

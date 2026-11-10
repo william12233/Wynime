@@ -17,6 +17,7 @@ for plugin_id in (
     "baimao",
     "akianime",
     "mxdm",
+    "bfzy",
 ):
     path = directory / "manifests" / f"{plugin_id}.json"
     manifest = json.loads(path.read_text(encoding="utf-8"))
@@ -47,4 +48,4 @@ for plugin_id in (
                 assert "classes.dex" not in names
         artifact["sha256"] = hashlib.sha256(payload.read_bytes()).hexdigest()
     path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-print("Ten JVM/Dex manifests refreshed from validated local artifacts")
+print("Eleven JVM/Dex manifests refreshed from validated local artifacts")

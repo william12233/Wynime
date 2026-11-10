@@ -72,10 +72,7 @@ class UpdateChecker(
                 val assets = assetNames.mapNotNull { expected ->
                     release.assets.firstOrNull { it.name == expected }
                         ?.let { asset ->
-                            // The browser URL is a direct release-asset download. The API URL
-                            // returns asset metadata unless the request includes GitHub's
-                            // octet-stream Accept header, which the generic downloader does not.
-                            val urls = listOf(asset.browserDownloadUrl, asset.apiUrl)
+                            val urls = listOf(asset.apiUrl, asset.browserDownloadUrl)
                                 .filter(String::isNotBlank)
                                 .distinct()
                             urls.takeIf { it.isNotEmpty() }?.let { asset.name to it }

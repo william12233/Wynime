@@ -9,7 +9,9 @@ import io.ktor.client.request.header
 import io.ktor.client.request.prepareRequest
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.HttpHeaders
+import io.ktor.http.ContentType
 import io.ktor.http.contentLength
+import io.ktor.http.contentType
 import io.ktor.utils.io.readAvailable
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.Dispatchers
@@ -233,6 +235,11 @@ class DefaultFileDownloader(
                                 socketTimeoutMillis = DOWNLOAD_SOCKET_TIMEOUT_MILLIS
                             }
                         }.execute { resp ->
+                            if (url.isGitHubReleaseAssetApiUrl() &&
+                                resp.contentType()?.match(ContentType.Application.Json) == true
+                            ) {
+                                throw IOException("GitHub release asset endpoint returned JSON metadata instead of the binary")
+                            }
                             val length = resp.contentLength()
                             logger.info { "Downloading $url to ${file.absolutePath}, length=${(length ?: 0).bytes}" }
 

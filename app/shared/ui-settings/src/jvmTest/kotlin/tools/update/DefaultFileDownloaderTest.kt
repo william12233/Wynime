@@ -111,6 +111,35 @@ class DefaultFileDownloaderTest {
         tempDir.deleteRecursively()
     }
 
+    @Test
+    fun `GitHub API metadata response falls back to the direct asset URL`() = testApplication {
+        routing {
+            get("/repos/example/releases/assets/42") {
+                call.respondText("{\"name\":\"asset.apk\"}", ContentType.Application.Json)
+            }
+            get("/download/asset.apk") {
+                call.respond(byteArrayOf(0x50, 0x4b, 0x03, 0x04))
+            }
+        }
+
+        val downloader = DefaultFileDownloader(
+            createClient { expectSuccess = true }.asScopedHttpClient(),
+        )
+        val tempDir = createTempDirectory(prefix = "file-downloader-test").toFile()
+        val target = downloader.download(
+            alternativeUrls = listOf(
+                "https://api.github.com/repos/example/releases/assets/42",
+                "/download/asset.apk",
+            ),
+            filenameProvider = { "asset.apk" },
+            saveDir = tempDir.toKtPath().inSystem,
+        )
+
+        assertNotNull(target)
+        assertEquals(byteArrayOf(0x50, 0x4b, 0x03, 0x04).toList(), File(tempDir, "asset.apk").readBytes().toList())
+        tempDir.deleteRecursively()
+    }
+
     private fun ApplicationTestBuilder.setupRouting() {
         routing {
 

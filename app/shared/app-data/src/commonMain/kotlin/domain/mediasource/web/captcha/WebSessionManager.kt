@@ -13,7 +13,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -210,6 +209,17 @@ class WebSessionManager(
 
         try {
             val browser = session.browser
+            val current = browser.currentPage()
+            if (current != null &&
+                isRelevantPage(current, host) &&
+                pendingPageKey(current.finalUrl) == pendingPageKey(url)
+            ) {
+                val currentVerdict = evaluator.evaluate(current, expectation)
+                if (currentVerdict is PageVerdict.Ok) {
+                    syncBrowserIdentity(host, browser, current.finalUrl, url)
+                    return currentVerdict
+                }
+            }
             browser.navigate(url)
             var last: PageVerdict<T>? = null
             val decisive = withTimeoutOrNull(browserLoadTimeout) {
@@ -448,24 +458,14 @@ class WebSessionManager(
                 },
             )
             publishUi(ui)
-            try {
-                return coroutineScope {
-                    val watcher = launch {
-                        browserPages(browser, host).collect { page ->
-                            if (evaluator.evaluate(page, request.expectation) is PageVerdict.Ok) {
-                                userDecision.complete(SolveOutcome.Solved)
-                            }
-                        }
-                    }
-                    browser.navigate(request.pageUrl)
-                    val outcome = userDecision.await()
-                    watcher.cancel()
-                    if (outcome == SolveOutcome.Solved) {
-                        val finalUrl = browser.currentPage()?.finalUrl ?: request.pageUrl
-                        syncBrowserIdentity(host, browser, finalUrl, request.pageUrl)
-                    }
-                    outcome
+            return try {
+                browser.navigate(request.pageUrl)
+                val outcome = userDecision.await()
+                if (outcome == SolveOutcome.Solved) {
+                    val finalUrl = browser.currentPage()?.finalUrl ?: request.pageUrl
+                    syncBrowserIdentity(host, browser, finalUrl, request.pageUrl)
                 }
+                outcome
             } finally {
                 removeUi(ui)
             }

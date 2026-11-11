@@ -123,9 +123,10 @@ class SourcePluginMediaResolver(
             throw failure
         }
         trace(traceId, reference, SourceTracePhase.FINAL_MEDIA_CHECK, SourceResultStatus.SUCCESS, resolved.format.name)
+        val requestHeaders = resolved.requestHeaders().withDefaultSourceUserAgent()
         return when (resolved.format) {
             ResolvedMediaFormat.WEB -> webResolver.resolve(
-                media.toWebMedia(resolved.url, resolved.requestHeaders()),
+                media.toWebMedia(resolved.url, requestHeaders),
                 episode,
             )
 
@@ -135,7 +136,7 @@ class SourcePluginMediaResolver(
             -> HttpStreamingMediaDataProvider(
                 uri = resolved.url,
                 originalTitle = media.originalTitle,
-                headers = resolved.requestHeaders(),
+                headers = requestHeaders,
                 extraFiles = media.extraFiles.toMediampMediaExtraFiles(),
             )
         }
@@ -167,4 +168,17 @@ class SourcePluginMediaResolver(
         location = location,
         kind = kind,
     )
+
+    private fun Map<String, String>.withDefaultSourceUserAgent(): Map<String, String> =
+        if (keys.any { it.equals("User-Agent", ignoreCase = true) }) {
+            this
+        } else {
+            this + ("User-Agent" to DEFAULT_SOURCE_USER_AGENT)
+        }
+
+    private companion object {
+        const val DEFAULT_SOURCE_USER_AGENT =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+    }
 }

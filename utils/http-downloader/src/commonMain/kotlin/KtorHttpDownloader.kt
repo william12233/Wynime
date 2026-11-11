@@ -4,6 +4,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.HttpStatement
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.HttpHeaders
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readAvailable
 import kotlinx.collections.immutable.mutate
@@ -41,6 +42,8 @@ import kotlinx.io.buffered
 import kotlinx.io.files.FileSystem
 import kotlinx.io.files.Path
 import kotlinx.io.readByteArray
+import kotlinx.io.Sink
+import kotlinx.io.IOException
 import com.wynime.utils.coroutines.IO_
 import com.wynime.utils.coroutines.childScope
 import com.wynime.utils.coroutines.update
@@ -81,6 +84,7 @@ import org.openani.mediamp.ffmpeg.FFmpegResult
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
+import kotlin.math.min
 import kotlin.time.Clock
 
 open class KtorHttpDownloader(
@@ -867,6 +871,97 @@ open class KtorHttpDownloader(
         }
     }
 
+    private suspend fun downloadHlsSegment(
+        segmentInfo: SegmentInfo,
+        options: DownloadOptions,
+    ): Long {
+        val segmentPath = baseSaveDir.resolve(segmentInfo.relativeTempFilePath)
+        withContext(ioDispatcher) {
+            fileSystem.createDirectories(
+                segmentPath.parent ?: error("Parent dir not found for segmentInfo: $segmentInfo"),
+            )
+        }
+
+        return fileSystem.sink(segmentPath).buffered().use { sink ->
+            val first = requestHlsRangeToSink(
+                url = segmentInfo.url,
+                options = options,
+                start = 0L,
+                end = HLS_RANGE_CHUNK_BYTES - 1L,
+                sink = sink,
+            )
+            if (first.statusCode !in 200..299) {
+                throw IOException("HLS segment returned HTTP ${first.statusCode}: ${segmentInfo.url}")
+            }
+
+            if (first.statusCode != 206) {
+                first.contentLength?.let { expected ->
+                    if (expected != first.bytesWritten) {
+                        throw IOException(
+                            "HLS segment ended early for ${segmentInfo.url}: " +
+                                    "expected=$expected actual=${first.bytesWritten}",
+                        )
+                    }
+                }
+                return@use first.bytesWritten
+            }
+
+            val firstRange = parseContentRange(first.contentRange)
+                ?: throw IOException("HLS segment returned an invalid Content-Range: ${segmentInfo.url}")
+            val totalLength = firstRange.total
+                ?: throw IOException("HLS segment did not provide a total length: ${segmentInfo.url}")
+            val firstExpectedLength = firstRange.end - firstRange.start + 1L
+            if (firstRange.start != 0L || first.bytesWritten != firstExpectedLength) {
+                throw IOException("HLS segment returned an incomplete first range: ${segmentInfo.url}")
+            }
+
+            var nextStart = firstRange.end + 1L
+            while (nextStart < totalLength) {
+                val requestedEnd = min(nextStart + HLS_RANGE_CHUNK_BYTES - 1L, totalLength - 1L)
+                val chunk = requestHlsRangeToSink(
+                    url = segmentInfo.url,
+                    options = options,
+                    start = nextStart,
+                    end = requestedEnd,
+                    sink = sink,
+                )
+                if (chunk.statusCode != 206) {
+                    throw IOException("HLS segment stopped honoring ranges: ${segmentInfo.url}")
+                }
+                val range = parseContentRange(chunk.contentRange)
+                    ?: throw IOException("HLS segment returned an invalid range: ${segmentInfo.url}")
+                val expectedLength = range.end - range.start + 1L
+                if (range.start != nextStart || range.end >= totalLength || chunk.bytesWritten != expectedLength) {
+                    throw IOException("HLS segment returned a discontinuous range: ${segmentInfo.url}")
+                }
+                nextStart = range.end + 1L
+            }
+            totalLength
+        }
+    }
+
+    private suspend fun requestHlsRangeToSink(
+        url: String,
+        options: DownloadOptions,
+        start: Long,
+        end: Long,
+        sink: Sink,
+    ): HlsRangeResponse {
+        val rangeOptions = options.copy(
+            headers = options.headers + (HttpHeaders.Range to "bytes=$start-$end"),
+        )
+        return httpGet(url, rangeOptions) { statement ->
+            statement.execute { response ->
+                HlsRangeResponse(
+                    statusCode = response.status.value,
+                    contentRange = response.headers[HttpHeaders.ContentRange],
+                    contentLength = response.headers[HttpHeaders.ContentLength]?.toLongOrNull(),
+                    bytesWritten = copyChannelToSink(response.bodyAsChannel(), sink),
+                )
+            }
+        }
+    }
+
     @OptIn(ExperimentalAtomicApi::class)
     protected suspend fun downloadSingleSegment(
         segmentInfo: SegmentInfo,
@@ -925,24 +1020,27 @@ open class KtorHttpDownloader(
         }
     }
 
-    @OptIn(ExperimentalAtomicApi::class)
     private suspend fun copyChannelToFile(
         channel: ByteReadChannel,
         filePath: Path,
     ): Long {
-        val totalBytes = AtomicLong(0L)
         fileSystem.sink(filePath).buffered().use { sink ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            withContext(ioDispatcher) {
-                while (true) {
-                    val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
-                    if (bytesRead == -1) break
-                    sink.write(buffer, startIndex = 0, endIndex = bytesRead)
-                    totalBytes.fetchAndAdd(bytesRead.toLong())
-                }
+            return copyChannelToSink(channel, sink)
+        }
+    }
+
+    private suspend fun copyChannelToSink(channel: ByteReadChannel, sink: Sink): Long {
+        var totalBytes = 0L
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        withContext(ioDispatcher) {
+            while (true) {
+                val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+                if (bytesRead == -1) break
+                sink.write(buffer, startIndex = 0, endIndex = bytesRead)
+                totalBytes += bytesRead.toLong()
             }
         }
-        return totalBytes.load()
+        return totalBytes
     }
 
     private suspend fun writeBytesToFile(filePath: Path, data: ByteArray) {
@@ -1012,7 +1110,11 @@ open class KtorHttpDownloader(
                                 recordSegmentFailure(downloadId, seg.index, attempt, options.maxRetriesPerSegment, error)
                             },
                         ) {
-                            downloadSingleSegment(seg, requestOptions)
+                            if (snapshot.mediaType == MediaType.M3U8) {
+                                downloadHlsSegment(seg, requestOptions)
+                            } else {
+                                downloadSingleSegment(seg, requestOptions)
+                            }
                         }
                         markSegmentDownloaded(downloadId, seg.index, newSize)
                     } finally {
@@ -1329,6 +1431,31 @@ private class RangeRequestRejectedException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
+
+private data class HlsRangeResponse(
+    val statusCode: Int,
+    val contentRange: String?,
+    val contentLength: Long?,
+    val bytesWritten: Long,
+)
+
+private data class ParsedContentRange(
+    val start: Long,
+    val end: Long,
+    val total: Long?,
+)
+
+private fun parseContentRange(value: String?): ParsedContentRange? {
+    val match = CONTENT_RANGE_REGEX.matchEntire(value?.trim().orEmpty()) ?: return null
+    return ParsedContentRange(
+        start = match.groupValues[1].toLongOrNull() ?: return null,
+        end = match.groupValues[2].toLongOrNull() ?: return null,
+        total = match.groupValues[3].takeUnless { it == "*" }?.toLongOrNull(),
+    )
+}
+
+private const val HLS_RANGE_CHUNK_BYTES = 1024L * 1024L
+private val CONTENT_RANGE_REGEX = Regex("bytes (\\d+)-(\\d+)/(\\d+|\\*)", RegexOption.IGNORE_CASE)
 
 private fun M3u8Playlist.MediaPlaylist.toSegments(resolveSegmentPath: (String) -> String): List<SegmentInfo> {
     return segments.mapIndexed { i, seg ->

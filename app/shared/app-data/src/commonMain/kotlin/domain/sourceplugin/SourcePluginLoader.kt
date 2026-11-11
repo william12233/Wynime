@@ -215,6 +215,24 @@ class SourcePluginHttpClient(
             )
         }
 
+        // E-ACG must stay in the manual flow. Its Cloudflare page can look
+        // solved before the browser identity has been persisted; starting a
+        // solver here makes the page reopen and the next request challenge
+        // again. The source card exposes the verification action instead.
+        if (pluginId.equals("eacg", ignoreCase = true)) {
+            pluginLogger?.info("偵測到 E-ACG 驗證，等待使用者點選需要驗證")
+            throw failure(
+                request = pluginRequest,
+                response = response,
+                status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
+                retryable = false,
+                requiresVerification = true,
+                challengeKind = challengeKind.name,
+                verificationKind = challengeKind,
+                reason = "E-ACG verification requires explicit user action",
+            )
+        }
+
         pluginLogger?.info("偵測到來源網站驗證，準備使用互動網頁工作階段處理")
         val outcome = try {
             val request = SolveRequest(

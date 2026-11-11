@@ -52,7 +52,7 @@ class SourcePluginContractTest {
             "2rk" to ("https://www.2rk.cc" to Rk2EntryPoint()),
             "dmbus" to ("https://dmbus.cc" to DmbusEntryPoint()),
             "dyttzy" to ("https://caiji.dyttzyapi.com" to DyttzyEntryPoint()),
-            "baimao" to ("https://www.bmmdmm.com" to BaimaoEntryPoint()),
+            "baimao" to ("https://www.bmddm.com" to BaimaoEntryPoint()),
             "akianime" to ("https://www.akianime.cc" to AkianimeEntryPoint()),
             "mxdm" to ("https://www.dcc3.com" to MxdmEntryPoint()),
         )

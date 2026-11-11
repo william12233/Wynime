@@ -1,7 +1,9 @@
 package tw.wynime.sources.rk2
 
+import com.wynime.source.plugin.api.ResolvedMediaFormat
 import com.wynime.source.plugin.api.SourceChannel
 import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourceHttpRequest
 import com.wynime.source.plugin.api.SourcePluginContext
 import com.wynime.source.plugin.api.SourcePluginEntryPoint
 import com.wynime.source.plugin.api.SourcePlugin
@@ -12,6 +14,7 @@ import com.wynime.source.plugin.api.SourceSubject
 import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
+import tw.wynime.sources.shared.SourceSiteException
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractJsonStringField
 import tw.wynime.sources.shared.isMediaUrl
@@ -19,6 +22,7 @@ import tw.wynime.sources.shared.links
 import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.queryMatches
 import tw.wynime.sources.shared.searchQueryVariants
+import java.net.URI
 
 class Rk2EntryPoint : SourcePluginEntryPoint {
     override fun create(context: SourcePluginContext): SourcePlugin = Rk2Plugin(context)
@@ -129,15 +133,24 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
             ?: Regex("(?is)(?:data-src|data-url|src)\\s*=\\s*[\"'](https?://[^\"']+\\.m3u8(?:\\?[^\"']*)?)[\"']")
                 .find(page.html)?.groupValues?.getOrNull(1)
             ?: Regex("https?://[^\"'<>\\s]+\\.m3u8(?:\\?[^\"'<>\\s]*)?").find(page.html)?.value
-        val resolved = resolvedMedia(request, page.finalUrl, mediaUrl ?: page.finalUrl, headers = lineHeaders)
-        resolved.copy(
+        val baseResolved = resolvedMedia(
+            request,
+            page.finalUrl,
+            mediaUrl?.let { absoluteUrl(page.finalUrl, it) } ?: page.finalUrl,
+            headers = lineHeaders,
+        )
+        val resolved = baseResolved.copy(
             requestContext = SourceMediaRequestContext(
-                headers = resolved.headers,
+                headers = baseResolved.headers,
                 cookies = mapOf("curXianlu" to channel.host),
                 referrer = page.finalUrl,
                 origin = rootUrl,
             ),
         )
+        if (resolved.format == ResolvedMediaFormat.HLS) {
+            validateHlsMedia(resolved.url, resolved.requestHeaders(), request)
+        }
+        return@run resolved
     }
 
     override fun matchWebResource(url: String): SourceWebResourceMatch = when {
@@ -167,5 +180,69 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
         return hosts
             .mapIndexed { index, host -> Rk2Channel(host, "线路${index + 1}") }
             .ifEmpty { fallbackChannels }
+    }
+
+    private suspend fun validateHlsMedia(
+        mediaUrl: String,
+        headers: Map<String, String>,
+        request: SourceResolveRequest,
+    ) {
+        val playlistResponse = context.http.execute(
+            SourceHttpRequest(
+                method = "GET",
+                url = mediaUrl,
+                headers = headers,
+                traceId = request.traceId,
+                entryPoint = request.entryPoint,
+            ),
+        )
+        if (playlistResponse.statusCode !in 200..399) {
+            throw SourceSiteException(
+                "2RK media playlist returned HTTP ${playlistResponse.statusCode}: $mediaUrl",
+            )
+        }
+        val playlist = playlistResponse.bodyAsText()
+        if (!playlist.contains("#EXTM3U")) {
+            throw SourceSiteException("2RK media URL did not return an HLS playlist: $mediaUrl")
+        }
+
+        val keyUrls = playlist.lineSequence()
+            .filter { it.startsWith("#EXT-X-KEY", ignoreCase = true) }
+            .mapNotNull { line ->
+                Regex("(?i)\\bURI\\s*=\\s*[\"']([^\"']+)[\"']")
+                    .find(line)
+                    ?.groupValues
+                    ?.getOrNull(1)
+            }
+            .map { resolveHlsUrl(mediaUrl, it) }
+            .distinct()
+        for (keyUrl in keyUrls) {
+            val keyResponse = context.http.execute(
+                SourceHttpRequest(
+                    method = "GET",
+                    url = keyUrl,
+                    headers = headers,
+                    traceId = request.traceId,
+                    entryPoint = request.entryPoint,
+                ),
+            )
+            if (keyResponse.statusCode !in 200..399) {
+                throw SourceSiteException(
+                    "2RK HLS key returned HTTP ${keyResponse.statusCode}: $keyUrl",
+                )
+            }
+            if (keyResponse.body.size != AES_128_KEY_BYTES) {
+                throw SourceSiteException(
+                    "2RK HLS key is ${keyResponse.body.size} bytes; the selected line is currently unavailable",
+                )
+            }
+        }
+    }
+
+    private fun resolveHlsUrl(baseUrl: String, value: String): String =
+        runCatching { URI(baseUrl).resolve(value).toString() }.getOrDefault(value)
+
+    private companion object {
+        const val AES_128_KEY_BYTES = 16
     }
 }

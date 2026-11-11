@@ -77,6 +77,21 @@ class WebCaptchaDetectorTest {
     }
 
     @Test
+    fun `ignores turnstile bootstrap script on a normal page`() {
+        assertNull(
+            WebCaptchaDetector.detect(
+                "https://eacg1.com/Comicplay/75512-1-1.html",
+                """
+                <html>
+                  <body><iframe id="fed-play-iframe"></iframe></body>
+                  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                </html>
+                """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
     fun `does not flag captcha mention without structural evidence`() {
 
         assertNull(

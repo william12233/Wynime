@@ -38,7 +38,7 @@ class KazumiSourcePluginFixtureTest {
 
             assertEquals("42", subject.id)
             assertEquals("播放Ⅰ", details.channels.first().channel.displayName)
-            assertEquals("https://www.bmmdmm.com/play/42-0-0.html", resolved.url)
+            assertEquals("https://www.bmddm.com/play/42-0-0.html", resolved.url)
             assertEquals(ResolvedMediaFormat.WEB, resolved.format)
             assertEquals(SourceWebResourceMatch.LoadPage, plugin.matchWebResource(resolved.url))
             assertEquals(
@@ -136,7 +136,7 @@ class KazumiSourcePluginFixtureTest {
             assertEquals("https://cdn.example/baimao.m3u8", resolved.url)
             assertEquals(ResolvedMediaFormat.HLS, resolved.format)
             assertEquals(
-                "https://www.bmmdmm.com/play/42-0-0.html",
+                "https://www.bmddm.com/play/42-0-0.html",
                 resolved.requestHeaders()["Referer"],
             )
         } finally {

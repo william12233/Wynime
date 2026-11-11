@@ -11,7 +11,9 @@ import com.wynime.source.plugin.api.SourceResolveRequest
 import com.wynime.source.plugin.api.SourceSearchRequest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import tw.wynime.sources.shared.SourceSiteException
 
 class Rk2PluginTest {
     @Test
@@ -66,8 +68,8 @@ class Rk2PluginTest {
                 ),
             )
 
-            assertEquals("https://www.2rk.cc/detail/demo?id=2", http.requests.last().url)
-            assertEquals("curXianlu=v1.2rk.cc", http.requests.last().headers["Cookie"])
+            val detailRequest = http.requests.last { it.url == "https://www.2rk.cc/detail/demo?id=2" }
+            assertEquals("curXianlu=v1.2rk.cc", detailRequest.headers["Cookie"])
             assertEquals(
                 "https://v1.2rk.cc/video/demo/2/episode.m3u8",
                 resolved.url,
@@ -87,6 +89,26 @@ class Rk2PluginTest {
         }
     }
 
+    @Test
+    fun `resolve rejects an invalid upstream hls key`() = runBlocking {
+        val http = FixtureHttpClient(keyBody = "x".repeat(31))
+        val plugin = Rk2EntryPoint().create(FixtureContext(http))
+        try {
+            assertFailsWith<SourceSiteException> {
+                plugin.resolve(
+                    SourceResolveRequest(
+                        subjectId = "demo#1",
+                        channelId = "www.2rk.cc",
+                        episodeId = "1",
+                    ),
+                )
+            }
+            Unit
+        } finally {
+            plugin.close()
+        }
+    }
+
     private class FixtureContext(
         override val http: FixtureHttpClient,
     ) : SourcePluginContext {
@@ -101,7 +123,9 @@ class Rk2PluginTest {
         }
     }
 
-    private class FixtureHttpClient : SourceHttpClient {
+    private class FixtureHttpClient(
+        private val keyBody: String = FIXTURE_KEY,
+    ) : SourceHttpClient {
         val requests = mutableListOf<SourceHttpRequest>()
 
         override suspend fun execute(request: SourceHttpRequest): SourceHttpResponse {
@@ -112,6 +136,10 @@ class Rk2PluginTest {
 
                 request.url.endsWith("/c.js") ->
                     "const channels=[\"www.2rk.cc\",\"v1.2rk.cc\",\"v2.2rk.cc\"];"
+
+                request.url.endsWith(".m3u8") -> FIXTURE_PLAYLIST
+
+                request.url.endsWith("/saber") -> keyBody
 
                 else -> FIXTURE_PAGE
             }
@@ -131,6 +159,14 @@ class Rk2PluginTest {
               <li><a href="/detail/demo?id=2" title="第02话">第02话</a></li>
             </ul>
             <script>h.loadSource("https://v1.2rk.cc/video/demo/2/episode.m3u8")</script>
+        """.trimIndent()
+        const val FIXTURE_KEY = "0123456789abcdef"
+        val FIXTURE_PLAYLIST = """
+            #EXTM3U
+            #EXT-X-KEY:METHOD=AES-128,URI="https://www.2rk.cc/saber"
+            #EXTINF:1,
+            segment.ts
+            #EXT-X-ENDLIST
         """.trimIndent()
     }
 }

@@ -148,6 +148,18 @@ class KtorHttpDownloaderTest {
                             )
                         }
 
+                        "https://example.com/ranged-hls.m3u8" -> {
+                            respond(
+                                content = RANGED_HLS_PLAYLIST,
+                                status = HttpStatusCode.OK,
+                                headers = headersOf(HttpHeaders.ContentType, "application/vnd.apple.mpegurl"),
+                            )
+                        }
+
+                        "https://example.com/ranged-hls.ts" -> {
+                            handleRangedHlsSegment(request.headers[HttpHeaders.Range])
+                        }
+
                         "https://example.com/tagged.m3u8" -> {
                             respond(
                                 content = TAGGED_MEDIA_PLAYLIST,
@@ -443,6 +455,24 @@ class KtorHttpDownloaderTest {
         }
     }
 
+    private fun MockRequestHandleScope.handleRangedHlsSegment(rangeHeader: String?): HttpResponseData {
+        val range = rangeHeader?.removePrefix("bytes=")?.split("-")
+            ?.takeIf { it.size == 2 }
+            ?: error("Expected a Range header for the ranged HLS fixture")
+        val start = range[0].toLong()
+        val end = range[1].toLong().coerceAtMost(RANGED_HLS_SEGMENT.lastIndex.toLong())
+        val body = RANGED_HLS_SEGMENT.copyOfRange(start.toInt(), end.toInt() + 1)
+        return respond(
+            content = body,
+            status = HttpStatusCode.PartialContent,
+            headers = headersOf(
+                HttpHeaders.ContentType to listOf("video/mp2t"),
+                HttpHeaders.ContentRange to listOf("bytes $start-$end/${RANGED_HLS_SEGMENT.size}"),
+                HttpHeaders.ContentLength to listOf("${body.size}"),
+            ),
+        )
+    }
+
     private fun MockRequestHandleScope.handleMkv(rangeHeader: String?): HttpResponseData {
         return if (rangeHeader != null) {
 
@@ -561,6 +591,31 @@ class KtorHttpDownloaderTest {
 
         val header = fileSystem.read(outputPath) { readByteArray(8) }
         assertEquals("ftyp", header.decodeToString(startIndex = 4, endIndex = 8))
+    }
+
+    @Test
+    fun `download - hls segments are reassembled from bounded ranges`() = testScope.runTest {
+        val downloadId = downloader.downloadWithId(
+            url = "https://example.com/ranged-hls.m3u8",
+            downloadId = DownloadId("ranged-hls"),
+            options = DownloadOptions(
+                maxRetriesPerSegment = 2,
+                baseRetryDelayMillis = 0,
+            ),
+        )?.downloadId
+        assertNotNull(downloadId)
+
+        downloader.joinDownload(downloadId)
+
+        val state = downloader.getState(downloadId)
+        assertNotNull(state)
+        assertEquals(DownloadStatus.COMPLETED, state.status)
+        assertEquals(
+            RANGED_HLS_SEGMENT.size.toLong(),
+            fileSystem.metadata(Path("$tempDir/ranged-hls.mp4")).size,
+        )
+        val output = fileSystem.read(Path("$tempDir/ranged-hls.mp4")) { readByteArray() }
+        assertTrue(output.contentEquals(RANGED_HLS_SEGMENT))
     }
 
     @Test
@@ -1446,6 +1501,19 @@ class KtorHttpDownloaderTest {
             segment3.ts
             #EXT-X-ENDLIST
         """
+
+        private const val RANGED_HLS_PLAYLIST = """
+            #EXTM3U
+            #EXT-X-VERSION:3
+            #EXT-X-TARGETDURATION:5
+            #EXT-X-MEDIA-SEQUENCE:0
+
+            #EXTINF:4.0,
+            https://example.com/ranged-hls.ts
+            #EXT-X-ENDLIST
+        """
+
+        private val RANGED_HLS_SEGMENT = ByteArray(2 * 1024 * 1024 + 123) { (it % 251).toByte() }
 
         private const val ENCRYPTED_MEDIA_PLAYLIST = """
             #EXTM3U

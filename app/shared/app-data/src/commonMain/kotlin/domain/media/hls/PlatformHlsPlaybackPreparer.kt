@@ -25,7 +25,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.io.Buffer
 import kotlinx.io.IOException
+import kotlinx.io.readByteArray
 import com.wynime.app.domain.foundation.HttpClientProvider
 import com.wynime.app.domain.foundation.ScopedHttpClientUserAgent
 import com.wynime.app.domain.foundation.get
@@ -40,6 +42,7 @@ import com.wynime.utils.logging.warn
 import org.openani.mediamp.source.UriMediaData
 import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.math.min
 import kotlin.math.roundToLong
 
 class PlatformHlsPlaybackPreparer internal constructor(
@@ -213,15 +216,7 @@ private class LocalHlsProxySession private constructor(
     }
 
     private suspend fun downloadSegment(remoteUri: String): ByteArray {
-        return httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
-            val response = get(remoteUri) {
-                this@LocalHlsProxySession.headers.forEach { (name, value) -> header(name, value) }
-            }
-            if (response.status.value !in 200..299) {
-                throw IOException("Remote returned ${response.status} for $remoteUri")
-            }
-            response.bodyAsBytes()
-        }
+        return downloadRemoteBytes(remoteUri)
     }
 
     private suspend fun respond(request: HlsProxyRequest, output: HlsProxyResponseSink) {
@@ -271,12 +266,73 @@ private class LocalHlsProxySession private constructor(
     }
 
     private suspend fun serveSegment(segment: ProxiedSegment, request: HlsProxyRequest, output: HlsProxyResponseSink) {
-        val cached = segmentCache.getCompleted(segment.remoteUri) ?: segmentCache.awaitInFlight(segment.remoteUri)
-        if (cached != null) {
-            serveBytes(cached, request.headers["range"], output)
-            return
+        val bytes = segmentCache.getOrDownload(segment.remoteUri) { downloadSegment(segment.remoteUri) }
+        serveBytes(bytes, request.headers["range"], output)
+    }
+
+    private suspend fun downloadRemoteBytes(remoteUri: String): ByteArray {
+        val first = requestRemoteRange(remoteUri, 0L, RANGE_CHUNK_BYTES - 1L)
+        if (first.statusCode !in 200..299) {
+            throw IOException("Remote returned HTTP ${first.statusCode} for $remoteUri")
         }
-        serveRemoteResource(segment.remoteUri, request, output, DEFAULT_SEGMENT_CONTENT_TYPE)
+
+        if (first.statusCode != 206) {
+            first.contentLength?.let { expected ->
+                if (expected != first.body.size.toLong()) {
+                    throw IOException(
+                        "Remote HLS segment ended early for $remoteUri: " +
+                                "expected=$expected actual=${first.body.size}",
+                    )
+                }
+            }
+            return first.body
+        }
+
+        val firstRange = parseContentRange(first.contentRange)
+            ?: throw IOException("Remote HLS segment returned an invalid Content-Range for $remoteUri")
+        val totalLength = firstRange.total
+            ?: throw IOException("Remote HLS segment did not provide a total length for $remoteUri")
+        val firstExpectedLength = firstRange.end - firstRange.start + 1L
+        if (firstRange.start != 0L || first.body.size.toLong() != firstExpectedLength) {
+            throw IOException("Remote HLS segment returned an incomplete first range for $remoteUri")
+        }
+
+        val output = Buffer()
+        output.write(first.body)
+        var nextStart = firstRange.end + 1L
+        while (nextStart < totalLength) {
+            val requestedEnd = min(nextStart + RANGE_CHUNK_BYTES - 1L, totalLength - 1L)
+            val chunk = requestRemoteRange(remoteUri, nextStart, requestedEnd)
+            if (chunk.statusCode != 206) {
+                throw IOException("Remote HLS segment stopped honoring ranges for $remoteUri")
+            }
+            val range = parseContentRange(chunk.contentRange)
+                ?: throw IOException("Remote HLS segment returned an invalid range for $remoteUri")
+            val expectedLength = range.end - range.start + 1L
+            if (range.start != nextStart || range.end >= totalLength || chunk.body.size.toLong() != expectedLength) {
+                throw IOException("Remote HLS segment returned a discontinuous range for $remoteUri")
+            }
+            output.write(chunk.body)
+            nextStart = range.end + 1L
+        }
+        return output.readByteArray()
+    }
+
+    private suspend fun requestRemoteRange(remoteUri: String, start: Long, end: Long): RemoteRangeResponse {
+        return httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
+            prepareGet(remoteUri) {
+                expectSuccess = false
+                this@LocalHlsProxySession.headers.forEach { (name, value) -> header(name, value) }
+                header(HttpHeaders.Range, "bytes=$start-$end")
+            }.execute { response ->
+                RemoteRangeResponse(
+                    statusCode = response.status.value,
+                    contentRange = response.headers[HttpHeaders.ContentRange],
+                    contentLength = response.contentLength(),
+                    body = response.bodyAsBytes(),
+                )
+            }
+        }
     }
 
     private suspend fun serveRemoteResource(
@@ -506,10 +562,34 @@ private class LocalHlsProxySession private constructor(
 
     private class ProxiedPlaylist(val segments: List<ProxiedSegment>)
 
+    private data class RemoteRangeResponse(
+        val statusCode: Int,
+        val contentRange: String?,
+        val contentLength: Long?,
+        val body: ByteArray,
+    )
+
+    private data class ParsedContentRange(
+        val start: Long,
+        val end: Long,
+        val total: Long?,
+    )
+
+    private fun parseContentRange(value: String?): ParsedContentRange? {
+        val match = CONTENT_RANGE_REGEX.matchEntire(value?.trim().orEmpty()) ?: return null
+        return ParsedContentRange(
+            start = match.groupValues[1].toLongOrNull() ?: return null,
+            end = match.groupValues[2].toLongOrNull() ?: return null,
+            total = match.groupValues[3].takeUnless { it == "*" }?.toLongOrNull(),
+        )
+    }
+
     companion object {
+        private const val RANGE_CHUNK_BYTES = 1024L * 1024L
         private const val DEFAULT_SEGMENT_CONTENT_TYPE = "video/mp2t"
         private const val DEFAULT_RESOURCE_CONTENT_TYPE = "application/octet-stream"
         private val CRLF = "\r\n".encodeToByteArray()
+        private val CONTENT_RANGE_REGEX = Regex("bytes (\\d+)-(\\d+)/(\\d+|\\*)", RegexOption.IGNORE_CASE)
 
         suspend fun createOrNull(
             manifest: String,

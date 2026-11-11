@@ -28,8 +28,8 @@ internal class BaimaoPlugin(context: SourcePluginContext) : SitePluginBase(
     id = "baimao",
     displayName = "白猫動漫",
     pluginVersion = PLUGIN_VERSION,
-    rootUrl = "https://www.bmmdmm.com",
-    iconUrl = "https://www.bmmdmm.com/hdst/hm_pic/favicon.ico",
+    rootUrl = "https://www.bmddm.com",
+    iconUrl = "https://www.bmddm.com/hdst/hm_pic/favicon.ico",
     description = "白猫動漫公開番劇與分集播放頁來源",
 ) {
     override suspend fun search(request: SourceSearchRequest): List<com.wynime.source.plugin.api.SourceSubject> {

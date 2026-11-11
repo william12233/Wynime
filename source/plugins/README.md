@@ -31,10 +31,10 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 | `next` | 7 | `1.7.1` |
 | `dm1` | 6 | `1.6.0` |
 | `girigiri` | 6 | `1.6.0` |
-| `2rk` | 7 | `1.7.0` |
+| `2rk` | 8 | `1.8.0` |
 | `dmbus` | 6 | `1.6.0` |
 | `dyttzy` | 4 | `1.4.0` |
-| `baimao` | 2 | `1.2.0` |
+| `baimao` | 3 | `1.3.0` |
 | `akianime` | 2 | `1.2.0` |
 | `mxdm` | 1 | `1.1.0` |
 
@@ -49,7 +49,7 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 | `2rk` | [2RK](https://www.2rk.cc/) | `关于我转生变成史莱姆这档事` | 播放一集、下載一集後刪除 |
 | `dmbus` | [DMBUS](https://dmbus.cc/) | `re0` | 播放一集、下載一集後刪除 |
 | `dyttzy` | [電影天堂](https://caiji.dyttzyapi.com/) | `哪吒之魔童鬧海` | 只使用 `dyttm3u8` 直接 HLS；播放一集、下載一集後刪除 |
-| `baimao` | [白猫動漫](https://www.bmmdmm.com/) | `新网球王子` | 播放頁由站方播放器處理 |
+| `baimao` | [白猫動漫](https://www.bmddm.com/) | `新网球王子` | 播放頁由站方播放器處理 |
 | `akianime` | [AkiAnime](https://www.akianime.cc/) | `新网球王子 U-17 世界杯 半决赛` | 公開 HLS 優先，其他線路由站方播放器處理 |
 | `mxdm` | [MX動漫](https://www.dcc3.com/) | `黑子的篮球第二季` | 播放頁由站方播放器處理 |
 | `bfzy` | [暴風資源](https://bfzy.tv/) | `遮天动画版` | 只使用站方公開 `bfzym3u8` HLS；播放一集、下載一集後刪除 |

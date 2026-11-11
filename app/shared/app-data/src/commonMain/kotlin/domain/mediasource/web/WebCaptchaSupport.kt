@@ -23,8 +23,7 @@ object WebCaptchaDetector {
 
         if (
             "cf-turnstile" in lowerHtml ||
-            "turnstile.render" in lowerHtml ||
-            "challenges.cloudflare.com/turnstile" in lowerHtml
+            "turnstile.render" in lowerHtml
         ) {
             return WebCaptchaKind.CloudflareTurnstile
         }

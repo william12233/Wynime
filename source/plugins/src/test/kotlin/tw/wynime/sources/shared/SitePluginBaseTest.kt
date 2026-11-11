@@ -102,11 +102,11 @@ class SitePluginBaseTest {
         try {
             assertEquals(
                 SourceWebResourceMatch.Continue,
-                plugin.matchWebResource("https://www.bmmdmm.com/hdst/js/player.js"),
+                plugin.matchWebResource("https://www.bmddm.com/hdst/js/player.js"),
             )
             assertEquals(
                 SourceWebResourceMatch.LoadPage,
-                plugin.matchWebResource("https://www.bmmdmm.com/hdst/player/artplayer/?url=token"),
+                plugin.matchWebResource("https://www.bmddm.com/hdst/player/artplayer/?url=token"),
             )
         } finally {
             plugin.close()

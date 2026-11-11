@@ -203,11 +203,12 @@ class AndroidUpdateInstaller : UpdateInstaller {
                 )
             }
         }
+        // Some Android vendor PackageManager implementations return null here for a
+        // valid APK (notably when parsing a downloaded APK outside the installed
+        // package path). Do not reject it before the platform package installer gets
+        // a chance to validate and install it.
         val packageInfo = context.packageManager.getPackageArchiveInfo(apk.absolutePath, 0)
-            ?: return InstallationResult.Failed(
-                InstallationFailureReason.INVALID_APK,
-                "PackageManager could not parse ${apk.name}",
-            )
+            ?: return null
         if (packageInfo.packageName != context.packageName) {
             return InstallationResult.Failed(
                 InstallationFailureReason.PACKAGE_MISMATCH,

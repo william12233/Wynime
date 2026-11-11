@@ -660,7 +660,7 @@ open class EpisodeViewModel(
             initialValue = MediaSelectorSummary.AutoSelecting(listOf(), estimate = 10.seconds),
         )
         val mediaSelectorSummary = combine(
-            mediaSelectorSummaryStateProducer.flow,
+            mediaSelectorSummaryStateProducer,
             cachePlaybackState,
         ) { summary, cacheState ->
             if (cacheState == CachePlaybackState.PLAYING) {

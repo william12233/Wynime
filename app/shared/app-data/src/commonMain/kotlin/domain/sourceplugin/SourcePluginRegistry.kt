@@ -209,7 +209,7 @@ class SourcePluginRegistry(
     }
 
     private companion object {
-        val RETIRED_PLUGIN_IDS = setOf("dida")
+        val RETIRED_PLUGIN_IDS = setOf("dida", "dm1", "eacg")
     }
 
 }

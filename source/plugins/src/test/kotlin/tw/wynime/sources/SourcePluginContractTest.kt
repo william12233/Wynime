@@ -12,15 +12,14 @@ import com.wynime.source.plugin.api.SourcePluginContext
 import com.wynime.source.plugin.api.SourcePluginEntryPoint
 import com.wynime.source.plugin.api.SourcePluginLogger
 import com.wynime.source.plugin.api.SourcePluginPlatform
-import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
 import tw.wynime.sources.dyttzy.DyttzyEntryPoint
-import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
 import tw.wynime.sources.rk2.Rk2EntryPoint
 import tw.wynime.sources.akianime.AkianimeEntryPoint
 import tw.wynime.sources.baimao.BaimaoEntryPoint
+import tw.wynime.sources.bfzy.BfzyEntryPoint
 import tw.wynime.sources.mxdm.MxdmEntryPoint
 import tw.wynime.sources.shared.jsonArrayObjects
 
@@ -45,14 +44,13 @@ class SourcePluginContractTest {
     @Test
     fun everyPublishedEntryPointHasCompatibleMetadataAndConnectionCheck() = runBlocking {
         val entryPoints = listOf(
-            "eacg" to ("https://eacg1.com" to EacgEntryPoint()),
-            "dm1" to ("https://dm1.xfdm.pro" to Dm1EntryPoint()),
             "next" to ("https://next.xifanacg.com" to NextEntryPoint()),
             "girigiri" to ("https://ani.girigirilove.com" to GirigiriEntryPoint()),
             "2rk" to ("https://www.2rk.cc" to Rk2EntryPoint()),
             "dmbus" to ("https://dmbus.cc" to DmbusEntryPoint()),
             "dyttzy" to ("https://caiji.dyttzyapi.com" to DyttzyEntryPoint()),
             "baimao" to ("https://www.bmddm.com" to BaimaoEntryPoint()),
+            "bfzy" to ("https://bfzy.tv" to BfzyEntryPoint()),
             "akianime" to ("https://www.akianime.cc" to AkianimeEntryPoint()),
             "mxdm" to ("https://www.dcc3.com" to MxdmEntryPoint()),
         )

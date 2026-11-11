@@ -14,73 +14,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
-import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
 import tw.wynime.sources.dyttzy.DyttzyEntryPoint
-import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
 import tw.wynime.sources.shared.SourceSiteException
 
 class SourcePluginFixtureTest {
-    @Test
-    fun `eacg parses search subject channel episode and mp4`() = runBlocking {
-        val plugin = EacgEntryPoint().create(FixtureContext("eacg") { request ->
-            when {
-                "/vodsearch/" in request.url -> """
-                    <a href="/voddetails-rezero.html">Re:从零开始的异世界生活</a>
-                """.trimIndent()
-                "/voddetails-rezero.html" in request.url -> EACG_SUBJECT
-                "/Comicplay/rezero-1-1.html" in request.url -> """<div data-play="https://sns-video-bd.xhscdn.com/spectrum/re0"></div>"""
-                else -> "<html><body>ok</body></html>"
-            }
-        })
-        try {
-            val subject = plugin.search(SourceSearchRequest("re0")).single()
-            val details = plugin.getSubject(subject.id)
-            val channel = details.channels.single()
-            val resolved = plugin.resolve(
-                SourceResolveRequest(subject.id, channel.channel.id, channel.episodes.single().id),
-            )
-
-            assertEquals("rezero", subject.id)
-            assertEquals("简中", channel.channel.displayName)
-            assertEquals("第01集", channel.episodes.single().displayName)
-            assertEquals("https://sns-video-bd.xhscdn.com/spectrum/re0", resolved.url)
-            assertEquals(ResolvedMediaFormat.MP4, resolved.format)
-            assertTrue("Referer" !in resolved.headers)
-        } finally {
-            plugin.close()
-        }
-    }
-
-    @Test
-    fun `dm1 parses search subject channel episode and hls`() = runBlocking {
-        val plugin = Dm1EntryPoint().create(FixtureContext("dm1") { request ->
-            when {
-                "/search.html" in request.url -> "<a href=\"/bangumi/123.html\">Re:Zero</a>"
-                "/bangumi/123.html" in request.url -> DM1_SUBJECT
-                "/watch/123/1/1.html" in request.url -> "<script>var player_aaaa={\"url\":\"https://cdn.example/re0.m3u8\"}</script>"
-                else -> "<html><body>ok</body></html>"
-            }
-        })
-        try {
-            val subject = plugin.search(SourceSearchRequest("re0")).single()
-            val details = plugin.getSubject(subject.id)
-            val channel = details.channels.single()
-            val resolved = plugin.resolve(
-                SourceResolveRequest(subject.id, channel.channel.id, channel.episodes.single().id),
-            )
-
-            assertEquals("123", subject.id)
-            assertEquals("简中", channel.channel.displayName)
-            assertEquals("https://cdn.example/re0.m3u8", resolved.url)
-            assertEquals(ResolvedMediaFormat.HLS, resolved.format)
-        } finally {
-            plugin.close()
-        }
-    }
-
     @Test
     fun `next parses server search source name episode and api playback`() = runBlocking {
         val plugin = NextEntryPoint().create(FixtureContext("next") { request ->
@@ -310,16 +250,6 @@ class SourcePluginFixtureTest {
     }
 
     private companion object {
-        const val EACG_SUBJECT = """
-            <ul><li class="fed-play-btns"><a>简中</a></li></ul>
-            <div class="fed-play-item"><a href="/Comicplay/rezero-1-1.html">第01集</a></div>
-        """
-
-        const val DM1_SUBJECT = """
-            <div class="anthology-tab"><div class="swiper-wrapper"><a class="swiper-slide">简中</a></div></div>
-            <a href="/watch/123/1/1.html">第01集</a>
-        """
-
         const val NEXT_SUBJECT = """
             <script>"id":7,"code":"main","name":"主線"</script>
             <a href="/anime/42/play/1?source=main">第01集</a>

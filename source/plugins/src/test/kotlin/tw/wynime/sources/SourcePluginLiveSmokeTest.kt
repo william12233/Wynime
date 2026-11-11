@@ -20,15 +20,14 @@ import com.wynime.source.plugin.api.SourcePluginPlatform
 import com.wynime.source.plugin.api.SourceResolveRequest
 import com.wynime.source.plugin.api.SourceSearchRequest
 import com.wynime.source.plugin.api.SourceSubject
-import tw.wynime.sources.dm1.Dm1EntryPoint
 import tw.wynime.sources.dmbus.DmbusEntryPoint
 import tw.wynime.sources.dyttzy.DyttzyEntryPoint
-import tw.wynime.sources.eacg.EacgEntryPoint
 import tw.wynime.sources.girigiri.GirigiriEntryPoint
 import tw.wynime.sources.next.NextEntryPoint
 import tw.wynime.sources.rk2.Rk2EntryPoint
 import tw.wynime.sources.akianime.AkianimeEntryPoint
 import tw.wynime.sources.baimao.BaimaoEntryPoint
+import tw.wynime.sources.bfzy.BfzyEntryPoint
 import tw.wynime.sources.mxdm.MxdmEntryPoint
 
 class SourcePluginLiveSmokeTest {
@@ -68,12 +67,11 @@ private fun defaultLiveSmokeSpecs() = listOf(
     SmokeSpec("白猫動漫", "baimao", "新网球王子 U-17 世界杯 半决赛", 8, BaimaoEntryPoint()),
     SmokeSpec("AkiAnime", "akianime", "新网球王子 U-17 世界杯 半决赛", 8, AkianimeEntryPoint()),
     SmokeSpec("MX動漫", "mxdm", "黑子的篮球第二季", 8, MxdmEntryPoint()),
-    SmokeSpec("DM1", "dm1", "咒術迴戰", null, Dm1EntryPoint()),
     SmokeSpec("DMBUS", "dmbus", "咒術迴戰", null, DmbusEntryPoint()),
-    SmokeSpec("E-ACG", "eacg", "咒術迴戰", null, EacgEntryPoint()),
     SmokeSpec("Girigiri", "girigiri", "咒術迴戰", null, GirigiriEntryPoint()),
     SmokeSpec("Next", "next", "咒術迴戰", null, NextEntryPoint()),
     SmokeSpec("電影天堂", "dyttzy", "哪吒之魔童闹海", null, DyttzyEntryPoint(), verifyHlsPlaylist = true),
+    SmokeSpec("暴風資源", "bfzy", "咒术回战", 1, BfzyEntryPoint(), verifyHlsPlaylist = true),
     SmokeSpec(
         "Next current target",
         "next",

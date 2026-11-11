@@ -2,11 +2,20 @@ package com.wynime.app.ui.mediafetch
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import com.wynime.app.domain.media.TestMediaList
 import com.wynime.app.domain.media.selector.MatchMetadata
 import com.wynime.app.domain.media.selector.MaybeExcludedMedia
 import com.wynime.app.domain.media.selector.MediaExclusionReason
 import com.wynime.app.domain.media.selector.TestMatchMetadata
+import com.wynime.app.domain.media.fetch.MediaSourceFetchState
+import com.wynime.app.ui.mediaselect.selector.WebSourceChannel
+import com.wynime.app.domain.mediasource.web.PageExpectation
+import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaKind
+import com.wynime.source.plugin.api.SourceDiagnostics
+import com.wynime.source.plugin.api.SourceResultStatus
 
 class MediaSelectorVisibleChannelsTest {
     @Test
@@ -56,5 +65,57 @@ class MediaSelectorVisibleChannelsTest {
         )
 
         assertEquals(2, listOf(TestMediaList[0], sameLine, secondLine).countPlaybackLines())
+    }
+
+    @Test
+    fun `simple mode keeps verification and loading states without channels`() {
+        val channels = emptyList<WebSourceChannel>()
+
+        assertTrue(
+            shouldShowSimpleWebSource(
+                MediaSourceFetchState.CaptchaRequired(
+                    request = SolveRequest(
+                        mediaSourceId = "source",
+                        pageUrl = "https://example.com/search",
+                        kind = WebCaptchaKind.Cloudflare,
+                        expectation = PageExpectation.AnyContent,
+                    ),
+                    id = 1,
+                ),
+                channels,
+            ),
+        )
+        assertTrue(shouldShowSimpleWebSource(MediaSourceFetchState.Working, channels))
+        assertTrue(shouldShowSimpleWebSource(MediaSourceFetchState.Idle, channels))
+    }
+
+    @Test
+    fun `simple mode hides completed states without channels`() {
+        val channels = emptyList<WebSourceChannel>()
+
+        assertFalse(shouldShowSimpleWebSource(MediaSourceFetchState.Succeed(1), channels))
+        assertFalse(
+            shouldShowSimpleWebSource(
+                MediaSourceFetchState.NoMatch(
+                    SourceDiagnostics(
+                        traceId = "trace",
+                        provider = "source",
+                        entryPoint = "search",
+                        responseCategory = SourceResultStatus.SUBJECT_NO_MATCH,
+                    ),
+                    1,
+                ),
+                channels,
+            ),
+        )
+        assertFalse(shouldShowSimpleWebSource(MediaSourceFetchState.Failed(IllegalStateException(), 1), channels))
+        assertFalse(shouldShowSimpleWebSource(MediaSourceFetchState.Abandoned(IllegalStateException(), 1), channels))
+        assertFalse(shouldShowSimpleWebSource(MediaSourceFetchState.RateLimited(123L, 1), channels))
+        assertTrue(
+            shouldShowSimpleWebSource(
+                MediaSourceFetchState.Failed(IllegalStateException(), 1),
+                listOf(WebSourceChannel("可用線路")),
+            ),
+        )
     }
 }

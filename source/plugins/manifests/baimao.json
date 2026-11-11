@@ -1,26 +1,26 @@
 {
   "id": "baimao",
   "name": "白猫動漫",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.baimao.BaimaoEntryPoint",
   "website": "https://www.bmddm.com/",
   "icon": "https://www.bmddm.com/hdst/hm_pic/favicon.ico",
-  "description": "白猫動漫動畫來源；插件直接解析站方播放資訊。",
+  "description": "白猫動漫動畫來源；以首集探測過濾可播放線路並解析站方播放資訊。",
   "platforms": [
     "desktop",
     "android"
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.3.0/source/plugins/artifacts/source-baimao.jar",
-      "sha256": "f7d1a7beab0085354a9bcbad6e5a06a6d0db0958f959572f1e22d20ca237ea65",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.4.0/source/plugins/artifacts/source-baimao.jar",
+      "sha256": "2ba1691879dcda8d31e9219c8a7ac0a5ab66252e87948aa1b0906ddcb6496dfd",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.3.0/source/plugins/artifacts/source-baimao-android.jar",
-      "sha256": "b39b10ad2f7004a3fc773a547de1ff63f428ac23ebf0508f6797aae7d665e54c",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.4.0/source/plugins/artifacts/source-baimao-android.jar",
+      "sha256": "37f7aa1a45a5e5fbb1034ef303c596e624d5f9d3fc41bfb1810a70ad70527ef7",
       "format": "jar"
     }
   }

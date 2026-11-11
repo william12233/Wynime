@@ -229,18 +229,18 @@ class MediaFetcherTest {
     }
 
     @Test
-    fun `source plugin verification failure becomes clickable captcha state`() = runTest {
+    fun `source verification failure becomes clickable captcha state`() = runTest {
         val captchaRequest = SolveRequest(
-            mediaSourceId = "eacg",
-            pageUrl = "https://eacg1.com/vodsearch/-------------.html",
+            mediaSourceId = "fixture-source",
+            pageUrl = "https://example.com/search",
             kind = WebCaptchaKind.Cloudflare,
             expectation = PageExpectation.AnyContent,
         )
         val failure = SourcePluginFailure(
             status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
             diagnostics = sourceFailureDiagnostics(
-                traceId = "trace-eacg",
-                provider = "eacg",
+                traceId = "trace-fixture-source",
+                provider = "fixture-source",
                 entryPoint = "discovery-search",
                 status = SourceResultStatus.BLOCKED_BY_CHALLENGE,
                 url = captchaRequest.pageUrl,

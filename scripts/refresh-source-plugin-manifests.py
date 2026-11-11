@@ -7,8 +7,6 @@ import zipfile
 root = Path(__file__).resolve().parent.parent
 directory = root / "source/plugins"
 for plugin_id in (
-    "eacg",
-    "dm1",
     "next",
     "girigiri",
     "2rk",
@@ -48,4 +46,4 @@ for plugin_id in (
                 assert "classes.dex" not in names
         artifact["sha256"] = hashlib.sha256(payload.read_bytes()).hexdigest()
     path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-print("Eleven JVM/Dex manifests refreshed from validated local artifacts")
+print("Nine JVM/Dex manifests refreshed from validated local artifacts")

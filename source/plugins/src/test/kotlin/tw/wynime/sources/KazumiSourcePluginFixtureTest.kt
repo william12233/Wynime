@@ -21,15 +21,36 @@ import tw.wynime.sources.mxdm.MxdmEntryPoint
 
 class KazumiSourcePluginFixtureTest {
     @Test
-    fun `baimao parses current search and routes the play page to web matching`() = runBlocking {
-        val plugin = BaimaoEntryPoint().create(FixtureContext("baimao") { request ->
-            when {
-                "/s_all?" in request.url ->
-                    "<a href=\"/show/42.html\"><h2>新网球王子 U-17 世界杯 半决赛</h2></a>"
-                "/show/42.html" in request.url -> BAIMAO_SUBJECT
-                else -> "<html><body>ok</body></html>"
-            }
-        })
+    fun `baimao keeps only channels whose first episode probe succeeds`() = runBlocking {
+        val plugin = BaimaoEntryPoint().create(
+            FixtureContext(
+                pluginId = "baimao",
+                responseHeaders = { request ->
+                    if ("/play/42-" in request.url) {
+                        mapOf("Set-Cookie" to "t1=1791599772393; Path=/, k1=38161845068; Path=/")
+                    } else {
+                        emptyMap()
+                    }
+                },
+                responseStatus = { request ->
+                    if ("unavailable.example" in request.url) 404 else 200
+                },
+                handler = { request ->
+                    when {
+                        "/s_all?" in request.url ->
+                            "<a href=\"/show/42.html\"><h2>新网球王子 U-17 世界杯 半决赛</h2></a>"
+                        "/show/42.html" in request.url -> BAIMAO_SUBJECT
+                        "/time" in request.url -> "1791606027"
+                        "/playinfo?" in request.url && "playindex=0" in request.url ->
+                            "{\"vurl\":\"https://cdn.example/baimao.m3u8\"}"
+                        "/playinfo?" in request.url && "playindex=1" in request.url ->
+                            "{\"vurl\":\"https://unavailable.example/baimao.m3u8\"}"
+                        "cdn.example/baimao.m3u8" in request.url -> "#EXTM3U\n#EXT-X-TARGETDURATION:6\n"
+                        else -> "<html><body>ok</body></html>"
+                    }
+                },
+            ),
+        )
         try {
             val subject = plugin.search(SourceSearchRequest("新网球王子 U-17 世界杯 半决赛")).single()
             val details = plugin.getSubject(subject.id)
@@ -38,9 +59,10 @@ class KazumiSourcePluginFixtureTest {
 
             assertEquals("42", subject.id)
             assertEquals("播放Ⅰ", details.channels.first().channel.displayName)
-            assertEquals("https://www.bmddm.com/play/42-0-0.html", resolved.url)
-            assertEquals(ResolvedMediaFormat.WEB, resolved.format)
-            assertEquals(SourceWebResourceMatch.LoadPage, plugin.matchWebResource(resolved.url))
+            assertEquals(1, details.channels.size)
+            assertEquals("https://cdn.example/baimao.m3u8", resolved.url)
+            assertEquals(ResolvedMediaFormat.HLS, resolved.format)
+            assertEquals(SourceWebResourceMatch.Matched(resolved.url), plugin.matchWebResource(resolved.url))
             assertEquals(
                 SourceWebResourceMatch.Matched("https://cdn.example/baimao.m3u8"),
                 plugin.matchWebResource("https://cdn.example/baimao.m3u8"),
@@ -199,13 +221,14 @@ class KazumiSourcePluginFixtureTest {
     private class FixtureContext(
         override val pluginId: String,
         private val responseHeaders: (SourceHttpRequest) -> Map<String, String> = { emptyMap() },
+        private val responseStatus: (SourceHttpRequest) -> Int = { 200 },
         handler: (SourceHttpRequest) -> String,
     ) : SourcePluginContext {
         override val hostVersion: String = "4.9.0-dev"
         override val platform: SourcePluginPlatform = SourcePluginPlatform.DESKTOP
         override val http: SourceHttpClient = object : SourceHttpClient {
             override suspend fun execute(request: SourceHttpRequest): SourceHttpResponse = SourceHttpResponse(
-                statusCode = 200,
+                statusCode = responseStatus(request),
                 finalUrl = request.url,
                 headers = responseHeaders(request),
                 body = handler(request).encodeToByteArray(),

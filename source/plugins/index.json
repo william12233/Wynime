@@ -3,32 +3,6 @@
   "pluginApiVersion": 3,
   "plugins": [
     {
-      "id": "eacg",
-      "name": "E-ACG",
-      "version": "1.0.37",
-      "description": "E-ACG 動畫來源",
-      "website": "https://eacg1.com/",
-      "icon": "https://k8dm.com/template/vfed/asset/img/favicon.png",
-      "platforms": [
-        "desktop",
-        "android"
-      ],
-      "manifest": "manifests/eacg.json"
-    },
-    {
-      "id": "dm1",
-      "name": "DM1",
-      "version": "1.6.0",
-      "description": "DM1 動畫來源",
-      "website": "https://dm1.xfdm.pro/",
-      "icon": "https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png",
-      "platforms": [
-        "desktop",
-        "android"
-      ],
-      "manifest": "manifests/dm1.json"
-    },
-    {
       "id": "next",
       "name": "Xifan Next",
       "version": "1.7.1",
@@ -44,10 +18,10 @@
     {
       "id": "girigiri",
       "name": "Girigiri Love",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "description": "Girigiri Love 動畫來源",
       "website": "https://ani.girigirilove.com/",
-      "icon": "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
+      "icon": "https://ani.girigirilove.com/brand/icon.png",
       "platforms": [
         "desktop",
         "android"
@@ -70,8 +44,8 @@
     {
       "id": "baimao",
       "name": "白猫動漫",
-      "version": "1.3.0",
-      "description": "白猫動漫動畫來源",
+      "version": "1.4.0",
+      "description": "白猫動漫動畫來源，只顯示首集探測可播放的線路",
       "website": "https://www.bmddm.com/",
       "icon": "https://www.bmddm.com/hdst/hm_pic/favicon.ico",
       "platforms": [

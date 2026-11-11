@@ -286,9 +286,9 @@ class MediaSelectorState(
                 null
             }
 
-            channels.isEmpty() && state is MediaSourceFetchState.Succeed -> {
+            !shouldShowSimpleWebSource(state, channels) -> {
 
-                if (delayToOvercomeCacheIssue) {
+                if (delayToOvercomeCacheIssue && state is MediaSourceFetchState.Succeed) {
                     delay(1000)
                 }
                 null
@@ -347,6 +347,17 @@ class MediaSelectorState(
             resolvingCaptchaInstanceIds.value = resolvingCaptchaInstanceIds.value - source.instanceId
         }
     }
+}
+
+internal fun shouldShowSimpleWebSource(
+    state: MediaSourceFetchState,
+    channels: List<WebSourceChannel>,
+): Boolean = when {
+    state is MediaSourceFetchState.Disabled -> false
+    state is MediaSourceFetchState.CaptchaRequired -> true
+    state is MediaSourceFetchState.Idle || state is MediaSourceFetchState.Working -> true
+    channels.isNotEmpty() -> true
+    else -> false
 }
 
 internal fun visibleSourceMedia(

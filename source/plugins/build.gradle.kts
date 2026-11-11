@@ -19,8 +19,6 @@ plugins {
 group = "tw.wynime.sources"
 
 val pluginIds = listOf(
-    "eacg",
-    "dm1",
     "next",
     "girigiri",
     "2rk",

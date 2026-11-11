@@ -37,7 +37,7 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
     displayName = "Girigiri 愛動漫",
     pluginVersion = PLUGIN_VERSION,
     rootUrl = "https://ani.girigirilove.com",
-    iconUrl = "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
+    iconUrl = "https://ani.girigirilove.com/brand/icon.png",
     description = "Girigiri 愛動漫公開番劇與分集來源",
 ) {
     override suspend fun search(request: SourceSearchRequest): List<SourceSubject> {

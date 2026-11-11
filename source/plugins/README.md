@@ -23,19 +23,17 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 
 每個插件版本由 `versions/<id>.properties` 獨立管理；App 版本更新不會自動替換插件版本。版本常數只會編譯進對應插件的 artifact，不會由共用 runtime 映射決定。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，與 App release tag 分離；官方索引只提供每個插件的最新版，App 不內置任何來源插件。
 
-版本號依該插件的程式碼修訂次數計算；修訂次數包含插件專屬程式碼，以及該插件實際打包的共用 `SitePluginBase` 程式碼。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，App 只讀取遠端索引並下載對應平台 artifact；除 eacg 保留 `1.0.x` 版本線外，其餘插件使用 `1.<修訂次數>.0`：
+版本號依該插件的程式碼修訂次數計算；修訂次數包含插件專屬程式碼，以及該插件實際打包的共用 `SitePluginBase` 程式碼。正式 artifact 使用 `source-plugin-<id>-v<version>` 的 immutable Git tag，App 只讀取遠端索引並下載對應平台 artifact；插件使用 `1.<修訂次數>.0`：
 
 | ID | 程式碼修訂次數 | 版本 |
 | --- | ---: | --- |
-| `eacg` | 9 | `1.0.37` |
 | `next` | 7 | `1.7.1` |
-| `dm1` | 6 | `1.6.0` |
-| `girigiri` | 7 | `1.7.0` |
+| `girigiri` | 8 | `1.8.0` |
 | `2rk` | 9 | `1.9.0` |
 | `bfzy` | 2 | `1.2.0` |
 | `dmbus` | 6 | `1.6.0` |
 | `dyttzy` | 4 | `1.4.0` |
-| `baimao` | 3 | `1.3.0` |
+| `baimao` | 4 | `1.4.0` |
 | `akianime` | 2 | `1.2.0` |
 | `mxdm` | 1 | `1.1.0` |
 
@@ -43,14 +41,12 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 
 | ID | 網站 | 搜尋規則 | 驗證要求 |
 | --- | --- | --- | --- |
-| `eacg` | [E-ACG](https://eacg1.com/) | `re0` | 播放一集、下載一集後刪除 |
-| `dm1` | [DM1](https://dm1.xfdm.pro/) | `re0` | 播放一集、下載一集後刪除 |
 | `next` | [Xifan Next](https://next.xifanacg.com/) | `re0` | 播放一集、下載一集後刪除 |
 | `girigiri` | [Girigiri Love](https://ani.girigirilove.com/) | `re0` | 播放一集、下載一集後刪除 |
 | `2rk` | [2RK](https://www.2rk.cc/) | `关于我转生变成史莱姆这档事` | 播放一集、下載一集後刪除 |
 | `dmbus` | [DMBUS](https://dmbus.cc/) | `re0` | 播放一集、下載一集後刪除 |
 | `dyttzy` | [電影天堂](https://caiji.dyttzyapi.com/) | `哪吒之魔童鬧海` | 只使用 `dyttm3u8` 直接 HLS；播放一集、下載一集後刪除 |
-| `baimao` | [白猫動漫](https://www.bmddm.com/) | `新网球王子` | 播放頁由站方播放器處理 |
+| `baimao` | [白猫動漫](https://www.bmddm.com/) | `新网球王子` | 只顯示首集探測可播放的線路 |
 | `akianime` | [AkiAnime](https://www.akianime.cc/) | `新网球王子 U-17 世界杯 半决赛` | 公開 HLS 優先，其他線路由站方播放器處理 |
 | `mxdm` | [MX動漫](https://www.dcc3.com/) | `黑子的篮球第二季` | 播放頁由站方播放器處理 |
 | `bfzy` | [暴風資源](https://bfzy.tv/) | `遮天动画版` | 由站方 API 取得 `bfzym3u8` HLS；播放一集、下載一集後刪除 |

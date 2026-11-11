@@ -1,8 +1,10 @@
 package tw.wynime.sources.baimao
 
 import com.wynime.source.plugin.api.SourceHttpRequest
+import com.wynime.source.plugin.api.ResolvedMediaFormat
 import com.wynime.source.plugin.api.SourceChannel
 import com.wynime.source.plugin.api.SourceChannelEpisodes
+import com.wynime.source.plugin.api.SourceEpisode
 import com.wynime.source.plugin.api.SourcePlugin
 import com.wynime.source.plugin.api.SourcePluginContext
 import com.wynime.source.plugin.api.SourcePluginEntryPoint
@@ -11,10 +13,12 @@ import com.wynime.source.plugin.api.SourceSearchRequest
 import com.wynime.source.plugin.api.SourceSubjectDetails
 import com.wynime.source.plugin.api.SourceWebResourceMatch
 import tw.wynime.sources.shared.SitePluginBase
+import tw.wynime.sources.shared.SourceSiteException
 import tw.wynime.sources.shared.cleanText
 import tw.wynime.sources.shared.extractJsonStringField
 import tw.wynime.sources.shared.isMediaUrl
 import tw.wynime.sources.shared.links
+import tw.wynime.sources.shared.mediaFormat
 import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.searchQueryVariants
 import kotlin.coroutines.cancellation.CancellationException
@@ -69,20 +73,24 @@ internal class BaimaoPlugin(context: SourcePluginContext) : SitePluginBase(
             )
         }
         val channelNames = channelNamesById(page.html, subjectId)
+        val channels = groups.map { (channelId, episodes) ->
+            SourceChannelEpisodes(
+                SourceChannel(channelId, channelNames[channelId] ?: "線路$channelId"),
+                episodes.distinctBy { it.id },
+            )
+        }
         return SourceSubjectDetails(
             subject = subject(subjectId, title, page.finalUrl),
-            channels = groups.map { (channelId, episodes) ->
-                SourceChannelEpisodes(
-                    SourceChannel(channelId, channelNames[channelId] ?: "線路$channelId"),
-                    episodes.distinctBy { it.id },
-                )
-            },
+            channels = channels.filterPlayable(subjectId),
         )
     }
 
     override suspend fun resolve(request: SourceResolveRequest) = run {
         val pageUrl = "$rootUrl/play/${request.subjectId}-${request.channelId}-${request.episodeId}.html"
         val mediaUrl = resolvePlayInfo(pageUrl, request)
+            ?: throw SourceSiteException(
+                "白猫動漫無法解析可播放媒體: ${request.subjectId}/${request.channelId}/${request.episodeId}",
+            )
         resolvedMedia(
             request = request,
             pageUrl = pageUrl,
@@ -143,6 +151,7 @@ internal class BaimaoPlugin(context: SourcePluginContext) : SitePluginBase(
             if (cookies["t1"].isNullOrBlank() || cookies["k1"].isNullOrBlank()) return null
             val pageFinalUrl = pageResponse.finalUrl
             val cookieHeader = cookies.asCookieHeader()
+            val timeRequestMillis = currentTimeMillis()
             val timeResponse = context.http.execute(
                 SourceHttpRequest(
                     method = "GET",
@@ -158,11 +167,10 @@ internal class BaimaoPlugin(context: SourcePluginContext) : SitePluginBase(
             if (timeResponse.statusCode !in 200..399) return null
             val serverTime = timeResponse.bodyAsText().trim().toDoubleOrNull()?.toLong() ?: return null
             val nowMillis = currentTimeMillis()
-            val nowSeconds = nowMillis / 1000L
-            val browserFactor = 1
-            cookies["m2t"] = m2t(nowSeconds, browserFactor)
-            cookies["im"] = im(serverTime, browserFactor)
-            cookies["kr"] = kr(serverTime)
+            val siteSeconds = BaimaoChallenge.siteSeconds(serverTime, timeRequestMillis, nowMillis)
+            cookies["m2t"] = BaimaoChallenge.m2t(siteSeconds)
+            cookies["im"] = BaimaoChallenge.im(siteSeconds)
+            cookies["kr"] = BaimaoChallenge.kr(siteSeconds)
             cookies["k2"] = k2(cookies.getValue("t1"))
             cookies["t2"] = t2(cookies.getValue("k2"), nowMillis)
 
@@ -190,6 +198,71 @@ internal class BaimaoPlugin(context: SourcePluginContext) : SitePluginBase(
             throw error
         } catch (_: Throwable) {
             null
+        }
+    }
+
+    private suspend fun List<SourceChannelEpisodes>.filterPlayable(
+        subjectId: String,
+    ): List<SourceChannelEpisodes> {
+        val result = mutableListOf<SourceChannelEpisodes>()
+        for (channel in this) {
+            val firstEpisode = channel.episodes.minWithOrNull(
+                compareBy<SourceEpisode> { it.episodeSort ?: Float.POSITIVE_INFINITY }
+                    .thenBy { it.id },
+            ) ?: continue
+            val request = SourceResolveRequest(
+                subjectId = subjectId,
+                channelId = channel.channel.id,
+                episodeId = firstEpisode.id,
+                episodeSort = firstEpisode.episodeSort,
+                episodeEp = firstEpisode.episodeEp,
+                pluginId = metadata.id,
+                entryPoint = "CHANNEL_PROBE",
+            )
+            val pageUrl = firstEpisode.playPageUrl ?: continue
+            val mediaUrl = resolvePlayInfo(pageUrl, request) ?: continue
+            if (probeMedia(mediaUrl, pageUrl, request)) result += channel
+        }
+        return result
+    }
+
+    private suspend fun probeMedia(
+        mediaUrl: String,
+        pageUrl: String,
+        request: SourceResolveRequest,
+    ): Boolean {
+        return try {
+            val response = context.http.execute(
+                SourceHttpRequest(
+                    method = "GET",
+                    url = mediaUrl,
+                    headers = defaultHeaders + mapOf(
+                        "Accept" to "*/*",
+                        "Range" to "bytes=0-4095",
+                        "Referer" to pageUrl,
+                    ),
+                    traceId = request.traceId,
+                    entryPoint = "CHANNEL_PROBE",
+                ),
+            )
+            if (response.statusCode !in 200..399) return false
+            val body = response.bodyAsText().trimStart()
+            when (mediaFormat(mediaUrl)) {
+                ResolvedMediaFormat.HLS -> body.contains("#EXTM3U")
+                ResolvedMediaFormat.MP4 -> {
+                    response.contentType?.startsWith("video/", ignoreCase = true) == true ||
+                        (!body.startsWith("<") && body.isNotBlank())
+                }
+                else -> false
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: LinkageError) {
+            throw error
+        } catch (error: Error) {
+            throw error
+        } catch (_: Throwable) {
+            false
         }
     }
 
@@ -224,24 +297,6 @@ internal class BaimaoPlugin(context: SourcePluginContext) : SitePluginBase(
     private fun LinkedHashMap<String, String>.asCookieHeader(): String = entries.joinToString("; ") {
         "${it.key}=${it.value}"
     }
-
-    private fun m2t(seconds: Long, browserFactor: Int): String {
-        val value = seconds shr (0x11 + browserFactor)
-        return (
-            (((((value * 0x11 + 0xbd) + (value % 0x3f + 0xf)) * (value % 0x1f + 0x21)) *
-                (value % 0x11 + 0x70)) * (value % 0x7 + 0x43)) + 0x17b
-            ).toString()
-    }
-
-    private fun im(seconds: Long, browserFactor: Int): String = challengeValue(
-        seconds shr (0x11 + browserFactor),
-    )
-
-    private fun kr(seconds: Long): String = challengeValue(seconds shr 0x7)
-
-    private fun challengeValue(value: Long): String = (
-        ((value * 0xd + 0x113) * (value % 0x21 + 0xb) + (value % 0x11 + 0x3)) % 0x387
-        ).toString()
 
     private fun k2(t1: String): String {
         val value = (t1.toLongOrNull() ?: return "") shr 0x5

@@ -15,16 +15,15 @@
 
 | 插件 ID | 網站 | 搜尋輸入 |
 | --- | --- | --- |
-| `eacg` | https://eacg.net/ | `re0` |
-| `dm1` | https://dm1.xfdm.pro/ | `re0` |
 | `next` | https://next.xifanacg.com/ | `re0` |
-| `girigiri` | https://Wynime.girigirilove.com/ | `re0` |
+| `girigiri` | https://ani.girigirilove.com/ | `re0` |
 | `2rk` | https://www.2rk.cc/ | `关于我转生变成史莱姆这档事` |
 | `dmbus` | https://dmbus.cc/ | `re0` |
 | `dyttzy` | https://caiji.dyttzyapi.com/ | `哪吒之魔童鬧海`（只驗證 `dyttm3u8` 直接 HLS） |
 | `baimao` | https://www.bmddm.com/ | `新网球王子 U-17 世界杯 半决赛` |
 | `akianime` | https://www.akianime.cc/ | `新网球王子 U-17 世界杯 半决赛` |
 | `mxdm` | https://www.dcc3.com/ | `黑子的篮球第二季` |
+| `bfzy` | https://bfzy.tv/ | `咒术回战`（只驗證 `bfzym3u8` 直接 HLS） |
 
 DYTTZY 的 `dytt` 分享網址、`vod_down_url` 與非 HTTPS HLS 項目不納入播放或下載；API 搜尋／詳情可作為解析證據，但不能代替實際播放與下載證據。
 
@@ -34,20 +33,20 @@ DYTTZY 的 `dytt` 分享網址、`vod_down_url` 與非 HTTPS HLS 項目不納入
 
 | 來源 | 播放 | 下載與清理 | 證據／備註 |
 | --- | --- | --- | --- |
-| `eacg` | `PASS` | `PASS` | `re0` 精確選到 E-ACG；`.tmp-eacg-episode-diagnostic.png` 顯示實際畫面，`.tmp-eacg-diagnostic-logcat.txt` 記錄驗證後的詳情頁、3 條網站頻道與 XHS MP4 resolve；`.tmp-download-eacg-complete.png`／`.tmp-download-eacg-deleted.png` 顯示下載完成與刪除後清理。 |
-| `dm1` | `PASS` | `UNVERIFIED` | `.tmp-final-play-dm1.png` 顯示播放器實際畫面，來源卡為稀飯動漫；下載未另行測試，依目前人工驗收指示只需一個來源完成下載驗證。 |
 | `next` | `PASS` | `UNVERIFIED` | `.tmp-final-play-next.png` 顯示播放器實際畫面，來源卡為稀飯動漫 Next；下載未另行測試，依目前人工驗收指示只需一個來源完成下載驗證。 |
 | `girigiri` | `PASS` | `PASS` | `re0` 搜尋由公開 API 取得 6 個候選，精確選到 `GV1222`；網站詳情頁只有 `简中` 1 個頻道、25 集。`.tmp-girigiri-playing-confirmed.png`／`.tmp-girigiri-download.log` 可核對播放與 `206` 媒體請求；`.tmp-girigiri-download-completed.png` 顯示 `1/25 已完成 · 333.7 MB`，`.tmp-girigiri-download-clean.png` 顯示由 App 刪除後回到 `0/25 已完成`。 |
 | `2rk` | `UNVERIFIED`（已修正分片截斷，待實機重測） | `UNVERIFIED` | 舊 `.tmp-final-play-2rk-line1.png` 只保留先前線路 1 的人工紀錄；本次確認咒術迴戰第 1 集的大型 `.ts` 回應會被截成 1 MB，已在共用播放代理與下載器加入 1 MB Range 重組。網站 `c.js` 實際列出 `线路1`、`线路2`、`线路3`；線路 2、3 的 `/saber` 回應仍是 31 bytes，ExoPlayer 報 `InvalidKeyException: Unsupported key size: 31 bytes`，因此個別標為上游 `BLOCKED`，沒有假稱三條都能播放。 |
 | `dmbus` | `PASS` | `PASS` | `.tmp-android-dmbus-slime-playing-fixed-logcat.txt` 有同一番劇的正向播放進度；下載完成、刪除與清理證據為 `.tmp-android-dmbus-download-finished-menu.xml`、`.tmp-android-dmbus-download-after-delete.xml`、`.tmp-android-dmbus-download-clean.png`。 |
 | `dyttzy` | `PASS`（Android；Windows Desktop） | `PASS`（Android；Windows Desktop 下載） | `哪吒闹海` 的 Android host 測試已由 `dyttm3u8` 解析到直接 HLS；`.tmp-android-ui-verify/dyttzy-nezha-playing-1.png` 與 `...-playing-2.png` 顯示播放畫面與進度變化。`.tmp-android-ui-verify/dyttzy-na-zha-download-completed.png` 顯示 `1/1 completed · 450.6 MB` 與「電影天堂 · Finished」；輸出 MP4 為 `450021076` bytes，並由 `.../dyttzy-na-zha-downloaded-playback.png` 確認可播放。刪除後 `.../dyttzy-na-zha-download-cleaned.png` 回到 `0/1 completed`，下載目錄無殘留。Windows Desktop 的商店安裝、`電影天堂`／`dyttm3u8` 播放、`1/1 已完成 · 450.6 MB` 下載與下載檔播放證據記錄於 `.tmp-desktop-ui-verify/dyttzy-desktop-evidence.txt`；桌面輸出檔保留供檢查，未執行刪除清理。 |
+| `bfzy` | `BLOCKED` | `UNVERIFIED` | API 可搜尋到咒术回战（ID `46365`），但第一集 `bfzym3u8` URL 目前回傳 HTTP `404 Not Found`；保留原始上游失敗，不以替代 URL 冒充成功。 |
 
-目前已有下載完成／刪除後清理證據的來源為 E-ACG、Girigiri、DMBUS 與 DYTTZY；下載驗收只要求一個來源時，這些證據已超出最低數量。
+目前已有下載完成／刪除後清理證據的來源為 Girigiri、DMBUS 與 DYTTZY；下載驗收只要求一個來源時，這些證據已超出最低數量。
 
 ### 多線路結果
 
-- E-ACG 詳情頁實際回傳 `EDD动漫`、`极速在线`、`看吧备用` 三條線路；最新模擬器測試以 `看吧备用` 成功播放。其餘線路保留網站實際錯誤（TLS 憑證鏈或上游 timeout），不以替代 URL 或停用驗證冒充成功。
 - 2RK 詳情頁實際回傳 `线路1`、`线路2`、`线路3`；線路 1 的 playlist／金鑰正常，但咒術迴戰第 1 集的大型分片曾被網路路徑截斷，已由共用 HLS 播放與下載層以 Range 分段重組；線路 2、3 因站方金鑰回應不是可用的 16-byte AES-128 金鑰而標示 `BLOCKED`。
+- 白猫的簡易來源卡只保留首集探測成功的線路；成功但沒有線路、HTTP 錯誤、限流與上游失敗的空卡片會隱藏，需要互動驗證的來源仍保留驗證入口。
+- 暴風資源咒術迴戰第一集的 API CDN URL 目前回 HTTP `404`；電影天堂同一目標的 API HLS 回 HTTP `403 The region has been denied`，兩者都按上游狀態標示，不繞過區域或 CDN 限制。
 
 ### 2RK 線路記錄
 

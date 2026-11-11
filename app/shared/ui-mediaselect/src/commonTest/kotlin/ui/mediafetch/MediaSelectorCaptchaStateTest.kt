@@ -63,24 +63,38 @@ class MediaSelectorCaptchaStateTest {
     }
 
     @Test
-    fun `rate limited state is exposed as countdown not captcha`() = runTest {
-        val retryAt = 4_000_000_000_000
+    fun `rate limited source without channels is hidden from simple mode`() = runTest {
         val stateScope = CoroutineScope(backgroundScope.coroutineContext + SupervisorJob())
         val state = createState(
             sourceResults = listOf(
                 FakeMediaSourceFetchResult(
-                    initialState = MediaSourceFetchState.RateLimited(retryAt = retryAt, id = 1),
+                    initialState = MediaSourceFetchState.RateLimited(retryAt = 4_000_000_000_000, id = 1),
                 ),
             ),
             backgroundScope = stateScope,
         )
         try {
             val presentation = state.presentationFlow.first { !it.isPlaceholder }
-            val source = presentation.webSources.single()
+            assertTrue(presentation.webSources.isEmpty())
+        } finally {
+            stateScope.cancel()
+        }
+    }
 
-            assertFalse(source.isCaptchaRequired)
-            assertTrue(source.isRateLimited)
-            assertEquals(retryAt, source.rateLimitedUntilMillis)
+    @Test
+    fun `failed source without channels is hidden from simple mode`() = runTest {
+        val stateScope = CoroutineScope(backgroundScope.coroutineContext + SupervisorJob())
+        val state = createState(
+            sourceResults = listOf(
+                FakeMediaSourceFetchResult(
+                    initialState = MediaSourceFetchState.Failed(IllegalStateException("offline"), id = 1),
+                ),
+            ),
+            backgroundScope = stateScope,
+        )
+        try {
+            val presentation = state.presentationFlow.first { !it.isPlaceholder }
+            assertTrue(presentation.webSources.isEmpty())
         } finally {
             stateScope.cancel()
         }

@@ -74,7 +74,7 @@ class UpdateCheckerTest {
     }
 
     @Test
-    fun `release asset exposes GitHub API download before browser download`() = runTest {
+    fun `release asset prefers direct browser download before GitHub API metadata URL`() = runTest {
         val result = checker(
             """
             [{"tag_name":"0.2","assets":[{"name":"wynime-0.2-windows-x86_64.zip","url":"https://api.github.com/repos/example/releases/assets/42","browser_download_url":"https://github.com/example/releases/download/v0.2/wynime-0.2-windows-x86_64.zip"}]}]
@@ -84,13 +84,13 @@ class UpdateCheckerTest {
 
         assertEquals(
             listOf(
-                "https://api.github.com/repos/example/releases/assets/42",
                 "https://github.com/example/releases/download/v0.2/wynime-0.2-windows-x86_64.zip",
+                "https://api.github.com/repos/example/releases/assets/42",
             ),
             result?.downloadUrlAlternatives,
         )
         assertEquals(
-            "https://api.github.com/repos/example/releases/assets/42",
+            "https://github.com/example/releases/download/v0.2/wynime-0.2-windows-x86_64.zip",
             result?.packageDescriptor?.downloadUrl,
         )
     }

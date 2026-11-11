@@ -72,7 +72,10 @@ class UpdateChecker(
                 val assets = assetNames.mapNotNull { expected ->
                     release.assets.firstOrNull { it.name == expected }
                         ?.let { asset ->
-                            val urls = listOf(asset.apiUrl, asset.browserDownloadUrl)
+                            // Keep the direct release URL first. The GitHub API asset URL
+                            // requires an octet-stream Accept header and some networks/proxies
+                            // return JSON metadata instead of the APK.
+                            val urls = listOf(asset.browserDownloadUrl, asset.apiUrl)
                                 .filter(String::isNotBlank)
                                 .distinct()
                             urls.takeIf { it.isNotEmpty() }?.let { asset.name to it }

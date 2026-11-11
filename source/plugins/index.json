@@ -18,7 +18,7 @@
     {
       "id": "dm1",
       "name": "DM1",
-      "version": "1.7.0",
+      "version": "1.6.0",
       "description": "DM1 動畫來源",
       "website": "https://dm1.xfdm.pro/",
       "icon": "https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png",
@@ -44,7 +44,7 @@
     {
       "id": "girigiri",
       "name": "Girigiri Love",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "description": "Girigiri Love 動畫來源",
       "website": "https://ani.girigirilove.com/",
       "icon": "https://ani.girigirilove.com/upload/anime.girigirilove.com_.png",
@@ -96,7 +96,7 @@
     {
       "id": "mxdm",
       "name": "MX動漫",
-      "version": "1.2.0",
+      "version": "1.1.0",
       "description": "MX動漫動畫來源",
       "website": "https://www.dcc3.com/",
       "icon": "https://www.dcc3.com/favicon.ico",
@@ -135,7 +135,7 @@
     {
       "id": "bfzy",
       "name": "暴風資源",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "暴風資源公開影片與 bfzym3u8 播放來源",
       "website": "https://bfzy.tv/",
       "icon": "https://bfzy.tv/favicon.ico",

@@ -43,6 +43,30 @@ private fun exitProcessForUpdate(delayMillis: Long): InstallationResult {
     return InstallationResult.Succeed
 }
 
+/**
+ * Starts the updater through a second cmd process so it owns its console and
+ * can finish after Wynime exits. Calling ani_update.exe directly makes the
+ * updater disappear on some Windows installations when the parent exits.
+ */
+internal fun windowsUpdaterCommand(
+    commandInterpreter: String,
+    updaterExecutable: String,
+    packageFile: String,
+    appDirectory: String,
+): List<String> = listOf(
+    commandInterpreter,
+    "/d",
+    "/c",
+    "start",
+    "cmd.exe",
+    "/c",
+    "\"",
+    updaterExecutable,
+    packageFile,
+    appDirectory,
+    "\"",
+)
+
 object WindowsUpdateInstaller : DesktopUpdateInstaller {
     private val logger = logger<WindowsUpdateInstaller>()
 
@@ -73,10 +97,14 @@ object WindowsUpdateInstaller : DesktopUpdateInstaller {
         val copiedUpdateExecutable = appDir.resolve(UPDATER_EXECUTABLE)
         updateExecutable.copyTo(copiedUpdateExecutable, true)
 
+        val commandInterpreter = System.getenv("ComSpec")?.takeIf { it.isNotBlank() } ?: "cmd.exe"
         ProcessBuilder(
-            copiedUpdateExecutable.absolutePath,
-            file.absolutePath,
-            appDir.absolutePath,
+            *windowsUpdaterCommand(
+                commandInterpreter = commandInterpreter,
+                updaterExecutable = copiedUpdateExecutable.absolutePath,
+                packageFile = file.absolutePath,
+                appDirectory = appDir.absolutePath,
+            ).toTypedArray(),
         )
             .directory(appDir)
             .start()

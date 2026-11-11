@@ -32,6 +32,7 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 | `dm1` | 6 | `1.6.0` |
 | `girigiri` | 7 | `1.7.0` |
 | `2rk` | 9 | `1.9.0` |
+| `bfzy` | 2 | `1.2.0` |
 | `dmbus` | 6 | `1.6.0` |
 | `dyttzy` | 4 | `1.4.0` |
 | `baimao` | 3 | `1.3.0` |

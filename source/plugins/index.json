@@ -5,7 +5,7 @@
     {
       "id": "eacg",
       "name": "E-ACG",
-      "version": "1.0.36",
+      "version": "1.0.37",
       "description": "E-ACG 動畫來源",
       "website": "https://eacg1.com/",
       "icon": "https://k8dm.com/template/vfed/asset/img/favicon.png",
@@ -18,7 +18,7 @@
     {
       "id": "dm1",
       "name": "DM1",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "description": "DM1 動畫來源",
       "website": "https://dm1.xfdm.pro/",
       "icon": "https://dm1.xfdm.pro/upload/site/20240308-1/813e41f81d6f85bfd7a44bf8a813f9e5.png",
@@ -57,7 +57,7 @@
     {
       "id": "2rk",
       "name": "2RK",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "description": "2RK 動畫來源",
       "website": "https://www.2rk.cc/",
       "icon": "https://www.2rk.cc/logo.png",
@@ -96,7 +96,7 @@
     {
       "id": "mxdm",
       "name": "MX動漫",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "MX動漫動畫來源",
       "website": "https://www.dcc3.com/",
       "icon": "https://www.dcc3.com/favicon.ico",

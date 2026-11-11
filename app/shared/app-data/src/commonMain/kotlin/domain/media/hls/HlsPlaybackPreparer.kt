@@ -11,6 +11,13 @@ data class HlsPlaybackOptions(
     val filterSegments: Boolean = false,
 
     val proxySegments: Boolean = false,
+
+    /**
+     * Downloads the selected playback range into the proxy cache. Segment
+     * proxying itself is independent from this because some media servers
+     * require the proxy even when OP/ED skipping is disabled.
+     */
+    val prefetchSegments: Boolean = proxySegments,
 ) {
     val isEnabled: Boolean get() = filterSegments || proxySegments
 

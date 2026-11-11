@@ -188,6 +188,69 @@ class WebSessionManager(
         return verdict
     }
 
+    /**
+     * Loads a page through a browser session that the user has already
+     * verified. This never creates a session or starts a solver; it only
+     * bridges source requests to the browser's cookies and challenge state.
+     *
+     * Source endpoints may return JSON, so this intentionally does not use
+     * PageEvaluator.AnyContent and accepts any non-empty non-challenge page.
+     */
+    suspend fun fetchVerifiedPage(url: String): LoadedPage? {
+        val host = normalizedSessionHost(url) ?: return null
+        val session = lock.withLock {
+            val state = hostStates[host] ?: return@withLock null
+            val solvedAt = state.lastSolveSucceededAtMillis
+            if (state.session == null || solvedAt <= 0L ||
+                getTimeMillis() - solvedAt >= stickyWindow.inWholeMilliseconds
+            ) {
+                return@withLock null
+            }
+            state.session!!.also {
+                it.refCount++
+                it.lastUsedAtMillis = getTimeMillis()
+            }
+        } ?: return null
+
+        try {
+            val browser = session.browser
+            val current = browser.currentPage()
+            if (current != null && isRelevantPage(current, host) &&
+                pendingPageKey(current.finalUrl) == pendingPageKey(url) &&
+                isUsableVerifiedPage(current)
+            ) {
+                syncBrowserIdentity(host, browser, current.finalUrl, url)
+                return current
+            }
+
+            browser.navigate(url)
+            var last: LoadedPage? = null
+            withTimeoutOrNull(browserLoadTimeout) {
+                browserPages(browser, host).first { page ->
+                    last = page
+                    isRequestedPage(page, url) && isUsableVerifiedPage(page)
+                }
+            }
+            val page = last?.takeIf { isRequestedPage(it, url) && isUsableVerifiedPage(it) }
+                ?: return null
+            syncBrowserIdentity(host, browser, page.finalUrl, url)
+            return page
+        } finally {
+            lock.withLock {
+                session.refCount--
+                session.lastUsedAtMillis = getTimeMillis()
+            }
+        }
+    }
+
+    private fun isRequestedPage(page: LoadedPage, requestedUrl: String): Boolean =
+        pendingPageKey(page.finalUrl) == pendingPageKey(requestedUrl)
+
+    private fun isUsableVerifiedPage(page: LoadedPage): Boolean =
+        page.html.isNotBlank() &&
+            page.status !in setOf(403, 404, 429) &&
+            WebCaptchaDetector.detect(page.finalUrl, page.html) == null
+
     private suspend fun shouldStickToBrowser(host: String): Boolean = lock.withLock {
         val state = hostStates[host] ?: return@withLock false
         state.session != null &&

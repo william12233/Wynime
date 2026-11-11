@@ -146,7 +146,7 @@ private class LocalHlsProxySession private constructor(
     override val prefetchProgress: Flow<List<PrefetchSegmentInfo>> get() = prefetchProgressFlow
 
     override fun setPrefetchRange(range: MediaTimeRange?) {
-        if (!options.proxySegments) return
+        if (!options.prefetchSegments) return
         synchronized(prefetchLock) {
             if (requestedPrefetchRange == range) return
             requestedPrefetchRange = range

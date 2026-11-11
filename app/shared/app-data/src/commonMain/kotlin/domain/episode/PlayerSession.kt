@@ -254,7 +254,11 @@ class PlayerSession(
         val options = HlsPlaybackOptions(
             filterSegments = config.enableExperimentalHlsSegmentFiltering,
 
-            proxySegments = config.autoSkipOpEd,
+            // HLS segment proxying is required for sources which only support
+            // bounded/range segment requests.  It must not disappear just
+            // because the user turned off automatic OP/ED skipping.
+            proxySegments = true,
+            prefetchSegments = config.autoSkipOpEd,
         )
         if (!options.isEnabled) {
             return PreparedMediaData(data)

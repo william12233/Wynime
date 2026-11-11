@@ -109,6 +109,29 @@ class Rk2PluginTest {
         }
     }
 
+    @Test
+    fun `resolve falls back to primary line when an alternate edge is unavailable`() = runBlocking {
+        val http = FixtureHttpClient(unavailableChannel = "v1.2rk.cc")
+        val plugin = Rk2EntryPoint().create(FixtureContext(http))
+        try {
+            val resolved = plugin.resolve(
+                SourceResolveRequest(
+                    subjectId = "demo#1",
+                    channelId = "v1.2rk.cc",
+                    episodeId = "2",
+                ),
+            )
+
+            assertEquals(
+                "https://www.2rk.cc/video/demo/2/episode.m3u8",
+                resolved.url,
+            )
+            assertEquals("curXianlu=www.2rk.cc", resolved.requestHeaders()["Cookie"])
+        } finally {
+            plugin.close()
+        }
+    }
+
     private class FixtureContext(
         override val http: FixtureHttpClient,
     ) : SourcePluginContext {
@@ -125,6 +148,7 @@ class Rk2PluginTest {
 
     private class FixtureHttpClient(
         private val keyBody: String = FIXTURE_KEY,
+        private val unavailableChannel: String? = null,
     ) : SourceHttpClient {
         val requests = mutableListOf<SourceHttpRequest>()
 
@@ -141,10 +165,16 @@ class Rk2PluginTest {
 
                 request.url.endsWith("/saber") -> keyBody
 
-                else -> FIXTURE_PAGE
+                else -> if (request.headers["Cookie"]?.contains("www.2rk.cc") == true) {
+                    FIXTURE_PRIMARY_PAGE
+                } else {
+                    FIXTURE_PAGE
+                }
             }
             return SourceHttpResponse(
-                statusCode = 200,
+                statusCode = if (unavailableChannel != null &&
+                    request.url.contains(unavailableChannel) && request.url.endsWith(".m3u8")
+                ) 503 else 200,
                 finalUrl = request.url,
                 body = body.encodeToByteArray(),
             )
@@ -160,6 +190,10 @@ class Rk2PluginTest {
             </ul>
             <script>h.loadSource("https://v1.2rk.cc/video/demo/2/episode.m3u8")</script>
         """.trimIndent()
+        val FIXTURE_PRIMARY_PAGE = FIXTURE_PAGE.replace(
+            "https://v1.2rk.cc/video/demo/2/episode.m3u8",
+            "https://www.2rk.cc/video/demo/2/episode.m3u8",
+        )
         const val FIXTURE_KEY = "0123456789abcdef"
         val FIXTURE_PLAYLIST = """
             #EXTM3U

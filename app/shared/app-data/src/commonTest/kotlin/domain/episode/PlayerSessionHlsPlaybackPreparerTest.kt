@@ -34,7 +34,23 @@ class PlayerSessionHlsPlaybackPreparerTest {
     private val episode = EpisodeMetadata(title = "EP1", ep = EpisodeSort(1), sort = EpisodeSort(1))
 
     @Test
-    fun `does not prepare uri media data when setting is disabled`() = runTest {
+    fun `does not prepare non hls uri media data`() = runTest {
+        val preparer = RecordingHlsPlaybackPreparer()
+        val playerSession = createPlayerSession(
+            hlsEnabled = false,
+            preparer = preparer,
+            mediaUri = "https://example.com/video.mp4",
+        )
+
+        playerSession.loadMedia(TestMediaList.first(), episode)
+
+        val data = assertIs<UriMediaData>(playerSession.player.mediaData.first())
+        assertEquals("https://example.com/video.mp4", data.uri)
+        assertEquals(0, preparer.prepareCount)
+    }
+
+    @Test
+    fun `always proxies hls even when skip and filter settings are disabled`() = runTest {
         val preparer = RecordingHlsPlaybackPreparer()
         val playerSession = createPlayerSession(
             hlsEnabled = false,
@@ -43,9 +59,9 @@ class PlayerSessionHlsPlaybackPreparerTest {
 
         playerSession.loadMedia(TestMediaList.first(), episode)
 
-        val data = assertIs<UriMediaData>(playerSession.player.mediaData.first())
-        assertEquals("https://example.com/original.m3u8", data.uri)
-        assertEquals(0, preparer.prepareCount)
+        assertEquals(1, preparer.prepareCount)
+        assertTrue(preparer.options.single().proxySegments)
+        assertFalse(preparer.options.single().prefetchSegments)
     }
 
     @Test
@@ -105,6 +121,7 @@ class PlayerSessionHlsPlaybackPreparerTest {
     private fun TestScope.createPlayerSession(
         hlsEnabled: Boolean,
         preparer: HlsPlaybackPreparer,
+        mediaUri: String = "https://example.com/original.m3u8",
     ): PlayerSession {
         val koin = Koin()
         koin.loadModules(
@@ -113,7 +130,7 @@ class PlayerSessionHlsPlaybackPreparerTest {
                     single<MediaResolver> {
                         StaticMediaResolver(
                             UriMediaData(
-                                "https://example.com/original.m3u8",
+                                mediaUri,
                                 mapOf("User-Agent" to "WynimeTest"),
                             ),
                         )
@@ -153,11 +170,13 @@ class PlayerSessionHlsPlaybackPreparerTest {
 
     private class RecordingHlsPlaybackPreparer : HlsPlaybackPreparer {
         val sessions = mutableListOf<RecordingHlsPlaybackProxySession>()
+        val options = mutableListOf<HlsPlaybackOptions>()
         var prepareCount: Int = 0
             private set
 
         override suspend fun prepare(data: UriMediaData, options: HlsPlaybackOptions): HlsPlaybackPreparerResult {
             prepareCount++
+            this.options += options
             val session = RecordingHlsPlaybackProxySession()
             sessions += session
             return HlsPlaybackPreparerResult(

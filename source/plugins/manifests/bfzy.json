@@ -1,7 +1,7 @@
 {
   "id": "bfzy",
   "name": "暴風資源",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.bfzy.BfzyEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-bfzy-v1.1.0/source/plugins/artifacts/source-bfzy.jar",
-      "sha256": "803e7370f6ed8ba138db603b3d47e202601b0cad7350139523d173e2c19daebf",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-bfzy-v1.2.0/source/plugins/artifacts/source-bfzy.jar",
+      "sha256": "bb6c82f2b752e83d47bc0ffbf9ec1cd3ff590bb71e7dc53af59d703f21b0719b",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-bfzy-v1.1.0/source/plugins/artifacts/source-bfzy-android.jar",
-      "sha256": "8f8da08a9cb7ad233c8e9e9ec8bdac651a3bf440e45f098897711d425097194d",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-bfzy-v1.2.0/source/plugins/artifacts/source-bfzy-android.jar",
+      "sha256": "46e2456e102fc52d32329a49eadebd20fceee3435b607ba5cc8d7a4207a86768",
       "format": "jar"
     }
   }

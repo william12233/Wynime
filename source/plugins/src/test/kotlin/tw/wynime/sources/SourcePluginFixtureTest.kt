@@ -172,9 +172,8 @@ class SourcePluginFixtureTest {
     fun `girigiri parses api result from the first search page and keeps one site channel`() = runBlocking {
         val plugin = GirigiriEntryPoint().create(FixtureContext("girigiri") { request ->
             when {
+                request.url.contains("api.php/provide/vod") && request.url.contains("ids=1222") -> GIRIGIRI_DETAIL
                 request.url.contains("api.php/provide/vod") -> GIRIGIRI_SEARCH
-                request.url.contains("/GV1222/") -> GIRIGIRI_SUBJECT
-                request.url.contains("/playGV1222-1-1/") -> "<script>var player_aaaa={\"url\":\"https://cdn.example/girigiri.mp4\"}</script>"
                 else -> "<html><body>ok</body></html>"
             }
         })
@@ -339,9 +338,8 @@ class SourcePluginFixtureTest {
             {"list":[{"vod_id":1222,"vod_name":"Re：从零开始的异世界生活"}]}
         """
 
-        const val GIRIGIRI_SUBJECT = """
-            <div class="anthology-tab"><div class="swiper-wrapper"><a class="swiper-slide">简中</a></div></div>
-            <a href="/playGV1222-1-1/">第01集</a>
+        const val GIRIGIRI_DETAIL = """
+            {"list":[{"vod_id":1222,"vod_name":"Re：从零开始的异世界生活","vod_play_from":"chs","vod_play_url":"01${'$'}https://cdn.example/girigiri.mp4"}]}
         """
 
         const val DMBUS_SUBJECT = """

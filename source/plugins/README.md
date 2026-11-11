@@ -27,11 +27,11 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 
 | ID | 程式碼修訂次數 | 版本 |
 | --- | ---: | --- |
-| `eacg` | 8 | `1.0.36` |
+| `eacg` | 9 | `1.0.37` |
 | `next` | 7 | `1.7.1` |
 | `dm1` | 6 | `1.6.0` |
-| `girigiri` | 6 | `1.6.0` |
-| `2rk` | 8 | `1.8.0` |
+| `girigiri` | 7 | `1.7.0` |
+| `2rk` | 9 | `1.9.0` |
 | `dmbus` | 6 | `1.6.0` |
 | `dyttzy` | 4 | `1.4.0` |
 | `baimao` | 3 | `1.3.0` |
@@ -52,7 +52,7 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 | `baimao` | [白猫動漫](https://www.bmddm.com/) | `新网球王子` | 播放頁由站方播放器處理 |
 | `akianime` | [AkiAnime](https://www.akianime.cc/) | `新网球王子 U-17 世界杯 半决赛` | 公開 HLS 優先，其他線路由站方播放器處理 |
 | `mxdm` | [MX動漫](https://www.dcc3.com/) | `黑子的篮球第二季` | 播放頁由站方播放器處理 |
-| `bfzy` | [暴風資源](https://bfzy.tv/) | `遮天动画版` | 只使用站方公開 `bfzym3u8` HLS；播放一集、下載一集後刪除 |
+| `bfzy` | [暴風資源](https://bfzy.tv/) | `遮天动画版` | 由站方 API 取得 `bfzym3u8` HLS；播放一集、下載一集後刪除 |
 
 線路名稱直接使用網站回傳的初始名稱。煙霧測試只驗證站點正常提供的媒體請求；遇到 TLS 憑證錯誤、破損 playlist、網盤或圖片偽裝串流時，必須記錄為未通過，不能用繞過驗證或替換第三方來源冒充成功。電影天堂只接受 API 回傳的 `dyttm3u8` 直接 HLS，`dytt` 分享網址與 `vod_down_url` 不作為播放或下載來源。
 

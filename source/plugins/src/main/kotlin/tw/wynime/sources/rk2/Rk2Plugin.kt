@@ -23,6 +23,7 @@ import tw.wynime.sources.shared.parseEpisodeNumber
 import tw.wynime.sources.shared.queryMatches
 import tw.wynime.sources.shared.searchQueryVariants
 import java.net.URI
+import kotlin.coroutines.cancellation.CancellationException
 
 class Rk2EntryPoint : SourcePluginEntryPoint {
     override fun create(context: SourcePluginContext): SourcePlugin = Rk2Plugin(context)
@@ -115,6 +116,29 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
         val slug = request.subjectId.substringBefore('#')
         val channel = loadChannels().firstOrNull { it.host == request.channelId }
             ?: throw IllegalArgumentException("Unknown 2RK channel: ${request.channelId}")
+        try {
+            return@run resolveForChannel(request, slug, channel)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            if (channel.host == PRIMARY_CHANNEL_HOST) throw error
+            // v1/v2 are occasionally published in c.js while their upstream
+            // edge is down. Keep selecting those lines from making the player
+            // wait forever: retry the same episode on the known-good primary
+            // edge, with its matching cookie and request context.
+            context.logger.warn(
+                "2RK ${channel.host} unavailable; falling back to $PRIMARY_CHANNEL_HOST",
+                error,
+            )
+            resolveForChannel(request, slug, Rk2Channel(PRIMARY_CHANNEL_HOST, "线路1"))
+        }
+    }
+
+    private suspend fun resolveForChannel(
+        request: SourceResolveRequest,
+        slug: String,
+        channel: Rk2Channel,
+    ) = run {
         val pageUrl = "$rootUrl/detail/$slug?id=${request.episodeId}"
         val lineHeaders = mapOf(
             "Accept" to "*/*",
@@ -244,5 +268,6 @@ internal class Rk2Plugin(context: SourcePluginContext) : SitePluginBase(
 
     private companion object {
         const val AES_128_KEY_BYTES = 16
+        const val PRIMARY_CHANNEL_HOST = "www.2rk.cc"
     }
 }

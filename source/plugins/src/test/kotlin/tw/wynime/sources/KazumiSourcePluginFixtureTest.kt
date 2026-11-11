@@ -175,10 +175,8 @@ class KazumiSourcePluginFixtureTest {
     fun `bfzy parses public m3u8 episodes and resolves the player page`() = runBlocking {
         val plugin = BfzyEntryPoint().create(FixtureContext("bfzy") { request ->
             when {
-                "/vod/search/" in request.url ->
-                    "<a href=\"/index.php/vod/detail/id/48096.html\">遮天动画版</a>"
-                "/vod/detail/id/48096.html" in request.url -> BFZY_SUBJECT
-                "/vod/play/id/48096/sid/1/nid/1.html" in request.url -> BFZY_PLAY_PAGE
+                "bfzyapi.com" in request.url && "ids=48096" in request.url -> BFZY_DETAIL
+                "bfzyapi.com" in request.url -> BFZY_SEARCH
                 else -> "<html><body>ok</body></html>"
             }
         })
@@ -257,14 +255,12 @@ class KazumiSourcePluginFixtureTest {
             </div>
         """
 
-        const val BFZY_SUBJECT = """
-            <title>遮天动画版详情介绍-遮天动画版在线观看</title>
-            <h4><div>bfzym3u8地址</div></h4>
-            <a href="/index.php/vod/play/id/48096/sid/1/nid/1.html">第01集</a>
+        const val BFZY_SEARCH = """
+            {"list":[{"vod_id":48096,"vod_name":"遮天动画版"}]}
         """
 
-        const val BFZY_PLAY_PAGE = """
-            <script>var player_aaaa={"url":"https://cdn.example/bfzy.m3u8","from":"bfzym3u8"}</script>
+        const val BFZY_DETAIL = """
+            {"list":[{"vod_id":48096,"vod_name":"遮天动画版","vod_play_from":"bfzym3u8","vod_play_url":"第01集${'$'}https://cdn.example/bfzy.m3u8"}]}
         """
     }
 }

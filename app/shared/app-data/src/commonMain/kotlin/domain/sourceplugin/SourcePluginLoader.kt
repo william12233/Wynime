@@ -15,6 +15,7 @@ import com.wynime.app.domain.foundation.HttpClientProvider
 import com.wynime.app.domain.foundation.ScopedHttpClientUserAgent
 import com.wynime.app.domain.foundation.get
 import com.wynime.app.domain.mediasource.web.PageExpectation
+import com.wynime.app.domain.mediasource.web.LoadedPage
 import com.wynime.app.domain.mediasource.web.SolveRequest
 import com.wynime.app.domain.mediasource.web.WebCaptchaDetector
 import com.wynime.app.domain.mediasource.web.WebCaptchaKind
@@ -188,7 +189,16 @@ class SourcePluginHttpClient(
     }
 
     private suspend fun executeWithChallengeHandling(pluginRequest: SourceHttpRequest): SourceHttpResponse {
-        val response = executeOnce(pluginRequest)
+        val response = if (
+            pluginId.equals("eacg", ignoreCase = true) &&
+            pluginRequest.method.equals("GET", ignoreCase = true)
+        ) {
+            webSessionManager?.fetchVerifiedPage(pluginRequest.url)
+                ?.toSourceHttpResponse(pluginRequest)
+                ?: executeOnce(pluginRequest)
+        } else {
+            executeOnce(pluginRequest)
+        }
         val sessionManager = webSessionManager
         val challengeKind = WebCaptchaDetector.detect(
             response.finalUrl.ifBlank { pluginRequest.url },
@@ -306,6 +316,21 @@ class SourcePluginHttpClient(
             )
         }
         return validatePluginResponse(pluginRequest, retried)
+    }
+
+    private fun LoadedPage.toSourceHttpResponse(request: SourceHttpRequest): SourceHttpResponse {
+        val resolvedUrl = finalUrl.ifBlank { request.url }
+        return SourceHttpResponse(
+            statusCode = status ?: 200,
+            finalUrl = resolvedUrl,
+            body = html.encodeToByteArray(),
+            redirectCount = if (resolvedUrl == request.url) 0 else 1,
+            contentType = if (html.trimStart().startsWith("{")) {
+                "application/json"
+            } else {
+                "text/html; charset=utf-8"
+            },
+        )
     }
 
     private fun validatePluginResponse(

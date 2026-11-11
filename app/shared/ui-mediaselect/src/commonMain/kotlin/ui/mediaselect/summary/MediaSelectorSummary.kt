@@ -59,6 +59,7 @@ import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
 import com.wynime.app.ui.foundation.text.ProvideTextStyleContentColor
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.media_selector_summary_auto_selecting
+import com.wynime.app.ui.lang.media_selector_summary_cached_file
 import com.wynime.app.ui.lang.media_selector_summary_change
 import com.wynime.app.ui.lang.media_selector_summary_manual_select
 import com.wynime.app.ui.lang.media_selector_summary_searched

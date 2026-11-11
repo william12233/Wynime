@@ -158,6 +158,10 @@ private class LibassMediaSourcePipeline(
             is UriMediaData -> DefaultHttpDataSource.Factory()
                 .setUserAgent(data.headers["User-Agent"] ?: DEFAULT_USER_AGENT)
                 .setDefaultRequestProperties(data.headers)
+                // Media hosts commonly redirect an https playlist to an http CDN
+                // (or back), and otherwise Media3 rejects the resolved source
+                // before it can start playback.
+                .setAllowCrossProtocolRedirects(true)
                 .setConnectTimeoutMs(CONNECT_TIMEOUT_MILLIS)
 
             is SeekableInputMediaData -> {

@@ -160,7 +160,17 @@ internal abstract class SitePluginBase(
         val webUrl = decodedUrl?.takeIf(::isHttpUrl)
         val directUrl = webUrl?.takeIf(::isDirectMediaUrl)
         val format = directUrl?.let(::directMediaFormat) ?: ResolvedMediaFormat.WEB
-        val requestHeaders = (referer?.let { mapOf("Referer" to it) } ?: emptyMap()) + headers
+        // The headers used while resolving the page are not automatically reused by
+        // the video player.  A number of hosts reject the media request unless it
+        // looks like the same browser request (most notably bfzy's m3u8 endpoint).
+        // Keep the media request deliberately small: the page's HTML Accept header
+        // must not be sent to a video/CDN endpoint.
+        val requestHeaders = buildMap {
+            defaultHeaders["User-Agent"]?.let { put("User-Agent", it) }
+            put("Accept", "*/*")
+            referer?.let { put("Referer", it) }
+            putAll(headers)
+        }
         return ResolvedMedia(
             stableIdentity = request.mediaIdentity(metadata.id).asStableId(),
             url = directUrl ?: webUrl ?: pageUrl,

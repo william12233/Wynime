@@ -37,6 +37,7 @@ import com.wynime.app.domain.mediasource.web.PageEvaluator
 import com.wynime.app.domain.mediasource.web.PageExpectation
 import com.wynime.app.domain.mediasource.web.PageVerdict
 import com.wynime.app.domain.mediasource.web.SolveRequest
+import com.wynime.app.domain.mediasource.web.WebCaptchaDetector
 import com.wynime.app.domain.mediasource.web.normalizedSessionHost
 import com.wynime.app.domain.mediasource.web.normalizedStorageOrigin
 import com.wynime.utils.coroutines.IO_

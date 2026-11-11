@@ -33,7 +33,10 @@ import androidx.compose.ui.unit.dp
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
 import com.wynime.app.ui.foundation.text.ProvideContentColor
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.media_selector_summary_cached_file
 import com.wynime.utils.platform.annotations.TestOnly
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -140,6 +143,29 @@ fun MediaSelectorSummaryBanner(
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    MediaSelectorSummary.LocalCache -> {
+                        val cachedFileText = stringResource(Lang.media_selector_summary_cached_file)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            MediaSelectorSummaryBannerSourceIcon(
+                                MediaSelectorSourceSummary(
+                                    sourceName = cachedFileText,
+                                    sourceIconUrl = "",
+                                ),
+                                Modifier.size(20.dp),
+                            )
+                            Text(
+                                cachedFileText,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
                     }
                 }

@@ -34,6 +34,16 @@ class PlayerSessionHlsPlaybackPreparerTest {
     private val episode = EpisodeMetadata(title = "EP1", ep = EpisodeSort(1), sort = EpisodeSort(1))
 
     @Test
+    fun `returns false when there is no media to load`() = runTest {
+        val playerSession = createPlayerSession(
+            hlsEnabled = false,
+            preparer = RecordingHlsPlaybackPreparer(),
+        )
+
+        assertFalse(playerSession.loadMedia(null, episode))
+    }
+
+    @Test
     fun `does not prepare non hls uri media data`() = runTest {
         val preparer = RecordingHlsPlaybackPreparer()
         val playerSession = createPlayerSession(
@@ -42,7 +52,7 @@ class PlayerSessionHlsPlaybackPreparerTest {
             mediaUri = "https://example.com/video.mp4",
         )
 
-        playerSession.loadMedia(TestMediaList.first(), episode)
+        assertTrue(playerSession.loadMedia(TestMediaList.first(), episode))
 
         val data = assertIs<UriMediaData>(playerSession.player.mediaData.first())
         assertEquals("https://example.com/video.mp4", data.uri)

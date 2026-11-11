@@ -447,6 +447,7 @@ private fun EpisodeScreenTabletVeryWide(
                                             navigator.navigateEpisodeDetails(vm.subjectId, episodeId)
                                         }
                                     },
+                                    onRequestOnlineSources = vm::startOnlineSources,
                                     onRestartSource = { vm.restartSource(it) },
                                     onClickLogin = { navigator.navigateBangumiAuthorize() },
                                     onClickTag = { navigator.navigateSubjectSearch(it.name) },
@@ -589,6 +590,7 @@ private fun EpisodeScreenContentPhone(
                             navigator.navigateEpisodeDetails(vm.subjectId, episodeId)
                         }
                     },
+                    onRequestOnlineSources = vm::startOnlineSources,
                     onRestartSource = { vm.restartSource(it) },
                     onClickLogin = { navigator.navigateBangumiAuthorize() },
                     onClickTag = { navigator.navigateSubjectSearch(it.name) },
@@ -876,6 +878,7 @@ private fun EpisodeVideo(
                 sheetsController,
                 playerControllerState,
                 mediaSelectorPage = {
+                    vm.startOnlineSources()
                     val pageState by vm.pageState.collectAsStateWithLifecycle()
                     pageState?.let { page ->
                         EpisodeVideoSideSheets.MediaSelectorSheet(

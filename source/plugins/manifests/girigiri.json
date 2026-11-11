@@ -1,7 +1,7 @@
 {
   "id": "girigiri",
   "name": "Girigiri Love",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.girigiri.GirigiriEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-girigiri-v1.8.0/source/plugins/artifacts/source-girigiri.jar",
-      "sha256": "0e0aecae26c9fdbd3df885b76c590fd7634b0f12dba64209ef5cc8cba2365e1c",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-girigiri-v1.9.0/source/plugins/artifacts/source-girigiri.jar",
+      "sha256": "d167a157f3b149786d06abbad414e21dff613f051e5e10a99f57bef7db4bf331",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-girigiri-v1.8.0/source/plugins/artifacts/source-girigiri-android.jar",
-      "sha256": "bffb030ef9b8f8bf599eda87995b78fa97a88c184e5d7ac34cf22b585d2bbe67",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-girigiri-v1.9.0/source/plugins/artifacts/source-girigiri-android.jar",
+      "sha256": "0110daf8cc306958636429abafa0c590774a3e3def6d7f2e6ef19c93c1137779",
       "format": "jar"
     }
   }

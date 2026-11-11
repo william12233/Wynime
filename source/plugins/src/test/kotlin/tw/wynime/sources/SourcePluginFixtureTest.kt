@@ -135,6 +135,27 @@ class SourcePluginFixtureTest {
     }
 
     @Test
+    fun `girigiri simplifies traditional leaf in Black Clover search`() = runBlocking {
+        val requests = mutableListOf<String>()
+        val plugin = GirigiriEntryPoint().create(FixtureContext("girigiri") { request ->
+            requests += request.url
+            if (request.url.contains("wd=%E9%BB%91%E8%89%B2%E4%BA%94%E5%8F%B6%E8%8D%89")) {
+                """{"list":[{"vod_id":1681,"vod_name":"黑色五叶草"}]}"""
+            } else {
+                """{"list":[]}"""
+            }
+        })
+        try {
+            val subject = plugin.search(SourceSearchRequest("黑色五葉草")).single()
+
+            assertEquals("GV1681", subject.id)
+            assertTrue(requests.any { it.contains("wd=%E9%BB%91%E8%89%B2%E4%BA%94%E5%8F%B6%E8%8D%89") })
+        } finally {
+            plugin.close()
+        }
+    }
+
+    @Test
     fun `dmbus parses search subject channel episode and m3u8`() = runBlocking {
         val plugin = DmbusEntryPoint().create(FixtureContext("dmbus") { request ->
             when {

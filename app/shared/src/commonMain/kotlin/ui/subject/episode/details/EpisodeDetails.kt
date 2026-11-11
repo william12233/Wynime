@@ -151,6 +151,7 @@ fun EpisodeDetails(
     mediaSelectorState: MediaSelectorState,
     selfInfo: SelfInfoUiState,
     onSwitchEpisode: (Int) -> Unit,
+    onRequestOnlineSources: () -> Unit,
     onRestartSource: (String) -> Unit,
     onClickLogin: () -> Unit,
     onClickTag: (Tag) -> Unit,
@@ -308,7 +309,8 @@ fun EpisodeDetails(
                                 onRestartSource = onRestartSource,
                                 modifier = Modifier
                                     .padding(vertical = 12.dp, horizontal = 16.dp)
-                                    .fillMaxWidth(),
+                                    .fillMaxWidth()
+                                    .weight(1f),
                                 onClickItem = {
                                     mediaSelectorState.select(it)
                                     showMediaSelector = false
@@ -351,13 +353,19 @@ fun EpisodeDetails(
             if (atLeastMedium) {
                 MediaSelectorSummaryCard(
                     mediaSelectorSummary,
-                    onClickManualSelect = { showMediaSelector = true },
+                    onClickManualSelect = {
+                        onRequestOnlineSources()
+                        showMediaSelector = true
+                    },
                     Modifier.fillMaxWidth().padding(innerPadding),
                 )
             } else {
                 MediaSelectorSummaryBanner(
                     mediaSelectorSummary,
-                    onClickSwitchSource = { showMediaSelector = true },
+                    onClickSwitchSource = {
+                        onRequestOnlineSources()
+                        showMediaSelector = true
+                    },
                     Modifier.fillMaxWidth().padding(innerPadding),
                 )
             }
@@ -705,6 +713,7 @@ private fun PreviewEpisodeDetailsImpl(
             mediaSelectorState = mediaSelectorState,
             selfInfo = selfInfo,
             onSwitchEpisode = {},
+            onRequestOnlineSources = {},
             onRestartSource = {},
             onClickLogin = { },
             onClickTag = {},

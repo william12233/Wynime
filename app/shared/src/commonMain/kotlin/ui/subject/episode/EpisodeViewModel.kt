@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -42,6 +43,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -81,6 +83,7 @@ import com.wynime.app.domain.episode.mediaSelectorFlow
 import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.domain.media.DroppedFileMedia
 import com.wynime.app.domain.media.cache.EpisodeCacheStatus
+import com.wynime.app.domain.media.cache.GetMediaCacheUseCase
 import com.wynime.app.domain.media.cache.MediaCacheState
 import com.wynime.app.domain.media.download.MediaDownloadManager
 import com.wynime.app.domain.media.fetch.MediaSourceManager
@@ -175,6 +178,12 @@ import com.wynime.app.data.models.episode.EpisodeInfo
 
 private const val OP_ED_AUTO_SKIP_BASE_SAMPLE_INTERVAL_MILLIS = 1_000L
 
+private enum class CachePlaybackState {
+    CHECKING,
+    PLAYING,
+    ONLINE_SOURCES,
+}
+
 private fun opEdAutoSkipSampleIntervalMillis(playbackSpeed: Float): Long {
     val effectiveSpeed = playbackSpeed.takeIf { it.isFinite() && it > 0f } ?: 1f
     return (OP_ED_AUTO_SKIP_BASE_SAMPLE_INTERVAL_MILLIS / effectiveSpeed).toLong().coerceAtLeast(1L)
@@ -220,7 +229,10 @@ open class EpisodeViewModel(
     private val playerStateFactory: MediampPlayerFactory<*> by inject()
     private val episodeCollectionRepository: EpisodeCollectionRepository by inject()
     private val downloadManager: MediaDownloadManager by inject()
+    private val getMediaCacheUseCase: GetMediaCacheUseCase by inject()
     private val initialCachePlaybackStarted = atomic(false)
+    private var cachePlaybackJob: Job? = null
+    private val cachePlaybackState = MutableStateFlow(CachePlaybackState.CHECKING)
     private val settingsRepository: SettingsRepository by inject()
     private val episodePlayHistoryRepository: EpisodePlayHistoryRepository by inject()
     private val mediaSourceManager: MediaSourceManager by inject()
@@ -301,6 +313,7 @@ open class EpisodeViewModel(
                 return withContext(Dispatchers.Main) { this@EpisodeViewModel.isFullscreen }
             }
         },
+        mediaFetchInitiallyEnabled = false,
     )
 
     val mediaResolver: MediaResolver get() = fetchPlayState.playerSession.mediaResolver
@@ -646,6 +659,16 @@ open class EpisodeViewModel(
             started = SharingStarted.Lazily,
             initialValue = MediaSelectorSummary.AutoSelecting(listOf(), estimate = 10.seconds),
         )
+        val mediaSelectorSummary = combine(
+            mediaSelectorSummaryStateProducer.flow,
+            cachePlaybackState,
+        ) { summary, cacheState ->
+            if (cacheState == CachePlaybackState.PLAYING) {
+                MediaSelectorSummary.LocalCache
+            } else {
+                summary
+            }
+        }
 
         val selectedMediaFlow =
             episodeSession.fetchSelectFlow.flatMapLatest { it?.mediaSelector?.selected ?: flowOfNull() }
@@ -670,7 +693,7 @@ open class EpisodeViewModel(
                     createTestMediaSelectorState(backgroundScope)
                 }
             },
-            mediaSelectorSummaryStateProducer,
+            mediaSelectorSummary,
             combine(selectedMediaFlow, player.mediaData) { selectedMedia, mediaData ->
                 MediaShareData.from(selectedMedia, mediaData)
             },
@@ -730,10 +753,14 @@ open class EpisodeViewModel(
     }
 
     suspend fun switchEpisode(episodeId: Int) {
-
+        cachePlaybackJob?.cancelAndJoin()
+        cachePlaybackJob = null
+        cachePlaybackState.value = CachePlaybackState.CHECKING
+        fetchPlayState.disableMediaFetch()
         backgroundScope.launch {
             fetchPlayState.switchEpisode(episodeId)
         }.join()
+        startCachePlayback(episodeId, cacheId = null)
     }
 
     fun savePlayerVolume(volume: Float, mute: Boolean) {
@@ -747,6 +774,7 @@ open class EpisodeViewModel(
     }
 
     fun refreshFetch() {
+        startOnlineSources()
         launchInBackground {
 
             fetchPlayState.episodeSessionFlow.flatMapLatest { it.fetchSelectFlow }
@@ -763,6 +791,7 @@ open class EpisodeViewModel(
     }
 
     fun restartSource(instanceId: String) {
+        startOnlineSources()
         launchInBackground {
             val result = fetchPlayState.episodeSessionFlow.flatMapLatest { it.fetchSelectFlow }
                 .mapNotNull { it?.mediaFetchSession }
@@ -775,6 +804,7 @@ open class EpisodeViewModel(
     }
 
     fun playDroppedFile(file: SystemPath) {
+        startOnlineSources()
         launchInBackground {
             val session = fetchPlayState.episodeSessionFlow.value
             val mediaSelector = fetchPlayState.episodeSessionFlow
@@ -791,40 +821,78 @@ open class EpisodeViewModel(
 
     fun onUIReady() {
         fetchPlayState.onUIReady()
-        val cacheId = initialCacheId ?: return
         if (initialCachePlaybackStarted.compareAndSet(false, true)) {
-            launchInBackground {
-                playInitialCache(cacheId)
-            }
+            startCachePlayback(initialEpisodeId, initialCacheId)
         }
     }
 
-    @OptIn(UnsafeEpisodeSessionApi::class)
-    private suspend fun playInitialCache(cacheId: String) {
-        val download = downloadManager.downloads.first { downloads ->
-            downloads.any { download ->
-                download.id == cacheId &&
-                        download.metadata.subjectId == subjectId.toString() &&
-                        download.metadata.episodeId == initialEpisodeId.toString()
+    fun startOnlineSources() {
+        cachePlaybackJob?.cancel()
+        cachePlaybackJob = null
+        cachePlaybackState.value = CachePlaybackState.ONLINE_SOURCES
+        fetchPlayState.enableMediaFetch()
+    }
+
+    private fun startCachePlayback(episodeId: Int, cacheId: String?) {
+        cachePlaybackJob?.cancel()
+        cachePlaybackState.value = CachePlaybackState.CHECKING
+        cachePlaybackJob = launchInBackground {
+            prepareCachePlayback(episodeId, cacheId)
+        }
+    }
+
+    private suspend fun prepareCachePlayback(episodeId: Int, cacheId: String?) {
+        try {
+            val caches = getMediaCacheUseCase(subjectId, episodeId)
+            val cache = if (cacheId != null) {
+                caches.firstOrNull { it.cacheId == cacheId }
+            } else {
+                caches
+                    .filter { it.state.first() == MediaCacheState.COMPLETED }
+                    .minByOrNull { it.cacheId }
             }
-        }.first { it.id == cacheId }
-        val cache = download.cache
-        val terminalState = cache.state.first {
-            it == MediaCacheState.COMPLETED || it == MediaCacheState.FAILED
+            if (cache == null) {
+                releaseOnlineSources()
+                return
+            }
+
+            val terminalState = if (cacheId != null) {
+                cache.state.first {
+                    it == MediaCacheState.COMPLETED || it == MediaCacheState.FAILED
+                }
+            } else {
+                MediaCacheState.COMPLETED
+            }
+            if (terminalState != MediaCacheState.COMPLETED) {
+                releaseOnlineSources()
+                return
+            }
+
+            val cachedMedia = cache.getCachedMedia()
+            val loaded = fetchPlayState.playerSession.loadMedia(
+                cachedMedia,
+                EpisodeMetadata(
+                    title = cache.metadata.episodeName,
+                    ep = cache.metadata.episodeEp,
+                    sort = cache.metadata.episodeSort,
+                ),
+            )
+            if (loaded) {
+                cachePlaybackState.value = CachePlaybackState.PLAYING
+            } else {
+                releaseOnlineSources()
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            logger.warn(error) { "Failed to prepare local cache playback" }
+            releaseOnlineSources()
         }
-        if (terminalState != MediaCacheState.COMPLETED) {
-            return
-        }
-        val cachedMedia = runCatching { cache.getCachedMedia() }.getOrNull() ?: return
-        // Local-cache playback uses PlayerSession directly because selector creation requires remote metadata.
-        fetchPlayState.playerSession.loadMedia(
-            cachedMedia,
-            EpisodeMetadata(
-                title = cache.metadata.episodeName,
-                ep = cache.metadata.episodeEp,
-                sort = cache.metadata.episodeSort,
-            ),
-        )
+    }
+
+    private fun releaseOnlineSources() {
+        cachePlaybackState.value = CachePlaybackState.ONLINE_SOURCES
+        fetchPlayState.enableMediaFetch()
     }
 
     init {
@@ -898,6 +966,7 @@ open class EpisodeViewModel(
     override fun getKoin(): Koin = koin
 
     fun updateFetchRequest(request: MediaFetchRequest) {
+        startOnlineSources()
         launchInBackground {
             fetchPlayState.episodeSessionFlow
                 .firstOrNull()

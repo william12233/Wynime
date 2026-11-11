@@ -110,7 +110,7 @@ fun MediaSelectorView(
                 onClickItem = onClickItem,
                 onRestartSource = onRestartSource,
                 modifier = Modifier.padding(bottom = WINDOW_VERTICAL_PADDING)
-                    .weight(1f, fill = false)
+                    .weight(1f, fill = scrollable)
                     .fillMaxWidth()
                     .ifThen(scrollable) { verticalScroll(rememberScrollState()) },
             )
@@ -132,7 +132,7 @@ fun MediaSelectorView(
                 },
                 onRequestQueryEdit = { showEditRequest = true },
                 Modifier.padding(bottom = WINDOW_VERTICAL_PADDING)
-                    .weight(1f, fill = false)
+                    .weight(1f, fill = scrollable)
                     .fillMaxWidth()
                     .ifThen(scrollable) { verticalScroll(rememberScrollState()) },
             )

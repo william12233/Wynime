@@ -69,6 +69,8 @@ private fun defaultLiveSmokeSpecs() = listOf(
     SmokeSpec("MX動漫", "mxdm", "黑子的篮球第二季", 8, MxdmEntryPoint()),
     SmokeSpec("DMBUS", "dmbus", "咒術迴戰", null, DmbusEntryPoint()),
     SmokeSpec("Girigiri", "girigiri", "咒術迴戰", null, GirigiriEntryPoint()),
+    SmokeSpec("DMBUS Black Clover", "dmbus", "黑色五葉草", 31, DmbusEntryPoint()),
+    SmokeSpec("Girigiri Black Clover", "girigiri", "黑色五葉草", 31, GirigiriEntryPoint()),
     SmokeSpec("Next", "next", "咒術迴戰", null, NextEntryPoint()),
     SmokeSpec("電影天堂", "dyttzy", "哪吒之魔童闹海", null, DyttzyEntryPoint(), verifyHlsPlaylist = true),
     SmokeSpec("暴風資源", "bfzy", "咒术回战", 1, BfzyEntryPoint(), verifyHlsPlaylist = true),

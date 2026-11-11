@@ -75,15 +75,16 @@ class PlayerSession(
 
     val videoLoadingState: StateFlow<VideoLoadingState> get() = _videoLoadingStateFlow.asStateFlow()
 
-    suspend fun loadMedia(media: Media?, episodeInfo: EpisodeMetadata) = coroutineScope {
+    suspend fun loadMedia(media: Media?, episodeInfo: EpisodeMetadata): Boolean = coroutineScope {
         val backgroundScope = this
         _videoLoadingStateFlow.value = VideoLoadingState.Initial
         stopPlayback()
         if (media == null) {
-            return@coroutineScope
+            return@coroutineScope false
         }
 
         var preparedHlsPlaybackProxySession: HlsPlaybackProxySession? = null
+        var loaded = false
         try {
             _videoLoadingStateFlow.value = VideoLoadingState.ResolvingSource
             val source = mediaResolver.resolve(
@@ -108,6 +109,7 @@ class PlayerSession(
             traceSourcePlaybackResult(media, SourceResultStatus.SUCCESS)
 
             _videoLoadingStateFlow.value = VideoLoadingState.Succeed
+            loaded = true
         } catch (e: UnsupportedMediaException) {
             logger.warn { IllegalStateException("Failed to resolve video source, unsupported media", e) }
             _videoLoadingStateFlow.value = VideoLoadingState.UnsupportedMedia
@@ -228,6 +230,7 @@ class PlayerSession(
         } finally {
             preparedHlsPlaybackProxySession?.close()
         }
+        loaded
     }
 
     suspend fun stopPlayback() {

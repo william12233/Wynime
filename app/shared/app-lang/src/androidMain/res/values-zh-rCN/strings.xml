@@ -1044,6 +1044,7 @@
     <string name="media_selector_summary_select_source">请选择数据源</string>
     <string name="media_selector_summary_source">数据源</string>
     <string name="media_selector_summary_dropped_file">本地文件</string>
+    <string name="media_selector_summary_cached_file">本地缓存</string>
     <string name="media_selector_summary_searched">已查找：</string>
     <string name="media_source_results_searching">正在查询</string>
     <string name="media_source_results_searched">已查询</string>

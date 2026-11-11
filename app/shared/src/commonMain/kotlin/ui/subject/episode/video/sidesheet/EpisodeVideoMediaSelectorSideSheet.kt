@@ -59,6 +59,7 @@ fun EpisodeVideoSideSheets.MediaSelectorSheet(
             onRestartSource = onRestartSource,
             modifier = modifier.padding(horizontal = 16.dp)
                 .fillMaxWidth()
+                .weight(1f)
                 .navigationBarsPadding(),
             onClickItem = {
                 mediaSelectorState.select(it)

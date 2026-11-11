@@ -60,6 +60,7 @@ class EpisodeFetchSelectPlayState(
     private val sharingStarted: SharingStarted = SharingStarted.WhileSubscribed(),
     private val mainDispatcher: CoroutineContext = Dispatchers.Main.immediate,
     private val analyticsContext: AnalyticsContext = object : AnalyticsContext {},
+    mediaFetchInitiallyEnabled: Boolean = true,
 ) {
     interface AnalyticsContext {
         suspend fun isFullscreen(): Boolean? = false
@@ -67,6 +68,8 @@ class EpisodeFetchSelectPlayState(
 
     private val mediaSourceManager by koin.inject<MediaSourceManager>()
     private val sharedFetchSessionRegistry = koin.getOrNull<SubjectMediaFetchSessionRegistry>()
+
+    private val mediaFetchEnabled = MutableStateFlow(mediaFetchInitiallyEnabled)
 
     private val fetchSessions = SubjectMediaFetchSessions(
         scope = backgroundScope,
@@ -166,6 +169,7 @@ class EpisodeFetchSelectPlayState(
         backgroundScope.coroutineContext,
         sharingStarted,
         fetchSessions,
+        mediaFetchEnabled,
     )
 
     private val uiReady = CompletableDeferred<Unit>()
@@ -181,6 +185,14 @@ class EpisodeFetchSelectPlayState(
             }
         }
 
+    }
+
+    fun enableMediaFetch() {
+        mediaFetchEnabled.value = true
+    }
+
+    fun disableMediaFetch() {
+        mediaFetchEnabled.value = false
     }
 
     suspend fun onClose() {
@@ -252,8 +264,9 @@ class EpisodeFetchSelectPlayState(
                                 .first()
                                 .episodeInfo
 
-                            playerSession.loadMedia(media, episodeInfo.toEpisodeMetadata())
-                            onMediaLoaded(episodeInfo.episodeId)
+                            if (playerSession.loadMedia(media, episodeInfo.toEpisodeMetadata())) {
+                                onMediaLoaded(episodeInfo.episodeId)
+                            }
                         }
                     }
                 }

@@ -98,6 +98,11 @@ sealed class MediaSelectorSummary {
     ) : MediaSelectorSummary() {
         override val typeId get() = 3
     }
+
+    @Immutable
+    data object LocalCache : MediaSelectorSummary() {
+        override val typeId get() = 4
+    }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -157,6 +162,7 @@ fun MediaSelectorSummaryCard(
                         is MediaSelectorSummary.AutoSelecting -> manualSelectText
                         is MediaSelectorSummary.RequiresManualSelection -> manualSelectText
                         is MediaSelectorSummary.Selected -> changeText
+                        MediaSelectorSummary.LocalCache -> changeText
                     }
 
                     OutlinedButton(
@@ -210,6 +216,22 @@ fun MediaSelectorSummaryCard(
                                 colors = listItemColors,
                             )
                         }
+
+                        MediaSelectorSummary.LocalCache -> {
+                            val cachedFileText = stringResource(Lang.media_selector_summary_cached_file)
+                            ListItem(
+                                headlineContent = { Text(cachedFileText, softWrap = true, maxLines = 2) },
+                                commonModifiers,
+                                overlineContent = { Text(sourceText) },
+                                leadingContent = {
+                                    SourceIcon(
+                                        MediaSelectorSourceSummary(cachedFileText, ""),
+                                        Modifier.size(24.dp),
+                                    )
+                                },
+                                colors = listItemColors,
+                            )
+                        }
                     }
                 }
 
@@ -239,6 +261,7 @@ fun MediaSelectorSummaryCard(
                             is MediaSelectorSummary.AutoSelecting -> state.sources
                             is MediaSelectorSummary.RequiresManualSelection -> state.sources
                             is MediaSelectorSummary.Selected -> error("not reachable")
+                            MediaSelectorSummary.LocalCache -> error("not reachable")
                         }
 
                         Column(Modifier.fillMaxWidth()) {
@@ -284,6 +307,8 @@ fun MediaSelectorSummaryCard(
                             }
                         }
                     }
+
+                    MediaSelectorSummary.LocalCache -> Unit
                 }
             }
         },
@@ -328,7 +353,8 @@ private class MediaSelectorSummaryState(
                     }
 
                     is MediaSelectorSummary.RequiresManualSelection,
-                    is MediaSelectorSummary.Selected -> {
+                    is MediaSelectorSummary.Selected,
+                    MediaSelectorSummary.LocalCache -> {
                         progressIndicatorState.finish()
                         currentSummary = state
                     }
@@ -439,6 +465,13 @@ private data class MediaSelectorColors(
                 )
 
                 is MediaSelectorSummary.Selected -> MediaSelectorColors(
+                    headerContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    headerContentColor = MaterialTheme.colorScheme.onSurface,
+                    bodyContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    bodyContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                MediaSelectorSummary.LocalCache -> MediaSelectorColors(
                     headerContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     headerContentColor = MaterialTheme.colorScheme.onSurface,
                     bodyContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,

@@ -304,7 +304,7 @@ internal class GirigiriPlugin(context: SourcePluginContext) : SitePluginBase(
         )
         val MEDIA_HEADERS = mapOf("Accept" to "*/*")
         val TRADITIONAL_TO_SIMPLIFIED = mapOf(
-            '術' to '术', '迴' to '回', '戰' to '战', '網' to '网', '動' to '动',
+            '術' to '术', '迴' to '回', '戰' to '战', '葉' to '叶', '網' to '网', '動' to '动',
             '畫' to '画', '國' to '国', '學' to '学', '會' to '会', '語' to '语',
             '開' to '开', '發' to '发', '現' to '现', '線' to '线', '號' to '号',
             '劇' to '剧', '戲' to '戏', '經' to '经', '傳' to '传', '這' to '这',

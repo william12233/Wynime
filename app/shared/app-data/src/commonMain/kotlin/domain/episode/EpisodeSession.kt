@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
@@ -25,6 +26,7 @@ class EpisodeSession(
     parentCoroutineContext: CoroutineContext,
     sharingStarted: SharingStarted = SharingStarted.WhileSubscribed(),
     fetchSessions: SubjectMediaFetchSessions? = null,
+    private val mediaFetchEnabled: StateFlow<Boolean> = MutableStateFlow(true),
 ) {
     private val createMediaFetchSelectBundleFlowUseCase: CreateMediaFetchSelectBundleFlowUseCase by koin.inject()
 
@@ -44,10 +46,16 @@ class EpisodeSession(
 
     val infoLoadErrorStateFlow: StateFlow<LoadError?> get() = infoLoader.infoLoadErrorState
 
-    val fetchSelectFlow = (
+    private val remoteFetchSelectFlow = (
             if (fetchSessions == null) createMediaFetchSelectBundleFlowUseCase(infoBundleFlow)
             else createMediaFetchSelectBundleFlowUseCase(infoBundleFlow, fetchSessions)
-            ).shareIn(sessionScope, sharingStarted, replay = 1)
+            )
+
+    val fetchSelectFlow = mediaFetchEnabled
+        .flatMapLatest { enabled ->
+            if (enabled) remoteFetchSelectFlow else flowOf(null)
+        }
+        .shareIn(sessionScope, sharingStarted, replay = 1)
 
     val mediaSourceLoadingFlow = fetchSelectFlow
         .transformLatest { bundle ->

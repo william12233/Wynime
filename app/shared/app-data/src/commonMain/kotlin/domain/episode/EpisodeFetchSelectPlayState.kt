@@ -71,8 +71,14 @@ class EpisodeFetchSelectPlayState(
 
     private val mediaFetchEnabled = MutableStateFlow(mediaFetchInitiallyEnabled)
     private val mediaAutoSelectEnabled = MutableStateFlow(mediaFetchInitiallyEnabled)
+    private val mediaAutoSelectInProgress = MutableStateFlow(false)
 
     val mediaAutoSelectEnabledFlow: StateFlow<Boolean> = mediaAutoSelectEnabled
+    val mediaAutoSelectInProgressFlow: StateFlow<Boolean> = mediaAutoSelectInProgress.asStateFlow()
+
+    internal fun setMediaAutoSelectInProgress(inProgress: Boolean) {
+        mediaAutoSelectInProgress.value = inProgress
+    }
 
     private val fetchSessions = SubjectMediaFetchSessions(
         scope = backgroundScope,

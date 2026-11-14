@@ -23,8 +23,17 @@ class AutoSelectExtension(
                 context.sessionFlow.flatMapLatest { it.fetchSelectFlow },
                 context.mediaAutoSelectEnabled,
             ) { fetchSelect, enabled -> fetchSelect to enabled }.collectLatest { (fetchSelect, enabled) ->
-                if (fetchSelect == null || !enabled) return@collectLatest
-                mediaSelectorAutoSelectUseCase(fetchSelect.mediaFetchSession, fetchSelect.mediaSelector)
+                if (fetchSelect == null || !enabled) {
+                    context.setMediaAutoSelectInProgress(false)
+                    return@collectLatest
+                }
+
+                context.setMediaAutoSelectInProgress(true)
+                try {
+                    mediaSelectorAutoSelectUseCase(fetchSelect.mediaFetchSession, fetchSelect.mediaSelector)
+                } finally {
+                    context.setMediaAutoSelectInProgress(false)
+                }
             }
         }
     }

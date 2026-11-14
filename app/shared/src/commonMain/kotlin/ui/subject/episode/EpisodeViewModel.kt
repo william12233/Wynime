@@ -97,6 +97,7 @@ import com.wynime.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
 import com.wynime.app.domain.mediasource.instance.GetMediaSourceInstancesUseCase
 import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
 import com.wynime.app.domain.player.CacheProgressProvider
+import com.wynime.app.domain.player.VideoLoadingState
 import com.wynime.app.domain.player.extension.AnalyticsExtension
 import com.wynime.app.domain.player.extension.AutoSelectExtension
 import com.wynime.app.domain.player.extension.MarkAsWatchedExtension
@@ -198,6 +199,17 @@ private fun opEdAutoSkipSampleIntervalMillis(playbackSpeed: Float): Long {
     val effectiveSpeed = playbackSpeed.takeIf { it.isFinite() && it > 0f } ?: 1f
     return (OP_ED_AUTO_SKIP_BASE_SAMPLE_INTERVAL_MILLIS / effectiveSpeed).toLong().coerceAtLeast(1L)
 }
+
+internal fun playerOverlayVideoLoadingState(
+    playerState: VideoLoadingState,
+    autoSelectInProgress: Boolean,
+    onlineSourceMode: Boolean,
+): VideoLoadingState =
+    if (playerState == VideoLoadingState.Initial && autoSelectInProgress && onlineSourceMode) {
+        VideoLoadingState.AutoSelectingSource
+    } else {
+        playerState
+    }
 
 @Stable
 data class EpisodePageState(
@@ -385,6 +397,18 @@ open class EpisodeViewModel(
         mediaSourceLoading = fetchPlayState.episodeSessionFlow.flatMapLatest { it.mediaSourceLoadingFlow },
         backgroundScope,
     ).videoStatisticsFlow
+
+    val episodeVideoLoadingStateFlow: Flow<VideoLoadingState> = combine(
+        fetchPlayState.playerSession.videoLoadingState,
+        fetchPlayState.mediaAutoSelectInProgressFlow,
+        cachePlaybackState,
+    ) { playerState, autoSelectInProgress, playbackState ->
+        playerOverlayVideoLoadingState(
+            playerState,
+            autoSelectInProgress = autoSelectInProgress,
+            onlineSourceMode = playbackState == CachePlaybackState.ONLINE_SOURCES,
+        )
+    }.distinctUntilChanged()
 
     val videoScaffoldConfig: VideoScaffoldConfig by settingsRepository.videoScaffoldConfig
         .flow.produceState(VideoScaffoldConfig.Default)

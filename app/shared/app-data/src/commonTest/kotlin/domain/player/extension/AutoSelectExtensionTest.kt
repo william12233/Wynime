@@ -38,8 +38,10 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
     private val defaultSettings = MediaSelectorSettings.AllVisible.copy(
@@ -135,9 +137,55 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         web.complete(listOf(candidate))
         advanceUntilIdle()
 
+        assertEquals(false, state.mediaAutoSelectInProgressFlow.value)
         assertNull(state.mediaSelectorFlow.filterNotNull().first()!!.selected.value)
         assertEquals(null, suite.player.mediaData.first())
 
+        testScope.cancel()
+    }
+
+    @Test
+    fun `auto select progress follows active source selection`() = runTest {
+        val web: CompletableDeferred<List<Media>>
+        val context = createCase { _, suite ->
+            web = suite.mediaSelectorTestBuilder.delayedMediaSource("web1", kind = MediaSourceKind.WEB)
+        }
+        val (testScope, suite, state) = context
+
+        initializeTest(suite)
+        startMediaFetcher(state, testScope)
+        advanceUntilIdle()
+
+        assertTrue(state.mediaAutoSelectInProgressFlow.value)
+
+        val candidate = suite.mediaSelectorTestBuilder.createMedia("web1", kind = MediaSourceKind.WEB)
+        web.complete(listOf(candidate))
+        advanceUntilIdle()
+
+        assertEquals(false, state.mediaAutoSelectInProgressFlow.value)
+        state.assertSelected(candidate, suite)
+        testScope.cancel()
+    }
+
+    @Test
+    fun `disabling media fetch clears auto select progress`() = runTest {
+        val web: CompletableDeferred<List<Media>>
+        val context = createCase { _, suite ->
+            web = suite.mediaSelectorTestBuilder.delayedMediaSource("web1", kind = MediaSourceKind.WEB)
+        }
+        val (testScope, suite, state) = context
+
+        initializeTest(suite)
+        startMediaFetcher(state, testScope)
+        advanceUntilIdle()
+        assertTrue(state.mediaAutoSelectInProgressFlow.value)
+
+        state.disableMediaFetch()
+        advanceUntilIdle()
+
+        assertFalse(state.mediaAutoSelectInProgressFlow.value)
+        assertFalse(state.mediaAutoSelectEnabledFlow.value)
+        assertEquals(null, suite.player.mediaData.first())
         testScope.cancel()
     }
 

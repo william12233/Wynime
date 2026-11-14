@@ -13,6 +13,8 @@ sealed interface VideoLoadingState {
 
     data object Initial : VideoLoadingState
 
+    data object AutoSelectingSource : VideoLoadingState, Progressing
+
     data object ResolvingSource : VideoLoadingState, Progressing
 
     data object DecodingData : VideoLoadingState, Progressing

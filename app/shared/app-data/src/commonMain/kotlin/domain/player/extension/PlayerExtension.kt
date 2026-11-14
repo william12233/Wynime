@@ -40,6 +40,8 @@ interface PlayerExtensionContext {
 
     val mediaAutoSelectEnabled: StateFlow<Boolean>
 
+    fun setMediaAutoSelectInProgress(inProgress: Boolean)
+
     val broadcastEvent: SharedFlow<PlayerExtensionEvent>
 
     @UnsafeEpisodeSessionApi

@@ -62,6 +62,7 @@ fun EpisodeVideoLoadingIndicator(
             videoLoadingState,
             speedProvider = { speed },
             optimizeForFullscreen = optimizeForFullscreen,
+            buffering = state.isBuffering,
             playerError = state.mediaStatus is MediaStatus.Error,
             modifier = modifier,
         )
@@ -69,13 +70,14 @@ fun EpisodeVideoLoadingIndicator(
 }
 
 fun shouldShowVideoLoadingIndicator(state: VideoLoadingState, buffering: Boolean, playerError: Boolean): Boolean =
-    buffering || playerError || state !is VideoLoadingState.Succeed
+    buffering || playerError || (state !is VideoLoadingState.Succeed && state != VideoLoadingState.Initial)
 
 @Composable
 fun EpisodeVideoLoadingIndicator(
     state: VideoLoadingState,
     speedProvider: () -> FileSize,
     optimizeForFullscreen: Boolean,
+    buffering: Boolean = false,
     playerError: Boolean = false,
     modifier: Modifier = Modifier,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
@@ -106,6 +108,12 @@ fun EpisodeVideoLoadingIndicator(
             }
             when (state) {
                 VideoLoadingState.Initial -> {
+                    if (buffering) {
+                        TextWithBorder(bufferingText, textAlign = TextAlign.Center)
+                    }
+                }
+
+                VideoLoadingState.AutoSelectingSource -> {
                     TextWithBorder(autoSelectingText)
                 }
 
@@ -197,7 +205,7 @@ private fun renderCause(cause: VideoLoadingState.Failed, labels: VideoLoadingCau
 private fun PreviewEpisodeVideoLoadingIndicator() {
     ProvideCompositionLocalsForPreview {
         EpisodeVideoLoadingIndicator(
-            VideoLoadingState.Initial,
+            VideoLoadingState.AutoSelectingSource,
             speedProvider = { 0.3.bytes },
             optimizeForFullscreen = false,
         )
@@ -209,7 +217,7 @@ private fun PreviewEpisodeVideoLoadingIndicator() {
 private fun PreviewEpisodeVideoLoadingIndicatorFullscreen() {
     ProvideCompositionLocalsForPreview {
         EpisodeVideoLoadingIndicator(
-            VideoLoadingState.Initial,
+            VideoLoadingState.AutoSelectingSource,
             speedProvider = { 0.3.bytes },
             optimizeForFullscreen = true,
         )

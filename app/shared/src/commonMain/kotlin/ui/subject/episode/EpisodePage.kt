@@ -63,7 +63,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.wynime.app.data.models.preference.DarkMode
 import com.wynime.app.data.models.preference.VideoScaffoldConfig
@@ -798,7 +797,7 @@ private fun EpisodeVideo(
                 Modifier.placeholder(episode.isPlaceholder || subject.isPlaceholder),
             )
         },
-        videoLoadingStateFlow = vm.videoStatisticsFlow.map { it.videoLoadingState },
+        videoLoadingStateFlow = vm.episodeVideoLoadingStateFlow,
         fullscreenState = fullscreenState,
         alwaysOnTop = window.isAlwaysOnTop,
         onToggleAlwaysOnTop = {

@@ -35,6 +35,10 @@ class PlayerExtensionManager(
         override val mediaAutoSelectEnabled
             get() = state.mediaAutoSelectEnabledFlow
 
+        override fun setMediaAutoSelectInProgress(inProgress: Boolean) {
+            state.setMediaAutoSelectInProgress(inProgress)
+        }
+
         override val broadcastEvent: MutableSharedFlow<PlayerExtensionEvent> =
             MutableSharedFlow(0, 1, BufferOverflow.DROP_OLDEST)
 

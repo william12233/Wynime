@@ -58,6 +58,7 @@ import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.foundation.icons.EditSquare
 import com.wynime.app.ui.foundation.ifThen
 import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.media_selector_summary_cached_file
 import com.wynime.app.ui.lang.media_selector_view_detailed_mode
 import com.wynime.app.ui.lang.media_selector_view_filtered_count
 import com.wynime.app.ui.lang.media_selector_view_show_excluded

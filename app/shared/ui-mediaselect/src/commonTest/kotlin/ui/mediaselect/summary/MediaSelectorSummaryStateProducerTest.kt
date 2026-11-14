@@ -10,7 +10,7 @@ import com.wynime.app.domain.media.TestMediaList
 import com.wynime.app.domain.media.selector.MaybeExcludedMedia
 import com.wynime.app.domain.media.selector.TestMatchMetadata
 import com.wynime.datasources.api.CachedMedia
-import com.wynime.datasources.api.MediaSourceKind
+import com.wynime.datasources.api.source.MediaSourceKind
 import com.wynime.datasources.api.topic.ResourceLocation
 import com.wynime.utils.platform.annotations.TestOnly
 

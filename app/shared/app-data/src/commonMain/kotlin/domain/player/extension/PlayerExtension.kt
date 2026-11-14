@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
 import com.wynime.app.domain.episode.EpisodeSession
@@ -36,6 +37,8 @@ interface PlayerExtensionContext {
     val videoLoadingStateFlow: Flow<VideoLoadingState>
 
     val sessionFlow: Flow<EpisodeSession>
+
+    val mediaAutoSelectEnabled: StateFlow<Boolean>
 
     val broadcastEvent: SharedFlow<PlayerExtensionEvent>
 

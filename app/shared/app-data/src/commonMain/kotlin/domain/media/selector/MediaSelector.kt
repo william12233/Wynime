@@ -194,7 +194,7 @@ class DefaultMediaSelector(
     override val mediaSourceId = mediaPreferenceItem(
         "mediaSource",
         getFromMediaList = { list ->
-            list.mapTo(HashSet(list.size)) { it.properties.resolution }
+            list.mapTo(HashSet(list.size)) { it.mediaSourceId }
                 .sortedBy { it }
         },
         getFromPreference = { it.mediaSourceId },

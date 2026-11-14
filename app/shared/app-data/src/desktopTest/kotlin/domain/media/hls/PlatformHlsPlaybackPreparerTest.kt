@@ -18,6 +18,7 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private suspend fun PlatformHlsPlaybackPreparer.prepare(data: UriMediaData): HlsPlaybackPreparerResult =
@@ -54,6 +55,29 @@ class PlatformHlsPlaybackPreparerTest {
             assertEquals(false, "ad002.ts" in localManifest)
         } finally {
             result.session?.close()
+            provider.forceReleaseAll()
+            server.close()
+        }
+    }
+
+    @Test
+    fun `manifest probe timeout falls back to original stream URL`() = runTest {
+        val server = StaticManifestServer(manifest, responseDelayMillis = 250)
+        val provider = DefaultHttpClientProvider(NoProxyProvider, backgroundScope)
+        val preparer = PlatformHlsPlaybackPreparer(
+            provider,
+            PlatformHlsPlaybackPreparer.DEFAULT_SEGMENT_CACHE_MAX_BYTES,
+            PlatformHlsProxyServerFactory,
+            manifestProbeTimeoutMillis = 50,
+        )
+        val originalUri = "${server.baseUrl}/anime/01/index.m3u8"
+
+        try {
+            val result = preparer.prepare(UriMediaData(originalUri), HlsPlaybackOptions(proxySegments = true))
+
+            assertEquals(originalUri, result.data.uri)
+            assertNull(result.session)
+        } finally {
             provider.forceReleaseAll()
             server.close()
         }
@@ -201,6 +225,7 @@ class PlatformHlsPlaybackPreparerTest {
         private val contentByPath: Map<String, String> = emptyMap(),
         private val redirectFrom: String? = null,
         private val redirectTo: String? = null,
+        private val responseDelayMillis: Long = 0,
     ) : AutoCloseable {
         private val closed = AtomicBoolean(false)
         private val bytes = content.toByteArray(StandardCharsets.UTF_8)
@@ -232,6 +257,7 @@ class PlatformHlsPlaybackPreparerTest {
                             ?.trim()
 
                         socket.getOutputStream().use { output ->
+                            if (responseDelayMillis > 0) Thread.sleep(responseDelayMillis)
                             val requestPath = lines.firstOrNull()
                                 ?.substringAfter(" ")
                                 ?.substringBefore(" ")

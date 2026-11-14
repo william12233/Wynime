@@ -32,6 +32,9 @@ class PlayerExtensionManager(
         override val sessionFlow: Flow<EpisodeSession>
             get() = state.episodeSessionFlow
 
+        override val mediaAutoSelectEnabled
+            get() = state.mediaAutoSelectEnabledFlow
+
         override val broadcastEvent: MutableSharedFlow<PlayerExtensionEvent> =
             MutableSharedFlow(0, 1, BufferOverflow.DROP_OLDEST)
 
@@ -56,6 +59,10 @@ class PlayerExtensionManager(
 
     val extensions: List<PlayerExtension> by lazy {
         factories.map { it.create(context, koin) }
+    }
+
+    suspend fun broadcastEvent(event: PlayerExtensionEvent) {
+        context.broadcast(event)
     }
 
     inline fun call(block: (PlayerExtension) -> Unit) {

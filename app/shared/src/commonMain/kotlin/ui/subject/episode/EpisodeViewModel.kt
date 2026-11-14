@@ -11,6 +11,7 @@ import androidx.paging.map
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.awaitCancellation
@@ -46,6 +47,8 @@ import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.atomicfu.atomic
 import com.wynime.app.data.models.comment.CommentReportTargetType
@@ -125,6 +128,7 @@ import com.wynime.app.ui.foundation.launchInBackground
 import com.wynime.app.ui.foundation.lists.PaginatedGroup
 import com.wynime.app.ui.foundation.stateOf
 import com.wynime.app.ui.mediafetch.MediaSelectorState
+import com.wynime.app.ui.mediafetch.MediaSelectorLocalCacheOption
 import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
 import com.wynime.app.ui.mediaselect.summary.MediaSelectorSummary
 import com.wynime.app.ui.mediaselect.summary.MediaSelectorSummaryStateProducer
@@ -179,8 +183,16 @@ private const val OP_ED_AUTO_SKIP_BASE_SAMPLE_INTERVAL_MILLIS = 1_000L
 private enum class CachePlaybackState {
     CHECKING,
     PLAYING,
+    LOCAL_ERROR,
     ONLINE_SOURCES,
 }
+
+private data class LocalCacheSelectorPageState(
+    val options: List<MediaSelectorLocalCacheOption>,
+    val selectedCacheId: String?,
+    val onlineQueryEnabled: Boolean,
+    val isChecking: Boolean,
+)
 
 private fun opEdAutoSkipSampleIntervalMillis(playbackSpeed: Float): Long {
     val effectiveSpeed = playbackSpeed.takeIf { it.isFinite() && it > 0f } ?: 1f
@@ -191,6 +203,10 @@ private fun opEdAutoSkipSampleIntervalMillis(playbackSpeed: Float): Long {
 data class EpisodePageState(
     val selfInfo: SelfInfoUiState,
     val mediaSelectorState: MediaSelectorState?,
+    val localCacheOptions: List<MediaSelectorLocalCacheOption>,
+    val selectedLocalCacheId: String?,
+    val onlineSourceQueryEnabled: Boolean,
+    val isCheckingLocalCache: Boolean,
     val subjectPresentation: SubjectPresentation,
     val episodePresentation: EpisodePresentation,
     val isLoading: Boolean = false,
@@ -230,7 +246,11 @@ open class EpisodeViewModel(
     private val getMediaCacheUseCase: GetMediaCacheUseCase by inject()
     private val initialCachePlaybackStarted = atomic(false)
     private var cachePlaybackJob: Job? = null
+    private val cachePlaybackMutex = Mutex()
     private val cachePlaybackState = MutableStateFlow(CachePlaybackState.CHECKING)
+    private val localCacheOptions = MutableStateFlow<List<MediaSelectorLocalCacheOption>>(emptyList())
+    private val selectedLocalCacheId = MutableStateFlow<String?>(null)
+    private val onlineSourceQueryEnabled = MutableStateFlow(false)
     private val settingsRepository: SettingsRepository by inject()
     private val episodePlayHistoryRepository: EpisodePlayHistoryRepository by inject()
     private val mediaSourceManager: MediaSourceManager by inject()
@@ -667,6 +687,19 @@ open class EpisodeViewModel(
                 summary
             }
         }
+        val cacheSelectorPageState = combine(
+            localCacheOptions,
+            selectedLocalCacheId,
+            onlineSourceQueryEnabled,
+            cachePlaybackState,
+        ) { options, selectedCacheId, queryEnabled, playbackState ->
+            LocalCacheSelectorPageState(
+                options = options,
+                selectedCacheId = selectedCacheId,
+                onlineQueryEnabled = queryEnabled,
+                isChecking = playbackState == CachePlaybackState.CHECKING,
+            )
+        }
 
         val selectedMediaFlow =
             episodeSession.fetchSelectFlow.flatMapLatest { it?.mediaSelector?.selected ?: flowOfNull() }
@@ -688,10 +721,11 @@ open class EpisodeViewModel(
                 }
             },
             mediaSelectorSummary,
+            cacheSelectorPageState,
             combine(selectedMediaFlow, player.mediaData) { selectedMedia, mediaData ->
                 MediaShareData.from(selectedMedia, mediaData)
             },
-        ) { authState, subjectEpisodeBundle, subjectLoadError, fetchSelect, mediaSelectorState, mediaSelectorSummary, shareData ->
+        ) { authState, subjectEpisodeBundle, subjectLoadError, fetchSelect, mediaSelectorState, mediaSelectorSummary, cachePageState, shareData ->
 
             val (subject, episode) = if (subjectEpisodeBundle == null) {
                 SubjectPresentation.Placeholder to EpisodePresentation.Placeholder
@@ -717,6 +751,10 @@ open class EpisodeViewModel(
             EpisodePageState(
                 selfInfo = authState,
                 mediaSelectorState = mediaSelectorState,
+                localCacheOptions = cachePageState.options,
+                selectedLocalCacheId = cachePageState.selectedCacheId,
+                onlineSourceQueryEnabled = cachePageState.onlineQueryEnabled,
+                isCheckingLocalCache = cachePageState.isChecking,
                 subjectPresentation = subject,
                 episodePresentation = episode,
                 isLoading = subjectEpisodeBundle == null,
@@ -750,11 +788,13 @@ open class EpisodeViewModel(
         cachePlaybackJob?.cancelAndJoin()
         cachePlaybackJob = null
         cachePlaybackState.value = CachePlaybackState.CHECKING
+        localCacheOptions.value = emptyList()
+        selectedLocalCacheId.value = null
+        onlineSourceQueryEnabled.value = false
         fetchPlayState.disableMediaFetch()
         backgroundScope.launch {
             fetchPlayState.switchEpisode(episodeId)
         }.join()
-        startCachePlayback(episodeId, cacheId = null)
     }
 
     fun savePlayerVolume(volume: Float, mute: Boolean) {
@@ -768,7 +808,7 @@ open class EpisodeViewModel(
     }
 
     fun refreshFetch() {
-        startOnlineSources()
+        queryOnlineSources()
         launchInBackground {
 
             fetchPlayState.episodeSessionFlow.flatMapLatest { it.fetchSelectFlow }
@@ -785,7 +825,7 @@ open class EpisodeViewModel(
     }
 
     fun restartSource(instanceId: String) {
-        startOnlineSources()
+        queryOnlineSources()
         launchInBackground {
             val result = fetchPlayState.episodeSessionFlow.flatMapLatest { it.fetchSelectFlow }
                 .mapNotNull { it?.mediaFetchSession }
@@ -798,7 +838,7 @@ open class EpisodeViewModel(
     }
 
     fun playDroppedFile(file: SystemPath) {
-        startOnlineSources()
+        selectOnlineSource()
         launchInBackground {
             val session = fetchPlayState.episodeSessionFlow.value
             val mediaSelector = fetchPlayState.episodeSessionFlow
@@ -820,48 +860,79 @@ open class EpisodeViewModel(
         }
     }
 
-    fun startOnlineSources() {
+    fun queryOnlineSources() {
+        val keepLocalPlayback = cachePlaybackState.value in setOf(
+            CachePlaybackState.PLAYING,
+            CachePlaybackState.LOCAL_ERROR,
+        )
+        onlineSourceQueryEnabled.value = true
+        if (!keepLocalPlayback) {
+            cachePlaybackState.value = CachePlaybackState.ONLINE_SOURCES
+        }
+        fetchPlayState.enableMediaFetch(autoSelect = !keepLocalPlayback)
+    }
+
+    fun selectOnlineSource() {
         cachePlaybackJob?.cancel()
         cachePlaybackJob = null
         cachePlaybackState.value = CachePlaybackState.ONLINE_SOURCES
-        fetchPlayState.enableMediaFetch()
+        selectedLocalCacheId.value = null
+        onlineSourceQueryEnabled.value = true
+        fetchPlayState.enableMediaFetch(autoSelect = false)
+    }
+
+    fun selectLocalCache(cacheId: String) {
+        val episodeId = fetchPlayState.episodeSessionFlow.value.episodeId
+        startCachePlayback(episodeId, cacheId)
     }
 
     private fun startCachePlayback(episodeId: Int, cacheId: String?) {
         cachePlaybackJob?.cancel()
+        fetchPlayState.disableMediaFetch()
         cachePlaybackState.value = CachePlaybackState.CHECKING
+        localCacheOptions.value = emptyList()
+        selectedLocalCacheId.value = cacheId
+        onlineSourceQueryEnabled.value = false
         cachePlaybackJob = launchInBackground {
             prepareCachePlayback(episodeId, cacheId)
         }
     }
 
-    private suspend fun prepareCachePlayback(episodeId: Int, cacheId: String?) {
+    private suspend fun prepareCachePlayback(episodeId: Int, cacheId: String?) = cachePlaybackMutex.withLock {
         try {
             val caches = getMediaCacheUseCase(subjectId, episodeId)
-            val cache = if (cacheId != null) {
-                caches.firstOrNull { it.cacheId == cacheId }
+            val completedCaches = caches
+                .filter {
+                    it.state.first() == MediaCacheState.COMPLETED && it.canPlay.first()
+                }
+                .sortedByDescending { it.metadata.creationTime }
+            localCacheOptions.value = completedCaches.map { cache ->
+                MediaSelectorLocalCacheOption(
+                    id = cache.cacheId,
+                    title = cache.origin.originalTitle.ifBlank { cache.metadata.episodeName },
+                    description = listOf(cache.origin.properties.alliance, cache.origin.properties.resolution)
+                        .filter(String::isNotBlank)
+                        .distinct()
+                        .joinToString(" · ")
+                        .takeIf(String::isNotBlank),
+                )
+            }
+            val cache = if (cacheId == null) {
+                completedCaches.firstOrNull()
             } else {
-                caches
-                    .filter { it.state.first() == MediaCacheState.COMPLETED }
-                    .minByOrNull { it.cacheId }
+                completedCaches.firstOrNull { it.cacheId == cacheId }
             }
             if (cache == null) {
-                releaseOnlineSources()
-                return
-            }
-
-            val terminalState = if (cacheId != null) {
-                cache.state.first {
-                    it == MediaCacheState.COMPLETED || it == MediaCacheState.FAILED
+                selectedLocalCacheId.value = null
+                if (cacheId == null) {
+                    releaseOnlineSources()
+                } else {
+                    cachePlaybackState.value = CachePlaybackState.LOCAL_ERROR
                 }
-            } else {
-                MediaCacheState.COMPLETED
-            }
-            if (terminalState != MediaCacheState.COMPLETED) {
-                releaseOnlineSources()
                 return
             }
 
+            selectedLocalCacheId.value = cache.cacheId
             val cachedMedia = cache.getCachedMedia()
             val loaded = fetchPlayState.playerSession.loadMedia(
                 cachedMedia,
@@ -873,23 +944,36 @@ open class EpisodeViewModel(
             )
             if (loaded) {
                 cachePlaybackState.value = CachePlaybackState.PLAYING
+                fetchPlayState.broadcastEvent(EpisodeFetchSelectPlayState.MediaLoadedEvent(episodeId))
             } else {
-                releaseOnlineSources()
+                cachePlaybackState.value = CachePlaybackState.LOCAL_ERROR
             }
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {
             logger.warn(error) { "Failed to prepare local cache playback" }
-            releaseOnlineSources()
+            cachePlaybackState.value = CachePlaybackState.LOCAL_ERROR
         }
     }
 
     private fun releaseOnlineSources() {
         cachePlaybackState.value = CachePlaybackState.ONLINE_SOURCES
-        fetchPlayState.enableMediaFetch()
+        onlineSourceQueryEnabled.value = true
+        fetchPlayState.enableMediaFetch(autoSelect = true)
     }
 
     init {
+        backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            var isInitialSession = true
+            fetchPlayState.episodeSessionFlow.collect { session ->
+                if (isInitialSession) {
+                    isInitialSession = false
+                } else {
+                    startCachePlayback(session.episodeId, cacheId = null)
+                }
+            }
+        }
+
         launchInBackground {
             val defaultMode = settingsRepository.videoScaffoldConfig.flow
                 .first()
@@ -960,7 +1044,7 @@ open class EpisodeViewModel(
     override fun getKoin(): Koin = koin
 
     fun updateFetchRequest(request: MediaFetchRequest) {
-        startOnlineSources()
+        queryOnlineSources()
         launchInBackground {
             fetchPlayState.episodeSessionFlow
                 .firstOrNull()

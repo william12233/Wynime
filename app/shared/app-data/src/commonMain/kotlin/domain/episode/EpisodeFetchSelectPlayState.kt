@@ -70,6 +70,9 @@ class EpisodeFetchSelectPlayState(
     private val sharedFetchSessionRegistry = koin.getOrNull<SubjectMediaFetchSessionRegistry>()
 
     private val mediaFetchEnabled = MutableStateFlow(mediaFetchInitiallyEnabled)
+    private val mediaAutoSelectEnabled = MutableStateFlow(mediaFetchInitiallyEnabled)
+
+    val mediaAutoSelectEnabledFlow: StateFlow<Boolean> = mediaAutoSelectEnabled
 
     private val fetchSessions = SubjectMediaFetchSessions(
         scope = backgroundScope,
@@ -110,6 +113,8 @@ class EpisodeFetchSelectPlayState(
     private val switchEpisodeLock = Mutex()
 
     suspend fun switchEpisode(episodeId: Int) {
+        disableMediaFetch()
+
         Analytics.recordEvent(
             EpisodeSwitch,
             mapOf(
@@ -187,11 +192,13 @@ class EpisodeFetchSelectPlayState(
 
     }
 
-    fun enableMediaFetch() {
+    fun enableMediaFetch(autoSelect: Boolean = true) {
+        mediaAutoSelectEnabled.value = autoSelect
         mediaFetchEnabled.value = true
     }
 
     fun disableMediaFetch() {
+        mediaAutoSelectEnabled.value = false
         mediaFetchEnabled.value = false
     }
 
@@ -207,6 +214,10 @@ class EpisodeFetchSelectPlayState(
 
     fun restartLoad() {
         episodeSessionFlow.value.restartLoad()
+    }
+
+    suspend fun broadcastEvent(event: PlayerExtensionEvent) {
+        extensionManager.broadcastEvent(event)
     }
 
     private suspend fun EpisodeSession.startSessionScopeTasks() {

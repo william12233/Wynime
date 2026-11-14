@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
 import kotlinx.io.IOException
 import kotlinx.io.readByteArray
@@ -44,11 +45,13 @@ import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.min
 import kotlin.math.roundToLong
+import kotlin.time.TimeSource
 
 class PlatformHlsPlaybackPreparer internal constructor(
     private val httpClientProvider: HttpClientProvider,
     private val segmentCacheMaxBytes: Long,
     private val serverFactory: HlsProxyServerFactory,
+    private val manifestProbeTimeoutMillis: Long = HLS_MANIFEST_PROBE_TIMEOUT_MILLIS,
 ) : HlsPlaybackPreparer {
 
     constructor(
@@ -63,19 +66,37 @@ class PlatformHlsPlaybackPreparer internal constructor(
         if (!data.uri.isCandidateHlsUri()) {
             return HlsPlaybackPreparerResult(data)
         }
-        var baseUri = data.uri
-        val manifest = try {
-            httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
-                val response = get(data.uri) {
-                    data.headers.forEach { (name, value) -> header(name, value) }
+        val manifestProbeStarted = TimeSource.Monotonic.markNow()
+        val manifestResult = try {
+            withTimeoutOrNull(manifestProbeTimeoutMillis) {
+                httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
+                    val response = get(data.uri) {
+                        data.headers.forEach { (name, value) -> header(name, value) }
+                    }
+                    response.call.request.url.toString() to response.bodyAsText()
                 }
-                baseUri = response.call.request.url.toString()
-                response.bodyAsText()
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Throwable) {
+        } catch (error: Throwable) {
+            logger.warn(error) {
+                "HLS manifest probe failed after ${manifestProbeStarted.elapsedNow().inWholeMilliseconds}ms; " +
+                    "using the original stream URL"
+            }
             return HlsPlaybackPreparerResult(data)
+        }
+        if (manifestResult == null) {
+            logger.warn {
+                "HLS manifest probe timed out after ${manifestProbeTimeoutMillis}ms; " +
+                    "elapsed_ms=${manifestProbeStarted.elapsedNow().inWholeMilliseconds}; " +
+                    "using the original stream URL"
+            }
+            return HlsPlaybackPreparerResult(data)
+        }
+        val (baseUri, manifest) = manifestResult
+        logger.info {
+            "playback_timing phase=hls_manifest_probe elapsed_ms=" +
+                manifestProbeStarted.elapsedNow().inWholeMilliseconds
         }
 
         val session = try {
@@ -103,6 +124,7 @@ class PlatformHlsPlaybackPreparer internal constructor(
 
     companion object {
         const val DEFAULT_SEGMENT_CACHE_MAX_BYTES: Long = 64L * 1024 * 1024
+        const val HLS_MANIFEST_PROBE_TIMEOUT_MILLIS: Long = 5_000L
     }
 }
 

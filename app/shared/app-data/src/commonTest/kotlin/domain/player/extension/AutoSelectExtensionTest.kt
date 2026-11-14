@@ -39,6 +39,7 @@ import kotlin.contracts.contract
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
     private val defaultSettings = MediaSelectorSettings.AllVisible.copy(
@@ -114,6 +115,28 @@ class AutoSelectExtensionTest : AbstractPlayerExtensionTest() {
         advanceUntilIdle()
 
         state.assertSelected(myMedia, suite)
+
+        testScope.cancel()
+    }
+
+    @Test
+    fun `manual online query does not auto select over local playback`() = runTest {
+        val web: CompletableDeferred<List<Media>>
+        val context = createCase { _, suite ->
+            web = suite.mediaSelectorTestBuilder.delayedMediaSource("web1", kind = MediaSourceKind.WEB)
+        }
+        val (testScope, suite, state) = context
+
+        initializeTest(suite)
+        state.enableMediaFetch(autoSelect = false)
+        startMediaFetcher(state, testScope)
+
+        val candidate = suite.mediaSelectorTestBuilder.createMedia("web1", kind = MediaSourceKind.WEB)
+        web.complete(listOf(candidate))
+        advanceUntilIdle()
+
+        assertNull(state.mediaSelectorFlow.filterNotNull().first()!!.selected.value)
+        assertEquals(null, suite.player.mediaData.first())
 
         testScope.cancel()
     }

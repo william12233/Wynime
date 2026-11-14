@@ -91,13 +91,16 @@ class MediaPreferenceItemTest {
     }
 
     @Test
-    fun `ITEM-05 mediaSourceId 的 available 误取分辨率集合`() = runSimpleMediaSelectorTestSuite {
+    fun `ITEM-05 mediaSourceId 的 available 使用来源 ID`() = runSimpleMediaSelectorTestSuite {
         mediaApi.addMedia(
             media(sourceId = SOURCE_PRIMARY_WEB, resolution = "1080P"),
             media(sourceId = SOURCE_SECONDARY_WEB, resolution = "720P"),
             media(sourceId = SOURCE_SECONDARY_WEB, resolution = "1080P"),
         )
 
-        assertEquals(listOf("1080P", "720P"), selector.mediaSourceId.available.first())
+        assertEquals(
+            listOf(SOURCE_PRIMARY_WEB, SOURCE_SECONDARY_WEB).sorted(),
+            selector.mediaSourceId.available.first(),
+        )
     }
 }

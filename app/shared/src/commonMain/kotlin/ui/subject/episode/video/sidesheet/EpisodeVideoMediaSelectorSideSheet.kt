@@ -9,16 +9,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.subject_episode_close_selector
 import com.wynime.app.ui.lang.subject_episode_select_media_source
-import com.wynime.app.ui.mediafetch.MediaSelectorLoadingPlaceholder
+import com.wynime.app.ui.mediafetch.MediaSelectorLocalCacheOption
 import com.wynime.app.ui.mediafetch.MediaSelectorState
 import com.wynime.app.ui.mediafetch.MediaSelectorView
 import com.wynime.app.ui.mediafetch.rememberTestMediaSelectorState
@@ -38,10 +40,18 @@ fun EpisodeVideoSideSheets.MediaSelectorSheet(
     onFetchRequestChange: (MediaFetchRequest) -> Unit,
     onDismissRequest: () -> Unit,
     onRestartSource: (instanceId: String) -> Unit,
+    localCacheOptions: List<MediaSelectorLocalCacheOption> = emptyList(),
+    selectedLocalCacheId: String? = null,
+    onlineSourceQueryEnabled: Boolean = true,
+    isCheckingLocalCache: Boolean = false,
+    onSelectLocalCache: (String) -> Unit = {},
+    onQueryOnlineSources: () -> Unit = {},
+    onSelectOnlineSource: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val selectMediaSourceText = stringResource(Lang.subject_episode_select_media_source)
     val closeSelectorText = stringResource(Lang.subject_episode_close_selector)
+    val scope = rememberCoroutineScope()
 
     SideSheetLayout(
         title = { Text(text = selectMediaSourceText) },
@@ -54,29 +64,29 @@ fun EpisodeVideoSideSheets.MediaSelectorSheet(
         },
     ) {
         val selectorState = mediaSelectorState
-        if (selectorState == null) {
-            MediaSelectorLoadingPlaceholder(
-                modifier.padding(horizontal = 16.dp)
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .navigationBarsPadding(),
-            )
-        } else {
-            MediaSelectorView(
-                state = selectorState,
-                fetchRequest = fetchRequest,
-                onFetchRequestChange = onFetchRequestChange,
-                onRestartSource = onRestartSource,
-                modifier = modifier.padding(horizontal = 16.dp)
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .navigationBarsPadding(),
-                onClickItem = {
-                    selectorState.select(it)
+        MediaSelectorView(
+            state = selectorState,
+            fetchRequest = fetchRequest,
+            onFetchRequestChange = onFetchRequestChange,
+            onRestartSource = onRestartSource,
+            modifier = modifier.padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .weight(1f)
+                .navigationBarsPadding(),
+            localCacheOptions = localCacheOptions,
+            selectedLocalCacheId = selectedLocalCacheId,
+            onlineQueryEnabled = onlineSourceQueryEnabled,
+            allowOnlineQuery = !isCheckingLocalCache,
+            onSelectLocalCache = onSelectLocalCache,
+            onQueryOnlineSources = onQueryOnlineSources,
+            onClickItem = { media ->
+                scope.launch {
+                    onSelectOnlineSource()
+                    selectorState?.selectAndWait(media)
                     onDismissRequest()
-                },
-            )
-        }
+                }
+            },
+        )
     }
 }
 

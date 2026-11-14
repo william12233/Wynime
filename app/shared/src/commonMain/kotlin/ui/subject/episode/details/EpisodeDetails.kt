@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
 import com.wynime.app.data.models.episode.preferredDisplayName
 import com.wynime.app.data.models.subject.SubjectInfo
 import com.wynime.app.data.models.subject.Tag
@@ -95,7 +96,7 @@ import com.wynime.app.ui.lang.subject_episode_related_recommendations
 import com.wynime.app.ui.lang.subject_episode_select_media_source
 import com.wynime.app.ui.lang.subject_episode_wish_change_to
 import com.wynime.app.ui.mediafetch.MediaSelectorState
-import com.wynime.app.ui.mediafetch.MediaSelectorLoadingPlaceholder
+import com.wynime.app.ui.mediafetch.MediaSelectorLocalCacheOption
 import com.wynime.app.ui.mediafetch.MediaSelectorView
 import com.wynime.app.ui.mediafetch.rememberTestMediaSelectorState
 import com.wynime.app.ui.mediafetch.request.TestMediaFetchRequest
@@ -152,7 +153,6 @@ fun EpisodeDetails(
     mediaSelectorState: MediaSelectorState?,
     selfInfo: SelfInfoUiState,
     onSwitchEpisode: (Int) -> Unit,
-    onRequestOnlineSources: () -> Unit,
     onRestartSource: (String) -> Unit,
     onClickLogin: () -> Unit,
     onClickTag: (Tag) -> Unit,
@@ -161,7 +161,15 @@ fun EpisodeDetails(
     onRetryLoad: () -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+    localCacheOptions: List<MediaSelectorLocalCacheOption> = emptyList(),
+    selectedLocalCacheId: String? = null,
+    onlineSourceQueryEnabled: Boolean = true,
+    isCheckingLocalCache: Boolean = false,
+    onSelectLocalCache: (String) -> Unit = {},
+    onQueryOnlineSources: () -> Unit = {},
+    onSelectOnlineSource: () -> Unit = {},
 ) {
+    val mediaSelectionScope = rememberCoroutineScope()
     var showSubjectDetails by rememberSaveable {
         mutableStateOf(false)
     }
@@ -304,29 +312,33 @@ fun EpisodeDetails(
                                 ),
                             )
                             val selectorState = mediaSelectorState
-                            if (selectorState == null) {
-                                MediaSelectorLoadingPlaceholder(
-                                    Modifier.padding(vertical = 12.dp, horizontal = 16.dp)
-                                        .fillMaxWidth()
-                                        .weight(1f),
-                                )
-                            } else {
-                                MediaSelectorView(
-                                    state = selectorState,
-                                    fetchRequest = fetchRequest,
-                                    onFetchRequestChange = onFetchRequestChange,
-                                    onRestartSource = onRestartSource,
-                                    modifier = Modifier
-                                        .padding(vertical = 12.dp, horizontal = 16.dp)
-                                        .fillMaxWidth()
-                                        .weight(1f),
-                                    onClickItem = {
-                                        selectorState.select(it)
+                            MediaSelectorView(
+                                state = selectorState,
+                                fetchRequest = fetchRequest,
+                                onFetchRequestChange = onFetchRequestChange,
+                                onRestartSource = onRestartSource,
+                                modifier = Modifier
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                localCacheOptions = localCacheOptions,
+                                selectedLocalCacheId = selectedLocalCacheId,
+                                onlineQueryEnabled = onlineSourceQueryEnabled,
+                                allowOnlineQuery = !isCheckingLocalCache,
+                                onSelectLocalCache = {
+                                    onSelectLocalCache(it)
+                                    showMediaSelector = false
+                                },
+                                onQueryOnlineSources = onQueryOnlineSources,
+                                onClickItem = { media ->
+                                    mediaSelectionScope.launch {
+                                        onSelectOnlineSource()
+                                        selectorState?.selectAndWait(media)
                                         showMediaSelector = false
-                                    },
-                                    scrollable = true,
-                                )
-                            }
+                                    }
+                                },
+                                scrollable = true,
+                            )
                         }
                     }
                 } else {
@@ -343,28 +355,32 @@ fun EpisodeDetails(
                         },
                     ) {
                         val selectorState = mediaSelectorState
-                        if (selectorState == null) {
-                            MediaSelectorLoadingPlaceholder(
-                                Modifier.padding(top = 12.dp)
-                                    .padding(horizontal = 16.dp)
-                                    .fillMaxWidth(),
-                            )
-                        } else {
-                            MediaSelectorView(
-                                state = selectorState,
-                                fetchRequest = fetchRequest,
-                                onFetchRequestChange = onFetchRequestChange,
-                                onRestartSource = onRestartSource,
-                                modifier = Modifier.padding(top = 12.dp)
-                                    .padding(horizontal = 16.dp)
-                                    .fillMaxWidth(),
-                                onClickItem = {
-                                    selectorState.select(it)
+                        MediaSelectorView(
+                            state = selectorState,
+                            fetchRequest = fetchRequest,
+                            onFetchRequestChange = onFetchRequestChange,
+                            onRestartSource = onRestartSource,
+                            modifier = Modifier.padding(top = 12.dp)
+                                .padding(horizontal = 16.dp)
+                                .fillMaxWidth(),
+                            localCacheOptions = localCacheOptions,
+                            selectedLocalCacheId = selectedLocalCacheId,
+                            onlineQueryEnabled = onlineSourceQueryEnabled,
+                            allowOnlineQuery = !isCheckingLocalCache,
+                            onSelectLocalCache = {
+                                onSelectLocalCache(it)
+                                showMediaSelector = false
+                            },
+                            onQueryOnlineSources = onQueryOnlineSources,
+                            onClickItem = { media ->
+                                mediaSelectionScope.launch {
+                                    onSelectOnlineSource()
+                                    selectorState?.selectAndWait(media)
                                     showMediaSelector = false
-                                },
-                                scrollable = sheetState.targetValue == SheetValue.Expanded,
-                            )
-                        }
+                                }
+                            },
+                            scrollable = sheetState.targetValue == SheetValue.Expanded,
+                        )
                     }
                 }
             }
@@ -373,7 +389,6 @@ fun EpisodeDetails(
                 MediaSelectorSummaryCard(
                     mediaSelectorSummary,
                     onClickManualSelect = {
-                        onRequestOnlineSources()
                         showMediaSelector = true
                     },
                     Modifier.fillMaxWidth().padding(innerPadding),
@@ -382,7 +397,6 @@ fun EpisodeDetails(
                 MediaSelectorSummaryBanner(
                     mediaSelectorSummary,
                     onClickSwitchSource = {
-                        onRequestOnlineSources()
                         showMediaSelector = true
                     },
                     Modifier.fillMaxWidth().padding(innerPadding),
@@ -732,7 +746,6 @@ private fun PreviewEpisodeDetailsImpl(
             mediaSelectorState = mediaSelectorState,
             selfInfo = selfInfo,
             onSwitchEpisode = {},
-            onRequestOnlineSources = {},
             onRestartSource = {},
             onClickLogin = { },
             onClickTag = {},

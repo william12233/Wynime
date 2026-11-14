@@ -44,6 +44,21 @@ class EpisodeFetchSelectPlayStateTest : AbstractPlayerExtensionTest() {
         advanceUntilIdle()
     }
 
+    @Test
+    fun `episode switch keeps remote fetch disabled until playback policy enables it`() = runTest {
+        val suite = createSuite()
+        val state = suite.createState()
+        state.onUIReady()
+        state.switchEpisode(initialEpisodeId + 1)
+
+        assertNull(state.episodeSessionFlow.value.fetchSelectFlow.first())
+        state.enableMediaFetch(autoSelect = false)
+        assertNotNull(state.mediaSelectorFlow.filterNotNull().first())
+        assertEquals(false, state.mediaAutoSelectEnabledFlow.value)
+
+        advanceUntilIdle()
+    }
+
     private fun TestScope.createSuite() = EpisodePlayerTestSuite(this, backgroundScope)
 }
 

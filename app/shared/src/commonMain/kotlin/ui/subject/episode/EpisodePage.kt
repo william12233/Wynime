@@ -441,13 +441,19 @@ private fun EpisodeScreenTabletVeryWide(
                                     vm.editableSubjectCollectionTypeState,
                                     page.mediaSelectorState,
                                     page.selfInfo,
+                                    localCacheOptions = page.localCacheOptions,
+                                    selectedLocalCacheId = page.selectedLocalCacheId,
+                                    onlineSourceQueryEnabled = page.onlineSourceQueryEnabled,
+                                    isCheckingLocalCache = page.isCheckingLocalCache,
+                                    onSelectLocalCache = vm::selectLocalCache,
+                                    onQueryOnlineSources = vm::queryOnlineSources,
+                                    onSelectOnlineSource = vm::selectOnlineSource,
                                     modifier = Modifier.fillMaxSize(),
                                     onSwitchEpisode = { episodeId ->
                                         if (!vm.episodeSelectorState.selectEpisodeId(episodeId)) {
                                             navigator.navigateEpisodeDetails(vm.subjectId, episodeId)
                                         }
                                     },
-                                    onRequestOnlineSources = vm::startOnlineSources,
                                     onRestartSource = { vm.restartSource(it) },
                                     onClickLogin = { navigator.navigateBangumiAuthorize() },
                                     onClickTag = { navigator.navigateSubjectSearch(it.name) },
@@ -585,12 +591,18 @@ private fun EpisodeScreenContentPhone(
                     vm.editableSubjectCollectionTypeState,
                     page.mediaSelectorState,
                     page.selfInfo,
+                    localCacheOptions = page.localCacheOptions,
+                    selectedLocalCacheId = page.selectedLocalCacheId,
+                    onlineSourceQueryEnabled = page.onlineSourceQueryEnabled,
+                    isCheckingLocalCache = page.isCheckingLocalCache,
+                    onSelectLocalCache = vm::selectLocalCache,
+                    onQueryOnlineSources = vm::queryOnlineSources,
+                    onSelectOnlineSource = vm::selectOnlineSource,
                     onSwitchEpisode = { episodeId ->
                         if (!vm.episodeSelectorState.selectEpisodeId(episodeId)) {
                             navigator.navigateEpisodeDetails(vm.subjectId, episodeId)
                         }
                     },
-                    onRequestOnlineSources = vm::startOnlineSources,
                     onRestartSource = { vm.restartSource(it) },
                     onClickLogin = { navigator.navigateBangumiAuthorize() },
                     onClickTag = { navigator.navigateSubjectSearch(it.name) },
@@ -878,15 +890,21 @@ private fun EpisodeVideo(
                 sheetsController,
                 playerControllerState,
                 mediaSelectorPage = {
-                    vm.startOnlineSources()
                     val pageState by vm.pageState.collectAsStateWithLifecycle()
                     pageState?.let { page ->
                         EpisodeVideoSideSheets.MediaSelectorSheet(
                             mediaSelectorState = page.mediaSelectorState,
+                            localCacheOptions = page.localCacheOptions,
+                            selectedLocalCacheId = page.selectedLocalCacheId,
+                            onlineSourceQueryEnabled = page.onlineSourceQueryEnabled,
+                            isCheckingLocalCache = page.isCheckingLocalCache,
                             fetchRequest = page.fetchRequest,
                             onFetchRequestChange = { vm.updateFetchRequest(it) },
                             onDismissRequest = { goBack() },
                             onRestartSource = { vm.restartSource(it) },
+                            onSelectLocalCache = vm::selectLocalCache,
+                            onQueryOnlineSources = vm::queryOnlineSources,
+                            onSelectOnlineSource = vm::selectOnlineSource,
                         )
                     }
                 },

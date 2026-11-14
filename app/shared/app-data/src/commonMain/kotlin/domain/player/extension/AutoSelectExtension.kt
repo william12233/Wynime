@@ -1,6 +1,7 @@
 package com.wynime.app.domain.player.extension
 
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import com.wynime.app.domain.episode.EpisodeSession
 import com.wynime.app.domain.media.selector.MediaSelector
@@ -18,8 +19,11 @@ class AutoSelectExtension(
         backgroundTaskScope: ExtensionBackgroundTaskScope
     ) {
         backgroundTaskScope.launch("AutoSelect") {
-            context.sessionFlow.flatMapLatest { it.fetchSelectFlow }.collectLatest { fetchSelect ->
-                if (fetchSelect == null) return@collectLatest
+            combine(
+                context.sessionFlow.flatMapLatest { it.fetchSelectFlow },
+                context.mediaAutoSelectEnabled,
+            ) { fetchSelect, enabled -> fetchSelect to enabled }.collectLatest { (fetchSelect, enabled) ->
+                if (fetchSelect == null || !enabled) return@collectLatest
                 mediaSelectorAutoSelectUseCase(fetchSelect.mediaFetchSession, fetchSelect.mediaSelector)
             }
         }

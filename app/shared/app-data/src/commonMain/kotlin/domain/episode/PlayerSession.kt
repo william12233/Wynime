@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import kotlin.time.TimeSource
 import com.wynime.app.domain.media.hls.HlsPlaybackOptions
 import com.wynime.app.domain.media.hls.HlsPlaybackPreparer
 import com.wynime.app.domain.media.hls.HlsPlaybackProxySession
@@ -77,6 +78,7 @@ class PlayerSession(
 
     suspend fun loadMedia(media: Media?, episodeInfo: EpisodeMetadata): Boolean = coroutineScope {
         val backgroundScope = this
+        val loadStarted = TimeSource.Monotonic.markNow()
         _videoLoadingStateFlow.value = VideoLoadingState.Initial
         stopPlayback()
         if (media == null) {
@@ -87,23 +89,47 @@ class PlayerSession(
         var loaded = false
         try {
             _videoLoadingStateFlow.value = VideoLoadingState.ResolvingSource
-            val source = mediaResolver.resolve(
-                media,
-                episodeInfo,
-            )
+            val resolveStarted = TimeSource.Monotonic.markNow()
+            val source = try {
+                mediaResolver.resolve(media, episodeInfo)
+            } finally {
+                logger.info {
+                    "playback_timing phase=media_resolve source=${media.mediaSourceId} " +
+                        "elapsed_ms=${resolveStarted.elapsedNow().inWholeMilliseconds}"
+                }
+            }
             _videoLoadingStateFlow.compareAndSet(
                 VideoLoadingState.ResolvingSource,
                 VideoLoadingState.DecodingData,
             )
 
-            val data = source.open(scopeForCleanup = backgroundScope)
+            val openStarted = TimeSource.Monotonic.markNow()
+            val data = try {
+                source.open(scopeForCleanup = backgroundScope)
+            } finally {
+                logger.info {
+                    "playback_timing phase=media_open source=${media.mediaSourceId} " +
+                        "elapsed_ms=${openStarted.elapsedNow().inWholeMilliseconds}"
+                }
+            }
+            val hlsPrepareStarted = TimeSource.Monotonic.markNow()
             val preparedData = prepareHlsPlaybackIfEnabled(data).also {
                 preparedHlsPlaybackProxySession = it.session
             }.data
+            logger.info {
+                "playback_timing phase=media_prepare source=${media.mediaSourceId} " +
+                    "elapsed_ms=${hlsPrepareStarted.elapsedNow().inWholeMilliseconds}"
+            }
 
             logger.info { "Set media data to player: $preparedData" }
 
+            val playerSetStarted = TimeSource.Monotonic.markNow()
             player.setMediaData(preparedData, playWhenReady = true)
+            logger.info {
+                "playback_timing phase=player_set_media source=${media.mediaSourceId} " +
+                    "elapsed_ms=${playerSetStarted.elapsedNow().inWholeMilliseconds} " +
+                    "total_ms=${loadStarted.elapsedNow().inWholeMilliseconds}"
+            }
             hlsPlaybackProxySession = preparedHlsPlaybackProxySession
             preparedHlsPlaybackProxySession = null
             traceSourcePlaybackResult(media, SourceResultStatus.SUCCESS)

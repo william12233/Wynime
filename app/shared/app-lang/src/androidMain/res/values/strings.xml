@@ -1012,6 +1012,7 @@
     <string name="media_selector_summary_source">Data source</string>
     <string name="media_selector_summary_dropped_file">Local file</string>
     <string name="media_selector_summary_cached_file">Cached file</string>
+    <string name="media_selector_query_online">Search online sources</string>
     <string name="media_selector_summary_searched">Searched:</string>
     <string name="media_source_results_searching">Searching</string>
     <string name="media_source_results_searched">Searched</string>

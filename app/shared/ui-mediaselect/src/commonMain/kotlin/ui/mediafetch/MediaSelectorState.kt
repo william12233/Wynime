@@ -327,6 +327,8 @@ class MediaSelectorState(
         }
     }
 
+    suspend fun selectAndWait(candidate: Media): Boolean = mediaSelector.select(candidate)
+
     fun removePreferencesUntilFirstCandidate() {
         backgroundScope.launch {
             mediaSelector.removePreferencesUntilFirstCandidate()

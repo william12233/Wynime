@@ -14,7 +14,11 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Surface
@@ -22,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,11 +34,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -54,6 +62,7 @@ import com.wynime.app.ui.lang.media_selector_view_detailed_mode
 import com.wynime.app.ui.lang.media_selector_view_filtered_count
 import com.wynime.app.ui.lang.media_selector_view_show_excluded
 import com.wynime.app.ui.lang.media_selector_view_simple_mode
+import com.wynime.app.ui.lang.media_selector_query_online
 import com.wynime.app.ui.lang.settings_media_source_more
 import com.wynime.app.ui.mediafetch.request.MediaFetchRequestEditorDialog
 import com.wynime.app.ui.mediafetch.request.TestMediaFetchRequest
@@ -65,27 +74,63 @@ import com.wynime.datasources.api.topic.ResourceLocation
 import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 
+@Immutable
+data class MediaSelectorLocalCacheOption(
+    val id: String,
+    val title: String,
+    val description: String? = null,
+)
+
 private inline val WINDOW_VERTICAL_PADDING get() = 8.dp
 
 @Composable
 fun MediaSelectorView(
-    state: MediaSelectorState,
+    state: MediaSelectorState?,
     fetchRequest: MediaFetchRequest?,
     onFetchRequestChange: (MediaFetchRequest) -> Unit,
     onRestartSource: (String) -> Unit,
     modifier: Modifier = Modifier,
-    onClickItem: (Media) -> Unit = { state.select(it) },
+    onClickItem: (Media) -> Unit = { state?.select(it) },
+    localCacheOptions: List<MediaSelectorLocalCacheOption> = emptyList(),
+    selectedLocalCacheId: String? = null,
+    onlineQueryEnabled: Boolean = true,
+    allowOnlineQuery: Boolean = true,
+    onSelectLocalCache: (String) -> Unit = {},
+    onQueryOnlineSources: (() -> Unit)? = null,
     scrollable: Boolean = true,
 ) {
-    val presentation by state.presentationFlow.collectAsStateWithLifecycle()
-    val sourceResults by state.sourceResultsPresentationFlow.collectAsStateWithLifecycle()
+    val selectorState = state
+    val presentationFlow: Flow<MediaSelectorState.Presentation?> =
+        selectorState?.presentationFlow ?: flowOf(null)
+    val sourceResultsFlow: Flow<MediaSourceResultListPresentation?> =
+        selectorState?.sourceResultsPresentationFlow ?: flowOf(null)
+    val presentation by presentationFlow
+        .collectAsStateWithLifecycle(initialValue = null)
+    val sourceResults by sourceResultsFlow
+        .collectAsStateWithLifecycle(initialValue = null)
     val scope = rememberCoroutineScope()
+    val showOnlinePicker = onlineQueryEnabled || onQueryOnlineSources == null
+    val showLocalCacheChoices = localCacheOptions.isNotEmpty() ||
+        (!onlineQueryEnabled && allowOnlineQuery && onQueryOnlineSources != null)
+    val presentationState = presentation
+    val sourceResultsState = sourceResults
 
     Column(modifier) {
 
+        if (showLocalCacheChoices) {
+            LocalCacheChoices(
+                options = localCacheOptions,
+                selectedId = selectedLocalCacheId,
+                onSelect = onSelectLocalCache,
+                showCacheLabel = localCacheOptions.isNotEmpty(),
+                onQueryOnlineSources = onQueryOnlineSources.takeIf { !onlineQueryEnabled && allowOnlineQuery },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            )
+        }
+
         var showEditRequest by rememberSaveable { mutableStateOf(false) }
         var isDetailedMode by rememberSaveable { mutableStateOf(false) }
-        if (showEditRequest && fetchRequest != null) {
+        if (showOnlinePicker && showEditRequest && fetchRequest != null) {
             MediaFetchRequestEditorDialog(
                 fetchRequest,
                 onDismissRequest = { showEditRequest = false },
@@ -96,18 +141,30 @@ fun MediaSelectorView(
             )
         }
 
-        MediaSelectorActionsRow(
-            isDetailedMode = isDetailedMode,
-            onDetailedModeChange = { isDetailedMode = it },
-            onRequestFetchRequestEdit = { showEditRequest = true },
-            Modifier.fillMaxWidth().padding(bottom = 16.dp),
-        )
+        if (showOnlinePicker) {
+            MediaSelectorActionsRow(
+                isDetailedMode = isDetailedMode,
+                onDetailedModeChange = { isDetailedMode = it },
+                onRequestFetchRequestEdit = { showEditRequest = true },
+                Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            )
+        }
 
-        if (isDetailedMode) {
+        if (!showOnlinePicker) {
+            if (!showLocalCacheChoices) {
+                MediaSelectorLoadingPlaceholder(
+                    Modifier.fillMaxWidth().weight(1f).padding(bottom = WINDOW_VERTICAL_PADDING),
+                )
+            }
+        } else if (selectorState == null || presentationState == null || sourceResultsState == null) {
+            MediaSelectorLoadingPlaceholder(
+                Modifier.fillMaxWidth().weight(1f).padding(bottom = WINDOW_VERTICAL_PADDING),
+            )
+        } else if (isDetailedMode) {
             MediaSelectorDetailedList(
-                presentation = presentation,
-                sourceResults = sourceResults,
-                state = state,
+                presentation = presentationState,
+                sourceResults = sourceResultsState,
+                state = selectorState,
                 scope = scope,
                 onClickItem = onClickItem,
                 onRestartSource = onRestartSource,
@@ -118,16 +175,16 @@ fun MediaSelectorView(
             )
         } else {
             MediaSelectorWebSourcesColumn(
-                presentation.webSources,
-                selectedSource = { presentation.selectedWebSource },
-                selectedChannel = { presentation.selectedWebSourceChannel },
+                presentationState.webSources,
+                selectedSource = { presentationState.selectedWebSource },
+                selectedChannel = { presentationState.selectedWebSourceChannel },
                 onSelect = { _, channel ->
                     channel.original?.let { onClickItem(it) }
                 },
                 onRefresh = { onRestartSource(it.instanceId) },
                 onResolveCaptcha = { source ->
                     scope.launch {
-                        if (state.resolveCaptcha(source)) {
+                        if (selectorState.resolveCaptcha(source)) {
                             onRestartSource(source.instanceId)
                         }
                     }
@@ -141,6 +198,61 @@ fun MediaSelectorView(
         }
     }
 
+}
+
+@Composable
+private fun LocalCacheChoices(
+    options: List<MediaSelectorLocalCacheOption>,
+    selectedId: String?,
+    onSelect: (String) -> Unit,
+    showCacheLabel: Boolean,
+    onQueryOnlineSources: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (showCacheLabel) {
+            Text(
+                stringResource(Lang.media_selector_summary_cached_file),
+                style = MaterialTheme.typography.titleSmall,
+            )
+        }
+        options.forEach { option ->
+            Card(
+                onClick = { onSelect(option.id) },
+                modifier = Modifier.fillMaxWidth().testTag("media-selector-local-cache-${option.id}"),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (option.id == selectedId) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    },
+                ),
+            ) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = option.id == selectedId, onClick = null)
+                    Column(Modifier.weight(1f).padding(start = 8.dp)) {
+                        Text(
+                            option.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        option.description?.takeIf(String::isNotBlank)?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        }
+        onQueryOnlineSources?.let { onQuery ->
+            Button(onClick = onQuery, modifier = Modifier.fillMaxWidth().testTag("media-selector-query-online")) {
+                Text(stringResource(Lang.media_selector_query_online))
+            }
+        }
+    }
 }
 
 @Composable

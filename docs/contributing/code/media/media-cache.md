@@ -10,8 +10,11 @@
 - `HttpMediaCacheStorage`：將 HTTP 快取接到下載管理器與本機檔案系統。
 - `MediaDownloadManager`：統一提供下載清單、暫停、恢復、刪除與進度查詢。
 
-快取媒體在選源時以 `MediaSourceKind.LocalCache` 表示；線上來源則使用
-`MediaSourceKind.WEB`。播放器只需依 `ResourceLocation` 解析來源，不需要知道快取的內部實作。
+播放頁會在快取索引完成恢復後檢查目前劇集的完整快取。命中時直接以本機檔案載入播放器，略過來源查找；
+快取缺少或無法播放時才啟用線上來源。快取儲存器不會註冊成 `MediaSource`，因此來源選擇不會再另外查詢同一批快取。
+
+直接播放的快取媒體以 `MediaSourceKind.LocalCache` 表示；線上來源使用 `MediaSourceKind.WEB`。
+播放器只需依 `ResourceLocation` 解析來源，不需要知道快取的內部實作。
 
 ## 資料庫相容性
 

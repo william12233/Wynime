@@ -113,7 +113,6 @@ internal class FakeDownloadStorage(
     override val engine: MediaCacheEngine = DummyMediaCacheEngine(TEST_STORAGE_ID),
 ) : MediaCacheStorage {
     override val mediaSourceId: String = TEST_STORAGE_ID
-    override val cacheMediaSource: MediaSource get() = error("Not used")
     override val listFlow = MutableStateFlow<List<MediaCache>>(emptyList())
     override val stats = MutableStateFlow(initialStats)
 

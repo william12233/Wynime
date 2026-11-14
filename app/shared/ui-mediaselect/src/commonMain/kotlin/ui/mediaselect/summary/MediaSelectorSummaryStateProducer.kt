@@ -71,6 +71,10 @@ class MediaSelectorSummaryStateProducer(
         emitAll(
             selectedMaybeExcludedMediaFlow.map { selected ->
                 when {
+                    selected?.result?.kind == MediaSourceKind.LocalCache -> {
+                        MediaSelectorSummary.LocalCache
+                    }
+
                     selected != null -> {
                         MediaSelectorSummary.Selected(
                             mediaSourceInstances.find { it.mediaSourceId == selected.original.mediaSourceId }

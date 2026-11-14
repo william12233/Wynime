@@ -155,7 +155,6 @@ suspend fun MediaSourceManager.createFetchFetchSession(requestLazy: Flow<MediaFe
 
 class MediaSourceManagerImpl(
 
-    additionalSources: () -> List<MediaSource>,
     private val pluginSources: Flow<List<MediaSource>> = flowOf(emptyList()),
     private val flowCoroutineContext: CoroutineContext = Dispatchers.Default,
 ) : MediaSourceManager, KoinComponent {
@@ -177,21 +176,10 @@ class MediaSourceManagerImpl(
         add(IkarosMediaSource.Factory())
     }.toList()
 
-    private val additionalSources by lazy {
-        additionalSources().map { source ->
-            MediaSourceInstance(
-                instanceId = source.mediaSourceId,
-                factoryId = FactoryId(source.mediaSourceId),
-                isEnabled = true,
-                config = MediaSourceConfig.Default,
-                source = source,
-            )
-        }
-    }
     override val allInstances =
         combine(instances.flow, proxyProvider.proxy.distinctUntilChanged(), pluginSources) { saves, config, plugins ->
 
-            this.additionalSources + plugins.map { plugin ->
+            plugins.map { plugin ->
                 MediaSourceInstance(
                     instanceId = plugin.mediaSourceId,
                     factoryId = FactoryId(plugin.mediaSourceId),
@@ -232,9 +220,7 @@ class MediaSourceManagerImpl(
     }
 
     override val allFactoryIds: List<FactoryId> by lazy {
-        factories
-            .map { it.factoryId }
-            .plus(this.additionalSources.map { it.factoryId })
+        factories.map { it.factoryId }
     }
 
     override val mediaFetcher: Flow<MediaFetcher> = allInstances.map { instances ->

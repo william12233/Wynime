@@ -27,9 +27,8 @@ class HttpMediaCacheStorage(
     private val store: DataStore<List<MediaCacheSave>>,
     private val dao: HttpCacheDownloadStateDao,
     private val httpEngine: MediaCacheEngine,
-    private val displayName: String,
     parentCoroutineContext: CoroutineContext = EmptyCoroutineContext,
-) : AbstractDataStoreMediaCacheStorage(mediaSourceId, store, httpEngine, displayName, parentCoroutineContext) {
+) : AbstractDataStoreMediaCacheStorage(mediaSourceId, store, httpEngine, parentCoroutineContext) {
 
     private val lock = Mutex()
 

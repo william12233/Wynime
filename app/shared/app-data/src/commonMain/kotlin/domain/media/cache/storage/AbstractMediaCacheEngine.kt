@@ -28,8 +28,6 @@ import com.wynime.app.domain.media.cache.engine.sum
 import com.wynime.app.domain.media.resolver.EpisodeMetadata
 import com.wynime.datasources.api.Media
 import com.wynime.datasources.api.MediaCacheMetadata
-import com.wynime.datasources.api.source.MediaSource
-import com.wynime.datasources.api.source.MediaSourceLocation
 import com.wynime.utils.coroutines.IO_
 import com.wynime.utils.coroutines.childScope
 import com.wynime.utils.coroutines.update
@@ -41,7 +39,6 @@ abstract class AbstractDataStoreMediaCacheStorage(
     override val mediaSourceId: String,
     private val datastore: DataStore<List<MediaCacheSave>>,
     override val engine: MediaCacheEngine,
-    private val displayName: String,
     parentCoroutineContext: CoroutineContext,
 ) : MediaCacheStorage {
     protected val logger = thisLogger()
@@ -106,9 +103,6 @@ abstract class AbstractDataStoreMediaCacheStorage(
 
     override val listFlow: MutableStateFlow<List<MediaCache>> = MutableStateFlow(emptyList())
 
-    override val cacheMediaSource: MediaSource by lazy {
-        MediaCacheStorageSource(this, displayName, MediaSourceLocation.Local)
-    }
     override val stats: Flow<MediaStats> = listFlow.flatMapLatest { caches ->
         if (caches.isEmpty()) {
             return@flatMapLatest flowOf(MediaStats.Zero)

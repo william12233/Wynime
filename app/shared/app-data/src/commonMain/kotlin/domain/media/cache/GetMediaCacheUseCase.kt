@@ -11,6 +11,7 @@ class GetMediaCacheUseCaseImpl(
     private val downloadManager: MediaDownloadManager,
 ) : GetMediaCacheUseCase {
     override suspend fun invoke(subjectId: Int, episodeId: Int): List<MediaCache> {
+        downloadManager.awaitCacheIndexReady()
         val subjectKey = subjectId.toString()
         val episodeKey = episodeId.toString()
         return downloadManager.findCaches { cache ->

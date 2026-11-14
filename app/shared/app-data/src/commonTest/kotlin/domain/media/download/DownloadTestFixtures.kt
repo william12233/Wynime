@@ -17,7 +17,6 @@ import com.wynime.datasources.api.CachedMedia
 import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.Media
 import com.wynime.datasources.api.MediaCacheMetadata
-import com.wynime.datasources.api.source.MediaSource
 import com.wynime.datasources.api.topic.EpisodeRange
 import com.wynime.datasources.api.topic.ResourceLocation
 
@@ -89,14 +88,14 @@ internal class DownloadTestStorage(
     override val engine: MediaCacheEngine = DummyMediaCacheEngine("test-storage"),
     override val mediaSourceId: String = "test-storage",
 ) : MediaCacheStorage {
-    override val cacheMediaSource: MediaSource get() = error("Not used")
     override val listFlow = MutableStateFlow<List<MediaCache>>(emptyList())
     override val stats = MutableStateFlow(MediaStats.Zero)
 
     var create: suspend (Media, MediaCacheMetadata, EpisodeMetadata) -> MediaCache = { _, _, _ -> error("Not used") }
     var onDelete: suspend (MediaCache) -> Unit = {}
+    var onRestore: suspend () -> Unit = {}
 
-    override suspend fun restorePersistedCaches() = Unit
+    override suspend fun restorePersistedCaches() = onRestore()
 
     override suspend fun cache(
         media: Media,

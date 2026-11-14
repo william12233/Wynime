@@ -40,7 +40,6 @@ class AbstractDataStoreMediaCacheStorageRestoreTest {
         mediaSourceId = "test-storage",
         datastore = MemoryDataStore(saves),
         engine = LocalFileEngine,
-        displayName = "Test Storage",
         parentCoroutineContext = parentCoroutineContext,
     ) {
         override suspend fun restorePersistedCaches() = Unit

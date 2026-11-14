@@ -147,7 +147,6 @@ private class TestStorage(
     mediaSourceId = "test-storage",
     datastore = MemoryDataStore(emptyList()),
     engine = DummyMediaCacheEngine("test-storage"),
-    displayName = "Test Storage",
     parentCoroutineContext = parentCoroutineContext,
 ) {
     override suspend fun restorePersistedCaches() = Unit

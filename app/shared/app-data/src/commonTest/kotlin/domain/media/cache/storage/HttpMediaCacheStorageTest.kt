@@ -61,7 +61,6 @@ class HttpMediaCacheStorageTest {
             store = store,
             dao = FakeHttpCacheDownloadStateDao,
             httpEngine = engine,
-            displayName = "Test HTTP Storage",
             parentCoroutineContext = backgroundScope.coroutineContext,
         )
         try {
@@ -106,7 +105,6 @@ class HttpMediaCacheStorageTest {
             store = store,
             dao = FakeHttpCacheDownloadStateDao,
             httpEngine = DelayedHttpCacheEngine(CompletableDeferred(Unit)),
-            displayName = "Test HTTP Storage",
             parentCoroutineContext = backgroundScope.coroutineContext,
         )
         try {
@@ -132,7 +130,6 @@ class HttpMediaCacheStorageTest {
             store = metadataStore,
             dao = FakeHttpCacheDownloadStateDao,
             httpEngine = engine,
-            displayName = "Test HTTP Storage",
             parentCoroutineContext = backgroundScope.coroutineContext,
         )
         val media = testMedia()

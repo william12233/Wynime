@@ -126,7 +126,6 @@ import com.wynime.app.ui.foundation.lists.PaginatedGroup
 import com.wynime.app.ui.foundation.stateOf
 import com.wynime.app.ui.mediafetch.MediaSelectorState
 import com.wynime.app.ui.mediafetch.MediaSourceInfoProvider
-import com.wynime.app.ui.mediafetch.createTestMediaSelectorState
 import com.wynime.app.ui.mediaselect.summary.MediaSelectorSummary
 import com.wynime.app.ui.mediaselect.summary.MediaSelectorSummaryStateProducer
 import com.wynime.app.ui.mediaselect.summary.selectedMaybeExcludedMediaFlow
@@ -161,7 +160,6 @@ import com.wynime.utils.coroutines.sampleWithInitial
 import com.wynime.utils.io.SystemPath
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.warn
-import com.wynime.utils.platform.annotations.TestOnly
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -192,7 +190,7 @@ private fun opEdAutoSkipSampleIntervalMillis(playbackSpeed: Float): Long {
 @Stable
 data class EpisodePageState(
     val selfInfo: SelfInfoUiState,
-    val mediaSelectorState: MediaSelectorState,
+    val mediaSelectorState: MediaSelectorState?,
     val subjectPresentation: SubjectPresentation,
     val episodePresentation: EpisodePresentation,
     val isLoading: Boolean = false,
@@ -663,7 +661,7 @@ open class EpisodeViewModel(
             mediaSelectorSummaryStateProducer,
             cachePlaybackState,
         ) { summary, cacheState ->
-            if (cacheState == CachePlaybackState.PLAYING) {
+            if (cacheState != CachePlaybackState.ONLINE_SOURCES) {
                 MediaSelectorSummary.LocalCache
             } else {
                 summary
@@ -678,19 +676,15 @@ open class EpisodeViewModel(
             episodeSession.infoLoadErrorStateFlow,
             episodeSession.fetchSelectFlow,
             episodeSession.fetchSelectFlow.map { fetchSelect ->
-                if (fetchSelect != null) {
+                fetchSelect?.let { selectedFetch ->
                     MediaSelectorState(
-                        fetchSelect.mediaSelector,
+                        selectedFetch.mediaSelector,
                         filteredSourceResults,
                         mediaSourceInfoProvider,
                         getPreferredWebMediaSource(subjectId),
                         backgroundScope,
                         webSessionManager,
                     )
-                } else {
-
-                    @OptIn(TestOnly::class)
-                    createTestMediaSelectorState(backgroundScope)
                 }
             },
             mediaSelectorSummary,

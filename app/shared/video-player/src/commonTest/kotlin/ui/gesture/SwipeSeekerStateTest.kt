@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 class SwipeSeekerStateTest {
     private val screenWidthPx = 1000
@@ -59,6 +60,23 @@ class SwipeSeekerStateTest {
         state.onSwipeStopped()
 
         assertEquals(emptyList(), seeks)
+        assertFalse(state.isSeeking)
+        assertFalse(state.isCancelled)
+    }
+
+    @Test
+    fun `seek callback failure still clears the active swipe`() {
+        val state = SwipeSeekerState(
+            screenWidthPx = screenWidthPx,
+            swipeSeekerConfig = SwipeSeekerConfig.Default,
+            density = Density(1f),
+            onSeek = { error("seek failed") },
+        )
+        state.onSwipeStarted()
+        state.onSwipeOffset(300f)
+
+        assertFailsWith<IllegalStateException> { state.onSwipeStopped() }
+
         assertFalse(state.isSeeking)
         assertFalse(state.isCancelled)
     }

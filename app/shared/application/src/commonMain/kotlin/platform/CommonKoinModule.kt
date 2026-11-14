@@ -410,7 +410,6 @@ private fun KoinApplication.otherModules(
                         store = metadataStore,
                         dao = database.httpCacheDownloadStateDao(),
                         httpEngine = get<HttpMediaCacheEngine>(),
-                        displayName = "LocalWebM3u",
                         coroutineScope.childScopeContext(),
                     ),
                 ),
@@ -428,9 +427,6 @@ private fun KoinApplication.otherModules(
 
     single<MediaSourceManager> {
         MediaSourceManagerImpl(
-            additionalSources = {
-                get<MediaDownloadManager>().storages.map { it.cacheMediaSource }
-            },
             pluginSources = get<SourcePluginRegistry>().mediaSources,
         )
     }
@@ -462,12 +458,11 @@ fun KoinApplication.startCommonKoinModule(
     }
 
     coroutineScope.launch {
-
-        koin.getOrNull<HttpDownloader>()?.init()
-        koin.getOrNull<MediaDownloadManager>()?.let { manager ->
-            for (storage in manager.storages) {
-                storage.restorePersistedCaches()
-            }
+        val downloadManager = koin.getOrNull<MediaDownloadManager>()
+        try {
+            koin.getOrNull<HttpDownloader>()?.init()
+        } finally {
+            downloadManager?.restorePersistedCaches()
         }
     }
 

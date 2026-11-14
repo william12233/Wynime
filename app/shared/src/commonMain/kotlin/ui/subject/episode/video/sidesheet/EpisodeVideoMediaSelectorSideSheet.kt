@@ -18,6 +18,7 @@ import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.subject_episode_close_selector
 import com.wynime.app.ui.lang.subject_episode_select_media_source
+import com.wynime.app.ui.mediafetch.MediaSelectorLoadingPlaceholder
 import com.wynime.app.ui.mediafetch.MediaSelectorState
 import com.wynime.app.ui.mediafetch.MediaSelectorView
 import com.wynime.app.ui.mediafetch.rememberTestMediaSelectorState
@@ -32,7 +33,7 @@ import org.jetbrains.compose.resources.stringResource
 @Suppress("UnusedReceiverParameter")
 @Composable
 fun EpisodeVideoSideSheets.MediaSelectorSheet(
-    mediaSelectorState: MediaSelectorState,
+    mediaSelectorState: MediaSelectorState?,
     fetchRequest: MediaFetchRequest?,
     onFetchRequestChange: (MediaFetchRequest) -> Unit,
     onDismissRequest: () -> Unit,
@@ -52,20 +53,30 @@ fun EpisodeVideoSideSheets.MediaSelectorSheet(
             }
         },
     ) {
-        MediaSelectorView(
-            state = mediaSelectorState,
-            fetchRequest = fetchRequest,
-            onFetchRequestChange = onFetchRequestChange,
-            onRestartSource = onRestartSource,
-            modifier = modifier.padding(horizontal = 16.dp)
-                .fillMaxWidth()
-                .weight(1f)
-                .navigationBarsPadding(),
-            onClickItem = {
-                mediaSelectorState.select(it)
-                onDismissRequest()
-            },
-        )
+        val selectorState = mediaSelectorState
+        if (selectorState == null) {
+            MediaSelectorLoadingPlaceholder(
+                modifier.padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .navigationBarsPadding(),
+            )
+        } else {
+            MediaSelectorView(
+                state = selectorState,
+                fetchRequest = fetchRequest,
+                onFetchRequestChange = onFetchRequestChange,
+                onRestartSource = onRestartSource,
+                modifier = modifier.padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .navigationBarsPadding(),
+                onClickItem = {
+                    selectorState.select(it)
+                    onDismissRequest()
+                },
+            )
+        }
     }
 }
 

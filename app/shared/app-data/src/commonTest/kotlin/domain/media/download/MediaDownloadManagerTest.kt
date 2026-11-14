@@ -9,6 +9,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -150,6 +151,25 @@ class MediaDownloadManagerTest {
         storage.listFlow.value = emptyList()
         assertEquals(emptyList(), manager.findCaches { true })
         assertNotNull(manager.findDownload(cache.cacheId))
+    }
+
+    @Test
+    fun `cache index becomes ready after persisted caches are restored`() = runTest {
+        val restoredCache = testDownload(50)
+        val storage = DownloadTestStorage().apply {
+            onRestore = { listFlow.value = listOf(restoredCache) }
+        }
+        val manager = manager(storage)
+        val result = async {
+            manager.awaitCacheIndexReady()
+            manager.findCaches { it.cacheId == restoredCache.cacheId }
+        }
+        runCurrent()
+
+        assertFalse(result.isCompleted)
+        manager.restorePersistedCaches()
+
+        assertEquals(listOf(restoredCache), result.await())
     }
 
     @Test

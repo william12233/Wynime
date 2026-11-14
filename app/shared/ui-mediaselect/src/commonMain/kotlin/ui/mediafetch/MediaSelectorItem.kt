@@ -50,11 +50,13 @@ import com.wynime.app.ui.lang.media_selector_item_season_mismatch
 import com.wynime.app.ui.lang.media_selector_item_single_episode_resource
 import com.wynime.app.ui.lang.media_selector_item_subject_title_mismatch
 import com.wynime.app.ui.lang.media_selector_item_unsupported_playback
+import com.wynime.app.ui.lang.media_selector_summary_cached_file
 import com.wynime.app.ui.media.rememberMediaDetailsStrings
 import com.wynime.app.ui.media.renderSubtitleLanguage
 import com.wynime.app.ui.settings.rendering.MediaSourceIcon
 import com.wynime.app.ui.settings.rendering.MediaSourceIcons
 import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.source.MediaSourceKind
 import com.wynime.datasources.api.topic.FileSize
 import org.jetbrains.compose.resources.stringResource
 
@@ -262,11 +264,17 @@ private fun ExposedMediaSourceMenu(
 ) {
     var showMenu by rememberSaveable { mutableStateOf(false) }
     val unknownText = stringResource(Lang.cache_unknown)
+    val cachedFileText = stringResource(Lang.media_selector_summary_cached_file)
     ExposedDropdownMenuBox(showMenu, { showMenu = it }, modifier) {
         val currentItem = groupState.selectedItem ?: group.first.original
         val currentSourceInfo by mediaSourceInfoProvider.rememberMediaSourceInfo(currentItem.mediaSourceId)
+        val currentSourceName = if (currentItem.kind == MediaSourceKind.LocalCache) {
+            cachedFileText
+        } else {
+            currentSourceInfo?.displayName ?: unknownText
+        }
         TextField(
-            value = currentSourceInfo?.displayName ?: unknownText,
+            value = currentSourceName,
             onValueChange = {},
             Modifier
                 .widthIn(min = 48.dp)
@@ -297,8 +305,13 @@ private fun ExposedMediaSourceMenu(
             for (maybeExcluded in group.list) {
                 val item = maybeExcluded.original
                 val sourceInfo by mediaSourceInfoProvider.rememberMediaSourceInfo(item.mediaSourceId)
+                val sourceName = if (item.kind == MediaSourceKind.LocalCache) {
+                    cachedFileText
+                } else {
+                    sourceInfo?.displayName ?: unknownText
+                }
                 DropdownMenuItem(
-                    text = { Text(sourceInfo?.displayName ?: unknownText) },
+                    text = { Text(sourceName) },
                     leadingIcon = { MediaSourceIcon(sourceInfo, Modifier.size(24.dp)) },
                     onClick = {
                         groupState.selectedItem = item

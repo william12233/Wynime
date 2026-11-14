@@ -123,13 +123,17 @@ class SwipeSeekerState internal constructor(
 
     @UiThread
     internal fun onSwipeStopped() {
-        if (seekDelta.isNaN()) return
-        if (!isCancelled) {
-            onSeek(deltaSeconds)
+        val shouldSeek = !seekDelta.isNaN() && !isCancelled
+        val finalDeltaSeconds = deltaSeconds
+        try {
+            if (shouldSeek) {
+                onSeek(finalDeltaSeconds)
+            }
+        } finally {
+            seekDelta = Float.NaN
+            isCancelled = false
+            dragStartY = Float.NaN
         }
-        seekDelta = Float.NaN
-        isCancelled = false
-        dragStartY = Float.NaN
     }
 
     @UiThread
@@ -190,8 +194,11 @@ class SwipeSeekerState internal constructor(
                 val handleDragStopped: suspend CoroutineScope.(Float) -> Unit = remember(seekerState) {
                     {
                         val cancelled = seekerState.isCancelled
-                        seekerState.onSwipeStopped()
-                        currentOnDragStopped(it, cancelled)
+                        try {
+                            seekerState.onSwipeStopped()
+                        } finally {
+                            currentOnDragStopped(it, cancelled)
+                        }
                     }
                 }
                 draggable(

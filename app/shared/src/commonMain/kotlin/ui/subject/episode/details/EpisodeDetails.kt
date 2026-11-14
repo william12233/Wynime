@@ -95,6 +95,7 @@ import com.wynime.app.ui.lang.subject_episode_related_recommendations
 import com.wynime.app.ui.lang.subject_episode_select_media_source
 import com.wynime.app.ui.lang.subject_episode_wish_change_to
 import com.wynime.app.ui.mediafetch.MediaSelectorState
+import com.wynime.app.ui.mediafetch.MediaSelectorLoadingPlaceholder
 import com.wynime.app.ui.mediafetch.MediaSelectorView
 import com.wynime.app.ui.mediafetch.rememberTestMediaSelectorState
 import com.wynime.app.ui.mediafetch.request.TestMediaFetchRequest
@@ -148,7 +149,7 @@ fun EpisodeDetails(
     onFetchRequestChange: (MediaFetchRequest) -> Unit,
     episodeCarouselState: EpisodeCarouselState,
     editableSubjectCollectionTypeState: EditableSubjectCollectionTypeState,
-    mediaSelectorState: MediaSelectorState,
+    mediaSelectorState: MediaSelectorState?,
     selfInfo: SelfInfoUiState,
     onSwitchEpisode: (Int) -> Unit,
     onRequestOnlineSources: () -> Unit,
@@ -302,21 +303,30 @@ fun EpisodeDetails(
                                     containerColor = BottomSheetDefaults.ContainerColor,
                                 ),
                             )
-                            MediaSelectorView(
-                                state = mediaSelectorState,
-                                fetchRequest = fetchRequest,
-                                onFetchRequestChange = onFetchRequestChange,
-                                onRestartSource = onRestartSource,
-                                modifier = Modifier
-                                    .padding(vertical = 12.dp, horizontal = 16.dp)
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                onClickItem = {
-                                    mediaSelectorState.select(it)
-                                    showMediaSelector = false
-                                },
-                                scrollable = true,
-                            )
+                            val selectorState = mediaSelectorState
+                            if (selectorState == null) {
+                                MediaSelectorLoadingPlaceholder(
+                                    Modifier.padding(vertical = 12.dp, horizontal = 16.dp)
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                )
+                            } else {
+                                MediaSelectorView(
+                                    state = selectorState,
+                                    fetchRequest = fetchRequest,
+                                    onFetchRequestChange = onFetchRequestChange,
+                                    onRestartSource = onRestartSource,
+                                    modifier = Modifier
+                                        .padding(vertical = 12.dp, horizontal = 16.dp)
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                    onClickItem = {
+                                        selectorState.select(it)
+                                        showMediaSelector = false
+                                    },
+                                    scrollable = true,
+                                )
+                            }
                         }
                     }
                 } else {
@@ -332,20 +342,29 @@ fun EpisodeDetails(
                                 .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
                         },
                     ) {
-                        MediaSelectorView(
-                            state = mediaSelectorState,
-                            fetchRequest = fetchRequest,
-                            onFetchRequestChange = onFetchRequestChange,
-                            onRestartSource = onRestartSource,
-                            modifier = Modifier.padding(top = 12.dp)
-                                .padding(horizontal = 16.dp)
-                                .fillMaxWidth(),
-                            onClickItem = {
-                                mediaSelectorState.select(it)
-                                showMediaSelector = false
-                            },
-                            scrollable = sheetState.targetValue == SheetValue.Expanded,
-                        )
+                        val selectorState = mediaSelectorState
+                        if (selectorState == null) {
+                            MediaSelectorLoadingPlaceholder(
+                                Modifier.padding(top = 12.dp)
+                                    .padding(horizontal = 16.dp)
+                                    .fillMaxWidth(),
+                            )
+                        } else {
+                            MediaSelectorView(
+                                state = selectorState,
+                                fetchRequest = fetchRequest,
+                                onFetchRequestChange = onFetchRequestChange,
+                                onRestartSource = onRestartSource,
+                                modifier = Modifier.padding(top = 12.dp)
+                                    .padding(horizontal = 16.dp)
+                                    .fillMaxWidth(),
+                                onClickItem = {
+                                    selectorState.select(it)
+                                    showMediaSelector = false
+                                },
+                                scrollable = sheetState.targetValue == SheetValue.Expanded,
+                            )
+                        }
                     }
                 }
             }

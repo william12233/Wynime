@@ -3,6 +3,7 @@ package com.wynime.app.domain.media.download
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +18,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.wynime.app.domain.media.cache.EpisodeCacheStatus
 import com.wynime.app.domain.media.cache.MediaCache
 import com.wynime.app.domain.media.cache.MediaCacheState
@@ -34,6 +37,9 @@ class MediaDownloadManager(
     val storages: List<MediaCacheStorage>,
     override val backgroundScope: CoroutineScope,
 ) : HasBackgroundScope {
+
+    private val cacheIndexReady = MutableStateFlow(storages.isEmpty())
+    private val cacheRestoreLock = Mutex()
 
     private val loadedDownloads: SharedFlow<List<MediaDownload>> = storages
         .map { storage -> storage.listFlow.map { caches -> storage to caches } }
@@ -110,6 +116,21 @@ class MediaDownloadManager(
 
     suspend fun findCaches(filter: (MediaCache) -> Boolean): List<MediaCache> =
         storages.flatMap { it.listFlow.first() }.filter(filter)
+
+    suspend fun restorePersistedCaches() {
+        cacheRestoreLock.withLock {
+            if (cacheIndexReady.value) return@withLock
+            try {
+                storages.forEach { it.restorePersistedCaches() }
+            } finally {
+                cacheIndexReady.value = true
+            }
+        }
+    }
+
+    suspend fun awaitCacheIndexReady() {
+        cacheIndexReady.first { it }
+    }
 
     suspend fun delete(download: MediaDownload): Boolean = download.storage.delete(download.cache)
 

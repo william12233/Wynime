@@ -43,6 +43,7 @@ import com.wynime.app.data.repository.episode.EpisodeCollectionSyncEnqueuer
 import com.wynime.app.data.repository.subject.BangumiCollectionSyncCoordinator
 import com.wynime.app.data.repository.subject.BangumiCollectionSyncEnqueuer
 import com.wynime.app.data.repository.subject.BangumiCollectionSyncer
+import com.wynime.app.data.repository.subject.BangumiTrackingMetadataRepository
 import com.wynime.app.data.repository.repositoryModules
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCaseImpl

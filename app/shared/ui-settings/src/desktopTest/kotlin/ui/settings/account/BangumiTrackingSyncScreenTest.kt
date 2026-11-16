@@ -7,7 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.wynime.app.data.repository.subject.BangumiTrackingAccount
-import com.wynime.app.data.repository.subject.BangumiTrackingConflictPolicy
+import com.wynime.app.data.repository.subject.BangumiCollectionUpstreamStatus
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncResult
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncSettings
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncSummary
@@ -36,7 +36,6 @@ class BangumiTrackingSyncScreenTest {
     private class Callbacks {
         var loginClicks = 0
         var syncClicks = 0
-        val autoSyncValues = mutableListOf<Boolean>()
         val showResultValues = mutableListOf<Boolean>()
     }
 
@@ -65,9 +64,7 @@ class BangumiTrackingSyncScreenTest {
                     onNavigateToLogin = { callbacks.loginClicks++ },
                     onTestConnection = {},
                     onSyncNow = { callbacks.syncClicks++ },
-                    onSetAutoSync = { callbacks.autoSyncValues += it },
                     onSetShowResult = { callbacks.showResultValues += it },
-                    onSetConflictPolicy = {},
                 )
             }
         }
@@ -112,7 +109,6 @@ class BangumiTrackingSyncScreenTest {
         val callbacks = Callbacks()
         render(BangumiTrackingConnectionUiState.NotConnected, callbacks)
 
-        onNodeWithTag("bangumi-tracking-auto-sync").assertIsNotEnabled()
         onNodeWithTag("bangumi-tracking-sync-now").assertIsNotEnabled()
         onNodeWithTag("bangumi-tracking-test-connection").performClick()
         waitForIdle()
@@ -130,30 +126,44 @@ class BangumiTrackingSyncScreenTest {
         )
 
         onNodeWithTag("bangumi-tracking-account").assertIsDisplayed()
-        onNodeWithTag("bangumi-tracking-auto-sync").performClick()
         onNodeWithTag("bangumi-tracking-sync-now").performClick()
 
         onNodeWithTag("bangumi-tracking-sync-result").assertTextContains("同步", substring = true)
             .assertTextContains("刪除收藏", substring = true)
         waitForIdle()
 
-        assertEquals(listOf(true), callbacks.autoSyncValues)
         assertEquals(1, callbacks.syncClicks)
     }
 
     @Test
-    fun `connected state renders all conflict policy choices`() = runWynimeComposeUiTest {
+    fun `connected state shows timestamp based conflict resolution`() = runWynimeComposeUiTest {
         val callbacks = Callbacks()
         render(
             BangumiTrackingConnectionUiState.Connected(BangumiTrackingAccount(1, "user")),
             callbacks,
         )
 
-        onNodeWithTag("bangumi-tracking-conflict-policy").assertIsDisplayed().performClick()
-        onNodeWithText("以本機為準", substring = true).assertIsDisplayed()
-        onNodeWithText("以 Bangumi 為準", substring = true).assertIsDisplayed()
+        onNodeWithTag("bangumi-tracking-conflict-policy").assertIsDisplayed()
         onNodeWithText("保留最近更新", substring = true).assertIsDisplayed()
+    }
 
-        assertEquals(3, BangumiTrackingConflictPolicy.entries.size)
+    @Test
+    fun `cloud pending status is visible instead of being reported as complete`() = runWynimeComposeUiTest {
+        val callbacks = Callbacks()
+        render(
+            BangumiTrackingConnectionUiState.Connected(BangumiTrackingAccount(1, "user")),
+            callbacks,
+            result = BangumiTrackingSyncResult(
+                localUpdated = 0,
+                bangumiUpdated = 0,
+                unchanged = 1,
+                conflictsResolved = 0,
+                cloudSyncStatus = BangumiCollectionUpstreamStatus.PENDING,
+                cloudSyncPendingCount = 2,
+            ),
+        )
+
+        onNodeWithTag("bangumi-tracking-cloud-sync-pending").assertIsDisplayed()
+        onNodeWithText("等待 Bangumi", substring = true).assertIsDisplayed()
     }
 }

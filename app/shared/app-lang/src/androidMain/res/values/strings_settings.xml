@@ -59,6 +59,8 @@
     <string name="settings_account_tracking_sync_full_summary">Full sync: %1$d / %2$d subjects, %3$d episodes, %4$d watched; %5$d ms</string>
     <string name="settings_account_tracking_sync_full_summary_partial">Full sync: %1$d / %2$d subjects, %3$d episodes, %4$d watched; failed %5$d; %6$d ms</string>
     <string name="settings_account_tracking_sync_complete">Sync complete · uploaded %1$d · downloaded %2$d · deleted %3$d · unchanged %4$d · conflicts %5$d · failed %6$d</string>
+    <string name="settings_account_tracking_sync_cloud_pending">Cloudflare is synced; %1$d change(s) still waiting for Bangumi</string>
+    <string name="settings_account_tracking_sync_cloud_unavailable">Cloudflare sync incomplete: %1$s</string>
     <string name="settings_account_tracking_sync_failed">Bangumi sync failed: %1$s</string>
     <string name="settings_account_tracking_sync_auto_success">Synced to Bangumi</string>
     <string name="settings_account_tracking_sync_auto_failed">Bangumi sync failed: %1$s</string>

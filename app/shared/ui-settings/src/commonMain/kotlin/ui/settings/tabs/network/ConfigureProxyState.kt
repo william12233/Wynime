@@ -1,6 +1,8 @@
 package com.wynime.app.ui.settings.tabs.network
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
@@ -68,6 +70,8 @@ sealed class SystemProxyPresentation {
 enum class ProxyTestCaseEnums {
     BANGUMI,
     BANGUMI_NEXT,
+    CLOUDFLARE,
+    CLOUDFLARE_STORAGE,
 }
 
 @Immutable
@@ -86,6 +90,18 @@ sealed class ProxyTestCase(
         name = ProxyTestCaseEnums.BANGUMI_NEXT,
         icon = Icons.Default.BangumiNext,
         color = BangumiNextIconColor,
+    )
+
+    data object CloudflareApi : ProxyTestCase(
+        name = ProxyTestCaseEnums.CLOUDFLARE,
+        icon = Icons.Default.Cloud,
+        color = Color(0xFFF38020),
+    )
+
+    data object CloudflareStorage : ProxyTestCase(
+        name = ProxyTestCaseEnums.CLOUDFLARE_STORAGE,
+        icon = Icons.Outlined.Storage,
+        color = Color(0xFF64748B),
     )
 }
 

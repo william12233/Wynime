@@ -539,8 +539,12 @@
     <string name="settings_network_proxy_service_ani">Wynime 服务</string>
     <string name="settings_network_proxy_service_collection">收藏数据服务</string>
     <string name="settings_network_proxy_service_comment">评论服务</string>
+    <string name="settings_network_proxy_service_cloudflare">Cloudflare 同步服务</string>
+    <string name="settings_network_proxy_service_cloudflare_storage">Cloudflare Durable Object 真实数据库</string>
+    <string name="settings_network_proxy_latency">%1$d 毫秒</string>
     <string name="settings_network_proxy_test_success">连接成功</string>
     <string name="settings_network_proxy_test_failed">连接失败</string>
+    <string name="settings_network_proxy_test_not_available">暂不可用（请先登录）</string>
     <string name="settings_network_proxy_current_disabled">未启用代理</string>
     <string name="settings_network_proxy_current_using">正在使用%1$s</string>
     <string name="settings_network_proxy_save_and_test">保存并测试</string>

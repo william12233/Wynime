@@ -1,8 +1,13 @@
 import { decryptJson, encryptJson, hashToken, randomToken } from "./crypto";
+import { CollectionStore } from "./collection-store";
 import { ReplayMarker } from "./replay-markers";
 import { collectionRemoval } from "./collection-removal";
 import type {
   BangumiGrant,
+  CollectionSyncMutation,
+  CollectionSyncRequest,
+  CollectionStoreMarkSyncedResponse,
+  CollectionStoreSyncResponse,
   Env,
   OAuthStateRecord,
   OAuthTicketRecord,
@@ -12,10 +17,12 @@ import type {
 } from "./protocol";
 
 export { ReplayMarker };
+export { CollectionStore };
 
 const DEFAULT_AUTHORIZE_URL = "https://bgm.tv/oauth/authorize";
 const DEFAULT_TOKEN_URL = "https://bgm.tv/oauth/access_token";
 const DEFAULT_API_BASE_URL = "https://api.bgm.tv";
+const COLLECTION_SYNC_API_VERSION = 1;
 const DEFAULT_APP_LINK_REDIRECT_URI =
   "https://wynime-bangumi-broker.wzhou785.workers.dev/app/oauth-complete";
 const DEFAULT_CUSTOM_SCHEME_REDIRECT_URI = "ani://bangumi-oauth-callback";
@@ -55,7 +62,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     return assetLinks(env);
   }
   if (url.pathname === "/healthz" && request.method === "GET") {
-    return json({ ok: true });
+    return json({ ok: true, serverTimeMillis: Date.now(), apiVersion: COLLECTION_SYNC_API_VERSION });
   }
   if (url.pathname === "/app/oauth-complete" && request.method === "GET") {
     return oauthAppLinkFallback(url, env);
@@ -80,6 +87,12 @@ async function route(request: Request, env: Env): Promise<Response> {
   }
   if (url.pathname === "/api/v1/playback/sync" && request.method === "POST") {
     return syncPlayback(request, env);
+  }
+  if (url.pathname === "/api/v1/collections/sync" && request.method === "POST") {
+    return syncCollections(request, env);
+  }
+  if (url.pathname === "/api/v1/diagnostics/storage-test" && request.method === "POST") {
+    return testCollectionStorage(request, env);
   }
   throw new HttpError(404, "not_found");
 }
@@ -282,6 +295,209 @@ async function syncPlayback(request: Request, env: Env): Promise<Response> {
       now: Date.now(),
     }),
   );
+}
+
+async function syncCollections(request: Request, env: Env): Promise<Response> {
+  const session = await authenticateSession(request, env);
+  const body = validateCollectionSyncRequest(await readJson<unknown>(request));
+  const stored = await collectionRpc<CollectionStoreSyncResponse>(env, session.userKey, {
+    op: "sync",
+    request: body,
+  });
+  if (body.mode !== "reconcile") {
+    return json(publicCollectionSyncResponse(stored));
+  }
+  if (stored.pendingChanges.length === 0) {
+    return json(publicCollectionSyncResponse({ ...stored, upstreamStatus: "synced" }));
+  }
+
+  let grant: BangumiGrant;
+  try {
+    grant = await decryptJson<BangumiGrant>(session.payloadCiphertext, env.SESSION_ENCRYPTION_KEY);
+  } catch {
+    return json(publicCollectionSyncResponse({
+      ...stored,
+      upstreamStatus: "unavailable",
+    }));
+  }
+
+  const syncedMutationIds: string[] = [];
+  const outcomes = await mapWithConcurrency(stored.pendingChanges, 4, async (mutation) => {
+    try {
+      await pushCollectionMutation(env, grant, session.userKey, mutation);
+      syncedMutationIds.push(mutation.mutationId);
+      return true;
+    } catch (error) {
+      console.warn("collection_upstream_push_failed", {
+        mutationId: mutation.mutationId,
+        type: error instanceof Error ? error.message : "unknown",
+      });
+      return false;
+    }
+  });
+  let pendingCount = stored.pendingCount;
+  if (syncedMutationIds.length > 0) {
+    const marked = await collectionRpc<CollectionStoreMarkSyncedResponse>(env, session.userKey, {
+      op: "markUpstreamSynced",
+      mutationIds: syncedMutationIds,
+    });
+    pendingCount = marked.pendingCount;
+  }
+  return json(publicCollectionSyncResponse({
+    ...stored,
+    upstreamStatus: outcomes.every(Boolean) && pendingCount === 0 ? "synced" : "unavailable",
+    pendingCount,
+  }));
+}
+
+function publicCollectionSyncResponse(
+  response: CollectionStoreSyncResponse,
+): Omit<CollectionStoreSyncResponse, "pendingChanges"> {
+  const { pendingChanges: _pendingChanges, ...publicResponse } = response;
+  return publicResponse;
+}
+
+async function pushCollectionMutation(
+  env: Env,
+  grant: BangumiGrant,
+  userKey: string,
+  mutation: CollectionSyncMutation,
+): Promise<void> {
+  const base = env.BANGUMI_API_BASE_URL || DEFAULT_API_BASE_URL;
+  const headers = {
+    authorization: `Bearer ${grant.accessToken}`,
+    accept: "application/json",
+    "content-type": "application/json",
+    "user-agent": "Wynime/1.0",
+  };
+  if (mutation.kind === "subject") {
+    if (mutation.collectionType === "NOT_COLLECTED") {
+      await confirmCollectionRemovalUpstream(env, grant, userKey, mutation.subjectId);
+      return;
+    }
+    const body: Record<string, unknown> = {};
+    for (const field of mutation.changedFields) {
+      switch (field) {
+        case "collectionType": body.type = bangumiSubjectCollectionType(mutation.collectionType); break;
+        case "rate": body.rate = mutation.rate; break;
+        case "comment": body.comment = mutation.comment; break;
+        case "tags": body.tags = mutation.tags; break;
+        case "private": body.private = mutation.private; break;
+        case "episodeStatus": body.ep_status = mutation.episodeStatus; break;
+        case "volumeStatus": body.vol_status = mutation.volumeStatus; break;
+      }
+    }
+    await fetchWithTimeout(`${base}/v0/users/-/collections/${mutation.subjectId}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    return;
+  }
+
+  if (mutation.episodeId == null) throw new Error("missing_episode_id");
+  await fetchWithTimeout(`${base}/v0/users/-/collections/${mutation.subjectId}/episodes`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({
+      episode_id: [mutation.episodeId],
+      type: bangumiEpisodeCollectionType(mutation.collectionType),
+    }),
+  });
+}
+
+async function confirmCollectionRemovalUpstream(
+  env: Env,
+  grant: BangumiGrant,
+  userKey: string,
+  subjectId: number,
+): Promise<void> {
+  const base = env.BANGUMI_API_BASE_URL || DEFAULT_API_BASE_URL;
+  const headers = {
+    authorization: `Bearer ${grant.accessToken}`,
+    accept: "application/json",
+    "user-agent": "Wynime/1.0",
+  };
+  const me = await fetchWithTimeout(`${base}/v0/me`, { headers });
+  const user = await me.json() as { id?: number; username?: string };
+  if (!user.id || !user.username || `bangumi:${user.id}` !== userKey) {
+    throw new Error("bangumi_account_mismatch");
+  }
+  const remote = await fetchResponseWithTimeout(
+    `${base}/v0/users/${encodeURIComponent(user.username)}/collections/${subjectId}`,
+    { headers },
+  );
+  if (remote.status === 404) return;
+  if (remote.ok) throw new Error("collection_removal_requires_web_confirmation");
+  throw new Error(`bangumi_http_${remote.status}`);
+}
+
+function bangumiSubjectCollectionType(value: string | null | undefined): number {
+  const types: Record<string, number> = { WISH: 1, DONE: 2, DOING: 3, ON_HOLD: 4, DROPPED: 5 };
+  const type = value ? types[value] : undefined;
+  if (!type) throw new Error("invalid_subject_collection_type");
+  return type;
+}
+
+function bangumiEpisodeCollectionType(value: string | null | undefined): number {
+  const types: Record<string, number> = {
+    NOT_COLLECTED: 0,
+    WISH: 1,
+    DOING: 1,
+    DONE: 2,
+    ON_HOLD: 1,
+    DROPPED: 3,
+  };
+  const type = value ? types[value] : undefined;
+  if (type === undefined) throw new Error("invalid_episode_collection_type");
+  return type;
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 5_000): Promise<Response> {
+  const response = await fetchResponseWithTimeout(url, init, timeoutMs);
+  if (!response.ok) throw new Error(`bangumi_http_${response.status}`);
+  return response;
+}
+
+async function fetchResponseWithTimeout(url: string, init: RequestInit, timeoutMs = 5_000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function mapWithConcurrency<T, R>(
+  values: T[],
+  concurrency: number,
+  mapper: (value: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < values.length) {
+      const index = cursor++;
+      results[index] = await mapper(values[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, worker));
+  return results;
+}
+
+async function testCollectionStorage(request: Request, env: Env): Promise<Response> {
+  const session = await authenticateSession(request, env);
+  const startedAt = Date.now();
+  const result = await collectionRpc<{ ok: true; storageLatencyMs: number }>(
+    env,
+    session.userKey,
+    { op: "storageProbe" },
+  );
+  return json({
+    ...result,
+    roundTripLatencyMs: Math.max(0, Date.now() - startedAt),
+  });
 }
 
 async function authenticateSession(request: Request, env: Env): Promise<SessionRecord> {
@@ -591,6 +807,85 @@ async function rpc<T>(env: Env, command: object): Promise<T> {
   };
   if (!response.ok || !payload.ok) throw new HttpError(503, "storage_unavailable");
   return payload.result as T;
+}
+
+async function collectionRpc<T>(env: Env, userKey: string, command: object): Promise<T> {
+  const id = env.COLLECTION_STORES.idFromName(userKey);
+  const response = await env.COLLECTION_STORES.get(id).fetch("https://collection-stores/rpc", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(command),
+  });
+  const payload = (await response.json()) as {
+    ok: boolean;
+    result?: T;
+  };
+  if (!response.ok || !payload.ok) throw new HttpError(503, "collection_storage_unavailable");
+  return payload.result as T;
+}
+
+function validateCollectionSyncRequest(value: unknown): CollectionSyncRequest {
+  if (!isRecord(value)) throw new HttpError(400, "invalid_collection_sync_request");
+  const deviceId = value.deviceId;
+  const cursor = value.cursor;
+  const mode = value.mode;
+  const changes = value.changes;
+  if (!isNonEmptyString(deviceId) || deviceId.length > 256) {
+    throw new HttpError(400, "invalid_device_id");
+  }
+  if (!isSafeNonNegativeInteger(cursor)) throw new HttpError(400, "invalid_collection_cursor");
+  if (mode !== "fast" && mode !== "reconcile") throw new HttpError(400, "invalid_collection_sync_mode");
+  if (!Array.isArray(changes) || changes.length > 200) throw new HttpError(400, "invalid_collection_changes");
+  const subjectIds = value.subjectIds;
+  if (subjectIds !== undefined && (!Array.isArray(subjectIds) || subjectIds.length > 200 ||
+      subjectIds.some((id) => !isSafePositiveInteger(id)))) {
+    throw new HttpError(400, "invalid_collection_subject_ids");
+  }
+  if (value.fullSnapshot !== undefined && typeof value.fullSnapshot !== "boolean") {
+    throw new HttpError(400, "invalid_collection_snapshot_flag");
+  }
+  if (value.includeEpisodes !== undefined && typeof value.includeEpisodes !== "boolean") {
+    throw new HttpError(400, "invalid_collection_episode_flag");
+  }
+
+  const parsedChanges = changes.map((change) => validateCollectionMutation(change));
+  return {
+    deviceId,
+    cursor,
+    mode,
+    fullSnapshot: value.fullSnapshot as boolean | undefined,
+    subjectIds: subjectIds as number[] | undefined,
+    includeEpisodes: value.includeEpisodes as boolean | undefined,
+    changes: parsedChanges,
+  };
+}
+
+function validateCollectionMutation(value: unknown): CollectionSyncMutation {
+  if (!isRecord(value)) throw new HttpError(400, "invalid_collection_mutation");
+  const kind = value.kind;
+  const changedFields = value.changedFields;
+  if (kind !== "subject" && kind !== "episode") throw new HttpError(400, "invalid_collection_kind");
+  if (!isSafePositiveInteger(value.subjectId)) throw new HttpError(400, "invalid_subject_id");
+  if (kind === "episode" && !isSafePositiveInteger(value.episodeId)) {
+    throw new HttpError(400, "invalid_episode_id");
+  }
+  if (!isNonEmptyString(value.mutationId) || value.mutationId.length > 256) {
+    throw new HttpError(400, "invalid_mutation_id");
+  }
+  if (!isNonEmptyString(value.deviceId) || value.deviceId.length > 256) {
+    throw new HttpError(400, "invalid_device_id");
+  }
+  if (!isSafeNonNegativeInteger(value.modifiedAt)) throw new HttpError(400, "invalid_modified_at");
+  if (!Array.isArray(changedFields) || changedFields.length === 0 || changedFields.length > 7 ||
+      changedFields.some((field) => typeof field !== "string")) {
+    throw new HttpError(400, "invalid_changed_fields");
+  }
+  if (value.fieldModifiedAt !== undefined && (!isRecord(value.fieldModifiedAt) ||
+      Object.entries(value.fieldModifiedAt).some(([field, modifiedAt]) =>
+        !changedFields.includes(field) || !isSafeNonNegativeInteger(modifiedAt)))) {
+    throw new HttpError(400, "invalid_field_modified_at");
+  }
+  return value as unknown as CollectionSyncMutation;
 }
 
 function isRecord(value: unknown): value is Record<string, any> {

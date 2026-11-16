@@ -12,6 +12,7 @@ import com.wynime.app.data.repository.SavedWindowState
 import com.wynime.app.data.repository.episode.EpisodeCollectionPendingChanges
 import com.wynime.app.data.repository.media.MediaSourceSaves
 import com.wynime.app.data.repository.player.EpisodeHistories
+import com.wynime.app.data.repository.subject.BangumiCollectionSyncState
 import com.wynime.app.data.repository.user.TokenSave
 import com.wynime.app.domain.sourceplugin.InstalledSourcePlugins
 import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryCache
@@ -49,6 +50,17 @@ abstract class PlatformDataStoreManager {
             produceFile = { resolveDataStoreFile("episodeCollectionPending") },
             corruptionHandler = ReplaceFileCorruptionHandler {
                 EpisodeCollectionPendingChanges()
+            },
+        )
+    }
+
+    val bangumiCollectionSyncStore by lazy {
+        DataStoreFactory.create(
+            serializer = BangumiCollectionSyncState.serializer()
+                .asDataStoreSerializer({ BangumiCollectionSyncState() }),
+            produceFile = { resolveDataStoreFile("bangumiCollectionSync") },
+            corruptionHandler = ReplaceFileCorruptionHandler {
+                BangumiCollectionSyncState()
             },
         )
     }

@@ -49,6 +49,8 @@
     <string name="settings_account_tracking_sync_remote_count">Bangumi 追番：%1$d</string>
     <string name="settings_account_tracking_sync_running">同步中…</string>
     <string name="settings_account_tracking_sync_complete">同步完成 · 上传变更 %1$d · 下载变更 %2$d · 删除收藏 %3$d · 无变更 %4$d · 冲突解决 %5$d · 失败 %6$d</string>
+    <string name="settings_account_tracking_sync_cloud_pending">Cloudflare 已同步，仍有 %1$d 项等待 Bangumi 更新</string>
+    <string name="settings_account_tracking_sync_cloud_unavailable">Cloudflare 同步未完成：%1$s</string>
     <string name="settings_account_tracking_sync_failed">Bangumi 同步失败：%1$s</string>
     <string name="settings_account_tracking_sync_auto_success">已同步至 Bangumi</string>
     <string name="settings_account_tracking_sync_auto_failed">Bangumi 同步失败：%1$s</string>

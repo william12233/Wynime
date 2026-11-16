@@ -8,6 +8,10 @@
 package com.wynime.cloud.apis
 
 import com.wynime.cloud.models.CollectionRemoval
+import com.wynime.cloud.models.CollectionStorageProbe
+import com.wynime.cloud.models.CollectionSyncRequest
+import com.wynime.cloud.models.CollectionSyncResponse
+import com.wynime.cloud.models.Healthz
 
 import com.wynime.cloud.infrastructure.*
 import io.ktor.client.HttpClient
@@ -100,6 +104,83 @@ open class DefaultApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.GET,
             "/api/v1/collections/{subjectId}/removal".replace("{" + "subjectId" + "}", "$subjectId"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun getHealthz(): HttpResponse<Healthz> {
+
+        val localVariableAuthNames = listOf<String>()
+
+        val localVariableBody =
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/healthz",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = false,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun syncCollections(collectionSyncRequest: CollectionSyncRequest): HttpResponse<CollectionSyncResponse> {
+
+        val localVariableAuthNames = listOf<String>("cloudSession")
+
+        val localVariableBody = collectionSyncRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/v1/collections/sync",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun testCollectionStorage(): HttpResponse<CollectionStorageProbe> {
+
+        val localVariableAuthNames = listOf<String>("cloudSession")
+
+        val localVariableBody =
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/v1/diagnostics/storage-test",
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,

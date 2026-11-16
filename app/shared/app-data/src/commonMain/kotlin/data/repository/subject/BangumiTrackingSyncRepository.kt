@@ -93,23 +93,20 @@ class BangumiTrackingMetadataRepository(
 
     suspend fun adoptAccount(account: BangumiTrackingAccount): String = accountMutex.withLock {
         val tokenKey = currentTokenKey()
-        val oldKey = if (tokenKey == adoptedTokenKey) {
-            adoptedAccountKey ?: tokenKey
-        } else {
-            accountBindingStore?.accountKeyForToken(tokenKey) ?: tokenKey
-        }
+        // A refreshed/reissued token may be seen for the same Bangumi account.
+        // Migrate only from a row whose persisted user id matches; never infer
+        // ownership from the previous token or currently adopted account.
         val persistedAccount = dao.findAccountByUserId(account.id)
-        val sourceKey = persistedAccount?.accountKey ?: oldKey
-        if (sourceKey != account.key) {
-            val oldMetadata = dao.list(sourceKey)
+        if (persistedAccount != null && persistedAccount.accountKey != account.key) {
+            val oldMetadata = dao.list(persistedAccount.accountKey)
             if (oldMetadata.isNotEmpty()) {
                 dao.upsertAll(oldMetadata.map { it.copy(accountKey = account.key) })
             }
-            dao.findAccount(sourceKey)?.let { old ->
+            dao.findAccount(persistedAccount.accountKey)?.let { old ->
                 dao.upsertAccount(old.copy(accountKey = account.key, userId = account.id, username = account.username))
             }
-            dao.deleteAll(sourceKey)
-            dao.deleteAccount(sourceKey)
+            dao.deleteAll(persistedAccount.accountKey)
+            dao.deleteAccount(persistedAccount.accountKey)
         }
         dao.upsertAccount(
             BangumiTrackingAccountEntity(
@@ -291,6 +288,9 @@ data class BangumiTrackingSyncResult(
     val failedSubjectIds: List<Int> = emptyList(),
     val failureMessages: List<String> = emptyList(),
     val elapsedMillis: Long = 0,
+    val cloudSyncStatus: BangumiCollectionUpstreamStatus? = null,
+    val cloudSyncPendingCount: Int = 0,
+    val cloudSyncError: String? = null,
 )
 
 data class BangumiTrackingSyncSummary(
@@ -352,6 +352,7 @@ class BangumiTrackingSyncRepository(
     private val settingsStore: BangumiTrackingSyncSettingsStore,
     private val serviceScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val syncCoordinator: BangumiSyncCoordinator = BangumiSyncCoordinator(),
+    private val collectionSyncCoordinator: BangumiCollectionSyncCoordinator? = null,
 ) : BangumiTrackingSyncEnqueuer {
     private val syncLock = Mutex()
     private var runningSync: kotlinx.coroutines.Deferred<BangumiTrackingSyncResult>? = null
@@ -414,7 +415,19 @@ class BangumiTrackingSyncRepository(
             }.also { runningSync = it }
         }
         return try {
-            deferred.await()
+            collectionSyncCoordinator?.prepareForCurrentAccount()
+            val result = deferred.await()
+            val cloudResult = collectionSyncCoordinator?.syncNow(reconcile = true)
+            if (cloudResult == null) {
+                result
+            } else {
+                result.copy(
+                    cloudSyncStatus = cloudResult.upstreamStatus,
+                    cloudSyncPendingCount = cloudResult.pendingCount,
+                    cloudSyncError = cloudResult.error?.message,
+                    failureMessages = result.failureMessages + listOfNotNull(cloudResult.error?.message),
+                )
+            }
         } finally {
             syncLock.withLock {
                 if (runningSync === deferred) runningSync = null
@@ -584,7 +597,9 @@ class BangumiTrackingSyncRepository(
         val user = currentBangumiUser() ?: throw RepositoryAuthorizationException("Bangumi login is required")
         val account = user
         val accountKey = metadataRepository.adoptAccount(account)
-        val settings = settingsStore.flow.first()
+        val settings = settingsStore.flow.first().copy(
+            conflictPolicy = BangumiTrackingConflictPolicy.LATEST_WINS,
+        )
         val local = subjectCollectionDao.listAll()
             .associateBy { it.subjectId }
             .mapValues { (_, value) ->

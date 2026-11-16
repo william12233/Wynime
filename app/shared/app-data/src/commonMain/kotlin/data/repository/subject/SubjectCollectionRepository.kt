@@ -214,6 +214,8 @@ class SubjectCollectionRepositoryImpl(
     private val trackingMetadataRepository: BangumiTrackingMetadataRepository? = null,
     private val trackingSyncEnqueuer: BangumiTrackingSyncEnqueuer? = null,
     private val trackingSyncSettingsStore: BangumiTrackingSyncSettingsStore? = null,
+    private val collectionSyncEnqueuer: BangumiCollectionSyncEnqueuer? = null,
+    private val collectionSyncCoordinator: BangumiCollectionSyncCoordinator? = null,
     private val syncCoordinator: BangumiSyncCoordinator = BangumiSyncCoordinator(),
 ) : SubjectCollectionRepository(defaultDispatcher) {
     private val bangumiFullSyncMutex = Mutex()
@@ -299,10 +301,12 @@ class SubjectCollectionRepositoryImpl(
     private suspend fun refetchSubjectCollection(subjectId: Int): SubjectCollectionDto? {
         val subject = subjectService.getSubjectCollection(subjectId) ?: return null
         val lastFetched = currentTimeMillis()
-        val subjectEntity = subject.toEntity(lastFetched = lastFetched)
+        val existingSubject = subjectCollectionDao.findById(subjectId).first()
+        val remoteEntity = subject.toEntity(lastFetched = lastFetched)
+        val subjectEntity = existingSubject.mergeRemoteCollectionState(remoteEntity)
         val tombstone = trackingMetadataRepository?.find(subjectId)
-        if (tombstone?.localDeletedAt != null && subjectEntity.lastUpdated <= tombstone.localDeletedAt) {
-            val protectedEntity = subjectCollectionDao.findById(subjectId).first()
+        if (tombstone?.localDeletedAt != null && remoteEntity.lastUpdated <= tombstone.localDeletedAt) {
+            val protectedEntity = existingSubject
                 ?.copy(
                     lastUpdated = maxOf(tombstone.localDeletedAt, subjectEntity.lastUpdated),
                     lastFetched = lastFetched,
@@ -314,11 +318,12 @@ class SubjectCollectionRepositoryImpl(
             saveEpisodeEntities(subjectId, subject.episodes, lastFetched)
             return subject
         }
-        if (tombstone?.localDeletedAt != null && subjectEntity.lastUpdated > tombstone.localDeletedAt) {
-            trackingMetadataRepository.clearTombstone(subjectId, subjectEntity.lastUpdated)
+        if (tombstone?.localDeletedAt != null && remoteEntity.lastUpdated > tombstone.localDeletedAt) {
+            trackingMetadataRepository.clearTombstone(subjectId, remoteEntity.lastUpdated)
         }
+        val existingEpisodes = episodeCollectionDao.listBySubjectIds(listOf(subjectId)).associateBy { it.episodeId }
         val episodeEntities = subject.episodes.map {
-            it.toEntity1(subjectId, lastFetched = lastFetched)
+            it.toEntity1(subjectId, lastFetched = lastFetched).preserveLocalCollectionType(existingEpisodes[it.episodeId.toInt()])
         }
         subjectCollectionDao.upsert(subjectEntity)
 
@@ -351,7 +356,10 @@ class SubjectCollectionRepositoryImpl(
         episodes: List<EpisodeCollectionDto>,
         lastFetched: Long,
     ) {
-        val episodeEntities = episodes.map { it.toEntity1(subjectId, lastFetched = lastFetched) }
+        val existingEpisodes = episodeCollectionDao.listBySubjectIds(listOf(subjectId)).associateBy { it.episodeId }
+        val episodeEntities = episodes.map {
+            it.toEntity1(subjectId, lastFetched = lastFetched).preserveLocalCollectionType(existingEpisodes[it.episodeId.toInt()])
+        }
         val oldIds = episodeCollectionDao.listIdBySubjectId(subjectId).first().toMutableList()
         episodeCollectionDao.upsert(episodeEntities)
         for (newEntity in episodeEntities) oldIds.remove(newEntity.episodeId)
@@ -501,18 +509,19 @@ class SubjectCollectionRepositoryImpl(
             .associateBy { it.subjectId }
         val entities = ArrayList<SubjectCollectionEntity>(items.size)
         for (item in items) {
-            val entity = item.toEntity(lastFetched = lastFetched)
+            val remoteEntity = item.toEntity(lastFetched = lastFetched)
+            val entity = existingSubjects[remoteEntity.subjectId].mergeRemoteCollectionState(remoteEntity)
             val tombstone = trackingMetadataRepository?.find(entity.subjectId)
-            if (tombstone?.localDeletedAt != null && entity.lastUpdated <= tombstone.localDeletedAt) {
+            if (tombstone?.localDeletedAt != null && remoteEntity.lastUpdated <= tombstone.localDeletedAt) {
 
                 entities += entity.copy(
                     collectionType = existingSubjects[entity.subjectId]?.collectionType
                         ?: entity.collectionType,
-                    lastUpdated = tombstone.localDeletedAt,
+                    lastUpdated = maxOf(tombstone.localDeletedAt, entity.lastUpdated),
                 )
             } else {
                 if (tombstone?.localDeletedAt != null) {
-                    trackingMetadataRepository.clearTombstone(entity.subjectId, entity.lastUpdated)
+                    trackingMetadataRepository.clearTombstone(entity.subjectId, remoteEntity.lastUpdated)
                 }
                 entities += entity
             }
@@ -526,18 +535,19 @@ class SubjectCollectionRepositoryImpl(
             subjectCollectionDao.upsert(changedEntities)
         }
 
+        val existingEpisodes = episodeCollectionDao
+            .listBySubjectIds(subjectIds)
+            .associateBy { it.episodeId }
         val episodeEntities = items
             .flatMap { it.episodes }
             .map { episode ->
-                episode.toEntity1(
+                val remoteEpisode = episode.toEntity1(
                     subjectId = episode.subjectId.toInt(),
                     lastFetched = lastFetched,
                 )
+                remoteEpisode.preserveLocalCollectionType(existingEpisodes[remoteEpisode.episodeId])
             }
         if (episodeEntities.isNotEmpty()) {
-            val existingEpisodes = episodeCollectionDao
-                .listBySubjectIds(subjectIds)
-                .associateBy { it.episodeId }
             val changedEpisodes = episodeEntities.filter { episode ->
                 val existing = existingEpisodes[episode.episodeId]
                 existing == null || !existing.hasSameCachedContent(episode)
@@ -566,25 +576,58 @@ class SubjectCollectionRepositoryImpl(
         isPrivate: Boolean?,
     ) {
         withContext(defaultDispatcher) {
-            subjectService.patchSubjectCollection(
-                subjectId,
-                UpdateSubjectCollectionRequestDto(
-                    selfRating = SelfRatingInfoDto(
-                        score = score ?: 0,
-                        comment = comment,
-                        tags = tags.orEmpty(),
-                        isPrivate = isPrivate ?: false,
+            val modifiedAt = currentTimeMillis()
+            val changedFields = buildList {
+                if (score != null) add("rate")
+                if (comment != null) add("comment")
+                if (tags != null) add("tags")
+                if (isPrivate != null) add("private")
+            }
+            val legacyPatch = suspend {
+                subjectService.patchSubjectCollection(
+                    subjectId,
+                    UpdateSubjectCollectionRequestDto(
+                        selfRating = SelfRatingInfoDto(
+                            score = score ?: 0,
+                            comment = comment,
+                            tags = tags.orEmpty(),
+                            isPrivate = isPrivate ?: false,
+                        ),
                     ),
-                ),
-            )
+                )
+            }
+            if (collectionSyncEnqueuer == null) {
+                legacyPatch()
+            } else {
+                try {
+                    legacyPatch()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    logger.warn(e) { "Legacy Bangumi rating update failed; Cloud queue retained" }
+                }
+            }
 
             subjectCollectionDao.updateRating(
-                subjectId,
-                score,
-                comment,
-                tags,
-                isPrivate,
+                subjectId = subjectId,
+                score = score,
+                comment = comment,
+                tags = tags,
+                private = isPrivate,
+                lastUpdated = modifiedAt,
+                lastFetched = modifiedAt,
             )
+            if (collectionSyncEnqueuer != null && changedFields.isNotEmpty()) {
+                collectionSyncEnqueuer.enqueueSubject(BangumiSubjectCollectionChange(
+                    subjectId = subjectId,
+                    modifiedAt = modifiedAt,
+                    changedFields = changedFields,
+                    rate = score,
+                    comment = comment,
+                    tags = tags,
+                    `private` = isPrivate,
+                ))
+            }
         }
     }
 
@@ -711,10 +754,15 @@ class SubjectCollectionRepositoryImpl(
         return withContext(defaultDispatcher) {
             val now = currentTimeMillis()
             if (type == null || type == UnifiedCollectionType.NOT_COLLECTED) {
-
-                val metadata = trackingMetadataRepository
-                    ?: throw RepositoryRequestError("取消收藏的同步狀態儲存未設定")
-                metadata.markLocalDeletion(subjectId, now)
+                trackingMetadataRepository?.markLocalDeletion(subjectId, now)
+                if (collectionSyncEnqueuer != null) {
+                    subjectCollectionDao.updateType(
+                        subjectId = subjectId,
+                        collectionType = UnifiedCollectionType.NOT_COLLECTED,
+                        lastUpdated = now,
+                        lastFetched = now,
+                    )
+                }
             } else {
                 val updated = subjectCollectionDao.updateType(
                     subjectId = subjectId,
@@ -733,8 +781,21 @@ class SubjectCollectionRepositoryImpl(
                     )
                 }
                 trackingMetadataRepository?.markLocalChange(subjectId, type, now)
+                trackingMetadataRepository?.let { metadataRepository ->
+                    if (metadataRepository.find(subjectId)?.localDeletedAt != null) {
+                        metadataRepository.clearTombstone(subjectId)
+                    }
+                }
             }
-            if (trackingSyncSettingsStore?.flow?.first()?.autoSyncTracking == true) {
+            collectionSyncEnqueuer?.enqueueSubject(
+                BangumiSubjectCollectionChange(
+                    subjectId = subjectId,
+                    modifiedAt = now,
+                    changedFields = listOf("collectionType"),
+                    collectionType = type?.name ?: UnifiedCollectionType.NOT_COLLECTED.name,
+                ),
+            )
+            if (collectionSyncEnqueuer == null && trackingSyncSettingsStore?.flow?.first()?.autoSyncTracking == true) {
                 trackingSyncEnqueuer?.enqueueLocalChange(subjectId)
             }
         }
@@ -786,6 +847,7 @@ class SubjectCollectionRepositoryImpl(
     private suspend fun performBangumiFullSyncInternal() {
         var savedCount = 0
         try {
+            collectionSyncCoordinator?.prepareForCurrentAccount()
             syncCoordinator.withExclusive(BangumiSyncOperation.COLLECTION_REFRESH) {
                 withContext(defaultDispatcher) {
                     bangumiFullSyncMutex.withLock {
@@ -898,13 +960,37 @@ class SubjectCollectionRepositoryImpl(
                         bangumiFullSyncState.value = BangumiSyncState.Inserting(0, remoteById.size)
                         val lastFetched = currentTimeMillis()
                         val entitiesToUpsert = ArrayList<SubjectCollectionEntity>(remoteById.size)
+                        val upstreamCollectionChanges = ArrayList<BangumiSubjectCollectionChange>()
                         remoteById.forEach { (subjectId, remote) ->
                             val local = existing[subjectId]
-                            val remoteEntity = remote.toLightweightEntity(
+                            val fetchedEntity = remote.toLightweightEntity(
                                 existing = local,
                                 episodeCount = remoteEpisodeCounts[subjectId],
                                 lastFetched = lastFetched,
                             )
+                            val remoteEntity = local.mergeRemoteCollectionState(fetchedEntity)
+                            if (local != null && fetchedEntity.lastUpdated > local.lastUpdated) {
+                                val changedFields = buildList {
+                                    if (fetchedEntity.collectionType != local.collectionType) add("collectionType")
+                                    if (fetchedEntity.selfRatingInfo.score != local.selfRatingInfo.score) add("rate")
+                                    if (fetchedEntity.selfRatingInfo.comment != local.selfRatingInfo.comment) add("comment")
+                                    if (fetchedEntity.selfRatingInfo.tags != local.selfRatingInfo.tags) add("tags")
+                                    if (fetchedEntity.selfRatingInfo.isPrivate != local.selfRatingInfo.isPrivate) add("private")
+                                }
+                                if (changedFields.isNotEmpty() && collectionSyncEnqueuer != null) {
+                                    upstreamCollectionChanges += BangumiSubjectCollectionChange(
+                                        subjectId = subjectId,
+                                        modifiedAt = fetchedEntity.lastUpdated,
+                                        fieldModifiedAt = changedFields.associateWith { fetchedEntity.lastUpdated },
+                                        changedFields = changedFields,
+                                        collectionType = fetchedEntity.collectionType.name,
+                                        rate = fetchedEntity.selfRatingInfo.score,
+                                        comment = fetchedEntity.selfRatingInfo.comment,
+                                        tags = fetchedEntity.selfRatingInfo.tags,
+                                        `private` = fetchedEntity.selfRatingInfo.isPrivate,
+                                    )
+                                }
+                            }
                             try {
                                 val tombstone = trackingMetadataRepository?.find(subjectId)
                                 if (tombstone?.localDeletedAt != null &&
@@ -921,10 +1007,7 @@ class SubjectCollectionRepositoryImpl(
                                         trackingMetadataRepository.clearTombstone(subjectId, remoteEntity.lastUpdated)
                                     }
 
-                                    if (local == null ||
-                                        remoteEntity.lastUpdated <= 0L ||
-                                        local.lastUpdated <= remoteEntity.lastUpdated
-                                    ) {
+                                    if (local == null || local.lastUpdated <= remoteEntity.lastUpdated) {
                                         entitiesToUpsert += remoteEntity
                                         savedCount++
                                     }
@@ -947,6 +1030,7 @@ class SubjectCollectionRepositoryImpl(
                         if (entitiesToUpsert.isNotEmpty()) {
                             subjectCollectionDao.upsert(entitiesToUpsert)
                         }
+                        upstreamCollectionChanges.forEach { collectionSyncEnqueuer?.enqueueSubject(it) }
 
                         if (failedSubjectIds.isNotEmpty()) {
                             val detail = "${failedSubjectIds.size} 個條目同步失敗"
@@ -1001,6 +1085,23 @@ class SubjectCollectionRepositoryImpl(
                                 "elapsedMs=${currentTimeMillis() - syncStartedAt}"
                         }
                         notifyCollectionsInvalidated()
+                    }
+                }
+            }
+            collectionSyncCoordinator?.let { coordinator ->
+                val result = coordinator.syncNow(reconcile = true)
+                if (!result.cloudSynced || result.upstreamStatus == BangumiCollectionUpstreamStatus.UNAVAILABLE) {
+                    val error = result.error
+                    if (error != null) {
+                        logger.warn(error) {
+                            "Bangumi collection Cloud sync is incomplete; local Bangumi refresh remains authoritative " +
+                                "pending=${result.pendingCount}"
+                        }
+                    } else {
+                        logger.warn {
+                            "Bangumi collection Cloud sync is incomplete; local Bangumi refresh remains authoritative " +
+                                "pending=${result.pendingCount}"
+                        }
                     }
                 }
             }
@@ -1171,6 +1272,33 @@ private fun SubjectCollectionEntity.hasSameCachedContent(other: SubjectCollectio
         cachedCharactersUpdated = 0L,
     )
 }
+
+/**
+ * Bangumi's v0 collection payload may carry an item `updated_at` that does not
+ * change when a personal collection field changes. Keep newer local personal
+ * fields in that case; cloud collection records are the source of truth for
+ * those fields.
+ */
+private fun SubjectCollectionEntity?.mergeRemoteCollectionState(
+    remote: SubjectCollectionEntity,
+): SubjectCollectionEntity {
+    val local = this ?: return remote
+    return if (local.lastUpdated > 0L &&
+        (remote.lastUpdated <= 0L || local.lastUpdated > remote.lastUpdated)
+    ) {
+        remote.copy(
+            collectionType = local.collectionType,
+            selfRatingInfo = local.selfRatingInfo,
+            lastUpdated = local.lastUpdated,
+        )
+    } else {
+        remote
+    }
+}
+
+private fun EpisodeCollectionEntity.preserveLocalCollectionType(
+    local: EpisodeCollectionEntity?,
+): EpisodeCollectionEntity = local?.let { copy(selfCollectionType = it.selfCollectionType) } ?: this
 
 private fun EpisodeCollectionEntity.hasSameCachedContent(other: EpisodeCollectionEntity): Boolean {
     return copy(lastFetched = 0L) == other.copy(lastFetched = 0L)

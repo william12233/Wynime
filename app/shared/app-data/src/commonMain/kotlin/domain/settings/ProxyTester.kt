@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import com.wynime.app.domain.foundation.HttpClientProvider
 import com.wynime.app.domain.foundation.get
+import com.wynime.app.data.network.WynimeCloudClient
 import com.wynime.app.trace.ErrorReport
 import com.wynime.datasources.bangumi.BangumiClientImpl
 import com.wynime.utils.analytics.Analytics
@@ -25,6 +26,8 @@ private val isFirstTestResult = AtomicBoolean(true)
 class ProxyTester(
     clientProvider: HttpClientProvider,
     flowScope: CoroutineScope,
+    cloudClient: WynimeCloudClient? = null,
+    cloudSessionProvider: (suspend () -> String?)? = null,
     serviceIds: Set<String> = ServiceConnectionTesters.DefaultServiceIds,
 ) {
     private val proxyTestRunning = FlowRunning()
@@ -35,6 +38,8 @@ class ProxyTester(
 
         ServiceConnectionTesters.createDefault(
             bangumiClient = BangumiClientImpl(client),
+            cloudClient = cloudClient,
+            cloudSessionProvider = cloudSessionProvider,
             serviceIds = serviceIds,
         )
     }
@@ -98,6 +103,7 @@ private fun reportNetworkCheckFailed(results: ServiceConnectionTester.Results) {
 
 private fun stateToString(state: ServiceConnectionTester.TestState): String = when (state) {
     is ServiceConnectionTester.TestState.Error -> "error"
+    ServiceConnectionTester.TestState.NotAvailable -> "not_available"
     ServiceConnectionTester.TestState.Failed -> "failed"
     ServiceConnectionTester.TestState.Idle -> "idle"
     is ServiceConnectionTester.TestState.Success -> "success"

@@ -25,6 +25,7 @@ import com.wynime.app.data.models.preference.UISettings
 import com.wynime.app.data.models.preference.UpdateSettings
 import com.wynime.app.data.models.preference.VideoResolverSettings
 import com.wynime.app.data.models.preference.VideoScaffoldConfig
+import com.wynime.app.data.network.WynimeCloudClient
 import com.wynime.app.data.persistent.dataStores
 import com.wynime.app.data.repository.user.SettingsRepository
 import com.wynime.app.data.repository.user.TokenRepository
@@ -69,6 +70,7 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
 
     private val clientProvider: HttpClientProvider by inject()
     private val tokenRepository: TokenRepository by inject()
+    private val cloudClient: WynimeCloudClient by inject()
     private val sourcePluginRepositoryClient: SourcePluginRepositoryClient by inject()
     private val sourcePluginRegistry: SourcePluginRegistry by inject()
 
@@ -134,6 +136,8 @@ open class SettingsViewModel : AbstractSettingsViewModel(), KoinComponent {
     private val proxyTester = ProxyTester(
         clientProvider = clientProvider,
         flowScope = backgroundScope,
+        cloudClient = cloudClient,
+        cloudSessionProvider = { tokenRepository.refreshToken.first() },
     )
 
     private val configureProxyUiState = combine(
@@ -244,6 +248,8 @@ private fun Map<String, ServiceConnectionTester.TestState>.toUIState(): List<Pro
             val case = when (id) {
                 ServiceConnectionTesters.ID_BANGUMI -> ProxyTestCase.BangumiApi
                 ServiceConnectionTesters.ID_BANGUMI_NEXT -> ProxyTestCase.BangumiNextApi
+                ServiceConnectionTesters.ID_CLOUDFLARE -> ProxyTestCase.CloudflareApi
+                ServiceConnectionTesters.ID_CLOUDFLARE_STORAGE -> ProxyTestCase.CloudflareStorage
                 else -> return@forEach
             }
             val result = when (state) {
@@ -252,8 +258,16 @@ private fun Map<String, ServiceConnectionTester.TestState>.toUIState(): List<Pro
                 is ServiceConnectionTester.TestState.Success -> ProxyTestCaseState.SUCCESS
                 is ServiceConnectionTester.TestState.Failed -> ProxyTestCaseState.FAILED
                 is ServiceConnectionTester.TestState.Error -> ProxyTestCaseState.FAILED
+                is ServiceConnectionTester.TestState.NotAvailable -> ProxyTestCaseState.NOT_AVAILABLE
             }
-            add(ProxyTestItem(case, result))
+            add(
+                ProxyTestItem(
+                    case = case,
+                    state = result,
+                    latencyMillis = (state as? ServiceConnectionTester.TestState.Success)
+                        ?.time?.inWholeMilliseconds,
+                ),
+            )
         }
     }
 }

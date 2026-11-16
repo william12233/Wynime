@@ -4,6 +4,49 @@
   "servers": [{ "url": "https://wynime-bangumi-broker.wzhou785.workers.dev" }],
   "security": [{ "cloudSession": [] }],
   "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "getHealthz",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Worker is reachable",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Healthz" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/collections/sync": {
+      "post": {
+        "operationId": "syncCollections",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionSyncRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Merged collection state",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionSyncResponse" } } }
+          },
+          "400": { "description": "Invalid collection sync request" },
+          "401": { "description": "Session requires refresh" },
+          "503": { "description": "Collection storage unavailable" }
+        }
+      }
+    },
+    "/api/v1/diagnostics/storage-test": {
+      "post": {
+        "operationId": "testCollectionStorage",
+        "responses": {
+          "200": {
+            "description": "Authenticated Durable Object storage probe",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CollectionStorageProbe" } } }
+          },
+          "401": { "description": "Session requires refresh" },
+          "503": { "description": "Collection storage unavailable" }
+        }
+      }
+    },
     "/api/v1/collections/{subjectId}/removal": {
       "parameters": [{ "name": "subjectId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int32", "minimum": 1 } }],
       "post": {
@@ -26,6 +69,97 @@
   "components": {
     "securitySchemes": { "cloudSession": { "type": "http", "scheme": "bearer" } },
     "schemas": {
+      "Healthz": {
+        "type": "object",
+        "required": ["ok", "serverTimeMillis", "apiVersion"],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "serverTimeMillis": { "type": "integer", "format": "int64" },
+          "apiVersion": { "type": "integer", "format": "int32", "minimum": 1 }
+        }
+      },
+      "CollectionSyncRequest": {
+        "type": "object",
+        "required": ["deviceId", "cursor", "mode", "changes"],
+        "properties": {
+          "deviceId": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "cursor": { "type": "integer", "format": "int64", "minimum": 0 },
+          "mode": { "type": "string", "enum": ["fast", "reconcile"] },
+          "fullSnapshot": { "type": "boolean" },
+          "subjectIds": { "type": "array", "maxItems": 200, "items": { "type": "integer", "format": "int32", "minimum": 1 } },
+          "includeEpisodes": { "type": "boolean" },
+          "changes": { "type": "array", "maxItems": 200, "items": { "$ref": "#/components/schemas/CollectionSyncMutation" } }
+        }
+      },
+      "CollectionSyncMutation": {
+        "type": "object",
+        "required": ["mutationId", "deviceId", "kind", "subjectId", "modifiedAt", "changedFields"],
+        "properties": {
+          "mutationId": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "deviceId": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "kind": { "type": "string", "enum": ["subject", "episode"] },
+          "subjectId": { "type": "integer", "format": "int32", "minimum": 1 },
+          "episodeId": { "type": "integer", "format": "int32", "minimum": 1 },
+          "modifiedAt": { "type": "integer", "format": "int64", "minimum": 0 },
+          "fieldModifiedAt": { "type": "object", "additionalProperties": { "type": "integer", "format": "int64", "minimum": 0 } },
+          "changedFields": { "type": "array", "minItems": 1, "maxItems": 7, "items": { "type": "string" } },
+          "collectionType": { "type": "string", "nullable": true },
+          "rate": { "type": "integer", "format": "int32", "nullable": true },
+          "comment": { "type": "string", "nullable": true },
+          "tags": { "type": "array", "nullable": true, "items": { "type": "string" } },
+          "private": { "type": "boolean", "nullable": true },
+          "episodeStatus": { "type": "integer", "format": "int32", "nullable": true },
+          "volumeStatus": { "type": "integer", "format": "int32", "nullable": true }
+        }
+      },
+      "CollectionSyncRecord": {
+        "type": "object",
+        "required": ["kind", "subjectId", "deleted", "fieldModifiedAt", "revision"],
+        "properties": {
+          "kind": { "type": "string", "enum": ["subject", "episode"] },
+          "subjectId": { "type": "integer", "format": "int32" },
+          "episodeId": { "type": "integer", "format": "int32", "nullable": true },
+          "collectionType": { "type": "string", "nullable": true },
+          "rate": { "type": "integer", "format": "int32", "nullable": true },
+          "comment": { "type": "string", "nullable": true },
+          "tags": { "type": "array", "nullable": true, "items": { "type": "string" } },
+          "private": { "type": "boolean", "nullable": true },
+          "episodeStatus": { "type": "integer", "format": "int32", "nullable": true },
+          "volumeStatus": { "type": "integer", "format": "int32", "nullable": true },
+          "deleted": { "type": "boolean" },
+          "fieldModifiedAt": { "type": "object", "additionalProperties": { "type": "integer", "format": "int64" } },
+          "revision": { "type": "integer", "format": "int64" }
+        }
+      },
+      "CollectionSyncAccepted": {
+        "type": "object",
+        "required": ["mutationId", "revision", "changed"],
+        "properties": {
+          "mutationId": { "type": "string" },
+          "revision": { "type": "integer", "format": "int64" },
+          "changed": { "type": "boolean" }
+        }
+      },
+      "CollectionSyncResponse": {
+        "type": "object",
+        "required": ["cursor", "records", "accepted", "upstreamStatus", "pendingCount"],
+        "properties": {
+          "cursor": { "type": "integer", "format": "int64" },
+          "records": { "type": "array", "items": { "$ref": "#/components/schemas/CollectionSyncRecord" } },
+          "accepted": { "type": "array", "items": { "$ref": "#/components/schemas/CollectionSyncAccepted" } },
+          "upstreamStatus": { "type": "string", "enum": ["not_requested", "pending", "unavailable", "synced"] },
+          "pendingCount": { "type": "integer", "format": "int32", "minimum": 0 }
+        }
+      },
+      "CollectionStorageProbe": {
+        "type": "object",
+        "required": ["ok", "storageLatencyMs", "roundTripLatencyMs"],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "storageLatencyMs": { "type": "integer", "format": "int64" },
+          "roundTripLatencyMs": { "type": "integer", "format": "int64" }
+        }
+      },
       "CollectionRemoval": {
         "type": "object", "required": ["subjectId", "status", "webUrl", "expiresAt"],
         "properties": {

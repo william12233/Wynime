@@ -21,12 +21,14 @@ suspend fun IAnalytics.recordAppStart(startupTimeMonitor: StartupTimeMonitor) {
 
     val tester = ServiceConnectionTester(
         listOf(
-            Service("bangumi") {
-                bangumiClient.testConnectionMaster() == ConnectionStatus.SUCCESS
-            },
-            Service("bangumi_next") {
-                bangumiClient.testConnectionNext() == ConnectionStatus.SUCCESS
-            },
+            Service(
+                id = "bangumi",
+                test = { bangumiClient.testConnectionMaster() == ConnectionStatus.SUCCESS },
+            ),
+            Service(
+                id = "bangumi_next",
+                test = { bangumiClient.testConnectionNext() == ConnectionStatus.SUCCESS },
+            ),
         ),
         Dispatchers.Default,
     )
@@ -46,6 +48,7 @@ suspend fun IAnalytics.recordAppStart(startupTimeMonitor: StartupTimeMonitor) {
 
                     is ServiceConnectionTester.TestState.Success -> true
 
+                    ServiceConnectionTester.TestState.NotAvailable -> null
                     ServiceConnectionTester.TestState.Idle -> null
                     ServiceConnectionTester.TestState.Testing -> null
                 },

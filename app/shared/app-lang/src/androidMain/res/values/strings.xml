@@ -506,8 +506,12 @@
     <string name="settings_network_proxy_service_ani">Wynime API</string>
     <string name="settings_network_proxy_service_collection">Collection data service</string>
     <string name="settings_network_proxy_service_comment">Comment service</string>
+    <string name="settings_network_proxy_service_cloudflare">Cloudflare broker endpoint</string>
+    <string name="settings_network_proxy_service_cloudflare_storage">Cloudflare Durable Object database</string>
+    <string name="settings_network_proxy_latency">%1$d ms</string>
     <string name="settings_network_proxy_test_success">Connection successful</string>
     <string name="settings_network_proxy_test_failed">Connection failed</string>
+    <string name="settings_network_proxy_test_not_available">Not available (sign in first)</string>
     <string name="settings_network_proxy_current_disabled">Proxy disabled</string>
     <string name="settings_network_proxy_current_using">Using %1$s</string>
     <string name="settings_network_proxy_save_and_test">Save and test</string>

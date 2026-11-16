@@ -24,6 +24,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.wynime.app.data.repository.subject.BangumiTrackingAccount
 import com.wynime.app.data.repository.subject.BangumiTrackingAutoSyncEvent
+import com.wynime.app.data.repository.subject.BangumiCollectionUpstreamStatus
 import com.wynime.app.data.repository.subject.BangumiTrackingConnectionError
 import com.wynime.app.data.repository.subject.BangumiTrackingConnectionResult
 import com.wynime.app.data.repository.subject.BangumiTrackingConflictPolicy
@@ -43,24 +44,19 @@ import com.wynime.app.data.repository.subject.classifyBangumiTrackingError
 import com.wynime.app.domain.session.auth.OAuthPlatform
 import com.wynime.app.ui.foundation.AbstractViewModel
 import com.wynime.app.ui.lang.Lang
-import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_sync
-import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_sync_description
 import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_success
 import com.wynime.app.ui.lang.settings_account_tracking_sync_auto_failed
 import com.wynime.app.ui.lang.settings_account_tracking_sync_bangumi_account
-import com.wynime.app.ui.lang.settings_account_tracking_sync_bangumi_first
-import com.wynime.app.ui.lang.settings_account_tracking_sync_bangumi_first_description
 import com.wynime.app.ui.lang.settings_account_tracking_sync_complete
+import com.wynime.app.ui.lang.settings_account_tracking_sync_cloud_pending
+import com.wynime.app.ui.lang.settings_account_tracking_sync_cloud_unavailable
 import com.wynime.app.ui.lang.settings_account_tracking_sync_connected
 import com.wynime.app.ui.lang.settings_account_tracking_sync_connection_success
-import com.wynime.app.ui.lang.settings_account_tracking_sync_conflict_when
 import com.wynime.app.ui.lang.settings_account_tracking_sync_description
 import com.wynime.app.ui.lang.settings_account_tracking_sync_latest_wins
 import com.wynime.app.ui.lang.settings_account_tracking_sync_latest_wins_description
 import com.wynime.app.ui.lang.settings_account_tracking_sync_last_success
 import com.wynime.app.ui.lang.settings_account_tracking_sync_local_count
-import com.wynime.app.ui.lang.settings_account_tracking_sync_local_first
-import com.wynime.app.ui.lang.settings_account_tracking_sync_local_first_description
 import com.wynime.app.ui.lang.settings_account_tracking_sync_login
 import com.wynime.app.ui.lang.settings_account_tracking_sync_login_expired
 import com.wynime.app.ui.lang.settings_account_tracking_sync_never
@@ -89,8 +85,6 @@ import com.wynime.app.ui.lang.settings_account_tracking_sync_full_summary
 import com.wynime.app.ui.lang.settings_account_tracking_sync_full_summary_partial
 import com.wynime.app.ui.settings.SettingsTab
 import com.wynime.app.ui.settings.framework.components.SettingsScope
-import com.wynime.app.ui.settings.framework.components.SingleSelectionElement
-import com.wynime.app.ui.settings.framework.components.SingleSelectionItem
 import com.wynime.app.ui.settings.framework.components.SwitchItem
 import com.wynime.app.ui.settings.framework.components.TextButtonItem
 import com.wynime.app.ui.settings.framework.components.TextItem
@@ -224,7 +218,6 @@ class BangumiTrackingSyncViewModel : AbstractViewModel(), KoinComponent {
         }
     }
 
-    fun setAutoSync(value: Boolean) = backgroundScope.launch { settingsStore.setAutoSyncTracking(value) }
     fun setShowResult(value: Boolean) = backgroundScope.launch { settingsStore.setShowSyncResult(value) }
     fun setConflictPolicy(value: BangumiTrackingConflictPolicy) =
         backgroundScope.launch { settingsStore.setConflictPolicy(value) }
@@ -261,9 +254,7 @@ fun BangumiTrackingSyncScreen(
         onNavigateToLogin = onNavigateToLogin,
         onTestConnection = vm::testConnection,
         onSyncNow = vm::syncNow,
-        onSetAutoSync = vm::setAutoSync,
         onSetShowResult = vm::setShowResult,
-        onSetConflictPolicy = vm::setConflictPolicy,
         modifier = modifier,
     )
 }
@@ -282,9 +273,7 @@ internal fun BangumiTrackingSyncContent(
     onNavigateToLogin: () -> Unit,
     onTestConnection: () -> Unit,
     onSyncNow: () -> Unit,
-    onSetAutoSync: (Boolean) -> Unit,
     onSetShowResult: (Boolean) -> Unit,
-    onSetConflictPolicy: (BangumiTrackingConflictPolicy) -> Unit,
     autoResult: BangumiTrackingAutoSyncEvent? = null,
     modifier: Modifier = Modifier,
 ) = SettingsTab(modifier) {
@@ -341,15 +330,7 @@ internal fun BangumiTrackingSyncContent(
         }
     }
 
-    Group({ Text(stringResource(Lang.settings_account_tracking_sync_auto_sync)) }) {
-        SwitchItem(
-            checked = settings.autoSyncTracking,
-            onCheckedChange = onSetAutoSync,
-            enabled = connected != null,
-            title = { Text(stringResource(Lang.settings_account_tracking_sync_auto_sync)) },
-            description = { Text(stringResource(Lang.settings_account_tracking_sync_auto_sync_description)) },
-            modifier = Modifier.testTag("bangumi-tracking-auto-sync"),
-        )
+    Group({ Text(stringResource(Lang.settings_account_tracking_sync_title)) }) {
         TextButtonItem(
             onClick = onSyncNow,
             enabled = connected != null && !syncRunning,
@@ -405,20 +386,9 @@ internal fun BangumiTrackingSyncContent(
     }
 
     Group({ Text(stringResource(Lang.settings_account_tracking_sync_preferences)) }) {
-        SingleSelectionItem(
-            items = BangumiTrackingConflictPolicy.entries.map { SingleSelectionElement(it, connected != null) },
-            selected = settings.conflictPolicy.ordinal,
-            key = { it },
-            description = { policy -> policy?.let { policyDescription(it) } ?: Text("") },
-            listItem = { policy ->
-                Column {
-                    Text(policyTitle(policy))
-                    Text(policyDescription(policy))
-                }
-            },
-            onConfirm = { policy -> if (policy != null) onSetConflictPolicy(policy) },
-            onSelectItem = { connected != null },
-            title = { Text(stringResource(Lang.settings_account_tracking_sync_conflict_when)) },
+        TextItem(
+            title = { Text(stringResource(Lang.settings_account_tracking_sync_latest_wins)) },
+            description = { Text(stringResource(Lang.settings_account_tracking_sync_latest_wins_description)) },
             modifier = Modifier.testTag("bangumi-tracking-conflict-policy"),
         )
         SwitchItem(
@@ -469,6 +439,38 @@ internal fun BangumiTrackingSyncContent(
                 },
                 modifier = Modifier.testTag("bangumi-tracking-sync-result"),
             )
+            when (it.cloudSyncStatus) {
+                BangumiCollectionUpstreamStatus.PENDING -> if (it.cloudSyncPendingCount > 0) {
+                    TextItem(
+                        title = {
+                            Text(
+                                stringResource(
+                                    Lang.settings_account_tracking_sync_cloud_pending,
+                                    it.cloudSyncPendingCount,
+                                ),
+                            )
+                        },
+                        modifier = Modifier.testTag("bangumi-tracking-cloud-sync-pending"),
+                    )
+                }
+
+                BangumiCollectionUpstreamStatus.UNAVAILABLE -> {
+                    TextItem(
+                        title = {
+                            Text(
+                                stringResource(
+                                    Lang.settings_account_tracking_sync_cloud_unavailable,
+                                    it.cloudSyncError
+                                        ?: stringResource(Lang.settings_account_tracking_sync_unknown_error),
+                                ),
+                            )
+                        },
+                        modifier = Modifier.testTag("bangumi-tracking-cloud-sync-unavailable"),
+                    )
+                }
+
+                else -> Unit
+            }
         }
         fullSyncSummary?.let { summary ->
             val expected = summary.expectedSubjectCount ?: summary.savedSubjectCount
@@ -610,20 +612,6 @@ private fun connectionErrorText(error: BangumiTrackingConnectionError): String =
     BangumiTrackingConnectionError.NETWORK -> stringResource(Lang.settings_account_tracking_sync_network_error)
     BangumiTrackingConnectionError.RATE_LIMITED -> stringResource(Lang.settings_account_tracking_sync_rate_limited)
     BangumiTrackingConnectionError.UNKNOWN -> stringResource(Lang.settings_account_tracking_sync_unknown_error)
-}
-
-@Composable
-private fun policyTitle(policy: BangumiTrackingConflictPolicy): String = when (policy) {
-    BangumiTrackingConflictPolicy.LOCAL_FIRST -> stringResource(Lang.settings_account_tracking_sync_local_first)
-    BangumiTrackingConflictPolicy.BANGUMI_FIRST -> stringResource(Lang.settings_account_tracking_sync_bangumi_first)
-    BangumiTrackingConflictPolicy.LATEST_WINS -> stringResource(Lang.settings_account_tracking_sync_latest_wins)
-}
-
-@Composable
-private fun policyDescription(policy: BangumiTrackingConflictPolicy): String = when (policy) {
-    BangumiTrackingConflictPolicy.LOCAL_FIRST -> stringResource(Lang.settings_account_tracking_sync_local_first_description)
-    BangumiTrackingConflictPolicy.BANGUMI_FIRST -> stringResource(Lang.settings_account_tracking_sync_bangumi_first_description)
-    BangumiTrackingConflictPolicy.LATEST_WINS -> stringResource(Lang.settings_account_tracking_sync_latest_wins_description)
 }
 
 private fun formatTrackingSyncTime(epochMillis: Long): String {

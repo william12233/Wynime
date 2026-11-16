@@ -85,6 +85,28 @@ class ServiceConnectionTesterTest {
     }
 
     @Test
+    fun `testAll - unavailable service is reported without invoking its test`() = runTest {
+        var testCalled = false
+        val service = ServiceConnectionTester.Service(
+            id = "unavailable",
+            available = { false },
+            test = {
+                testCalled = true
+                true
+            },
+        )
+        val tester = ServiceConnectionTester(
+            services = listOf(service),
+            defaultDispatcher = currentContinuationInterceptor(),
+        )
+
+        tester.testAll()
+
+        assertEquals(ServiceConnectionTester.TestState.NotAvailable, tester.results.first().states[service])
+        assertEquals(false, testCalled)
+    }
+
+    @Test
     fun `testAll - multiple services mixed results`() = runTest {
         val okService = createService("ok")
         val failService = createService("fail", shouldFail = true)

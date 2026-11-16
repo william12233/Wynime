@@ -1,5 +1,6 @@
 export interface Env {
   REPLAY_MARKERS: DurableObjectNamespace;
+  COLLECTION_STORES: DurableObjectNamespace;
   BANGUMI_CLIENT_ID: string;
   BANGUMI_CLIENT_SECRET: string;
   SESSION_ENCRYPTION_KEY: string;
@@ -77,4 +78,77 @@ export interface BangumiGrant {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
+}
+
+export type CollectionSyncMode = "fast" | "reconcile";
+export type CollectionRecordKind = "subject" | "episode";
+
+export interface CollectionSyncMutation {
+  mutationId: string;
+  deviceId: string;
+  kind: CollectionRecordKind;
+  subjectId: number;
+  episodeId?: number;
+  modifiedAt: number;
+  fieldModifiedAt?: Record<string, number>;
+  changedFields: string[];
+  collectionType?: string | null;
+  rate?: number | null;
+  comment?: string | null;
+  tags?: string[] | null;
+  private?: boolean | null;
+  episodeStatus?: number | null;
+  volumeStatus?: number | null;
+}
+
+export interface CollectionSyncRequest {
+  deviceId: string;
+  cursor: number;
+  mode: CollectionSyncMode;
+  fullSnapshot?: boolean;
+  subjectIds?: number[];
+  includeEpisodes?: boolean;
+  changes: CollectionSyncMutation[];
+}
+
+export interface CollectionSyncRecord {
+  kind: CollectionRecordKind;
+  subjectId: number;
+  episodeId?: number;
+  collectionType?: string | null;
+  rate?: number | null;
+  comment?: string | null;
+  tags?: string[] | null;
+  private?: boolean | null;
+  episodeStatus?: number | null;
+  volumeStatus?: number | null;
+  deleted: boolean;
+  fieldModifiedAt: Record<string, number>;
+  revision: number;
+}
+
+export interface CollectionSyncResponse {
+  cursor: number;
+  records: CollectionSyncRecord[];
+  accepted: Array<{
+    mutationId: string;
+    revision: number;
+    changed: boolean;
+  }>;
+  upstreamStatus: "not_requested" | "pending" | "unavailable" | "synced";
+  pendingCount: number;
+}
+
+export interface CollectionStoreSyncResponse extends CollectionSyncResponse {
+  /** Internal queue contents used by the worker's reconciliation pass. */
+  pendingChanges: CollectionSyncMutation[];
+}
+
+export interface CollectionStoreMarkSyncedResponse {
+  pendingCount: number;
+}
+
+export interface CollectionStorageProbeResponse {
+  ok: true;
+  storageLatencyMs: number;
 }

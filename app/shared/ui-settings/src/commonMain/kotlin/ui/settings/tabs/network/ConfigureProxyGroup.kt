@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -65,6 +66,10 @@ import com.wynime.app.ui.lang.settings_network_proxy_retest
 import com.wynime.app.ui.lang.settings_network_proxy_save_and_test
 import com.wynime.app.ui.lang.settings_network_proxy_service_collection
 import com.wynime.app.ui.lang.settings_network_proxy_service_comment
+import com.wynime.app.ui.lang.settings_network_proxy_service_cloudflare
+import com.wynime.app.ui.lang.settings_network_proxy_service_cloudflare_storage
+import com.wynime.app.ui.lang.settings_network_proxy_test_not_available
+import com.wynime.app.ui.lang.settings_network_proxy_latency
 import com.wynime.app.ui.lang.settings_network_proxy_system
 import com.wynime.app.ui.lang.settings_network_proxy_test_failed
 import com.wynime.app.ui.lang.settings_network_proxy_test_success
@@ -186,6 +191,8 @@ private fun renderTestCaseName(case: ProxyTestCase): String {
     return when (case.name) {
         ProxyTestCaseEnums.BANGUMI -> "Bangumi"
         ProxyTestCaseEnums.BANGUMI_NEXT -> "Bangumi"
+        ProxyTestCaseEnums.CLOUDFLARE -> "Cloudflare"
+        ProxyTestCaseEnums.CLOUDFLARE_STORAGE -> "Cloudflare Durable Object"
     }
 }
 
@@ -194,6 +201,8 @@ private fun renderTestCaseDescription(case: ProxyTestCase): String {
     return when (case.name) {
         ProxyTestCaseEnums.BANGUMI -> stringResource(Lang.settings_network_proxy_service_collection)
         ProxyTestCaseEnums.BANGUMI_NEXT -> stringResource(Lang.settings_network_proxy_service_comment)
+        ProxyTestCaseEnums.CLOUDFLARE -> stringResource(Lang.settings_network_proxy_service_cloudflare)
+        ProxyTestCaseEnums.CLOUDFLARE_STORAGE -> stringResource(Lang.settings_network_proxy_service_cloudflare_storage)
     }
 }
 
@@ -205,7 +214,13 @@ private fun SettingsScope.ProxyTestItemView(
     TextItem(
         modifier = modifier,
         title = { Text(renderTestCaseName(item.case)) },
-        description = { Text(renderTestCaseDescription(item.case)) },
+        description = {
+            val description = renderTestCaseDescription(item.case)
+            Text(
+                item.latencyMillis?.let { "$description · ${stringResource(Lang.settings_network_proxy_latency, it)}" }
+                    ?: description,
+            )
+        },
         icon = {
             Icon(
                 item.case.icon,
@@ -235,6 +250,11 @@ private fun ProxyTestStatusIcon(
             ProxyTestCaseState.FAILED ->
                 ProvideContentColor(MaterialTheme.colorScheme.error) {
                     Icon(Icons.Default.Close, stringResource(Lang.settings_network_proxy_test_failed))
+                }
+
+            ProxyTestCaseState.NOT_AVAILABLE ->
+                ProvideContentColor(MaterialTheme.colorScheme.onSurfaceVariant) {
+                    Icon(Icons.Default.RemoveCircleOutline, stringResource(Lang.settings_network_proxy_test_not_available))
                 }
         }
     }
@@ -408,13 +428,15 @@ enum class ProxyTestCaseState {
     INIT,
     RUNNING,
     SUCCESS,
-    FAILED
+    FAILED,
+    NOT_AVAILABLE,
 }
 
 @Immutable
 class ProxyTestItem(
     val case: ProxyTestCase,
     val state: ProxyTestCaseState,
+    val latencyMillis: Long? = null,
 )
 
 @Immutable
@@ -444,7 +466,9 @@ class ConfigureProxyUIState(
             } else {
                 ProxyOverallTestState.FAILED_PROXIED
             }
-        } else if (testState.items.all { it.state == ProxyTestCaseState.SUCCESS }) {
+        } else if (testState.items.all {
+                it.state == ProxyTestCaseState.SUCCESS || it.state == ProxyTestCaseState.NOT_AVAILABLE
+            }) {
             ProxyOverallTestState.SUCCESS
         } else {
             ProxyOverallTestState.INIT

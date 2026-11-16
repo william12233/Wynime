@@ -8,6 +8,10 @@
       {
         "name": "REPLAY_MARKERS",
         "class_name": "ReplayMarker"
+      },
+      {
+        "name": "COLLECTION_STORES",
+        "class_name": "CollectionStore"
       }
     ]
   },
@@ -15,6 +19,10 @@
     {
       "tag": "v1",
       "new_classes": ["ReplayMarker"]
+    },
+    {
+      "tag": "v2",
+      "new_sqlite_classes": ["CollectionStore"]
     }
   ],
   "vars": {

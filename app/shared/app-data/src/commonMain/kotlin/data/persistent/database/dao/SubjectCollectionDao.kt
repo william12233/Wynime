@@ -252,11 +252,21 @@ interface SubjectCollectionDao {
         self_rating_score = COALESCE(:score, self_rating_score), 
         self_rating_comment = COALESCE(:comment, self_rating_comment), 
         self_rating_tags = COALESCE(:tags, self_rating_tags), 
-        self_rating_isPrivate = COALESCE(:private, self_rating_isPrivate)
+            self_rating_isPrivate = COALESCE(:private, self_rating_isPrivate),
+            lastUpdated = :lastUpdated,
+            lastFetched = :lastFetched
     WHERE subjectId = :subjectId
 """,
     )
-    suspend fun updateRating(subjectId: Int, score: Int?, comment: String?, tags: List<String>?, private: Boolean?)
+    suspend fun updateRating(
+        subjectId: Int,
+        score: Int?,
+        comment: String?,
+        tags: List<String>?,
+        private: Boolean?,
+        lastUpdated: Long = currentTimeMillis(),
+        lastFetched: Long = currentTimeMillis(),
+    )
 
     @Query("""SELECT COUNT(*) FROM subject_collection WHERE (collectionType is NOT NULL AND collectionType != 'NOT_COLLECTED' AND (:collectionType IS NULL OR collectionType = :collectionType))""")
     fun countCollected(collectionType: UnifiedCollectionType?): Flow<Int>

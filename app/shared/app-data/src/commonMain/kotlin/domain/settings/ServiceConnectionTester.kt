@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.wynime.app.domain.settings.ServiceConnectionTester.Service
+import com.wynime.app.data.network.WynimeCloudClient
 import com.wynime.datasources.api.source.ConnectionStatus
 import com.wynime.datasources.bangumi.BangumiClient
 import com.wynime.utils.coroutines.SingleTaskExecutor
@@ -57,6 +58,8 @@ class ServiceConnectionTester(
         val id: String,
 
         val test: suspend () -> Boolean,
+
+        val available: suspend () -> Boolean = { true },
     )
 
     sealed class TestState {
@@ -64,6 +67,7 @@ class ServiceConnectionTester(
         data object Idle : TestState()
 
         data object Testing : TestState()
+        data object NotAvailable : TestState()
         data class Success(
             val time: Duration,
         ) : TestState()
@@ -87,6 +91,7 @@ class ServiceConnectionTester(
             when (it) {
                 is TestState.Error -> true
                 TestState.Failed -> true
+                TestState.NotAvailable -> true
                 TestState.Idle -> false
                 is TestState.Success -> true
                 TestState.Testing -> false
@@ -106,6 +111,10 @@ class ServiceConnectionTester(
             lock.withLock(owner = this) {
                 _state.value = TestState.Testing
                 try {
+                    if (!service.available()) {
+                        _state.value = TestState.NotAvailable
+                        return@withLock
+                    }
                     val (res, t) = measureTimedValue { service.test() }
                     _state.value = if (res) TestState.Success(t) else TestState.Failed
                 } catch (e: CancellationException) {
@@ -126,22 +135,49 @@ class ServiceConnectionTester(
 object ServiceConnectionTesters {
     const val ID_BANGUMI = "BANGUMI"
     const val ID_BANGUMI_NEXT = "BANGUMI_NEXT"
+    const val ID_CLOUDFLARE = "CLOUDFLARE"
+    const val ID_CLOUDFLARE_STORAGE = "CLOUDFLARE_STORAGE"
 
-    val DefaultServiceIds = setOf(ID_BANGUMI, ID_BANGUMI_NEXT)
+    val DefaultServiceIds = setOf(
+        ID_BANGUMI,
+        ID_BANGUMI_NEXT,
+        ID_CLOUDFLARE,
+        ID_CLOUDFLARE_STORAGE,
+    )
 
     fun createDefault(
         bangumiClient: BangumiClient,
+        cloudClient: WynimeCloudClient? = null,
+        cloudSessionProvider: (suspend () -> String?)? = null,
         serviceIds: Set<String> = DefaultServiceIds,
         defaultDispatcher: CoroutineContext = Dispatchers.Default,
     ): ServiceConnectionTester {
         return ServiceConnectionTester(
             listOf(
-                Service(ID_BANGUMI) {
-                    bangumiClient.testConnectionMaster() == ConnectionStatus.SUCCESS
-                },
-                Service(ID_BANGUMI_NEXT) {
-                    bangumiClient.testConnectionNext() == ConnectionStatus.SUCCESS
-                },
+                Service(
+                    id = ID_BANGUMI,
+                    test = { bangumiClient.testConnectionMaster() == ConnectionStatus.SUCCESS },
+                ),
+                Service(
+                    id = ID_BANGUMI_NEXT,
+                    test = { bangumiClient.testConnectionNext() == ConnectionStatus.SUCCESS },
+                ),
+                Service(
+                    id = ID_CLOUDFLARE,
+                    test = { cloudClient?.health()?.ok == true },
+                    available = { cloudClient != null },
+                ),
+                Service(
+                    id = ID_CLOUDFLARE_STORAGE,
+                    test = {
+                        cloudSessionProvider?.invoke()?.takeIf(String::isNotBlank)?.let { token ->
+                            cloudClient?.testCollectionStorage(token)?.ok == true
+                        } == true
+                    },
+                    available = {
+                        cloudClient != null && !cloudSessionProvider?.invoke().isNullOrBlank()
+                    },
+                ),
             ).filter { it.id in serviceIds },
             defaultDispatcher,
         )

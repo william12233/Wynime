@@ -2,6 +2,10 @@ package com.wynime.app.data.network
 
 import com.wynime.cloud.apis.DefaultApi
 import com.wynime.cloud.models.CollectionRemoval
+import com.wynime.cloud.models.CollectionStorageProbe
+import com.wynime.cloud.models.CollectionSyncRequest
+import com.wynime.cloud.models.CollectionSyncResponse
+import com.wynime.cloud.models.Healthz
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.bearerAuth
@@ -19,6 +23,23 @@ import com.wynime.utils.ktor.UnsafeScopedHttpClientApi
 class WynimeCloudClient(
     private val client: ScopedHttpClient,
 ) {
+    suspend fun health(): Healthz = use { http ->
+        DefaultApi(BASE_URL, http).getHealthz().body()
+    }
+
+    suspend fun testCollectionStorage(sessionToken: String): CollectionStorageProbe = use { http ->
+        DefaultApi(BASE_URL, http).apply { setBearerToken(sessionToken) }
+            .testCollectionStorage().body()
+    }
+
+    suspend fun syncCollections(
+        sessionToken: String,
+        request: CollectionSyncRequest,
+    ): CollectionSyncResponse = use { http ->
+        DefaultApi(BASE_URL, http).apply { setBearerToken(sessionToken) }
+            .syncCollections(request).body()
+    }
+
     suspend fun createCollectionRemoval(sessionToken: String, subjectId: Int): CollectionRemoval = use { http ->
         DefaultApi(BASE_URL, http).apply { setBearerToken(sessionToken) }
             .createCollectionRemoval(subjectId).body()

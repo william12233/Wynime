@@ -25,6 +25,8 @@ import com.wynime.app.data.repository.subject.DefaultSubjectRelationsRepository
 import com.wynime.app.data.repository.subject.FollowedSubjectsRepository
 import com.wynime.app.data.repository.subject.SubjectCollectionRepository
 import com.wynime.app.data.repository.subject.SubjectCollectionRepositoryImpl
+import com.wynime.app.data.repository.subject.BangumiCollectionSyncCoordinator
+import com.wynime.app.data.repository.subject.BangumiCollectionSyncEnqueuer
 import com.wynime.app.data.repository.subject.BangumiTrackingMetadataRepository
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncEnqueuer
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncApi
@@ -87,6 +89,8 @@ fun KoinApplication.repositoryModules(
             trackingMetadataRepository = get(),
             trackingSyncEnqueuer = get<BangumiTrackingSyncEnqueuer>(),
             trackingSyncSettingsStore = get(),
+            collectionSyncEnqueuer = get<BangumiCollectionSyncEnqueuer>(),
+            collectionSyncCoordinator = get<BangumiCollectionSyncCoordinator>(),
             syncCoordinator = get(),
         )
     }
@@ -116,6 +120,7 @@ fun KoinApplication.repositoryModules(
             bangumiApi = get(),
             settingsStore = get(),
             syncCoordinator = get(),
+            collectionSyncCoordinator = get<BangumiCollectionSyncCoordinator>(),
         )
     }
 

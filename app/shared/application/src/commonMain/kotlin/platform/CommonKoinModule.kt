@@ -40,7 +40,9 @@ import com.wynime.app.data.persistent.database.MIGRATION_19_20
 import com.wynime.app.data.persistent.database.createDatabaseBuilder
 import com.wynime.app.data.repository.player.PlaybackHistorySyncer
 import com.wynime.app.data.repository.episode.EpisodeCollectionSyncEnqueuer
-import com.wynime.app.data.repository.episode.EpisodeCollectionSyncer
+import com.wynime.app.data.repository.subject.BangumiCollectionSyncCoordinator
+import com.wynime.app.data.repository.subject.BangumiCollectionSyncEnqueuer
+import com.wynime.app.data.repository.subject.BangumiCollectionSyncer
 import com.wynime.app.data.repository.repositoryModules
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCaseImpl
@@ -272,14 +274,23 @@ private fun KoinApplication.otherModules(
         ).also { it.start() }
     }
     single(createdAtStart = true) {
-        EpisodeCollectionSyncer(
-            pendingStore = getContext().dataStores.episodeCollectionPendingStore,
-            episodeService = get(),
-            sessionStateProvider = get(),
+        BangumiCollectionSyncer(
+            pendingStore = getContext().dataStores.bangumiCollectionSyncStore,
+            cloudClient = get(),
+            tokenRepository = get(),
+            subjectCollectionDao = database.subjectCollection(),
+            episodeCollectionDao = database.episodeCollection(),
+            deviceIdProvider = {
+                get<SettingsRepository>().analyticsSettings.flow.first().deviceId
+            },
             scope = coroutineScope,
+            legacyEpisodePendingStore = getContext().dataStores.episodeCollectionPendingStore,
+            accountKeyProvider = { get<BangumiTrackingMetadataRepository>().accountKey() },
         ).also { it.start() }
     }
-    single<EpisodeCollectionSyncEnqueuer> { get<EpisodeCollectionSyncer>() }
+    single<BangumiCollectionSyncEnqueuer> { get<BangumiCollectionSyncer>() }
+    single<BangumiCollectionSyncCoordinator> { get<BangumiCollectionSyncer>() }
+    single<EpisodeCollectionSyncEnqueuer> { get<BangumiCollectionSyncer>() }
     single<WynimeSubjectRelationIndexService> {
         WynimeSubjectRelationIndexService(get())
     }

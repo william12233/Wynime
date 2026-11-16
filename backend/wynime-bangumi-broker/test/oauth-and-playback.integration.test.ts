@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
 import { hashToken, encryptJson } from "../src/crypto";
+import { CollectionStore } from "../src/collection-store";
 import { ReplayMarker } from "../src/replay-markers";
 import type { Env, PlaybackSyncRequest } from "../src/protocol";
 
@@ -64,8 +65,17 @@ function createWorkerEnv(marker: ReplayMarker): Env {
         marker.fetch(input instanceof Request ? input : new Request(input, init)),
     }),
   } as any;
+  const collectionStore = new CollectionStore({ storage: new MemoryStorage() } as any);
+  const collectionNamespace = {
+    idFromName: () => ({}) as DurableObjectId,
+    get: () => ({
+      fetch: (input: string | URL | Request, init?: RequestInit) =>
+        collectionStore.fetch(input instanceof Request ? input : new Request(input, init)),
+    }),
+  } as any;
   return {
     REPLAY_MARKERS: namespace,
+    COLLECTION_STORES: collectionNamespace,
     BANGUMI_CLIENT_ID: "test-client",
     BANGUMI_CLIENT_SECRET: "test-secret",
     SESSION_ENCRYPTION_KEY: "test-session-encryption-key",
@@ -105,6 +115,17 @@ afterEach(() => {
 });
 
 describe("Wynime OAuth callback and ticket flow", () => {
+  it("publishes the collection API version and server clock", async () => {
+    const { marker } = createMarker();
+    const response = await workerRequest(createWorkerEnv(marker), "https://broker.test/healthz");
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      apiVersion: 1,
+    });
+  });
+
   it("hands an App Link callback back to the app when Android opened the browser", async () => {
     const { marker } = createMarker();
     const response = await workerRequest(
@@ -401,5 +422,290 @@ describe("Wynime playback Durable Object", () => {
 
     expect([...storage.values.keys()].some((key) => key.startsWith("playback-event:"))).toBe(false);
     expect([...storage.values.keys()].filter((key) => key.startsWith("playback-record:"))).toHaveLength(2);
+  });
+});
+
+describe("Wynime collection Durable Object", () => {
+  async function saveSession(marker: ReplayMarker, env: Env, token: string, id = 42) {
+    const expiresAt = Date.now() + 86400000;
+    await markerRpc(marker, {
+      op: "putSession",
+      sessionHash: await hashToken(token),
+      record: {
+        userKey: `bangumi:${id}`,
+        expiresAt,
+        payloadCiphertext: await encryptJson(
+          { userKey: `bangumi:${id}`, accessToken: `access-${id}`, refreshToken: "refresh", expiresAt },
+          env.SESSION_ENCRYPTION_KEY,
+        ),
+      },
+    });
+  }
+
+  it("performs an authenticated write/read/delete storage probe", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-storage-probe-session-token";
+    await saveSession(marker, env, token);
+
+    const response = await workerRequest(env, "https://broker.test/api/v1/diagnostics/storage-test", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}` },
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ ok: true });
+  });
+
+  it("keeps the newest field and makes retries idempotent", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-sync-session-token-with-enough-length";
+    await saveSession(marker, env, token);
+    const url = "https://broker.test/api/v1/collections/sync";
+    const request = (body: object) => workerRequest(env, url, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    const firstMutation = {
+      mutationId: "mutation-new",
+      deviceId: "device-a",
+      kind: "subject",
+      subjectId: 701779,
+      modifiedAt: 200,
+      changedFields: ["collectionType"],
+      collectionType: "DOING",
+    };
+    const first = await request({ deviceId: "device-a", cursor: 0, mode: "fast", changes: [firstMutation] });
+    expect(first.status).toBe(200);
+    const firstBody = await first.json() as { records: Array<Record<string, unknown>> };
+    expect(firstBody.records).toContainEqual(expect.objectContaining({ collectionType: "DOING" }));
+
+    const stale = await request({
+      deviceId: "device-b",
+      cursor: 0,
+      mode: "fast",
+      changes: [{
+        ...firstMutation,
+        mutationId: "mutation-old",
+        deviceId: "device-b",
+        modifiedAt: 100,
+        collectionType: "WISH",
+      }],
+    });
+    expect(stale.status).toBe(200);
+    const staleBody = await stale.json() as { records: Array<Record<string, unknown>> };
+    expect(staleBody.records).toContainEqual(expect.objectContaining({ collectionType: "DOING" }));
+
+    const retry = await request({ deviceId: "device-a", cursor: 2, mode: "fast", changes: [firstMutation] });
+    expect(retry.status).toBe(200);
+    const retryBody = await retry.json() as { accepted: Array<Record<string, unknown>> };
+    expect(retryBody.accepted).toEqual([{ mutationId: "mutation-new", revision: 1, changed: true }]);
+
+    const staleWithCurrentCursor = await request({
+      deviceId: "device-b",
+      cursor: 1,
+      mode: "fast",
+      changes: [{
+        ...firstMutation,
+        mutationId: "mutation-old-with-current-cursor",
+        deviceId: "device-b",
+        modifiedAt: 100,
+        collectionType: "WISH",
+      }],
+    });
+    expect(staleWithCurrentCursor.status).toBe(200);
+    await expect(staleWithCurrentCursor.json()).resolves.toMatchObject({
+      accepted: [{ mutationId: "mutation-old-with-current-cursor", revision: 1, changed: false }],
+      records: [expect.objectContaining({ collectionType: "DOING", revision: 1 })],
+    });
+  });
+
+  it("accepts locally first and reconciles the durable queue to Bangumi", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-reconcile-session-token-with-enough-length";
+    await saveSession(marker, env, token);
+    const upstream = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toContain("/v0/users/-/collections/701779");
+      return new Response(null, { status: 200 });
+    });
+    vi.stubGlobal("fetch", upstream);
+
+    const response = await workerRequest(env, "https://broker.test/api/v1/collections/sync", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        deviceId: "device-a",
+        cursor: 0,
+        mode: "reconcile",
+        changes: [{
+          mutationId: "reconcile-mutation",
+          deviceId: "device-a",
+          kind: "subject",
+          subjectId: 701779,
+          modifiedAt: 300,
+          changedFields: ["collectionType", "rate"],
+          collectionType: "DOING",
+          rate: 8,
+        }],
+      }),
+    });
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      upstreamStatus: "synced",
+      pendingCount: 0,
+    });
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+
+  it("bounds a device clock that is far in the future", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-clock-skew-session-token-with-enough-length";
+    await saveSession(marker, env, token);
+    const before = Date.now();
+    const response = await workerRequest(env, "https://broker.test/api/v1/collections/sync", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        deviceId: "device-a",
+        cursor: 0,
+        mode: "fast",
+        changes: [{
+          mutationId: "future-clock-mutation",
+          deviceId: "device-a",
+          kind: "subject",
+          subjectId: 701779,
+          modifiedAt: before + 24 * 60 * 60 * 1000,
+          changedFields: ["collectionType"],
+          collectionType: "DOING",
+        }],
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json() as { records: Array<{ fieldModifiedAt: Record<string, number> }> };
+    expect(body.records[0].fieldModifiedAt.collectionType).toBeLessThanOrEqual(Date.now() + 5 * 60 * 1000);
+  });
+
+  it("drops superseded pending fields before pushing them upstream", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-superseded-session-token-with-enough-length";
+    await saveSession(marker, env, token);
+    const url = "https://broker.test/api/v1/collections/sync";
+    const request = (body: object) => workerRequest(env, url, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+
+    await request({
+      deviceId: "device-a",
+      cursor: 0,
+      mode: "fast",
+      changes: [{
+        mutationId: "superseded-old",
+        deviceId: "device-a",
+        kind: "subject",
+        subjectId: 701779,
+        modifiedAt: 100,
+        changedFields: ["collectionType"],
+        collectionType: "WISH",
+      }],
+    });
+    await request({
+      deviceId: "device-a",
+      cursor: 1,
+      mode: "fast",
+      changes: [{
+        mutationId: "superseded-new",
+        deviceId: "device-a",
+        kind: "subject",
+        subjectId: 701779,
+        modifiedAt: 200,
+        changedFields: ["collectionType"],
+        collectionType: "DONE",
+      }],
+    });
+
+    const upstream = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toContain("/v0/users/-/collections/701779");
+      expect(JSON.parse(String(init?.body))).toEqual({ type: 2 });
+      return new Response(null, { status: 200 });
+    });
+    vi.stubGlobal("fetch", upstream);
+    const response = await request({
+      deviceId: "device-a",
+      cursor: 2,
+      mode: "reconcile",
+      changes: [],
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      upstreamStatus: "synced",
+      pendingCount: 0,
+    });
+    expect(upstream).toHaveBeenCalledTimes(1);
+  });
+
+  it("reconciles a web-confirmed removal instead of overwriting it", async () => {
+    const { marker } = createMarker();
+    const env = createWorkerEnv(marker);
+    const token = "collection-removal-session-token-with-enough-length";
+    await saveSession(marker, env, token);
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/v0/me")) {
+        return new Response(JSON.stringify({ id: 42, username: "test-user" }), { status: 200 });
+      }
+      if (url.endsWith("/v0/users/test-user/collections/701779")) {
+        return new Response(null, { status: 404 });
+      }
+      throw new Error("unexpected upstream URL: " + url);
+    }));
+
+    const response = await workerRequest(env, "https://broker.test/api/v1/collections/sync", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        deviceId: "device-a",
+        cursor: 0,
+        mode: "reconcile",
+        changes: [{
+          mutationId: "removal-mutation",
+          deviceId: "device-a",
+          kind: "subject",
+          subjectId: 701779,
+          modifiedAt: 300,
+          changedFields: ["collectionType"],
+          collectionType: "NOT_COLLECTED",
+        }],
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      upstreamStatus: "synced",
+      pendingCount: 0,
+    });
   });
 });

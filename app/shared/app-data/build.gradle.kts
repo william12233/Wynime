@@ -121,6 +121,3 @@ dependencies {
     kspDesktop(libs.androidx.room.compiler)
     kspAndroid(libs.androidx.room.compiler)
 }
-
-// Source plugins are downloaded and verified from the remote repository at runtime.
-// The application package intentionally contains no source-plugin artifacts.

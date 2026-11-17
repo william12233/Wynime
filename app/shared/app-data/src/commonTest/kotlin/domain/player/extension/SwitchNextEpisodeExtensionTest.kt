@@ -234,6 +234,7 @@ class SwitchNextEpisodeExtensionTest : AbstractPlayerExtensionTest() {
         assertEquals(1000, state.getCurrentEpisodeId())
         assertEquals(1, getNextEpisodeCalled)
 
+        state.enableMediaFetch(autoSelect = false)
         state.mediaSelectorFlow.filterNotNull().first().select(TestMediaList[0])
         advanceUntilIdle()
 

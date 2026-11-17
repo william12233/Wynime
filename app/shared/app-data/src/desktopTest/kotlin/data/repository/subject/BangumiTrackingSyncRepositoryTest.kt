@@ -4,10 +4,12 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -70,7 +72,9 @@ class BangumiTrackingSyncRepositoryTest {
             fixture.settings.setAutoSyncTracking(true)
             assertTrue(fixture.settings.flow.first().autoSyncTracking)
             fixture.database.subjectCollection().upsert(subject(1, UnifiedCollectionType.WISH, 100))
-            val event = async { fixture.repository.autoSyncEvents.first() }
+            val event = async(start = CoroutineStart.UNDISPATCHED) { fixture.repository.autoSyncEvents.first() }
+            val userLookupGate = CompletableDeferred<Unit>()
+            fixture.api.userLookupGate = userLookupGate
 
             fixture.metadata.markLocalChange(1, UnifiedCollectionType.WISH, 100)
             fixture.repository.enqueueLocalChange(1)
@@ -80,7 +84,7 @@ class BangumiTrackingSyncRepositoryTest {
             fixture.repository.enqueueLocalChange(1)
 
             runCurrent()
-            advanceUntilIdle()
+            userLookupGate.complete(Unit)
             assertIs<BangumiTrackingAutoSyncEvent.Succeeded>(event.await())
 
             assertEquals(listOf(1 to UnifiedCollectionType.DONE), fixture.api.upserts)
@@ -98,12 +102,12 @@ class BangumiTrackingSyncRepositoryTest {
 
             val restartedMetadata = BangumiTrackingMetadataRepository(
                 dao = fixture.database.bangumiTrackingMetadataDao(),
-                tokenRepository = TokenRepository(MemoryDataStore(TokenSave.Initial)),
+                tokenRepository = fixture.tokens,
                 accountBindingStore = fixture.settings,
             )
             val persisted = restartedMetadata.find(1)
 
-            assertEquals(200, persisted?.localDeletedAt)
+            assertEquals(200L, persisted?.localDeletedAt)
             assertEquals(BangumiTrackingPendingOperation.DELETE_COLLECTION.name, persisted?.pendingOperation)
             assertNull(persisted?.pendingType)
         } finally {
@@ -160,7 +164,7 @@ class BangumiTrackingSyncRepositoryTest {
             assertEquals(listOf(1), result.failedSubjectIds)
             assertEquals(0, result.deletedRemote)
             assertEquals(BangumiTrackingPendingOperation.DELETE_COLLECTION.name, persisted.pendingOperation)
-            assertEquals(300, persisted.localDeletedAt)
+            assertEquals(300L, persisted.localDeletedAt)
             assertNotNull(persisted.pendingError)
         } finally {
             fixture.database.close()
@@ -271,6 +275,43 @@ class BangumiTrackingSyncRepositoryTest {
     }
 
     @Test
+    fun `canceling a waiter leaves the running manual sync available to later callers`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            val pageGate = CompletableDeferred<Unit>()
+            fixture.api.pageGate = pageGate
+            val first = async { fixture.repository.syncNow() }
+            fixture.api.pageStarted.await()
+            first.cancelAndJoin()
+
+            val second = async { fixture.repository.syncNow() }
+            runCurrent()
+            pageGate.complete(Unit)
+            second.await()
+
+            assertEquals(1, fixture.api.currentUserCalls.get())
+            assertEquals(listOf(0 to 100), fixture.api.pageRequests)
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
+    fun `checking the connection preserves the previous sync summary`() = runTest {
+        val fixture = fixture(backgroundScope)
+        try {
+            fixture.repository.syncNow()
+            val summary = assertNotNull(fixture.repository.summary())
+
+            assertIs<BangumiTrackingConnectionResult.Connected>(fixture.repository.testConnection())
+
+            assertEquals(summary, fixture.repository.summary())
+        } finally {
+            fixture.database.close()
+        }
+    }
+
+    @Test
     fun `full sync sends independent remote mutations without an application concurrency cap`() = runTest {
         val fixture = fixture(backgroundScope)
         try {
@@ -366,18 +407,21 @@ class BangumiTrackingSyncRepositoryTest {
         val repository: BangumiTrackingSyncRepository,
     )
 
-    private fun fixture(scope: CoroutineScope): Fixture {
+    private suspend fun fixture(scope: CoroutineScope): Fixture {
         val database = Room.inMemoryDatabaseBuilder<WynimeDatabase> { WynimeDatabaseConstructor.initialize() }
             .setDriver(BundledSQLiteDriver())
             .build()
         val settings = BangumiTrackingSyncSettingsStore(createTestPreferencesDataStore())
-        val tokens = TokenRepository(MemoryDataStore(TokenSave.Initial))
+        val tokens = TokenRepository(MemoryDataStore(TokenSave.Initial)).apply {
+            setRefreshToken("test-account-session")
+        }
         val metadata = BangumiTrackingMetadataRepository(
             dao = database.bangumiTrackingMetadataDao(),
             tokenRepository = tokens,
             accountBindingStore = settings,
         )
         val api = FakeSyncApi()
+        metadata.adoptAccount(api.account)
         val subjectService = FakeSubjectService(api)
         return Fixture(
             database = database,
@@ -410,12 +454,14 @@ class BangumiTrackingSyncRepositoryTest {
         val inFlightUpserts = AtomicInteger()
         val maxUpserts = AtomicInteger()
         var page: (Int) -> BangumiTrackingRemotePage = { BangumiTrackingRemotePage(emptyList(), 0) }
+        var userLookupGate: CompletableDeferred<Unit>? = null
         var pageGate: CompletableDeferred<Unit>? = null
         val pageStarted = CompletableDeferred<Unit>()
         var upsertDelayMillis: Long = 0
 
         override suspend fun currentUser(): BangumiTrackingAccount {
             currentUserCalls.incrementAndGet()
+            userLookupGate?.await()
             return account
         }
 

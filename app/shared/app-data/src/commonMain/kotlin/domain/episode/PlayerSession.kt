@@ -13,6 +13,7 @@ import kotlin.time.TimeSource
 import com.wynime.app.domain.media.hls.HlsPlaybackOptions
 import com.wynime.app.domain.media.hls.HlsPlaybackPreparer
 import com.wynime.app.domain.media.hls.HlsPlaybackProxySession
+import com.wynime.app.domain.media.hls.isCandidateHlsUri
 import com.wynime.app.domain.media.player.prefetch.MediaPrefetchController
 import com.wynime.app.domain.media.fetch.MediaFetchSession
 import com.wynime.app.domain.media.resolver.EpisodeMetadata
@@ -276,22 +277,16 @@ class PlayerSession(
     }
 
     private suspend fun prepareHlsPlaybackIfEnabled(data: MediaData): PreparedMediaData {
-        if (data !is UriMediaData) {
+        if (data !is UriMediaData || !data.uri.isCandidateHlsUri()) {
             return PreparedMediaData(data)
         }
         val config = getVideoScaffoldConfigUseCase.invoke().first()
         val options = HlsPlaybackOptions(
             filterSegments = config.enableExperimentalHlsSegmentFiltering,
 
-            // HLS segment proxying is required for sources which only support
-            // bounded/range segment requests.  It must not disappear just
-            // because the user turned off automatic OP/ED skipping.
             proxySegments = true,
             prefetchSegments = config.autoSkipOpEd,
         )
-        if (!options.isEnabled) {
-            return PreparedMediaData(data)
-        }
         val result = hlsPlaybackPreparer.prepare(data, options)
         return PreparedMediaData(result.data, result.session)
     }

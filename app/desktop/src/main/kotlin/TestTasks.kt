@@ -29,6 +29,17 @@ object TestTasks {
     private val logger = logger<TestTasks>()
     fun handleTestTask(taskName: String, args: List<String>, context: DesktopContext): Nothing {
         when (taskName) {
+            "release-smoke-test" -> {
+                val expectedVersion = args.single()
+                val actualVersion = currentWynimeBuildConfig.versionName
+                check(actualVersion == expectedVersion) {
+                    "Packaged Wynime version is $actualVersion, expected $expectedVersion"
+                }
+                checkBundledSqlite()
+                checkMediampFfmpeg()
+                exitProcess(0)
+            }
+
             "mediamp-ffmpeg-smoke-test" -> {
                 checkMediampFfmpeg()
                 exitProcess(0)

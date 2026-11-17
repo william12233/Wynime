@@ -3,7 +3,6 @@ package com.wynime.app.ui.mediafetch
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.onNodeWithText
 import com.wynime.app.ui.framework.runWynimeComposeUiTest
 import kotlin.test.Test

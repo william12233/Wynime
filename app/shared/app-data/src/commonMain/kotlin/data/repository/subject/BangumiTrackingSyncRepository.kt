@@ -2,6 +2,8 @@ package com.wynime.app.data.repository.subject
 
 import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -9,6 +11,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -93,28 +96,25 @@ class BangumiTrackingMetadataRepository(
 
     suspend fun adoptAccount(account: BangumiTrackingAccount): String = accountMutex.withLock {
         val tokenKey = currentTokenKey()
-        // A refreshed/reissued token may be seen for the same Bangumi account.
-        // Migrate only from a row whose persisted user id matches; never infer
-        // ownership from the previous token or currently adopted account.
+        // The persisted Bangumi user ID establishes ownership across token changes.
         val persistedAccount = dao.findAccountByUserId(account.id)
         if (persistedAccount != null && persistedAccount.accountKey != account.key) {
             val oldMetadata = dao.list(persistedAccount.accountKey)
             if (oldMetadata.isNotEmpty()) {
                 dao.upsertAll(oldMetadata.map { it.copy(accountKey = account.key) })
             }
-            dao.findAccount(persistedAccount.accountKey)?.let { old ->
-                dao.upsertAccount(old.copy(accountKey = account.key, userId = account.id, username = account.username))
-            }
-            dao.deleteAll(persistedAccount.accountKey)
-            dao.deleteAccount(persistedAccount.accountKey)
         }
         dao.upsertAccount(
-            BangumiTrackingAccountEntity(
+            (persistedAccount ?: BangumiTrackingAccountEntity(account.key)).copy(
                 accountKey = account.key,
                 userId = account.id,
                 username = account.username,
             ),
         )
+        if (persistedAccount != null && persistedAccount.accountKey != account.key) {
+            dao.deleteAll(persistedAccount.accountKey)
+            dao.deleteAccount(persistedAccount.accountKey)
+        }
         adoptedAccountKey = account.key
         adoptedTokenKey = tokenKey
         accountBindingStore?.bindTokenToAccount(tokenKey, account.key)
@@ -355,12 +355,12 @@ class BangumiTrackingSyncRepository(
     private val collectionSyncCoordinator: BangumiCollectionSyncCoordinator? = null,
 ) : BangumiTrackingSyncEnqueuer {
     private val syncLock = Mutex()
-    private var runningSync: kotlinx.coroutines.Deferred<BangumiTrackingSyncResult>? = null
-    private val pendingJobs = mutableMapOf<Int, kotlinx.coroutines.Job>()
+    private var runningSync: Deferred<BangumiTrackingSyncResult>? = null
+    private val pendingJobs = mutableMapOf<Int, Job>()
     private val pendingLock = Mutex()
     private val _autoSyncEvents = MutableSharedFlow<BangumiTrackingAutoSyncEvent>(extraBufferCapacity = 16)
     val autoSyncEvents = _autoSyncEvents.asSharedFlow()
-    val syncState: kotlinx.coroutines.flow.StateFlow<BangumiSyncUiState> = syncCoordinator.state
+    val syncState: StateFlow<BangumiSyncUiState> = syncCoordinator.state
 
     suspend fun summary(): BangumiTrackingSyncSummary? {
         val accountKey = metadataRepository.accountKey()
@@ -408,29 +408,29 @@ class BangumiTrackingSyncRepository(
 
     suspend fun syncNow(): BangumiTrackingSyncResult {
         val deferred = syncLock.withLock {
-            runningSync ?: serviceScope.async(start = kotlinx.coroutines.CoroutineStart.LAZY) {
-                syncCoordinator.withExclusive(BangumiSyncOperation.TRACKING) {
+            runningSync?.takeUnless { it.isCompleted } ?: serviceScope.async(start = CoroutineStart.LAZY) {
+                collectionSyncCoordinator?.prepareForCurrentAccount()
+                val result = syncCoordinator.withExclusive(BangumiSyncOperation.TRACKING) {
                     performFullSync()
+                }
+                val cloudResult = collectionSyncCoordinator?.syncNow(reconcile = true)
+                if (cloudResult == null) {
+                    result
+                } else {
+                    result.copy(
+                        cloudSyncStatus = cloudResult.upstreamStatus,
+                        cloudSyncPendingCount = cloudResult.pendingCount,
+                        cloudSyncError = cloudResult.error?.message,
+                        failureMessages = result.failureMessages + listOfNotNull(cloudResult.error?.message),
+                    )
                 }
             }.also { runningSync = it }
         }
         return try {
-            collectionSyncCoordinator?.prepareForCurrentAccount()
-            val result = deferred.await()
-            val cloudResult = collectionSyncCoordinator?.syncNow(reconcile = true)
-            if (cloudResult == null) {
-                result
-            } else {
-                result.copy(
-                    cloudSyncStatus = cloudResult.upstreamStatus,
-                    cloudSyncPendingCount = cloudResult.pendingCount,
-                    cloudSyncError = cloudResult.error?.message,
-                    failureMessages = result.failureMessages + listOfNotNull(cloudResult.error?.message),
-                )
-            }
+            deferred.await()
         } finally {
             syncLock.withLock {
-                if (runningSync === deferred) runningSync = null
+                if (runningSync === deferred && deferred.isCompleted) runningSync = null
             }
         }
     }

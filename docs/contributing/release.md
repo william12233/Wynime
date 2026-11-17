@@ -1,6 +1,6 @@
 # 正式發行
 
-正式版本由 `.github/workflows/src.main.kts` 產生的 `release.yml` 發布。Release tag 使用 `vX.Y.Z`；tag 去除前綴 `v` 後，會套用到所有正式 artifact 名稱。
+正式版本由 `.github/workflows/release.yml` 發布。Release tag 使用 `vX.Y.Z`，去除前綴 `v` 後套用到所有正式 artifact 名稱。
 
 ## 公開 artifact allowlist
 
@@ -11,7 +11,7 @@ wynime-<version>-arm64-v8a.apk
 wynime-<version>-windows-x86_64.zip
 ```
 
-Android TV、其他 Android ABI、其他作業系統、額外 QR asset 與其他命名都不屬於正式 release。workflow generator 會驗證 release matrix；release 結束後的 verification job 會再次驗證 GitHub Release asset 清單、APK ABI、APK 簽章與 Windows ZIP 完整性。
+正式 Release workflow 會以草稿收集兩份資產。驗證工作確認資產清單、APK ABI、APK 簽章、升級版本及 Windows ZIP 完整性後，才會公開草稿。
 
 ## 正式 build 與簽章
 
@@ -25,7 +25,7 @@ Android TV、其他 Android ABI、其他作業系統、額外 QR asset 與其他
 
 ## 版本與檢查
 
-修改 release matrix、artifact naming 或 signing 流程時，同步修改 `.github/workflows/src.main.kts` 與生成的 `.github/workflows/release.yml`。Deterministic tests 位於 `build-logic/src/test/kotlin/ReleaseArtifactNamesTest.kt`，至少執行：
+修改 release matrix、artifact naming 或 signing 流程時，執行 `.github/workflows/validate_platform_workflows.py`，並執行打包名稱及建置檢查：
 
 ```powershell
 .\gradlew.bat :build-logic:test --no-configuration-cache --no-daemon

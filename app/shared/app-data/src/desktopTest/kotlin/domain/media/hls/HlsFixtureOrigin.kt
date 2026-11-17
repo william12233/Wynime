@@ -26,6 +26,7 @@ class HlsFixtureOrigin : AutoCloseable {
     var segmentLatencyMillis: Long = 0
 
     val chunkedPaths: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    val boundedRangePaths: MutableSet<String> = ConcurrentHashMap.newKeySet()
     val failPaths: MutableMap<String, Int> = ConcurrentHashMap()
 
     private val recorded = ConcurrentLinkedQueue<RecordedRequest>()
@@ -56,6 +57,10 @@ class HlsFixtureOrigin : AutoCloseable {
             val body = resource(path)
             if (body == null) {
                 exchange.sendResponseHeaders(404, -1)
+                return
+            }
+            if (path in boundedRangePaths && headers["range"]?.substringAfter('-')?.toIntOrNull() == null) {
+                exchange.sendResponseHeaders(416, -1)
                 return
             }
             exchange.responseHeaders.add("Content-Type", contentTypeOf(path))

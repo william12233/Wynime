@@ -25,9 +25,13 @@ for filename in ("build.yml", "release.yml"):
     if filename == "release.yml":
         signing = jobs["create-release"]["steps"]
         validation = next(i for i, step in enumerate(signing) if step.get("name") == "Validate formal release signing configuration")
-        publication = next(i for i, step in enumerate(signing) if step.get("name") == "Create Release")
-        assert validation < publication
-        assert "verify-release-assets" in jobs
+        draft = next(i for i, step in enumerate(signing) if step.get("name") == "Create or reuse release draft")
+        assert validation < draft
+        assert "consistency-check" in jobs["create-release"]["needs"]
+        assert set(jobs["verify-release-assets"]["needs"]) == {
+            "create-release", "release_github-windows-2022", "release_github-ubuntu-2404",
+        }
+        assert "verify-release-assets" in jobs["publish-release"]["needs"]
     if filename == "build.yml":
         android_steps = jobs["build_github-ubuntu-2404"]["steps"]
         for step in android_steps:

@@ -129,6 +129,7 @@ class EpisodeFetchPlayStateSwitchEpisodeTest : AbstractPlayerExtensionTest() {
 
             assertEquals(newEpisodeId, state.getCurrentEpisodeId())
 
+            state.enableMediaFetch(autoSelect = false)
             val myMedia1 = TestMediaList[1]
             ms1.complete(listOf(myMedia1))
             suite.setMediaDuration(100_000)

@@ -331,6 +331,31 @@ abstract class AbstractRealHlsProxyTest internal constructor(
     }
 
     @Test
+    fun `range restricted origin falls back to bounded requests and caches the media type`() = withFixture {
+        val result = prepare("/hls/fmp4/index.m3u8")
+        val session = result.session()
+        try {
+            val uri = text(httpGet(result.data.uri)).segmentUris().first()
+            val path = "/hls/fmp4/seg000.m4s"
+            origin.boundedRangePaths += path
+
+            val response = httpGet(uri)
+            assertEquals(200, response.status)
+            assertEquals("video/mp4", response.headers["content-type"])
+            assertContentEquals(origin.bytesOf(path), response.body)
+            assertEquals(2, origin.count(path))
+
+            val cached = httpGet(uri, mapOf("Range" to "bytes=10-19"))
+            assertEquals(206, cached.status)
+            assertEquals("video/mp4", cached.headers["content-type"])
+            assertContentEquals(response.body.copyOfRange(10, 20), cached.body)
+            assertEquals(2, origin.count(path))
+        } finally {
+            session.close()
+        }
+    }
+
+    @Test
     fun `chunked origin responses are forwarded intact`() = withFixture {
         val result = prepare("/hls/vod/index.m3u8")
         val session = result.session()

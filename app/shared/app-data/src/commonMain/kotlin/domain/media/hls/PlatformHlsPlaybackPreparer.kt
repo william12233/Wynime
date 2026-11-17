@@ -1,6 +1,7 @@
 package com.wynime.app.domain.media.hls
 
 import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.plugins.retry
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
@@ -16,15 +17,19 @@ import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.io.Buffer
 import kotlinx.io.IOException
@@ -39,6 +44,7 @@ import com.wynime.utils.coroutines.IO_
 import com.wynime.utils.httpdownloader.m3u.DefaultM3u8Parser
 import com.wynime.utils.httpdownloader.m3u.M3u8Playlist
 import com.wynime.utils.logging.info
+import com.wynime.utils.logging.logger
 import com.wynime.utils.logging.warn
 import org.openani.mediamp.source.UriMediaData
 import kotlin.concurrent.Volatile
@@ -68,12 +74,14 @@ class PlatformHlsPlaybackPreparer internal constructor(
         }
         val manifestProbeStarted = TimeSource.Monotonic.markNow()
         val manifestResult = try {
-            withTimeoutOrNull(manifestProbeTimeoutMillis) {
-                httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
-                    val response = get(data.uri) {
-                        data.headers.forEach { (name, value) -> header(name, value) }
+            withContext(Dispatchers.IO_) {
+                withTimeoutOrNull(manifestProbeTimeoutMillis) {
+                    httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
+                        val response = get(data.uri) {
+                            data.headers.forEach { (name, value) -> header(name, value) }
+                        }
+                        response.call.request.url.toString() to response.bodyAsText()
                     }
-                    response.call.request.url.toString() to response.bodyAsText()
                 }
             }
         } catch (e: CancellationException) {
@@ -206,7 +214,6 @@ private class LocalHlsProxySession private constructor(
         prefetchJob = null
         prefetchStopRequested = false
         prefetchTargetUris = targetUris
-        range!!
         logger.info { "HLS prefetch $range -> segments ${targets.first().index}..${targets.last().index}" }
         segmentCache.pin(targets.map { it.remoteUri })
         prefetchProgressFlow.value = targets.map { segment ->
@@ -218,7 +225,7 @@ private class LocalHlsProxySession private constructor(
                 if (prefetchStopRequested) break
                 if (segmentCache.isComplete(segment.remoteUri)) continue
                 val success = try {
-                    segmentCache.getOrDownload(segment.remoteUri) { downloadSegment(segment.remoteUri) }
+                    segmentCache.getOrDownload(segment.remoteUri) { downloadRemoteSegment(segment.remoteUri) }
                     true
                 } catch (e: CancellationException) {
                     throw e
@@ -235,10 +242,6 @@ private class LocalHlsProxySession private constructor(
                 }
             }
         }
-    }
-
-    private suspend fun downloadSegment(remoteUri: String): ByteArray {
-        return downloadRemoteBytes(remoteUri)
     }
 
     private suspend fun respond(request: HlsProxyRequest, output: HlsProxyResponseSink) {
@@ -288,11 +291,16 @@ private class LocalHlsProxySession private constructor(
     }
 
     private suspend fun serveSegment(segment: ProxiedSegment, request: HlsProxyRequest, output: HlsProxyResponseSink) {
-        val bytes = segmentCache.getOrDownload(segment.remoteUri) { downloadSegment(segment.remoteUri) }
-        serveBytes(bytes, request.headers["range"], output)
+        val remoteUri = segment.remoteUri
+        val cached = segmentCache.getCompleted(remoteUri) ?: segmentCache.awaitInFlight(remoteUri)
+        if (cached != null) {
+            serveCachedSegment(cached, request.headers["range"], output)
+            return
+        }
+        serveRemoteResource(remoteUri, request, output, DEFAULT_SEGMENT_CONTENT_TYPE, allowBoundedFallback = true)
     }
 
-    private suspend fun downloadRemoteBytes(remoteUri: String): ByteArray {
+    private suspend fun downloadRemoteSegment(remoteUri: String): CachedHlsSegment {
         val first = requestRemoteRange(remoteUri, 0L, RANGE_CHUNK_BYTES - 1L)
         if (first.statusCode !in 200..299) {
             throw IOException("Remote returned HTTP ${first.statusCode} for $remoteUri")
@@ -307,7 +315,7 @@ private class LocalHlsProxySession private constructor(
                     )
                 }
             }
-            return first.body
+            return CachedHlsSegment(first.body, first.contentType)
         }
 
         val firstRange = parseContentRange(first.contentRange)
@@ -315,7 +323,9 @@ private class LocalHlsProxySession private constructor(
         val totalLength = firstRange.total
             ?: throw IOException("Remote HLS segment did not provide a total length for $remoteUri")
         val firstExpectedLength = firstRange.end - firstRange.start + 1L
-        if (firstRange.start != 0L || first.body.size.toLong() != firstExpectedLength) {
+        if (firstRange.start != 0L || firstRange.end < firstRange.start || firstRange.end >= totalLength ||
+            first.body.size.toLong() != firstExpectedLength
+        ) {
             throw IOException("Remote HLS segment returned an incomplete first range for $remoteUri")
         }
 
@@ -331,19 +341,22 @@ private class LocalHlsProxySession private constructor(
             val range = parseContentRange(chunk.contentRange)
                 ?: throw IOException("Remote HLS segment returned an invalid range for $remoteUri")
             val expectedLength = range.end - range.start + 1L
-            if (range.start != nextStart || range.end >= totalLength || chunk.body.size.toLong() != expectedLength) {
+            if (range.start != nextStart || range.end < range.start || range.end >= totalLength ||
+                range.total != totalLength || chunk.body.size.toLong() != expectedLength
+            ) {
                 throw IOException("Remote HLS segment returned a discontinuous range for $remoteUri")
             }
             output.write(chunk.body)
             nextStart = range.end + 1L
         }
-        return output.readByteArray()
+        return CachedHlsSegment(output.readByteArray(), first.contentType)
     }
 
     private suspend fun requestRemoteRange(remoteUri: String, start: Long, end: Long): RemoteRangeResponse {
         return httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
             prepareGet(remoteUri) {
                 expectSuccess = false
+                retry { noRetry() }
                 this@LocalHlsProxySession.headers.forEach { (name, value) -> header(name, value) }
                 header(HttpHeaders.Range, "bytes=$start-$end")
             }.execute { response ->
@@ -351,6 +364,7 @@ private class LocalHlsProxySession private constructor(
                     statusCode = response.status.value,
                     contentRange = response.headers[HttpHeaders.ContentRange],
                     contentLength = response.contentLength(),
+                    contentType = response.contentType()?.toString() ?: DEFAULT_SEGMENT_CONTENT_TYPE,
                     body = response.bodyAsBytes(),
                 )
             }
@@ -362,16 +376,34 @@ private class LocalHlsProxySession private constructor(
         request: HlsProxyRequest,
         output: HlsProxyResponseSink,
         fallbackContentType: String,
+        allowBoundedFallback: Boolean = false,
     ) {
         var headersWritten = false
+        val requestedRange = request.headers["range"]
         try {
             httpClientProvider.get(ScopedHttpClientUserAgent.BROWSER).use {
                 prepareGet(remoteUri) {
-
                     expectSuccess = false
+                    retry { noRetry() }
                     this@LocalHlsProxySession.headers.forEach { (name, value) -> header(name, value) }
-                    request.headers["range"]?.let { header(HttpHeaders.Range, it) }
+                    requestedRange?.let { header(HttpHeaders.Range, it) }
                 }.execute { response ->
+                    val code = response.status.value
+                    if (allowBoundedFallback && (code in RANGE_REJECTION_STATUS_CODES ||
+                            (code == 206 && requestedRange == null))
+                    ) {
+                        val downloaded = try {
+                            segmentCache.getOrDownload(remoteUri) { downloadRemoteSegment(remoteUri) }
+                        } catch (error: IOException) {
+                            logger.warn(error) { "Bounded HLS segment request failed" }
+                            null
+                        }
+                        if (downloaded != null) {
+                            headersWritten = true
+                            serveCachedSegment(downloaded, requestedRange, output)
+                            return@execute
+                        }
+                    }
                     val contentLength = response.contentLength()
                     val header = buildString {
                         append("HTTP/1.1 ").append(response.status.value).append(' ').append(response.status.description).append("\r\n")
@@ -422,7 +454,8 @@ private class LocalHlsProxySession private constructor(
         }
     }
 
-    private suspend fun serveBytes(bytes: ByteArray, rangeHeader: String?, output: HlsProxyResponseSink) {
+    private suspend fun serveCachedSegment(segment: CachedHlsSegment, rangeHeader: String?, output: HlsProxyResponseSink) {
+        val bytes = segment.bytes
         val range = rangeHeader?.let { parseByteRange(it, bytes.size.toLong()) }
         if (rangeHeader != null && range == null) {
             output.write(errorResponseHeader(416, "Range Not Satisfiable").encodeToByteArray())
@@ -438,7 +471,7 @@ private class LocalHlsProxySession private constructor(
             } else {
                 append("HTTP/1.1 200 OK\r\n")
             }
-            append("Content-Type: ").append(DEFAULT_SEGMENT_CONTENT_TYPE).append("\r\n")
+            append("Content-Type: ").append(segment.contentType).append("\r\n")
             append("Accept-Ranges: bytes\r\n")
             append("Content-Length: ").append(length).append("\r\n")
             append("Cache-Control: no-store\r\n")
@@ -588,6 +621,7 @@ private class LocalHlsProxySession private constructor(
         val statusCode: Int,
         val contentRange: String?,
         val contentLength: Long?,
+        val contentType: String,
         val body: ByteArray,
     )
 
@@ -610,6 +644,7 @@ private class LocalHlsProxySession private constructor(
         private const val RANGE_CHUNK_BYTES = 1024L * 1024L
         private const val DEFAULT_SEGMENT_CONTENT_TYPE = "video/mp2t"
         private const val DEFAULT_RESOURCE_CONTENT_TYPE = "application/octet-stream"
+        private val RANGE_REJECTION_STATUS_CODES = setOf(400, 403, 416)
         private val CRLF = "\r\n".encodeToByteArray()
         private val CONTENT_RANGE_REGEX = Regex("bytes (\\d+)-(\\d+)/(\\d+|\\*)", RegexOption.IGNORE_CASE)
 
@@ -650,9 +685,12 @@ private class LocalHlsProxySession private constructor(
     }
 }
 
+private data class CachedHlsSegment(val bytes: ByteArray, val contentType: String)
+
 private class SegmentCache(private val maxBytes: Long) {
-    private class Entry(val deferred: kotlinx.coroutines.CompletableDeferred<ByteArray>) {
-        val bytes: ByteArray? get() = if (deferred.isCompleted && !deferred.isCancelled) deferred.getCompleted() else null
+    private class Entry(val deferred: CompletableDeferred<CachedHlsSegment>) {
+        @OptIn(ExperimentalCoroutinesApi::class)
+        val segment: CachedHlsSegment? get() = if (deferred.isCompleted && !deferred.isCancelled) deferred.getCompleted() else null
     }
 
     private val lock = SynchronizedObject()
@@ -669,24 +707,28 @@ private class SegmentCache(private val maxBytes: Long) {
         return entry
     }
 
-    fun isComplete(uri: String): Boolean = synchronized(lock) { touchLocked(uri)?.bytes != null }
+    fun isComplete(uri: String): Boolean = getCompleted(uri) != null
 
-    fun getCompleted(uri: String): ByteArray? = synchronized(lock) { touchLocked(uri)?.bytes }
+    fun getCompleted(uri: String): CachedHlsSegment? = synchronized(lock) { touchLocked(uri)?.segment }
 
-    suspend fun awaitInFlight(uri: String): ByteArray? {
+    suspend fun awaitInFlight(uri: String): CachedHlsSegment? {
         val deferred = synchronized(lock) { touchLocked(uri)?.deferred } ?: return null
-        return runCatching { deferred.await() }.getOrNull()
+        return try {
+            deferred.await()
+        } catch (_: CancellationException) {
+            currentCoroutineContext().ensureActive()
+            null
+        }
     }
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    suspend fun getOrDownload(uri: String, download: suspend () -> ByteArray): ByteArray {
+    suspend fun getOrDownload(uri: String, download: suspend () -> CachedHlsSegment): CachedHlsSegment {
         while (true) {
             val (entry, owner) = synchronized(lock) {
                 val existing = touchLocked(uri)
                 if (existing != null && !existing.deferred.isCancelled) {
                     existing to false
                 } else {
-                    val created = Entry(kotlinx.coroutines.CompletableDeferred())
+                    val created = Entry(CompletableDeferred())
                     entries[uri] = created
                     created to true
                 }
@@ -694,20 +736,21 @@ private class SegmentCache(private val maxBytes: Long) {
             if (!owner) {
                 try {
                     return entry.deferred.await()
-                } catch (e: CancellationException) {
-
-                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                } catch (_: CancellationException) {
+                    currentCoroutineContext().ensureActive()
                     continue
                 }
             }
             try {
-                val bytes = download()
+                val segment = download()
                 synchronized(lock) {
-                    totalBytes += bytes.size
-                    entry.deferred.complete(bytes)
-                    evictLocked()
+                    if (entries[uri] === entry) {
+                        totalBytes += segment.bytes.size
+                        entry.deferred.complete(segment)
+                        evictLocked()
+                    }
                 }
-                return bytes
+                return segment
             } catch (e: Throwable) {
                 synchronized(lock) {
                     if (entries[uri] === entry) entries.remove(uri)
@@ -724,7 +767,7 @@ private class SegmentCache(private val maxBytes: Long) {
         val iterator = entries.entries.iterator()
         while (totalBytes > maxBytes && iterator.hasNext()) {
             val (uri, entry) = iterator.next()
-            val bytes = entry.bytes ?: continue
+            val bytes = entry.segment?.bytes ?: continue
             if (uri in pinned) continue
             totalBytes -= bytes.size
             iterator.remove()
@@ -738,9 +781,9 @@ private class SegmentCache(private val maxBytes: Long) {
     }
 }
 
-private val logger = com.wynime.utils.logging.logger<PlatformHlsPlaybackPreparer>()
+private val logger = logger<PlatformHlsPlaybackPreparer>()
 
-private fun String.isCandidateHlsUri(): Boolean {
+internal fun String.isCandidateHlsUri(): Boolean {
     val scheme = substringBefore("://", missingDelimiterValue = "").lowercase()
     return (scheme == "http" || scheme == "https") && lowercase().contains(".m3u8")
 }

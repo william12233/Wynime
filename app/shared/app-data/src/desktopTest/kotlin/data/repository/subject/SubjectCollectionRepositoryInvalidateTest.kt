@@ -725,7 +725,7 @@ class SubjectCollectionRepositoryInvalidateTest {
 
     @Test
     fun `INV-09 未失效的缓存不会触发网络拉取`() = runRepositoryTest {
-        dao.upsert(subject(1, currentTimeMillis()))
+        dao.upsert(subject(1, currentTimeMillis()).copy(totalEpisodes = 0))
 
         repository.subjectCollectionFlow(1).test {
             assertEquals(1, awaitItem().subjectId)

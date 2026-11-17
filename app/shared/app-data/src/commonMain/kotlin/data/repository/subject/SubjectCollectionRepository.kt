@@ -264,7 +264,7 @@ class SubjectCollectionRepositoryImpl(
                     cachedEpisodeCount != existing.totalEpisodes ||
                     !existing.aliasesFetched
                 if (existing != null && !existing.aliasesFetched) {
-                    // Do not start media search with a lightweight cache entry missing Bangumi aliases.
+                    // Media search uses Bangumi aliases from the hydrated entry.
                     if (tryRefetchKeepingCachedSubject(subjectId) == null) {
                         emit(existing)
                     }

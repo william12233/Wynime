@@ -32,8 +32,6 @@ fun SourceIcon(
     var useFallback by remember(iconUrl, sourceName) { mutableStateOf(iconUrl.isBlank()) }
     val resolvedIconUrl = if (useFallback) fallbackIconUrl else iconUrl.trim()
     val iconModel = resolvedIconUrl.ifEmpty {
-        // This branch is only needed for an empty source name in a malformed
-        // plugin; keep a valid model so the image component never receives "".
         fallbackIconUrl
     }
     key(iconModel) {

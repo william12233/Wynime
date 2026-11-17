@@ -6,6 +6,9 @@ name: Release
 permissions:
   actions: write
   contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   consistency-check:
     name: Validate Android and Windows workflows
@@ -15,10 +18,11 @@ jobs:
     - run: python -m pip install PyYAML
     - run: python .github/workflows/validate_platform_workflows.py
   create-release:
-    name: Create Release
+    name: Prepare release draft
     runs-on: ubuntu-latest
+    needs:
+    - consistency-check
     outputs:
-      uploadUrl: ${{ steps.step-5.outputs.upload_url }}
       id: ${{ steps.step-5.outputs.id }}
     steps:
     - id: step-0
@@ -41,7 +45,8 @@ jobs:
       run: |
         set -euo pipefail
 
-        export RELEASE_NOTES="Wynime ${{ steps.step-2.outputs.substring }} release."
+        [[ "$GIT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]
+        export RELEASE_NOTES="Wynime $TAG_VERSION release."
 
         python3 - <<'PY' > "$RUNNER_TEMP/release-body.md"
         import os
@@ -70,16 +75,28 @@ jobs:
         \ \\\n  SIGNING_RELEASE_KEYPASSWORD; do\n  if [ -z \"${!variable:-}\" ]; then\n    echo \"$variable is required for\
         \ an official release\" >&2\n    exit 1\n  fi\ndone"
     - id: step-5
-      name: Create Release
-      uses: softprops/action-gh-release@v1
-      with:
-        body_path: ${{ steps.step-3.outputs.body_path }}
-        name: ${{ steps.step-2.outputs.substring }}
-        tag_name: ${{ steps.step-1.outputs.tag }}
-        draft: 'false'
-        prerelease: ${{ contains(steps.step-1.outputs.tag, '-') }}
+      name: Create or reuse release draft
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_TAG: ${{ steps.step-1.outputs.tag }}
+        TAG_VERSION: ${{ steps.step-2.outputs.substring }}
+        RELEASE_BODY: ${{ steps.step-3.outputs.body_path }}
+        PRERELEASE: ${{ contains(steps.step-1.outputs.tag, '-') }}
+      run: |
+        set -euo pipefail
+        releases="repos/$GITHUB_REPOSITORY/releases"
+        existing=$(gh api --paginate --slurp "$releases?per_page=100" |
+          jq -c --arg tag "$RELEASE_TAG" '[.[][] | select(.tag_name == $tag)] | first // empty')
+        if [[ -n "$existing" ]]; then
+          jq -e '.draft == true' <<< "$existing" > /dev/null
+          releaseId=$(jq -er '.id' <<< "$existing")
+        else
+          releaseId=$(gh api --method POST "$releases" --raw-field "tag_name=$RELEASE_TAG" \
+            --raw-field "target_commitish=$GITHUB_SHA" --raw-field "name=$TAG_VERSION" \
+            --field "body=@$RELEASE_BODY" --field draft=true --field "prerelease=$PRERELEASE" --jq '.id')
+        fi
+        [[ "$releaseId" =~ ^[0-9]+$ ]]
+        echo "id=$releaseId" >> "$GITHUB_OUTPUT"
   release_github-windows-2022:
     name: Windows Server 2019 x86_64
     runs-on:
@@ -289,6 +306,16 @@ jobs:
         name: compose-logs-github-windows-2022
         path: app/desktop/build/compose/logs
       if: ${{ always() }}
+    - name: Launch the Windows release ZIP
+      timeout-minutes: 5
+      shell: powershell
+      env:
+        TAG_VERSION: ${{ steps.step-2.outputs.substring }}
+      run: |
+        $env:WYNIME_DESKTOP_TEST_ARGC = '1'
+        $env:WYNIME_DESKTOP_TEST_ARGV_0 = $env:TAG_VERSION
+        $zip = "ci-helper/build/distributions/wynime-$env:TAG_VERSION.zip"
+        & ./ci-helper/verify/run-wynime-test-windows-x64.ps1 $zip 'release-smoke-test'
   release_github-ubuntu-2404:
     name: Ubuntu 24.04 Android arm64-v8a
     runs-on:
@@ -590,21 +617,28 @@ jobs:
         GITHUB_REPOSITORY: ${{ github.repository }}
         RELEASE_ID: ${{ needs.create-release.outputs.id }}
         TAG_VERSION: ${{ steps.step-3.outputs.substring }}
-      run: "set -euo pipefail\n\nexpectedAndroid=\"wynime-$TAG_VERSION-arm64-v8a.apk\"\nexpectedWindows=\"wynime-$TAG_VERSION-windows-x86_64.zip\"\
-        \nassetsUrl=\"repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?per_page=100\"\nassetsJson=\"$(gh api \"$assetsUrl\"\
-        )\"\nactualNames=\"$(printf '%s' \"$assetsJson\" | jq -r '.[].name' | sort)\"\nexpectedNames=\"$(printf '%s\\n%s\\\
-        n' \"$expectedAndroid\" \"$expectedWindows\" | sort)\"\nassetCount=\"$(printf '%s\\n' \"$actualNames\" | sed '/^$/d'\
-        \ | wc -l | tr -d ' ')\"\n\nif [ \"$assetCount\" -ne 2 ] || [ \"$actualNames\" != \"$expectedNames\" ]; then\n  echo\
-        \ \"Official release must contain exactly these two assets:\" >&2\n  printf '%s\\n' \"$expectedNames\" >&2\n  echo\
-        \ \"Actual assets:\" >&2\n  printf '%s\\n' \"$actualNames\" >&2\n  exit 1\nfi\n\nandroidId=\"$(printf '%s' \"$assetsJson\"\
-        \ | jq -r --arg name \"$expectedAndroid\" '.[] | select(.name == $name) | .id')\"\nwindowsId=\"$(printf '%s' \"$assetsJson\"\
-        \ | jq -r --arg name \"$expectedWindows\" '.[] | select(.name == $name) | .id')\"\ntest -n \"$androidId\"\ntest -n\
-        \ \"$windowsId\"\n\nsdkRoot=\"${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}\"\ntest -n \"$sdkRoot\"\napksigner=\"$(find \"\
-        $sdkRoot/build-tools\" -type f -name apksigner -print | sort -V | tail -n 1)\"\naapt2=\"$(find \"$sdkRoot/build-tools\"\
-        \ -type f -name aapt2 -print | sort -V | tail -n 1)\"\ntest -n \"$apksigner\"\ntest -n \"$aapt2\"\n\napkPath=\"$RUNNER_TEMP/$expectedAndroid\"\
-        \nzipPath=\"$RUNNER_TEMP/$expectedWindows\"\n
-        \ curl --fail --silent --show-error --location -H 'Accept: application/octet-stream' -H \"Authorization: Bearer $GH_TOKEN\" \"https://api.github.com/repos/$GITHUB_REPOSITORY/releases/assets/$androidId\" -o \"$apkPath\"\n\
-        \ curl --fail --silent --show-error --location -H 'Accept: application/octet-stream' -H \"Authorization: Bearer $GH_TOKEN\" \"https://api.github.com/repos/$GITHUB_REPOSITORY/releases/assets/$windowsId\" -o \"$zipPath\"\n\n\"$apksigner\" verify --verbose \"$apkPath\"\nnativeCode=\"$(\"$aapt2\" dump badging \"\
-        $apkPath\" | sed -n 's/^native-code: //p')\"\nprintf '%s\\n' \"$nativeCode\" | grep -Fxq \"'arm64-v8a'\"\nif printf\
-        \ '%s\\n' \"$nativeCode\" | grep -Eq \"'(x86_64|armeabi-v7a|x86)'\"; then\n  echo \"The official APK contains an unexpected\
-        \ ABI: $nativeCode\" >&2\n  exit 1\nfi\nunzip -t \"$zipPath\" >/dev/null"
+      run: bash .github/workflows/verify_release_assets.sh
+  publish-release:
+    name: Publish verified release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs:
+    - create-release
+    - verify-release-assets
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Publish release draft
+      env:
+        GH_TOKEN: ${{ github.token }}
+        RELEASE_ID: ${{ needs.create-release.outputs.id }}
+      run: |
+        set -euo pipefail
+        git fetch origin main
+        git merge-base --is-ancestor FETCH_HEAD HEAD
+        release="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"
+        gh api "$release" | jq -e --arg tag "$GITHUB_REF_NAME" '.tag_name == $tag and .draft == true' > /dev/null
+        gh api --method PATCH "$release" --field draft=false |
+          jq -e --arg tag "$GITHUB_REF_NAME" '.tag_name == $tag and .draft == false' > /dev/null

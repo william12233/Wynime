@@ -647,6 +647,7 @@ class RememberPlayProgressExtensionTest : AbstractPlayerExtensionTest() {
 
         assertEquals(0, suite.player.currentPositionMillis.value)
 
+        state.enableMediaFetch(autoSelect = false)
         loadSelectedMedia(suite, state, mediaIndex = 1)
         assertEquals(500, suite.player.currentPositionMillis.value)
 

@@ -914,11 +914,18 @@ jobs:
       run: ./gradlew assembleAndroidDeviceTest "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8"
         "-Dorg.gradle.jvmargs=-Xmx8g -Dkotlin.daemon.jvm.options=-Xmx6g" "-Dkotlin.daemon.jvm.options=-Xmx6g"
       if: ${{ steps.step-59.outcome == 'failure' }}
+    - name: Set up Android Build Tools for source plugin verification
+      uses: android-actions/setup-android@v3
+      with:
+        accept-android-sdk-licenses: 'true'
+        packages: build-tools;37.0.0
     - name: Verify source plugin packages and release tooling
       shell: bash
       run: |
-        sdkmanager 'build-tools;37.0.0'
-        ./gradlew :source:plugin-api:check :source:plugins:check :build-logic:test :ci-helper:compileKotlin --no-configuration-cache
+        ./gradlew --stop
+        ./gradlew :source:plugin-api:check :source:plugins:check :build-logic:test :ci-helper:compileKotlin \
+          --no-daemon --no-configuration-cache --max-workers=2 \
+          '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8 -Dkotlin.daemon.jvm.options=-Xmx2g'
     - id: step-61
       name: Stop Gradle daemons before emulator (api=30, arch=x86_64)
       run: './gradlew --stop

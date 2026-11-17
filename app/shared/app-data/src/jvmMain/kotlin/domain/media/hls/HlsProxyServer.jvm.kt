@@ -1,5 +1,6 @@
 package com.wynime.app.domain.media.hls
 
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import com.wynime.utils.logging.logger
 import com.wynime.utils.logging.warn
@@ -15,12 +16,15 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.coroutines.cancellation.CancellationException
 
 internal actual val PlatformHlsProxyServerFactory: HlsProxyServerFactory = HlsProxyServerFactory { JvmHlsProxyServer() }
 
 internal class JvmHlsProxyServer : HlsProxyServer {
     private val closed = AtomicBoolean(false)
     private val serverSocket = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+    private val requests = SupervisorJob()
+    private val connections = mutableSetOf<Socket>()
 
     override val port: Int get() = serverSocket.localPort
 
@@ -36,8 +40,17 @@ internal class JvmHlsProxyServer : HlsProxyServer {
                     logger.warn(e) { "Failed to accept HLS proxy connection" }
                     continue
                 }
+                val accepted = synchronized(connections) { !closed.get() && connections.add(socket) }
+                if (!accepted) {
+                    socket.close()
+                    continue
+                }
                 thread(name = "HlsProxy-$port-conn", isDaemon = true) {
-                    socket.use { handleConnection(it, handler) }
+                    try {
+                        socket.use { handleConnection(it, handler) }
+                    } finally {
+                        synchronized(connections) { connections.remove(socket) }
+                    }
                 }
             }
         }
@@ -49,9 +62,9 @@ internal class JvmHlsProxyServer : HlsProxyServer {
             val request = parseHlsProxyRequest(reader.readLine()) { reader.readLine() } ?: return
             socket.getOutputStream().use { output ->
                 try {
-                    runBlocking { handler.handle(request, OutputStreamSink(output)) }
-                } catch (e: SocketException) {
-
+                    runBlocking(requests) { handler.handle(request, OutputStreamSink(output)) }
+                } catch (_: SocketException) {
+                } catch (_: CancellationException) {
                 } catch (e: Throwable) {
 
                     logger.warn(e) { "Failed to serve HLS proxy request ${request.path}" }
@@ -71,7 +84,13 @@ internal class JvmHlsProxyServer : HlsProxyServer {
 
     override fun close() {
         if (closed.compareAndSet(false, true)) {
-            serverSocket.close()
+            requests.cancel()
+            try {
+                serverSocket.close()
+            } finally {
+                val active = synchronized(connections) { connections.toList().also { connections.clear() } }
+                active.forEach { socket -> runCatching { socket.close() } }
+            }
         }
     }
 

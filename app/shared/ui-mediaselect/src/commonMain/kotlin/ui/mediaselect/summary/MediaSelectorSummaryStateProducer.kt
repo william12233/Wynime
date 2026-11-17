@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.transformLatest
@@ -38,6 +39,7 @@ class MediaSelectorSummaryStateProducer(
     private val sourceSummariesFlow = combine(mediaSourceResultsFlow, mediaSources) { results, sources ->
         tupleOf(results, sources)
     }.flatMapLatest { (results, sourcesSorted) ->
+        if (results.isEmpty()) return@flatMapLatest flowOf(emptyList())
         combine(
             results.map { result ->
                 result.state.map { it is MediaSourceFetchState.Completed }.distinctUntilChanged()

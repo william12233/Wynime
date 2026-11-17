@@ -1,11 +1,15 @@
 package com.wynime.app.ui.settings.account
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.wynime.app.data.repository.subject.BangumiTrackingAccount
 import com.wynime.app.data.repository.subject.BangumiCollectionUpstreamStatus
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncResult
@@ -65,6 +69,7 @@ class BangumiTrackingSyncScreenTest {
                     onTestConnection = {},
                     onSyncNow = { callbacks.syncClicks++ },
                     onSetShowResult = { callbacks.showResultValues += it },
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
                 )
             }
         }
@@ -148,7 +153,7 @@ class BangumiTrackingSyncScreenTest {
     }
 
     @Test
-    fun `cloud pending status is visible instead of being reported as complete`() = runWynimeComposeUiTest {
+    fun `cloud pending status remains visible after local sync`() = runWynimeComposeUiTest {
         val callbacks = Callbacks()
         render(
             BangumiTrackingConnectionUiState.Connected(BangumiTrackingAccount(1, "user")),
@@ -163,7 +168,7 @@ class BangumiTrackingSyncScreenTest {
             ),
         )
 
-        onNodeWithTag("bangumi-tracking-cloud-sync-pending").assertIsDisplayed()
+        onNodeWithTag("bangumi-tracking-cloud-sync-pending").performScrollTo().assertIsDisplayed()
         onNodeWithText("等待 Bangumi", substring = true).assertIsDisplayed()
     }
 }

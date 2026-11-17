@@ -44,17 +44,13 @@ class SourcePluginStoreState(
             _isRefreshing.value = true
             _error.value = null
             try {
-                // Keep this list empty: bundled packages are migration-only. New installations
-                // must come from the repository, so a fresh App install starts with zero
-                // selected source plugins and an upgrade cannot silently select a build.
-                val bundled = emptyList<SourcePluginIndexEntry>()
-                _available.value = bundled
+                _available.value = emptyList()
                 val cached = repositoryCache.data.first()
                 cached.index?.takeIf { it.pluginApiVersion == SOURCE_PLUGIN_API_VERSION }?.plugins?.let {
-                    _available.value = mergeEntries(bundled, it)
+                    _available.value = latestEntries(it)
                 }
                 val result = repositoryClient.fetchIndex(cached)
-                _available.value = mergeEntries(bundled, result.index.plugins)
+                _available.value = latestEntries(result.index.plugins)
                 repositoryCache.updateData {
                     SourcePluginRepositoryCache(etag = result.etag, index = result.index)
                 }
@@ -84,12 +80,10 @@ class SourcePluginStoreState(
         _error.value = null
     }
 
-    private fun mergeEntries(
-        bundled: List<SourcePluginIndexEntry>,
-        remote: List<SourcePluginIndexEntry>,
-    ): List<SourcePluginIndexEntry> = (bundled + remote).groupBy { it.id }.values.map { entries ->
-        entries.maxWith { left, right -> compareSourcePluginVersions(left.version, right.version) }
-    }
+    private fun latestEntries(plugins: List<SourcePluginIndexEntry>): List<SourcePluginIndexEntry> =
+        plugins.groupBy { it.id }.values.map { entries ->
+            entries.maxWith { left, right -> compareSourcePluginVersions(left.version, right.version) }
+        }
 
     private fun runPluginOperation(pluginId: String, operation: suspend () -> Unit): Job = scope.launch {
         _busyPluginIds.value += pluginId

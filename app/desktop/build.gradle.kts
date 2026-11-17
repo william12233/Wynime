@@ -125,8 +125,6 @@ compose.desktop {
             description = project.description
             vendor = "Wynime"
 
-            val projectVersion = project.version.toString()
-
             windows {
                 this.upgradeUuid = UUID.randomUUID().toString()
                 iconFile.set(file("icons/a_1024x1024_rounded.ico"))

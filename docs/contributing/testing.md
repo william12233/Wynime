@@ -18,7 +18,7 @@
 
 ## 外掛
 
-來源外掛 API 為 v3，十個附帶來源提供 JVM／Dex 套件。測試涵蓋 SHA-256、entry point、API 契約、離線遷移、啟用狀態保留、損毀與替換失敗；未知舊 ABI 套件在 class loading 前標示不相容。搜尋測試同時覆蓋繁體原字形與簡體 fallback。
+官方索引提供 v3 JVM／Dex 外掛。測試涵蓋 SHA-256、entry point、API 契約、啟用狀態保留、損毀與替換失敗，並在 class loading 前檢查 ABI 相容性。搜尋測試同時覆蓋繁體原字形與簡體 fallback。
 
 ## Worker
 

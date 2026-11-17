@@ -10,25 +10,12 @@
 import hashlib
 import os
 import shutil
-import ssl
 import sys
 import urllib.request
 
 
-def download_with_no_cert_check(url: str, destination: str):
-	"""
-	Downloads the file from `url` to `destination`, ignoring certificate verification.
-	"""
-	                                  
-	ssl_ctx = ssl.create_default_context()
-	ssl_ctx.check_hostname = False
-	ssl_ctx.verify_mode = ssl.CERT_NONE
-
-	                                                 
-	with urllib.request.urlopen(url, context=ssl_ctx) as response, open(
-			destination, "wb"
-	) as out_file:
-		                                          
+def download_file(url: str, destination: str):
+	with urllib.request.urlopen(url, timeout=120) as response, open(destination, "wb") as out_file:
 		shutil.copyfileobj(response, out_file)
 
 
@@ -65,7 +52,7 @@ def main():
 
 	                                                   
 	checksum_file = "checksum.tmp"
-	download_with_no_cert_check(jbr_checksum_url, checksum_file)
+	download_file(jbr_checksum_url, checksum_file)
 
 	                                                                   
 	with open(checksum_file, "r", encoding="utf-8") as cf:
@@ -79,7 +66,7 @@ def main():
 
 	                          
 	if file_checksum != expected_checksum:
-		download_with_no_cert_check(jbr_url, jbr_location)
+		download_file(jbr_url, jbr_location)
 		file_checksum = sha512sum(jbr_location)
 
 	             
@@ -97,7 +84,7 @@ def main():
 	except OSError:
 		pass
 
-	print("[*] JBR downloaded and verified successfully, ignoring SSL errors.")
+	print("[*] JBR archive SHA-512 verified.")
 
 
 if __name__ == "__main__":

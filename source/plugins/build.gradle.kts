@@ -111,6 +111,18 @@ tasks.register<JavaExec>("sourcePluginLiveSmokeTest") {
 val pluginProjectDir = layout.projectDirectory.asFile
 val pluginBuildDir = layout.buildDirectory.get().asFile
 
+fun androidPluginD8(): File {
+    val sdkPath = sequenceOf(
+        System.getProperty("android.sdk.dir"),
+        System.getenv("ANDROID_SDK_ROOT"),
+        System.getenv("ANDROID_HOME"),
+    ).firstOrNull { !it.isNullOrBlank() }
+        ?: error("Set android.sdk.dir, ANDROID_SDK_ROOT, or ANDROID_HOME to build Android source plugins")
+    val buildTools = File(sdkPath, "build-tools/37.0.0")
+    return listOf(File(buildTools, "d8.bat"), File(buildTools, "d8")).firstOrNull(File::isFile)
+        ?: error("Install Android SDK Build Tools 37.0.0 to build Android source plugins")
+}
+
 pluginIds.forEach { pluginId ->
     val taskName = "package${pluginId.replaceFirstChar { it.uppercase() }}Plugin"
     tasks.register<Jar>(taskName) {
@@ -140,21 +152,7 @@ tasks.register("packageAndroidPlugins") {
     notCompatibleWithConfigurationCache("D8 packaging invokes Android SDK tools during task execution.")
 
     doLast {
-        val sdkPath = sequenceOf(
-            System.getProperty("android.sdk.dir"),
-            System.getenv("ANDROID_SDK_ROOT"),
-            System.getenv("ANDROID_HOME"),
-        ).filterNotNull().firstOrNull { it.isNotBlank() }
-            ?: error("Set android.sdk.dir, ANDROID_SDK_ROOT, or ANDROID_HOME to package Android plugins")
-        val buildTools = File(sdkPath, "build-tools")
-            .listFiles()
-            ?.filter { it.isDirectory }
-            ?.sortedByDescending { it.name }
-            ?.firstOrNull()
-            ?: error("No Android build-tools directory found under $sdkPath")
-        val d8 = listOf(File(buildTools, "d8.bat"), File(buildTools, "d8"))
-            .firstOrNull { it.isFile }
-            ?: error("D8 was not found under ${buildTools.absolutePath}")
+        val d8 = androidPluginD8()
 
         pluginIds.forEach { pluginId ->
             val jvmArtifact = File(pluginProjectDir, "artifacts/source-$pluginId.jar")
@@ -254,6 +252,7 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
     )
 
     doLast {
+        val d8 = androidPluginD8()
         val indexFile = File(pluginProjectDir, "index.json")
         val indexText = indexFile.readText()
         check(Regex("\\\"pluginApiVersion\\\"\\s*:\\s*3").containsMatchIn(indexText)) {
@@ -301,20 +300,6 @@ val verifyPluginArtifactFreshness = tasks.register("verifyPluginArtifactFreshnes
                 }
             }
 
-            val sdkPath = sequenceOf(
-                System.getProperty("android.sdk.dir"),
-                System.getenv("ANDROID_SDK_ROOT"),
-                System.getenv("ANDROID_HOME"),
-            ).filterNotNull().firstOrNull { it.isNotBlank() }
-                ?: error("Set android.sdk.dir, ANDROID_SDK_ROOT, or ANDROID_HOME for artifact freshness")
-            val buildTools = File(sdkPath, "build-tools")
-                .listFiles()
-                ?.filter(File::isDirectory)
-                ?.maxByOrNull(File::getName)
-                ?: error("No Android build-tools directory found under $sdkPath")
-            val d8 = listOf(File(buildTools, "d8.bat"), File(buildTools, "d8"))
-                .firstOrNull(File::isFile)
-                ?: error("D8 was not found under ${buildTools.absolutePath}")
             val dexDirectory = File(pluginBuildDir, "freshness/dex/$pluginId")
             check(dexDirectory.toPath().normalize().startsWith(pluginBuildDir.toPath().normalize()))
             dexDirectory.deleteRecursively()

@@ -1,7 +1,7 @@
 {
   "id": "akianime",
   "name": "AkiAnime",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.akianime.AkianimeEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.2.0/source/plugins/artifacts/source-akianime.jar",
-      "sha256": "9d0f0b40a728011cd37181cfa53e3d8f1f14883f207a0a352cd7b3c646cced54",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.3.0/source/plugins/artifacts/source-akianime.jar",
+      "sha256": "2111a6e040fada4be67203ba415bf223a87e0d7becae6f1b2ae7cf759b6894dd",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.2.0/source/plugins/artifacts/source-akianime-android.jar",
-      "sha256": "bc07d3ceaf3f0c8de7e4250b52341c9e8cd0161e6d4b24885efd331b11e62e51",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-akianime-v1.3.0/source/plugins/artifacts/source-akianime-android.jar",
+      "sha256": "70c7c4b057eec461bc8e311be10e95741e302fb8dd87891b36d374a88df5916f",
       "format": "jar"
     }
   }

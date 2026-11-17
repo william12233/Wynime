@@ -17,7 +17,7 @@
 
 JAR 會輸出到 `build/plugins/`，並同步寫入主專案的 `source/plugins/artifacts/`。插件透過主專案內的 `:source:plugin-api` 編譯，不複製或發行獨立的 API JAR。
 
-Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入；桌面 artifact 保留 JVM class。
+Android artifact 使用 Android SDK Build Tools `37.0.0` 的 D8 建置，只含供 `DexClassLoader` 載入的 `classes.dex`。桌面 artifact 保留 JVM class。
 
 `index.json` 與各 `manifests/*.json` 是公開倉庫的機器可讀索引，更新 artifact 後必須同步更新 SHA-256。App 不會把這些 manifest 或 JAR 打包進安裝檔；新安裝與更新都從遠端倉庫下載並驗證。
 
@@ -27,15 +27,15 @@ Android artifact 是只含 `classes.dex` 的 JAR，供 `DexClassLoader` 載入�
 
 | ID | 程式碼修訂次數 | 版本 |
 | --- | ---: | --- |
-| `next` | 7 | `1.7.1` |
+| `next` | 8 | `1.8.0` |
 | `girigiri` | 9 | `1.9.0` |
 | `2rk` | 9 | `1.9.0` |
 | `bfzy` | 2 | `1.2.0` |
-| `dmbus` | 6 | `1.6.0` |
-| `dyttzy` | 4 | `1.4.0` |
-| `baimao` | 4 | `1.4.0` |
-| `akianime` | 2 | `1.2.0` |
-| `mxdm` | 1 | `1.1.0` |
+| `dmbus` | 7 | `1.7.0` |
+| `dyttzy` | 5 | `1.5.0` |
+| `baimao` | 4 | `1.4.1` |
+| `akianime` | 3 | `1.3.0` |
+| `mxdm` | 2 | `1.2.0` |
 
 ## 目前來源與人工煙霧測試
 

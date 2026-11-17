@@ -121,4 +121,4 @@ Wynime 支援 Android 手機／平板及 Windows。
 ### 资源来源是什么?
 
 全部视频数据都来自网络, Wynime 本身不存储任何视频数据。
-Wynime 使用可安裝的 [v3 來源外掛](source/plugins)，附帶七個來源的 Android Dex 與 Windows JVM 套件。來源網站提供媒體，App 負責搜尋、選擇、播放及下載。
+Wynime 從官方索引下載可安裝的 [v3 來源外掛](source/plugins)。索引提供 Android Dex 與 Windows JVM 套件。來源網站提供媒體，App 負責搜尋、選擇、播放及下載。

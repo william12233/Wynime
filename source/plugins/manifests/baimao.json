@@ -1,7 +1,7 @@
 {
   "id": "baimao",
   "name": "白猫動漫",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.baimao.BaimaoEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.4.0/source/plugins/artifacts/source-baimao.jar",
-      "sha256": "2ba1691879dcda8d31e9219c8a7ac0a5ab66252e87948aa1b0906ddcb6496dfd",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.4.1/source/plugins/artifacts/source-baimao.jar",
+      "sha256": "79a94d17a37307dfff06873176212e030837581921ceb0b6f1c58140228e85cc",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.4.0/source/plugins/artifacts/source-baimao-android.jar",
-      "sha256": "37f7aa1a45a5e5fbb1034ef303c596e624d5f9d3fc41bfb1810a70ad70527ef7",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-baimao-v1.4.1/source/plugins/artifacts/source-baimao-android.jar",
+      "sha256": "8e25a9db2b2f993390fcf55e87661ec805e4f31e79fd410e8563ad54b900a094",
       "format": "jar"
     }
   }

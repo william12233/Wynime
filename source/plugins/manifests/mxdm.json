@@ -1,7 +1,7 @@
 {
   "id": "mxdm",
   "name": "MX動漫",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "pluginApiVersion": 3,
   "minHostVersion": "0.1.3",
   "entryClass": "tw.wynime.sources.mxdm.MxdmEntryPoint",
@@ -14,13 +14,13 @@
   ],
   "artifacts": {
     "desktop": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-mxdm-v1.1.0/source/plugins/artifacts/source-mxdm.jar",
-      "sha256": "925312f868b2d392be6ea42ec6128c88d1315c9e75a691310bfa8ffb13d405c4",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-mxdm-v1.2.0/source/plugins/artifacts/source-mxdm.jar",
+      "sha256": "d12c91151c3cebc200715abe3c69dd9eb33bbb527378d53912bdb333fae4e630",
       "format": "jar"
     },
     "android": {
-      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-mxdm-v1.1.0/source/plugins/artifacts/source-mxdm-android.jar",
-      "sha256": "af6da01a1398b959076f3d364b84476d388bb7808318adae77cfb429963da016",
+      "url": "https://raw.githubusercontent.com/william12233/Wynime/source-plugin-mxdm-v1.2.0/source/plugins/artifacts/source-mxdm-android.jar",
+      "sha256": "6db957cc5f578b718c8bf82e1312924b839ccc1cbf2530ea69cae61a1dc10ce0",
       "format": "jar"
     }
   }

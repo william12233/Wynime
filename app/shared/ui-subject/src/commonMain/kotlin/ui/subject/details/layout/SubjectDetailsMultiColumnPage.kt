@@ -79,6 +79,7 @@ import com.wynime.app.ui.lang.subject_details_login_to_collect
 import com.wynime.app.ui.lang.subject_details_rate
 import com.wynime.app.ui.lang.subject_details_rating
 import com.wynime.app.ui.lang.subject_details_related_subjects
+import com.wynime.app.ui.lang.subject_details_tab_discussions
 import com.wynime.app.ui.subject.AiringLabel
 import com.wynime.app.ui.subject.collection.components.EditableSubjectCollectionTypeButton
 import com.wynime.app.ui.subject.collection.progress.SubjectProgressButton
@@ -119,6 +120,7 @@ internal fun SubjectDetailsMultiColumnPage(
     onClickTag: (Tag) -> Unit,
     onClickLogin: () -> Unit,
     onClickCache: () -> Unit,
+    onClickDiscussions: () -> Unit,
     modifier: Modifier = Modifier,
     showTopBar: Boolean = true,
     windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
@@ -193,6 +195,9 @@ internal fun SubjectDetailsMultiColumnPage(
             }
             if (info.summary.isNotBlank()) {
                 SubjectSummarySection(info.summary)
+            }
+            OutlinedButton(onClickDiscussions) {
+                Text(stringResource(Lang.subject_details_tab_discussions))
             }
             PagedEpisodesGrid(
                 episodes = episodes,

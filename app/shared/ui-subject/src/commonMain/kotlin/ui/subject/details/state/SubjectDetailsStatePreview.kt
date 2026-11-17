@@ -1,6 +1,9 @@
 package com.wynime.app.ui.subject.details.state
 
+import androidx.paging.PagingData
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.wynime.app.data.models.subject.SubjectDiscussion
 import com.wynime.app.data.models.subject.TestSelfRatingInfo
 import com.wynime.app.data.models.subject.TestSubjectCollections
 import com.wynime.app.data.models.subject.TestSubjectInfo
@@ -16,7 +19,9 @@ import com.wynime.datasources.api.topic.UnifiedCollectionType
 import com.wynime.utils.platform.annotations.TestOnly
 
 @TestOnly
-fun createTestSubjectDetailsState(): SubjectDetailsState {
+fun createTestSubjectDetailsState(
+    discussionsPager: Flow<PagingData<SubjectDiscussion>> = createTestPager(emptyList()),
+): SubjectDetailsState {
     val subjectCollectionInfo = TestSubjectCollections.first()
     val subjectInfo = subjectCollectionInfo.subjectInfo
     return SubjectDetailsState(
@@ -27,6 +32,7 @@ fun createTestSubjectDetailsState(): SubjectDetailsState {
         staffPager = createTestPager(emptyList()),
         exposedStaffPager = createTestPager(emptyList()),
         relatedSubjectsPager = createTestPager(TestRelatedSubjects),
+        discussionsPager = discussionsPager,
         uiState = MutableStateFlow(
             SubjectDetailsUiState(
                 subjectId = TestSubjectInfo.subjectId,

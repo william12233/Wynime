@@ -28,7 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -122,7 +122,6 @@ import com.wynime.app.ui.foundation.widgets.BackNavigationIconButton
 import com.wynime.app.ui.foundation.widgets.LocalToaster
 import com.wynime.app.ui.foundation.widgets.showLoadError
 import com.wynime.app.ui.lang.Lang
-import com.wynime.app.ui.lang.subject_details_coming_soon
 import com.wynime.app.ui.lang.subject_details_login_to_collect
 import com.wynime.app.ui.lang.subject_details_tab_details
 import com.wynime.app.ui.lang.subject_details_tab_discussions
@@ -141,6 +140,8 @@ import com.wynime.app.ui.subject.details.components.SubjectBlurredBackground
 import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults
 import com.wynime.app.ui.subject.details.components.SubjectDetailsDefaults.MaximumContentWidth
 import com.wynime.app.ui.subject.details.components.SubjectDetailsHeader
+import com.wynime.app.ui.subject.details.components.SubjectDiscussionDialog
+import com.wynime.app.ui.subject.details.components.SubjectDiscussionList
 import com.wynime.app.ui.subject.details.layout.CompactDetailsTabContent
 import com.wynime.app.ui.subject.details.layout.SubjectDetailsLayoutParams
 import com.wynime.app.ui.subject.details.layout.SubjectDetailsMultiColumnPage
@@ -281,8 +282,10 @@ private fun SubjectDetailsPage(
     onClickOpenExternal: () -> Unit = {},
 ) {
     val navigator = LocalNavigator.current
+    val uriHandler = LocalUriHandler.current
 
     var showSelectEpisode by rememberSaveable { mutableStateOf(false) }
+    var showDiscussions by rememberSaveable(state.subjectId) { mutableStateOf(false) }
 
     val imageViewer = rememberImageViewerHandler()
     ImageViewerBackHandler(imageViewer)
@@ -331,6 +334,13 @@ private fun SubjectDetailsPage(
 
         if (layoutParams.isMultiColumn && state.info != null) {
             EditableRatingDialogsHost(uiState.rating, state)
+            if (showDiscussions) {
+                SubjectDiscussionDialog(
+                    state.discussionsPager,
+                    onClickUrl = uriHandler::openUri,
+                    onDismiss = { showDiscussions = false },
+                )
+            }
 
             PeoplePreviewHost {
                 SubjectDetailsMultiColumnPage(
@@ -342,6 +352,7 @@ private fun SubjectDetailsPage(
                     onClickTag = onClickTag,
                     onClickLogin = onClickLogin,
                     onClickCache = { navigator.navigateSubjectCaches(uiState.subjectId) },
+                    onClickDiscussions = { showDiscussions = true },
                     modifier = modifier,
                     showTopBar = showTopBar,
                     windowInsets = windowInsets,
@@ -431,17 +442,16 @@ private fun SubjectDetailsPage(
                         contentPadding = tabContentPadding,
                     )
                 },
-                discussionsTab = {
-                    LazyColumn(
-                        Modifier.fillMaxSize(),
-
-                    ) {
-                        item {
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                Text(stringResource(Lang.subject_details_coming_soon), Modifier.padding(16.dp))
-                            }
-                        }
-                    }
+                discussionsTab = { tabContentPadding ->
+                    val listState = rememberLazyListState()
+                    SubjectDiscussionList(
+                        state.discussionsPager,
+                        onClickUrl = uriHandler::openUri,
+                        onClickImage = { imageViewer.viewImage(it) },
+                        modifier = Modifier.nestedScrollWorkaround(listState),
+                        listState = listState,
+                        contentPadding = tabContentPadding,
+                    )
                 },
             )
         }

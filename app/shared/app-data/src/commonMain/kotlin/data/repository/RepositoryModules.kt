@@ -34,6 +34,7 @@ import com.wynime.app.data.repository.subject.BangumiTrackingSyncApiImpl
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncRepository
 import com.wynime.app.data.repository.subject.BangumiTrackingSyncSettingsStore
 import com.wynime.app.data.repository.subject.BangumiSyncCoordinator
+import com.wynime.app.data.repository.subject.SubjectDiscussionRepository
 import com.wynime.app.data.repository.subject.SubjectRelationGraphRepository
 import com.wynime.app.data.repository.subject.SubjectRelationsRepository
 import com.wynime.app.data.repository.subject.SubjectSearchCompletionRepository
@@ -166,6 +167,7 @@ fun KoinApplication.repositoryModules(
     single<SubjectRelationGraphRepository> {
         SubjectRelationGraphRepository(get(), database.subjectCollection())
     }
+    single { SubjectDiscussionRepository(get()) }
 
     single<PersonDetailsRepository> {
         PersonDetailsRepository(

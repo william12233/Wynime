@@ -921,6 +921,8 @@
     <string name="subject_details_tab_details">詳情</string>
     <string name="subject_details_tab_comments">評價</string>
     <string name="subject_details_tab_discussions">討論</string>
+    <string name="subject_details_discussions_empty">暫無討論</string>
+    <string name="subject_details_discussions_unavailable">無法取得主文</string>
     <string name="subject_details_characters">角色</string>
     <string name="subject_details_characters_with_count">角色 %1$d</string>
     <string name="subject_details_staff">製作人員</string>

@@ -38,6 +38,7 @@ import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
 import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import com.wynime.app.data.repository.subject.SubjectCollectionRepository
+import com.wynime.app.data.repository.subject.SubjectDiscussionRepository
 import com.wynime.app.data.repository.subject.SubjectRelationsRepository
 import com.wynime.app.data.models.player.playProgressByEpisodeId
 import com.wynime.app.ui.rating.EditableRatingActions
@@ -73,6 +74,7 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
     private val episodePlayHistoryRepository: EpisodePlayHistoryRepository by inject()
     private val bangumiRelatedPeopleService: BangumiRelatedPeopleService by inject()
     private val subjectRelationsRepository: SubjectRelationsRepository by inject()
+    private val subjectDiscussionRepository: SubjectDiscussionRepository by inject()
     private val setSubjectCollectionTypeOrDeleteUseCase: SetSubjectCollectionTypeOrDeleteUseCase by inject()
 
     override fun create(
@@ -194,6 +196,7 @@ class DefaultSubjectDetailsStateFactory : SubjectDetailsStateFactory, KoinCompon
         val state = SubjectDetailsState(
             subjectId = subjectInfo.subjectId,
             info = subjectInfo,
+            discussionsPager = subjectDiscussionRepository.discussionsPager(subjectId).cachedIn(this),
             staffPager = relatedPersonsFlow
                 .filterNotNull()
                 .map {

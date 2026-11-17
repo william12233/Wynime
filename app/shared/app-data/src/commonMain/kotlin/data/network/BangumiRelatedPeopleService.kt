@@ -4,12 +4,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import com.wynime.app.data.models.subject.RelatedSubjectInfo
 import com.wynime.app.data.models.subject.SubjectRelation
+import com.wynime.datasources.bangumi.models.BangumiSubjectType
+import com.wynime.datasources.bangumi.models.BangumiV0SubjectRelation
 
 class BangumiRelatedPeopleService(
     private val bangumiApi: BangumiApiProvider,
 ) {
     fun relatedSubjectsFlow(subjectId: Int): Flow<List<RelatedSubjectInfo>> = flow {
-        val list = bangumiApi.request { getRelatedSubjectsBySubjectId(subjectId) }
+        val list = bangumiApi.getRelatedAnimeSubjects(subjectId)
         emit(
             list.map { subject ->
                 RelatedSubjectInfo(
@@ -23,6 +25,9 @@ class BangumiRelatedPeopleService(
         )
     }
 }
+
+internal suspend fun BangumiApiProvider.getRelatedAnimeSubjects(subjectId: Int): List<BangumiV0SubjectRelation> =
+    request { getRelatedSubjectsBySubjectId(subjectId) }.filter { it.type == BangumiSubjectType.Anime.value }
 
 private fun String.toSubjectRelation() = when (trim().lowercase()) {
     "前传", "prequel" -> SubjectRelation.PREQUEL

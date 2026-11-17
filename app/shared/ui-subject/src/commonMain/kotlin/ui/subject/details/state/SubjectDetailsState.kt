@@ -8,10 +8,12 @@ import androidx.compose.runtime.remember
 import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import com.wynime.app.data.models.subject.RelatedCharacterInfo
 import com.wynime.app.data.models.subject.RelatedPersonInfo
 import com.wynime.app.data.models.subject.RelatedSubjectInfo
 import com.wynime.app.data.models.subject.SubjectAiringInfo
+import com.wynime.app.data.models.subject.SubjectDiscussion
 import com.wynime.app.data.models.subject.SubjectInfo
 import com.wynime.app.data.models.subject.SubjectProgressInfo
 import com.wynime.app.ui.rating.EditableRatingActions
@@ -42,6 +44,7 @@ class SubjectDetailsState(
 
     val uiState: StateFlow<SubjectDetailsUiState>,
     actions: SubjectDetailsActions = SubjectDetailsActions.Noop,
+    val discussionsPager: Flow<PagingData<SubjectDiscussion>> = flowOf(PagingData.empty()),
 ) : SubjectDetailsActions by actions {
     val detailsTabLazyListState = LazyListState()
 }

@@ -16,6 +16,7 @@ import com.wynime.app.data.models.subject.SubjectRelationGraphPlatform
 import com.wynime.app.data.models.subject.SubjectRelationGraphSubject
 import com.wynime.app.data.persistent.database.dao.SubjectCollectionDao
 import com.wynime.app.data.network.BangumiApiProvider
+import com.wynime.app.data.network.getRelatedAnimeSubjects
 import com.wynime.app.data.repository.Repository
 import com.wynime.app.data.repository.RepositoryException
 import com.wynime.models.SubjectRelationGraphDto
@@ -64,7 +65,7 @@ class SubjectRelationGraphRepository(
         }
 
         suspend fun loadRelations(id: Int): List<BangumiV0SubjectRelation> {
-            return relations[id] ?: bangumiApi.request { getRelatedSubjectsBySubjectId(id) }.also { related ->
+            return relations[id] ?: bangumiApi.getRelatedAnimeSubjects(id).also { related ->
                 relations[id] = related
             }
         }

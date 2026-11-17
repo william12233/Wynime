@@ -901,6 +901,8 @@
     <string name="subject_details_tab_details">Details</string>
     <string name="subject_details_tab_comments">Reviews</string>
     <string name="subject_details_tab_discussions">Discussions</string>
+    <string name="subject_details_discussions_empty">No discussions yet</string>
+    <string name="subject_details_discussions_unavailable">Original post unavailable</string>
     <string name="subject_details_characters">Characters</string>
     <string name="subject_details_characters_with_count">Characters %1$d</string>
     <string name="subject_details_staff">Staff</string>

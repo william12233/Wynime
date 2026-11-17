@@ -1,10 +1,12 @@
 package com.wynime.app.data.network
 
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.get
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.datetime.LocalDate
 import kotlinx.coroutines.flow.first
@@ -64,6 +66,29 @@ class BangumiApiProvider(
             )
             currentAccessToken()?.let(api::setBearerToken)
             block(api).body()
+        }
+    }
+
+    internal suspend fun getSubjectTopics(subjectId: Int, limit: Int, offset: Int): BangumiSubjectTopicPage {
+        return getJson("$BANGUMI_NEXT_API_BASE_URL/p1/subjects/$subjectId/topics", "subject topics") {
+            expectSuccess = false
+            parameter("limit", limit)
+            parameter("offset", offset)
+        }
+    }
+
+    internal suspend fun getSubjectTopic(topicId: Int): BangumiSubjectTopicDetail? {
+        return try {
+            getJson<BangumiSubjectTopicDetail>(
+                "$BANGUMI_NEXT_API_BASE_URL/p1/subjects/-/topics/$topicId",
+                "subject topic",
+            ) { expectSuccess = false }
+        } catch (e: BangumiExploreRequestException) {
+            when (e.statusCode) {
+                HttpStatusCode.Unauthorized.value, HttpStatusCode.Forbidden.value,
+                HttpStatusCode.NotFound.value, HttpStatusCode.Gone.value -> null
+                else -> throw e
+            }
         }
     }
 
@@ -152,7 +177,7 @@ class BangumiApiProvider(
         val response = httpClient.get(endpoint, configure)
         val text = response.bodyAsText()
         logger.info {
-            "Bangumi explore response received: operation=$operation, status=${response.status.value}, bytes=${text.length}."
+            "Bangumi response received: operation=$operation, status=${response.status.value}, bytes=${text.length}."
         }
         if (!response.status.isSuccess()) {
             throw BangumiExploreRequestException(
@@ -164,7 +189,7 @@ class BangumiApiProvider(
         }
         try {
             val result = bangumiJson.decodeFromString<T>(text)
-            logger.info { "Bangumi explore response parsed: operation=$operation." }
+            logger.info { "Bangumi response parsed: operation=$operation." }
             result
         } catch (e: SerializationException) {
             throw BangumiExploreRequestException(

@@ -31,6 +31,7 @@ for filename in ("build.yml", "release.yml"):
         assert set(jobs["verify-release-assets"]["needs"]) == {
             "create-release", "release_github-windows-2022", "release_github-ubuntu-2404",
         }
+        assert jobs["verify-release-assets"]["permissions"]["contents"] == "write"
         assert "verify-release-assets" in jobs["publish-release"]["needs"]
     if filename == "build.yml":
         android_steps = jobs["build_github-ubuntu-2404"]["steps"]

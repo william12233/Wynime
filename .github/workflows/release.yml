@@ -587,7 +587,7 @@ jobs:
     name: Verify official release assets
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # GitHub requires write access to read draft release assets.
     needs:
     - create-release
     - release_github-windows-2022

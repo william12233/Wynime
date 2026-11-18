@@ -108,6 +108,7 @@ class KtorHttpDownloaderTest {
         mockClient = HttpClient(MockEngine) {
             expectSuccess = true
             engine {
+                dispatcher = testDispatcher
                 addHandler { request ->
                     val urlString = request.url.toString()
 

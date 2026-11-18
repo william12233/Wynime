@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
@@ -16,11 +15,13 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performMouseInput
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.dp
 import com.wynime.app.ui.foundation.LocalPlatform
@@ -36,15 +37,12 @@ class PlayerControlFocusTest {
     fun `desktop control click restores player keyboard focus`() = runWynimeComposeUiTest {
         val controllerState = PlayerControllerState(ControllerVisibility.Visible)
         var shortcutCount = 0
+        var controlClicks = 0
 
         setContent {
             CompositionLocalProvider(LocalPlatform provides Platform.Windows(Arch.X86_64)) {
                 ProvideWynimeMotionCompositionLocals {
                     MaterialTheme {
-                        LaunchedEffect(Unit) {
-                            controllerState.requestPlayerFocus()
-                        }
-
                         VideoScaffold(
                             expanded = true,
                             maintainAspectRatio = false,
@@ -72,7 +70,7 @@ class PlayerControlFocusTest {
                                 Box(
                                     Modifier
                                         .size(48.dp)
-                                        .clickable {}
+                                        .clickable { controlClicks++ }
                                         .testTag("playerControl"),
                                 )
                             },
@@ -82,19 +80,23 @@ class PlayerControlFocusTest {
             }
         }
 
-        onNodeWithTag("playerGestureHost").assertIsFocused()
+        val player = onNodeWithTag("playerGestureHost")
+        player.performSemanticsAction(SemanticsActions.RequestFocus).assertIsFocused()
 
-        onNodeWithTag("playerControl").performMouseInput {
+        val control = onNodeWithTag("playerControl")
+        control.performSemanticsAction(SemanticsActions.RequestFocus)
+        control.performMouseInput {
             click()
         }
 
-        onNodeWithTag("playerGestureHost")
+        player
             .assertIsFocused()
             .performKeyInput {
                 pressKey(Key.Spacebar)
             }
 
         runOnIdle {
+            assertEquals(1, controlClicks)
             assertEquals(1, shortcutCount)
         }
     }

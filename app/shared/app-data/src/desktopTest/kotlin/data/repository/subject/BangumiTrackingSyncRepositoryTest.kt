@@ -10,7 +10,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -315,7 +314,11 @@ class BangumiTrackingSyncRepositoryTest {
     fun `full sync sends independent remote mutations without an application concurrency cap`() = runTest {
         val fixture = fixture(backgroundScope)
         try {
-            fixture.api.upsertDelayMillis = 100
+            val upsertGate = CompletableDeferred<Unit>()
+            fixture.api.onUpsert = {
+                if (fixture.api.inFlightUpserts.get() >= 5) upsertGate.complete(Unit)
+                upsertGate.await()
+            }
             fixture.database.subjectCollection().upsert(
                 (1..8).map { subject(it, UnifiedCollectionType.DOING, it.toLong()) },
             )
@@ -457,7 +460,7 @@ class BangumiTrackingSyncRepositoryTest {
         var userLookupGate: CompletableDeferred<Unit>? = null
         var pageGate: CompletableDeferred<Unit>? = null
         val pageStarted = CompletableDeferred<Unit>()
-        var upsertDelayMillis: Long = 0
+        var onUpsert: suspend () -> Unit = {}
 
         override suspend fun currentUser(): BangumiTrackingAccount {
             currentUserCalls.incrementAndGet()
@@ -494,7 +497,7 @@ class BangumiTrackingSyncRepositoryTest {
             val inFlight = inFlightUpserts.incrementAndGet()
             maxUpserts.updateAndGet { maxOf(it, inFlight) }
             try {
-                if (upsertDelayMillis > 0) delay(upsertDelayMillis)
+                onUpsert()
             } finally {
                 inFlightUpserts.decrementAndGet()
             }

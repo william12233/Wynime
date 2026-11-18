@@ -37,11 +37,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.wynime.app.ui.foundation.LocalPlatform
 import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
 import com.wynime.app.ui.foundation.layout.isWidthCompact
 import com.wynime.app.ui.foundation.theme.EasingDurations
 import com.wynime.utils.platform.Platform
-import com.wynime.utils.platform.currentPlatform
 
 @Immutable
 
@@ -63,7 +63,7 @@ class WynimeMotionScheme(
     ),
 ) {
     companion object {
-        fun calculate(density: Density): WynimeMotionScheme {
+        fun calculate(density: Density, platform: Platform): WynimeMotionScheme {
             val feedItemFadeOutTime = EasingDurations.standardAccelerate
             val feedItemFadeInTime = EasingDurations.standardDecelerate
 
@@ -97,7 +97,7 @@ class WynimeMotionScheme(
                 ),
                 feedItemFadeOutSpec = kotlin.run {
 
-                    if (currentPlatform() is Platform.Desktop) {
+                    if (platform is Platform.Desktop) {
                         snap()
                     } else {
                         tween(
@@ -241,6 +241,7 @@ fun ProvideWynimeMotionCompositionLocals(
     content: @Composable () -> Unit
 ) {
     val density by rememberUpdatedState(LocalDensity.current)
+    val platform by rememberUpdatedState(LocalPlatform.current)
     val windowSizeClass by rememberUpdatedState(currentWindowAdaptiveInfo1().windowSizeClass)
 
     val isWidthCompact by remember {
@@ -255,7 +256,7 @@ fun ProvideWynimeMotionCompositionLocals(
     }
     val wynimeMotionScheme by remember {
         derivedStateOf {
-            WynimeMotionScheme.calculate(density)
+            WynimeMotionScheme.calculate(density, platform)
         }
     }
     CompositionLocalProvider(

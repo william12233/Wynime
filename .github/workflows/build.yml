@@ -591,7 +591,7 @@ jobs:
         \ 0\nfi\nmkdir -p \"$(dirname \"$FILE_PATH\")\"\nprintf '%s' \"$BASE64_CONTENT\" | base64 --decode > \"$FILE_PATH\"\
         \nchmod 600 \"$FILE_PATH\"\necho \"filePath=$FILE_PATH\" >> \"$GITHUB_OUTPUT\"\necho \"available=true\" >> \"$GITHUB_OUTPUT\"\
         \n"
-      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+      if: ${{ github.repository == 'william12233/Wynime' && github.event_name != 'pull_request' && !startsWith(github.ref, 'refs/heads/release/') }}
     - id: step-16
       name: Prepare google-services.json
       env:

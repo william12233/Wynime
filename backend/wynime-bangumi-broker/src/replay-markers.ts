@@ -131,7 +131,7 @@ export class ReplayMarker {
         await this.state.storage.delete(sessionKey(command.sessionHash));
         return null;
       case "playbackSync":
-        return this.syncPlayback(command.userKey, command.request, command.now);
+        return this.syncPlayback(command.userKey, command.request);
     }
   }
 
@@ -220,21 +220,25 @@ export class ReplayMarker {
   private async syncPlayback(
     userKey: string,
     request: PlaybackSyncRequest,
-    now: number,
   ): Promise<PlaybackSyncResponse> {
     const user = storageKeyPart(userKey);
     const cursorKey = "playback-cursor:" + user;
     const initialCursor = Math.max(0, Math.floor(request.cursor));
-    let cursor = (await this.state.storage.get<number>(cursorKey)) ?? 0;
-    const accepted: PlaybackSyncResponse["accepted"] = [];
+    return this.state.storage.transaction(async (storage) => {
+      const previousCursor = (await storage.get<number>(cursorKey)) ?? 0;
+      let cursor = previousCursor;
+      let mayNeedPruning = false;
+      const accepted: PlaybackSyncResponse["accepted"] = [];
+      const touched = new Map<string, StoredPlaybackRecord>();
 
-    for (const change of request.changes) {
-      const recordKey = playbackRecordKey(user, change.subjectId, change.episodeId);
-      const current = await this.state.storage.get<StoredPlaybackRecord>(recordKey);
-                                                                                         
-                                                                                           
-      if (!current || isPlaybackChangeNewer(change, current, request.deviceId)) {
-        cursor += 1;
+      for (const change of request.changes) {
+        const key = playbackRecordKey(user, change.subjectId, change.episodeId);
+        const current = touched.get(key) ?? await storage.get<StoredPlaybackRecord>(key);
+        if (current && !isPlaybackChangeNewer(change, current, request.deviceId)) {
+          touched.set(key, current);
+          continue;
+        }
+
         const next: StoredPlaybackRecord = {
           subjectId: change.subjectId,
           episodeId: change.episodeId,
@@ -245,61 +249,48 @@ export class ReplayMarker {
           revision: (current?.revision ?? 0) + 1,
           deleted: Boolean(change.deleted),
           deviceId: request.deviceId,
-          cursor,
+          cursor: ++cursor,
         };
-        await this.state.storage.put(recordKey, next);
-        accepted.push({
-          subjectId: next.subjectId,
-          episodeId: next.episodeId,
-          revision: next.revision,
-        });
+        if (next.completed && !next.deleted && !current?.completed) mayNeedPruning = true;
+        await storage.put(key, next);
+        touched.set(key, next);
+        accepted.push({ subjectId: next.subjectId, episodeId: next.episodeId, revision: next.revision });
       }
-    }
 
-    await this.state.storage.put(cursorKey, cursor);
-    await this.pruneCompletedRecords(user);
+      if (cursor !== previousCursor) await storage.put(cursorKey, cursor);
 
-    const serverChanges = new Map<string, PlaybackServerChange>();
-    const records = await this.state.storage.list<StoredPlaybackRecord>({
-      prefix: "playback-record:" + user + ":",
+      const serverChanges = new Map<string, StoredPlaybackRecord>();
+      if (initialCursor < previousCursor || mayNeedPruning) {
+        const records = await storage.list<StoredPlaybackRecord>({ prefix: "playback-record:" + user + ":" });
+        if (mayNeedPruning) {
+          const completed = [...records.entries()]
+            .filter(([, record]) => record.completed && !record.deleted)
+            .sort(([, left], [, right]) => left.lastPlayedAt - right.lastPlayedAt);
+          const excess = Math.max(0, completed.length - MAX_COMPLETED_RECORDS);
+          const keys = completed.slice(0, excess).map(([key]) => key);
+          for (let offset = 0; offset < keys.length; offset += 128) {
+            await storage.delete(keys.slice(offset, offset + 128));
+          }
+          for (const key of keys) {
+            records.delete(key);
+            touched.delete(key);
+          }
+        }
+        for (const [key, record] of records) {
+          if (record.cursor > initialCursor) serverChanges.set(key, record);
+        }
+      }
+      for (const [key, record] of touched) serverChanges.set(key, record);
+
+      return {
+        cursor,
+        serverChanges: [...serverChanges.values()].map(toServerChange)
+          .sort((left, right) => left.revision - right.revision),
+        accepted,
+      };
     });
-    for (const record of records.values()) {
-      if (record.cursor > initialCursor) {
-        const change = toServerChange(record);
-        serverChanges.set(changeIdentity(change), change);
-      }
-    }
-
-    for (const change of request.changes) {
-      const current = await this.state.storage.get<StoredPlaybackRecord>(
-        playbackRecordKey(user, change.subjectId, change.episodeId),
-      );
-                                                                                    
-                                                                                      
-      if (current) {
-        const serverChange = toServerChange(current);
-        serverChanges.set(changeIdentity(serverChange), serverChange);
-      }
-    }
-
-    return {
-      cursor,
-      serverChanges: [...serverChanges.values()].sort((left, right) => left.revision - right.revision),
-      accepted,
-    };
   }
 
-  private async pruneCompletedRecords(user: string) {
-    const records = await this.state.storage.list<StoredPlaybackRecord>({
-      prefix: "playback-record:" + user + ":",
-    });
-    const completed = [...records.entries()]
-      .filter(([, record]) => record.completed && !record.deleted)
-      .sort(([, left], [, right]) => left.lastPlayedAt - right.lastPlayedAt);
-    const excess = completed.length - MAX_COMPLETED_RECORDS;
-    if (excess <= 0) return;
-    await this.state.storage.delete(completed.slice(0, excess).map(([key]) => key));
-  }
 }
 
 function toServerChange(record: StoredPlaybackRecord): PlaybackServerChange {
@@ -313,10 +304,6 @@ function toServerChange(record: StoredPlaybackRecord): PlaybackServerChange {
     revision: record.revision,
     deleted: record.deleted,
   };
-}
-
-function changeIdentity(change: PlaybackServerChange): string {
-  return String(change.subjectId) + ":" + String(change.episodeId) + ":" + String(change.revision);
 }
 
 function storageKeyPart(value: string): string {

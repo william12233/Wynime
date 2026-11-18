@@ -7,13 +7,26 @@ import type { Env, PlaybackSyncRequest } from "../src/protocol";
 
 class MemoryStorage {
   readonly values = new Map<string, unknown>();
+  readonly lists: Array<{ options: DurableObjectListOptions; rows: number }> = [];
+  readonly reads: string[] = [];
 
-  async get<T>(key: string): Promise<T | undefined> {
-    return this.values.get(key) as T | undefined;
+  async get<T>(key: string): Promise<T | undefined>;
+  async get<T>(keys: string[]): Promise<Map<string, T>>;
+  async get<T>(key: string | string[]): Promise<T | undefined | Map<string, T>> {
+    if (typeof key === "string") {
+      this.reads.push(key);
+      return structuredClone(this.values.get(key)) as T | undefined;
+    }
+    const results = new Map<string, T>();
+    for (const item of key) {
+      const value = await this.get<T>(item);
+      if (value !== undefined) results.set(item, value);
+    }
+    return results;
   }
 
   async put<T>(key: string, value: T): Promise<void> {
-    this.values.set(key, value);
+    this.values.set(key, structuredClone(value));
   }
 
   async delete(key: string | string[]): Promise<boolean> {
@@ -25,13 +38,27 @@ class MemoryStorage {
     return this.values.delete(key);
   }
 
-  async list<T>(options?: { prefix?: string }): Promise<Map<string, T>> {
-    const prefix = options?.prefix || "";
-    return new Map(
-      [...this.values.entries()]
-        .filter(([key]) => key.startsWith(prefix))
-        .map(([key, value]) => [key, value as T]),
-    );
+  async list<T>(options: DurableObjectListOptions = {}): Promise<Map<string, T>> {
+    const entries = [...this.values.entries()]
+      .filter(([key]) =>
+        key.startsWith(options.prefix ?? "") &&
+        (options.startAfter === undefined || key > options.startAfter) &&
+        (options.end === undefined || key < options.end))
+      .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+      .slice(0, options.limit);
+    this.lists.push({ options, rows: entries.length });
+    return new Map(entries.map(([key, value]) => [key, structuredClone(value) as T]));
+  }
+
+  async transaction<T>(operation: (storage: MemoryStorage) => Promise<T>): Promise<T> {
+    const before = new Map(this.values);
+    try {
+      return await operation(this);
+    } catch (error) {
+      this.values.clear();
+      for (const [key, value] of before) this.values.set(key, value);
+      throw error;
+    }
   }
 }
 
@@ -57,7 +84,7 @@ async function markerRpc<T>(marker: ReplayMarker, command: object): Promise<T> {
   return body.result;
 }
 
-function createWorkerEnv(marker: ReplayMarker): Env {
+function createWorkerEnv(marker: ReplayMarker, collectionStorage = new MemoryStorage()): Env {
   const namespace = {
     idFromName: () => ({}) as DurableObjectId,
     get: () => ({
@@ -65,7 +92,7 @@ function createWorkerEnv(marker: ReplayMarker): Env {
         marker.fetch(input instanceof Request ? input : new Request(input, init)),
     }),
   } as any;
-  const collectionStore = new CollectionStore({ storage: new MemoryStorage() } as any);
+  const collectionStore = new CollectionStore({ storage: collectionStorage } as any);
   const collectionNamespace = {
     idFromName: () => ({}) as DurableObjectId,
     get: () => ({
@@ -359,6 +386,38 @@ describe("Wynime authenticated collection removal", () => {
 });
 
 describe("Wynime playback Durable Object", () => {
+  it("avoids scanning 10,000 stored episodes when the playback cursor is current", async () => {
+    const { marker, storage } = createMarker();
+    const userKey = "bangumi:42";
+    await storage.put("playback-cursor:bangumi%3A42", 10_000);
+    for (let episodeId = 1; episodeId <= 10_000; episodeId++) {
+      await storage.put("playback-record:bangumi%3A42:10:" + episodeId, {
+        ...playbackChange({ episodeId }),
+        revision: 1,
+        cursor: episodeId,
+        deviceId: "computer",
+      });
+    }
+    const sync = (request: PlaybackSyncRequest) =>
+      markerRpc(marker, { op: "playbackSync", userKey, request });
+    await expect(sync({ deviceId: "phone", cursor: 10_000, changes: [] })).resolves.toMatchObject({
+      cursor: 10_000,
+      serverChanges: [],
+    });
+    expect(storage.lists).toEqual([]);
+    await expect(sync({
+      deviceId: "computer",
+      cursor: 10_000,
+      changes: [playbackChange({ episodeId: 20, positionMs: 4_000, lastPlayedAt: 200 })],
+    })).resolves.toMatchObject({ cursor: 10_001, serverChanges: [{ episodeId: 20, positionMs: 4_000 }] });
+    expect(storage.lists).toEqual([]);
+    await expect(sync({ deviceId: "phone", cursor: 10_000, changes: [] })).resolves.toMatchObject({
+      cursor: 10_001,
+      serverChanges: [{ episodeId: 20, positionMs: 4_000 }],
+    });
+    expect(storage.lists.map(({ rows }) => rows)).toEqual([10_000]);
+  });
+
   it("syncs A to B and B to A with composite identity and no event log", async () => {
     const { marker, storage } = createMarker();
     const request = (deviceId: string, cursor: number, changes: PlaybackSyncRequest["changes"]) =>
@@ -441,6 +500,113 @@ describe("Wynime collection Durable Object", () => {
       },
     });
   }
+
+  it("skips old rows and reads each changed collection only once", async () => {
+    const { marker } = createMarker();
+    const storage = new MemoryStorage();
+    const env = createWorkerEnv(marker, storage);
+    const token = "collection-range-session-token-with-enough-length";
+    await saveSession(marker, env, token);
+    const subjectKey = "record:subject:2";
+    const episodeKey = "record:episode:2:20";
+    const fields = { collectionType: { value: "DONE", modifiedAt: 100, mutationId: "active" } };
+    await storage.put("meta", { cursor: 10_000, pendingCount: 0 });
+    await storage.put(subjectKey, { kind: "subject", subjectId: 2, fields, revision: 9_998 });
+    await storage.put(episodeKey, { kind: "episode", subjectId: 2, episodeId: 20, fields, revision: 10_000 });
+    await storage.put("record:subject:22", { kind: "subject", subjectId: 22, fields, revision: 1 });
+    for (let revision = 1; revision <= 10_000; revision++) {
+      await storage.put("log:" + String(revision).padStart(16, "0"), {
+        recordKey: revision >= 9_999 ? episodeKey : subjectKey,
+        revision,
+      });
+    }
+
+    const sync = (request: object) => workerRequest(env, "https://broker.test/api/v1/collections/sync", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ deviceId: "phone", mode: "fast", changes: [], includeEpisodes: true, ...request }),
+    });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await expect((await sync({ cursor: 10_000 })).json()).resolves.toMatchObject({ cursor: 10_000, records: [] });
+    }
+    expect(storage.lists).toEqual([]);
+    expect(storage.reads).toEqual(["meta", "meta", "meta"]);
+
+    storage.reads.length = 0;
+    await expect((await sync({ cursor: 9_998 })).json()).resolves.toMatchObject({
+      cursor: 10_000,
+      records: [expect.objectContaining({ episodeId: 20, collectionType: "DONE" })],
+    });
+    expect(storage.lists).toEqual([{
+      options: { prefix: "log:", startAfter: "log:0000000000009998", end: "log:0000000000010001" },
+      rows: 2,
+    }]);
+    expect(storage.reads).toEqual(["meta", episodeKey]);
+
+    const snapshot = await sync({ cursor: 10_000, fullSnapshot: true, subjectIds: [2], includeEpisodes: false });
+    await expect(snapshot.json()).resolves.toMatchObject({
+      records: [
+        expect.objectContaining({ kind: "subject", subjectId: 2 }),
+        expect.objectContaining({ kind: "episode", subjectId: 2, episodeId: 20 }),
+      ],
+    });
+  });
+
+  it("indexes existing pending changes once and retains a failed upstream write", async () => {
+    const { marker } = createMarker();
+    const storage = new MemoryStorage();
+    const env = createWorkerEnv(marker, storage);
+    const token = "collection-legacy-queue-session-token";
+    await saveSession(marker, env, token);
+    const pending = {
+      mutationId: "legacy",
+      deviceId: "computer",
+      kind: "subject",
+      subjectId: 42,
+      modifiedAt: 100,
+      changedFields: ["collectionType", "rate"],
+      collectionType: "WISH",
+      rate: 7,
+    };
+    await storage.put("meta", { cursor: 20 });
+    await storage.put("mutation:legacy", { revision: 19, changed: true, upstreamSynced: false });
+    await storage.put("pending:legacy", pending);
+    await storage.put("record:subject:42", {
+      kind: "subject",
+      subjectId: 42,
+      revision: 20,
+      fields: {
+        collectionType: { value: "DONE", modifiedAt: 200, mutationId: "newer" },
+        rate: { value: 7, modifiedAt: 100, mutationId: "legacy" },
+      },
+    });
+
+    const sync = (mode: string) => workerRequest(env, "https://broker.test/api/v1/collections/sync", {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ deviceId: "phone", cursor: 20, mode, changes: [] }),
+    });
+    await expect((await sync("fast")).json()).resolves.toMatchObject({ pendingCount: 1, upstreamStatus: "pending" });
+    expect(storage.lists.map(({ options }) => options.prefix)).toEqual(["pending:"]);
+    storage.lists.length = 0;
+
+    const upstream = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body))).toEqual({ rate: 7 });
+      return new Response(null, { status: upstream.mock.calls.length === 1 ? 503 : 200 });
+    });
+    vi.stubGlobal("fetch", upstream);
+    await expect((await sync("reconcile")).json()).resolves.toMatchObject({
+      pendingCount: 1,
+      upstreamStatus: "unavailable",
+    });
+    await expect((await sync("reconcile")).json()).resolves.toMatchObject({
+      pendingCount: 0,
+      upstreamStatus: "synced",
+    });
+    await expect((await sync("fast")).json()).resolves.toMatchObject({ pendingCount: 0 });
+    expect(storage.lists.map(({ options, rows }) => [options.prefix, rows]))
+      .toEqual([["pending-order:", 1], ["pending-order:", 1]]);
+  });
 
   it("performs an authenticated write/read/delete storage probe", async () => {
     const { marker } = createMarker();

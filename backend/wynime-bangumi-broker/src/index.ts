@@ -371,7 +371,7 @@ async function pushCollectionMutation(
     "user-agent": "Wynime/1.0",
   };
   if (mutation.kind === "subject") {
-    if (mutation.collectionType === "NOT_COLLECTED") {
+    if (mutation.collectionType === "NOT_COLLECTED" && mutation.changedFields.includes("collectionType")) {
       await confirmCollectionRemovalUpstream(env, grant, userKey, mutation.subjectId);
       return;
     }

@@ -32,6 +32,7 @@ interface StoredMutationResult {
 
 interface StoredMeta {
   cursor: number;
+  pendingCount: number;
 }
 
 interface StoredLogEntry {
@@ -49,6 +50,10 @@ const RECORD_PREFIX = "record:";
 const LOG_PREFIX = "log:";
 const MUTATION_PREFIX = "mutation:";
 const PENDING_PREFIX = "pending:";
+const PENDING_ORDER_PREFIX = "pending-order:";
+const STORAGE_BATCH_SIZE = 128;
+// A web-confirmed removal can use two Bangumi fetches. Leave headroom under the free Worker subrequest limit.
+const MAX_UPSTREAM_BATCH = 20;
 const VALID_FIELDS = new Set([
   "collectionType",
   "rate",
@@ -80,56 +85,55 @@ export class CollectionStore {
 
   private async sync(request: CollectionSyncRequest): Promise<CollectionStoreSyncResponse> {
     const now = Date.now();
-    const initialCursor = request.cursor;
-    const meta = await this.readMeta();
-    const accepted: CollectionSyncResponse["accepted"] = [];
-    const authoritativeKeys = new Set<string>();
+    return this.state.storage.transaction(async (storage) => {
+      const meta = await this.readMeta(storage);
+      const initialMeta = { ...meta };
+      const accepted: CollectionSyncResponse["accepted"] = [];
+      const authoritativeKeys = new Set<string>();
+      const updatedRecords = new Map<string, StoredRecord>();
 
-    for (const mutation of request.changes) {
-      const mutationKey = MUTATION_PREFIX + mutation.mutationId;
-      const previous = await this.state.storage.get<StoredMutationResult>(mutationKey);
-      if (previous) {
-        accepted.push({
-          mutationId: mutation.mutationId,
-          revision: previous.revision,
-          changed: previous.changed,
-        });
-        if (!previous.changed) authoritativeKeys.add(recordKey(mutation.kind, mutation.subjectId, mutation.episodeId));
-        continue;
+      for (const mutation of request.changes) {
+        const key = recordKey(mutation.kind, mutation.subjectId, mutation.episodeId);
+        const mutationKey = MUTATION_PREFIX + mutation.mutationId;
+        let result = await storage.get<StoredMutationResult>(mutationKey);
+        if (!result) {
+          const normalized = normalizeMutationClock(mutation, now);
+          result = await this.applyMutation(storage, normalized, now, meta, updatedRecords);
+          await storage.put(mutationKey, result);
+        }
+        accepted.push({ mutationId: mutation.mutationId, revision: result.revision, changed: result.changed });
+        if (!result.changed) authoritativeKeys.add(key);
       }
 
-      const normalized = normalizeMutationClock(mutation, now);
-      const result = await this.applyMutation(normalized, now, meta);
-      await this.state.storage.put(mutationKey, result);
-      accepted.push({ mutationId: mutation.mutationId, revision: result.revision, changed: result.changed });
-      if (!result.changed) authoritativeKeys.add(recordKey(normalized.kind, normalized.subjectId, normalized.episodeId));
-      if (result.changed) {
-        await this.state.storage.put(PENDING_PREFIX + mutation.mutationId, normalized);
+      if (meta.cursor !== initialMeta.cursor || meta.pendingCount !== initialMeta.pendingCount) {
+        await storage.put(META_KEY, meta);
       }
-    }
 
-    await this.state.storage.put(META_KEY, meta);
-    const records = await this.readRecords(request, initialCursor, authoritativeKeys);
-    const pendingChanges = await this.readPendingChanges();
-
-    return {
-      cursor: meta.cursor,
-      records,
-      accepted,
-      upstreamStatus: pendingChanges.length > 0 ? "pending" : "not_requested",
-      pendingCount: pendingChanges.length,
-      pendingChanges: pendingChanges.slice(0, 200),
-    };
+      const records = await this.readRecords(storage, request, initialMeta.cursor, updatedRecords, authoritativeKeys);
+      const pendingChanges = request.mode === "reconcile" && meta.pendingCount > 0
+        ? await this.readPendingBatch(storage)
+        : [];
+      return {
+        cursor: meta.cursor,
+        records,
+        accepted,
+        upstreamStatus: meta.pendingCount > 0 ? "pending" : "not_requested",
+        pendingCount: meta.pendingCount,
+        pendingChanges,
+      };
+    });
   }
 
   private async applyMutation(
+    storage: DurableObjectTransaction,
     mutation: CollectionSyncMutation,
     now: number,
     meta: StoredMeta,
+    updatedRecords: Map<string, StoredRecord>,
   ): Promise<StoredMutationResult> {
     validateMutation(mutation);
     const key = recordKey(mutation.kind, mutation.subjectId, mutation.episodeId);
-    const current = await this.state.storage.get<StoredRecord>(key) ?? {
+    const current = updatedRecords.get(key) ?? await storage.get<StoredRecord>(key) ?? {
       kind: mutation.kind,
       subjectId: mutation.subjectId,
       ...(mutation.episodeId == null ? {} : { episodeId: mutation.episodeId }),
@@ -137,7 +141,8 @@ export class CollectionStore {
       revision: 0,
     } satisfies StoredRecord;
     const fields = { ...current.fields };
-    let changed = false;
+    const replacedMutationIds = new Set<string>();
+    const changedFields: string[] = [];
 
     for (const field of mutation.changedFields) {
       const next: StoredField = {
@@ -149,124 +154,170 @@ export class CollectionStore {
       };
       const previous = fields[field];
       if (!previous || isNewer(next, previous)) {
+        if (previous) replacedMutationIds.add(previous.mutationId);
         fields[field] = next;
-        changed = true;
+        changedFields.push(field);
       }
     }
 
-    if (!changed) {
+    if (changedFields.length === 0) {
       return { revision: current.revision, changed: false, upstreamSynced: true };
     }
 
     meta.cursor += 1;
-    const nextRecord: StoredRecord = {
-      ...current,
-      fields,
-      revision: meta.cursor,
-    };
-    await this.state.storage.put(key, nextRecord);
-    await this.state.storage.put(logKey(meta.cursor), {
-      recordKey: key,
-      revision: meta.cursor,
-    } satisfies StoredLogEntry);
+    const nextRecord: StoredRecord = { ...current, fields, revision: meta.cursor };
+    updatedRecords.set(key, nextRecord);
+    await storage.put(key, nextRecord);
+    await storage.put(logKey(meta.cursor), { recordKey: key, revision: meta.cursor } satisfies StoredLogEntry);
+
+    for (const mutationId of replacedMutationIds) {
+      const pending = await storage.get<CollectionSyncMutation>(PENDING_PREFIX + mutationId);
+      if (!pending) continue;
+      const remaining = activePendingFields(pending, nextRecord);
+      if (remaining.length === 0) {
+        await storage.delete([PENDING_PREFIX + mutationId, pendingOrderKey(pending)]);
+        meta.pendingCount -= 1;
+      } else if (remaining.length !== pending.changedFields.length) {
+        await storage.put(PENDING_PREFIX + mutationId, withPendingFields(pending, remaining));
+      }
+    }
+
+    const pending = withPendingFields(mutation, changedFields);
+    await storage.put(PENDING_PREFIX + mutation.mutationId, pending);
+    await storage.put(pendingOrderKey(pending), mutation.mutationId);
+    meta.pendingCount += 1;
     return { revision: meta.cursor, changed: true, upstreamSynced: false };
   }
 
   private async markUpstreamSynced(mutationIds: string[]): Promise<CollectionStoreMarkSyncedResponse> {
-    for (const mutationId of mutationIds) {
-      if (!mutationId) continue;
-      const result = await this.state.storage.get<StoredMutationResult>(MUTATION_PREFIX + mutationId);
-      if (result) {
-        await this.state.storage.put(MUTATION_PREFIX + mutationId, {
-          ...result,
-          upstreamSynced: true,
-        } satisfies StoredMutationResult);
+    return this.state.storage.transaction(async (storage) => {
+      const meta = await this.readMeta(storage);
+      const initialCount = meta.pendingCount;
+      for (const mutationId of new Set(mutationIds)) {
+        if (!mutationId) continue;
+        const mutationKey = MUTATION_PREFIX + mutationId;
+        const result = await storage.get<StoredMutationResult>(mutationKey);
+        if (result && !result.upstreamSynced) {
+          await storage.put(mutationKey, { ...result, upstreamSynced: true });
+        }
+        const pending = await storage.get<CollectionSyncMutation>(PENDING_PREFIX + mutationId);
+        if (pending) {
+          await storage.delete([PENDING_PREFIX + mutationId, pendingOrderKey(pending)]);
+          meta.pendingCount -= 1;
+        }
       }
-      await this.state.storage.delete(PENDING_PREFIX + mutationId);
-    }
-    const pending = await this.readPendingChanges();
-    return { pendingCount: pending.length };
+      if (meta.pendingCount !== initialCount) await storage.put(META_KEY, meta);
+      return { pendingCount: meta.pendingCount };
+    });
   }
 
-  private async readPendingChanges(): Promise<CollectionSyncMutation[]> {
-    const pending = await this.state.storage.list<CollectionSyncMutation>({ prefix: PENDING_PREFIX });
-    const active: CollectionSyncMutation[] = [];
-    for (const [key, mutation] of pending) {
-      const record = await this.state.storage.get<StoredRecord>(
-        recordKey(mutation.kind, mutation.subjectId, mutation.episodeId),
-      );
-      const changedFields = mutation.changedFields.filter((field) =>
-        record?.fields[field]?.mutationId === mutation.mutationId,
-      );
-      if (changedFields.length === 0) {
-        await this.state.storage.delete(key);
-        continue;
-      }
-      if (changedFields.length !== mutation.changedFields.length) {
-        const trimmed = {
-          ...mutation,
-          changedFields,
-          fieldModifiedAt: mutation.fieldModifiedAt
-            ? Object.fromEntries(changedFields.map((field) => [field, mutation.fieldModifiedAt![field]]))
-            : undefined,
-        } satisfies CollectionSyncMutation;
-        await this.state.storage.put(key, trimmed);
-        active.push(trimmed);
-      } else {
-        active.push(mutation);
-      }
-    }
-    return active.sort((left, right) => {
-      if (left.modifiedAt !== right.modifiedAt) return left.modifiedAt - right.modifiedAt;
-      return left.mutationId.localeCompare(right.mutationId);
+  private async readPendingBatch(storage: DurableObjectTransaction): Promise<CollectionSyncMutation[]> {
+    const index = await storage.list<string>({ prefix: PENDING_ORDER_PREFIX, limit: MAX_UPSTREAM_BATCH });
+    const keys = [...index.values()].map((id) => PENDING_PREFIX + id);
+    const pending = await getBatch<CollectionSyncMutation>(storage, keys);
+    return keys.flatMap((key) => {
+      const mutation = pending.get(key);
+      return mutation ? [mutation] : [];
     });
   }
 
   private async readRecords(
+    storage: DurableObjectTransaction,
     request: CollectionSyncRequest,
-    cursor: number,
-    authoritativeKeys: Set<string> = new Set(),
+    previousCursor: number,
+    updatedRecords: Map<string, StoredRecord>,
+    authoritativeKeys: Set<string>,
   ): Promise<CollectionSyncRecord[]> {
-    const keys = new Set<string>();
     const subjectIds = request.subjectIds ? new Set(request.subjectIds) : null;
-    const shouldInclude = (record: StoredRecord) => {
-      if (subjectIds && !subjectIds.has(record.subjectId)) return false;
-      if (record.kind === "episode" && !request.includeEpisodes && !subjectIds) return false;
-      return true;
-    };
+    const shouldInclude = (record: StoredRecord) =>
+      subjectIds ? subjectIds.has(record.subjectId) : record.kind === "subject" || request.includeEpisodes;
 
-    if (request.fullSnapshot || cursor <= 0) {
-      const records = await this.state.storage.list<StoredRecord>({ prefix: RECORD_PREFIX });
-      for (const [key, record] of records) {
-        if (shouldInclude(record)) keys.add(key);
+    const records = new Map<string, StoredRecord>();
+    if (request.fullSnapshot || request.cursor <= 0) {
+      if (subjectIds) {
+        const subjectKeys = [...subjectIds].map((id) => recordKey("subject", id));
+        for (const [key, record] of await getBatch<StoredRecord>(storage, subjectKeys)) {
+          records.set(key, record);
+        }
+        for (const id of subjectIds) {
+          const prefixes = [recordKey("subject", id) + ":", recordKey("episode", id) + ":"];
+          for (const prefix of prefixes) {
+            for (const [key, record] of await storage.list<StoredRecord>({ prefix })) {
+              records.set(key, record);
+            }
+          }
+        }
+      } else {
+        const prefix = request.includeEpisodes ? RECORD_PREFIX : RECORD_PREFIX + "subject:";
+        for (const [key, record] of await storage.list<StoredRecord>({ prefix })) {
+          records.set(key, record);
+        }
       }
-    } else {
-      const logs = await this.state.storage.list<StoredLogEntry>({ prefix: LOG_PREFIX });
-      for (const entry of logs.values()) {
-        if (entry.revision <= cursor) continue;
-        const record = await this.state.storage.get<StoredRecord>(entry.recordKey);
-        if (record && shouldInclude(record)) keys.add(entry.recordKey);
+    } else if (!subjectIds || subjectIds.size > 0) {
+      if (request.cursor < previousCursor) {
+        const logs = await storage.list<StoredLogEntry>({
+          prefix: LOG_PREFIX,
+          startAfter: logKey(request.cursor),
+          end: logKey(previousCursor + 1),
+        });
+        for (const entry of logs.values()) authoritativeKeys.add(entry.recordKey);
+      }
+      for (const [key, record] of updatedRecords) {
+        if (record.revision > request.cursor) records.set(key, record);
+      }
+
+      const missingKeys = [...authoritativeKeys].filter((key) => !records.has(key) && !updatedRecords.has(key));
+      for (const [key, record] of await getBatch<StoredRecord>(storage, missingKeys)) records.set(key, record);
+      for (const key of authoritativeKeys) {
+        const updated = updatedRecords.get(key);
+        if (updated) records.set(key, updated);
       }
     }
 
-    const records: CollectionSyncRecord[] = [];
-    for (const key of authoritativeKeys) {
-      const record = await this.state.storage.get<StoredRecord>(key);
-      if (record && shouldInclude(record)) keys.add(key);
-    }
-    for (const key of keys) {
-      const record = await this.state.storage.get<StoredRecord>(key);
-      if (record) records.push(toPublicRecord(record));
-    }
-    return records.sort((left, right) => {
+    return [...records.values()].filter(shouldInclude).map(toPublicRecord).sort((left, right) => {
       if (left.revision !== right.revision) return left.revision - right.revision;
       if (left.subjectId !== right.subjectId) return left.subjectId - right.subjectId;
       return (left.episodeId ?? 0) - (right.episodeId ?? 0);
     });
   }
 
-  private async readMeta(): Promise<StoredMeta> {
-    return (await this.state.storage.get<StoredMeta>(META_KEY)) ?? { cursor: 0 };
+  private async readMeta(storage: DurableObjectTransaction): Promise<StoredMeta> {
+    const stored = await storage.get<{ cursor: number; pendingCount?: number }>(META_KEY);
+    if (stored && stored.pendingCount !== undefined) {
+      return { cursor: stored.cursor, pendingCount: stored.pendingCount };
+    }
+
+    // Existing objects have pending payloads keyed by mutation ID.
+    const meta: StoredMeta = { cursor: stored?.cursor ?? 0, pendingCount: 0 };
+    let startAfter: string | undefined;
+    for (;;) {
+      const page = await storage.list<CollectionSyncMutation>({
+        prefix: PENDING_PREFIX,
+        startAfter,
+        limit: STORAGE_BATCH_SIZE,
+      });
+      const recordKeys = [...new Set([...page.values()].map((mutation) =>
+        recordKey(mutation.kind, mutation.subjectId, mutation.episodeId),
+      ))];
+      const records = await getBatch<StoredRecord>(storage, recordKeys);
+      for (const [key, mutation] of page) {
+        startAfter = key;
+        const record = records.get(recordKey(mutation.kind, mutation.subjectId, mutation.episodeId));
+        const remaining = activePendingFields(mutation, record);
+        if (remaining.length === 0) {
+          await storage.delete(key);
+          continue;
+        }
+        if (remaining.length !== mutation.changedFields.length) {
+          await storage.put(key, withPendingFields(mutation, remaining));
+        }
+        await storage.put(pendingOrderKey(mutation), mutation.mutationId);
+        meta.pendingCount += 1;
+      }
+      if (page.size < STORAGE_BATCH_SIZE) break;
+    }
+    await storage.put(META_KEY, meta);
+    return meta;
   }
 
   private async storageProbe(): Promise<CollectionStorageProbeResponse> {
@@ -279,6 +330,37 @@ export class CollectionStore {
     await this.state.storage.delete(key);
     return { ok: true, storageLatencyMs: Math.max(0, Date.now() - startedAt) };
   }
+}
+
+async function getBatch<T>(
+  storage: DurableObjectTransaction,
+  keys: string[],
+): Promise<Map<string, T>> {
+  const values = new Map<string, T>();
+  for (let offset = 0; offset < keys.length; offset += STORAGE_BATCH_SIZE) {
+    const batch = await storage.get<T>(keys.slice(offset, offset + STORAGE_BATCH_SIZE));
+    for (const [key, value] of batch) values.set(key, value);
+  }
+  return values;
+}
+
+function activePendingFields(mutation: CollectionSyncMutation, record?: StoredRecord): string[] {
+  return mutation.changedFields.filter((field) => record?.fields[field]?.mutationId === mutation.mutationId);
+}
+
+function withPendingFields(mutation: CollectionSyncMutation, changedFields: string[]): CollectionSyncMutation {
+  if (changedFields.length === mutation.changedFields.length) return mutation;
+  return {
+    ...mutation,
+    changedFields,
+    fieldModifiedAt: mutation.fieldModifiedAt
+      ? Object.fromEntries(Object.entries(mutation.fieldModifiedAt).filter(([field]) => changedFields.includes(field)))
+      : undefined,
+  };
+}
+
+function pendingOrderKey(mutation: CollectionSyncMutation): string {
+  return PENDING_ORDER_PREFIX + String(mutation.modifiedAt).padStart(16, "0") + ":" + mutation.mutationId;
 }
 
 function validateMutation(mutation: CollectionSyncMutation) {

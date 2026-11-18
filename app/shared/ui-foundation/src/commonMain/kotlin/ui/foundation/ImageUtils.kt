@@ -2,11 +2,14 @@ package com.wynime.app.ui.foundation
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import com.github.panpf.sketch.Image
 
 expect fun ImageBitmap.resize(
     width: Int,
     height: Int,
 ): ImageBitmap
+
+internal expect fun ImageBitmap.asSketchImage(): Image
 
 fun ImageBitmap.themeColor(): Color {
     val width = this.width

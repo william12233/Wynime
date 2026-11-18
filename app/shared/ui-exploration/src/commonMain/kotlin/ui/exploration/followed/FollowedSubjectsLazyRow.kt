@@ -207,6 +207,7 @@ private fun FollowedSubjectItem(
                     modifier = Modifier.size(imageSize),
                     contentDescription = item.subjectInfo.preferredDisplayName(useOriginalTitle),
                     contentScale = ContentScale.Crop,
+                    sizeToDisplay = true,
                 )
             }
             Surface({ onClick() }, content = image)

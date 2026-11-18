@@ -174,6 +174,7 @@ fun SubjectCollectionItem(
                 modifier = Modifier
                     .height(height).width(height * COVER_WIDTH_TO_HEIGHT_RATIO),
                 contentScale = ContentScale.Crop,
+                sizeToDisplay = true,
             )
 
             Box(Modifier.weight(1f)) {

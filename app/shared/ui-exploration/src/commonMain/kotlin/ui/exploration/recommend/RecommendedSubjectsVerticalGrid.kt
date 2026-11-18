@@ -100,6 +100,7 @@ private fun RecommendedSubjectCard(
         modifier = modifier,
         shape = shape,
         imageModifier = Modifier.sizeIn(maxWidth = 300.dp, maxHeight = (300f / 9 * 16).dp),
+        sizeToDisplay = true,
     )
 }
 

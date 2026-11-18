@@ -1,5 +1,6 @@
 package com.wynime.app.ui.foundation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
@@ -13,15 +14,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.DefaultAlpha
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import com.github.panpf.sketch.AsyncImageState
+import com.github.panpf.sketch.Image
 import com.github.panpf.sketch.LocalPlatformContext
 import com.github.panpf.sketch.PlatformContext
 import com.github.panpf.sketch.Sketch
@@ -39,12 +43,15 @@ import com.github.panpf.sketch.request.ImageOptions
 import com.github.panpf.sketch.request.ImageRequest
 import com.github.panpf.sketch.request.ImageResult
 import com.github.panpf.sketch.request.LoadState
+import com.github.panpf.sketch.request.RequestContext
 import com.github.panpf.sketch.resize.Precision
 import com.github.panpf.sketch.resize.Scale
 import com.github.panpf.sketch.resize.ScaleDecider
 import com.github.panpf.sketch.state.PainterStateImage
 import com.github.panpf.sketch.state.StateImage
 import com.github.panpf.sketch.target.Target
+import com.github.panpf.sketch.transform.TransformResult
+import com.github.panpf.sketch.transform.Transformation
 import com.github.panpf.sketch.transition.Transition
 import com.github.panpf.sketch.util.Size
 import com.github.panpf.sketch.util.asComposeImageBitmap
@@ -57,6 +64,7 @@ import com.wynime.utils.io.resolve
 import com.wynime.utils.ktor.ScopedHttpClient
 import com.wynime.utils.platform.currentPlatform
 import com.wynime.utils.platform.isDesktop
+import kotlin.math.roundToInt
 import okio.Path
 import okio.Path.Companion.toPath
 import com.github.panpf.sketch.AsyncImage as SketchAsyncImage
@@ -104,6 +112,10 @@ fun rememberWynimeSketchInstance(client: ScopedHttpClient): Sketch {
     return sketch
 }
 
+/**
+ * With [sizeToDisplay], the layout must provide both dimensions independently of the bitmap.
+ * The request starts after measurement and caps the cached bitmap at the size needed to fill the image bounds.
+ */
 @Composable
 fun AsyncImage(
     model: String?,
@@ -123,6 +135,7 @@ fun AsyncImage(
     clipToBounds: Boolean = true,
     crossfade: Boolean? = null,
     crossfadeDurationMillis: Int? = null,
+    sizeToDisplay: Boolean = false,
 ) {
     val state = rememberAsyncImageState()
     WynimeAsyncImage(
@@ -144,6 +157,7 @@ fun AsyncImage(
         clipToBounds = clipToBounds,
         crossfade = crossfade,
         crossfadeDurationMillis = crossfadeDurationMillis,
+        sizeToDisplay = sizeToDisplay,
     )
 }
 
@@ -167,8 +181,18 @@ internal fun WynimeAsyncImage(
     clipToBounds: Boolean = true,
     crossfade: Boolean? = null,
     crossfadeDurationMillis: Int? = null,
+    sizeToDisplay: Boolean = false,
 ) {
     var requestSize by remember { mutableStateOf<IntSize?>(null) }
+    val measuredModifier = modifier.onSizeChanged { size ->
+        if (!sizeToDisplay || (size.width > 0 && size.height > 0)) {
+            requestSize = size.toWynimeImageRequestSize()
+        }
+    }
+    if (sizeToDisplay && requestSize == null) {
+        Box(measuredModifier)
+        return
+    }
 
     val placeholderStateImage = rememberStateImage(placeholder, "placeholder")
     val errorStateImage = rememberStateImage(error, "error")
@@ -183,6 +207,7 @@ internal fun WynimeAsyncImage(
             contentScale = contentScale,
             alignment = alignment,
             requestSize = requestSize,
+            sizeToDisplay = sizeToDisplay,
         )
 
         configureWynimeImageCrossfade(crossfade, crossfadeDurationMillis)
@@ -193,10 +218,7 @@ internal fun WynimeAsyncImage(
         request = request,
         sketch = LocalSketch.current,
         contentDescription = contentDescription,
-        modifier = modifier.onSizeChanged { size ->
-            val roundedSize = size.toWynimeImageRequestSize()
-            if (requestSize != roundedSize) requestSize = roundedSize
-        },
+        modifier = measuredModifier,
         state = state,
         alignment = alignment,
         contentScale = contentScale,
@@ -302,9 +324,11 @@ internal fun ImageRequest.Builder.configureWynimeImageRequest(
     contentScale: ContentScale,
     alignment: Alignment,
     requestSize: IntSize? = null,
+    sizeToDisplay: Boolean = false,
 ) {
     if (requestSize != null && requestSize.width > 0 && requestSize.height > 0) {
         size(requestSize.width * 2, requestSize.height * 2)
+        if (sizeToDisplay) addTransformations(DisplaySizeTransformation(requestSize))
     }
     scale(wynimeScaleDecider(contentScale, alignment))
     when (contentScale) {
@@ -317,6 +341,25 @@ internal fun ImageRequest.Builder.configureWynimeImageRequest(
                 )) Precision.SAME_ASPECT_RATIO else Precision.LESS_PIXELS,
         )
         ContentScale.FillBounds -> precision(Precision.EXACTLY)
+    }
+}
+
+private data class DisplaySizeTransformation(val size: IntSize) : Transformation {
+    override val key: String = "WynimeDisplaySize(${size.width},${size.height})"
+
+    override fun transform(requestContext: RequestContext, input: Image): TransformResult? {
+        // Sketch samples in powers of two. Keep that headroom for decoding and trim surplus pixels before caching.
+        val scale = maxOf(size.width.toDouble() / input.width, size.height.toDouble() / input.height)
+        if (scale >= 1.0) return null
+        val source = input.asBitmapOrNull()?.asComposeImageBitmap() ?: return null
+        val outputSize = IntSize((input.width * scale).roundToInt(), (input.height * scale).roundToInt())
+        val output = ImageBitmap(outputSize.width, outputSize.height, colorSpace = source.colorSpace)
+        Canvas(output).drawImageRect(
+            source,
+            dstSize = outputSize,
+            paint = Paint().apply { filterQuality = FilterQuality.Low },
+        )
+        return TransformResult(output.asSketchImage(), transformed = key)
     }
 }
 

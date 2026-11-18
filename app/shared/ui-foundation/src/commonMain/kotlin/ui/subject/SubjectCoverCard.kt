@@ -23,6 +23,7 @@ fun SubjectCoverCard(
     shape: Shape = CarouselItemDefaults.shape,
     imageModifier: Modifier = Modifier,
     brushLayerModifier: Modifier = Modifier,
+    sizeToDisplay: Boolean = false,
 ) {
     BasicCarouselItem(
         label = { CarouselItemDefaults.Text(name ?: "", maxLines = 2) },
@@ -37,6 +38,7 @@ fun SubjectCoverCard(
                     modifier = imageModifier.aspectRatio(9f / 16).fillMaxWidth(),
                     contentDescription = name,
                     contentScale = ContentScale.Crop,
+                    sizeToDisplay = sizeToDisplay,
                 )
             }
 

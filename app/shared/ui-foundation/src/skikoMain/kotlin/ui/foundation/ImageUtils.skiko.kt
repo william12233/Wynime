@@ -3,6 +3,8 @@ package com.wynime.app.ui.foundation
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import com.github.panpf.sketch.Image
+import com.github.panpf.sketch.asImage
 import org.jetbrains.skia.ImageInfo
 import org.jetbrains.skia.Paint
 import org.jetbrains.skia.Rect
@@ -30,3 +32,5 @@ actual fun ImageBitmap.resize(
 
     return surface.makeImageSnapshot().toComposeImageBitmap()
 }
+
+internal actual fun ImageBitmap.asSketchImage(): Image = asSkiaBitmap().asImage()

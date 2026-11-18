@@ -73,9 +73,10 @@ fun TodayUpdatesCarousel(
                         } else {
                             AsyncImage(
                                 item.imageLarge,
-                                modifier = Modifier.height(size.imageHeight),
+                                modifier = Modifier.height(size.imageHeight).fillMaxWidth(),
                                 contentDescription = item.displayName,
                                 contentScale = ContentScale.Crop,
+                                sizeToDisplay = true,
                             )
                         }
                     }

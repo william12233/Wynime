@@ -6,13 +6,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import com.wynime.app.data.models.player.EpisodeHistory
 import com.wynime.app.data.network.WynimeCloudClient
 import com.wynime.app.data.network.WynimePlaybackChange
@@ -42,70 +45,98 @@ class PlaybackHistorySyncer(
     requestCooldown: Duration = 5.seconds,
 ) : Repository() {
     private val syncMutex = Mutex()
+    private val foreground = MutableStateFlow(false)
+    private val appliedBatches = MutableStateFlow(0L)
+    private val progressCheckpoint = MutableStateFlow<(suspend () -> Unit)?>(null)
     private val requestGate = LeadingTrailingSyncGate(
         scope = scope,
         cooldown = requestCooldown,
-        task = ::syncOnceCatching,
+        task = { syncOnceCatching(pendingOnly = !foreground.value) },
     )
 
     fun start() {
         scope.launch(CoroutineName("PlaybackHistorySyncer.session")) {
-            sessionStateProvider.stateFlow.collectLatest { state ->
-                if (state !is SessionState.Valid || !state.bangumiConnected) return@collectLatest
-                requestSync()
-                while (currentCoroutineContext().isActive) {
-                    delay(STEADY_SYNC_INTERVAL)
-                    requestSync()
-                }
+            combine(foreground, sessionStateProvider.stateFlow, tokenRepository.refreshToken) { active, state, token ->
+                active && state is SessionState.Valid && state.bangumiConnected && !token.isNullOrBlank()
+            }.distinctUntilChanged().collect { shouldPull ->
+                if (shouldPull) requestSync()
             }
         }
         scope.launch(CoroutineName("PlaybackHistorySyncer.login")) {
             sessionStateProvider.eventFlow.collect { event ->
-                if (event is SessionEvent.NewLogin) requestSync()
+                if (event is SessionEvent.NewLogin && foreground.value) requestSync()
             }
         }
+    }
+
+    fun setForeground(active: Boolean) {
+        foreground.value = active
     }
 
     fun requestSync() {
         requestGate.request()
     }
 
-    suspend fun syncOnce() = syncMutex.withLock {
-        val state = sessionStateProvider.stateFlow.first()
-        if (state !is SessionState.Valid || !state.bangumiConnected) return@withLock
-
-        val cloudSessionToken = tokenRepository.refreshToken.first()?.takeIf(String::isNotBlank)
-            ?: return@withLock
-        val pendingOps = repository.pendingOpsFlow.first()
-        val changes = pendingOps.latestPerIdentity().mapNotNull { it.toCloudChange() }
-        val sentPendingOpIds = pendingOps
-            .filter { it.toCloudChange() != null }
-            .map { it.id }
-        val storedCursor = repository.lastSyncAtMillisFlow.first()
-        val cursor = storedCursor.takeUnless { it >= LEGACY_TIMESTAMP_THRESHOLD } ?: 0L
-        val deviceId = settingsRepository.analyticsSettings.flow.first().deviceId
-
-        val response = withContext(ioDispatcher) {
-            cloudClient.syncPlayback(
-                sessionToken = cloudSessionToken,
-                request = WynimePlaybackSyncRequest(
-                    deviceId = deviceId,
-                    cursor = cursor,
-                    changes = changes,
-                ),
-            )
-        }
-
-        repository.applySyncResult(
-            sentPendingOpIds = sentPendingOpIds,
-            records = response.serverChanges.map { it.toEpisodeHistory() },
-            nextSyncAtMillis = response.cursor,
-        )
+    fun registerProgressCheckpoint(checkpoint: suspend () -> Unit): () -> Unit {
+        progressCheckpoint.value = checkpoint
+        return { progressCheckpoint.compareAndSet(checkpoint, null) }
     }
 
-    private suspend fun syncOnceCatching() {
+    suspend fun saveCurrentProgress() {
+        progressCheckpoint.value?.invoke()
+    }
+
+    suspend fun flushPending() = syncOnceCatching(pendingOnly = true)
+
+    suspend fun syncOnce() = syncOnce(pendingOnly = false)
+
+    suspend fun pullBeforePlayback() {
+        withTimeoutOrNull(2_000L) { syncOnceCatching(pendingOnly = false) }
+    }
+
+    private suspend fun syncOnce(pendingOnly: Boolean) {
+        val generation = appliedBatches.value
+        syncMutex.withLock {
+            val state = sessionStateProvider.stateFlow.first()
+            if (state !is SessionState.Valid || !state.bangumiConnected) return@withLock
+
+            val cloudSessionToken = tokenRepository.refreshToken.first()?.takeIf(String::isNotBlank)
+                ?: return@withLock
+            val pendingOps = repository.pendingOpsFlow.first()
+            val changes = pendingOps.latestPerIdentity().mapNotNull { it.toCloudChange() }
+            if (changes.isEmpty() && (pendingOnly || appliedBatches.value != generation)) return@withLock
+
+            val storedCursor = repository.lastSyncAtMillisFlow.first()
+            var cursor = storedCursor.takeUnless { it >= LEGACY_TIMESTAMP_THRESHOLD } ?: 0L
+            val deviceId = settingsRepository.analyticsSettings.flow.first().deviceId
+            for (batch in changes.chunked(MAX_CHANGES_PER_REQUEST).ifEmpty { listOf(emptyList()) }) {
+                if (tokenRepository.refreshToken.first() != cloudSessionToken) return@withLock
+                val identities = batch.mapTo(HashSet()) { it.subjectId to it.episodeId }
+                val sentPendingOpIds = pendingOps.filter {
+                    (it.subjectId to it.episodeId) in identities && it.toCloudChange() != null
+                }.map { it.id }
+                val response = withContext(ioDispatcher) {
+                    cloudClient.syncPlayback(
+                        sessionToken = cloudSessionToken,
+                        request = WynimePlaybackSyncRequest(deviceId = deviceId, cursor = cursor, changes = batch),
+                    )
+                }
+                if (tokenRepository.refreshToken.first() != cloudSessionToken) return@withLock
+
+                repository.applySyncResult(
+                    sentPendingOpIds = sentPendingOpIds,
+                    records = response.serverChanges.map { it.toEpisodeHistory() },
+                    nextSyncAtMillis = response.cursor,
+                )
+                cursor = response.cursor
+                appliedBatches.value += 1
+            }
+        }
+    }
+
+    private suspend fun syncOnceCatching(pendingOnly: Boolean) {
         try {
-            syncOnce()
+            syncOnce(pendingOnly)
         } catch (e: Exception) {
             RepositoryException.wrapOrThrowCancellation(e)
             logger.info { "Failed to sync playback histories: ${e.message}" }
@@ -154,7 +185,7 @@ class PlaybackHistorySyncer(
     }
 
     private companion object {
-        val STEADY_SYNC_INTERVAL = 60.seconds
+        const val MAX_CHANGES_PER_REQUEST = 100
         const val LEGACY_TIMESTAMP_THRESHOLD = 100_000_000_000L
     }
 }

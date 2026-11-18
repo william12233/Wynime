@@ -36,6 +36,7 @@ import com.wynime.app.domain.mediasource.web.captcha.WebCaptchaDialogHost
 import com.wynime.app.domain.mediasource.web.captcha.WebSessionManager
 import com.wynime.app.domain.session.SessionState
 import com.wynime.app.domain.session.SessionStateProvider
+import com.wynime.app.domain.session.WynimeCloudSyncLifecycle
 import com.wynime.app.navigation.BrowserNavigator
 import com.wynime.app.navigation.MainScreenPage
 import com.wynime.app.navigation.NavRoutes
@@ -91,6 +92,7 @@ class WynimeAppViewModel : AbstractViewModel(), KoinComponent {
     private val sessionStateProvider: SessionStateProvider by inject()
     private val trackingSyncRepository: BangumiTrackingSyncRepository by inject()
     private val subjectCollectionRepository: SubjectCollectionRepository by inject()
+    private val cloudSync: WynimeCloudSyncLifecycle by inject()
 
     private var startupCollectionSyncStarted = false
 
@@ -138,6 +140,18 @@ class WynimeAppViewModel : AbstractViewModel(), KoinComponent {
         userRepository.clearSelfInfo()
     }
 
+    fun setCloudSyncForeground(active: Boolean) {
+        cloudSync.setForeground(active)
+    }
+
+    fun requestCollectionPull() {
+        cloudSync.requestCollectionPull()
+    }
+
+    fun flushCloudSync() {
+        backgroundScope.launch { cloudSync.flushPending() }
+    }
+
     fun verifyPendingCollectionRemovals() {
         if (!startupCollectionSyncStarted) {
             startupCollectionSyncStarted = true
@@ -170,7 +184,14 @@ fun WynimeApp(
 ) {
     val viewModel = viewModel { WynimeAppViewModel() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.setCloudSyncForeground(true)
         viewModel.verifyPendingCollectionRemovals()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        viewModel.setCloudSyncForeground(false)
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        viewModel.flushCloudSync()
     }
 
     val appState = viewModel.appState.collectAsStateWithLifecycle(null).value ?: return

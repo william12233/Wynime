@@ -104,6 +104,15 @@ interface PlaybackHistoryDao {
     suspend fun deletePendingOpsByIds(ids: Collection<Long>)
 
     @Transaction
+    suspend fun upsertRecordsAndReplacePendingOps(
+        records: List<PlaybackHistoryRecordEntity>,
+        operations: List<PlaybackHistoryPendingOpEntity>,
+    ) {
+        upsertRecords(records)
+        replacePendingOps(operations)
+    }
+
+    @Transaction
     suspend fun replacePendingOp(op: PlaybackHistoryPendingOpEntity): Long {
         deletePendingOpsByEpisodeId(op.episodeId)
         return insertPendingOp(op)

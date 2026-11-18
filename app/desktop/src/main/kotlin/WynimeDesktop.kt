@@ -14,8 +14,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.InternalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -46,6 +48,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import com.wynime.app.data.models.preference.DarkMode
 import com.wynime.app.data.models.preference.DebugSettings
 import com.wynime.app.data.models.preference.UISettings
@@ -56,6 +59,7 @@ import com.wynime.app.data.repository.user.UserRepository
 import com.wynime.app.desktop.storage.AppFolderResolver
 import com.wynime.app.desktop.storage.AppInfo
 import com.wynime.app.desktop.window.WindowFrame
+import com.wynime.app.domain.session.WynimeCloudSyncLifecycle
 import com.wynime.app.domain.settings.ProxyProvider
 import com.wynime.app.domain.update.UpdateManager
 import com.wynime.app.navigation.WynimeNavigator
@@ -289,6 +293,7 @@ object WynimeDesktop {
         }
         val settingsRepository = koin.koin.get<SettingsRepository>()
         val userRepository = koin.koin.get<UserRepository>()
+        val cloudSync = koin.koin.get<WynimeCloudSyncLifecycle>()
 
         coroutineScope.launch {
             settingsRepository.videoResolverSettings.flow
@@ -436,11 +441,21 @@ object WynimeDesktop {
                     }
                 }
             }
-            val exitApplicationSavingWindowState = remember(saveCurrentWindowState) {
-                {
-                    saveCurrentWindowState()
-                    WynimeCefApp.disposeBlocking()
-                    exitApplication()
+            val exitScope = rememberCoroutineScope()
+            var exiting by remember { mutableStateOf(false) }
+            val exitApplicationSavingWindowState: () -> Unit = {
+                if (!exiting) {
+                    exiting = true
+                    cloudSync.setForeground(false)
+                    exitScope.launch {
+                        try {
+                            withTimeoutOrNull(2_000L) { cloudSync.flushPending() }
+                        } finally {
+                            saveCurrentWindowState()
+                            WynimeCefApp.disposeBlocking()
+                            exitApplication()
+                        }
+                    }
                 }
             }
 
@@ -454,6 +469,12 @@ object WynimeDesktop {
 
             val alwaysOnTopState = remember { mutableStateOf(false) }
             val trayState = rememberWynimeTrayState()
+            LaunchedEffect(trayState.isWindowHiddenToTray) {
+                if (trayState.isWindowHiddenToTray) {
+                    cloudSync.setForeground(false)
+                    cloudSync.flushPending()
+                }
+            }
             val appIcon = painterResource(Res.drawable.a_round)
 
             WynimeSystemTray(

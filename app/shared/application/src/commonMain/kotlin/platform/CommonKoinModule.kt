@@ -102,6 +102,7 @@ import com.wynime.app.domain.sourceplugin.SourcePluginRepositoryClient
 import com.wynime.app.domain.sourceplugin.SourcePluginStorage
 import com.wynime.app.domain.sourceplugin.createSourcePluginLoader
 import com.wynime.app.domain.sourceplugin.currentSourcePluginPlatform
+import com.wynime.app.domain.session.WynimeCloudSyncLifecycle
 import com.wynime.app.domain.session.SessionManager
 import com.wynime.app.domain.session.SessionStateProvider
 import com.wynime.app.domain.session.auth.WynimeCloudSessionRefresher
@@ -285,10 +286,12 @@ private fun KoinApplication.otherModules(
                 get<SettingsRepository>().analyticsSettings.flow.first().deviceId
             },
             scope = coroutineScope,
+            sessionStateProvider = get(),
             legacyEpisodePendingStore = getContext().dataStores.episodeCollectionPendingStore,
             accountKeyProvider = { get<BangumiTrackingMetadataRepository>().accountKey() },
         ).also { it.start() }
     }
+    single { WynimeCloudSyncLifecycle(playback = get(), collections = get()) }
     single<BangumiCollectionSyncEnqueuer> { get<BangumiCollectionSyncer>() }
     single<BangumiCollectionSyncCoordinator> { get<BangumiCollectionSyncer>() }
     single<EpisodeCollectionSyncEnqueuer> { get<BangumiCollectionSyncer>() }

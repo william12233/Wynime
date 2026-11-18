@@ -8,7 +8,10 @@ import com.wynime.app.data.models.subject.SelfRatingInfo
 import com.wynime.app.data.repository.episode.EpisodeCollectionPendingChange
 import com.wynime.app.data.repository.episode.EpisodeCollectionPendingChanges
 import com.wynime.app.data.repository.episode.EpisodeCollectionSyncEnqueuer
+import com.wynime.app.data.repository.player.LeadingTrailingSyncGate
 import com.wynime.app.data.repository.user.TokenRepository
+import com.wynime.app.domain.session.SessionEvent
+import com.wynime.app.domain.session.SessionStateProvider
 import com.wynime.cloud.models.CollectionSyncMutation
 import com.wynime.cloud.models.CollectionSyncRecord
 import com.wynime.cloud.models.CollectionSyncRequest
@@ -21,17 +24,16 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 import kotlin.uuid.ExperimentalUuidApi
 
@@ -119,6 +121,7 @@ class BangumiCollectionSyncer(
     private val episodeCollectionDao: EpisodeCollectionDao,
     private val deviceIdProvider: suspend () -> String,
     private val scope: CoroutineScope,
+    private val sessionStateProvider: SessionStateProvider,
     private val legacyEpisodePendingStore: DataStore<EpisodeCollectionPendingChanges>? = null,
     private val accountKeyProvider: suspend () -> String? = { null },
 ) : BangumiCollectionSyncEnqueuer,
@@ -126,35 +129,38 @@ class BangumiCollectionSyncer(
     BangumiCollectionSyncCoordinator {
 
     private val syncMutex = Mutex()
-    private val requests = Channel<Unit>(Channel.CONFLATED)
-    private var requestJob: Job? = null
+    private val foreground = MutableStateFlow(false)
+    private val requestGate = LeadingTrailingSyncGate(scope, cooldown = 5.seconds) {
+        syncOnRequest(pendingOnly = !foreground.value)
+    }
+    private var sessionJob: Job? = null
     private var cloudApiVersion: Int? = null
     private var cloudHealthCheckedAt: Long = 0L
 
     fun start() {
-        if (requestJob != null) return
+        if (sessionJob != null) return
         scope.launch(CoroutineName("BangumiCollectionSyncer.migratePending")) {
             migrateLegacyEpisodeChanges()
         }
-        requestJob = scope.launch(CoroutineName("BangumiCollectionSyncer.requestGate")) {
-            while (currentCoroutineContext().isActive) {
-                requests.receive()
-                do {
-                    syncOnceCatching(fullSnapshot = false, reconcile = false)
-                } while (requests.tryReceive().isSuccess)
+        sessionJob = scope.launch(CoroutineName("BangumiCollectionSyncer.session")) {
+            combine(foreground, tokenRepository.refreshToken) { active, token ->
+                active && !token.isNullOrBlank()
+            }.distinctUntilChanged().collect { shouldPull ->
+                if (shouldPull) requestSync()
             }
         }
-        scope.launch(CoroutineName("BangumiCollectionSyncer.session")) {
-            tokenRepository.refreshToken.collectLatest { token ->
-                if (!token.isNullOrBlank()) requestSync()
-                if (token.isNullOrBlank()) return@collectLatest
-                while (currentCoroutineContext().isActive) {
-                    delay(RECONCILE_INTERVAL_MILLIS)
-                    syncOnceCatching(fullSnapshot = false, reconcile = true)
-                }
+        scope.launch(CoroutineName("BangumiCollectionSyncer.login")) {
+            sessionStateProvider.eventFlow.collect { event ->
+                if (event is SessionEvent.NewLogin && foreground.value) requestSync()
             }
         }
     }
+
+    fun setForeground(active: Boolean) {
+        foreground.value = active
+    }
+
+    suspend fun flushPending() = syncOnRequest(pendingOnly = true)
 
     override suspend fun enqueueSubject(change: BangumiSubjectCollectionChange) {
         require(change.subjectId > 0) { "subjectId must be positive" }
@@ -213,7 +219,7 @@ class BangumiCollectionSyncer(
             }
         return syncMutex.withLock {
             try {
-                syncOnce(token, fullSnapshot = true, reconcile = reconcile)
+                syncOnce(token, bootstrap = true, reconcile = reconcile)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -229,7 +235,7 @@ class BangumiCollectionSyncer(
     }
 
     fun requestSync() {
-        requests.trySend(Unit)
+        requestGate.request()
     }
 
     override suspend fun prepareForCurrentAccount() {
@@ -266,7 +272,10 @@ class BangumiCollectionSyncer(
         mergePendingChanges(listOf(change))
     }
 
-    private suspend fun mergePendingChanges(changes: Collection<BangumiCollectionPendingChange>) {
+    private suspend fun mergePendingChanges(
+        changes: Collection<BangumiCollectionPendingChange>,
+        scheduleSync: Boolean = true,
+    ) {
         if (changes.isEmpty()) return
         pendingStore.updateData { state ->
             val latest = state.changes
@@ -290,45 +299,42 @@ class BangumiCollectionSyncer(
                 fieldModifiedAt = clocks,
             )
         }
-        requestSync()
+        if (scheduleSync) requestSync()
     }
 
-    private suspend fun syncOnceCatching(fullSnapshot: Boolean, reconcile: Boolean) {
+    private suspend fun syncOnRequest(pendingOnly: Boolean) {
         try {
             val token = tokenRepository.refreshToken.first()?.takeIf(String::isNotBlank) ?: return
             syncMutex.withLock {
-                syncOnce(token, fullSnapshot, reconcile)
+                if (pendingOnly && pendingStore.data.first().changes.isEmpty()) return@withLock
+                syncOnce(token, bootstrap = false, reconcile = true)
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
             logger.info(e) { "Cloud collection sync failed; pending changes are retained" }
-            scope.launch {
-                delay(RETRY_DELAY_MILLIS)
-                requestSync()
-            }
         }
     }
 
     private suspend fun syncOnce(
         token: String,
-        fullSnapshot: Boolean,
+        bootstrap: Boolean,
         reconcile: Boolean,
     ): BangumiCollectionSyncResult {
         ensureCloudApiAvailable()
         val accountKey = accountKey(token)
+        check(tokenRepository.refreshToken.first() == token) { "Cloud session changed during collection sync" }
         scopeState(accountKey)
-        var response = sendAndApply(token, fullSnapshot, reconcile)
         var bootstrapped = pendingStore.data.first().bootstrapCompleted
+        var response = sendAndApply(token, fullSnapshot = bootstrap && !bootstrapped, reconcile = false)
+        var appliedRecordCount = response.records.size
 
-        if (fullSnapshot && !bootstrapped) {
-            // Seed every locally known field on the first authenticated pull. This
-            // must not depend on response.records being empty: a pending local
-            // mutation can make an otherwise empty cloud store return one record.
+        if (bootstrap && !bootstrapped) {
             val localChanges = localSnapshotChanges()
             if (localChanges.isNotEmpty()) {
-                mergePendingChanges(localChanges)
-                response = sendAndApply(token, fullSnapshot = false, reconcile = reconcile)
+                mergePendingChanges(localChanges, scheduleSync = false)
+                response = sendAndApply(token, fullSnapshot = false, reconcile = false)
+                appliedRecordCount += response.records.size
             }
             bootstrapped = true
             pendingStore.updateData { current ->
@@ -336,11 +342,29 @@ class BangumiCollectionSyncer(
             }
         }
 
+        while (response.accepted.isNotEmpty() && pendingStore.data.first().changes.isNotEmpty()) {
+            response = sendAndApply(token, fullSnapshot = false, reconcile = false)
+            appliedRecordCount += response.records.size
+        }
+
+        if (reconcile) {
+            while (response.pendingCount > 0) {
+                val previousCount = response.pendingCount
+                response = sendAndApply(token, fullSnapshot = false, reconcile = true)
+                appliedRecordCount += response.records.size
+                if (response.pendingCount >= previousCount) break
+            }
+        }
+
         return BangumiCollectionSyncResult(
             cloudSynced = true,
-            upstreamStatus = response.upstreamStatus.toAppStatus(),
+            upstreamStatus = if (reconcile && response.pendingCount == 0) {
+                BangumiCollectionUpstreamStatus.SYNCED
+            } else {
+                response.upstreamStatus.toAppStatus()
+            },
             pendingCount = response.pendingCount,
-            appliedRecordCount = response.records.size,
+            appliedRecordCount = appliedRecordCount,
             bootstrapped = bootstrapped,
         )
     }
@@ -360,7 +384,9 @@ class BangumiCollectionSyncer(
             fullSnapshot = fullSnapshot,
             includeEpisodes = true,
         )
+        check(tokenRepository.refreshToken.first() == token) { "Cloud session changed during collection sync" }
         val response = cloudClient.syncCollections(token, request)
+        check(tokenRepository.refreshToken.first() == token) { "Cloud session changed during collection sync" }
         val clocks = applyRecords(response, state.changes, state.fieldModifiedAt)
         val accepted = response.accepted.mapTo(HashSet()) { it.mutationId }
         pendingStore.updateData { current ->
@@ -370,7 +396,6 @@ class BangumiCollectionSyncer(
                 fieldModifiedAt = clocks,
             )
         }
-        if (pendingStore.data.first().changes.isNotEmpty()) requestSync()
         return response
     }
 
@@ -400,10 +425,8 @@ class BangumiCollectionSyncer(
                 // away the cursor or pending mutations collected in the meantime.
                 return@updateData state.copy(accountKey = accountKey)
             }
-            accountChanged = state.accountKey != null || state.cursor != 0L || state.changes.isNotEmpty()
-            if (state.accountKey == null && state.cursor == 0L && state.changes.isEmpty()) {
-                return@updateData state.copy(accountKey = accountKey)
-            }
+            if (state.accountKey == null) return@updateData state.copy(accountKey = accountKey)
+            accountChanged = true
             state.copy(
                 accountKey = accountKey,
                 cursor = 0,
@@ -589,8 +612,6 @@ class BangumiCollectionSyncer(
 
     private companion object {
         const val MAX_CHANGES_PER_REQUEST = 200
-        const val RETRY_DELAY_MILLIS = 5_000L
-        const val RECONCILE_INTERVAL_MILLIS = 60_000L
         val logger = logger<BangumiCollectionSyncer>()
     }
 }

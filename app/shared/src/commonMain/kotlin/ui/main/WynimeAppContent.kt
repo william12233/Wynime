@@ -91,6 +91,12 @@ fun WynimeAppContent(wynimeNavigator: WynimeNavigator) {
 
     val backStack = rememberWynimeBackStack(appState.initialNavRoute)
     wynimeNavigator.setBackStack(backStack)
+    LaunchedEffect(backStack.lastOrNull()) {
+        when (backStack.lastOrNull()) {
+            is NavRoutes.SubjectDetail, is NavRoutes.EpisodeDetail -> wynimeAppViewModel.requestCollectionPull()
+            else -> Unit
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         CompositionLocalProvider(

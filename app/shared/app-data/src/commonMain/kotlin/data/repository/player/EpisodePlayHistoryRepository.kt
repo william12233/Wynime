@@ -130,12 +130,10 @@ class EpisodePlayHistoryRepositoryImpl(
         if (activeHistories.isEmpty()) return
 
         val now = nowMillis()
-        playbackHistoryDao.upsertRecords(
+        playbackHistoryDao.upsertRecordsAndReplacePendingOps(
             activeHistories.map { history ->
                 history.copy(deletedAtMillis = now, isDirty = false).toEntity()
             },
-        )
-        playbackHistoryDao.replacePendingOps(
             activeHistories.map { history ->
                 PlaybackHistoryPendingOp.Delete(
                     id = 0,
@@ -165,12 +163,10 @@ class EpisodePlayHistoryRepositoryImpl(
         if (histories.isEmpty()) return
 
         logger.info { "remove play progress for episodes $idSet" }
-        playbackHistoryDao.upsertRecords(
+        playbackHistoryDao.upsertRecordsAndReplacePendingOps(
             histories.map { history ->
                 history.copy(deletedAtMillis = now, isDirty = false).toEntity()
             },
-        )
-        playbackHistoryDao.replacePendingOps(
             histories.map { history ->
                 PlaybackHistoryPendingOp.Delete(
                     id = 0,
@@ -211,12 +207,16 @@ class EpisodePlayHistoryRepositoryImpl(
             serverRevision = existing?.serverRevision ?: 0,
             isDirty = false,
         )
+        if (existing != null && episodeHistory.copy(updatedAtMillis = existing.updatedAtMillis) == existing) return
         logger.info { "save or update play progress $episodeHistory" }
-        playbackHistoryDao.upsertRecord(episodeHistory.toEntity())
-
         val pendingOp = episodeHistory.toPendingUpsertOrNull()
-        if (pendingOp != null) {
-            playbackHistoryDao.replacePendingOp(pendingOp.toEntity())
+        if (pendingOp == null) {
+            playbackHistoryDao.upsertRecord(episodeHistory.toEntity())
+        } else {
+            playbackHistoryDao.upsertRecordsAndReplacePendingOps(
+                listOf(episodeHistory.toEntity()),
+                listOf(pendingOp.toEntity()),
+            )
             onDirtyChanged()
         }
     }

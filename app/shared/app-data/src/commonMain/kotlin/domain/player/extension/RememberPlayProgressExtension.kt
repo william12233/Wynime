@@ -3,6 +3,7 @@ package com.wynime.app.domain.player.extension
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
@@ -12,6 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import com.wynime.app.data.models.episode.displayName
 import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
+import com.wynime.app.data.repository.player.PlaybackHistorySyncer
 import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
 import com.wynime.app.domain.episode.EpisodeSession
 import com.wynime.app.domain.episode.SubjectEpisodeInfoBundle
@@ -31,6 +33,8 @@ class RememberPlayProgressExtension(
     private val initialReportDelay: Duration = 5.seconds,
 ) : PlayerExtension(name = "SaveProgressExtension") {
     private val playProgressRepository: EpisodePlayHistoryRepository by koin.inject()
+    private val historySyncer = koin.getOrNull<PlaybackHistorySyncer>()
+    private val saveMutex = Mutex()
     private val latestInfoBundleMutex = Mutex()
     private val latestInfoBundles = mutableMapOf<Int, SubjectEpisodeInfoBundle>()
 
@@ -40,6 +44,19 @@ class RememberPlayProgressExtension(
             context.subscribeEvents<EpisodeFetchSelectPlayState.MediaLoadedEvent>().collectLatest { event ->
                 if (event.episodeId == episodeSession.episodeId && mediaLoaded.isActive) {
                     mediaLoaded.complete(Unit)
+                }
+            }
+        }
+
+        historySyncer?.let { syncer ->
+            backgroundTaskScope.launch("ProgressCheckpoint") {
+                val unregister = syncer.registerProgressCheckpoint {
+                    if (mediaLoaded.isCompleted) savePlayProgressOrRemove(episodeSession)
+                }
+                try {
+                    awaitCancellation()
+                } finally {
+                    unregister()
                 }
             }
         }
@@ -67,6 +84,7 @@ class RememberPlayProgressExtension(
         backgroundTaskScope.launch("PlaybackStateListener") {
             val player = context.player
             var haveResumedOnce = false
+            var pulledProgress = false
             player.state.collectLatest { state ->
                 when {
                     state.mediaStatus == MediaStatus.Opening -> {
@@ -77,6 +95,10 @@ class RememberPlayProgressExtension(
                     state.isPlaying -> {
 
                         if (!haveResumedOnce) {
+                            if (!pulledProgress) {
+                                historySyncer?.pullBeforePlayback()
+                                pulledProgress = true
+                            }
                             val positionMillis =
                                 playProgressRepository.getPositionMillisByEpisodeId(episodeSession.episodeId)
                             if (positionMillis == null) {
@@ -152,23 +174,23 @@ class RememberPlayProgressExtension(
         episodeId: Int,
         episodeSession: EpisodeSession?,
         allowZeroPosition: Boolean = false,
-    ) {
+    ) = saveMutex.withLock {
         val player = context.player
         val mediaStatus = player.state.value.mediaStatus
         val videoDurationMillis = player.mediaProperties.value?.durationMillis
 
         if (videoDurationMillis == null || videoDurationMillis <= 0L) {
-            return
+            return@withLock
         }
 
         if (mediaStatus != MediaStatus.Ready && mediaStatus != MediaStatus.Ended) {
-            return
+            return@withLock
         }
 
         val currentPositionMillis = player.currentPositionMillis.value
 
         if (currentPositionMillis < 0L || (currentPositionMillis == 0L && !allowZeroPosition)) {
-            return
+            return@withLock
         }
 
         if (videoDurationMillis - currentPositionMillis < 5000 || currentPositionMillis > videoDurationMillis) {
@@ -178,7 +200,7 @@ class RememberPlayProgressExtension(
             playProgressRepository.saveOrUpdate(
                 episodeId = episodeId,
                 positionMillis = currentPositionMillis,
-                subjectId = info?.subjectId,
+                subjectId = info?.subjectId ?: context.subjectId,
                 episodeSort = info?.episodeInfo?.sort?.number,
                 subjectName = info?.subjectInfo?.displayName,
                 subjectImageUrl = info?.subjectInfo?.imageLarge,

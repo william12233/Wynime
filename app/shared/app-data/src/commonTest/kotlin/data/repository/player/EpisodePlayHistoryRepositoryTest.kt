@@ -65,6 +65,18 @@ class EpisodePlayHistoryRepositoryTest {
     }
 
     @Test
+    fun `an unchanged saved position does not queue another upload`() = runTest {
+        val repository = createRepository()
+        repository.saveOrUpdate(episodeId = 2, positionMillis = 3_000, subjectId = 10, durationMillis = 100_000)
+        repository.deletePendingOps(listOf(repository.pendingOpsFlow.first().single().id))
+        now = 200
+        repository.saveOrUpdate(episodeId = 2, positionMillis = 3_000, subjectId = 10, durationMillis = 100_000)
+
+        assertEquals(100L, repository.flow.first().single().updatedAtMillis)
+        assertTrue(repository.pendingOpsFlow.first().isEmpty())
+    }
+
+    @Test
     fun `flowByEpisodeIds returns only requested active records`() = runTest {
         val repository = createRepository()
         repository.saveOrUpdate(episodeId = 1, positionMillis = 10, durationMillis = 100)

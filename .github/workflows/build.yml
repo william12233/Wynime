@@ -34,6 +34,8 @@ jobs:
     - windows-2022
     permissions:
       actions: write
+    outputs:
+      sentry_configured: ${{ steps.step-2.outputs.sentry_configured }}
     steps:
     - id: step-0
       uses: actions/checkout@v4
@@ -43,14 +45,15 @@ jobs:
       continue-on-error: true
       run: rm local.properties
     - id: step-2
-      continue-on-error: true
-      run: 'echo "wynime.android.abis=x86_64" >> local.properties
-
-        echo "wynime.sentry.dsn=${{ secrets.SENTRY_DSN }}" >> local.properties
-
-        echo "kotlin.native.ignoreDisabledTargets=true" >> local.properties
-
-        '
+      env:
+        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+      run: |
+        Add-Content -LiteralPath local.properties -Value 'wynime.android.abis=x86_64'
+        Add-Content -LiteralPath local.properties -Value 'kotlin.native.ignoreDisabledTargets=true'
+        if ($env:SENTRY_DSN) {
+          Add-Content -LiteralPath local.properties -Value "wynime.sentry.dsn=$env:SENTRY_DSN"
+          'sentry_configured=true' >> $env:GITHUB_OUTPUT
+        }
     - id: step-3
       continue-on-error: true
       run: "if ($env:FIREBASE_GA_APP_ID -and $env:FIREBASE_GA_API_SECRET) {\n  Add-Content -LiteralPath local.properties -Value\
@@ -945,12 +948,12 @@ jobs:
         profile: pixel_2
         ram-size: 2048M
         emulator-boot-timeout: '1800'
-        script: |
-          status=0
-          bash .github/workflows/smoke_android_app.sh 30 || status=$?
-          ./gradlew connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g" || status=$?
-          adb logcat -d > logcat-api30-x86_64.txt || true
-          killall -INT crashpad_handler || true
+        script: >-
+          status=0;
+          bash .github/workflows/smoke_android_app.sh 30 || status=$?;
+          ./gradlew connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g" || status=$?;
+          adb logcat -d > logcat-api30-x86_64.txt || true;
+          killall -INT crashpad_handler || true;
           exit "$status"
     - id: step-63
       name: Upload Android Instrumented Test Reports (api=30, arch=x86_64)
@@ -998,12 +1001,12 @@ jobs:
         profile: pixel_2
         ram-size: 2048M
         emulator-boot-timeout: '1800'
-        script: |
-          status=0
-          bash .github/workflows/smoke_android_app.sh 36 || status=$?
-          ./gradlew connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g" || status=$?
-          adb logcat -d > logcat-api36-x86_64.txt || true
-          killall -INT crashpad_handler || true
+        script: >-
+          status=0;
+          bash .github/workflows/smoke_android_app.sh 36 || status=$?;
+          ./gradlew connectedDeviceTest --continue "-Pandroid.min.sdk=30" "--scan" "-Porg.gradle.daemon.idletimeout=60000" "-Dfile.encoding=UTF-8" "-Dorg.gradle.jvmargs=-Xmx3g -Dkotlin.daemon.jvm.options=-Xmx2g" "-Dkotlin.daemon.jvm.options=-Xmx2g" || status=$?;
+          adb logcat -d > logcat-api36-x86_64.txt || true;
+          killall -INT crashpad_handler || true;
           exit "$status"
     - id: step-68
       name: Upload Android Instrumented Test Reports (api=36, arch=x86_64)
@@ -1094,7 +1097,12 @@ jobs:
       shell: powershell
       run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1"
         "${{ github.workspace }}\ci-helper\verify" "sentry-dsn"
-      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+      if: ${{ needs.build_github-windows-2022.outputs.sentry_configured == 'true' }}
+    - name: Check that bundled SQLite can be loaded
+      timeout-minutes: 5
+      shell: powershell
+      run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1"
+        "${{ github.workspace }}\ci-helper\verify" "sqlite-bundled-load-test"
   verify_github-windows-2022:
     name: Verify (Windows Server 2022 x86_64 (GitHub))
     runs-on:
@@ -1143,7 +1151,7 @@ jobs:
       shell: powershell
       run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${{ github.workspace }}/ci-helper/verify/run-wynime-test-windows-x64.ps1"
         "${{ github.workspace }}\ci-helper\verify" "sentry-dsn"
-      if: ${{ (github.repository == 'william12233/Wynime') && (!(github.event_name == 'pull_request')) }}
+      if: ${{ needs.build_github-windows-2022.outputs.sentry_configured == 'true' }}
     - name: Open the Windows app from its distribution
       timeout-minutes: 3
       shell: powershell

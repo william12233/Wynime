@@ -38,6 +38,9 @@ for filename in ("build.yml", "release.yml"):
             name = step.get("name", "")
             if name.startswith(("Build Android Release APKs", "Upload Android Release APK")) and "Attempt #1" in name:
                 assert "steps.step-15.outputs.available == 'true'" in step.get("if", ""), name
+            if step.get("uses", "").startswith("reactivecircus/android-emulator-runner@"):
+                # The emulator action starts a separate shell for each script line.
+                assert "\n" not in step["with"]["script"].strip(), name
     assert any("windows" in job_id for job_id in jobs)
     assert any("ubuntu" in job_id for job_id in jobs)
 print("Android/Windows workflow configuration and release signing gate: PASS")

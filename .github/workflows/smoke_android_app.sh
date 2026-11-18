@@ -12,9 +12,20 @@ start=$(adb shell am start -W -n "$activity" | tr -d '\r')
 printf '%s\n' "$start"
 grep -Fxq 'Status: ok' <<< "$start"
 
-for attempt in {1..15}; do
+layout=/data/local/tmp/wynime-startup.xml
+deadline=$((SECONDS + 60))
+while (( SECONDS < deadline )); do
   activities=$(adb shell dumpsys activity activities)
-  if adb shell pidof "$package" > /dev/null && grep -F 'ResumedActivity' <<< "$activities" | grep -Fq "$package/"; then
+  if adb shell pidof "$package" > /dev/null && grep -F 'ResumedActivity' <<< "$activities" | grep -Fq "$package/" &&
+     timeout 8s adb shell uiautomator dump "$layout" > /dev/null &&
+     adb exec-out cat "$layout" | python3 -c '
+import sys
+from xml.etree import ElementTree as ET
+
+nodes = ET.parse(sys.stdin).getroot().iter("node")
+sys.exit(not any(node.get("package") == sys.argv[1] and (node.get("text") or node.get("content-desc"))
+                 for node in nodes))
+' "$package"; then
     adb exec-out screencap -p > "startup-api$api-x86_64.png"
     exit 0
   fi
@@ -22,5 +33,5 @@ for attempt in {1..15}; do
 done
 
 adb exec-out screencap -p > "startup-api$api-x86_64.png"
-echo "Wynime did not reach a resumed activity on API $api." >&2
+echo "Wynime did not render accessible app content on API $api." >&2
 exit 1

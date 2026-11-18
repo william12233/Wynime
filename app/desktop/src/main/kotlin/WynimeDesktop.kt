@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.InternalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -32,8 +33,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sun.jna.platform.win32.Advapi32Util
 import com.sun.jna.platform.win32.WinReg
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -421,6 +424,7 @@ object WynimeDesktop {
         }
         val savedWindowState: SavedWindowState? = savedWindowStateDeferred.getCompleted()
         restoreWindowState(windowState, savedWindowState)
+        val startupReport = System.getenv("WYNIME_DESKTOP_STARTUP_REPORT_FILE")?.let(::File)
 
         application {
             val saveCurrentWindowState = remember(windowState, windowStateRepository) {
@@ -472,12 +476,29 @@ object WynimeDesktop {
                     )
                 },
                 state = windowState,
-            title = "Wynime",
+                title = "Wynime",
                 icon = appIcon,
                 alwaysOnTop = alwaysOnTopState.value,
 
                 onKeyEvent = { event -> backKeyEventHandler.onKeyEvent(event, backPressedDispatcher::onBackPressed) },
             ) {
+                val firstLayout = remember { startupReport?.let { CompletableDeferred<Unit>() } }
+                val startupModifier = remember(firstLayout) {
+                    firstLayout?.let { layout ->
+                        Modifier.onGloballyPositioned { coordinates ->
+                            if (coordinates.size.width > 0 && coordinates.size.height > 0) {
+                                layout.complete(Unit)
+                            }
+                        }
+                    } ?: Modifier
+                }
+                if (startupReport != null && firstLayout != null) {
+                    LaunchedEffect(window, firstLayout) {
+                        firstLayout.await()
+                        while (!window.isShowing) delay(50)
+                        startupReport.writeText("ready")
+                    }
+                }
 
                 val lifecycleOwner = LocalLifecycleOwner.current
                 val backPressedDispatcherOwner = remember(backPressedDispatcher, lifecycleOwner) {
@@ -536,7 +557,7 @@ object WynimeDesktop {
                     },
                 ) {
                     if (isRunningUnderWine()) {
-                        MainWindowContent(navigator, settingsRepository)
+                        MainWindowContent(navigator, settingsRepository, startupModifier)
                     } else {
                         HandleWindowsWindowProc()
                         if (platform.isWindows()) {
@@ -560,7 +581,7 @@ object WynimeDesktop {
                                 )
                             },
                         ) {
-                            MainWindowContent(navigator, settingsRepository)
+                            MainWindowContent(navigator, settingsRepository, startupModifier)
                         }
                     }
                 }
@@ -603,6 +624,7 @@ object WynimeDesktop {
 private fun FrameWindowScope.MainWindowContent(
     wynimeNavigator: WynimeNavigator,
     settingsRepository: SettingsRepository,
+    modifier: Modifier,
 ) {
     WynimeApp {
         val themeSettings = LocalThemeSettings.current
@@ -625,7 +647,7 @@ private fun FrameWindowScope.MainWindowContent(
         OverrideCaptionButtonAppearance(isDark = isTitleBarDark)
 
         Box(
-            Modifier
+            modifier
                 .ifThen(!isSystemInFullscreen()) {
                     statusBarsPadding()
                 }

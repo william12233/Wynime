@@ -1158,17 +1158,27 @@ jobs:
       run: |
         $launcher = Get-ChildItem ci-helper/verify -Filter Wynime.exe -Recurse | Select-Object -First 1
         if (-not $launcher) { throw 'Wynime.exe is missing from the package.' }
+        $env:WYNIME_DESKTOP_STARTUP_REPORT_FILE = Join-Path $env:RUNNER_TEMP "wynime-startup-$([Guid]::NewGuid()).txt"
         $process = Start-Process -FilePath $launcher.FullName -WorkingDirectory $launcher.DirectoryName -PassThru
         try {
-          for ($attempt = 0; $attempt -lt 30; $attempt++) {
+          for ($attempt = 0; $attempt -lt 60; $attempt++) {
             $process.Refresh()
             if ($process.HasExited) { throw "Wynime exited before opening a window ($($process.ExitCode))." }
-            if ($process.MainWindowHandle -ne [IntPtr]::Zero) { exit 0 }
+            if ((Test-Path -LiteralPath $env:WYNIME_DESKTOP_STARTUP_REPORT_FILE) -and
+                (Get-Content -LiteralPath $env:WYNIME_DESKTOP_STARTUP_REPORT_FILE -Raw) -eq 'ready') {
+              Write-Host 'Wynime displayed its main window and laid out its content.'
+              exit 0
+            }
             Start-Sleep -Seconds 2
           }
-          throw 'Wynime did not open a window within 60 seconds.'
+          throw 'Wynime did not display its main window and lay out its content within 120 seconds.'
+        } catch {
+          $log = Join-Path $env:APPDATA 'Him188\Wynime\data\logs\app.log'
+          if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 100 }
+          throw
         } finally {
           if (-not $process.HasExited) { Stop-Process -Id $process.Id }
+          Remove-Item -LiteralPath $env:WYNIME_DESKTOP_STARTUP_REPORT_FILE -ErrorAction SilentlyContinue
         }
   verify_github-windows-11-arm64:
     name: Verify (Windows 11 AArch64 (GitHub))

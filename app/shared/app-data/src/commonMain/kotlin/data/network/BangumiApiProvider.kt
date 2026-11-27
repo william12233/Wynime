@@ -43,8 +43,8 @@ class BangumiApiProvider(
         return request { getMyself() }
     }
 
-    suspend fun <T : Any> request(block: suspend DefaultApi.() -> HttpResponse<T>): T {
-        return withApi { block(this).body() }
+    suspend fun <T : Any> request(useAccessToken: Boolean = true, block: suspend DefaultApi.() -> HttpResponse<T>): T {
+        return withApi(useAccessToken) { block(this).body() }
     }
 
     suspend fun <T : Any> nextSubjectRequest(block: suspend SubjectBangumiNextApi.() -> NextHttpResponse<T>): T {
@@ -158,13 +158,13 @@ class BangumiApiProvider(
         return result
     }
 
-    private suspend fun <T> withApi(block: suspend DefaultApi.() -> T): T {
+    private suspend fun <T> withApi(useAccessToken: Boolean, block: suspend DefaultApi.() -> T): T {
         return withHttpClient { httpClient ->
             val api = DefaultApi(
                 baseUrl = BANGUMI_API_BASE_URL,
                 httpClient = httpClient,
             )
-            currentAccessToken()?.let(api::setBearerToken)
+            if (useAccessToken) currentAccessToken()?.let(api::setBearerToken)
             block(api)
         }
     }

@@ -82,6 +82,7 @@ import com.wynime.app.navigation.LocalNavigator
 import com.wynime.app.navigation.SubjectDetailPlaceholder
 import com.wynime.app.platform.LocalContext
 import com.wynime.app.platform.navigation.LocalBrowserNavigator
+import com.wynime.app.ui.foundation.stateOf
 import com.wynime.app.ui.foundation.LocalSubjectAppearanceSettings
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
@@ -95,6 +96,7 @@ import com.wynime.app.ui.foundation.widgets.rememberModalSideSheetState
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.subject_episode_close_selector
 import com.wynime.app.ui.lang.subject_episode_related_recommendations
+import com.wynime.app.ui.lang.subject_episode_details_refresh_failed
 import com.wynime.app.ui.lang.recommendations_empty
 import com.wynime.app.ui.lang.subject_episode_select_media_source
 import com.wynime.app.ui.lang.subject_episode_wish_change_to
@@ -117,6 +119,9 @@ import com.wynime.app.ui.subject.createTestAiringLabelState
 import com.wynime.app.ui.subject.details.SubjectDetailsScreen
 import com.wynime.app.ui.subject.details.state.SubjectDetailsStateLoader
 import com.wynime.app.ui.subject.details.state.createTestSubjectDetailsLoader
+import com.wynime.app.ui.subject.episode.EpisodeCatalogStatus
+import com.wynime.app.ui.subject.episode.EpisodeCatalogStatusRow
+import com.wynime.app.ui.subject.episode.RetryEpisodeMetadata
 import com.wynime.app.ui.subject.episode.EpisodePageLoadError
 import com.wynime.app.ui.subject.episode.details.components.FavoriteIconButton
 import com.wynime.app.ui.subject.episode.details.components.SubjectRecommendationCard
@@ -138,6 +143,8 @@ class EpisodeDetailsState(
     val recommendations: State<EpisodeRecommendationsState>,
     val subjectDetailsStateLoader: SubjectDetailsStateLoader,
     val onRetryRecommendations: () -> Unit = {},
+    val episodeCatalogStatus: State<EpisodeCatalogStatus> = stateOf(EpisodeCatalogStatus()),
+    val onRetryEpisodeCatalog: () -> Unit = {},
 ) {
     private val subject by subjectInfo
 
@@ -262,10 +269,13 @@ fun EpisodeDetails(
                     onRetryLoad,
                 )
 
-                is EpisodePageLoadError.SubjectError -> LoadErrorCard(
-                    loadError.loadError,
-                    onRetryLoad,
-                )
+                is EpisodePageLoadError.SubjectError -> {
+                    if (loadError.isPlayingLocalCache) {
+                        RetryEpisodeMetadata(stringResource(Lang.subject_episode_details_refresh_failed), onRetryLoad)
+                    } else {
+                        LoadErrorCard(loadError.loadError, onRetryLoad)
+                    }
+                }
 
                 null -> {}
             }
@@ -414,12 +424,15 @@ fun EpisodeDetails(
             }
         },
         episodeListSection = {
-            EpisodeListSection(
-                episodeCarouselState = episodeCarouselState,
-                expanded = expandEpisodeList,
-                airingLabelState = state.airingLabelState,
-                onToggleExpanded = { expandEpisodeList = !expandEpisodeList },
-            )
+            Column {
+                EpisodeCatalogStatusRow(state.episodeCatalogStatus.value, state.onRetryEpisodeCatalog)
+                EpisodeListSection(
+                    episodeCarouselState = episodeCarouselState,
+                    expanded = expandEpisodeList,
+                    airingLabelState = state.airingLabelState,
+                    onToggleExpanded = { expandEpisodeList = !expandEpisodeList },
+                )
+            }
         },
         subjectRecommendations = { horizontalPadding ->
             item("subject_recommendation_header") {

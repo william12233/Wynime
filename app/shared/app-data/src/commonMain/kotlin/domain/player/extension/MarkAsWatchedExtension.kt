@@ -1,118 +1,80 @@
 package com.wynime.app.domain.player.extension
 
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import com.wynime.app.data.models.episode.toEpisodeInfo
 import com.wynime.app.domain.episode.EpisodeSession
 import com.wynime.app.domain.episode.GetEpisodeCollectionTypeUseCase
 import com.wynime.app.domain.episode.SetEpisodeCollectionTypeUseCase
 import com.wynime.app.domain.settings.GetVideoScaffoldConfigUseCase
 import com.wynime.datasources.api.topic.UnifiedCollectionType
 import com.wynime.datasources.api.topic.isDoneOrDropped
-import com.wynime.utils.coroutines.cancellableCoroutineScope
-import com.wynime.utils.coroutines.sampleWithInitial
-import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
+import com.wynime.utils.logging.warn
 import org.koin.core.Koin
-import org.openani.mediamp.MediampPlayer
-import kotlin.math.min
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.seconds
 
 class MarkAsWatchedExtension(
     private val context: PlayerExtensionContext,
     koin: Koin,
-    private val enableSamplingAndDebounce: Boolean,
 ) : PlayerExtension("AutoMarkWatched") {
-    private val getVideoScaffoldConfigUseCase: GetVideoScaffoldConfigUseCase by koin.inject()
-    private val getEpisodeCollectionTypeUseCase: GetEpisodeCollectionTypeUseCase by koin.inject()
-    private val setEpisodeCollectionTypeUseCase: SetEpisodeCollectionTypeUseCase by koin.inject()
+    private val getVideoScaffoldConfig: GetVideoScaffoldConfigUseCase by koin.inject()
+    private val getEpisodeCollectionType: GetEpisodeCollectionTypeUseCase by koin.inject()
+    private val setEpisodeCollectionType: SetEpisodeCollectionTypeUseCase by koin.inject()
 
-    override fun onStart(
-        episodeSession: EpisodeSession,
-        backgroundTaskScope: ExtensionBackgroundTaskScope,
-    ) {
+    override fun onStart(episodeSession: EpisodeSession, backgroundTaskScope: ExtensionBackgroundTaskScope) {
         backgroundTaskScope.launch("AutoMarkWatched") {
-            context.sessionFlow.collectLatest { session ->
-                invoke(
-                    context.player,
-                    context.subjectId,
-                    session.episodeId,
-                )
-            }
-        }
-    }
+            var marked = false
+            getVideoScaffoldConfig().map { it.autoMarkDone }.distinctUntilChanged().collectLatest { enabled ->
+                if (!enabled || marked) return@collectLatest
+                val player = context.player
+                combine(
+                    player.currentPositionMillis,
+                    player.mediaProperties.map { it?.durationMillis }.distinctUntilChanged(),
+                    player.state.map { it.isPlaying }.distinctUntilChanged(),
+                ) { position, duration, playing ->
+                    playing && duration != null && positionMeetsThreshold(position, duration)
+                }.first { it }
 
-    private suspend fun invoke(
-        player: MediampPlayer,
-        subjectId: Int,
-        episodeId: Int,
-    ) {
-        getVideoScaffoldConfigUseCase()
-            .map { it.autoMarkDone }
-            .distinctUntilChanged()
-            .collectLatest { enabled ->
-                if (!enabled) return@collectLatest
-
-                impl(episodeId, player, subjectId)
-            }
-
-    }
-
-    private suspend fun impl(
-        episodeId: Int,
-        player: MediampPlayer,
-        subjectId: Int,
-    ) {
-        val collectionType =
-            getEpisodeCollectionTypeUseCase(
-                subjectId,
-                episodeId,
-                allowNetwork = false,
-            )
-        if (collectionType?.isDoneOrDropped() == true) {
-
-            return
-        }
-
-        cancellableCoroutineScope {
-            combine(
-                player.currentPositionMillis
-                    .let { if (enableSamplingAndDebounce) it.sampleWithInitial(5000) else it },
-                player.mediaProperties.map { it?.durationMillis }
-                    .let { if (enableSamplingAndDebounce) it.debounce(5000) else it },
-                player.state,
-            ) { pos, videoLength, state ->
-                if (videoLength == null || !state.isPlaying) return@combine
-                if (videoLength < 10.seconds.inWholeMilliseconds) return@combine
-                if (pos >=
-                    min(
-                        (videoLength.toFloat() * 0.9).toLong(),
-                        videoLength - 100.seconds.inWholeMilliseconds,
-                    )
-                ) {
-                    logger.info { "观看到 90%, 标记看过" }
-                    try {
-                        setEpisodeCollectionTypeUseCase(subjectId, episodeId, UnifiedCollectionType.DONE)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        logger.warn("Failed to setEpisodeCollectionTypeUseCase, see cause", e)
+                try {
+                    val subjectId = context.subjectId
+                    val episodeId = episodeSession.episodeId
+                    if (getEpisodeCollectionType(subjectId, episodeId, allowNetwork = false)?.isDoneOrDropped() == true) {
+                        marked = true
+                        return@collectLatest
                     }
-                    cancelScope()
+                    val cachedEpisode = episodeSession.loadedMedia.value?.cacheMetadata?.toEpisodeInfo()
+                    if (cachedEpisode != null) {
+                        setEpisodeCollectionType.setKnownEpisodeCollectionType(subjectId, cachedEpisode, UnifiedCollectionType.DONE)
+                    } else {
+                        setEpisodeCollectionType(subjectId, episodeId, UnifiedCollectionType.DONE)
+                    }
+                    marked = true
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    logger.warn(e) { "Failed to mark episode ${episodeSession.episodeId} as watched" }
                 }
-            }.collect()
+            }
         }
+    }
+
+    private fun positionMeetsThreshold(positionMillis: Long, durationMillis: Long): Boolean {
+        if (durationMillis < 10.seconds.inWholeMilliseconds) return false
+        val percentThreshold = durationMillis - durationMillis / 10
+        val endingThreshold = durationMillis - 100.seconds.inWholeMilliseconds
+        val threshold = if (endingThreshold > 0) minOf(percentThreshold, endingThreshold) else percentThreshold
+        return positionMillis >= threshold
     }
 
     companion object : EpisodePlayerExtensionFactory<MarkAsWatchedExtension> {
         private val logger = logger<MarkAsWatchedExtension>()
 
-        override fun create(context: PlayerExtensionContext, koin: Koin): MarkAsWatchedExtension {
-            return MarkAsWatchedExtension(context, koin, enableSamplingAndDebounce = true)
-        }
+        override fun create(context: PlayerExtensionContext, koin: Koin): MarkAsWatchedExtension =
+            MarkAsWatchedExtension(context, koin)
     }
 }

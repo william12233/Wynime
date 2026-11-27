@@ -1379,6 +1379,9 @@
     <string name="subject_episode_no_episodes">没有可选的剧集</string>
     <string name="subject_episode_metadata_unavailable">暂时无法加载剧集信息</string>
     <string name="recommendations_empty">暂无推荐</string>
+    <string name="subject_episode_catalog_unavailable">暂时无法加载完整剧集</string>
+    <string name="subject_episode_details_refresh_failed">暂时无法更新作品资料</string>
+    <string name="subject_episode_watch_requires_collection">请先追番</string>
 </resources>
 
 

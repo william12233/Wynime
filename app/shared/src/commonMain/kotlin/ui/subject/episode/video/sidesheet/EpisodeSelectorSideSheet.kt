@@ -1,8 +1,10 @@
 package com.wynime.app.ui.subject.episode.video.sidesheet
 
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -11,8 +13,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -40,7 +42,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.ui.download.subject.contentColorForWatchStatus
 import com.wynime.app.ui.foundation.BackgroundScope
 import com.wynime.app.ui.foundation.HasBackgroundScope
@@ -48,16 +49,23 @@ import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.foundation.icons.PlayingIcon
 import com.wynime.app.ui.foundation.stateOf
 import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_cached
 import com.wynime.app.ui.lang.subject_episode_close
+import com.wynime.app.ui.lang.subject_episode_default_title
+import com.wynime.app.ui.lang.subject_episode_mark_watched
+import com.wynime.app.ui.lang.subject_episode_unwatch
+import com.wynime.app.ui.lang.subject_episode_watched
 import com.wynime.app.ui.lang.subject_episode_now_playing
 import com.wynime.app.ui.lang.subject_episode_no_episodes
 import com.wynime.app.ui.lang.video_player_select_episode
-import com.wynime.app.ui.search.LoadErrorCard
+import com.wynime.app.ui.subject.episode.EpisodeCatalogStatus
+import com.wynime.app.ui.subject.episode.EpisodeCatalogStatusRow
 import com.wynime.app.ui.subject.episode.EpisodePresentation
 import com.wynime.app.ui.subject.episode.TAG_EPISODE_SELECTOR_SHEET
 import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
 import com.wynime.app.ui.subject.episode.video.settings.SideSheetLayout
 import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
 import com.wynime.utils.platform.annotations.TestOnly
 import org.jetbrains.compose.resources.stringResource
 import kotlin.coroutines.CoroutineContext
@@ -71,14 +79,12 @@ class EpisodeSelectorState(
     currentEpisodeId: Flow<Int>,
     private val onSelect: (Item) -> Unit,
     parentCoroutineContext: CoroutineContext,
-    loadError: State<LoadError?> = stateOf(null),
-    isLoading: State<Boolean> = stateOf(false),
+    catalogStatus: State<EpisodeCatalogStatus> = stateOf(EpisodeCatalogStatus()),
     val onRetry: () -> Unit = {},
 ) : HasBackgroundScope by BackgroundScope(parentCoroutineContext) {
 
     val items: List<Item> by itemsFlow.produceState(emptyList())
-    val loadError by loadError
-    val isLoading by isLoading
+    val catalogStatus by catalogStatus
 
     private val currentEpisodeId by currentEpisodeId.produceState(-1)
 
@@ -126,10 +132,10 @@ fun EpisodeVideoSideSheets.EpisodeSelectorSheet(
     state: EpisodeSelectorState,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    onToggleWatched: ((Int) -> Unit)? = null,
 ) {
     val selectEpisodeText = stringResource(Lang.video_player_select_episode)
     val closeText = stringResource(Lang.subject_episode_close)
-    val nowPlayingText = stringResource(Lang.subject_episode_now_playing)
 
     SideSheetLayout(
         onDismissRequest = onDismissRequest,
@@ -155,53 +161,84 @@ fun EpisodeVideoSideSheets.EpisodeSelectorSheet(
                 )
             }
         }
+        val status = state.catalogStatus
+        EpisodeCatalogStatusRow(status, state.onRetry)
         LazyColumn(state = lazyListState) {
-            if (state.items.isEmpty()) {
+            if (!status.loading && !status.hasError && state.items.isEmpty()) {
                 item {
                     Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                        val error = state.loadError
-                        when {
-                            error != null -> LoadErrorCard(error, state.onRetry)
-                            state.isLoading -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                            else -> Text(stringResource(Lang.subject_episode_no_episodes))
-                        }
+                        Text(stringResource(Lang.subject_episode_no_episodes))
                     }
                 }
             }
             itemsIndexed(state.items, key = { _, item -> item.episodeId }) { index, item ->
-                val selected = index == state.currentIndex
-                val color = contentColorForWatchStatus(item.collectionType, item.isKnownBroadcast)
-                ListItem(
-                    headlineContent = { Text(item.title, color = color) },
-                    Modifier.clickable {
+                EpisodeSelectorRow(
+                    item = item,
+                    selected = index == state.currentIndex,
+                    onClick = {
                         state.select(item)
                         onDismissRequest()
                     },
-                    leadingContent = {
-                        ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
-                            Text(item.sort, fontFamily = FontFamily.Monospace, color = color)
-                        }
-                    },
-                    trailingContent = {
-                        if (selected) {
-                            PlayingIcon(contentDescription = nowPlayingText)
-                        }
-                    },
-                    colors =
-                        if (selected) ListItemDefaults.colors(
-                            headlineColor = MaterialTheme.colorScheme.primary,
-                            leadingIconColor = MaterialTheme.colorScheme.primary,
-                            trailingIconColor = MaterialTheme.colorScheme.primary,
-                        )
-                        else ListItemDefaults.colors(),
+                    onToggleWatched = onToggleWatched?.let { action -> { action(item.episodeId) } },
                 )
-
                 if (index != state.items.lastIndex) {
                     HorizontalDivider(Modifier.padding(horizontal = 4.dp))
                 }
             }
         }
     }
+}
+
+@Composable
+internal fun EpisodeSelectorRow(
+    item: EpisodePresentation,
+    selected: Boolean,
+    onClick: () -> Unit,
+    onToggleWatched: (() -> Unit)?,
+) {
+    val watched = item.collectionType.isDoneOrDropped()
+    val color = contentColorForWatchStatus(item.collectionType, item.isKnownBroadcast)
+    ListItem(
+        headlineContent = {
+            Text(item.title.ifBlank { stringResource(Lang.subject_episode_default_title, item.ep) }, color = color)
+        },
+        modifier = Modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = onToggleWatched,
+            onLongClickLabel = stringResource(if (watched) Lang.subject_episode_unwatch else Lang.subject_episode_mark_watched),
+        ),
+        supportingContent = if (watched) {
+            { Text(stringResource(Lang.subject_episode_watched)) }
+        } else null,
+        leadingContent = {
+            ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
+                Text(item.sort, fontFamily = FontFamily.Monospace, color = color)
+            }
+        },
+        trailingContent = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (item.isDownloaded) {
+                    Icon(
+                        Icons.Rounded.DownloadDone,
+                        contentDescription = stringResource(Lang.subject_episode_cached),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                if (selected) {
+                    PlayingIcon(contentDescription = stringResource(Lang.subject_episode_now_playing))
+                }
+            }
+        },
+        colors = if (selected) {
+            ListItemDefaults.colors(
+                headlineColor = MaterialTheme.colorScheme.primary,
+                leadingIconColor = MaterialTheme.colorScheme.primary,
+                trailingIconColor = MaterialTheme.colorScheme.primary,
+            )
+        } else {
+            ListItemDefaults.colors()
+        },
+    )
 }
 
 @Composable
@@ -261,10 +298,9 @@ fun PreviewEpisodeSelectorSideSheet() {
 @Composable
 fun PreviewPlayingIcon() {
     ProvideCompositionLocalsForPreview {
-        val nowPlayingText = stringResource(Lang.subject_episode_now_playing)
-        Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
             Box(modifier = Modifier.border(1.dp, color = Color.Magenta)) {
-                PlayingIcon(contentDescription = nowPlayingText)
+                PlayingIcon(contentDescription = stringResource(Lang.subject_episode_now_playing))
             }
         }
     }

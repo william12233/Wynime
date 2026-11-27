@@ -1368,6 +1368,9 @@
     <string name="subject_episode_no_episodes">沒有可選擇的集數</string>
     <string name="subject_episode_metadata_unavailable">暫時無法載入集數資訊</string>
     <string name="recommendations_empty">目前沒有推薦</string>
+    <string name="subject_episode_catalog_unavailable">完整集數暫時無法載入</string>
+    <string name="subject_episode_details_refresh_failed">作品資料暫時無法更新</string>
+    <string name="subject_episode_watch_requires_collection">請先追番</string>
 </resources>
 
 

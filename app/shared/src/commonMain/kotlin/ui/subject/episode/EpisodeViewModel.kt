@@ -69,9 +69,11 @@ import com.wynime.app.data.network.WynimeCommentReportService
 import com.wynime.app.data.repository.RepositoryException
 import com.wynime.app.data.repository.RepositoryNetworkException
 import com.wynime.app.data.repository.RepositoryServiceUnavailableException
+import com.wynime.app.data.repository.episode.EpisodeCatalogRepository
 import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
 import com.wynime.app.data.repository.episode.EpisodeCommentRepository
 import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
+import com.wynime.app.data.repository.subject.GetEpisodeTypeFiltersUseCase
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import com.wynime.app.data.repository.user.SettingsRepository
 import com.wynime.app.domain.comment.PostCommentUseCase
@@ -84,7 +86,6 @@ import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
 import com.wynime.app.domain.episode.episodeIdFlow
 import com.wynime.app.domain.episode.getCurrentEpisodeId
 import com.wynime.app.domain.episode.infoBundleFlow
-import com.wynime.app.domain.episode.infoLoadErrorFlow
 import com.wynime.app.domain.episode.mediaSelectorFlow
 import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.domain.media.DroppedFileMedia
@@ -156,7 +157,6 @@ import com.wynime.app.videoplayer.ui.ControllerVisibility
 import com.wynime.app.videoplayer.ui.PlayerControllerState
 import com.wynime.app.videoplayer.videoenhancement.VideoEnhancementMode
 import com.wynime.app.videoplayer.videoenhancement.createVideoEnhancementController
-import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.PackedDate
 import com.wynime.datasources.api.source.MediaFetchRequest
 import com.wynime.datasources.api.topic.isDoneOrDropped
@@ -239,6 +239,7 @@ sealed class EpisodePageLoadError {
 
     data class SubjectError(
         val loadError: LoadError,
+        val isPlayingLocalCache: Boolean = false,
     ) : EpisodePageLoadError()
 
     data class SeriesError(
@@ -259,6 +260,8 @@ open class EpisodeViewModel(
 
     private val playerStateFactory: MediampPlayerFactory<*> by inject()
     private val episodeCollectionRepository: EpisodeCollectionRepository by inject()
+    private val episodeCatalogRepository: EpisodeCatalogRepository by inject()
+    private val getEpisodeTypeFilters: GetEpisodeTypeFiltersUseCase by inject()
     private val downloadManager: MediaDownloadManager by inject()
     private val getMediaCacheUseCase: GetMediaCacheUseCase by inject()
     private val initialCachePlaybackStarted = atomic(false)
@@ -347,10 +350,6 @@ open class EpisodeViewModel(
     @UnsafeEpisodeSessionApi
     private val subjectEpisodeInfoBundleFlow: Flow<SubjectEpisodeInfoBundle?> get() = fetchPlayState.infoBundleFlow
 
-    @UnsafeEpisodeSessionApi
-    private val subjectEpisodeInfoBundleLoadErrorFlow = fetchPlayState.infoLoadErrorFlow
-        .stateIn(backgroundScope, SharingStarted.Eagerly, null)
-
     @OptIn(UnsafeEpisodeSessionApi::class)
     private val remoteSubject = subjectEpisodeInfoBundleFlow.filterNotNull()
         .map { it.subjectCollectionInfo }
@@ -388,8 +387,46 @@ open class EpisodeViewModel(
         }
     }.distinctUntilChanged().stateIn(backgroundScope, SharingStarted.Eagerly, emptyList())
 
-    @OptIn(UnsafeEpisodeSessionApi::class)
-    protected val episodeCollectionsFlow = subjectCollectionFlow.map { it.episodes }.distinctUntilChanged()
+    private val publicEpisodeCatalog = episodeCatalogRepository.catalogFlow(subjectId)
+    private val localEpisodeCatalog = episodeCollectionRepository.cachedCatalogFlow(subjectId)
+    private val episodeCatalogRefresh = MutableStateFlow(EpisodeCatalogStatus(loading = true))
+    private val episodeCatalogRefreshMutex = Mutex()
+
+    protected val episodeCollectionsFlow = combine(
+        publicEpisodeCatalog, localEpisodeCatalog, cachedEpisodes, getEpisodeTypeFilters(),
+    ) { catalog, local, downloads, filters ->
+        mergeEpisodeCatalog(local.episodes, catalog?.episodes.orEmpty(), downloads, filters)
+    }.stateIn(backgroundScope, SharingStarted.Eagerly, emptyList())
+
+    private val episodeCatalogStatus = combine(
+        publicEpisodeCatalog, localEpisodeCatalog, episodeCatalogRefresh,
+    ) { public, local, refresh ->
+        if (public != null || local.isComplete) {
+            refresh.copy(loading = false, hasError = false)
+        } else {
+            refresh
+        }
+    }.produceState(EpisodeCatalogStatus(loading = true))
+
+    private fun refreshEpisodeCatalog(force: Boolean = false) {
+        launchInBackground {
+            if (!episodeCatalogRefreshMutex.tryLock()) return@launchInBackground
+            try {
+                episodeCatalogRefresh.value = EpisodeCatalogStatus(loading = true)
+                episodeCatalogRepository.refresh(subjectId, force)
+                episodeCatalogRefresh.value = EpisodeCatalogStatus()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.warn(e) { "Could not refresh the episode catalog for $subjectId" }
+                episodeCatalogRefresh.value = EpisodeCatalogStatus(hasError = true)
+            } finally {
+                episodeCatalogRefreshMutex.unlock()
+            }
+        }
+    }
+
+    private fun retryEpisodeCatalog() = refreshEpisodeCatalog(force = true)
 
     @UnsafeEpisodeSessionApi
     private val episodeInfoFlow = episodeCollectionFlow.map { it?.episodeInfo }.distinctUntilChanged()
@@ -493,6 +530,8 @@ open class EpisodeViewModel(
             recommendations = recommendations.produceState(),
             subjectDetailsStateLoader = SubjectDetailsStateLoader(subjectDetailsStateFactory, backgroundScope),
             onRetryRecommendations = recommendationRestarter::restart,
+            episodeCatalogStatus = episodeCatalogStatus,
+            onRetryEpisodeCatalog = ::retryEpisodeCatalog,
         )
     }
 
@@ -556,11 +595,7 @@ open class EpisodeViewModel(
                 collectionButtonEnabled.value = false
                 launchInBackground {
                     try {
-                        episodeCollectionRepository.setEpisodeCollectionType(
-                            subjectId,
-                            episodeId = episode.episodeInfo.episodeId,
-                            collectionType = it,
-                        )
+                        episodeCollectionRepository.changeKnownEpisodeCollectionType(subjectId, episode.episodeInfo, it)
                     } finally {
                         collectionButtonEnabled.value = true
                     }
@@ -595,30 +630,36 @@ open class EpisodeViewModel(
 
     @OptIn(UnsafeEpisodeSessionApi::class)
     val episodeSelectorState: EpisodeSelectorState = EpisodeSelectorState(
-        itemsFlow = combine(remoteSubject, cachedEpisodes) { remote, cached ->
-            buildMap<Int, Pair<EpisodeSort, EpisodePresentation>> {
-                for (metadata in cached) {
-                    val item = metadata.toEpisodePresentation()
-                    put(item.episodeId, metadata.episodeSort to item)
-                }
-                for (episode in remote?.episodes.orEmpty()) {
-                    val item = episode.toPresentation(remote?.recurrence)
-                    put(
-                        item.episodeId,
-                        episode.episodeInfo.sort to item.copy(isKnownBroadcast = item.isKnownBroadcast || containsKey(item.episodeId)),
-                    )
-                }
-            }.values.sortedBy { it.first }.map { it.second }
+        itemsFlow = combine(episodeCollectionsFlow, remoteSubject, cachedEpisodes) { episodes, subject, cached ->
+            val downloadedIds = cached.mapTo(mutableSetOf()) { it.episodeId.toInt() }
+            episodes.map { episode ->
+                val downloaded = episode.episodeId in downloadedIds
+                val item = episode.toPresentation(subject?.recurrence)
+                item.copy(isKnownBroadcast = item.isKnownBroadcast || downloaded, isDownloaded = downloaded)
+            }
         },
         onSelect = { item ->
             launchInBackground { switchEpisode(item.episodeId) }
         },
         currentEpisodeId = episodeIdFlow,
         parentCoroutineContext = backgroundScope.coroutineContext,
-        loadError = subjectEpisodeInfoBundleLoadErrorFlow.produceState(),
-        isLoading = remoteSubject.map { it == null }.produceState(true),
-        onRetry = ::restartMetadataLoad,
+        catalogStatus = episodeCatalogStatus,
+        onRetry = ::retryEpisodeCatalog,
     )
+
+    fun toggleEpisodeWatched(episodeId: Int, onNotCollected: () -> Unit, onError: (LoadError) -> Unit) {
+        val episode = episodeCollectionsFlow.value.firstOrNull { it.episodeId == episodeId } ?: return
+        launchInBackground {
+            try {
+                if (!episodeCollectionRepository.toggleEpisodeWatched(subjectId, episode.episodeInfo)) {
+                    withContext(Dispatchers.Main) { onNotCollected() }
+                }
+            } catch (e: Exception) {
+                val error = LoadError.fromException(RepositoryException.wrapOrThrowCancellation(e))
+                withContext(Dispatchers.Main) { onError(error) }
+            }
+        }
+    }
 
     private val commentStateRestarter = FlowRestarter()
     private val commentLoadFailureChannel = Channel<Throwable>(Channel.BUFFERED)
@@ -830,7 +871,7 @@ open class EpisodeViewModel(
             fun getLoadError(): EpisodePageLoadError? {
 
                 subjectLoadError?.let {
-                    return EpisodePageLoadError.SubjectError(subjectLoadError)
+                    return EpisodePageLoadError.SubjectError(subjectLoadError, isPlayingLocalCache = playingDownload != null)
                 }
                 return null
             }
@@ -1041,6 +1082,7 @@ open class EpisodeViewModel(
     }
 
     init {
+        refreshEpisodeCatalog()
         launchInBackground { loadRecommendations() }
         backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) {
             var isInitialSession = true

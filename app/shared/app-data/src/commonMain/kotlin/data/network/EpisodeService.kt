@@ -34,6 +34,8 @@ import kotlin.coroutines.cancellation.CancellationException
 
 sealed interface EpisodeService {
 
+    suspend fun getEpisodeInfosPaged(subjectId: Int, offset: Int): Paged<EpisodeInfo>
+
     suspend fun getEpisodeCollectionInfosPaged(
         subjectId: Int,
         offset: Int? = 0,
@@ -62,58 +64,56 @@ class EpisodeServiceImpl(
         episodeType: BangumiEpType?,
     ): Paged<EpisodeCollectionInfo> {
         return withContext(ioDispatcher) {
-            val requestedOffset = offset ?: 0
-            val requestedLimit = limit?.takeIf { it > 0 } ?: 100
-            val episodePage = bangumiApi.request {
-                getEpisodes(
-                    subjectId = subjectId,
-                    type = episodeType,
-                    limit = requestedLimit,
-                    offset = requestedOffset,
-                )
-            }
-            val episodes = episodePage.data.orEmpty()
-            val responseOffset = episodePage.offset ?: requestedOffset
-            if (responseOffset != requestedOffset) {
-                throw RepositoryRequestError(
-                    "Bangumi 集數回傳 offset 不一致：要求 $requestedOffset，收到 $responseOffset",
-                )
-            }
-            val total = episodePage.total
-            if (total != null && (total < 0 || responseOffset > total || responseOffset + episodes.size > total)) {
-                throw RepositoryRequestError(
-                    "Bangumi 集數資料超過 total：offset=$responseOffset，取得 ${episodes.size}，total=$total",
-                )
-            }
-            if (episodes.isEmpty() && total != null && responseOffset < total) {
-                throw RepositoryRequestError(
-                    "Bangumi 集數資料不完整：offset=$responseOffset，total=$total",
-                )
-            }
-            if (total != null && responseOffset + episodes.size < total && episodes.size < requestedLimit) {
-                throw RepositoryRequestError(
-                    "Bangumi 集數分頁提前結束：offset=$responseOffset，取得 ${responseOffset + episodes.size}/$total",
-                )
-            }
+            val page = loadPublicEpisodePage(subjectId, offset ?: 0, limit?.takeIf { it > 0 } ?: 100, episodeType)
             val collections = if (bangumiApi.hasAccessToken()) {
                 loadUserEpisodeCollections(subjectId, episodeType)
             } else {
                 emptyMap()
             }
-            val hasMore = if (total != null) {
-                responseOffset + episodes.size < total
-            } else {
-                episodes.size >= requestedLimit
-            }
             Paged(
-                total = total,
-                hasMore = hasMore,
-                page = episodes.map { episode ->
+                total = page.total,
+                hasMore = page.hasMore,
+                page = page.page.map { episode ->
                     collections[episode.id]?.toEpisodeCollectionInfo()
                         ?: episode.toEpisodeInfo().createNotCollected()
                 },
             )
         }
+    }
+
+    override suspend fun getEpisodeInfosPaged(subjectId: Int, offset: Int): Paged<EpisodeInfo> =
+        withContext(ioDispatcher) {
+            val page = loadPublicEpisodePage(subjectId, offset, 100, episodeType = null, useAccessToken = false)
+            Paged(page = page.page.map { it.toEpisodeInfo() }, total = page.total, hasMore = page.hasMore)
+        }
+
+    private suspend fun loadPublicEpisodePage(
+        subjectId: Int,
+        offset: Int,
+        limit: Int,
+        episodeType: BangumiEpType?,
+        useAccessToken: Boolean = true,
+    ): Paged<BangumiEpisode> {
+        val result = bangumiApi.request(useAccessToken) {
+            getEpisodes(subjectId = subjectId, type = episodeType, limit = limit, offset = offset)
+        }
+        val episodes = result.data.orEmpty()
+        val responseOffset = result.offset ?: offset
+        if (responseOffset != offset) {
+            throw RepositoryRequestError("Bangumi 集數回傳 offset 不一致：要求 $offset，收到 $responseOffset")
+        }
+        val total = result.total
+        if (total != null && (total < 0 || offset > total || episodes.size > total - offset)) {
+            throw RepositoryRequestError("Bangumi 集數資料超過 total：offset=$offset，取得 ${episodes.size}，total=$total")
+        }
+        if (total != null && episodes.size < limit && episodes.size < total - offset) {
+            throw RepositoryRequestError("Bangumi 集數分頁提前結束：offset=$offset，取得 ${episodes.size}，total=$total")
+        }
+        return Paged(
+            total = total,
+            hasMore = if (total != null) episodes.size < total - offset else episodes.size >= limit,
+            page = episodes,
+        )
     }
 
     override suspend fun getEpisodeCollectionById(subjectId: Int, episodeId: Int): EpisodeCollectionInfo? =

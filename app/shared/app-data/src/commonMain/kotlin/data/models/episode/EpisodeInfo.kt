@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 import com.wynime.app.data.models.subject.preferredDisplayName as subjectPreferredDisplayName
 import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.EpisodeType
+import com.wynime.datasources.api.MediaCacheMetadata
 import com.wynime.datasources.api.PackedDate
 
 @Immutable
@@ -52,3 +53,13 @@ fun EpisodeInfo.preferredDisplayName(useOriginalTitle: Boolean): String =
 
 @Stable
 fun EpisodeInfo.renderEpisodeEp() = sort.toString()
+
+fun MediaCacheMetadata.toEpisodeInfo(): EpisodeInfo? {
+    val id = episodeId.toIntOrNull()?.takeIf { it > 0 } ?: return null
+    val episodeType = when (val sort = episodeSort) {
+        is EpisodeSort.Normal -> EpisodeType.MainStory
+        is EpisodeSort.Special -> sort.type
+        is EpisodeSort.Unknown -> null
+    }
+    return EpisodeInfo(id, episodeType, name = episodeName, sort = episodeSort, ep = episodeEp)
+}

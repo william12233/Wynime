@@ -5,10 +5,13 @@ import androidx.datastore.core.DataStoreFactory
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.mutablePreferencesOf
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.nullable
 import com.wynime.app.data.models.user.SelfInfo
 import com.wynime.app.data.repository.SavedWindowState
+import com.wynime.app.data.repository.episode.CachedEpisodeCatalog
 import com.wynime.app.data.repository.episode.EpisodeCollectionPendingChanges
 import com.wynime.app.data.repository.media.MediaSourceSaves
 import com.wynime.app.data.repository.player.EpisodeHistories
@@ -40,6 +43,15 @@ abstract class PlatformDataStoreManager {
             corruptionHandler = ReplaceFileCorruptionHandler {
                 EpisodeHistories.Empty
             },
+        )
+    }
+
+    val episodeCatalogStore by lazy {
+        DataStoreFactory.create(
+            serializer = MapSerializer(Int.serializer(), CachedEpisodeCatalog.serializer())
+                .asDataStoreSerializer({ emptyMap() }),
+            produceFile = { resolveDataStoreFile("episodeCatalogs") },
+            corruptionHandler = ReplaceFileCorruptionHandler { emptyMap() },
         )
     }
 

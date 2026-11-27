@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import com.wynime.app.data.models.episode.EpisodeInfo
 import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
 import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.domain.usecase.UseCase
@@ -24,6 +25,10 @@ fun interface SetEpisodeCollectionTypeUseCase : UseCase {
         collectionType: UnifiedCollectionType,
     )
 
+    suspend fun setKnownEpisodeCollectionType(subjectId: Int, episode: EpisodeInfo, type: UnifiedCollectionType) {
+        invoke(subjectId, episode.episodeId, type)
+    }
+
     suspend fun invokeSafe(request: SetEpisodeCollectionTypeRequest): LoadError? {
         return LoadError.runAndWrapOrThrowCancellation {
             invoke(request.subjectId, request.episodeId, request.collectionType)
@@ -35,6 +40,10 @@ class SetEpisodeCollectionTypeUseCaseImpl(
     koin: Koin,
 ) : SetEpisodeCollectionTypeUseCase {
     private val episodeCollectionRepository: EpisodeCollectionRepository by koin.inject()
+    override suspend fun setKnownEpisodeCollectionType(subjectId: Int, episode: EpisodeInfo, type: UnifiedCollectionType) {
+        episodeCollectionRepository.changeKnownEpisodeCollectionType(subjectId, episode, type)
+    }
+
     override suspend fun invoke(subjectId: Int, episodeId: Int, collectionType: UnifiedCollectionType) {
         withContext(Dispatchers.Default) {
             suspend {

@@ -112,6 +112,7 @@ import com.wynime.app.ui.foundation.theme.weaken
 import com.wynime.app.ui.foundation.widgets.LocalToaster
 import com.wynime.app.ui.foundation.widgets.showLoadError
 import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_watch_requires_collection
 import com.wynime.app.ui.lang.subject_episode_metadata_unavailable
 import com.wynime.app.ui.lang.episode_comments
 import com.wynime.app.ui.lang.episode_comments_with_count
@@ -917,9 +918,18 @@ private fun EpisodeVideo(
                     }
                 },
                 episodeSelectorPage = {
+                    val toaster = LocalToaster.current
+                    val requiresCollection = stringResource(Lang.subject_episode_watch_requires_collection)
                     EpisodeVideoSideSheets.EpisodeSelectorSheet(
                         vm.episodeSelectorState,
                         onDismissRequest = { goBack() },
+                        onToggleWatched = { episodeId ->
+                            vm.toggleEpisodeWatched(
+                                episodeId,
+                                onNotCollected = { toaster.toast(requiresCollection) },
+                                onError = toaster::showLoadError,
+                            )
+                        },
                     )
                 },
             )

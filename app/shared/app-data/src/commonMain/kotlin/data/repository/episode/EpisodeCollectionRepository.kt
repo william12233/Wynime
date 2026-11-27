@@ -3,7 +3,10 @@ package com.wynime.app.data.repository.episode
 import androidx.paging.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import com.wynime.app.data.models.episode.EpisodeCollectionInfo
 import com.wynime.app.data.models.episode.EpisodeInfo
@@ -25,6 +28,7 @@ import com.wynime.models.EpisodeCollectionDto
 import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.PackedDate
 import com.wynime.datasources.api.topic.UnifiedCollectionType
+import com.wynime.datasources.api.topic.isDoneOrDropped
 import com.wynime.utils.logging.warn
 import com.wynime.utils.platform.currentTimeMillis
 import com.wynime.utils.serialization.BigNum
@@ -46,6 +50,19 @@ class EpisodeCollectionRepository(
 
     private val subjectCollectionRepository by subjectCollectionRepository
 
+    data class CachedCatalog(val episodes: List<EpisodeCollectionInfo>, val isComplete: Boolean)
+
+    private val episodeChangeMutex = Mutex()
+
+    fun cachedCatalogFlow(subjectId: Int): Flow<CachedCatalog> =
+        combine(episodeCollectionDao.filterBySubjectId(subjectId), subjectDao.findById(subjectId)) { episodes, subject ->
+            CachedCatalog(
+                episodes = episodes.map { it.toEpisodeCollectionInfo() },
+                isComplete = subject != null && subject.totalEpisodes > 0 &&
+                    episodes.count { it.lastFetched > 0 } == subject.totalEpisodes,
+            )
+        }.distinctUntilChanged().flowOn(defaultDispatcher)
+
     private fun EpisodeCollectionEntity.isExpired(): Boolean {
         return (currentTimeMillis() - lastFetched).milliseconds > cacheExpiry
     }
@@ -61,7 +78,14 @@ class EpisodeCollectionRepository(
 
             try {
                 episodeService.getEpisodeCollectionById(subjectId, episodeId)
-                    ?.also { episodeCollectionDao.upsert(it.toEntity(subjectId)) }
+                    ?.let { remote ->
+                        episodeChangeMutex.withLock {
+                            val local = episodeCollectionDao.findByEpisodeId(episodeId).first()
+                            val updated = remote.copy(collectionType = local?.selfCollectionType ?: remote.collectionType)
+                            episodeCollectionDao.upsert(updated.toEntity(subjectId))
+                            updated
+                        }
+                    }
                     ?: cached
                     ?: throw NoSuchElementException("Episode $episodeId not found")
             } catch (e: CancellationException) {
@@ -155,11 +179,56 @@ class EpisodeCollectionRepository(
         episodeId: Int,
         collectionType: UnifiedCollectionType,
     ) = withContext(defaultDispatcher) {
-        val subject = subjectDao.findById(subjectId).first()
-        if (subject == null || subject.collectionType == UnifiedCollectionType.NOT_COLLECTED) {
-            logger.warn { "User has not yet collected subject $subjectId when we want to setEpisodeCollectionType, ignoring." }
-            return@withContext
+        episodeChangeMutex.withLock {
+            if (isCollected(subjectId)) {
+                updateEpisodeCollectionType(subjectId, episodeId, collectionType)
+            }
         }
+    }
+
+    suspend fun changeKnownEpisodeCollectionType(
+        subjectId: Int,
+        episode: EpisodeInfo,
+        collectionType: UnifiedCollectionType,
+    ): Boolean = changeKnownEpisode(subjectId, episode) { collectionType }
+
+    suspend fun toggleEpisodeWatched(subjectId: Int, episode: EpisodeInfo): Boolean =
+        changeKnownEpisode(subjectId, episode) { current ->
+            if (current.isDoneOrDropped()) UnifiedCollectionType.NOT_COLLECTED else UnifiedCollectionType.DONE
+        }
+
+    private suspend fun changeKnownEpisode(
+        subjectId: Int,
+        episode: EpisodeInfo,
+        collectionType: (UnifiedCollectionType) -> UnifiedCollectionType,
+    ): Boolean = withContext(defaultDispatcher) {
+        episodeChangeMutex.withLock {
+            if (!isCollected(subjectId)) return@withLock false
+            episodeCollectionDao.insertIfAbsent(
+                EpisodeCollectionInfo(episode, UnifiedCollectionType.NOT_COLLECTED).toEntity(subjectId, lastFetched = 0),
+            )
+            val current = episodeCollectionDao.findByEpisodeId(episode.episodeId).first()
+            if (current?.subjectId != subjectId) return@withLock false
+            val updated = collectionType(current.selfCollectionType)
+            if (current.selfCollectionType != updated) {
+                withContext(NonCancellable) {
+                    updateEpisodeCollectionType(subjectId, episode.episodeId, updated)
+                }
+            }
+            true
+        }
+    }
+
+    private suspend fun isCollected(subjectId: Int): Boolean {
+        val subject = subjectDao.findById(subjectId).first()
+        return subject != null && subject.collectionType != UnifiedCollectionType.NOT_COLLECTED
+    }
+
+    private suspend fun updateEpisodeCollectionType(
+        subjectId: Int,
+        episodeId: Int,
+        collectionType: UnifiedCollectionType,
+    ) {
         episodeCollectionDao.updateSelfCollectionType(subjectId, episodeId, collectionType)
         val pending = EpisodeCollectionPendingChange(
             subjectId = subjectId,
@@ -187,16 +256,10 @@ class EpisodeCollectionRepository(
         try {
             val local = episodeCollectionDao.findByEpisodeId(episodeId).first()
 
-            if (local != null && (!local.isExpired() || !allowNetwork)) {
-                return@withContext local.selfCollectionType
-            } else {
-                val remote = episodeService.getEpisodeCollectionById(subjectId, episodeId)
-                if (remote != null) {
-                    return@withContext remote.collectionType
-                }
-
-                return@withContext null
+            if (!allowNetwork || (local != null && !local.isExpired())) {
+                return@withContext local?.selfCollectionType
             }
+            episodeService.getEpisodeCollectionById(subjectId, episodeId)?.collectionType
         } catch (e: Throwable) {
             throw RepositoryException.wrapOrThrowCancellation(e)
         }

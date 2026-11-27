@@ -6,6 +6,8 @@ import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Transaction
@@ -131,6 +133,9 @@ interface EpisodeCollectionDao {
 
     @Query("SELECT * FROM episode_collection WHERE subjectId IN (:subjectIds)")
     suspend fun listBySubjectIds(subjectIds: List<Int>): List<EpisodeCollectionEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(item: EpisodeCollectionEntity)
 
     @Upsert
     suspend fun upsert(item: EpisodeCollectionEntity)

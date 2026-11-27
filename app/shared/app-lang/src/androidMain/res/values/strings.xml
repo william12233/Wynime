@@ -1353,6 +1353,9 @@
     <string name="subject_episode_no_episodes">No episodes available</string>
     <string name="subject_episode_metadata_unavailable">Episode details unavailable</string>
     <string name="recommendations_empty">No recommendations available</string>
+    <string name="subject_episode_catalog_unavailable">Full episode list is temporarily unavailable</string>
+    <string name="subject_episode_details_refresh_failed">Series details could not be refreshed</string>
+    <string name="subject_episode_watch_requires_collection">Follow this series before marking episodes as watched</string>
 </resources>
 
 

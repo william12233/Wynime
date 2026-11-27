@@ -71,6 +71,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.wynime.app.data.models.episode.EpisodeInfo
+import com.wynime.app.data.repository.episode.EpisodeCollectionPendingChange
+import com.wynime.app.data.repository.episode.EpisodeCollectionSyncEnqueuer
+import kotlin.test.assertFalse
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 import kotlin.time.Duration.Companion.seconds
@@ -262,6 +266,39 @@ class SubjectCollectionRepositoryInvalidateTest {
         cachedStaffUpdated = 0,
         cachedCharactersUpdated = 0,
     )
+
+    @Test
+    fun downloadedEpisodeWatchStatusIsWrittenAndEnqueuedForCollectedSubjects() = runRepositoryTest {
+        val enqueued = mutableListOf<EpisodeCollectionPendingChange>()
+        val episodeRepository = EpisodeCollectionRepository(
+            subjectDao = dao,
+            episodeCollectionDao = database.episodeCollection(),
+            episodeService = unusedEpisodeService,
+            subjectCollectionRepository = lazy { repository },
+            getEpisodeTypeFiltersUseCase = GetEpisodeTypeFiltersUseCase { flowOf(EpisodeType.entries) },
+            pendingSyncEnqueuer = object : EpisodeCollectionSyncEnqueuer {
+                override suspend fun enqueue(changes: Collection<EpisodeCollectionPendingChange>) {
+                    enqueued += changes
+                }
+            },
+        )
+        val first = EpisodeInfo(101, EpisodeType.MainStory, "Cached first episode", sort = EpisodeSort(1))
+        dao.upsert(subject(20, lastFetched = 100, type = UnifiedCollectionType.NOT_COLLECTED))
+        assertNull(episodeRepository.getEpisodeCollectionType(20, 101, allowNetwork = false))
+        assertFalse(episodeRepository.toggleEpisodeWatched(20, first))
+        assertTrue(episodeRepository.cachedCatalogFlow(20).first().episodes.isEmpty())
+        assertTrue(enqueued.isEmpty())
+
+        dao.upsert(subject(20, lastFetched = 100))
+        assertTrue(episodeRepository.toggleEpisodeWatched(20, first))
+        val watched = episodeRepository.cachedCatalogFlow(20).first()
+        assertEquals(UnifiedCollectionType.DONE, watched.episodes.single().collectionType)
+        assertFalse(watched.isComplete)
+
+        assertTrue(episodeRepository.toggleEpisodeWatched(20, first))
+        assertEquals(UnifiedCollectionType.NOT_COLLECTED, episodeRepository.cachedCatalogFlow(20).first().episodes.single().collectionType)
+        assertEquals(listOf(UnifiedCollectionType.DONE, UnifiedCollectionType.NOT_COLLECTED), enqueued.map { it.collectionType })
+    }
 
     private fun serverSubject(
         subjectId: Int,

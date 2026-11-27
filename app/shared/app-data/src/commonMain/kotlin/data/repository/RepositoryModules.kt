@@ -2,12 +2,14 @@ package com.wynime.app.data.repository
 
 import kotlinx.coroutines.flow.map
 import com.wynime.app.data.network.BangumiCalendarRepository
+import com.wynime.app.data.network.EpisodeService
 import com.wynime.app.data.network.RecommendationRepository
 import com.wynime.app.data.network.TrendsRepository
 import com.wynime.app.data.persistent.dataStores
 import com.wynime.app.data.persistent.database.WynimeDatabase
 import com.wynime.app.data.repository.episode.AnimeScheduleRepository
 import com.wynime.app.data.repository.episode.BangumiCommentRepository
+import com.wynime.app.data.repository.episode.EpisodeCatalogRepository
 import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
 import com.wynime.app.data.repository.episode.EpisodeCollectionSyncEnqueuer
 import com.wynime.app.data.repository.episode.EpisodeCommentRepository
@@ -185,6 +187,13 @@ fun KoinApplication.repositoryModules(
         BangumiCommentRepository(
             get(),
             database.subjectReviews(),
+        )
+    }
+
+    single<EpisodeCatalogRepository> {
+        EpisodeCatalogRepository(
+            store = getContext().dataStores.episodeCatalogStore,
+            loadPage = get<EpisodeService>()::getEpisodeInfosPaged,
         )
     }
 

@@ -9,14 +9,21 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import com.wynime.app.data.models.episode.EpisodeInfo
 import com.wynime.app.data.models.preference.VideoScaffoldConfig
 import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
 import com.wynime.app.domain.episode.EpisodePlayerTestSuite
 import com.wynime.app.domain.episode.GetEpisodeCollectionTypeUseCase
 import com.wynime.app.domain.episode.SetEpisodeCollectionTypeUseCase
+import com.wynime.app.domain.media.TestMediaList
+import com.wynime.app.domain.media.resolver.MediaResolver
+import com.wynime.app.domain.media.resolver.TestUniversalMediaResolver
 import com.wynime.app.domain.settings.GetVideoScaffoldConfigUseCase
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.MediaCacheMetadata
 import com.wynime.datasources.api.topic.UnifiedCollectionType
 import com.wynime.utils.coroutines.childScope
 import kotlin.test.Test
@@ -28,10 +35,6 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
-    private val extensionFactory = EpisodePlayerExtensionFactory { context, koin ->
-        MarkAsWatchedExtension(context, koin, enableSamplingAndDebounce = false)
-    }
-
     private fun TestScope.createCase(
         videoScaffoldConfigFlow: Flow<VideoScaffoldConfig> = flowOf(
             VideoScaffoldConfig.AllDisabled.copy(autoMarkDone = true),
@@ -56,7 +59,7 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         }
 
         val state = suite.createState(
-            extensions = listOf(extensionFactory),
+            extensions = listOf(MarkAsWatchedExtension),
         )
         state.onUIReady()
         return Triple(testScope, suite, state)
@@ -87,7 +90,7 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
     }
 
     @Test
-    fun `does mark if not playing`() = runTest {
+    fun `waits for playback after seeking while paused`() = runTest {
         var setCalled = false
         val (testScope, suite, _) = createCase(
             setEpisodeCollectionType = { _, _, _ ->
@@ -160,6 +163,71 @@ class MarkAsWatchedExtensionTest : AbstractPlayerExtensionTest() {
         assertEquals(UnifiedCollectionType.DONE, requestedType)
 
         testScope.cancel()
+    }
+
+    @Test
+    fun `marks in the same tick as a seek across the threshold`() = runTest {
+        var calls = 0
+        val (scope, suite) = createCase(setEpisodeCollectionType = { _, _, _ -> calls++ })
+        suite.player.loadMedia(durationMs = 24.minutes.inWholeMilliseconds, playWhenReady = true)
+        runCurrent()
+        suite.player.seekTo(20.minutes.inWholeMilliseconds)
+        runCurrent()
+        assertEquals(0, calls)
+
+        val timeBeforeSeek = testScheduler.currentTime
+        suite.player.seekTo(22.minutes.inWholeMilliseconds)
+        runCurrent()
+        assertEquals(1, calls)
+        assertEquals(timeBeforeSeek, testScheduler.currentTime)
+        scope.cancel()
+    }
+
+    @Test
+    fun `uses download metadata when marking an episode with no cached collection`() = runTest {
+        var savedEpisode: EpisodeInfo? = null
+        val (scope, suite, state) = createCase(
+            setEpisodeCollectionType = object : SetEpisodeCollectionTypeUseCase {
+                override suspend fun invoke(subjectId: Int, episodeId: Int, collectionType: UnifiedCollectionType) {
+                    error("Downloaded episodes should use their stored metadata")
+                }
+
+                override suspend fun setKnownEpisodeCollectionType(subjectId: Int, episode: EpisodeInfo, type: UnifiedCollectionType) {
+                    assertEquals(UnifiedCollectionType.DONE, type)
+                    savedEpisode = episode
+                }
+            },
+        )
+        suite.registerComponent<MediaResolver> { TestUniversalMediaResolver }
+        suite.setMediaDuration(24.minutes.inWholeMilliseconds)
+        val metadata = MediaCacheMetadata(
+            subjectId = subjectId.toString(),
+            episodeId = initialEpisodeId.toString(),
+            subjectNames = listOf("Series"),
+            episodeSort = EpisodeSort(1),
+            episodeName = "Downloaded title",
+        )
+        assertTrue(state.loadLocalPlayback(initialEpisodeId, TestMediaList[0], metadata))
+        runCurrent()
+        suite.player.seekTo(22.minutes.inWholeMilliseconds)
+        runCurrent()
+        assertEquals(initialEpisodeId, savedEpisode?.episodeId)
+        assertEquals("Downloaded title", savedEpisode?.name)
+        scope.cancel()
+    }
+
+    @Test
+    fun `a short episode does not mark as watched at startup`() = runTest {
+        var calls = 0
+        val (scope, suite) = createCase(setEpisodeCollectionType = { _, _, _ -> calls++ })
+        suite.player.loadMedia(durationMs = 60.seconds.inWholeMilliseconds, playWhenReady = true)
+        runCurrent()
+        assertEquals(0, calls)
+
+        suite.player.seekTo(54.seconds.inWholeMilliseconds)
+        runCurrent()
+        assertEquals(1, calls)
+        scope.cancel()
     }
 
     @Test

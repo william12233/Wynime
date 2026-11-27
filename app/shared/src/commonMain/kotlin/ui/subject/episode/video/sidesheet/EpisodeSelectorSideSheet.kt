@@ -3,6 +3,7 @@ package com.wynime.app.ui.subject.episode.video.sidesheet
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -21,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -37,15 +40,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.ui.download.subject.contentColorForWatchStatus
 import com.wynime.app.ui.foundation.BackgroundScope
 import com.wynime.app.ui.foundation.HasBackgroundScope
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
 import com.wynime.app.ui.foundation.icons.PlayingIcon
+import com.wynime.app.ui.foundation.stateOf
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.subject_episode_close
 import com.wynime.app.ui.lang.subject_episode_now_playing
+import com.wynime.app.ui.lang.subject_episode_no_episodes
 import com.wynime.app.ui.lang.video_player_select_episode
+import com.wynime.app.ui.search.LoadErrorCard
 import com.wynime.app.ui.subject.episode.EpisodePresentation
 import com.wynime.app.ui.subject.episode.TAG_EPISODE_SELECTOR_SHEET
 import com.wynime.app.ui.subject.episode.video.components.EpisodeVideoSideSheets
@@ -64,9 +71,14 @@ class EpisodeSelectorState(
     currentEpisodeId: Flow<Int>,
     private val onSelect: (Item) -> Unit,
     parentCoroutineContext: CoroutineContext,
+    loadError: State<LoadError?> = stateOf(null),
+    isLoading: State<Boolean> = stateOf(false),
+    val onRetry: () -> Unit = {},
 ) : HasBackgroundScope by BackgroundScope(parentCoroutineContext) {
 
     val items: List<Item> by itemsFlow.produceState(emptyList())
+    val loadError by loadError
+    val isLoading by isLoading
 
     private val currentEpisodeId by currentEpisodeId.produceState(-1)
 
@@ -82,11 +94,7 @@ class EpisodeSelectorState(
         items.find { it.episodeId == this.currentEpisodeId }
     }
 
-    val hasNextEpisode by derivedStateOf {
-        val currentIndex = currentIndex
-        currentIndex != -1 && currentIndex < items.lastIndex
-                && items[currentIndex + 1].isKnownBroadcast
-    }
+    val hasNextEpisode by derivedStateOf { nextEpisodeAfter(this.currentEpisodeId) != null }
 
     fun select(item: Item) {
         onSelect(item)
@@ -102,10 +110,13 @@ class EpisodeSelectorState(
     }
 
     fun selectNext() {
-        val currentIndex = currentIndex
-        if (currentIndex != -1 && currentIndex < items.lastIndex) {
-            onSelect(items[currentIndex + 1])
-        }
+        nextEpisodeAfter(currentEpisodeId)?.let(onSelect)
+    }
+
+    fun nextEpisodeAfter(episodeId: Int): Item? {
+        val index = items.indexOfFirst { it.episodeId == episodeId }
+        if (index < 0) return null
+        return items.getOrNull(index + 1)?.takeIf { it.isKnownBroadcast }
     }
 }
 
@@ -145,6 +156,18 @@ fun EpisodeVideoSideSheets.EpisodeSelectorSheet(
             }
         }
         LazyColumn(state = lazyListState) {
+            if (state.items.isEmpty()) {
+                item {
+                    Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                        val error = state.loadError
+                        when {
+                            error != null -> LoadErrorCard(error, state.onRetry)
+                            state.isLoading -> CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else -> Text(stringResource(Lang.subject_episode_no_episodes))
+                        }
+                    }
+                }
+            }
             itemsIndexed(state.items, key = { _, item -> item.episodeId }) { index, item ->
                 val selected = index == state.currentIndex
                 val color = contentColorForWatchStatus(item.collectionType, item.isKnownBroadcast)

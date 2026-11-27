@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.wynime.app.data.models.subject.SubjectInfo
 import com.wynime.app.data.models.subject.nameOrNameCn
+import com.wynime.datasources.api.MediaCacheMetadata
 
 @Immutable
 class SubjectPresentation(
@@ -30,3 +31,11 @@ fun SubjectInfo.toPresentation(): SubjectPresentation {
         originalTitle = nameOrNameCn,
     )
 }
+
+internal fun MediaCacheMetadata.toSubjectInfo(subjectId: Int) = SubjectInfo.createPlaceholder(
+    subjectId = subjectId,
+    name = subjectNames.firstOrNull { it.isNotBlank() } ?: subjectNameCN?.takeIf { it.isNotBlank() }
+        ?: "Bangumi #$subjectId",
+    nameCn = subjectNameCN.orEmpty(),
+    image = "",
+)

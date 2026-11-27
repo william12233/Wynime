@@ -2,14 +2,14 @@ package com.wynime.app.ui.exploration
 
 import androidx.compose.runtime.Stable
 import androidx.paging.cachedIn
-import androidx.paging.filter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -19,17 +19,18 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.plus
 import kotlinx.datetime.toLocalDateTime
-import com.wynime.app.data.models.preference.NsfwMode
-import com.wynime.app.data.models.subject.subjectInfo
 import com.wynime.app.data.network.BangumiCalendarDay
 import com.wynime.app.data.network.BangumiCalendarRepository
 import com.wynime.app.data.network.RecommendationRepository
 import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.data.repository.subject.FollowedSubjectsRepository
+import com.wynime.app.data.repository.subject.FollowedSubjectsState
 import com.wynime.app.data.repository.user.SettingsRepository
 import com.wynime.app.domain.usecase.GlobalKoin
 import com.wynime.app.ui.foundation.AbstractViewModel
 import com.wynime.utils.logging.info
+import com.wynime.utils.coroutines.flows.FlowRestarter
+import com.wynime.utils.coroutines.flows.restartable
 import org.koin.core.Koin
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -50,6 +51,7 @@ open class ExplorationPageViewModel(private val koin: Koin = GlobalKoin) : Abstr
     private val horizontalScrollTipFlow =
         settingsRepository.oneshotActionConfig.flow.map { it.horizontalScrollTip }
     private val todayUpdatesStateMutable = MutableStateFlow<TodayUpdatesUiState>(TodayUpdatesUiState.InitialLoading)
+    private val followedSubjectsRestarter = FlowRestarter()
     private val todayUpdatesRefreshMutex = Mutex()
     val todayUpdatesState: StateFlow<TodayUpdatesUiState> = todayUpdatesStateMutable.asStateFlow()
 
@@ -72,6 +74,10 @@ open class ExplorationPageViewModel(private val koin: Koin = GlobalKoin) : Abstr
 
     private suspend fun refreshTodayUpdates(forceRefresh: Boolean = false) {
         todayUpdatesRefreshMutex.withLock {
+            val previous = todayUpdatesStateMutable.value as? TodayUpdatesUiState.Content
+            if (previous?.items.isNullOrEmpty()) {
+                todayUpdatesStateMutable.value = TodayUpdatesUiState.InitialLoading
+            }
             try {
                 val now = Clock.System.now()
                 val timeZone = TimeZone.currentSystemDefault()
@@ -82,7 +88,8 @@ open class ExplorationPageViewModel(private val koin: Koin = GlobalKoin) : Abstr
                 )
             } catch (e: Throwable) {
                 if (e is CancellationException) throw e
-                todayUpdatesStateMutable.value = TodayUpdatesUiState.Error(LoadError.fromException(e))
+                todayUpdatesStateMutable.value = previous?.takeIf { it.items.isNotEmpty() }
+                    ?: TodayUpdatesUiState.Error(LoadError.fromException(e))
             }
         }
     }
@@ -90,13 +97,10 @@ open class ExplorationPageViewModel(private val koin: Koin = GlobalKoin) : Abstr
     val explorationPageState: ExplorationPageState = ExplorationPageState(
         todayUpdatesState = todayUpdatesState,
         onRetryTodayUpdates = ::retryTodayUpdates,
-        followedSubjectsPager = combine(
-            settingsRepository.uiSettings.flow.map { it.searchSettings.nsfwMode },
-            followedSubjectsRepository.followedSubjectsPager(),
-        ) { nsfwMode, subjects ->
-            if (nsfwMode != NsfwMode.HIDE) return@combine subjects
-            subjects.filter { !it.subjectInfo.nsfw }
-        }.cachedIn(backgroundScope),
+        followedSubjectsState = followedSubjectsRepository.followedSubjectsFlow()
+            .restartable(followedSubjectsRestarter)
+            .stateIn(backgroundScope, SharingStarted.Eagerly, FollowedSubjectsState.Loading),
+        onRetryFollowedSubjects = followedSubjectsRestarter::restart,
         recommendationPager = recommendationRepository.recommendedSubjectsPager().cachedIn(backgroundScope),
         horizontalScrollTipFlow = horizontalScrollTipFlow,
         onSetDisableHorizontalScrollTip = {

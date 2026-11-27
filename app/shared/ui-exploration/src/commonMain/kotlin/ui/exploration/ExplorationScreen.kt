@@ -2,15 +2,18 @@ package com.wynime.app.ui.exploration
 
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyListState
@@ -24,6 +27,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,17 +35,23 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.collectAsLazyPagingItemsWithLifecycle
 import kotlinx.coroutines.flow.Flow
@@ -52,10 +62,10 @@ import kotlinx.coroutines.launch
 import com.wynime.app.data.models.recommend.RecommendedItemInfo
 import com.wynime.app.data.models.recommend.RecommendedSubjectInfo
 import com.wynime.app.data.models.recommend.TestRecommendedItemInfos
-import com.wynime.app.data.models.subject.FollowedSubjectInfo
 import com.wynime.app.data.models.subject.TestFollowedSubjectInfos
 import com.wynime.app.data.models.subject.subjectInfo
 import com.wynime.app.data.models.subject.toNavPlaceholder
+import com.wynime.app.data.repository.subject.FollowedSubjectsState
 import com.wynime.app.navigation.LocalNavigator
 import com.wynime.app.navigation.SubjectDetailPlaceholder
 import com.wynime.app.ui.adaptive.WynimeTopAppBar
@@ -71,7 +81,6 @@ import com.wynime.app.ui.exploration.today.TodayUpdatesCarousel
 import com.wynime.app.ui.foundation.HorizontalScrollControlState
 import com.wynime.app.ui.foundation.LocalPlatform
 import com.wynime.app.ui.foundation.ProvideCompositionLocalsForPreview
-import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
 import com.wynime.app.ui.foundation.ifNotNullThen
 import com.wynime.app.ui.foundation.layout.WynimeWindowInsets
 import com.wynime.app.ui.foundation.layout.CarouselItemDefaults
@@ -109,11 +118,14 @@ import org.jetbrains.compose.resources.stringResource
 class ExplorationPageState(
     val todayUpdatesState: StateFlow<TodayUpdatesUiState>,
     private val onRetryTodayUpdates: () -> Unit,
-    val followedSubjectsPager: Flow<PagingData<FollowedSubjectInfo>>,
+    val followedSubjectsState: StateFlow<FollowedSubjectsState>,
+    val onRetryFollowedSubjects: () -> Unit,
     val recommendationPager: Flow<PagingData<RecommendedItemInfo>>,
     val horizontalScrollTipFlow: Flow<Boolean>,
     private val onSetDisableHorizontalScrollTip: () -> Unit,
 ) {
+    internal var initialLoadCompleted by mutableStateOf(false)
+
     val followedSubjectsLazyRowState = LazyListState()
 
     val pageScrollState = LazyGridState()
@@ -145,12 +157,24 @@ fun ExplorationScreen(
 
         TopAppBarDefaults.enterAlwaysScrollBehavior()
     }
+    val todayUpdatesState by state.todayUpdatesState.collectAsState()
+    val followedSubjectsState by state.followedSubjectsState.collectAsState()
+    val recommendationPager = state.recommendationPager.collectAsLazyPagingItemsWithLifecycle()
+    val recommendationPagerLoadError by recommendationPager.rememberLoadErrorState()
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = WynimeThemeDefaults.pageContentBackgroundColor,
         topBar = {
             WynimeTopAppBar(
-                title = { WynimeTopAppBarDefaults.Title(stringResource(Lang.exploration_title)) },
+                title = {
+                    ExplorationTitle(
+                        state,
+                        todayUpdatesState,
+                        followedSubjectsState,
+                        recommendationPager.loadState.refresh,
+                        hasRecommendations = recommendationPager.itemCount > 0,
+                    )
+                },
                 Modifier.fillMaxWidth(),
                 actions = {
                     actions()
@@ -196,7 +220,6 @@ fun ExplorationScreen(
         val scope = rememberCoroutineScope()
         val horizontalScrollTip = stringResource(Lang.exploration_horizontal_scroll_tip)
 
-        val todayUpdatesState by state.todayUpdatesState.collectAsState()
         val todayUpdatesCarouselState = rememberCarouselState(initialItem = 0) {
             when (val current = todayUpdatesState) {
                 TodayUpdatesUiState.InitialLoading -> 8
@@ -204,9 +227,6 @@ fun ExplorationScreen(
                 is TodayUpdatesUiState.Error -> 0
             }
         }
-        val recommendationPager = state.recommendationPager.collectAsLazyPagingItemsWithLifecycle()
-        val recommendationPagerLoadError by recommendationPager.rememberLoadErrorState()
-        val wynimeMotionScheme = LocalWynimeMotionScheme.current
         val layoutParams = RecommendationDefaults.layoutParameters()
         LazyVerticalGrid(
             layoutParams.gridCells,
@@ -288,8 +308,6 @@ fun ExplorationScreen(
                         title = { Text(stringResource(Lang.exploration_continue_watching), softWrap = false) },
                     )
 
-                    val followedSubjectsPager =
-                        state.followedSubjectsPager.collectAsLazyPagingItemsWithLifecycle()
                     val followedSubjectsLayoutParameters =
                         FollowedSubjectsDefaults.layoutParameters(currentWindowAdaptiveInfo1())
 
@@ -311,7 +329,8 @@ fun ExplorationScreen(
                         ),
                     ) {
                         FollowedSubjectsLazyRow(
-                            followedSubjectsPager,
+                            state = followedSubjectsState,
+                            onRetry = state.onRetryFollowedSubjects,
                             onClick = {
                                 Analytics.recordEvent(SubjectEnter) {
                                     put("source", "home_followed")
@@ -365,6 +384,32 @@ fun ExplorationScreen(
     }
 }
 
+@Composable
+internal fun ExplorationTitle(
+    state: ExplorationPageState,
+    todayUpdates: TodayUpdatesUiState,
+    followedSubjects: FollowedSubjectsState,
+    recommendationsRefresh: LoadState,
+    hasRecommendations: Boolean,
+) {
+    val isLoading = todayUpdates is TodayUpdatesUiState.InitialLoading ||
+        followedSubjects is FollowedSubjectsState.Loading ||
+        (!hasRecommendations && recommendationsRefresh is LoadState.Loading)
+    SideEffect {
+        if (!isLoading) state.initialLoadCompleted = true
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        WynimeTopAppBarDefaults.Title(stringResource(Lang.exploration_title))
+        if (!state.initialLoadCompleted && isLoading) {
+            Spacer(Modifier.width(8.dp))
+            LinearProgressIndicator(
+                Modifier.width(48.dp).height(3.dp).testTag("exploration_initial_load"),
+            )
+        }
+    }
+}
+
 fun RecommendedSubjectInfo.toNavPlaceholder(): SubjectDetailPlaceholder {
     return SubjectDetailPlaceholder(
         id = bangumiId,
@@ -385,7 +430,8 @@ private fun PreviewExplorationPage() {
                 ExplorationPageState(
                     todayUpdatesState = MutableStateFlow(TodayUpdatesUiState.Content(TestTodayUpdateSubjectInfos)),
                     onRetryTodayUpdates = {},
-                    followedSubjectsPager = createTestPager(TestFollowedSubjectInfos),
+                    followedSubjectsState = MutableStateFlow(FollowedSubjectsState.Content(TestFollowedSubjectInfos)),
+                    onRetryFollowedSubjects = {},
                     recommendationPager = createTestPager(TestRecommendedItemInfos),
                     horizontalScrollTipFlow = flowOf(false),
                     onSetDisableHorizontalScrollTip = {},

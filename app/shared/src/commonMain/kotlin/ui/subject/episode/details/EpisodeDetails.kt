@@ -31,6 +31,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -75,6 +76,7 @@ import com.wynime.app.data.models.subject.Tag
 import com.wynime.app.data.models.subject.preferredDisplayName
 import com.wynime.app.domain.episode.SetEpisodeCollectionTypeRequest
 import com.wynime.app.domain.episode.SubjectRecommendation
+import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.domain.media.cache.EpisodeCacheStatus
 import com.wynime.app.navigation.LocalNavigator
 import com.wynime.app.navigation.SubjectDetailPlaceholder
@@ -93,6 +95,7 @@ import com.wynime.app.ui.foundation.widgets.rememberModalSideSheetState
 import com.wynime.app.ui.lang.Lang
 import com.wynime.app.ui.lang.subject_episode_close_selector
 import com.wynime.app.ui.lang.subject_episode_related_recommendations
+import com.wynime.app.ui.lang.recommendations_empty
 import com.wynime.app.ui.lang.subject_episode_select_media_source
 import com.wynime.app.ui.lang.subject_episode_wish_change_to
 import com.wynime.app.ui.mediafetch.MediaSelectorState
@@ -132,8 +135,9 @@ import org.jetbrains.compose.resources.stringResource
 class EpisodeDetailsState(
     val subjectInfo: State<SubjectInfo>,
     val airingLabelState: AiringLabelState,
-    val recommendations: State<List<SubjectRecommendation>>,
+    val recommendations: State<EpisodeRecommendationsState>,
     val subjectDetailsStateLoader: SubjectDetailsStateLoader,
+    val onRetryRecommendations: () -> Unit = {},
 ) {
     private val subject by subjectInfo
 
@@ -141,6 +145,12 @@ class EpisodeDetailsState(
 
     var showEpisodes: Boolean by mutableStateOf(false)
 }
+
+data class EpisodeRecommendationsState(
+    val items: List<SubjectRecommendation> = emptyList(),
+    val isLoading: Boolean = true,
+    val error: LoadError? = null,
+)
 
 @Composable
 fun EpisodeDetails(
@@ -417,7 +427,19 @@ fun EpisodeDetails(
                     Text(stringResource(Lang.subject_episode_related_recommendations))
                 }
             }
-            for (recommendation in subjectRecommendations) {
+            if (subjectRecommendations.items.isEmpty()) {
+                item("subject_recommendation_status") {
+                    Box(Modifier.fillMaxWidth().padding(horizontalPadding).padding(vertical = 8.dp)) {
+                        val error = subjectRecommendations.error
+                        when {
+                            error != null -> LoadErrorCard(error, state.onRetryRecommendations)
+                            subjectRecommendations.isLoading -> LinearProgressIndicator()
+                            else -> Text(stringResource(Lang.recommendations_empty))
+                        }
+                    }
+                }
+            }
+            for (recommendation in subjectRecommendations.items) {
                 item("subject_recommendation_${recommendation.uniqueId}") {
                     SubjectRecommendationCard(
                         {
@@ -711,7 +733,7 @@ private fun rememberTestEpisodeDetailsState(
         EpisodeDetailsState(
             subjectInfo = mutableStateOf(subjectInfo),
             airingLabelState = createTestAiringLabelState(),
-            recommendations = mutableStateOf(PreviewSubjectRecommendations),
+            recommendations = mutableStateOf(EpisodeRecommendationsState(PreviewSubjectRecommendations, isLoading = false)),
             subjectDetailsStateLoader = createTestSubjectDetailsLoader(scope),
         )
     }

@@ -76,7 +76,6 @@ import com.wynime.app.ui.comment.CommentEditorState
 import com.wynime.app.ui.comment.CommentReportHost
 import com.wynime.app.ui.comment.CommentReportState
 import com.wynime.app.ui.comment.CommentState
-import com.wynime.app.ui.external.placeholder.placeholder
 import com.wynime.app.ui.foundation.ImageViewer
 import com.wynime.app.ui.foundation.ImageViewerBackHandler
 import com.wynime.app.ui.foundation.LocalImageViewerHandler
@@ -113,6 +112,7 @@ import com.wynime.app.ui.foundation.theme.weaken
 import com.wynime.app.ui.foundation.widgets.LocalToaster
 import com.wynime.app.ui.foundation.widgets.showLoadError
 import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_metadata_unavailable
 import com.wynime.app.ui.lang.episode_comments
 import com.wynime.app.ui.lang.episode_comments_with_count
 import com.wynime.app.ui.lang.foundation_richtext_external_app_link_warning_prefix
@@ -791,10 +791,19 @@ private fun EpisodeVideo(
             val subject = page.subjectPresentation
             val useOriginalTitle = LocalSubjectAppearanceSettings.current.useOriginalTitle
             EpisodePlayerTitle(
-                episode.ep,
-                if (useOriginalTitle) episode.originalTitle else episode.title,
-                if (useOriginalTitle) subject.originalTitle else subject.title,
-                Modifier.placeholder(episode.isPlaceholder || subject.isPlaceholder),
+                ep = episode.ep.takeUnless { episode.isPlaceholder && !page.isLoading },
+                episodeTitle = when {
+                    episode.isPlaceholder && !page.isLoading -> ""
+                    useOriginalTitle -> episode.originalTitle
+                    else -> episode.title
+                },
+                subjectTitle = when {
+                    subject.isPlaceholder && !page.isLoading -> stringResource(Lang.subject_episode_metadata_unavailable)
+                    useOriginalTitle -> subject.originalTitle
+                    else -> subject.title
+                },
+                isSubjectLoading = subject.isPlaceholder && page.isLoading,
+                isEpisodeLoading = episode.isPlaceholder && page.isLoading,
             )
         },
         videoLoadingStateFlow = vm.episodeVideoLoadingStateFlow,

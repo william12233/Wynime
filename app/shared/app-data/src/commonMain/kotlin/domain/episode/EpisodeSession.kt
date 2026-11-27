@@ -1,6 +1,7 @@
 package com.wynime.app.domain.episode
 
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +16,7 @@ import com.wynime.app.domain.foundation.LoadError
 import com.wynime.app.domain.media.fetch.MediaFetchSession
 import com.wynime.app.domain.media.fetch.MediaFetcher
 import com.wynime.app.domain.media.selector.MediaSelector
+import com.wynime.datasources.api.MediaCacheMetadata
 import com.wynime.utils.coroutines.childScope
 import org.koin.core.Koin
 import kotlin.coroutines.CoroutineContext
@@ -28,6 +30,12 @@ class EpisodeSession(
     fetchSessions: SubjectMediaFetchSessions? = null,
     private val mediaFetchEnabled: StateFlow<Boolean> = MutableStateFlow(true),
 ) {
+    internal val managesPlayback = MutableStateFlow(false)
+    internal val loadedMedia = MutableStateFlow<LoadedMedia?>(null)
+    val localPlaybackMetadata: Flow<MediaCacheMetadata?> = loadedMedia.map { it?.cacheMetadata }
+
+    internal class LoadedMedia(val cacheMetadata: MediaCacheMetadata?)
+
     private val createMediaFetchSelectBundleFlowUseCase: CreateMediaFetchSelectBundleFlowUseCase by koin.inject()
 
     internal val sessionScope =

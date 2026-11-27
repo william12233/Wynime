@@ -2,12 +2,14 @@ package com.wynime.app.domain.episode
 
 import app.cash.turbine.test
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -20,7 +22,6 @@ import com.wynime.app.domain.foundation.LoadError
 import com.wynime.utils.coroutines.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 
@@ -73,29 +74,48 @@ class SubjectEpisodeInfoBundleTest {
     }
 
     @Test
-    fun `infoBundleFlow load failure is captured in the background amd exposed via infoLoadErrorState`() = runTest {
+    fun `infoBundleFlow reports an error and retries without ending collection`() = runTest {
         val episodeIdFlow = MutableStateFlow(2)
-        val (scope, backgroundException) = createExceptionCapturingSupervisorScope()
-        val suite = createSuite(scope)
+        val suite = createSuite()
+        var attempts = 0
         suite.registerComponent<GetSubjectEpisodeInfoBundleFlowUseCase> {
             GetSubjectEpisodeInfoBundleFlowUseCase { idsFlow ->
                 idsFlow.map {
-                    throw RepositoryNetworkException()
+                    if (attempts++ == 0) throw RepositoryNetworkException()
+                    createTestSubjectEpisodeInfoBundle(it.subjectId, it.episodeId)
                 }
             }
         }
         val state = suite.createState(episodeIdFlow)
-        val job = state.infoBundleFlow.drop(1).launchIn(scope)
-        assertEquals(LoadError.NetworkError, state.infoLoadErrorState.onEach { println(it) }.filterNotNull().first())
-        job.cancel()
-        scope.cancel()
-        assertIs<RepositoryNetworkException>(backgroundException.await(), "should be a network error")
+        state.infoBundleFlow.test {
+            assertEquals(null, awaitItem())
+            assertEquals(LoadError.NetworkError, state.infoLoadErrorState.filterNotNull().first())
+            state.restart()
+            assertEquals(null, awaitItem())
+            assertEquals(2, awaitItem()?.episodeId)
+            assertEquals(null, state.infoLoadErrorState.value)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `metadata that never emits has a bounded loading state`() = runTest {
+        val suite = createSuite()
+        suite.registerComponent<GetSubjectEpisodeInfoBundleFlowUseCase> {
+            GetSubjectEpisodeInfoBundleFlowUseCase { flow { awaitCancellation() } }
+        }
+        val state = suite.createState(flowOf(2))
+        state.infoBundleFlow.test {
+            assertEquals(null, awaitItem())
+            assertEquals(LoadError.NetworkError, state.infoLoadErrorState.filterNotNull().first())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
     fun `infoBundleFlow does NOT update infoLoadErrorState on CancellationException`() = runTest {
         val episodeIdFlow = MutableStateFlow(2)
-        val (scope, backgroundException) = createExceptionCapturingSupervisorScope()
+        val (scope, _) = createExceptionCapturingSupervisorScope()
         val suite = createSuite(scope)
 
         suite.registerComponent<GetSubjectEpisodeInfoBundleFlowUseCase> {

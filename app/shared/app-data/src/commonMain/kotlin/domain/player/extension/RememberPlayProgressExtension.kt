@@ -1,12 +1,12 @@
 package com.wynime.app.domain.player.extension
 
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -14,14 +14,12 @@ import kotlinx.coroutines.withContext
 import com.wynime.app.data.models.episode.displayName
 import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
 import com.wynime.app.data.repository.player.PlaybackHistorySyncer
-import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
 import com.wynime.app.domain.episode.EpisodeSession
-import com.wynime.app.domain.episode.SubjectEpisodeInfoBundle
-import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
 import org.koin.core.Koin
 import org.openani.mediamp.MediaStatus
+import org.openani.mediamp.source.MediaData
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -34,24 +32,16 @@ class RememberPlayProgressExtension(
 ) : PlayerExtension(name = "SaveProgressExtension") {
     private val playProgressRepository: EpisodePlayHistoryRepository by koin.inject()
     private val historySyncer = koin.getOrNull<PlaybackHistorySyncer>()
-    private val saveMutex = Mutex()
-    private val latestInfoBundleMutex = Mutex()
-    private val latestInfoBundles = mutableMapOf<Int, SubjectEpisodeInfoBundle>()
+    private val progressMutex = Mutex()
+    private val restoredPlayback = MutableStateFlow<RestoredPlayback?>(null)
+
+    private data class RestoredPlayback(val media: EpisodeSession.LoadedMedia, val savedPosition: Long?)
 
     override fun onStart(episodeSession: EpisodeSession, backgroundTaskScope: ExtensionBackgroundTaskScope) {
-        val mediaLoaded = CompletableDeferred<Unit>()
-        backgroundTaskScope.launch("MediaLoadedListener") {
-            context.subscribeEvents<EpisodeFetchSelectPlayState.MediaLoadedEvent>().collectLatest { event ->
-                if (event.episodeId == episodeSession.episodeId && mediaLoaded.isActive) {
-                    mediaLoaded.complete(Unit)
-                }
-            }
-        }
-
         historySyncer?.let { syncer ->
             backgroundTaskScope.launch("ProgressCheckpoint") {
                 val unregister = syncer.registerProgressCheckpoint {
-                    if (mediaLoaded.isCompleted) savePlayProgressOrRemove(episodeSession)
+                    savePlayProgressOrRemove(episodeSession)
                 }
                 try {
                     awaitCancellation()
@@ -60,22 +50,9 @@ class RememberPlayProgressExtension(
                 }
             }
         }
-
-        backgroundTaskScope.launch("InfoBundleCache") {
-            episodeSession.infoBundleFlow.filterNotNull().collect { info ->
-                latestInfoBundleMutex.withLock {
-                    latestInfoBundles[info.episodeId] = info
-                }
-            }
-        }
-
         backgroundTaskScope.launch("MediaSelectorListener") {
-            mediaLoaded.await()
-            episodeSession.fetchSelectFlow.collectLatest inner@{ fetchSelect ->
-                if (fetchSelect == null) return@inner
-
-                fetchSelect.mediaSelector.events.onBeforeSelect.collect {
-
+            episodeSession.fetchSelectFlow.collectLatest { fetchSelect ->
+                fetchSelect?.mediaSelector?.events?.onBeforeSelect?.collect {
                     savePlayProgressOrRemove(episodeSession)
                 }
             }
@@ -83,141 +60,127 @@ class RememberPlayProgressExtension(
 
         backgroundTaskScope.launch("PlaybackStateListener") {
             val player = context.player
-            var haveResumedOnce = false
-            var pulledProgress = false
-            player.state.collectLatest { state ->
-                when {
-                    state.mediaStatus == MediaStatus.Opening -> {
-
-                        haveResumedOnce = false
+            var restoredDirectMedia: MediaData? = null
+            combine(player.state, episodeSession.loadedMedia) { state, media -> state to media }
+                .collectLatest { (state, media) ->
+                    if (media == null) {
+                        val directMedia = player.mediaData.value
+                        if (state.isPlaying && !episodeSession.managesPlayback.value &&
+                            directMedia != null && directMedia !== restoredDirectMedia
+                        ) {
+                            restoreSavedPosition(
+                                episodeSession.episodeId,
+                                isCurrent = { !episodeSession.managesPlayback.value && player.mediaData.value === directMedia },
+                                onRestored = { restoredDirectMedia = directMedia },
+                            )
+                        }
+                        return@collectLatest
                     }
+                    when {
+                        state.isPlaying -> {
+                            restorePosition(episodeSession, media)
+                            delay(initialReportDelay)
+                            savePlayProgressOrRemove(episodeSession, allowZeroPosition = true)
 
-                    state.isPlaying -> {
-
-                        if (!haveResumedOnce) {
-                            if (!pulledProgress) {
-                                historySyncer?.pullBeforePlayback()
-                                pulledProgress = true
-                            }
-                            val positionMillis =
-                                playProgressRepository.getPositionMillisByEpisodeId(episodeSession.episodeId)
-                            if (positionMillis == null) {
-                                logger.info { "Did not find saved position" }
-                                haveResumedOnce = true
-                            } else {
-                                logger.info {
-                                    "Loaded saved position: $positionMillis, waiting for video properties"
-                                }
-                                player.mediaProperties.first { (it?.durationMillis ?: 0L) > 0L }
-                                withContext(Dispatchers.Main + NonCancellable) {
-                                    logger.info {
-                                        "Video properties ready, seeking to saved position: $positionMillis"
-                                    }
-                                    player.seekTo(positionMillis)
-                                    haveResumedOnce = true
+                            if (periodicReportInterval != Duration.INFINITE) {
+                                while (true) {
+                                    delay(periodicReportInterval)
+                                    savePlayProgressOrRemove(episodeSession, allowZeroPosition = true)
                                 }
                             }
                         }
 
-                        delay(initialReportDelay)
-                        savePlayProgressOrRemove(episodeSession, allowZeroPosition = true)
-
-                        if (periodicReportInterval != Duration.INFINITE) {
-                            while (true) {
-                                delay(periodicReportInterval)
-                                savePlayProgressOrRemove(episodeSession, allowZeroPosition = true)
-                            }
+                        state.mediaStatus == MediaStatus.Ready && !state.playWhenReady -> {
+                            restorePosition(episodeSession, media)
+                            savePlayProgressOrRemove(episodeSession)
                         }
-                    }
 
-                    state.mediaStatus == MediaStatus.Ready && !state.playWhenReady -> {
-                        mediaLoaded.await()
-                        savePlayProgressOrRemove(episodeSession)
+                        state.mediaStatus == MediaStatus.Ended -> savePlayProgressOrRemove(episodeSession)
                     }
+                }
+        }
+    }
 
-                    state.mediaStatus == MediaStatus.Ended -> {
-                        mediaLoaded.await()
-                        savePlayProgressOrRemove(episodeSession)
+    private suspend fun restorePosition(session: EpisodeSession, media: EpisodeSession.LoadedMedia) {
+        if (restoredPlayback.value?.media === media) return
+        if (media.cacheMetadata == null && session.loadedMedia.value === media) {
+            historySyncer?.pullBeforePlayback()
+        }
+        restoreSavedPosition(
+            session.episodeId,
+            isCurrent = { session.loadedMedia.value === media },
+            onRestored = { position -> restoredPlayback.value = RestoredPlayback(media, position) },
+        )
+    }
+
+    private suspend fun restoreSavedPosition(
+        episodeId: Int,
+        isCurrent: () -> Boolean,
+        onRestored: (Long?) -> Unit,
+    ) {
+        val position = playProgressRepository.getPositionMillisByEpisodeId(episodeId)
+        if (position != null && position > 0) {
+            val properties = context.player.mediaProperties.first { (it?.durationMillis ?: 0L) > 0L }
+            withContext(Dispatchers.Main.immediate + NonCancellable) {
+                if (isCurrent()) {
+                    if (position < (properties?.durationMillis ?: 0L)) {
+                        logger.info { "Seeking to saved position: $position" }
+                        context.player.seekTo(position)
                     }
-
-                    else -> Unit
+                    onRestored(position)
                 }
             }
-
+        } else if (isCurrent()) {
+            onRestored(position)
         }
     }
 
-    @OptIn(UnsafeEpisodeSessionApi::class)
     override suspend fun onBeforeSwitchEpisode(newEpisodeId: Int) {
-        savePlayProgressOrRemove(context.getCurrentEpisodeId())
+        savePlayProgressOrRemove(context.sessionFlow.first())
     }
 
-    @OptIn(UnsafeEpisodeSessionApi::class)
     override suspend fun onClose() {
-        savePlayProgressOrRemove(context.getCurrentEpisodeId())
+        savePlayProgressOrRemove(context.sessionFlow.first())
     }
 
     private suspend fun savePlayProgressOrRemove(
-        episodeSession: EpisodeSession,
+        session: EpisodeSession,
         allowZeroPosition: Boolean = false,
     ) {
-        savePlayProgressOrRemove(episodeSession.episodeId, episodeSession, allowZeroPosition)
-    }
+        progressMutex.withLock {
+            val media = session.loadedMedia.value ?: return
+            val restored = restoredPlayback.value?.takeIf { it.media === media } ?: return
+            val player = context.player
+            val videoDurationMillis = player.mediaProperties.value?.durationMillis ?: return
+            if (videoDurationMillis <= 0L) return
 
-    private suspend fun savePlayProgressOrRemove(
-        episodeId: Int
-    ) {
-        savePlayProgressOrRemove(episodeId, null)
-    }
+            val mediaStatus = player.state.value.mediaStatus
+            if (mediaStatus != MediaStatus.Ready && mediaStatus != MediaStatus.Ended) return
 
-    private suspend fun savePlayProgressOrRemove(
-        episodeId: Int,
-        episodeSession: EpisodeSession?,
-        allowZeroPosition: Boolean = false,
-    ) = saveMutex.withLock {
-        val player = context.player
-        val mediaStatus = player.state.value.mediaStatus
-        val videoDurationMillis = player.mediaProperties.value?.durationMillis
+            val position = player.currentPositionMillis.value
+            if (position < 0L || (position == 0L && (!allowZeroPosition || (restored.savedPosition ?: 0L) > 0L))) {
+                return
+            }
 
-        if (videoDurationMillis == null || videoDurationMillis <= 0L) {
-            return@withLock
-        }
-
-        if (mediaStatus != MediaStatus.Ready && mediaStatus != MediaStatus.Ended) {
-            return@withLock
-        }
-
-        val currentPositionMillis = player.currentPositionMillis.value
-
-        if (currentPositionMillis < 0L || (currentPositionMillis == 0L && !allowZeroPosition)) {
-            return@withLock
-        }
-
-        if (videoDurationMillis - currentPositionMillis < 5000 || currentPositionMillis > videoDurationMillis) {
-            playProgressRepository.remove(episodeId)
-        } else {
-            val info = latestInfoBundle(episodeId, episodeSession)
-            playProgressRepository.saveOrUpdate(
-                episodeId = episodeId,
-                positionMillis = currentPositionMillis,
-                subjectId = info?.subjectId ?: context.subjectId,
-                episodeSort = info?.episodeInfo?.sort?.number,
-                subjectName = info?.subjectInfo?.displayName,
-                subjectImageUrl = info?.subjectInfo?.imageLarge,
-                episodeName = info?.episodeInfo?.displayName,
-                durationMillis = videoDurationMillis,
-            )
-        }
-    }
-
-    private suspend fun latestInfoBundle(
-        episodeId: Int,
-        episodeSession: EpisodeSession?,
-    ): SubjectEpisodeInfoBundle? {
-        episodeSession?.infoBundleFlow?.replayCache?.lastOrNull()?.let { return it }
-
-        return latestInfoBundleMutex.withLock {
-            latestInfoBundles[episodeId]
+            val info = session.infoBundleFlow.replayCache.lastOrNull()
+            val cache = media.cacheMetadata
+            withContext(NonCancellable) {
+                if (videoDurationMillis - position < 5000) {
+                    playProgressRepository.remove(session.episodeId)
+                } else {
+                    playProgressRepository.saveOrUpdate(
+                        episodeId = session.episodeId,
+                        positionMillis = position,
+                        subjectId = context.subjectId,
+                        episodeSort = info?.episodeInfo?.sort?.number ?: cache?.episodeSort?.number,
+                        subjectName = info?.subjectInfo?.displayName ?: cache?.subjectNameCN?.takeIf { it.isNotBlank() }
+                            ?: cache?.subjectNames?.firstOrNull { it.isNotBlank() },
+                        subjectImageUrl = info?.subjectInfo?.imageLarge,
+                        episodeName = info?.episodeInfo?.displayName ?: cache?.episodeName,
+                        durationMillis = videoDurationMillis,
+                    )
+                }
+            }
         }
     }
 

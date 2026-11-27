@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -50,7 +51,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.atomicfu.atomic
+import kotlinx.coroutines.withTimeoutOrNull
 import com.wynime.app.data.models.comment.CommentReportTargetType
 import com.wynime.app.data.models.episode.displayName
 import com.wynime.app.data.models.episode.nameOrNameCn
@@ -64,6 +65,8 @@ import com.wynime.app.data.models.subject.nameCnOrName
 import com.wynime.app.data.models.subject.nameOrNameCn
 import com.wynime.app.data.models.player.playProgressByEpisodeId
 import com.wynime.app.data.network.WynimeCommentReportService
+import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryNetworkException
 import com.wynime.app.data.repository.RepositoryServiceUnavailableException
 import com.wynime.app.data.repository.episode.EpisodeCollectionRepository
 import com.wynime.app.data.repository.episode.EpisodeCommentRepository
@@ -71,7 +74,6 @@ import com.wynime.app.data.repository.player.EpisodePlayHistoryRepository
 import com.wynime.app.data.repository.subject.SetSubjectCollectionTypeOrDeleteUseCase
 import com.wynime.app.data.repository.user.SettingsRepository
 import com.wynime.app.domain.comment.PostCommentUseCase
-import com.wynime.app.domain.episode.EpisodeCompletionContext.isKnownCompleted
 import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
 import com.wynime.app.domain.episode.EpisodeSession
 import com.wynime.app.domain.episode.GetSubjectRecommendationUseCase
@@ -89,9 +91,9 @@ import com.wynime.app.domain.media.cache.EpisodeCacheStatus
 import com.wynime.app.domain.media.cache.GetMediaCacheUseCase
 import com.wynime.app.domain.media.cache.MediaCacheState
 import com.wynime.app.domain.media.download.MediaDownloadManager
+import com.wynime.app.domain.media.download.MediaDownload
 import com.wynime.app.domain.media.fetch.MediaSourceManager
 import com.wynime.app.domain.media.fetch.MediaSourceResultsFilterer
-import com.wynime.app.domain.media.resolver.EpisodeMetadata
 import com.wynime.app.domain.media.resolver.MediaResolver
 import com.wynime.app.domain.mediasource.GetPreferredWebMediaSourceUseCase
 import com.wynime.app.domain.mediasource.instance.GetMediaSourceInstancesUseCase
@@ -140,6 +142,7 @@ import com.wynime.app.ui.subject.details.state.SubjectDetailsStateFactory
 import com.wynime.app.ui.subject.details.state.SubjectDetailsStateLoader
 import com.wynime.app.ui.subject.episode.details.EpisodeCarouselState
 import com.wynime.app.ui.subject.episode.details.EpisodeDetailsState
+import com.wynime.app.ui.subject.episode.details.EpisodeRecommendationsState
 import com.wynime.app.ui.subject.episode.statistics.VideoStatistics
 import com.wynime.app.ui.subject.episode.statistics.VideoStatisticsCollector
 import com.wynime.app.ui.subject.episode.video.PlayerSkipOpEdState
@@ -152,15 +155,16 @@ import com.wynime.app.videoplayer.ui.ControllerVisibility
 import com.wynime.app.videoplayer.ui.PlayerControllerState
 import com.wynime.app.videoplayer.videoenhancement.VideoEnhancementMode
 import com.wynime.app.videoplayer.videoenhancement.createVideoEnhancementController
+import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.PackedDate
 import com.wynime.datasources.api.source.MediaFetchRequest
 import com.wynime.datasources.api.topic.isDoneOrDropped
 import com.wynime.utils.coroutines.SingleTaskExecutor
 import com.wynime.utils.coroutines.flows.FlowRestarter
+import com.wynime.utils.coroutines.flows.combine as combinePageFlows
 import com.wynime.utils.coroutines.flows.flowOfEmptyList
 import com.wynime.utils.coroutines.flows.flowOfNull
 import com.wynime.utils.coroutines.flows.restartable
-import com.wynime.utils.coroutines.flows.shareTransparentlyIn
 import com.wynime.utils.coroutines.sampleWithInitial
 import com.wynime.utils.io.SystemPath
 import com.wynime.utils.logging.info
@@ -263,6 +267,9 @@ open class EpisodeViewModel(
     private val localCacheOptions = MutableStateFlow<List<MediaSelectorLocalCacheOption>>(emptyList())
     private val selectedLocalCacheId = MutableStateFlow<String?>(null)
     private val onlineSourceQueryEnabled = MutableStateFlow(false)
+    private val downloadPreference = compareByDescending<MediaDownload> { it.id == initialCacheId }
+        .thenByDescending { it.metadata.creationTime }
+        .thenBy { it.id }
     private val settingsRepository: SettingsRepository by inject()
     private val episodePlayHistoryRepository: EpisodePlayHistoryRepository by inject()
     private val mediaSourceManager: MediaSourceManager by inject()
@@ -314,22 +321,7 @@ open class EpisodeViewModel(
             RememberPlayProgressExtension,
             MarkAsWatchedExtension,
             SwitchNextEpisodeExtension.Factory(
-                getNextEpisode = { currentEpisodeId ->
-                    val list = episodeCollectionsFlow.first()
-                    val subject = subjectCollectionFlow.first()
-                    val currentIndex = list.indexOfFirst { it.episodeId == currentEpisodeId }
-                    if (currentIndex == -1) {
-                        null
-                    } else {
-                        val nextEpisode = list.getOrNull(currentIndex + 1) ?: return@Factory null
-
-                        if (!nextEpisode.episodeInfo.isKnownCompleted(subject.recurrence)) {
-                            null
-                        } else {
-                            nextEpisode.episodeId
-                        }
-                    }
-                },
+                getNextEpisode = { currentEpisodeId -> episodeSelectorState.nextEpisodeAfter(currentEpisodeId)?.episodeId },
             ),
             SwitchMediaOnPlayerErrorExtension,
             AutoSelectExtension,
@@ -356,23 +348,47 @@ open class EpisodeViewModel(
 
     @UnsafeEpisodeSessionApi
     private val subjectEpisodeInfoBundleLoadErrorFlow = fetchPlayState.infoLoadErrorFlow
-        .filterNotNull()
-        .stateIn(backgroundScope, SharingStarted.WhileSubscribed(), null)
+        .stateIn(backgroundScope, SharingStarted.Eagerly, null)
+
+    @OptIn(UnsafeEpisodeSessionApi::class)
+    private val remoteSubject = subjectEpisodeInfoBundleFlow.filterNotNull()
+        .map { it.subjectCollectionInfo }
+        .distinctUntilChanged()
+        .stateIn(backgroundScope, SharingStarted.Eagerly, null)
 
     @UnsafeEpisodeSessionApi
-    protected val subjectCollectionFlow =
-        subjectEpisodeInfoBundleFlow.filterNotNull().map { it.subjectCollectionInfo }
-            .distinctUntilChanged()
+    protected val subjectCollectionFlow = remoteSubject.filterNotNull()
 
-    @UnsafeEpisodeSessionApi
+    @OptIn(UnsafeEpisodeSessionApi::class)
     private val subjectInfoFlow = subjectCollectionFlow.map { it.subjectInfo }.distinctUntilChanged()
 
     @UnsafeEpisodeSessionApi
     private val episodeCollectionFlow = subjectEpisodeInfoBundleFlow.map { it?.episodeCollectionInfo }
         .distinctUntilChanged()
 
-    protected val episodeCollectionsFlow = episodeCollectionRepository.subjectEpisodeCollectionInfosFlow(subjectId)
-        .shareInBackground()
+    private val downloadedEpisodes = downloadManager.downloadsForSubject(subjectId)
+        .map { downloads ->
+            downloads.filter { it.metadata.episodeId.toIntOrNull() != null }
+                .sortedWith(downloadPreference)
+        }
+        .stateIn(backgroundScope, SharingStarted.Eagerly, emptyList())
+
+    private val cachedEpisodes = downloadedEpisodes.flatMapLatest { downloads ->
+        if (downloads.isEmpty()) return@flatMapLatest flowOfEmptyList()
+        combine(downloads.map { download ->
+            combine(download.cache.state, download.cache.canPlay) { state, canPlay ->
+                download.metadata.takeIf { state == MediaCacheState.COMPLETED && canPlay }
+            }.catch { error ->
+                logger.warn(error) { "Could not read download ${download.id}" }
+                emit(null)
+            }
+        }) { options ->
+            options.filterNotNull().distinctBy { it.episodeId.toInt() }
+        }
+    }.distinctUntilChanged().stateIn(backgroundScope, SharingStarted.Eagerly, emptyList())
+
+    @OptIn(UnsafeEpisodeSessionApi::class)
+    protected val episodeCollectionsFlow = subjectCollectionFlow.map { it.episodes }.distinctUntilChanged()
 
     @UnsafeEpisodeSessionApi
     private val episodeInfoFlow = episodeCollectionFlow.map { it?.episodeInfo }.distinctUntilChanged()
@@ -389,8 +405,7 @@ open class EpisodeViewModel(
 
     @OptIn(UnsafeEpisodeSessionApi::class)
     val videoStatisticsFlow: Flow<VideoStatistics> = VideoStatisticsCollector(
-        fetchPlayState.mediaSelectorFlow
-            .filterNotNull(),
+        fetchPlayState.mediaSelectorFlow,
         fetchPlayState.playerSession.videoLoadingState,
         player,
         mediaSourceInfoProvider,
@@ -434,14 +449,39 @@ open class EpisodeViewModel(
 
     private val selfInfoFlow = SelfInfoStateProducer(koin = getKoin()).flow
 
+    private val recommendationRestarter = FlowRestarter()
+    private val recommendations = MutableStateFlow(EpisodeRecommendationsState())
+
     @OptIn(UnsafeEpisodeSessionApi::class)
-    protected val recommendationsFlow = subjectInfoFlow.map { getSubjectRecommendations(it) }
-        .shareTransparentlyIn(backgroundScope, SharingStarted.WhileSubscribed(5_000), replay = 1)
+    private suspend fun loadRecommendations() {
+        remoteSubject.map { it?.subjectInfo?.takeIf { info -> info.tags.isNotEmpty() } }
+            .distinctUntilChangedBy { it?.tags }
+            .restartable(recommendationRestarter)
+            .collectLatest { subject ->
+                val previous = recommendations.value.items
+                recommendations.value = EpisodeRecommendationsState(items = previous)
+                try {
+                    val items = withTimeoutOrNull(15.seconds) {
+                        if (subject == null) getSubjectRecommendations(subjectId) else getSubjectRecommendations(subject)
+                    } ?: throw RepositoryNetworkException("Episode recommendations timed out")
+                    recommendations.value = EpisodeRecommendationsState(items = items.ifEmpty { previous }, isLoading = false)
+                } catch (e: Exception) {
+                    val failure = RepositoryException.wrapOrThrowCancellation(e)
+                    recommendations.value = EpisodeRecommendationsState(
+                        items = previous,
+                        isLoading = false,
+                        error = LoadError.fromException(failure),
+                    )
+                }
+            }
+    }
 
     @OptIn(UnsafeEpisodeSessionApi::class)
     val episodeDetailsState: EpisodeDetailsState = run {
         EpisodeDetailsState(
-            subjectInfo = subjectInfoFlow.produceState(SubjectInfo.Empty),
+            subjectInfo = combine(remoteSubject, downloadedEpisodes) { remote, downloads ->
+                remote?.subjectInfo ?: downloads.firstOrNull()?.metadata?.toSubjectInfo(subjectId) ?: SubjectInfo.Empty
+            }.produceState(SubjectInfo.Empty),
             airingLabelState = AiringLabelState(
                 subjectCollectionFlow.map { it.airingInfo }.produceState(null),
                 subjectCollectionFlow.map {
@@ -449,8 +489,9 @@ open class EpisodeViewModel(
                 }
                     .produceState(null),
             ),
-            recommendations = recommendationsFlow.produceState(emptyList()),
+            recommendations = recommendations.produceState(),
             subjectDetailsStateLoader = SubjectDetailsStateLoader(subjectDetailsStateFactory, backgroundScope),
+            onRetryRecommendations = recommendationRestarter::restart,
         )
     }
 
@@ -553,18 +594,29 @@ open class EpisodeViewModel(
 
     @OptIn(UnsafeEpisodeSessionApi::class)
     val episodeSelectorState: EpisodeSelectorState = EpisodeSelectorState(
-        itemsFlow = episodeCollectionsFlow.combine(subjectCollectionFlow) { list, subject ->
-            list.map {
-                it.toPresentation(subject.recurrence)
-            }
+        itemsFlow = combine(remoteSubject, cachedEpisodes) { remote, cached ->
+            buildMap<Int, Pair<EpisodeSort, EpisodePresentation>> {
+                for (metadata in cached) {
+                    val item = metadata.toEpisodePresentation()
+                    put(item.episodeId, metadata.episodeSort to item)
+                }
+                for (episode in remote?.episodes.orEmpty()) {
+                    val item = episode.toPresentation(remote?.recurrence)
+                    put(
+                        item.episodeId,
+                        episode.episodeInfo.sort to item.copy(isKnownBroadcast = item.isKnownBroadcast || containsKey(item.episodeId)),
+                    )
+                }
+            }.values.sortedBy { it.first }.map { it.second }
         },
-        onSelect = {
-            launchInBackground {
-                switchEpisode(it.episodeId)
-            }
+        onSelect = { item ->
+            launchInBackground { switchEpisode(item.episodeId) }
         },
         currentEpisodeId = episodeIdFlow,
         parentCoroutineContext = backgroundScope.coroutineContext,
+        loadError = subjectEpisodeInfoBundleLoadErrorFlow.produceState(),
+        isLoading = remoteSubject.map { it == null }.produceState(true),
+        onRetry = ::restartMetadataLoad,
     )
 
     private val commentStateRestarter = FlowRestarter()
@@ -727,9 +779,10 @@ open class EpisodeViewModel(
 
         val selectedMediaFlow =
             episodeSession.fetchSelectFlow.flatMapLatest { it?.mediaSelector?.selected ?: flowOfNull() }
-        return com.wynime.utils.coroutines.flows.combine(
+        return combinePageFlows(
             selfInfoFlow,
             episodeSession.infoBundleFlow.distinctUntilChanged().onStart { emit(null) },
+            combine(downloadedEpisodes, episodeSession.localPlaybackMetadata, ::Pair),
             episodeSession.infoLoadErrorStateFlow,
             episodeSession.fetchSelectFlow,
             episodeSession.fetchSelectFlow.map { fetchSelect ->
@@ -749,15 +802,24 @@ open class EpisodeViewModel(
             combine(selectedMediaFlow, player.mediaData) { selectedMedia, mediaData ->
                 MediaShareData.from(selectedMedia, mediaData)
             },
-        ) { authState, subjectEpisodeBundle, subjectLoadError, fetchSelect, mediaSelectorState, mediaSelectorSummary, cachePageState, shareData ->
-
-            val (subject, episode) = if (subjectEpisodeBundle == null) {
-                SubjectPresentation.Placeholder to EpisodePresentation.Placeholder
-            } else {
-                Pair(
-                    subjectEpisodeBundle.subjectInfo.toPresentation(),
-                    subjectEpisodeBundle.episodeCollectionInfo.toPresentation(subjectEpisodeBundle.subjectCollectionInfo.recurrence),
+        ) { authState, subjectEpisodeBundle, local, subjectLoadError, fetchSelect, mediaSelectorState, mediaSelectorSummary, cachePageState, shareData ->
+            val (downloads, playingDownload) = local
+            val episodeId = episodeSession.episodeId
+            val cachedEpisode = playingDownload ?: downloads.firstOrNull { it.metadata.episodeId.toInt() == episodeId }?.metadata
+            val cachedSubject = cachedEpisode ?: downloads.firstOrNull()?.metadata
+            val remoteInfo = subjectEpisodeBundle?.subjectInfo ?: remoteSubject.value?.subjectInfo
+            val subject = (remoteInfo?.takeIf { it.displayName.isNotBlank() } ?: cachedSubject?.toSubjectInfo(subjectId))
+                ?.toPresentation() ?: SubjectPresentation.Placeholder
+            val localEpisode = cachedEpisode?.toEpisodePresentation()
+            val remoteEpisode = subjectEpisodeBundle?.episodeCollectionInfo
+                ?.toPresentation(subjectEpisodeBundle.subjectCollectionInfo.recurrence)
+            val episode = when {
+                remoteEpisode == null -> localEpisode ?: EpisodePresentation.Placeholder.copy(episodeId = episodeId)
+                remoteEpisode.title.isBlank() && localEpisode != null -> remoteEpisode.copy(
+                    title = localEpisode.title,
+                    originalTitle = remoteEpisode.originalTitle.ifBlank { localEpisode.originalTitle },
                 )
+                else -> remoteEpisode
             }
 
             if (subjectLoadError != null) {
@@ -781,7 +843,7 @@ open class EpisodeViewModel(
                 isCheckingLocalCache = cachePageState.isChecking,
                 subjectPresentation = subject,
                 episodePresentation = episode,
-                isLoading = subjectEpisodeBundle == null,
+                isLoading = subjectEpisodeBundle == null && subjectLoadError == null,
                 loadError = getLoadError(),
                 playingEpisodeSummary = if (subjectEpisodeBundle == null) {
                     null
@@ -816,9 +878,7 @@ open class EpisodeViewModel(
         selectedLocalCacheId.value = null
         onlineSourceQueryEnabled.value = false
         fetchPlayState.disableMediaFetch()
-        backgroundScope.launch {
-            fetchPlayState.switchEpisode(episodeId)
-        }.join()
+        fetchPlayState.switchEpisode(episodeId)
     }
 
     fun savePlayerVolume(volume: Float, mute: Boolean) {
@@ -958,14 +1018,7 @@ open class EpisodeViewModel(
 
             selectedLocalCacheId.value = cache.cacheId
             val cachedMedia = cache.getCachedMedia()
-            val loaded = fetchPlayState.playerSession.loadMedia(
-                cachedMedia,
-                EpisodeMetadata(
-                    title = cache.metadata.episodeName,
-                    ep = cache.metadata.episodeEp,
-                    sort = cache.metadata.episodeSort,
-                ),
-            )
+            val loaded = fetchPlayState.loadLocalPlayback(episodeId, cachedMedia, cache.metadata)
             if (loaded) {
                 cachePlaybackState.value = CachePlaybackState.PLAYING
                 fetchPlayState.broadcastEvent(EpisodeFetchSelectPlayState.MediaLoadedEvent(episodeId))
@@ -987,6 +1040,7 @@ open class EpisodeViewModel(
     }
 
     init {
+        launchInBackground { loadRecommendations() }
         backgroundScope.launch(start = CoroutineStart.UNDISPATCHED) {
             var isInitialSession = true
             fetchPlayState.episodeSessionFlow.collect { session ->
@@ -1079,19 +1133,14 @@ open class EpisodeViewModel(
         }
     }
 
-    @OptIn(UnsafeEpisodeSessionApi::class)
     fun retryLoad(error: EpisodePageLoadError) {
-        launchInBackground {
-            when (error) {
-                is EpisodePageLoadError.SeriesError -> {
-                    fetchPlayState.restartLoad()
-                }
-
-                is EpisodePageLoadError.SubjectError -> {
-                    fetchPlayState.restartLoad()
-                }
-            }
+        when (error) {
+            is EpisodePageLoadError.SeriesError, is EpisodePageLoadError.SubjectError -> restartMetadataLoad()
         }
+    }
+
+    private fun restartMetadataLoad() {
+        launchInBackground { fetchPlayState.restartLoad() }
     }
 
     private suspend fun MediampPlayer.applyCustomOptions() {

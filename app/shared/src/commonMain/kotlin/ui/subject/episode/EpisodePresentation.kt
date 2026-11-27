@@ -9,6 +9,7 @@ import com.wynime.app.data.models.episode.nameOrNameCn
 import com.wynime.app.data.models.episode.renderEpisodeEp
 import com.wynime.app.data.models.subject.SubjectRecurrence
 import com.wynime.app.domain.episode.EpisodeCompletionContext.isKnownCompleted
+import com.wynime.datasources.api.MediaCacheMetadata
 import com.wynime.datasources.api.topic.UnifiedCollectionType
 
 @Immutable
@@ -51,4 +52,13 @@ fun EpisodeCollectionInfo.toPresentation(
     sort = episodeInfo.sort.toString(),
     collectionType = collectionType,
     isKnownBroadcast = episodeInfo.isKnownCompleted(recurrence),
+)
+
+internal fun MediaCacheMetadata.toEpisodePresentation() = EpisodePresentation(
+    episodeId = episodeId.toInt(),
+    title = episodeName,
+    ep = (episodeEp ?: episodeSort).toString().ifBlank { "#$episodeId" },
+    sort = episodeSort.toString(),
+    collectionType = UnifiedCollectionType.NOT_COLLECTED,
+    isKnownBroadcast = true,
 )

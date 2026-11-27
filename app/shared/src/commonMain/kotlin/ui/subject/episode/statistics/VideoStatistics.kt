@@ -31,8 +31,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -57,7 +57,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.openani.mediamp.MediampPlayer
 
 class VideoStatisticsCollector(
-    mediaSelector: Flow<MediaSelector>,
+    mediaSelector: Flow<MediaSelector?>,
     videoLoadingStateFlow: Flow<VideoLoadingState>,
     playerState: MediampPlayer,
     private val mediaSourceInfoProvider: MediaSourceInfoProvider,
@@ -65,11 +65,11 @@ class VideoStatisticsCollector(
     backgroundScope: CoroutineScope,
 ) {
     val videoStatisticsFlow: StateFlow<VideoStatistics> = kotlin.run {
-        val selectedMediaFlow = mediaSelector.flatMapLatest { it.selected }
+        val selectedMediaFlow = mediaSelector.flatMapLatest { it?.selected ?: flowOf(null) }
         combine(
             selectedMediaFlow,
             selectedMediaFlow.flatMapLatest {
-                mediaSourceInfoProvider.getSourceInfoFlow(it?.mediaSourceId ?: return@flatMapLatest emptyFlow())
+                mediaSourceInfoProvider.getSourceInfoFlow(it?.mediaSourceId ?: return@flatMapLatest flowOf(null))
             },
             selectedMediaFlow
                 .combine(playerState.mediaData.map { it?.filenameOrNull }) { selectedMedia, filename ->

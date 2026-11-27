@@ -7,16 +7,18 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import com.wynime.app.data.models.trending.TrendingSubjectInfo
 import com.wynime.app.data.models.trending.TrendsInfo
 import com.wynime.app.data.repository.Repository
 import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryNetworkException
 import com.wynime.utils.coroutines.IO_
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class TrendsRepository(
@@ -54,9 +56,9 @@ class TrendsRepository(
         if (request.started) {
             requestScope.launch {
                 try {
-                    val page = withContext(ioDispatcher) {
+                    val page = withTimeoutOrNull(15.seconds) {
                         dataSource.getTrendingSubjects(limit = FIRST_PAGE_SIZE, offset = 0)
-                    }
+                    } ?: throw RepositoryNetworkException("Bangumi trending timed out")
                     cacheMutex.withLock {
                         cachedFirstPage = CachedTrendingPage(page = page, cachedAt = clock.now())
                         if (inFlightFirstPage === request.deferred) inFlightFirstPage = null

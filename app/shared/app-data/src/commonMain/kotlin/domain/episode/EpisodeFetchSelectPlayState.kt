@@ -44,6 +44,9 @@ import com.wynime.utils.analytics.Analytics
 import com.wynime.utils.analytics.AnalyticsEvent.Companion.EpisodeSwitch
 import com.wynime.utils.logging.info
 import com.wynime.utils.logging.logger
+import com.wynime.app.domain.media.resolver.EpisodeMetadata
+import com.wynime.datasources.api.Media
+import com.wynime.datasources.api.MediaCacheMetadata
 import org.koin.core.Koin
 import org.openani.mediamp.MediampPlayer
 import kotlin.coroutines.AbstractCoroutineContextElement
@@ -208,6 +211,28 @@ class EpisodeFetchSelectPlayState(
         mediaFetchEnabled.value = false
     }
 
+    suspend fun loadLocalPlayback(episodeId: Int, media: Media, metadata: MediaCacheMetadata): Boolean {
+        val session = episodeSessionFlow.value
+        if (session.episodeId != episodeId) return false
+        return session.loadPlayback(
+            media,
+            EpisodeMetadata(metadata.episodeName, metadata.episodeEp, metadata.episodeSort),
+            metadata,
+        )
+    }
+
+    private suspend fun EpisodeSession.loadPlayback(
+        media: Media,
+        metadata: EpisodeMetadata,
+        cacheMetadata: MediaCacheMetadata? = null,
+    ): Boolean {
+        managesPlayback.value = true
+        loadedMedia.value = null
+        val loaded = playerSession.loadMedia(media, metadata)
+        if (loaded) loadedMedia.value = EpisodeSession.LoadedMedia(cacheMetadata)
+        return loaded
+    }
+
     suspend fun onClose() {
         try {
             extensionManager.call { it.onClose() }
@@ -281,7 +306,7 @@ class EpisodeFetchSelectPlayState(
                                 .first()
                                 .episodeInfo
 
-                            if (playerSession.loadMedia(media, episodeInfo.toEpisodeMetadata())) {
+                            if (episodeSession.loadPlayback(media, episodeInfo.toEpisodeMetadata())) {
                                 onMediaLoaded(episodeInfo.episodeId)
                             }
                         }

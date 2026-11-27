@@ -2,11 +2,14 @@ package com.wynime.app.ui.exploration.recommend
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.adaptive.WindowAdaptiveInfo
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -14,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
@@ -30,6 +34,8 @@ import com.wynime.app.ui.foundation.animation.LocalWynimeMotionScheme
 import com.wynime.app.ui.foundation.layout.CarouselItemDefaults
 import com.wynime.app.ui.foundation.layout.currentWindowAdaptiveInfo1
 import com.wynime.app.ui.foundation.layout.minimumHairlineSize
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.recommendations_empty
 import com.wynime.app.ui.search.LoadErrorCard
 import com.wynime.app.ui.search.createTestPager
 import com.wynime.app.ui.search.rememberLoadErrorState
@@ -37,6 +43,7 @@ import com.wynime.app.ui.subject.SubjectCoverCard
 import com.wynime.app.ui.subject.SubjectGridDefaults
 import com.wynime.app.ui.subject.SubjectGridLayoutParams
 import com.wynime.utils.platform.annotations.TestOnly
+import org.jetbrains.compose.resources.stringResource
 
 fun LazyGridScope.recommendationItems(
     data: LazyPagingItems<RecommendedItemInfo>,
@@ -47,7 +54,17 @@ fun LazyGridScope.recommendationItems(
     if (loadError != null) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Box(Modifier.minimumHairlineSize()) {
-                LoadErrorCard(loadError, { data.refresh() })
+                LoadErrorCard(loadError, { data.retry() })
+            }
+        }
+    } else if (data.itemCount == 0) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Box(Modifier.padding(vertical = 8.dp)) {
+                if (data.loadState.refresh is LoadState.Loading) {
+                    LinearProgressIndicator()
+                } else {
+                    Text(stringResource(Lang.recommendations_empty))
+                }
             }
         }
     }

@@ -10,6 +10,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import com.wynime.app.data.models.preference.NsfwMode
+import com.wynime.app.data.repository.RepositoryNetworkException
 import com.wynime.app.data.repository.RepositoryRequestError
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -67,6 +68,21 @@ class BangumiExploreFeedTest {
         assertEquals(1, source.calendarRequests)
 
         repository.getCalendarDays(forceRefresh = true)
+        assertEquals(2, source.calendarRequests)
+    }
+
+    @Test
+    fun `calendar timeout releases the in flight request for retry`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val source = FakeExploreDataSource(calendarGate = gate)
+        val repository = BangumiCalendarRepository(
+            dataSource = source,
+            ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
+
+        assertFailsWith<RepositoryNetworkException> { repository.getCalendarDays() }
+        gate.complete(Unit)
+        assertEquals(source.calendarDays, repository.getCalendarDays(forceRefresh = true))
         assertEquals(2, source.calendarRequests)
     }
 

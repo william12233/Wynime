@@ -1376,6 +1376,9 @@
     
     
     
+    <string name="subject_episode_no_episodes">没有可选的剧集</string>
+    <string name="subject_episode_metadata_unavailable">暂时无法加载剧集信息</string>
+    <string name="recommendations_empty">暂无推荐</string>
 </resources>
 
 

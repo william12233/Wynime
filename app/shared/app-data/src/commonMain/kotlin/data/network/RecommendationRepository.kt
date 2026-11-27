@@ -5,9 +5,12 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.LocalDate
 import com.wynime.app.data.models.preference.NsfwMode
 import com.wynime.app.data.models.recommend.RecommendedItemInfo
@@ -15,13 +18,14 @@ import com.wynime.app.data.models.recommend.RecommendedSubjectInfo
 import com.wynime.app.data.models.trending.TrendingSubjectInfo
 import com.wynime.app.data.repository.Repository
 import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryNetworkException
 import com.wynime.app.data.repository.runWrappingExceptionAsLoadResult
 import com.wynime.app.data.repository.user.SettingsRepository
 import com.wynime.utils.coroutines.IO_
 import com.wynime.utils.logging.error
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.ln
+import kotlin.time.Duration.Companion.seconds
 
 class RecommendationRepository(
     private val dataSource: BangumiExploreDataSource,
@@ -59,34 +63,35 @@ class RecommendationRepository(
         }
     }
 
-    private suspend fun loadRecommendations(): List<BangumiRecommendationCandidate> {
-        val trending = trendsRepository.getTrendsInfo().subjects
-        val calendar = try {
-            calendarRepository.getCalendarDays().flatMap { it.items }
-        } catch (e: Throwable) {
-            if (e is CancellationException) throw e
-            logger.error(e) {
-                "Failed to load Bangumi calendar while building recommendations; continuing with trending candidates."
+    private suspend fun loadRecommendations(): List<BangumiRecommendationCandidate> = coroutineScope {
+        val trendingRequest = async { loadSource("trending") { trendsRepository.getTrendsInfo().subjects } }
+        val calendarRequest = async { loadSource("calendar") { calendarRepository.getCalendarDays().flatMap { it.items } } }
+        val preferencesRequest = async {
+            loadSource("collection preferences") {
+                withTimeoutOrNull(15.seconds) { dataSource.getCollectionPreferences() }
+                    ?: throw RepositoryNetworkException("Recommendation preferences timed out")
             }
-            emptyList()
         }
-        val preferences = try {
-            dataSource.getCollectionPreferences()
-        } catch (e: Throwable) {
-            if (e is CancellationException) throw e
-            logger.error(e) {
-                "Failed to load local Bangumi collection preferences; continuing without personalization."
-            }
-            emptyList()
-        }
+        val trending = trendingRequest.await()
+        val calendar = calendarRequest.await()
+        if (trending.isFailure && calendar.isFailure) trending.getOrThrow()
         val nsfwMode = settingsRepository.uiSettings.flow.first().searchSettings.nsfwMode
-        return rankBangumiRecommendations(
-            candidates = mergeCandidates(trending, calendar),
-            preferences = preferences,
+        rankBangumiRecommendations(
+            candidates = mergeCandidates(trending.getOrDefault(emptyList()), calendar.getOrDefault(emptyList())),
+            preferences = preferencesRequest.await().getOrDefault(emptyList()),
             nsfwMode = nsfwMode,
             limit = RECOMMENDATION_LIMIT,
         )
     }
+
+    private suspend fun <T> loadSource(source: String, load: suspend () -> T): Result<T> =
+        try {
+            Result.success(load())
+        } catch (e: Exception) {
+            val failure = RepositoryException.wrapOrThrowCancellation(e)
+            logger.error(failure) { "Could not load $source for Bangumi recommendations" }
+            Result.failure(failure)
+        }
 
     private fun mergeCandidates(
         trending: List<TrendingSubjectInfo>,

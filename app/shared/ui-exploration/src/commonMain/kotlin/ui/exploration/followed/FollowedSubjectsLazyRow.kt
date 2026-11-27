@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -34,12 +35,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.itemContentType
-import androidx.paging.compose.itemKey
 import com.wynime.app.data.models.preference.NsfwMode
 import com.wynime.app.data.models.subject.FollowedSubjectInfo
 import com.wynime.app.data.models.subject.TestFollowedSubjectInfos
+import com.wynime.app.data.repository.subject.FollowedSubjectsState
 import com.wynime.app.data.models.subject.listCoverUrl
 import com.wynime.app.data.models.subject.hasNewEpisodeToPlay
 import com.wynime.app.data.models.subject.preferredDisplayName
@@ -63,10 +62,6 @@ import com.wynime.app.ui.lang.subject_collection_doing
 import com.wynime.app.ui.search.LoadErrorCard
 import com.wynime.app.ui.search.LoadErrorCardLayout
 import com.wynime.app.ui.search.LoadErrorCardRole
-import com.wynime.app.ui.search.isFinishedAndEmpty
-import com.wynime.app.ui.search.isLoadingFirstPage
-import com.wynime.app.ui.search.rememberLoadErrorState
-import com.wynime.app.ui.search.rememberTestLazyPagingItems
 import com.wynime.app.ui.subject.SubjectProgressState
 import com.wynime.app.ui.subject.rememberSubjectStatusStrings
 import com.wynime.utils.platform.annotations.TestOnly
@@ -74,8 +69,8 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun FollowedSubjectsLazyRow(
-    items: LazyPagingItems<FollowedSubjectInfo>,
-
+    state: FollowedSubjectsState,
+    onRetry: () -> Unit,
     onClick: (FollowedSubjectInfo) -> Unit,
     onPlay: (FollowedSubjectInfo) -> Unit,
     modifier: Modifier = Modifier,
@@ -94,8 +89,8 @@ fun FollowedSubjectsLazyRow(
         verticalAlignment = verticalAlignment,
     ) {
 
-        when {
-            items.isLoadingFirstPage -> {
+        when (state) {
+            FollowedSubjectsState.Loading -> {
 
                 items(8) {
                     FollowedSubjectItem(
@@ -108,59 +103,54 @@ fun FollowedSubjectsLazyRow(
                 }
             }
 
-            items.loadState.hasError -> {
+            is FollowedSubjectsState.Error -> {
                 item {
                     Box(Modifier.minimumHairlineSize()) {
-                        val problem by items.rememberLoadErrorState()
-                        LoadErrorCard(problem, { items.retry() })
+                        LoadErrorCard(state.error, onRetry)
                     }
                 }
             }
 
-            items.isFinishedAndEmpty -> {
-                item {
-                    val followedHintText = stringResource(
-                        Lang.exploration_followed_collect_as_to_show_here,
-                        stringResource(Lang.subject_collection_doing),
-                    )
-                    Box(Modifier.minimumHairlineSize()) {
-                        LoadErrorCardLayout(
-                            LoadErrorCardRole.Unimportant,
-                            content = {
-                                ListItem(
-                                    headlineContent = { Text(followedHintText) },
-                                    colors = listItemColors,
-                                )
-                            },
+            is FollowedSubjectsState.Content -> {
+                if (state.items.isEmpty()) {
+                    item {
+                        val followedHintText = stringResource(
+                            Lang.exploration_followed_collect_as_to_show_here,
+                            stringResource(Lang.subject_collection_doing),
+                        )
+                        Box(Modifier.minimumHairlineSize()) {
+                            LoadErrorCardLayout(
+                                LoadErrorCardRole.Unimportant,
+                                content = {
+                                    ListItem(
+                                        headlineContent = { Text(followedHintText) },
+                                        colors = listItemColors,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
+                items(
+                    state.items,
+                    key = { "FollowedSubjectsLazyRow-" + it.subjectInfo.subjectId },
+                    contentType = { it.subjectProgressInfo.hasNewEpisodeToPlay },
+                ) { item ->
+                    var subjectNsfwType by rememberSaveable(item) { mutableStateOf(item.nsfwMode) }
+                    NsfwMask(
+                        subjectNsfwType,
+                        onTemporarilyDisplay = { subjectNsfwType = NsfwMode.DISPLAY },
+                        shape = layoutParameters.shape,
+                    ) {
+                        FollowedSubjectItem(
+                            item,
+                            onClick = { onClick(item) },
+                            onPlay = { onPlay(item) },
+                            layoutParameters.imageSize,
+                            layoutParameters.shape,
                         )
                     }
                 }
-            }
-        }
-        items(
-            items.itemCount,
-            key = items.itemKey { "FollowedSubjectsLazyRow-" + it.subjectInfo.subjectId },
-            contentType = items.itemContentType { it.subjectProgressInfo.hasNewEpisodeToPlay },
-        ) { index ->
-            val item = items[index]
-            var subjectNsfwType: NsfwMode by rememberSaveable(item) {
-                mutableStateOf(
-                    item?.nsfwMode ?: NsfwMode.DISPLAY,
-                )
-            }
-
-            NsfwMask(
-                subjectNsfwType,
-                onTemporarilyDisplay = { subjectNsfwType = NsfwMode.DISPLAY },
-                shape = layoutParameters.shape,
-            ) {
-                FollowedSubjectItem(
-                    item,
-                    onClick = { item?.let { onClick(it) } },
-                    onPlay = { item?.let { onPlay(it) } },
-                    layoutParameters.imageSize,
-                    layoutParameters.shape,
-                )
             }
         }
     }
@@ -256,7 +246,8 @@ object FollowedSubjectsDefaults {
 fun PreviewFollowedSubjectsLazyRow() = ProvideCompositionLocalsForPreview {
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLowest) {
         FollowedSubjectsLazyRow(
-            items = rememberTestLazyPagingItems(TestFollowedSubjectInfos),
+            state = FollowedSubjectsState.Content(TestFollowedSubjectInfos),
+            onRetry = {},
             onClick = {},
             onPlay = {},
         )

@@ -130,7 +130,6 @@ fun KoinApplication.repositoryModules(
     single<FollowedSubjectsRepository> {
         FollowedSubjectsRepository(
             subjectCollectionRepository = get(),
-            episodeCollectionRepository = get(),
             settingsRepository = get(),
             sessionManager = get(),
         )

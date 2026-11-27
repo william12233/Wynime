@@ -1,10 +1,10 @@
 package com.wynime.app.domain.player.extension
 
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
 import com.wynime.app.domain.episode.EpisodeSession
 import com.wynime.app.domain.settings.GetVideoScaffoldConfigUseCase
 import com.wynime.utils.logging.info
@@ -21,25 +21,15 @@ class SwitchNextEpisodeExtension(
     private val getVideoScaffoldConfigUseCase: GetVideoScaffoldConfigUseCase by koin.inject()
 
     override fun onStart(episodeSession: EpisodeSession, backgroundTaskScope: ExtensionBackgroundTaskScope) {
-        val mediaLoaded = CompletableDeferred<Unit>()
-        backgroundTaskScope.launch("MediaLoadedListener") {
-            context.subscribeEvents<EpisodeFetchSelectPlayState.MediaLoadedEvent>().collectLatest {
-                if (mediaLoaded.isActive) mediaLoaded.complete(Unit)
-            }
-        }
-
         backgroundTaskScope.launch("SwitchNextEpisode") {
-            mediaLoaded.await()
-            context.sessionFlow.collectLatest { session ->
-                getVideoScaffoldConfigUseCase()
-                    .map { it.autoPlayNext }
-                    .distinctUntilChanged()
-                    .collectLatest inner@{ enabled ->
-                        if (!enabled) return@inner
+            episodeSession.loadedMedia.filterNotNull().first()
+            getVideoScaffoldConfigUseCase()
+                .map { it.autoPlayNext }
+                .distinctUntilChanged()
+                .collectLatest { enabled ->
+                    if (enabled) impl(episodeSession)
+                }
 
-                        impl(session)
-                    }
-            }
         }
     }
 

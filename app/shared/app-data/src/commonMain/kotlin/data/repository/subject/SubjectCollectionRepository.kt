@@ -371,18 +371,18 @@ class SubjectCollectionRepositoryImpl(
         types: List<UnifiedCollectionType>?,
     ): Flow<List<SubjectCollectionInfo>> = subjectCollectionDao.filterMostRecentUpdated(types, limit)
         .restartOnNewLogin(sessionManager)
-        .combine(nsfwModeSettingsFlow) { list, nsfwModeSettings ->
-            list to nsfwModeSettings
+        .combine(nsfwModeSettingsFlow, getEpisodeTypeFiltersUseCase()) { list, nsfwModeSettings, episodeTypes ->
+            Triple(list, nsfwModeSettings, episodeTypes)
         }
-        .flatMapLatest { (list, nsfwModeSettings) ->
+        .flatMapLatest { (list, nsfwModeSettings, episodeTypes) ->
             if (list.isEmpty()) {
                 return@flatMapLatest flowOfEmptyList()
             }
             combine(
                 list.map { entity ->
-                    episodeCollectionRepository.subjectEpisodeCollectionInfosFlow(entity.subjectId).map { episodes ->
+                    episodeCollectionDao.filterBySubjectId(entity.subjectId, episodeTypes).map { episodes ->
                         entity.toSubjectCollectionInfo(
-                            episodes = episodes,
+                            episodes = episodes.map { it.toEpisodeCollectionInfo() },
                             currentDate = getCurrentDate(),
                             nsfwModeSettings = nsfwModeSettings,
                         )

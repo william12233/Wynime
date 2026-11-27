@@ -1,9 +1,11 @@
 package com.wynime.app.domain.player.extension
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -20,12 +22,15 @@ import com.wynime.app.data.repository.player.EpisodePlayHistoryRepositoryImpl
 import com.wynime.app.data.repository.player.PlaybackHistoryPendingOp
 import com.wynime.app.domain.episode.EpisodeFetchSelectPlayState
 import com.wynime.app.domain.episode.EpisodePlayerTestSuite
+import com.wynime.app.domain.episode.GetSubjectEpisodeInfoBundleFlowUseCase
 import com.wynime.app.domain.episode.UnsafeEpisodeSessionApi
 import com.wynime.app.domain.episode.mediaSelectorFlow
 import com.wynime.app.domain.episode.player
 import com.wynime.app.domain.media.TestMediaList
 import com.wynime.app.domain.media.resolver.MediaResolver
 import com.wynime.app.domain.media.resolver.TestUniversalMediaResolver
+import com.wynime.datasources.api.EpisodeSort
+import com.wynime.datasources.api.MediaCacheMetadata
 import com.wynime.utils.coroutines.childScope
 import org.openani.mediamp.PlaybackErrorCode
 import org.openani.mediamp.PlaybackException
@@ -102,6 +107,64 @@ class RememberPlayProgressExtensionTest : AbstractPlayerExtensionTest() {
     ) {
         assertSavedHistory(positionMillis, episodeId)
         assertEquals(1, repository.flow.first().size)
+    }
+
+    @Test
+    fun `downloaded episodes resume and keep separate positions while metadata is unavailable`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val scope = this.childScope()
+        val suite = EpisodePlayerTestSuite(this, scope)
+        suite.registerComponent<EpisodePlayHistoryRepository> { repository }
+        suite.registerComponent<MediaResolver> { TestUniversalMediaResolver }
+        suite.registerComponent<GetSubjectEpisodeInfoBundleFlowUseCase> {
+            GetSubjectEpisodeInfoBundleFlowUseCase { flow { awaitCancellation() } }
+        }
+        val otherEpisode = initialEpisodeId + 1
+        val rememberProgress = EpisodePlayerExtensionFactory { context, koin ->
+            RememberPlayProgressExtension(context, koin, periodicReportInterval = Duration.INFINITE)
+        }
+        val state = suite.createState(listOf(rememberProgress))
+        suspend fun loadDownload(episodeId: Int) {
+            assertEquals(true, state.loadLocalPlayback(
+                episodeId,
+                TestMediaList[0],
+                MediaCacheMetadata(
+                    subjectId = subjectId.toString(),
+                    episodeId = episodeId.toString(),
+                    subjectNames = listOf("Downloaded show"),
+                    episodeSort = EpisodeSort(episodeId),
+                    episodeName = "Downloaded episode $episodeId",
+                ),
+            ))
+        }
+        suite.setMediaDuration(100_000)
+        repository.saveOrUpdate(initialEpisodeId, 8_000)
+        state.onUIReady()
+        loadDownload(initialEpisodeId)
+        runCurrent()
+        assertEquals(8_000L, suite.player.currentPositionMillis.value)
+        val metadata = state.episodeSessionFlow.value.localPlaybackMetadata.first()
+        assertEquals("Downloaded show", metadata?.subjectNames?.single())
+        assertEquals("Downloaded episode $initialEpisodeId", metadata?.episodeName)
+
+        suite.player.seekTo(18_000)
+        suite.player.pause()
+        runCurrent()
+        val first = assertSavedHistory(18_000)
+        assertEquals(subjectId, first.subjectId)
+        assertEquals("Downloaded show", first.subjectName)
+
+        state.switchEpisode(otherEpisode)
+        loadDownload(otherEpisode)
+        runCurrent()
+        suite.player.seekTo(25_000)
+        state.switchEpisode(initialEpisodeId)
+        loadDownload(initialEpisodeId)
+        runCurrent()
+        assertEquals(18_000L, suite.player.currentPositionMillis.value)
+        assertEquals(25_000L, repository.getPositionMillisByEpisodeId(otherEpisode))
+        state.onClose()
+        scope.cancel()
     }
 
     @Test

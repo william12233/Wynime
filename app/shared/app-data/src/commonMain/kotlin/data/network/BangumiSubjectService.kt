@@ -351,7 +351,7 @@ class BangumiSubjectService(
                 .distinctBy { it.subjectId }
                 .take((limit - size).coerceAtLeast(0))
                 .forEach(::add)
-        }.take(limit)
+        }.ifEmpty { relations.map { it.toWynimeRecommendation() } }.take(limit)
     }
 
     private suspend fun loadRelatedSubjectRecommendations(subjectId: Int): List<SubjectRecommendationDto> =

@@ -7,15 +7,17 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import com.wynime.app.data.repository.Repository
 import com.wynime.app.data.repository.RepositoryException
+import com.wynime.app.data.repository.RepositoryNetworkException
 import com.wynime.app.data.repository.RepositoryRequestError
 import com.wynime.utils.coroutines.IO_
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 class BangumiCalendarRepository(
@@ -48,7 +50,8 @@ class BangumiCalendarRepository(
         if (request.started) {
             requestScope.launch {
                 try {
-                    val days = withContext(ioDispatcher) { dataSource.getCalendarDays() }
+                    val days = withTimeoutOrNull(15.seconds) { dataSource.getCalendarDays() }
+                        ?: throw RepositoryNetworkException("Bangumi calendar timed out")
                     cacheMutex.withLock {
                         cachedCalendar = CachedCalendar(days = days, cachedAt = clock.now())
                         if (inFlight?.deferred === request.deferred) inFlight = null

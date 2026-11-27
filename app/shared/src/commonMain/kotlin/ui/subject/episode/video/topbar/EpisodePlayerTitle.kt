@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import com.wynime.app.ui.external.placeholder.placeholder
 import com.wynime.app.ui.foundation.TextWithBorder
 
 @Composable
@@ -16,22 +17,26 @@ fun EpisodePlayerTitle(
     ep: String?,
     episodeTitle: String,
     subjectTitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSubjectLoading: Boolean = false,
+    isEpisodeLoading: Boolean = false,
 ) {
     Column(modifier, horizontalAlignment = Alignment.Start) {
         ProvideTextStyle(MaterialTheme.typography.titleMedium) {
             Row {
                 TextWithBorder(
                     subjectTitle,
+                    modifier = Modifier.placeholder(isSubjectLoading),
                     softWrap = false, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
         }
-        ProvideTextStyle(MaterialTheme.typography.titleSmall) {
+        if (ep != null || episodeTitle.isNotBlank()) ProvideTextStyle(MaterialTheme.typography.titleSmall) {
             Row(Modifier, verticalAlignment = Alignment.CenterVertically) {
 
                 TextWithBorder(
                     remember(ep, episodeTitle) { (ep ?: "01") + "  " + episodeTitle },
+                    modifier = Modifier.placeholder(isEpisodeLoading),
                     softWrap = false, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }

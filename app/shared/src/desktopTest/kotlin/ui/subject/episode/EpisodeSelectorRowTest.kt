@@ -6,14 +6,18 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.longClick
+import kotlinx.coroutines.runBlocking
 import com.wynime.app.data.models.episode.EpisodeCollectionInfo
 import com.wynime.app.data.models.episode.EpisodeInfo
 import com.wynime.app.ui.framework.runWynimeComposeUiTest
+import com.wynime.app.ui.lang.Lang
+import com.wynime.app.ui.lang.subject_episode_watched
 import com.wynime.app.ui.subject.episode.video.sidesheet.EpisodeSelectorRow
 import com.wynime.datasources.api.EpisodeSort
 import com.wynime.datasources.api.EpisodeType
 import com.wynime.datasources.api.MediaCacheMetadata
 import com.wynime.datasources.api.topic.UnifiedCollectionType
+import org.jetbrains.compose.resources.getString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -48,11 +52,15 @@ class EpisodeSelectorRowTest {
         }
 
         val row = onNodeWithText("Episode one")
+        val watchedLabel = runBlocking { getString(Lang.subject_episode_watched) }
+        val rowHeight = row.fetchSemanticsNode().boundsInRoot.height
         row.performTouchInput { longClick() }
         runOnIdle {
             assertEquals(UnifiedCollectionType.DONE, status.value)
             assertEquals(0, selected)
         }
+        onNodeWithText(watchedLabel, useUnmergedTree = true).assertDoesNotExist()
+        assertEquals(rowHeight, row.fetchSemanticsNode().boundsInRoot.height)
         row.performTouchInput { longClick() }
         runOnIdle {
             assertEquals(UnifiedCollectionType.NOT_COLLECTED, status.value)

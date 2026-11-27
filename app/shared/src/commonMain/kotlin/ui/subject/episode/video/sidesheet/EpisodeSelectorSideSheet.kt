@@ -54,7 +54,6 @@ import com.wynime.app.ui.lang.subject_episode_close
 import com.wynime.app.ui.lang.subject_episode_default_title
 import com.wynime.app.ui.lang.subject_episode_mark_watched
 import com.wynime.app.ui.lang.subject_episode_unwatch
-import com.wynime.app.ui.lang.subject_episode_watched
 import com.wynime.app.ui.lang.subject_episode_now_playing
 import com.wynime.app.ui.lang.subject_episode_no_episodes
 import com.wynime.app.ui.lang.video_player_select_episode
@@ -207,9 +206,6 @@ internal fun EpisodeSelectorRow(
             onLongClick = onToggleWatched,
             onLongClickLabel = stringResource(if (watched) Lang.subject_episode_unwatch else Lang.subject_episode_mark_watched),
         ),
-        supportingContent = if (watched) {
-            { Text(stringResource(Lang.subject_episode_watched)) }
-        } else null,
         leadingContent = {
             ProvideTextStyle(MaterialTheme.typography.bodyLarge) {
                 Text(item.sort, fontFamily = FontFamily.Monospace, color = color)
